@@ -1,5 +1,6 @@
 'use server'
 
+import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
 export type ReferenceRow = {
@@ -70,4 +71,19 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
     references,
     totalCount: references.length,
   }
+}
+
+export async function deleteReference(id: string) {
+  const supabase = await createServerSupabaseClient()
+
+  const { error } = await supabase
+    .from('references')
+    .delete()
+    .eq('id', id)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  revalidatePath('/dashboard')
 }

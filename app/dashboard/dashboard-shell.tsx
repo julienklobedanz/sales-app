@@ -12,7 +12,6 @@ import {
   Send,
   ChevronsUpDown,
   LogOut,
-  User,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -38,16 +37,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { DashboardHeader } from './dashboard-header'
 import { createClient } from '@/lib/supabase/client'
+import { type User } from '@supabase/supabase-js'
 
 export function DashboardShell({
   children,
-  showAdmin = false,
+  user,
 }: {
   children: React.ReactNode
-  showAdmin?: boolean
+  user: User
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -58,13 +58,10 @@ export function DashboardShell({
     router.push('/login')
   }
 
-  // Dummy User Data (Später dynamisch aus Supabase User holen)
-  const user = {
-    name: 'Max Mustermann',
-    email: 'm.mustermann@refstack.com',
-    avatar: '',
-    initials: 'MM',
-  }
+  const userInitials =
+    user.email?.slice(0, 2).toUpperCase() || 'U'
+  const userName = user.user_metadata?.full_name ?? user.email ?? 'Benutzer'
+  const userEmail = user.email ?? ''
 
   return (
     <SidebarProvider defaultOpen={true}>
@@ -79,7 +76,7 @@ export function DashboardShell({
                   </div>
                   <div className="flex flex-col gap-0.5 leading-none">
                     <span className="font-semibold">Refstack</span>
-                    <span className="">v1.0.0</span>
+                    <span className="text-xs">v1.0.0</span>
                   </div>
                 </Link>
               </SidebarMenuButton>
@@ -132,7 +129,6 @@ export function DashboardShell({
             </SidebarGroupContent>
           </SidebarGroup>
 
-          {/* Sekundäre Navigation (Mitte/Unten) */}
           <SidebarGroup className="mt-auto">
             <SidebarGroupLabel>Support & Einstellungen</SidebarGroupLabel>
             <SidebarGroupContent>
@@ -171,7 +167,6 @@ export function DashboardShell({
           </SidebarGroup>
         </SidebarContent>
 
-        {/* Footer mit User Profil */}
         <SidebarFooter>
           <SidebarMenu>
             <SidebarMenuItem>
@@ -182,14 +177,13 @@ export function DashboardShell({
                     className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                   >
                     <Avatar className="h-8 w-8 rounded-lg">
-                      <AvatarImage src={user.avatar} alt={user.name} />
                       <AvatarFallback className="rounded-lg">
-                        {user.initials}
+                        {userInitials}
                       </AvatarFallback>
                     </Avatar>
                     <div className="grid flex-1 text-left text-sm leading-tight">
-                      <span className="truncate font-semibold">{user.name}</span>
-                      <span className="truncate text-xs">{user.email}</span>
+                      <span className="truncate font-semibold">{userName}</span>
+                      <span className="truncate text-xs">{userEmail}</span>
                     </div>
                     <ChevronsUpDown className="ml-auto size-4" />
                   </SidebarMenuButton>
@@ -203,16 +197,15 @@ export function DashboardShell({
                   <DropdownMenuLabel className="p-0 font-normal">
                     <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                       <Avatar className="h-8 w-8 rounded-lg">
-                        <AvatarImage src={user.avatar} alt={user.name} />
                         <AvatarFallback className="rounded-lg">
-                          {user.initials}
+                          {userInitials}
                         </AvatarFallback>
                       </Avatar>
                       <div className="grid flex-1 text-left text-sm leading-tight">
                         <span className="truncate font-semibold">
-                          {user.name}
+                          {userName}
                         </span>
-                        <span className="truncate text-xs">{user.email}</span>
+                        <span className="truncate text-xs">{userEmail}</span>
                       </div>
                     </div>
                   </DropdownMenuLabel>

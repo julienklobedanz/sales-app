@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   Card,
   CardContent,
@@ -50,6 +51,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
 import type { ReferenceRow } from './actions'
+import { deleteReference } from './actions'
 import {
   PlusCircleIcon,
   SlidersHorizontal,
@@ -106,6 +108,7 @@ export function DashboardOverview({
   references: ReferenceRow[]
   totalCount: number
 }) {
+  const router = useRouter()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [selectedRef, setSelectedRef] = useState<ReferenceRow | null>(null)
@@ -133,10 +136,18 @@ export function DashboardOverview({
     setSheetOpen(true)
   }
 
-  const handleDelete = (id: string, e?: React.MouseEvent) => {
+  const handleDelete = async (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation()
-    // TODO: Implement Server Action for Delete
-    toast.error('Löschen ist noch nicht implementiert.')
+
+    toast.promise(deleteReference(id), {
+      loading: 'Lösche Referenz...',
+      success: 'Referenz erfolgreich gelöscht',
+      error: 'Fehler beim Löschen der Referenz',
+    }).then(() => {
+      setSheetOpen(false)
+      setSelectedRef(null)
+      router.refresh()
+    }, () => {})
   }
 
   const handleCopyId = (id: string, e: React.MouseEvent) => {

@@ -8,14 +8,14 @@ export default async function DashboardLayout({
   children: React.ReactNode
 }) {
   const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
   if (!user) {
     redirect('/login')
   }
 
-  const showAdmin =
-    (user.app_metadata?.role as string) === 'admin' ||
-    (user.user_metadata?.role as string) === 'admin'
-
-  return <DashboardShell showAdmin={!!showAdmin}>{children}</DashboardShell>
+  return <DashboardShell user={user}>{children}</DashboardShell>
 }
