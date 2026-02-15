@@ -64,6 +64,11 @@ import {
   MoreHorizontal,
   CopyIcon,
   FileTextIcon,
+  SearchIcon,
+  BarChart3,
+  FileEdit,
+  Clock,
+  CheckCircle,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -157,7 +162,7 @@ export function DashboardOverview({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Gesamt</CardTitle>
-            <div className="text-muted-foreground">📊</div>
+            <BarChart3 className="text-muted-foreground size-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalCount}</div>
@@ -167,7 +172,7 @@ export function DashboardOverview({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Entwürfe</CardTitle>
-            <div className="text-muted-foreground">📝</div>
+            <FileEdit className="text-muted-foreground size-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{draftCount}</div>
@@ -177,7 +182,7 @@ export function DashboardOverview({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Ausstehend</CardTitle>
-            <div className="text-muted-foreground">⏳</div>
+            <Clock className="text-muted-foreground size-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{pendingCount}</div>
@@ -187,7 +192,7 @@ export function DashboardOverview({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Freigegeben</CardTitle>
-            <div className="text-muted-foreground">✅</div>
+            <CheckCircle className="text-muted-foreground size-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{approvedCount}</div>
@@ -203,7 +208,7 @@ export function DashboardOverview({
           {/* Linke Seite: Suche (Breiter) & Filter */}
           <div className="flex flex-1 items-center gap-2">
             <div className="relative max-w-lg flex-1">
-              <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <SearchIcon className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Referenzen suchen..."
                 value={search}
@@ -494,25 +499,5 @@ export function DashboardOverview({
         </SheetContent>
       </Sheet>
     </div>
-  )
-}
-
-function SearchIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="11" cy="11" r="8" />
-      <path d="m21 21-4.3-4.3" />
-    </svg>
   )
 }
