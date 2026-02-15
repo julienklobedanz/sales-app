@@ -6,24 +6,35 @@ export async function GET(request: NextRequest) {
   const code = requestUrl.searchParams.get('code')
   const next = requestUrl.searchParams.get('next') ?? '/dashboard'
 
-  // 1. Origin bestimmen: Zuerst Env Var, dann Request Origin
-  let origin = process.env.NEXT_PUBLIC_APP_URL?.trim() || requestUrl.origin
+  // --- URL ERMITTLUNG (ROBUST) ---
+  // 1. Priorität: Ihre gesetzte Variable
+  let origin = process.env.NEXT_PUBLIC_APP_URL
 
-  // 2. Sicherheits-Check: Protokoll erzwingen (falls "sales-app..." statt "https://sales-app..." eingetragen wurde)
+  // 2. Priorität: Automatische Vercel URL (falls Variable vergessen wurde)
+  if (!origin && process.env.VERCEL_URL) {
+    origin = `https://${process.env.VERCEL_URL}`
+  }
+
+  // 3. Fallback: Request Origin (nicht immer verlässlich hinter Proxies)
+  if (!origin) {
+    origin = requestUrl.origin
+  }
+
+  // Sanitize: Leerzeichen weg, Slash am Ende weg
+  origin = origin.trim().replace(/\/$/, '')
+
+  // Protokoll erzwingen (WICHTIG für Vercel!)
   if (!origin.startsWith('http')) {
     origin = `https://${origin}`
   }
-  // Trailing Slash entfernen, falls vorhanden
-  origin = origin.replace(/\/$/, '')
 
-  // 3. Ziel-URL sicher zusammenbauen
-  // new URL() verhindert "invalid path" Fehler bei Slash-Konflikten
-  const redirectTo = new URL(next, origin)
+  console.log('[Callback] Redirect Origin:', origin) // Zum Debuggen in Vercel Logs
 
   if (code) {
-    const cookieStore = request.cookies
+    // URL sicher zusammenbauen
+    const redirectTo = new URL(next, origin)
 
-    // Response mit Redirect vorbereiten
+    // Response vorbereiten
     const response = NextResponse.redirect(redirectTo)
 
     const supabase = createServerClient(
@@ -32,7 +43,7 @@ export async function GET(request: NextRequest) {
       {
         cookies: {
           getAll() {
-            return cookieStore.getAll()
+            return request.cookies.getAll()
           },
           setAll(cookiesToSet) {
             cookiesToSet.forEach(({ name, value, options }) =>
@@ -47,11 +58,12 @@ export async function GET(request: NextRequest) {
 
     if (!error) {
       return response
+    } else {
+      console.error('[Callback] Auth Error:', error.message)
     }
   }
 
-  // Fehlerfall: Login mit Error-Parameter
-  const errorUrl = new URL('/login', origin)
-  errorUrl.searchParams.set('error', 'auth')
-  return NextResponse.redirect(errorUrl)
+  // Fehlerfall: Zurück zum Login
+  // Auch hier nutzen wir die sichere Origin
+  return NextResponse.redirect(`${origin}/login?error=auth`)
 }
