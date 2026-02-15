@@ -2,14 +2,16 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url)
-  const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/dashboard'
+  // Wir nutzen request.nextUrl, das ist in Next.js stabiler
+  const requestUrl = request.nextUrl
+  const code = requestUrl.searchParams.get('code')
+  const next = requestUrl.searchParams.get('next') ?? '/dashboard'
 
-  const redirectTo = new URL(next, request.url)
-  let response = NextResponse.redirect(redirectTo)
+  // Auch hier: Sicherstellen, dass wir auf der richtigen Domain bleiben
+  const origin = process.env.NEXT_PUBLIC_APP_URL || requestUrl.origin
 
   if (code) {
+    const response = NextResponse.redirect(`${origin}${next}`)
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -28,12 +30,13 @@ export async function GET(request: NextRequest) {
     )
 
     const { error } = await supabase.auth.exchangeCodeForSession(code)
-    if (error) {
-      response = NextResponse.redirect(new URL('/login', request.url))
+
+    if (!error) {
+      // Erfolg: Weiterleiten zur echten URL
+      return response
     }
-  } else {
-    response = NextResponse.redirect(new URL('/login', request.url))
   }
 
-  return response
+  // Fehler: Zurück zum Login
+  return NextResponse.redirect(`${origin}/login?error=auth`)
 }
