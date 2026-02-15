@@ -34,7 +34,12 @@ import {
   SheetDescription,
   SheetFooter,
 } from '@/components/ui/sheet'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -62,6 +67,8 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 
+// --- Konstanten & Hilfsfunktionen ---
+
 const STATUS_LABELS: Record<ReferenceRow['status'], string> = {
   draft: 'Entwurf',
   pending: 'Ausstehend',
@@ -85,25 +92,7 @@ function formatDate(iso: string) {
   })
 }
 
-function SearchIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="11" cy="11" r="8" />
-      <path d="m21 21-4.3-4.3" />
-    </svg>
-  )
-}
+// --- Hauptkomponente ---
 
 export function DashboardOverview({
   references: initialReferences,
@@ -117,6 +106,7 @@ export function DashboardOverview({
   const [selectedRef, setSelectedRef] = useState<ReferenceRow | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
 
+  // Client-seitiges Filtering
   const filteredReferences = useMemo(() => {
     let list = initialReferences
     if (search.trim()) {
@@ -150,24 +140,19 @@ export function DashboardOverview({
     toast.success('ID in die Zwischenablage kopiert')
   }
 
+  // Quick Stats berechnen
   const draftCount = initialReferences.filter((r) => r.status === 'draft').length
   const pendingCount = initialReferences.filter((r) => r.status === 'pending').length
   const approvedCount = initialReferences.filter((r) => r.status === 'approved').length
 
   return (
     <div className="flex flex-col space-y-8 pt-6">
+      {/* 1. Header Bereich (Nur Titel) */}
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-        <div className="flex items-center space-x-2">
-          <Link href="/dashboard/new">
-            <Button>
-              <PlusCircleIcon className="mr-2 size-4" />
-              Referenz erstellen
-            </Button>
-          </Link>
-        </div>
       </div>
 
+      {/* 2. KPI Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -176,7 +161,7 @@ export function DashboardOverview({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalCount}</div>
-            <p className="text-muted-foreground text-xs">Referenzen in Datenbank</p>
+            <p className="text-xs text-muted-foreground">Referenzen in Datenbank</p>
           </CardContent>
         </Card>
         <Card>
@@ -186,7 +171,7 @@ export function DashboardOverview({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{draftCount}</div>
-            <p className="text-muted-foreground text-xs">In Bearbeitung</p>
+            <p className="text-xs text-muted-foreground">In Bearbeitung</p>
           </CardContent>
         </Card>
         <Card>
@@ -196,7 +181,7 @@ export function DashboardOverview({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{pendingCount}</div>
-            <p className="text-muted-foreground text-xs">Warten auf Freigabe</p>
+            <p className="text-xs text-muted-foreground">Warten auf Freigabe</p>
           </CardContent>
         </Card>
         <Card>
@@ -206,25 +191,29 @@ export function DashboardOverview({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{approvedCount}</div>
-            <p className="text-muted-foreground text-xs">Verfügbar für Sales</p>
+            <p className="text-xs text-muted-foreground">Verfügbar für Sales</p>
           </CardContent>
         </Card>
       </div>
 
+      {/* 3. Toolbar & Tabelle */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex flex-1 items-center space-x-2">
-            <div className="relative">
-              <SearchIcon className="text-muted-foreground absolute left-2.5 top-2.5 h-4 w-4" />
+        {/* Toolbar: Suche (breit), Filter, Button (rechts) */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          {/* Linke Seite: Suche (Breiter) & Filter */}
+          <div className="flex flex-1 items-center gap-2">
+            <div className="relative max-w-lg flex-1">
+              <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Suchen..."
+                placeholder="Referenzen suchen..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="h-9 w-[150px] pl-9 lg:w-[250px]"
+                className="h-9 w-full pl-9"
               />
             </div>
+
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="h-9 w-[130px]">
+              <SelectTrigger className="h-9 w-[130px] shrink-0">
                 <div className="flex items-center gap-2">
                   <SlidersHorizontal className="size-3.5" />
                   <SelectValue placeholder="Status" />
@@ -238,6 +227,14 @@ export function DashboardOverview({
               </SelectContent>
             </Select>
           </div>
+
+          {/* Rechte Seite: Button */}
+          <Link href="/dashboard/new">
+            <Button className="w-full sm:w-auto">
+              <PlusCircleIcon className="mr-2 size-4" />
+              Referenz erstellen
+            </Button>
+          </Link>
         </div>
 
         <div className="rounded-md border bg-card">
@@ -258,7 +255,7 @@ export function DashboardOverview({
                 <TableRow>
                   <TableCell
                     colSpan={7}
-                    className="text-muted-foreground h-24 text-center"
+                    className="h-24 text-center text-muted-foreground"
                   >
                     Keine Referenzen gefunden.
                   </TableCell>
@@ -267,11 +264,11 @@ export function DashboardOverview({
                 filteredReferences.map((ref) => (
                   <TableRow
                     key={ref.id}
-                    className="group cursor-pointer hover:bg-muted/50"
+                    className="cursor-pointer hover:bg-muted/50 group"
                     onClick={() => openDetail(ref)}
                   >
                     <TableCell className="font-medium">{ref.company_name}</TableCell>
-                    <TableCell className="text-muted-foreground max-w-[200px] truncate">
+                    <TableCell className="max-w-[200px] truncate text-muted-foreground">
                       {ref.title}
                     </TableCell>
                     <TableCell>{ref.industry ?? '—'}</TableCell>
@@ -297,15 +294,16 @@ export function DashboardOverview({
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Aktionen</DropdownMenuLabel>
-                          <DropdownMenuItem
-                            onSelect={() => openDetail(ref)}
-                          >
+                          <DropdownMenuItem onSelect={() => openDetail(ref)}>
                             <FileTextIcon className="mr-2 h-4 w-4" />
                             Details ansehen
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onSelect={(e) =>
-                              handleCopyId(ref.id, e as unknown as React.MouseEvent)
+                              handleCopyId(
+                                ref.id,
+                                e as unknown as React.MouseEvent
+                              )
                             }
                           >
                             <CopyIcon className="mr-2 h-4 w-4" />
@@ -313,11 +311,13 @@ export function DashboardOverview({
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
                             onSelect={(e) => {
-                              const ev = (e as unknown) as React.MouseEvent
-                              handleDelete(ref.id, ev)
+                              handleDelete(
+                                ref.id,
+                                e as unknown as React.MouseEvent
+                              )
                             }}
+                            className="text-destructive focus:text-destructive"
                           >
                             <Trash2Icon className="mr-2 h-4 w-4" />
                             Löschen
@@ -333,10 +333,12 @@ export function DashboardOverview({
         </div>
       </div>
 
+      {/* 4. Detail Sheet */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent className="flex flex-col gap-0 p-0 sm:max-w-md md:max-w-[600px] md:w-[600px]">
+        <SheetContent className="flex flex-col gap-0 p-0 sm:max-w-md md:w-[600px] md:max-w-[600px]">
           {selectedRef && (
             <>
+              {/* Fixierter Header */}
               <SheetHeader className="z-10 border-b bg-background px-6 py-6">
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-1">
@@ -356,6 +358,7 @@ export function DashboardOverview({
                 </div>
               </SheetHeader>
 
+              {/* Scrollbarer Content-Bereich */}
               <div className="flex-1 overflow-y-auto">
                 <Tabs defaultValue="overview" className="w-full">
                   <div className="px-6 pt-6">
@@ -366,6 +369,7 @@ export function DashboardOverview({
                     </TabsList>
                   </div>
 
+                  {/* TAB: ÜBERSICHT */}
                   <TabsContent value="overview" className="mt-0 space-y-6 px-6 py-6">
                     <div className="rounded-lg border bg-muted/40 p-4">
                       <h4 className="mb-2 flex items-center gap-2 text-sm font-medium">
@@ -441,6 +445,7 @@ export function DashboardOverview({
                     </div>
                   </TabsContent>
 
+                  {/* TAB: DATEIEN */}
                   <TabsContent value="files" className="mt-0 px-6 py-6">
                     <div className="text-muted-foreground bg-muted/10 flex h-40 flex-col items-center justify-center rounded-lg border border-dashed text-sm">
                       <div className="bg-muted mb-2 rounded-full p-2">
@@ -450,6 +455,7 @@ export function DashboardOverview({
                     </div>
                   </TabsContent>
 
+                  {/* TAB: HISTORIE */}
                   <TabsContent value="history" className="mt-0 px-6 py-6">
                     <div className="relative ml-2 space-y-6 border-l pl-4">
                       <div className="relative">
@@ -464,6 +470,7 @@ export function DashboardOverview({
                 </Tabs>
               </div>
 
+              {/* Fixierter Footer */}
               <SheetFooter className="z-10 gap-2 border-t bg-muted/20 px-6 py-4 sm:justify-between">
                 <Button
                   variant="ghost"
@@ -487,5 +494,25 @@ export function DashboardOverview({
         </SheetContent>
       </Sheet>
     </div>
+  )
+}
+
+function SearchIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.3-4.3" />
+    </svg>
   )
 }
