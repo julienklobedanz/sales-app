@@ -56,6 +56,13 @@ const STATUS_OPTIONS = [
 
 type Company = { id: string; name: string }
 
+export type ContactOption = {
+  id: string
+  first_name: string | null
+  last_name: string | null
+  email: string | null
+}
+
 export type ReferenceFormInitialData = {
   id: string
   company_id: string
@@ -64,7 +71,7 @@ export type ReferenceFormInitialData = {
   summary: string | null
   industry: string | null
   country: string | null
-  contact_person?: string | null
+  contact_id?: string | null
   status:
     | 'draft'
     | 'pending'
@@ -84,9 +91,11 @@ function formAction(
 
 export function ReferenceForm({
   companies = [],
+  contacts = [],
   initialData,
 }: {
   companies?: Company[]
+  contacts?: ContactOption[]
   initialData?: ReferenceFormInitialData
 }) {
   const router = useRouter()
@@ -96,6 +105,9 @@ export function ReferenceForm({
   const [industry, setIndustry] = useState(initialData?.industry ?? '')
   const [country, setCountry] = useState(initialData?.country ?? '')
   const [status, setStatus] = useState(initialData?.status ?? 'draft')
+  const [contactId, setContactId] = useState(
+    initialData?.contact_id ? initialData.contact_id : '__none__'
+  )
 
   const isEditMode = !!initialData
   const submitting = isEditMode ? editSubmitting : isPending
@@ -193,15 +205,30 @@ export function ReferenceForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="contact_person">Interner Kontakt / Account Owner (E-Mail)</Label>
-        <Input
-          id="contact_person"
-          name="contact_person"
-          type="email"
-          placeholder="z. B. max@firma.de"
-          disabled={submitting}
-          defaultValue={initialData?.contact_person ?? ''}
+        <Label>Kontaktperson / Account Owner</Label>
+        <input
+          type="hidden"
+          name="contactId"
+          value={contactId === '__none__' ? '' : contactId}
         />
+        <Select
+          value={contactId || '__none__'}
+          onValueChange={(v) => setContactId(v ?? '__none__')}
+          disabled={submitting}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Kontakt auswählen …" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__none__">Keine</SelectItem>
+            {contacts.map((c) => (
+              <SelectItem key={c.id} value={c.id}>
+                {[c.first_name, c.last_name].filter(Boolean).join(' ') || c.email || c.id}
+                {c.email ? ` (${c.email})` : ''}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <p className="text-muted-foreground text-xs">
           Wird für Einzelfreigabe-Anfragen per E-Mail genutzt (z. B. bei Sales-Anfragen).
         </p>

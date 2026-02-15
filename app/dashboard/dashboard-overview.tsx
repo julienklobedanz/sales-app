@@ -559,7 +559,7 @@ export function DashboardOverview({
                       </h4>
                       <div className="pl-6">
                         <p className="text-sm font-medium">
-                          {selectedRef.contact_person || 'Nicht zugewiesen'}
+                          {selectedRef.contact_display || selectedRef.contact_email || 'Nicht zugewiesen'}
                         </p>
                         <p className="text-muted-foreground mt-0.5 text-xs">
                           Account Owner

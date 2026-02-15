@@ -23,7 +23,9 @@ export type ReferenceRow = {
   company_id: string
   company_name: string
   website?: string | null
-  contact_person?: string | null
+  contact_id?: string | null
+  contact_email?: string | null
+  contact_display?: string | null
   file_path?: string | null
 }
 
@@ -47,10 +49,10 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
       status,
       created_at,
       company_id,
+      contact_id,
       file_path,
-      companies (
-        name
-      )
+      companies ( name ),
+      contact_persons ( email, first_name, last_name )
     `
     )
     .order('created_at', { ascending: false })
@@ -65,6 +67,15 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
       Array.isArray(raw) && raw.length > 0
         ? (raw[0] as { name?: string })
         : (raw as { name?: string } | null)
+    const contactRaw = r.contact_persons
+    const contact = contactRaw
+      ? Array.isArray(contactRaw) && contactRaw.length > 0
+        ? (contactRaw[0] as { email?: string; first_name?: string; last_name?: string })
+        : (contactRaw as { email?: string; first_name?: string; last_name?: string })
+      : null
+    const contactDisplay = contact
+      ? [contact.first_name, contact.last_name].filter(Boolean).join(' ') || contact.email || null
+      : null
     return {
       id: r.id,
       title: r.title,
@@ -75,6 +86,9 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
       created_at: r.created_at,
       company_id: r.company_id,
       company_name: company?.name ?? '—',
+      contact_id: r.contact_id ?? null,
+      contact_email: contact?.email ?? null,
+      contact_display: contactDisplay ?? null,
       file_path: r.file_path ?? null,
     }
   })
@@ -108,7 +122,9 @@ export async function updateReference(id: string, formData: FormData) {
   const summary = formData.get('summary')?.toString()?.trim() ?? null
   const industry = formData.get('industry')?.toString()?.trim() ?? null
   const country = formData.get('country')?.toString()?.trim() ?? null
-  const contactPerson = formData.get('contact_person')?.toString()?.trim() ?? null
+  const contactIdRaw = formData.get('contactId')?.toString()?.trim() ?? null
+  const contactId =
+    contactIdRaw && contactIdRaw !== '__none__' ? contactIdRaw : null
   const statusRaw = formData.get('status')?.toString()
   const allowed: ReferenceRow['status'][] = [
     'draft',
@@ -164,7 +180,7 @@ export async function updateReference(id: string, formData: FormData) {
     summary: string | null
     industry: string | null
     country: string | null
-    contact_person: string | null
+    contact_id: string | null
     status: string
     updated_at: string
     file_path?: string
@@ -173,7 +189,7 @@ export async function updateReference(id: string, formData: FormData) {
     summary,
     industry,
     country,
-    contact_person: contactPerson,
+    contact_id: contactId,
     status,
     updated_at: new Date().toISOString(),
   }
@@ -205,7 +221,7 @@ export async function submitForApproval(id: string) {
 
   const { data: row, error: fetchError } = await supabase
     .from('references')
-    .select('title, contact_person, companies(name)')
+    .select('title, contact_id, companies(name), contact_persons(email)')
     .eq('id', id)
     .single()
 
@@ -227,9 +243,15 @@ export async function submitForApproval(id: string) {
 
   if (updateError) throw new Error(updateError.message)
 
+  const contactRaw = row.contact_persons
+  const contact = contactRaw
+    ? Array.isArray(contactRaw) && contactRaw.length > 0
+      ? (contactRaw[0] as { email?: string })
+      : (contactRaw as { email?: string })
+    : null
   const contactEmail =
-    typeof row.contact_person === 'string' && row.contact_person.includes('@')
-      ? row.contact_person
+    typeof contact?.email === 'string' && contact.email.includes('@')
+      ? contact.email
       : null
 
   if (contactEmail && process.env.RESEND_API_KEY) {

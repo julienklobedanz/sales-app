@@ -25,7 +25,9 @@ export async function createReference(
   const summary = formData.get('summary')?.toString()?.trim()
   const industry = formData.get('industry')?.toString()?.trim() || null
   const country = formData.get('country')?.toString()?.trim() || null
-  const contactPerson = formData.get('contact_person')?.toString()?.trim() || null
+  const contactIdRaw = formData.get('contactId')?.toString()?.trim() || null
+  const contactId =
+    contactIdRaw && contactIdRaw !== '__none__' ? contactIdRaw : null
   const statusRaw = formData.get('status')?.toString()
 
   if (!title) {
@@ -93,7 +95,7 @@ export async function createReference(
       summary: summary || null,
       industry,
       country,
-      contact_person: contactPerson,
+      contact_id: contactId,
       status,
       file_path: filePath,
     })

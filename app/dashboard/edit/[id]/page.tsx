@@ -24,7 +24,7 @@ export default async function EditReferencePage({
       summary,
       industry,
       country,
-      contact_person,
+      contact_id,
       status,
       file_path,
       companies ( name )
@@ -51,10 +51,15 @@ export default async function EditReferencePage({
     summary: row.summary ?? null,
     industry: row.industry ?? null,
     country: row.country ?? null,
-    contact_person: row.contact_person ?? null,
+    contact_id: row.contact_id ?? null,
     status: row.status as ReferenceFormInitialData['status'],
     file_path: row.file_path ?? null,
   }
+
+  const { data: contacts } = await supabase
+    .from('contact_persons')
+    .select('id, first_name, last_name, email')
+    .order('last_name')
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6">
@@ -69,7 +74,7 @@ export default async function EditReferencePage({
           <h1 className="text-2xl font-bold tracking-tight">
             Referenz bearbeiten
           </h1>
-          <ReferenceForm initialData={initialData} />
+          <ReferenceForm contacts={contacts ?? []} initialData={initialData} />
         </div>
       </div>
     </div>

@@ -17,6 +17,11 @@ export default async function NewReferencePage() {
     .select('id, name')
     .order('name')
 
+  const { data: contacts } = await supabase
+    .from('contact_persons')
+    .select('id, first_name, last_name, email')
+    .order('last_name')
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-6">
       <div className="mx-auto max-w-2xl space-y-6">
@@ -26,7 +31,10 @@ export default async function NewReferencePage() {
             Zurück zum Dashboard
           </Button>
         </Link>
-        <ReferenceForm companies={companies ?? []} />
+        <ReferenceForm
+          companies={companies ?? []}
+          contacts={contacts ?? []}
+        />
       </div>
     </div>
   )
