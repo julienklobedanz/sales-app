@@ -11,7 +11,6 @@ import { Input } from '@/components/ui/input'
 import { completeOnboarding } from './actions'
 import {
   CheckCircle2,
-  UserIcon,
   BriefcaseIcon,
   ShieldCheckIcon,
 } from 'lucide-react'
@@ -22,7 +21,7 @@ export default function OnboardingPage() {
       <Card className="w-full max-w-lg">
         <CardHeader className="text-center">
           <div className="bg-primary/10 mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full">
-            <UserIcon className="text-primary h-6 w-6" />
+            <BriefcaseIcon className="text-primary h-6 w-6" />
           </div>
           <CardTitle className="text-2xl">Willkommen bei Refstack</CardTitle>
           <CardDescription>
@@ -62,7 +61,7 @@ export default function OnboardingPage() {
                       <CheckCircle2 className="text-primary size-5 opacity-0 peer-checked:opacity-100" />
                     </div>
                     <p className="text-muted-foreground mt-2 text-xs">
-                      Ich suche Referenzen für Pitches und Meetings.
+                      Finden & Anfragen: Referenzen suchen und Freigaben anfragen.
                     </p>
                   </div>
                 </label>
@@ -83,28 +82,7 @@ export default function OnboardingPage() {
                       <CheckCircle2 className="text-primary size-5 opacity-0 peer-checked:opacity-100" />
                     </div>
                     <p className="text-muted-foreground mt-2 text-xs">
-                      Ich verwalte Inhalte, lade PDFs hoch und steuere Freigaben.
-                    </p>
-                  </div>
-                </label>
-
-                <label className="cursor-pointer">
-                  <input
-                    type="radio"
-                    name="role"
-                    value="account_owner"
-                    className="peer sr-only"
-                  />
-                  <div className="border-muted bg-popover hover:bg-accent peer-checked:border-primary peer-checked:bg-primary/5 rounded-lg border-2 p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <UserIcon className="text-muted-foreground size-5" />
-                        <div className="font-medium">Account Owner</div>
-                      </div>
-                      <CheckCircle2 className="text-primary size-5 opacity-0 peer-checked:opacity-100" />
-                    </div>
-                    <p className="text-muted-foreground mt-2 text-xs">
-                      Ich gebe Referenzen für meine Kunden frei.
+                      Verwalten & Veröffentlichen: Inhalte pflegen, PDFs hochladen und Freigaben steuern.
                     </p>
                   </div>
                 </label>

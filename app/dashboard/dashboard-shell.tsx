@@ -12,6 +12,8 @@ import {
   Send,
   ChevronsUpDown,
   LogOut,
+  ShieldCheckIcon,
+  BriefcaseIcon,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -41,6 +43,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { DashboardHeader } from './dashboard-header'
 import { createClient } from '@/lib/supabase/client'
 import { type User } from '@supabase/supabase-js'
+import { updateUserRole } from './actions'
+import { toast } from 'sonner'
 
 export type Profile = {
   full_name: string | null
@@ -63,6 +67,14 @@ export function DashboardShell({
     const supabase = createClient()
     await supabase.auth.signOut()
     router.push('/login')
+  }
+
+  const handleRoleChange = async (newRole: 'admin' | 'sales') => {
+    toast.promise(updateUserRole(newRole), {
+      loading: 'Rolle wird gewechselt...',
+      success: `Rolle zu ${newRole} gewechselt`,
+      error: 'Fehler beim Rollenwechsel',
+    }).then(() => router.refresh(), () => {})
   }
 
   const isAdmin = profile.role === 'admin'
@@ -111,30 +123,48 @@ export function DashboardShell({
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname?.startsWith('/dashboard/requests')}
-                    tooltip="Anfragen"
-                  >
-                    <Link href="/dashboard/requests">
-                      <ClockIcon />
-                      <span>Anfragen</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname?.startsWith('/dashboard/favorites')}
-                    tooltip="Favoriten"
-                  >
-                    <Link href="/dashboard/favorites">
-                      <StarIcon />
-                      <span>Favoriten</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                {profile.role === 'admin' && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname?.startsWith('/dashboard/requests')}
+                      tooltip="Anfragen"
+                    >
+                      <Link href="/dashboard/requests">
+                        <ClockIcon />
+                        <span>Anfragen</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+                {profile.role === 'sales' && (
+                  <>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={pathname?.startsWith('/dashboard/favorites')}
+                        tooltip="Favoriten"
+                      >
+                        <Link href="/dashboard/favorites">
+                          <StarIcon />
+                          <span>Favoriten</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={pathname?.startsWith('/dashboard/requests')}
+                        tooltip="Meine Anfragen"
+                      >
+                        <Link href="/dashboard/requests">
+                          <ClockIcon />
+                          <span>Meine Anfragen</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  </>
+                )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -227,9 +257,30 @@ export function DashboardShell({
                           {userName}
                         </span>
                         <span className="truncate text-xs">{userEmail}</span>
+                        <span className="bg-primary/10 text-primary mt-1 w-fit rounded px-1 py-0.5 text-[10px] font-bold uppercase">
+                          {profile.role}
+                        </span>
                       </div>
                     </div>
                   </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel className="text-muted-foreground ml-2 text-[10px] uppercase">
+                      Rolle wechseln (Test-Modus)
+                    </DropdownMenuLabel>
+                    <DropdownMenuItem
+                      onSelect={() => handleRoleChange('admin')}
+                    >
+                      <ShieldCheckIcon className="mr-2 size-4 text-primary" />
+                      Marketing / Admin
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() => handleRoleChange('sales')}
+                    >
+                      <BriefcaseIcon className="mr-2 size-4 text-primary" />
+                      Sales Representative
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
                   <DropdownMenuSeparator />
                   <DropdownMenuGroup>
                     <DropdownMenuItem

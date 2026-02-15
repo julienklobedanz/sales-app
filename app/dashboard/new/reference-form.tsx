@@ -46,9 +46,12 @@ const COUNTRIES = [
 ]
 
 const STATUS_OPTIONS = [
-  { value: 'draft', label: 'Entwurf' },
-  { value: 'pending', label: 'Ausstehend' },
-  { value: 'approved', label: 'Freigegeben' },
+  { value: 'draft', label: 'Entwurf (Privat)' },
+  { value: 'pending', label: 'Zur Prüfung einreichen' },
+  { value: 'external', label: 'Extern Freigegeben (Öffentlich)' },
+  { value: 'internal', label: 'Intern Freigegeben (Nur Lesezugriff)' },
+  { value: 'anonymous', label: 'Anonymisiert (Ohne Firmenname)' },
+  { value: 'restricted', label: 'Eingeschränkt (Einzelfreigabe nötig)' },
 ] as const
 
 type Company = { id: string; name: string }
@@ -61,7 +64,13 @@ export type ReferenceFormInitialData = {
   summary: string | null
   industry: string | null
   country: string | null
-  status: 'draft' | 'pending' | 'approved'
+  status:
+    | 'draft'
+    | 'pending'
+    | 'external'
+    | 'internal'
+    | 'anonymous'
+    | 'restricted'
   file_path?: string | null
 }
 
@@ -242,15 +251,16 @@ export function ReferenceForm({
         )}
       </div>
 
+      {/* Status Selection */}
       <div className="space-y-2">
-        <Label>Status</Label>
+        <Label htmlFor="status">Status / Freigabestufe</Label>
         <input type="hidden" name="status" value={status} />
         <Select
           value={status}
           onValueChange={setStatus}
           disabled={submitting}
         >
-          <SelectTrigger className="w-full sm:w-[180px]">
+          <SelectTrigger id="status" className="w-full sm:w-[180px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -261,7 +271,10 @@ export function ReferenceForm({
             ))}
           </SelectContent>
         </Select>
-        </div>
+        <p className="text-muted-foreground text-[10px] italic">
+          Hinweis: &quot;Extern&quot; ist sofort für alle Sales Reps nutzbar.
+        </p>
+      </div>
 
       <div className="flex gap-3 pt-2">
         <Button type="submit" disabled={submitting}>

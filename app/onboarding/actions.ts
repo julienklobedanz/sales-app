@@ -11,12 +11,14 @@ export async function completeOnboarding(formData: FormData) {
   } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const role = formData.get('role') as string
+  const roleRaw = formData.get('role') as string
+  const role =
+    roleRaw === 'sales' || roleRaw === 'admin' ? roleRaw : 'sales'
   const fullName = formData.get('full_name') as string
 
   const { error } = await supabase.from('profiles').upsert({
     id: user.id,
-    role: role,
+    role,
     full_name: fullName,
   })
 

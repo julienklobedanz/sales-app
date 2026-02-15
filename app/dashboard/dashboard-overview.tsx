@@ -51,7 +51,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
 import type { ReferenceRow } from './actions'
-import { deleteReference } from './actions'
+import { deleteReference, submitForApproval } from './actions'
+import type { Profile } from './dashboard-shell'
 import {
   PlusCircleIcon,
   SlidersHorizontal,
@@ -72,6 +73,7 @@ import {
   Clock,
   CheckCircle,
   Send,
+  Mail,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -79,17 +81,16 @@ import { toast } from 'sonner'
 
 const STATUS_LABELS: Record<string, string> = {
   draft: 'Entwurf',
-  pending: 'Wartet auf Freigabe',
-  external: 'Extern Freigegeben',
-  internal: 'Intern Freigegeben',
+  pending: 'In Prüfung',
+  external: 'Extern Frei',
+  internal: 'Nur Intern',
   anonymous: 'Anonym',
   restricted: 'Eingeschränkt',
-  approved: 'Freigegeben',
 }
 
 const STATUS_BADGE_VARIANT: Record<
   string,
-  'secondary' | 'outline' | 'default' | 'destructive'
+  'secondary' | 'outline' | 'default'
 > = {
   draft: 'secondary',
   pending: 'outline',
@@ -97,7 +98,6 @@ const STATUS_BADGE_VARIANT: Record<
   internal: 'outline',
   anonymous: 'outline',
   restricted: 'outline',
-  approved: 'default',
 }
 
 function formatDate(iso: string) {
@@ -113,9 +113,11 @@ function formatDate(iso: string) {
 export function DashboardOverview({
   references: initialReferences,
   totalCount,
+  profile,
 }: {
   references: ReferenceRow[]
   totalCount: number
+  profile: Profile
 }) {
   const router = useRouter()
   const [search, setSearch] = useState('')
@@ -123,9 +125,12 @@ export function DashboardOverview({
   const [selectedRef, setSelectedRef] = useState<ReferenceRow | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
 
-  // Client-seitiges Filtering
+  // Client-seitiges Filtering (Sales: draft nie anzeigen)
   const filteredReferences = useMemo(() => {
     let list = initialReferences
+    if (profile.role === 'sales') {
+      list = list.filter((r) => r.status !== 'draft')
+    }
     if (search.trim()) {
       const q = search.trim().toLowerCase()
       list = list.filter(
@@ -138,7 +143,7 @@ export function DashboardOverview({
       list = list.filter((r) => r.status === statusFilter)
     }
     return list
-  }, [initialReferences, search, statusFilter])
+  }, [initialReferences, profile.role, search, statusFilter])
 
   const openDetail = (ref: ReferenceRow) => {
     setSelectedRef(ref)
@@ -165,9 +170,24 @@ export function DashboardOverview({
     toast.success('ID in die Zwischenablage kopiert')
   }
 
-  const submitForApproval = (id: string) => {
-    // TODO: Approval-Token erzeugen, E-Mail an Account Owner senden
-    toast.info('Freigabe anfordern wird vorbereitet …')
+  const handleSubmitForApproval = async (id: string) => {
+    try {
+      await submitForApproval(id)
+      toast.success('Freigabe angefordert. E-Mail wurde versendet.')
+      router.refresh()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Fehler beim Anfordern der Freigabe.')
+    }
+  }
+
+  const handleRequestSpecificApproval = async (id: string) => {
+    try {
+      await submitForApproval(id)
+      toast.success('Einzelfreigabe angefordert. E-Mail wurde versendet.')
+      router.refresh()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Fehler beim Anfordern.')
+    }
   }
 
   // Quick Stats berechnen
@@ -246,7 +266,7 @@ export function DashboardOverview({
               <SelectTrigger className="h-9 w-[180px] shrink-0">
                 <div className="flex items-center gap-2">
                   <SlidersHorizontal className="size-3.5" />
-                  <SelectValue placeholder="Status filtern" />
+                  <SelectValue placeholder="Alle Status" />
                 </div>
               </SelectTrigger>
               <SelectContent>
@@ -254,21 +274,29 @@ export function DashboardOverview({
                 <SelectItem value="draft">Entwurf</SelectItem>
                 <SelectItem value="pending">In Prüfung</SelectItem>
                 <SelectItem value="external">Extern frei</SelectItem>
-                <SelectItem value="internal">Nur Intern</SelectItem>
+                <SelectItem value="internal">Intern frei</SelectItem>
                 <SelectItem value="anonymous">Anonym</SelectItem>
                 <SelectItem value="restricted">Eingeschränkt</SelectItem>
-                <SelectItem value="approved">Freigegeben</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {/* Rechte Seite: Button */}
-          <Link href="/dashboard/new">
-            <Button className="w-full sm:w-auto">
-              <PlusCircleIcon className="mr-2 size-4" />
-              Referenz erstellen
-            </Button>
-          </Link>
+          {/* Rechte Seite: Button (Admin = erstellen, Sales = anfragen) */}
+          {profile.role === 'admin' ? (
+            <Link href="/dashboard/new">
+              <Button className="w-full sm:w-auto">
+                <PlusCircleIcon className="mr-2 size-4" />
+                Referenz erstellen
+              </Button>
+            </Link>
+          ) : (
+            <Link href="/dashboard/request">
+              <Button variant="outline" className="w-full sm:w-auto">
+                <Send className="mr-2 size-4" />
+                Referenz anfragen
+              </Button>
+            </Link>
+          )}
         </div>
 
         <div className="rounded-md border bg-card">
@@ -535,41 +563,53 @@ export function DashboardOverview({
                 </Tabs>
               </div>
 
-              {/* Fixierter Footer */}
+              {/* Fixierter Footer (rollenabhängig) */}
               <SheetFooter className="z-10 flex-col gap-2 border-t bg-muted/20 px-6 py-4 sm:flex-row sm:justify-between">
                 <div className="flex w-full gap-2 sm:w-auto">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                    onClick={(e) => handleDelete(selectedRef.id, e)}
-                  >
-                    <Trash2Icon className="mr-2 size-4" /> Löschen
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() =>
-                      router.push(`/dashboard/edit/${selectedRef.id}`)
-                    }
-                  >
-                    <PencilIcon className="mr-2 size-4" /> Bearbeiten
-                  </Button>
+                  {profile.role === 'admin' && (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        onClick={(e) => handleDelete(selectedRef.id, e)}
+                      >
+                        <Trash2Icon className="mr-2 size-4" /> Löschen
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          router.push(`/dashboard/edit/${selectedRef.id}`)
+                        }
+                      >
+                        <PencilIcon className="mr-2 size-4" /> Bearbeiten
+                      </Button>
+                    </>
+                  )}
                 </div>
                 <div className="flex w-full gap-2 sm:w-auto">
-                  {selectedRef.status === 'draft' && (
-                    <Button
-                      size="sm"
-                      onClick={() => submitForApproval(selectedRef.id)}
-                    >
-                      <Send className="mr-2 size-4" /> Freigabe anfordern
-                    </Button>
-                  )}
-                  {selectedRef.status === 'pending' && (
-                    <div className="flex items-center px-2 text-sm font-medium text-yellow-600">
-                      <Clock className="mr-2 size-4" /> Wartet auf Account Owner
-                    </div>
-                  )}
+                  {profile.role === 'sales' &&
+                    (selectedRef.status === 'restricted' ||
+                      selectedRef.status === 'internal') && (
+                      <Button
+                        size="sm"
+                        onClick={() =>
+                          handleRequestSpecificApproval(selectedRef.id)
+                        }
+                      >
+                        <Send className="mr-2 size-4" /> Einzelfreigabe anfragen
+                      </Button>
+                    )}
+                  {profile.role === 'admin' &&
+                    selectedRef.status === 'draft' && (
+                      <Button
+                        size="sm"
+                        onClick={() => handleSubmitForApproval(selectedRef.id)}
+                      >
+                        <Mail className="mr-2 size-4" /> Account Owner kontaktieren
+                      </Button>
+                    )}
                 </div>
               </SheetFooter>
             </>

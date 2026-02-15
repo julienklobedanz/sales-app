@@ -1,12 +1,20 @@
 'use server'
 
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { submitForApproval } from '../actions'
 
 export type CreateReferenceResult =
   | { success: true; referenceId: string }
   | { success: false; error: string }
 
-const REFERENCE_STATUSES = ['draft', 'pending', 'approved'] as const
+const REFERENCE_STATUSES = [
+  'draft',
+  'pending',
+  'external',
+  'internal',
+  'anonymous',
+  'restricted',
+] as const
 
 export async function createReference(
   formData: FormData
@@ -95,6 +103,14 @@ export async function createReference(
   }
   if (!reference?.id) {
     return { success: false, error: 'Referenz konnte nicht gespeichert werden.' }
+  }
+
+  if (status === 'pending') {
+    try {
+      await submitForApproval(reference.id)
+    } catch (e) {
+      console.error('submitForApproval nach Create:', e)
+    }
   }
 
   return { success: true, referenceId: reference.id }
