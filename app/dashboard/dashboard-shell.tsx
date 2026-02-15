@@ -69,12 +69,14 @@ export function DashboardShell({
     router.push('/login')
   }
 
-  const handleRoleChange = async (newRole: 'admin' | 'sales') => {
-    toast.promise(updateUserRole(newRole), {
+  const handleRoleChange = (newRole: 'admin' | 'sales') => {
+    const promise = updateUserRole(newRole)
+    toast.promise(promise, {
       loading: 'Rolle wird gewechselt...',
       success: `Rolle zu ${newRole} gewechselt`,
       error: 'Fehler beim Rollenwechsel',
-    }).then(() => router.refresh(), () => {})
+    })
+    promise.then(() => router.refresh(), () => {})
   }
 
   const isAdmin = profile.role === 'admin'

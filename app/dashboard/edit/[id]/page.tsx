@@ -14,10 +14,10 @@ export default async function EditReferencePage({
   const { id } = await params
   const supabase = await createServerSupabaseClient()
 
+  // 1. Referenz laden (mit contact_id)
   const { data: row, error } = await supabase
     .from('references')
-    .select(
-      `
+    .select(`
       id,
       company_id,
       title,
@@ -28,14 +28,23 @@ export default async function EditReferencePage({
       status,
       file_path,
       companies ( name )
-    `
-    )
+    `)
     .eq('id', id)
     .single()
 
   if (error || !row) {
     notFound()
   }
+
+  // 2. Optionen für Dropdowns laden
+  const { data: companies } = await supabase
+    .from('companies')
+    .select('id, name')
+    .order('name')
+  const { data: contacts } = await supabase
+    .from('contact_persons')
+    .select('*')
+    .order('last_name')
 
   const company =
     Array.isArray(row.companies) && row.companies.length > 0
@@ -56,11 +65,6 @@ export default async function EditReferencePage({
     file_path: row.file_path ?? null,
   }
 
-  const { data: contacts } = await supabase
-    .from('contact_persons')
-    .select('id, first_name, last_name, email')
-    .order('last_name')
-
   return (
     <div className="min-h-screen bg-background p-4 md:p-6">
       <div className="mx-auto max-w-2xl space-y-6">
@@ -74,7 +78,11 @@ export default async function EditReferencePage({
           <h1 className="text-2xl font-bold tracking-tight">
             Referenz bearbeiten
           </h1>
-          <ReferenceForm contacts={contacts ?? []} initialData={initialData} />
+          <ReferenceForm
+            companies={companies ?? []}
+            contacts={contacts ?? []}
+            initialData={initialData}
+          />
         </div>
       </div>
     </div>

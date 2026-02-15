@@ -1,5 +1,6 @@
 'use server'
 
+import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { submitForApproval } from '../actions'
 
@@ -117,5 +118,37 @@ export async function createReference(
     }
   }
 
+  revalidatePath('/dashboard')
   return { success: true, referenceId: reference.id }
+}
+
+export async function createContact(formData: FormData) {
+  const supabase = await createServerSupabaseClient()
+
+  const firstName = formData.get('firstName')?.toString()?.trim()
+  const lastName = formData.get('lastName')?.toString()?.trim()
+  const email = formData.get('email')?.toString()?.trim()
+
+  if (!firstName || !lastName || !email) {
+    return { success: false, error: 'Alle Felder sind erforderlich.' }
+  }
+
+  const { data, error } = await supabase
+    .from('contact_persons')
+    .insert({
+      first_name: firstName,
+      last_name: lastName,
+      email,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    return { success: false, error: error.message }
+  }
+
+  revalidatePath('/dashboard/new')
+  revalidatePath('/dashboard/edit/[id]', 'page')
+
+  return { success: true, contact: data }
 }

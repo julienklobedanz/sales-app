@@ -37,10 +37,9 @@ export type GetDashboardDataResult = {
 export async function getDashboardData(): Promise<GetDashboardDataResult> {
   const supabase = await createServerSupabaseClient()
 
-  const { data: rows, error } = await supabase
-    .from('references')
-    .select(
-      `
+  // Relation per FK-Constraint-Name (Supabase: Table Editor → references → Beziehungen).
+  // Falls Fehler bleibt: exakten Constraint-Namen aus Fehlermeldung details übernehmen.
+  const fullSelect = `
       id,
       title,
       summary,
@@ -52,16 +51,45 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
       contact_id,
       file_path,
       companies ( name ),
-      contact_persons ( email, first_name, last_name )
+      contact_persons!references_contact_id_fkey ( email, first_name, last_name )
     `
-    )
+  let rows: Record<string, unknown>[] | null = null
+  let error: { message: string; details?: string } | null = null
+
+  const result = await supabase
+    .from('references')
+    .select(fullSelect)
     .order('created_at', { ascending: false })
 
+  error = result.error
+  rows = result.data
+
+  // Fallback: Ohne contact_id und contact_persons (falls Schema noch nicht migriert)
   if (error) {
-    return { references: [], totalCount: 0 }
+    console.error('[getDashboardData] Supabase error:', error.message, error.details)
+    const fallback = await supabase
+      .from('references')
+      .select(`
+        id,
+        title,
+        summary,
+        industry,
+        country,
+        status,
+        created_at,
+        company_id,
+        file_path,
+        companies ( name )
+      `)
+      .order('created_at', { ascending: false })
+    if (fallback.error) {
+      console.error('[getDashboardData] Fallback error:', fallback.error.message)
+      return { references: [], totalCount: 0 }
+    }
+    rows = fallback.data
   }
 
-  const references: ReferenceRow[] = (rows ?? []).map((r) => {
+  const references: ReferenceRow[] = (rows ?? []).map((r: Record<string, unknown>) => {
     const raw = r.companies
     const company =
       Array.isArray(raw) && raw.length > 0
@@ -77,19 +105,19 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
       ? [contact.first_name, contact.last_name].filter(Boolean).join(' ') || contact.email || null
       : null
     return {
-      id: r.id,
-      title: r.title,
-      summary: r.summary ?? null,
-      industry: r.industry ?? null,
-      country: r.country ?? null,
+      id: r.id as string,
+      title: r.title as string,
+      summary: (r.summary as string | null) ?? null,
+      industry: (r.industry as string | null) ?? null,
+      country: (r.country as string | null) ?? null,
       status: r.status as ReferenceRow['status'],
-      created_at: r.created_at,
-      company_id: r.company_id,
+      created_at: r.created_at as string,
+      company_id: r.company_id as string,
       company_name: company?.name ?? '—',
-      contact_id: r.contact_id ?? null,
+      contact_id: (r.contact_id as string | null) ?? null,
       contact_email: contact?.email ?? null,
       contact_display: contactDisplay ?? null,
-      file_path: r.file_path ?? null,
+      file_path: (r.file_path as string | null) ?? null,
     }
   })
 
@@ -221,7 +249,12 @@ export async function submitForApproval(id: string) {
 
   const { data: row, error: fetchError } = await supabase
     .from('references')
-    .select('title, contact_id, companies(name), contact_persons(email)')
+    .select(`
+      title,
+      contact_id,
+      companies ( name ),
+      contact_persons!references_contact_id_fkey ( email, first_name )
+    `)
     .eq('id', id)
     .single()
 
@@ -243,12 +276,10 @@ export async function submitForApproval(id: string) {
 
   if (updateError) throw new Error(updateError.message)
 
-  const contactRaw = row.contact_persons
-  const contact = contactRaw
-    ? Array.isArray(contactRaw) && contactRaw.length > 0
-      ? (contactRaw[0] as { email?: string })
-      : (contactRaw as { email?: string })
-    : null
+  const contactPerson = Array.isArray(row.contact_persons)
+    ? row.contact_persons[0]
+    : row.contact_persons
+  const contact = contactPerson as { email?: string; first_name?: string } | null
   const contactEmail =
     typeof contact?.email === 'string' && contact.email.includes('@')
       ? contact.email
@@ -258,12 +289,13 @@ export async function submitForApproval(id: string) {
     try {
       const baseUrl =
         process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+      const firstName = contact?.first_name ?? ''
       await resend.emails.send({
         from: 'Refstack <onboarding@resend.dev>',
         to: contactEmail,
         subject: `Freigabe erforderlich: ${company_name}`,
         html: `
-          <h1>Hallo!</h1>
+          <h1>Hallo${firstName ? ` ${firstName}` : ''}!</h1>
           <p>Für das Unternehmen <strong>${company_name}</strong> wurde eine neue Referenz erstellt:</p>
           <p><em>"${row.title}"</em></p>
           <p>Bitte klicken Sie auf den folgenden Link, um die Details zu prüfen und die Freigabestufe festzulegen:</p>

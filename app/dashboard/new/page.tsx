@@ -12,14 +12,16 @@ export default async function NewReferencePage() {
     redirect('/login')
   }
 
+  // 1. Firmen laden
   const { data: companies } = await supabase
     .from('companies')
     .select('id, name')
     .order('name')
 
+  // 2. Kontaktpersonen laden
   const { data: contacts } = await supabase
     .from('contact_persons')
-    .select('id, first_name, last_name, email')
+    .select('*')
     .order('last_name')
 
   return (

@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useState } from 'react'
+import { useActionState, useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/select'
 import { createReference, type CreateReferenceResult } from './actions'
 import { updateReference } from '../actions'
+import { CreateContactDialog } from './create-contact-dialog'
 
 const INDUSTRIES = [
   'IT & Software',
@@ -56,7 +57,7 @@ const STATUS_OPTIONS = [
 
 type Company = { id: string; name: string }
 
-export type ContactOption = {
+export type ContactPerson = {
   id: string
   first_name: string | null
   last_name: string | null
@@ -95,7 +96,7 @@ export function ReferenceForm({
   initialData,
 }: {
   companies?: Company[]
-  contacts?: ContactOption[]
+  contacts?: ContactPerson[]
   initialData?: ReferenceFormInitialData
 }) {
   const router = useRouter()
@@ -108,18 +109,29 @@ export function ReferenceForm({
   const [contactId, setContactId] = useState(
     initialData?.contact_id ? initialData.contact_id : '__none__'
   )
+  const handledStateRef = useRef<CreateReferenceResult | null>(null)
 
   const isEditMode = !!initialData
   const submitting = isEditMode ? editSubmitting : isPending
 
-  if (state?.success) {
-    toast.success('Referenz wurde angelegt.')
-    router.push('/dashboard')
+  const handleContactCreated = (newId: string) => {
+    setContactId(newId)
     router.refresh()
   }
-  if (state && !state.success && 'error' in state) {
-    toast.error(state.error)
-  }
+
+  useEffect(() => {
+    if (!state) return
+    if (state.success && handledStateRef.current !== state) {
+      handledStateRef.current = state
+      toast.success('Referenz wurde angelegt.')
+      router.push('/dashboard')
+      router.refresh()
+    }
+    if (!state.success && 'error' in state && handledStateRef.current !== state) {
+      handledStateRef.current = state
+      toast.error(state.error)
+    }
+  }, [state, router])
 
   async function handleEditSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -205,32 +217,39 @@ export function ReferenceForm({
       </div>
 
       <div className="space-y-2">
-        <Label>Kontaktperson / Account Owner</Label>
-        <input
-          type="hidden"
-          name="contactId"
-          value={contactId === '__none__' ? '' : contactId}
-        />
-        <Select
-          value={contactId || '__none__'}
-          onValueChange={(v) => setContactId(v ?? '__none__')}
-          disabled={submitting}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Kontakt auswählen …" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__none__">Keine</SelectItem>
-            {contacts.map((c) => (
-              <SelectItem key={c.id} value={c.id}>
-                {[c.first_name, c.last_name].filter(Boolean).join(' ') || c.email || c.id}
-                {c.email ? ` (${c.email})` : ''}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Label htmlFor="contactId">Interner Kontakt / Account Owner</Label>
+        <div className="flex gap-2">
+          <div className="flex-1">
+            <input
+              type="hidden"
+              name="contactId"
+              value={contactId === '__none__' ? '' : contactId}
+            />
+            <Select
+              value={contactId || '__none__'}
+              onValueChange={(v) => setContactId(v ?? '__none__')}
+              disabled={submitting}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Person auswählen …" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">Keine</SelectItem>
+                {contacts.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {[c.first_name, c.last_name].filter(Boolean).join(' ') ||
+                      c.email ||
+                      c.id}
+                    {c.email ? ` (${c.email})` : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <CreateContactDialog onContactCreated={handleContactCreated} />
+        </div>
         <p className="text-muted-foreground text-xs">
-          Wird für Einzelfreigabe-Anfragen per E-Mail genutzt (z. B. bei Sales-Anfragen).
+          Wird für Freigabe-Anfragen per E-Mail benachrichtigt.
         </p>
       </div>
 

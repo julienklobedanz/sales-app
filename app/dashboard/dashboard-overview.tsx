@@ -36,12 +36,6 @@ import {
   SheetFooter,
 } from '@/components/ui/sheet'
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs'
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -100,12 +94,13 @@ const STATUS_BADGE_VARIANT: Record<
   restricted: 'outline',
 }
 
+/** Deterministisches Datumsformat (Server = Client), vermeidet Hydration-Fehler durch toLocaleDateString. */
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('de-DE', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })
+  const d = new Date(iso)
+  const day = d.getUTCDate().toString().padStart(2, '0')
+  const month = (d.getUTCMonth() + 1).toString().padStart(2, '0')
+  const year = d.getUTCFullYear()
+  return `${day}.${month}.${year}`
 }
 
 // --- Hauptkomponente ---
@@ -458,168 +453,157 @@ export function DashboardOverview({
 
       {/* 4. Detail Sheet */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent className="flex flex-col gap-0 p-0 sm:max-w-md md:w-[600px] md:max-w-[600px]">
+        <SheetContent className="flex flex-col gap-0 p-0 sm:max-w-sm md:w-[380px] md:max-w-[380px]">
           {selectedRef && (
             <>
               {/* Fixierter Header */}
-              <SheetHeader className="z-10 border-b bg-background px-6 py-6">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-1">
-                    <SheetTitle className="text-xl font-semibold leading-none tracking-tight">
+              <SheetHeader className="z-10 border-b bg-background px-4 py-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-1 min-w-0">
+                    <SheetTitle className="text-lg font-semibold leading-tight tracking-tight truncate">
                       {selectedRef.company_name}
                     </SheetTitle>
-                    <SheetDescription className="text-muted-foreground line-clamp-2 text-sm">
+                    <SheetDescription className="text-muted-foreground line-clamp-2 text-xs">
                       {selectedRef.title}
                     </SheetDescription>
                   </div>
                   <Badge
                     variant={STATUS_BADGE_VARIANT[selectedRef.status] ?? 'outline'}
-                    className="shrink-0"
+                    className="shrink-0 text-xs"
                   >
                     {STATUS_LABELS[selectedRef.status] ?? selectedRef.status}
                   </Badge>
                 </div>
               </SheetHeader>
 
-              {/* Scrollbarer Content-Bereich */}
-              <div className="flex-1 overflow-y-auto">
-                <Tabs defaultValue="overview" className="w-full">
-                  <div className="px-6 pt-6">
-                    <TabsList className="grid w-full grid-cols-3">
-                      <TabsTrigger value="overview">Übersicht</TabsTrigger>
-                      <TabsTrigger value="files">Dateien</TabsTrigger>
-                      <TabsTrigger value="history">Historie</TabsTrigger>
-                    </TabsList>
-                  </div>
-
-                  {/* TAB: ÜBERSICHT */}
-                  <TabsContent value="overview" className="mt-0 space-y-6 px-6 py-6">
+              {/* Ein scrollbarer Bereich: Übersicht, Dateien, Historie untereinander */}
+              <div className="flex-1 overflow-y-auto px-4 py-4">
+                {/* Abstand zwischen Abschnitten: space-y-8 | Abstand innerhalb Abschnitt: space-y-4 | Mehr Abstand oben vor Übersicht: pt-6 */}
+                <div className="space-y-8 pt-6">
+                  {/* Übersicht */}
+                  <section className="space-y-4">
+                    <h3 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
+                      Übersicht
+                    </h3>
                     <div className="rounded-lg border bg-muted/40 p-4">
-                      <h4 className="mb-2 flex items-center gap-2 text-sm font-medium">
-                        Zusammenfassung
-                      </h4>
                       <p className="text-muted-foreground text-sm leading-relaxed">
                         {selectedRef.summary ||
                           'Keine Zusammenfassung hinterlegt.'}
                       </p>
                     </div>
-
-                    <div className="grid grid-cols-2 gap-6">
+                    <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1">
-                        <span className="text-muted-foreground flex items-center gap-2 text-xs font-medium">
-                          <Building2Icon className="size-3.5" /> Industrie
+                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+                          <Building2Icon className="size-3" /> Industrie
                         </span>
-                        <p className="text-foreground pl-5.5 text-sm font-medium">
+                        <p className="text-foreground pl-4 text-xs font-medium">
                           {selectedRef.industry || '—'}
                         </p>
                       </div>
                       <div className="space-y-1">
-                        <span className="text-muted-foreground flex items-center gap-2 text-xs font-medium">
-                          <MapPinIcon className="size-3.5" /> Region
+                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+                          <MapPinIcon className="size-3" /> Region
                         </span>
-                        <p className="text-foreground pl-5.5 text-sm font-medium">
+                        <p className="text-foreground pl-4 text-xs font-medium">
                           {selectedRef.country || '—'}
                         </p>
                       </div>
                       <div className="space-y-1">
-                        <span className="text-muted-foreground flex items-center gap-2 text-xs font-medium">
-                          <GlobeIcon className="size-3.5" /> Website
+                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+                          <GlobeIcon className="size-3" /> Website
                         </span>
-                        <div className="pl-5.5">
+                        <div className="pl-4">
                           {selectedRef.website ? (
                             <a
                               href={selectedRef.website}
                               target="_blank"
                               rel="noreferrer"
-                              className="text-primary hover:underline inline-flex items-center gap-1 text-sm font-medium"
+                              className="text-primary hover:underline inline-flex items-center gap-1 text-xs font-medium"
                             >
                               Öffnen <ExternalLinkIcon className="size-3" />
                             </a>
                           ) : (
-                            <p className="text-foreground text-sm font-medium">—</p>
+                            <p className="text-foreground text-xs font-medium">—</p>
                           )}
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <span className="text-muted-foreground flex items-center gap-2 text-xs font-medium">
-                          <CalendarIcon className="size-3.5" /> Erstellt
+                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+                          <CalendarIcon className="size-3" /> Erstellt
                         </span>
-                        <p className="text-foreground pl-5.5 text-sm font-medium">
+                        <p className="text-foreground pl-4 text-xs font-medium">
                           {formatDate(selectedRef.created_at)}
                         </p>
                       </div>
                     </div>
-
-                    <Separator />
-
-                    <div className="space-y-3">
-                      <h4 className="flex items-center gap-2 text-sm font-medium">
-                        <UserIcon className="text-muted-foreground size-4" />{' '}
-                        Interner Kontakt
-                      </h4>
-                      <div className="pl-6">
-                        <p className="text-sm font-medium">
-                          {selectedRef.contact_display || selectedRef.contact_email || 'Nicht zugewiesen'}
-                        </p>
-                        <p className="text-muted-foreground mt-0.5 text-xs">
-                          Account Owner
-                        </p>
-                      </div>
+                    <Separator className="!my-4" />
+                    <div className="space-y-1">
+                      <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+                        <UserIcon className="size-3" /> Interner Kontakt
+                      </span>
+                      <p className="pl-4 text-xs font-medium">
+                        {selectedRef.contact_display || selectedRef.contact_email || 'Nicht zugewiesen'}
+                      </p>
+                      <p className="text-muted-foreground pl-4 text-[10px]">Account Owner</p>
                     </div>
-                  </TabsContent>
+                  </section>
 
-                  {/* TAB: DATEIEN */}
-                  <TabsContent value="files" className="mt-0 px-6 py-6">
+                  {/* Dateien */}
+                  <section className="space-y-4">
+                    <h3 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
+                      Dateien
+                    </h3>
                     {selectedRef.file_path ? (
-                      <div className="flex items-center justify-between rounded-lg border p-4">
-                        <div className="flex items-center gap-3">
-                          <div className="rounded bg-red-100 p-2 text-red-600">
-                            <FileTextIcon className="size-5" />
+                      <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <div className="rounded bg-red-100 p-1.5 text-red-600 shrink-0">
+                            <FileTextIcon className="size-4" />
                           </div>
-                          <div>
-                            <p className="text-sm font-medium">Case Study PDF</p>
-                            <p className="text-muted-foreground text-xs">
+                          <div className="min-w-0">
+                            <p className="text-xs font-medium truncate">Case Study PDF</p>
+                            <p className="text-muted-foreground truncate text-[10px]">
                               {selectedRef.file_path.split('/').pop()}
                             </p>
                           </div>
                         </div>
-                        <Button variant="outline" size="sm" asChild>
+                        <Button variant="outline" size="sm" className="shrink-0 h-7 text-xs" asChild>
                           <a
                             href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/references/${selectedRef.file_path}`}
                             target="_blank"
                             rel="noopener noreferrer"
                           >
-                            <ExternalLinkIcon className="mr-2 size-3" /> Öffnen
+                            <ExternalLinkIcon className="mr-1 size-3" /> Öffnen
                           </a>
                         </Button>
                       </div>
                     ) : (
-                      <div className="text-muted-foreground bg-muted/10 flex h-40 flex-col items-center justify-center rounded-lg border border-dashed text-sm">
-                        <div className="bg-muted mb-2 rounded-full p-2">
-                          <span className="flex h-4 w-4 items-center justify-center">📎</span>
-                        </div>
+                      <div className="text-muted-foreground bg-muted/10 flex h-24 flex-col items-center justify-center gap-1 rounded-lg border border-dashed text-xs">
+                        <span>📎</span>
                         <p>Keine Dateien vorhanden.</p>
                       </div>
                     )}
-                  </TabsContent>
+                  </section>
 
-                  {/* TAB: HISTORIE */}
-                  <TabsContent value="history" className="mt-0 px-6 py-6">
-                    <div className="relative ml-2 space-y-6 border-l pl-4">
+                  {/* Historie */}
+                  <section className="space-y-4">
+                    <h3 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
+                      Historie
+                    </h3>
+                    <div className="relative ml-1.5 space-y-4 border-l pl-4">
                       <div className="relative">
-                        <span className="bg-primary ring-background absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full ring-4" />
-                        <p className="text-sm font-medium">Referenz erstellt</p>
-                        <p className="text-muted-foreground mt-1 text-xs">
+                        <span className="bg-primary ring-background absolute -left-[17px] top-0.5 h-2 w-2 rounded-full ring-2" />
+                        <p className="text-xs font-medium">Referenz erstellt</p>
+                        <p className="text-muted-foreground mt-1 text-[10px]">
                           {formatDate(selectedRef.created_at)}
                         </p>
                       </div>
                     </div>
-                  </TabsContent>
-                </Tabs>
+                  </section>
+                </div>
               </div>
 
               {/* Fixierter Footer (rollenabhängig) */}
-              <SheetFooter className="z-10 flex-col gap-2 border-t bg-muted/20 px-6 py-4 sm:flex-row sm:justify-between">
+              <SheetFooter className="z-10 flex-col gap-2 border-t bg-muted/20 px-4 py-3 sm:flex-row sm:justify-between">
                 <div className="flex w-full gap-2 sm:w-auto">
                   {profile.role === 'admin' && (
                     <>
