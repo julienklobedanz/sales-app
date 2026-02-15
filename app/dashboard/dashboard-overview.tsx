@@ -35,6 +35,14 @@ import {
   SheetFooter,
 } from '@/components/ui/sheet'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
 import type { ReferenceRow } from './actions'
 import {
@@ -48,7 +56,11 @@ import {
   ExternalLinkIcon,
   CalendarIcon,
   UserIcon,
+  MoreHorizontal,
+  CopyIcon,
+  FileTextIcon,
 } from 'lucide-react'
+import { toast } from 'sonner'
 
 const STATUS_LABELS: Record<ReferenceRow['status'], string> = {
   draft: 'Entwurf',
@@ -124,6 +136,18 @@ export function DashboardOverview({
   const openDetail = (ref: ReferenceRow) => {
     setSelectedRef(ref)
     setSheetOpen(true)
+  }
+
+  const handleDelete = (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation()
+    // TODO: Implement Server Action for Delete
+    toast.error('Löschen ist noch nicht implementiert.')
+  }
+
+  const handleCopyId = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    navigator.clipboard.writeText(id)
+    toast.success('ID in die Zwischenablage kopiert')
   }
 
   const draftCount = initialReferences.filter((r) => r.status === 'draft').length
@@ -226,13 +250,14 @@ export function DashboardOverview({
                 <TableHead>Land</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Datum</TableHead>
+                <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredReferences.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={6}
+                    colSpan={7}
                     className="text-muted-foreground h-24 text-center"
                   >
                     Keine Referenzen gefunden.
@@ -242,7 +267,7 @@ export function DashboardOverview({
                 filteredReferences.map((ref) => (
                   <TableRow
                     key={ref.id}
-                    className="cursor-pointer hover:bg-muted/50"
+                    className="group cursor-pointer hover:bg-muted/50"
                     onClick={() => openDetail(ref)}
                   >
                     <TableCell className="font-medium">{ref.company_name}</TableCell>
@@ -259,6 +284,47 @@ export function DashboardOverview({
                     <TableCell className="text-right text-muted-foreground text-sm">
                       {formatDate(ref.created_at)}
                     </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            className="h-8 w-8 p-0 opacity-0 transition-opacity group-hover:opacity-100 data-[state=open]:opacity-100"
+                          >
+                            <span className="sr-only">Menü öffnen</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Aktionen</DropdownMenuLabel>
+                          <DropdownMenuItem
+                            onSelect={() => openDetail(ref)}
+                          >
+                            <FileTextIcon className="mr-2 h-4 w-4" />
+                            Details ansehen
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onSelect={(e) =>
+                              handleCopyId(ref.id, e as unknown as React.MouseEvent)
+                            }
+                          >
+                            <CopyIcon className="mr-2 h-4 w-4" />
+                            ID kopieren
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onSelect={(e) => {
+                              const ev = (e as unknown) as React.MouseEvent
+                              handleDelete(ref.id, ev)
+                            }}
+                          >
+                            <Trash2Icon className="mr-2 h-4 w-4" />
+                            Löschen
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -271,7 +337,7 @@ export function DashboardOverview({
         <SheetContent className="flex flex-col gap-0 p-0 sm:max-w-md md:max-w-[600px] md:w-[600px]">
           {selectedRef && (
             <>
-              <SheetHeader className="border-b px-6 py-6">
+              <SheetHeader className="z-10 border-b bg-background px-6 py-6">
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-1">
                     <SheetTitle className="text-xl font-semibold leading-none tracking-tight">
@@ -385,7 +451,7 @@ export function DashboardOverview({
                   </TabsContent>
 
                   <TabsContent value="history" className="mt-0 px-6 py-6">
-                    <div className="border-l relative ml-2 space-y-6 pl-4">
+                    <div className="relative ml-2 space-y-6 border-l pl-4">
                       <div className="relative">
                         <span className="bg-primary ring-background absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full ring-4" />
                         <p className="text-sm font-medium">Referenz erstellt</p>
@@ -398,11 +464,12 @@ export function DashboardOverview({
                 </Tabs>
               </div>
 
-              <SheetFooter className="border-t bg-muted/20 gap-2 px-6 py-4 sm:justify-between">
+              <SheetFooter className="z-10 gap-2 border-t bg-muted/20 px-6 py-4 sm:justify-between">
                 <Button
                   variant="ghost"
                   size="sm"
                   className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  onClick={(e) => handleDelete(selectedRef.id, e)}
                 >
                   <Trash2Icon className="mr-2 size-4" /> Löschen
                 </Button>
