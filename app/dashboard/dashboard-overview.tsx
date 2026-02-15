@@ -29,9 +29,9 @@ import { Badge } from '@/components/ui/badge'
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
   SheetHeader,
   SheetTitle,
+  SheetDescription,
   SheetFooter,
 } from '@/components/ui/sheet'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -46,6 +46,8 @@ import {
   Building2Icon,
   MapPinIcon,
   ExternalLinkIcon,
+  CalendarIcon,
+  UserIcon,
 } from 'lucide-react'
 
 const STATUS_LABELS: Record<ReferenceRow['status'], string> = {
@@ -69,6 +71,26 @@ function formatDate(iso: string) {
     month: '2-digit',
     year: 'numeric',
   })
+}
+
+function SearchIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.3-4.3" />
+    </svg>
+  )
 }
 
 export function DashboardOverview({
@@ -110,7 +132,7 @@ export function DashboardOverview({
 
   return (
     <div className="flex flex-col space-y-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
+      <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
         <div className="flex items-center space-x-2">
           <Link href="/dashboard/new">
@@ -126,7 +148,7 @@ export function DashboardOverview({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Gesamt</CardTitle>
-            <div className="text-muted-foreground h-4 w-4">📊</div>
+            <div className="text-muted-foreground">📊</div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalCount}</div>
@@ -136,7 +158,7 @@ export function DashboardOverview({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Entwürfe</CardTitle>
-            <div className="text-muted-foreground h-4 w-4">📝</div>
+            <div className="text-muted-foreground">📝</div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{draftCount}</div>
@@ -146,7 +168,7 @@ export function DashboardOverview({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Ausstehend</CardTitle>
-            <div className="text-muted-foreground h-4 w-4">⏳</div>
+            <div className="text-muted-foreground">⏳</div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{pendingCount}</div>
@@ -156,7 +178,7 @@ export function DashboardOverview({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Freigegeben</CardTitle>
-            <div className="text-muted-foreground h-4 w-4">✅</div>
+            <div className="text-muted-foreground">✅</div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{approvedCount}</div>
@@ -168,14 +190,17 @@ export function DashboardOverview({
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex flex-1 items-center space-x-2">
-            <Input
-              placeholder="Suchen..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="h-8 w-[150px] lg:w-[250px]"
-            />
+            <div className="relative">
+              <SearchIcon className="text-muted-foreground absolute left-2.5 top-2.5 h-4 w-4" />
+              <Input
+                placeholder="Suchen..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="h-9 w-[150px] pl-9 lg:w-[250px]"
+              />
+            </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="h-8 w-[130px]">
+              <SelectTrigger className="h-9 w-[130px]">
                 <div className="flex items-center gap-2">
                   <SlidersHorizontal className="size-3.5" />
                   <SelectValue placeholder="Status" />
@@ -243,135 +268,146 @@ export function DashboardOverview({
       </div>
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent
-          side="right"
-          className="overflow-y-auto sm:max-w-[600px]"
-        >
+        <SheetContent className="flex flex-col gap-0 p-0 sm:max-w-md md:max-w-[600px] md:w-[600px]">
           {selectedRef && (
             <>
-              <SheetHeader className="mb-6 space-y-2">
-                <div className="flex items-start justify-between">
-                  <SheetTitle className="text-xl font-semibold leading-none tracking-tight">
-                    {selectedRef.company_name}
-                  </SheetTitle>
-                  <Badge variant={STATUS_BADGE_VARIANT[selectedRef.status]}>
+              <SheetHeader className="border-b px-6 py-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-1">
+                    <SheetTitle className="text-xl font-semibold leading-none tracking-tight">
+                      {selectedRef.company_name}
+                    </SheetTitle>
+                    <SheetDescription className="text-muted-foreground line-clamp-2 text-sm">
+                      {selectedRef.title}
+                    </SheetDescription>
+                  </div>
+                  <Badge
+                    variant={STATUS_BADGE_VARIANT[selectedRef.status]}
+                    className="shrink-0"
+                  >
                     {STATUS_LABELS[selectedRef.status]}
                   </Badge>
                 </div>
-                <SheetDescription className="text-muted-foreground text-base">
-                  {selectedRef.title}
-                </SheetDescription>
               </SheetHeader>
 
-              <Tabs defaultValue="overview" className="w-full">
-                <TabsList className="mb-6 grid w-full grid-cols-3">
-                  <TabsTrigger value="overview">Übersicht</TabsTrigger>
-                  <TabsTrigger value="files">Dateien</TabsTrigger>
-                  <TabsTrigger value="history">Historie</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="overview" className="animate-in fade-in-50 space-y-6">
-                  <div className="space-y-2">
-                    <h4 className="text-foreground/80 text-sm font-medium leading-none">
-                      Zusammenfassung
-                    </h4>
-                    <p className="text-muted-foreground text-sm leading-relaxed">
-                      {selectedRef.summary || 'Keine Zusammenfassung hinterlegt.'}
-                    </p>
+              <div className="flex-1 overflow-y-auto">
+                <Tabs defaultValue="overview" className="w-full">
+                  <div className="px-6 pt-6">
+                    <TabsList className="grid w-full grid-cols-3">
+                      <TabsTrigger value="overview">Übersicht</TabsTrigger>
+                      <TabsTrigger value="files">Dateien</TabsTrigger>
+                      <TabsTrigger value="history">Historie</TabsTrigger>
+                    </TabsList>
                   </div>
 
-                  <Separator />
-
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-6">
-                    <div className="space-y-1.5">
-                      <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-                        <Building2Icon className="size-3.5" /> Industrie
-                      </span>
-                      <p className="text-foreground text-sm font-medium">
-                        {selectedRef.industry || '—'}
+                  <TabsContent value="overview" className="mt-0 space-y-6 px-6 py-6">
+                    <div className="rounded-lg border bg-muted/40 p-4">
+                      <h4 className="mb-2 flex items-center gap-2 text-sm font-medium">
+                        Zusammenfassung
+                      </h4>
+                      <p className="text-muted-foreground text-sm leading-relaxed">
+                        {selectedRef.summary ||
+                          'Keine Zusammenfassung hinterlegt.'}
                       </p>
                     </div>
-                    <div className="space-y-1.5">
-                      <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-                        <MapPinIcon className="size-3.5" /> Region / Land
-                      </span>
-                      <p className="text-foreground text-sm font-medium">
-                        {selectedRef.country || '—'}
-                      </p>
-                    </div>
-                    <div className="space-y-1.5">
-                      <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-                        <GlobeIcon className="size-3.5" /> Website
-                      </span>
-                      {selectedRef.website ? (
-                        <a
-                          href={selectedRef.website}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-primary hover:underline flex items-center gap-1 text-sm font-medium"
-                        >
-                          Öffnen <ExternalLinkIcon className="size-3" />
-                        </a>
-                      ) : (
-                        <p className="text-foreground text-sm font-medium">—</p>
-                      )}
-                    </div>
-                    <div className="space-y-1.5">
-                      <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-                        <span className="size-3.5">📅</span> Erstellt am
-                      </span>
-                      <p className="text-foreground text-sm font-medium">
-                        {formatDate(selectedRef.created_at)}
-                      </p>
-                    </div>
-                  </div>
 
-                  <Separator />
-
-                  <div className="bg-muted/40 rounded-md border p-4">
-                    <h4 className="mb-1 text-sm font-semibold">Interner Kontakt</h4>
-                    <p className="text-muted-foreground text-sm">
-                      {selectedRef.contact_person ||
-                        'Kein Ansprechpartner hinterlegt.'}
-                    </p>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="files" className="animate-in fade-in-50 mt-4">
-                  <div className="text-muted-foreground bg-muted/20 flex h-40 flex-col items-center justify-center rounded-md border border-dashed text-sm">
-                    <div className="bg-muted mb-2 rounded-full p-2">
-                      <span className="flex h-4 w-4 items-center justify-center">📎</span>
-                    </div>
-                    <p>Keine Dateien vorhanden.</p>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="history" className="animate-in fade-in-50 mt-4">
-                  <div className="space-y-4">
-                    <div className="flex gap-4 text-sm">
-                      <div className="text-muted-foreground w-24 flex-none">
-                        {formatDate(selectedRef.created_at)}
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="space-y-1">
+                        <span className="text-muted-foreground flex items-center gap-2 text-xs font-medium">
+                          <Building2Icon className="size-3.5" /> Industrie
+                        </span>
+                        <p className="text-foreground pl-5.5 text-sm font-medium">
+                          {selectedRef.industry || '—'}
+                        </p>
                       </div>
-                      <div className="flex-1">
-                        <p className="font-medium">Referenz erstellt</p>
-                        <p className="text-muted-foreground text-xs">
-                          Initiale Anlage des Datensatzes.
+                      <div className="space-y-1">
+                        <span className="text-muted-foreground flex items-center gap-2 text-xs font-medium">
+                          <MapPinIcon className="size-3.5" /> Region
+                        </span>
+                        <p className="text-foreground pl-5.5 text-sm font-medium">
+                          {selectedRef.country || '—'}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-muted-foreground flex items-center gap-2 text-xs font-medium">
+                          <GlobeIcon className="size-3.5" /> Website
+                        </span>
+                        <div className="pl-5.5">
+                          {selectedRef.website ? (
+                            <a
+                              href={selectedRef.website}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-primary hover:underline inline-flex items-center gap-1 text-sm font-medium"
+                            >
+                              Öffnen <ExternalLinkIcon className="size-3" />
+                            </a>
+                          ) : (
+                            <p className="text-foreground text-sm font-medium">—</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-muted-foreground flex items-center gap-2 text-xs font-medium">
+                          <CalendarIcon className="size-3.5" /> Erstellt
+                        </span>
+                        <p className="text-foreground pl-5.5 text-sm font-medium">
+                          {formatDate(selectedRef.created_at)}
                         </p>
                       </div>
                     </div>
-                  </div>
-                </TabsContent>
-              </Tabs>
 
-              <SheetFooter className="mt-8 flex-col gap-2 sm:flex-row">
+                    <Separator />
+
+                    <div className="space-y-3">
+                      <h4 className="flex items-center gap-2 text-sm font-medium">
+                        <UserIcon className="text-muted-foreground size-4" />{' '}
+                        Interner Kontakt
+                      </h4>
+                      <div className="pl-6">
+                        <p className="text-sm font-medium">
+                          {selectedRef.contact_person || 'Nicht zugewiesen'}
+                        </p>
+                        <p className="text-muted-foreground mt-0.5 text-xs">
+                          Account Owner
+                        </p>
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="files" className="mt-0 px-6 py-6">
+                    <div className="text-muted-foreground bg-muted/10 flex h-40 flex-col items-center justify-center rounded-lg border border-dashed text-sm">
+                      <div className="bg-muted mb-2 rounded-full p-2">
+                        <span className="flex h-4 w-4 items-center justify-center">📎</span>
+                      </div>
+                      <p>Keine Dateien vorhanden.</p>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="history" className="mt-0 px-6 py-6">
+                    <div className="border-l relative ml-2 space-y-6 pl-4">
+                      <div className="relative">
+                        <span className="bg-primary ring-background absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full ring-4" />
+                        <p className="text-sm font-medium">Referenz erstellt</p>
+                        <p className="text-muted-foreground mt-1 text-xs">
+                          {formatDate(selectedRef.created_at)}
+                        </p>
+                      </div>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </div>
+
+              <SheetFooter className="border-t bg-muted/20 gap-2 px-6 py-4 sm:justify-between">
                 <Button
-                  variant="outline"
-                  className="border-destructive/20 text-destructive hover:bg-destructive/10 hover:text-destructive w-full sm:w-auto"
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                 >
                   <Trash2Icon className="mr-2 size-4" /> Löschen
                 </Button>
                 <Button
-                  className="w-full sm:w-auto"
+                  size="sm"
                   onClick={() => {
                     /* TODO: Edit */
                   }}
