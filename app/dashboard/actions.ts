@@ -12,6 +12,8 @@ export type ReferenceRow = {
   created_at: string
   company_id: string
   company_name: string
+  website?: string | null
+  contact_person?: string | null
 }
 
 export type GetDashboardDataResult = {

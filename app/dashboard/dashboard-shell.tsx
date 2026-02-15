@@ -77,7 +77,7 @@ export function DashboardShell({
                     isActive={pathname?.startsWith('/dashboard/requests')}
                     tooltip="Anfragen"
                   >
-                    <Link href="/dashboard">
+                    <Link href="/dashboard/requests">
                       <ClockIcon />
                       <span>Anfragen</span>
                     </Link>
@@ -89,7 +89,7 @@ export function DashboardShell({
                     isActive={pathname?.startsWith('/dashboard/favorites')}
                     tooltip="Favoriten"
                   >
-                    <Link href="/dashboard">
+                    <Link href="/dashboard/favorites">
                       <StarIcon />
                       <span>Favoriten</span>
                     </Link>
