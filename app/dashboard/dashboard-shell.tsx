@@ -42,12 +42,19 @@ import { DashboardHeader } from './dashboard-header'
 import { createClient } from '@/lib/supabase/client'
 import { type User } from '@supabase/supabase-js'
 
+export type Profile = {
+  full_name: string | null
+  role: 'admin' | 'sales' | 'account_owner'
+}
+
 export function DashboardShell({
   children,
   user,
+  profile,
 }: {
   children: React.ReactNode
   user: User
+  profile: Profile
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -58,9 +65,12 @@ export function DashboardShell({
     router.push('/login')
   }
 
+  const isAdmin = profile.role === 'admin'
+
   const userInitials =
     user.email?.slice(0, 2).toUpperCase() || 'U'
-  const userName = user.user_metadata?.full_name ?? user.email ?? 'Benutzer'
+  const userName =
+    profile.full_name ?? user.user_metadata?.full_name ?? user.email ?? 'Benutzer'
   const userEmail = user.email ?? ''
 
   return (
@@ -128,6 +138,17 @@ export function DashboardShell({
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
+
+          {isAdmin && (
+            <SidebarGroup>
+              <SidebarGroupLabel>Admin</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {/* Admin-Menüpunkte z. B. Nutzerverwaltung, Einstellungen */}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )}
 
           <SidebarGroup className="mt-auto">
             <SidebarGroupLabel>Support & Einstellungen</SidebarGroupLabel>

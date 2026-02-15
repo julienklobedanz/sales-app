@@ -12,10 +12,23 @@ export default async function DashboardLayout({
   const {
     data: { user },
   } = await supabase.auth.getUser()
-
   if (!user) {
     redirect('/login')
   }
 
-  return <DashboardShell user={user}>{children}</DashboardShell>
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile) {
+    redirect('/onboarding')
+  }
+
+  return (
+    <DashboardShell user={user} profile={profile}>
+      {children}
+    </DashboardShell>
+  )
 }

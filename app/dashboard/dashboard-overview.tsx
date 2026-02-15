@@ -71,23 +71,32 @@ import {
   FileEdit,
   Clock,
   CheckCircle,
+  Send,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
 // --- Konstanten & Hilfsfunktionen ---
 
-const STATUS_LABELS: Record<ReferenceRow['status'], string> = {
+const STATUS_LABELS: Record<string, string> = {
   draft: 'Entwurf',
-  pending: 'Ausstehend',
+  pending: 'Wartet auf Freigabe',
+  external: 'Extern Freigegeben',
+  internal: 'Intern Freigegeben',
+  anonymous: 'Anonym',
+  restricted: 'Eingeschränkt',
   approved: 'Freigegeben',
 }
 
 const STATUS_BADGE_VARIANT: Record<
-  ReferenceRow['status'],
-  'secondary' | 'outline' | 'default'
+  string,
+  'secondary' | 'outline' | 'default' | 'destructive'
 > = {
   draft: 'secondary',
   pending: 'outline',
+  external: 'default',
+  internal: 'outline',
+  anonymous: 'outline',
+  restricted: 'outline',
   approved: 'default',
 }
 
@@ -154,6 +163,11 @@ export function DashboardOverview({
     e.stopPropagation()
     navigator.clipboard.writeText(id)
     toast.success('ID in die Zwischenablage kopiert')
+  }
+
+  const submitForApproval = (id: string) => {
+    // TODO: Approval-Token erzeugen, E-Mail an Account Owner senden
+    toast.info('Freigabe anfordern wird vorbereitet …')
   }
 
   // Quick Stats berechnen
@@ -229,16 +243,20 @@ export function DashboardOverview({
             </div>
 
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="h-9 w-[130px] shrink-0">
+              <SelectTrigger className="h-9 w-[180px] shrink-0">
                 <div className="flex items-center gap-2">
                   <SlidersHorizontal className="size-3.5" />
-                  <SelectValue placeholder="Status" />
+                  <SelectValue placeholder="Status filtern" />
                 </div>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Alle</SelectItem>
+                <SelectItem value="all">Alle Status</SelectItem>
                 <SelectItem value="draft">Entwurf</SelectItem>
-                <SelectItem value="pending">Ausstehend</SelectItem>
+                <SelectItem value="pending">In Prüfung</SelectItem>
+                <SelectItem value="external">Extern frei</SelectItem>
+                <SelectItem value="internal">Nur Intern</SelectItem>
+                <SelectItem value="anonymous">Anonym</SelectItem>
+                <SelectItem value="restricted">Eingeschränkt</SelectItem>
                 <SelectItem value="approved">Freigegeben</SelectItem>
               </SelectContent>
             </Select>
@@ -290,8 +308,8 @@ export function DashboardOverview({
                     <TableCell>{ref.industry ?? '—'}</TableCell>
                     <TableCell>{ref.country ?? '—'}</TableCell>
                     <TableCell>
-                      <Badge variant={STATUS_BADGE_VARIANT[ref.status]}>
-                        {STATUS_LABELS[ref.status]}
+                      <Badge variant={STATUS_BADGE_VARIANT[ref.status] ?? 'outline'}>
+                        {STATUS_LABELS[ref.status] ?? ref.status}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right text-muted-foreground text-sm">
@@ -313,6 +331,12 @@ export function DashboardOverview({
                           <DropdownMenuItem onSelect={() => openDetail(ref)}>
                             <FileTextIcon className="mr-2 h-4 w-4" />
                             Details ansehen
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onSelect={() => router.push(`/dashboard/edit/${ref.id}`)}
+                          >
+                            <PencilIcon className="mr-2 h-4 w-4" />
+                            Bearbeiten
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onSelect={(e) =>
@@ -366,10 +390,10 @@ export function DashboardOverview({
                     </SheetDescription>
                   </div>
                   <Badge
-                    variant={STATUS_BADGE_VARIANT[selectedRef.status]}
+                    variant={STATUS_BADGE_VARIANT[selectedRef.status] ?? 'outline'}
                     className="shrink-0"
                   >
-                    {STATUS_LABELS[selectedRef.status]}
+                    {STATUS_LABELS[selectedRef.status] ?? selectedRef.status}
                   </Badge>
                 </div>
               </SheetHeader>
@@ -463,12 +487,37 @@ export function DashboardOverview({
 
                   {/* TAB: DATEIEN */}
                   <TabsContent value="files" className="mt-0 px-6 py-6">
-                    <div className="text-muted-foreground bg-muted/10 flex h-40 flex-col items-center justify-center rounded-lg border border-dashed text-sm">
-                      <div className="bg-muted mb-2 rounded-full p-2">
-                        <span className="flex h-4 w-4 items-center justify-center">📎</span>
+                    {selectedRef.file_path ? (
+                      <div className="flex items-center justify-between rounded-lg border p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="rounded bg-red-100 p-2 text-red-600">
+                            <FileTextIcon className="size-5" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">Case Study PDF</p>
+                            <p className="text-muted-foreground text-xs">
+                              {selectedRef.file_path.split('/').pop()}
+                            </p>
+                          </div>
+                        </div>
+                        <Button variant="outline" size="sm" asChild>
+                          <a
+                            href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/references/${selectedRef.file_path}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <ExternalLinkIcon className="mr-2 size-3" /> Öffnen
+                          </a>
+                        </Button>
                       </div>
-                      <p>Keine Dateien vorhanden.</p>
-                    </div>
+                    ) : (
+                      <div className="text-muted-foreground bg-muted/10 flex h-40 flex-col items-center justify-center rounded-lg border border-dashed text-sm">
+                        <div className="bg-muted mb-2 rounded-full p-2">
+                          <span className="flex h-4 w-4 items-center justify-center">📎</span>
+                        </div>
+                        <p>Keine Dateien vorhanden.</p>
+                      </div>
+                    )}
                   </TabsContent>
 
                   {/* TAB: HISTORIE */}
@@ -487,23 +536,41 @@ export function DashboardOverview({
               </div>
 
               {/* Fixierter Footer */}
-              <SheetFooter className="z-10 gap-2 border-t bg-muted/20 px-6 py-4 sm:justify-between">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                  onClick={(e) => handleDelete(selectedRef.id, e)}
-                >
-                  <Trash2Icon className="mr-2 size-4" /> Löschen
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    /* TODO: Edit */
-                  }}
-                >
-                  <PencilIcon className="mr-2 size-4" /> Bearbeiten
-                </Button>
+              <SheetFooter className="z-10 flex-col gap-2 border-t bg-muted/20 px-6 py-4 sm:flex-row sm:justify-between">
+                <div className="flex w-full gap-2 sm:w-auto">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    onClick={(e) => handleDelete(selectedRef.id, e)}
+                  >
+                    <Trash2Icon className="mr-2 size-4" /> Löschen
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() =>
+                      router.push(`/dashboard/edit/${selectedRef.id}`)
+                    }
+                  >
+                    <PencilIcon className="mr-2 size-4" /> Bearbeiten
+                  </Button>
+                </div>
+                <div className="flex w-full gap-2 sm:w-auto">
+                  {selectedRef.status === 'draft' && (
+                    <Button
+                      size="sm"
+                      onClick={() => submitForApproval(selectedRef.id)}
+                    >
+                      <Send className="mr-2 size-4" /> Freigabe anfordern
+                    </Button>
+                  )}
+                  {selectedRef.status === 'pending' && (
+                    <div className="flex items-center px-2 text-sm font-medium text-yellow-600">
+                      <Clock className="mr-2 size-4" /> Wartet auf Account Owner
+                    </div>
+                  )}
+                </div>
               </SheetFooter>
             </>
           )}

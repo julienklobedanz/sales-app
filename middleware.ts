@@ -31,11 +31,13 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   // Auth-Protection: Nur mit gültiger Session (z. B. /dashboard), sonst Redirect zu /login.
-  // Öffentlich: /login, /auth (inkl. /auth/callback), /signup
+  // Öffentlich: /login, /auth (inkl. /auth/callback), /signup, /onboarding, /approval (No-Login-Freigabe)
   const isAuthRoute =
     request.nextUrl.pathname.startsWith('/login') ||
     request.nextUrl.pathname.startsWith('/auth') ||
-    request.nextUrl.pathname.startsWith('/signup')
+    request.nextUrl.pathname.startsWith('/signup') ||
+    request.nextUrl.pathname.startsWith('/onboarding') ||
+    request.nextUrl.pathname.startsWith('/approval')
 
   if (!user && !isAuthRoute) {
     const url = request.nextUrl.clone()
@@ -49,10 +51,7 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Alle Pfade außer:
-     * - _next/static (statische Dateien)
-     * - _next/image (Bilder-Optimierung)
-     * - favicon.ico & statische Assets
+     * Alle Pfade außer statische Dateien; /login, /auth, /approval, /onboarding sind per isAuthRoute öffentlich.
      */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],

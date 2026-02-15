@@ -63,6 +63,19 @@ export async function createReference(
     resolvedCompanyId = newCompany.id
   }
 
+  let filePath: string | null = null
+  const file = formData.get('file') as File | null
+  if (file && file.size > 0) {
+    const fileName = `${Date.now()}-${file.name}`
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('references')
+      .upload(fileName, file)
+    if (uploadError) {
+      return { success: false, error: 'Upload fehlgeschlagen: ' + uploadError.message }
+    }
+    filePath = uploadData.path
+  }
+
   const { data: reference, error: refError } = await supabase
     .from('references')
     .insert({
@@ -72,6 +85,7 @@ export async function createReference(
       industry,
       country,
       status,
+      file_path: filePath,
     })
     .select('id')
     .single()
