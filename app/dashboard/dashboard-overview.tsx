@@ -45,7 +45,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
 import type { ReferenceRow } from './actions'
-import { deleteReference, submitForApproval } from './actions'
+import { deleteReference, submitForApproval, toggleFavorite } from './actions'
 import type { Profile } from './dashboard-shell'
 import {
   PlusCircleIcon,
@@ -68,6 +68,7 @@ import {
   CheckCircle,
   Send,
   Mail,
+  Star,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -109,10 +110,12 @@ export function DashboardOverview({
   references: initialReferences,
   totalCount,
   profile,
+  title = 'Dashboard',
 }: {
   references: ReferenceRow[]
   totalCount: number
   profile: Profile
+  title?: string
 }) {
   const router = useRouter()
   const [search, setSearch] = useState('')
@@ -125,6 +128,17 @@ export function DashboardOverview({
     status: true,
     date: true,
   })
+
+  const handleToggleFavorite = async (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation()
+    try {
+      await toggleFavorite(id)
+      toast.success('Favoriten aktualisiert')
+      router.refresh()
+    } catch {
+      toast.error('Fehler beim Aktualisieren der Favoriten')
+    }
+  }
 
   // Client-seitiges Filtering (Sales: draft nie anzeigen)
   const filteredReferences = useMemo(() => {
@@ -156,13 +170,14 @@ export function DashboardOverview({
 
     toast.promise(deleteReference(id), {
       loading: 'Lösche Referenz...',
-      success: 'Referenz erfolgreich gelöscht',
+      success: () => {
+        setSheetOpen(false)
+        setSelectedRef(null)
+        router.refresh()
+        return 'Referenz erfolgreich gelöscht'
+      },
       error: 'Fehler beim Löschen der Referenz',
-    }).then(() => {
-      setSheetOpen(false)
-      setSelectedRef(null)
-      router.refresh()
-    }, () => {})
+    })
   }
 
   const handleCopyId = (id: string, e: React.MouseEvent) => {
@@ -202,7 +217,7 @@ export function DashboardOverview({
     <div className="flex flex-col space-y-8 pt-6">
       {/* 1. Header Bereich (Nur Titel) */}
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+        <h2 className="text-3xl font-bold tracking-tight">{title}</h2>
       </div>
 
       {/* 2. KPI Cards */}
@@ -348,6 +363,7 @@ export function DashboardOverview({
                 {visibleColumns.country && <TableHead>Land</TableHead>}
                 {visibleColumns.status && <TableHead>Status</TableHead>}
                 {visibleColumns.date && <TableHead className="text-right">Datum</TableHead>}
+                <TableHead className="w-[40px]"></TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
@@ -361,7 +377,7 @@ export function DashboardOverview({
                       (visibleColumns.country ? 1 : 0) +
                       (visibleColumns.status ? 1 : 0) +
                       (visibleColumns.date ? 1 : 0) +
-                      1
+                      2
                     }
                     className="h-24 text-center text-muted-foreground"
                   >
@@ -393,6 +409,22 @@ export function DashboardOverview({
                         {formatDate(ref.created_at)}
                       </TableCell>
                     )}
+                    <TableCell className="pr-0" onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 hover:bg-transparent"
+                        onClick={(e) => handleToggleFavorite(ref.id, e)}
+                      >
+                        <Star
+                          className={`size-4 ${
+                            ref.is_favorited
+                              ? 'fill-yellow-400 text-yellow-400'
+                              : 'text-muted-foreground/50 hover:text-yellow-400'
+                          }`}
+                        />
+                      </Button>
+                    </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -459,10 +491,26 @@ export function DashboardOverview({
               {/* Fixierter Header */}
               <SheetHeader className="z-10 border-b bg-background px-4 py-4">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-1 min-w-0">
-                    <SheetTitle className="text-lg font-semibold leading-tight tracking-tight truncate">
-                      {selectedRef.company_name}
-                    </SheetTitle>
+                  <div className="space-y-1 min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <SheetTitle className="text-lg font-semibold leading-tight tracking-tight truncate">
+                        {selectedRef.company_name}
+                      </SheetTitle>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 shrink-0 -mt-1 hover:bg-transparent"
+                        onClick={(e) => handleToggleFavorite(selectedRef.id, e)}
+                      >
+                        <Star
+                          className={`size-4 ${
+                            selectedRef.is_favorited
+                              ? 'fill-yellow-400 text-yellow-400'
+                              : 'text-muted-foreground hover:text-yellow-400'
+                          }`}
+                        />
+                      </Button>
+                    </div>
                     <SheetDescription className="text-muted-foreground line-clamp-2 text-xs">
                       {selectedRef.title}
                     </SheetDescription>

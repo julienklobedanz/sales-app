@@ -27,6 +27,7 @@ export type ReferenceRow = {
   contact_email?: string | null
   contact_display?: string | null
   file_path?: string | null
+  is_favorited: boolean
 }
 
 export type GetDashboardDataResult = {
@@ -34,11 +35,25 @@ export type GetDashboardDataResult = {
   totalCount: number
 }
 
-export async function getDashboardData(): Promise<GetDashboardDataResult> {
+export type RequestItem = {
+  id: string
+  reference_id: string
+  reference_title: string
+  company_name: string
+  requester_name?: string
+  status: 'pending' | 'approved' | 'rejected'
+  created_at: string
+}
+
+export async function getDashboardData(
+  onlyFavorites = false
+): Promise<GetDashboardDataResult> {
   const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   // Relation per FK-Constraint-Name (Supabase: Table Editor → references → Beziehungen).
-  // Falls Fehler bleibt: exakten Constraint-Namen aus Fehlermeldung details übernehmen.
   const fullSelect = `
       id,
       title,
@@ -89,7 +104,19 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
     rows = fallback.data
   }
 
-  const references: ReferenceRow[] = (rows ?? []).map((r: Record<string, unknown>) => {
+  // Favoriten des aktuellen Users (Set für schnellen Lookup)
+  const favoriteIds = new Set<string>()
+  if (user) {
+    const { data: favs } = await supabase
+      .from('favorites')
+      .select('reference_id')
+      .eq('user_id', user.id)
+    if (favs) {
+      favs.forEach((f: { reference_id: string }) => favoriteIds.add(f.reference_id))
+    }
+  }
+
+  let references: ReferenceRow[] = (rows ?? []).map((r: Record<string, unknown>) => {
     const raw = r.companies
     const company =
       Array.isArray(raw) && raw.length > 0
@@ -118,13 +145,46 @@ export async function getDashboardData(): Promise<GetDashboardDataResult> {
       contact_email: contact?.email ?? null,
       contact_display: contactDisplay ?? null,
       file_path: (r.file_path as string | null) ?? null,
+      is_favorited: favoriteIds.has(r.id as string),
     }
   })
+
+  if (onlyFavorites) {
+    references = references.filter((r) => r.is_favorited)
+  }
 
   return {
     references,
     totalCount: references.length,
   }
+}
+
+export async function toggleFavorite(referenceId: string) {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) throw new Error('Nicht eingeloggt')
+
+  const { data: existing } = await supabase
+    .from('favorites')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('reference_id', referenceId)
+    .maybeSingle()
+
+  if (existing) {
+    await supabase.from('favorites').delete().eq('id', existing.id)
+  } else {
+    await supabase.from('favorites').insert({
+      user_id: user.id,
+      reference_id: referenceId,
+    })
+  }
+
+  revalidatePath('/dashboard')
+  revalidatePath('/dashboard/favorites')
 }
 
 export async function deleteReference(id: string) {
@@ -244,6 +304,11 @@ export async function updateReference(id: string, formData: FormData) {
 
 export async function submitForApproval(id: string) {
   const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) throw new Error('Nicht authentifiziert')
 
   const newToken = crypto.randomUUID()
 
@@ -275,6 +340,21 @@ export async function submitForApproval(id: string) {
     .eq('id', id)
 
   if (updateError) throw new Error(updateError.message)
+
+  const { data: existing } = await supabase
+    .from('approvals')
+    .select('id')
+    .eq('reference_id', id)
+    .eq('status', 'pending')
+    .maybeSingle()
+
+  if (!existing) {
+    await supabase.from('approvals').insert({
+      reference_id: id,
+      requester_id: user.id,
+      status: 'pending',
+    })
+  }
 
   const contactPerson = Array.isArray(row.contact_persons)
     ? row.contact_persons[0]
@@ -311,6 +391,115 @@ export async function submitForApproval(id: string) {
   }
 
   revalidatePath('/dashboard')
+  revalidatePath('/dashboard/requests')
+}
+
+export async function getRequests(): Promise<RequestItem[]> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return []
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  let query = supabase
+    .from('approvals')
+    .select(
+      `
+      id,
+      status,
+      created_at,
+      reference:references (
+        id,
+        title,
+        companies ( name )
+      ),
+      requester:profiles ( full_name )
+    `
+    )
+    .order('created_at', { ascending: false })
+
+  if (profile?.role !== 'admin') {
+    query = query.eq('requester_id', user.id)
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    console.error('[getRequests] Error:', error)
+    return []
+  }
+
+  return (data ?? []).map((row: Record<string, unknown>) => {
+    const reference = row.reference as
+      | { id?: string; title?: string; companies?: { name?: string } | { name?: string }[] }
+      | null
+    const companies = reference?.companies
+    const companyName =
+      Array.isArray(companies) && companies.length > 0
+        ? (companies[0] as { name?: string }).name
+        : (companies as { name?: string } | null)?.name
+
+    const requester = row.requester as { full_name?: string } | null
+
+    return {
+      id: row.id as string,
+      reference_id: reference?.id as string,
+      reference_title: reference?.title ?? 'Unbekannt',
+      company_name: companyName ?? '—',
+      requester_name: requester?.full_name ?? 'Unbekannt',
+      status: row.status as RequestItem['status'],
+      created_at: row.created_at as string,
+    }
+  })
+}
+
+export async function reviewRequest(
+  approvalId: string,
+  decision: 'approve_external' | 'approve_internal' | 'reject'
+) {
+  const supabase = await createServerSupabaseClient()
+
+  const { data: approval, error: fetchErr } = await supabase
+    .from('approvals')
+    .select('reference_id')
+    .eq('id', approvalId)
+    .single()
+
+  if (fetchErr || !approval) throw new Error('Antrag nicht gefunden')
+
+  let newRefStatus = 'draft'
+  let approvalStatus: 'approved' | 'rejected' = 'rejected'
+
+  if (decision === 'approve_external') {
+    newRefStatus = 'external'
+    approvalStatus = 'approved'
+  } else if (decision === 'approve_internal') {
+    newRefStatus = 'internal'
+    approvalStatus = 'approved'
+  }
+
+  const { error: refError } = await supabase
+    .from('references')
+    .update({ status: newRefStatus })
+    .eq('id', approval.reference_id)
+
+  if (refError) throw new Error(refError.message)
+
+  const { error: appError } = await supabase
+    .from('approvals')
+    .update({ status: approvalStatus })
+    .eq('id', approvalId)
+
+  if (appError) throw new Error(appError.message)
+
+  revalidatePath('/dashboard')
+  revalidatePath('/dashboard/requests')
 }
 
 export async function updateUserRole(role: 'admin' | 'sales') {
