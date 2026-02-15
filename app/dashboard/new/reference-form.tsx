@@ -64,6 +64,7 @@ export type ReferenceFormInitialData = {
   summary: string | null
   industry: string | null
   country: string | null
+  contact_person?: string | null
   status:
     | 'draft'
     | 'pending'
@@ -189,6 +190,21 @@ export function ReferenceForm({
           disabled={submitting}
           defaultValue={initialData?.summary ?? ''}
         />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="contact_person">Interner Kontakt / Account Owner (E-Mail)</Label>
+        <Input
+          id="contact_person"
+          name="contact_person"
+          type="email"
+          placeholder="z. B. max@firma.de"
+          disabled={submitting}
+          defaultValue={initialData?.contact_person ?? ''}
+        />
+        <p className="text-muted-foreground text-xs">
+          Wird für Einzelfreigabe-Anfragen per E-Mail genutzt (z. B. bei Sales-Anfragen).
+        </p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

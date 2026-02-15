@@ -124,6 +124,12 @@ export function DashboardOverview({
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [selectedRef, setSelectedRef] = useState<ReferenceRow | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [visibleColumns, setVisibleColumns] = useState({
+    industry: true,
+    country: true,
+    status: true,
+    date: true,
+  })
 
   // Client-seitiges Filtering (Sales: draft nie anzeigen)
   const filteredReferences = useMemo(() => {
@@ -193,7 +199,9 @@ export function DashboardOverview({
   // Quick Stats berechnen
   const draftCount = initialReferences.filter((r) => r.status === 'draft').length
   const pendingCount = initialReferences.filter((r) => r.status === 'pending').length
-  const approvedCount = initialReferences.filter((r) => r.status === 'approved').length
+  const approvedCount = initialReferences.filter((r) =>
+    ['external', 'internal', 'anonymous', 'restricted'].includes(r.status)
+  ).length
 
   return (
     <div className="flex flex-col space-y-8 pt-6">
@@ -279,21 +287,57 @@ export function DashboardOverview({
                 <SelectItem value="restricted">Eingeschränkt</SelectItem>
               </SelectContent>
             </Select>
+
+            {/* Spalten ein/ausblenden */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="ml-auto hidden h-9 lg:flex">
+                  <SlidersHorizontal className="mr-2 h-4 w-4" />
+                  Spalten
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-[150px]">
+                <DropdownMenuLabel>Sichtbarkeit</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {Object.keys(visibleColumns).map((column) => (
+                  <DropdownMenuItem
+                    key={column}
+                    onSelect={(e) => {
+                      e.preventDefault()
+                      setVisibleColumns((prev) => ({
+                        ...prev,
+                        [column]: !prev[column as keyof typeof visibleColumns],
+                      }))
+                    }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={`h-4 w-4 border rounded-sm flex items-center justify-center ${
+                          visibleColumns[column as keyof typeof visibleColumns]
+                            ? 'bg-primary border-primary'
+                            : ''
+                        }`}
+                      >
+                        {visibleColumns[column as keyof typeof visibleColumns] && (
+                          <CheckCircle className="h-3 w-3 text-white" />
+                        )}
+                      </div>
+                      <span className="capitalize">
+                        {column === 'date' ? 'Datum' : column === 'industry' ? 'Industrie' : column === 'country' ? 'Land' : column === 'status' ? 'Status' : column}
+                      </span>
+                    </div>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
-          {/* Rechte Seite: Button (Admin = erstellen, Sales = anfragen) */}
-          {profile.role === 'admin' ? (
+          {/* Nur Admins sehen den "Erstellen"-Button; Sales sieht hier nichts */}
+          {profile.role === 'admin' && (
             <Link href="/dashboard/new">
               <Button className="w-full sm:w-auto">
                 <PlusCircleIcon className="mr-2 size-4" />
                 Referenz erstellen
-              </Button>
-            </Link>
-          ) : (
-            <Link href="/dashboard/request">
-              <Button variant="outline" className="w-full sm:w-auto">
-                <Send className="mr-2 size-4" />
-                Referenz anfragen
               </Button>
             </Link>
           )}
@@ -305,10 +349,10 @@ export function DashboardOverview({
               <TableRow>
                 <TableHead className="w-[200px]">Unternehmen</TableHead>
                 <TableHead>Titel</TableHead>
-                <TableHead>Industrie</TableHead>
-                <TableHead>Land</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Datum</TableHead>
+                {visibleColumns.industry && <TableHead>Industrie</TableHead>}
+                {visibleColumns.country && <TableHead>Land</TableHead>}
+                {visibleColumns.status && <TableHead>Status</TableHead>}
+                {visibleColumns.date && <TableHead className="text-right">Datum</TableHead>}
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
@@ -316,7 +360,14 @@ export function DashboardOverview({
               {filteredReferences.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={7}
+                    colSpan={
+                      2 +
+                      (visibleColumns.industry ? 1 : 0) +
+                      (visibleColumns.country ? 1 : 0) +
+                      (visibleColumns.status ? 1 : 0) +
+                      (visibleColumns.date ? 1 : 0) +
+                      1
+                    }
                     className="h-24 text-center text-muted-foreground"
                   >
                     Keine Referenzen gefunden.
@@ -333,16 +384,20 @@ export function DashboardOverview({
                     <TableCell className="max-w-[200px] truncate text-muted-foreground">
                       {ref.title}
                     </TableCell>
-                    <TableCell>{ref.industry ?? '—'}</TableCell>
-                    <TableCell>{ref.country ?? '—'}</TableCell>
-                    <TableCell>
-                      <Badge variant={STATUS_BADGE_VARIANT[ref.status] ?? 'outline'}>
-                        {STATUS_LABELS[ref.status] ?? ref.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right text-muted-foreground text-sm">
-                      {formatDate(ref.created_at)}
-                    </TableCell>
+                    {visibleColumns.industry && <TableCell>{ref.industry ?? '—'}</TableCell>}
+                    {visibleColumns.country && <TableCell>{ref.country ?? '—'}</TableCell>}
+                    {visibleColumns.status && (
+                      <TableCell>
+                        <Badge variant={STATUS_BADGE_VARIANT[ref.status] ?? 'outline'}>
+                          {STATUS_LABELS[ref.status] ?? ref.status}
+                        </Badge>
+                      </TableCell>
+                    )}
+                    {visibleColumns.date && (
+                      <TableCell className="text-right text-muted-foreground text-sm">
+                        {formatDate(ref.created_at)}
+                      </TableCell>
+                    )}
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>

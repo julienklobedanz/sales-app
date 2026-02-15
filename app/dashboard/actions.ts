@@ -108,6 +108,7 @@ export async function updateReference(id: string, formData: FormData) {
   const summary = formData.get('summary')?.toString()?.trim() ?? null
   const industry = formData.get('industry')?.toString()?.trim() ?? null
   const country = formData.get('country')?.toString()?.trim() ?? null
+  const contactPerson = formData.get('contact_person')?.toString()?.trim() ?? null
   const statusRaw = formData.get('status')?.toString()
   const allowed: ReferenceRow['status'][] = [
     'draft',
@@ -163,6 +164,7 @@ export async function updateReference(id: string, formData: FormData) {
     summary: string | null
     industry: string | null
     country: string | null
+    contact_person: string | null
     status: string
     updated_at: string
     file_path?: string
@@ -171,6 +173,7 @@ export async function updateReference(id: string, formData: FormData) {
     summary,
     industry,
     country,
+    contact_person: contactPerson,
     status,
     updated_at: new Date().toISOString(),
   }

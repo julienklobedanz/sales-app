@@ -24,6 +24,7 @@ export default async function EditReferencePage({
       summary,
       industry,
       country,
+      contact_person,
       status,
       file_path,
       companies ( name )
@@ -50,6 +51,7 @@ export default async function EditReferencePage({
     summary: row.summary ?? null,
     industry: row.industry ?? null,
     country: row.country ?? null,
+    contact_person: row.contact_person ?? null,
     status: row.status as ReferenceFormInitialData['status'],
     file_path: row.file_path ?? null,
   }
