@@ -319,7 +319,7 @@ export function ReferenceForm({
         <input type="hidden" name="status" value={status} />
         <Select
           value={status}
-          onValueChange={setStatus}
+          onValueChange={(val) => setStatus(val as typeof status)}
           disabled={submitting}
         >
           <SelectTrigger id="status" className="w-full sm:w-[180px]">
