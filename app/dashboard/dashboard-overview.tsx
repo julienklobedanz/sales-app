@@ -95,6 +95,55 @@ const STATUS_BADGE_VARIANT: Record<
   restricted: 'outline',
 }
 
+const PROJECT_STATUS_LABELS: Record<string, string> = {
+  active: 'Aktiv',
+  completed: 'Abgeschlossen',
+}
+
+/** Spalten-Keys und Standard-Sichtbarkeit: nur Status, Unternehmen, Titel, Tags, Projektstatus, Letzte Änderung */
+const COLUMN_KEYS = [
+  'status',
+  'company',
+  'title',
+  'tags',
+  'industry',
+  'country',
+  'project_status',
+  'project_start',
+  'project_end',
+  'duration_months',
+  'created_at',
+  'updated_at',
+] as const
+const DEFAULT_VISIBLE: Record<(typeof COLUMN_KEYS)[number], boolean> = {
+  status: true,
+  company: true,
+  title: true,
+  tags: true,
+  industry: false,
+  country: false,
+  project_status: true,
+  project_start: false,
+  project_end: false,
+  duration_months: false,
+  created_at: false,
+  updated_at: true,
+}
+const COLUMN_LABELS: Record<(typeof COLUMN_KEYS)[number], string> = {
+  status: 'Status',
+  company: 'Unternehmen',
+  title: 'Titel',
+  tags: 'Tags',
+  industry: 'Industrie',
+  country: 'Land',
+  project_status: 'Projektstatus',
+  project_start: 'Projektstart',
+  project_end: 'Projektende',
+  duration_months: 'Dauer (Monate)',
+  created_at: 'Hinzugefügt am',
+  updated_at: 'Letzte Änderung',
+}
+
 /** Deterministisches Datumsformat (Server = Client), vermeidet Hydration-Fehler durch toLocaleDateString. */
 function formatDate(iso: string) {
   const d = new Date(iso)
@@ -127,12 +176,9 @@ export function DashboardOverview({
   const [favoritesOnly, setFavoritesOnly] = useState(initialFavoritesOnly)
   const [selectedRef, setSelectedRef] = useState<ReferenceRow | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
-  const [visibleColumns, setVisibleColumns] = useState({
-    industry: true,
-    country: true,
-    status: true,
-    date: true,
-  })
+  const [visibleColumns, setVisibleColumns] = useState<
+    Record<(typeof COLUMN_KEYS)[number], boolean>
+  >(DEFAULT_VISIBLE)
 
   const handleToggleFavorite = async (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation()
@@ -324,35 +370,31 @@ export function DashboardOverview({
                   Spalten
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-[150px]">
+              <DropdownMenuContent align="end" className="w-[220px]">
                 <DropdownMenuLabel>Sichtbarkeit</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {Object.keys(visibleColumns).map((column) => (
+                {COLUMN_KEYS.map((column) => (
                   <DropdownMenuItem
                     key={column}
                     onSelect={(e) => {
                       e.preventDefault()
                       setVisibleColumns((prev) => ({
                         ...prev,
-                        [column]: !prev[column as keyof typeof visibleColumns],
+                        [column]: !prev[column],
                       }))
                     }}
                   >
                     <div className="flex items-center gap-2">
                       <div
                         className={`h-4 w-4 border rounded-sm flex items-center justify-center ${
-                          visibleColumns[column as keyof typeof visibleColumns]
-                            ? 'bg-primary border-primary'
-                            : ''
+                          visibleColumns[column] ? 'bg-primary border-primary' : ''
                         }`}
                       >
-                        {visibleColumns[column as keyof typeof visibleColumns] && (
+                        {visibleColumns[column] && (
                           <CheckCircle className="h-3 w-3 text-white" />
                         )}
                       </div>
-                      <span className="capitalize">
-                        {column === 'date' ? 'Datum' : column === 'industry' ? 'Industrie' : column === 'country' ? 'Land' : column === 'status' ? 'Status' : column}
-                      </span>
+                      <span>{COLUMN_LABELS[column]}</span>
                     </div>
                   </DropdownMenuItem>
                 ))}
@@ -371,16 +413,22 @@ export function DashboardOverview({
           )}
         </div>
 
-        <div className="rounded-md border bg-card">
+        <div className="rounded-md border bg-card overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[200px]">Unternehmen</TableHead>
-                <TableHead>Titel</TableHead>
-                {visibleColumns.industry && <TableHead>Industrie</TableHead>}
-                {visibleColumns.country && <TableHead>Land</TableHead>}
-                {visibleColumns.status && <TableHead>Status</TableHead>}
-                {visibleColumns.date && <TableHead className="text-right">Datum</TableHead>}
+                {visibleColumns.status && <TableHead>{COLUMN_LABELS.status}</TableHead>}
+                {visibleColumns.company && <TableHead className="w-[180px]">{COLUMN_LABELS.company}</TableHead>}
+                {visibleColumns.title && <TableHead>{COLUMN_LABELS.title}</TableHead>}
+                {visibleColumns.tags && <TableHead className="max-w-[120px]">{COLUMN_LABELS.tags}</TableHead>}
+                {visibleColumns.industry && <TableHead>{COLUMN_LABELS.industry}</TableHead>}
+                {visibleColumns.country && <TableHead>{COLUMN_LABELS.country}</TableHead>}
+                {visibleColumns.project_status && <TableHead>{COLUMN_LABELS.project_status}</TableHead>}
+                {visibleColumns.project_start && <TableHead className="text-right">{COLUMN_LABELS.project_start}</TableHead>}
+                {visibleColumns.project_end && <TableHead className="text-right">{COLUMN_LABELS.project_end}</TableHead>}
+                {visibleColumns.duration_months && <TableHead className="text-right">{COLUMN_LABELS.duration_months}</TableHead>}
+                {visibleColumns.created_at && <TableHead className="text-right">{COLUMN_LABELS.created_at}</TableHead>}
+                {visibleColumns.updated_at && <TableHead className="text-right">{COLUMN_LABELS.updated_at}</TableHead>}
                 <TableHead className="w-[40px]"></TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
@@ -390,12 +438,7 @@ export function DashboardOverview({
                 <TableRow>
                   <TableCell
                     colSpan={
-                      2 +
-                      (visibleColumns.industry ? 1 : 0) +
-                      (visibleColumns.country ? 1 : 0) +
-                      (visibleColumns.status ? 1 : 0) +
-                      (visibleColumns.date ? 1 : 0) +
-                      2
+                      COLUMN_KEYS.filter((k) => visibleColumns[k]).length + 2
                     }
                     className="h-24 text-center text-muted-foreground"
                   >
@@ -409,12 +452,6 @@ export function DashboardOverview({
                     className="cursor-pointer hover:bg-muted/50 group"
                     onClick={() => openDetail(ref)}
                   >
-                    <TableCell className="font-medium">{ref.company_name}</TableCell>
-                    <TableCell className="max-w-[200px] truncate text-muted-foreground">
-                      {ref.title}
-                    </TableCell>
-                    {visibleColumns.industry && <TableCell>{ref.industry ?? '—'}</TableCell>}
-                    {visibleColumns.country && <TableCell>{ref.country ?? '—'}</TableCell>}
                     {visibleColumns.status && (
                       <TableCell>
                         <Badge variant={STATUS_BADGE_VARIANT[ref.status] ?? 'outline'}>
@@ -422,9 +459,55 @@ export function DashboardOverview({
                         </Badge>
                       </TableCell>
                     )}
-                    {visibleColumns.date && (
+                    {visibleColumns.company && (
+                      <TableCell className="font-medium">{ref.company_name}</TableCell>
+                    )}
+                    {visibleColumns.title && (
+                      <TableCell className="max-w-[200px] truncate text-muted-foreground">
+                        {ref.title}
+                      </TableCell>
+                    )}
+                    {visibleColumns.tags && (
+                      <TableCell className="max-w-[120px] truncate text-sm">
+                        {ref.tags ?? '—'}
+                      </TableCell>
+                    )}
+                    {visibleColumns.industry && <TableCell>{ref.industry ?? '—'}</TableCell>}
+                    {visibleColumns.country && <TableCell>{ref.country ?? '—'}</TableCell>}
+                    {visibleColumns.project_status && (
+                      <TableCell>
+                        {ref.project_status ? (
+                          <Badge variant="outline">
+                            {PROJECT_STATUS_LABELS[ref.project_status] ?? ref.project_status}
+                          </Badge>
+                        ) : (
+                          '—'
+                        )}
+                      </TableCell>
+                    )}
+                    {visibleColumns.project_start && (
+                      <TableCell className="text-right text-muted-foreground text-sm">
+                        {ref.project_start ? formatDate(ref.project_start) : '—'}
+                      </TableCell>
+                    )}
+                    {visibleColumns.project_end && (
+                      <TableCell className="text-right text-muted-foreground text-sm">
+                        {ref.project_end ? formatDate(ref.project_end) : '—'}
+                      </TableCell>
+                    )}
+                    {visibleColumns.duration_months && (
+                      <TableCell className="text-right text-muted-foreground text-sm">
+                        {ref.duration_months != null ? `${ref.duration_months}` : '—'}
+                      </TableCell>
+                    )}
+                    {visibleColumns.created_at && (
                       <TableCell className="text-right text-muted-foreground text-sm">
                         {formatDate(ref.created_at)}
+                      </TableCell>
+                    )}
+                    {visibleColumns.updated_at && (
+                      <TableCell className="text-right text-muted-foreground text-sm">
+                        {ref.updated_at ? formatDate(ref.updated_at) : '—'}
                       </TableCell>
                     )}
                     <TableCell className="pr-0" onClick={(e) => e.stopPropagation()}>
@@ -558,6 +641,14 @@ export function DashboardOverview({
                       </p>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1 col-span-2">
+                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+                          Tags
+                        </span>
+                        <p className="text-foreground pl-4 text-xs font-medium">
+                          {selectedRef.tags || '—'}
+                        </p>
+                      </div>
                       <div className="space-y-1">
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
                           <Building2Icon className="size-3" /> Industrie
@@ -572,6 +663,26 @@ export function DashboardOverview({
                         </span>
                         <p className="text-foreground pl-4 text-xs font-medium">
                           {selectedRef.country || '—'}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+                          Projektstatus
+                        </span>
+                        <p className="text-foreground pl-4 text-xs font-medium">
+                          {selectedRef.project_status
+                            ? PROJECT_STATUS_LABELS[selectedRef.project_status] ?? selectedRef.project_status
+                            : '—'}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+                          Dauer
+                        </span>
+                        <p className="text-foreground pl-4 text-xs font-medium">
+                          {selectedRef.duration_months != null
+                            ? `${selectedRef.duration_months} Monate`
+                            : '—'}
                         </p>
                       </div>
                       <div className="space-y-1">
@@ -599,6 +710,14 @@ export function DashboardOverview({
                         </span>
                         <p className="text-foreground pl-4 text-xs font-medium">
                           {formatDate(selectedRef.created_at)}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+                          Letzte Änderung
+                        </span>
+                        <p className="text-foreground pl-4 text-xs font-medium">
+                          {selectedRef.updated_at ? formatDate(selectedRef.updated_at) : '—'}
                         </p>
                       </div>
                     </div>

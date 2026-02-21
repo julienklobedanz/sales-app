@@ -20,6 +20,7 @@ export type ReferenceRow = {
     | 'anonymous'
     | 'restricted'
   created_at: string
+  updated_at: string | null
   company_id: string
   company_name: string
   website?: string | null
@@ -28,6 +29,11 @@ export type ReferenceRow = {
   contact_display?: string | null
   file_path?: string | null
   is_favorited: boolean
+  tags: string | null
+  project_status: 'active' | 'completed' | null
+  project_start: string | null
+  project_end: string | null
+  duration_months: number | null
 }
 
 export type GetDashboardDataResult = {
@@ -62,9 +68,14 @@ export async function getDashboardData(
       country,
       status,
       created_at,
+      updated_at,
       company_id,
       contact_id,
       file_path,
+      tags,
+      project_status,
+      project_start,
+      project_end,
       companies ( name ),
       contact_persons!references_contact_id_fkey ( email, first_name, last_name )
     `
@@ -92,8 +103,13 @@ export async function getDashboardData(
         country,
         status,
         created_at,
+        updated_at,
         company_id,
         file_path,
+        tags,
+        project_status,
+        project_start,
+        project_end,
         companies ( name )
       `)
       .order('created_at', { ascending: false })
@@ -131,6 +147,16 @@ export async function getDashboardData(
     const contactDisplay = contact
       ? [contact.first_name, contact.last_name].filter(Boolean).join(' ') || contact.email || null
       : null
+    const start = r.project_start as string | null
+    const end = r.project_end as string | null
+    let duration_months: number | null = null
+    if (start && end) {
+      const s = new Date(start)
+      const e = new Date(end)
+      if (!Number.isNaN(s.getTime()) && !Number.isNaN(e.getTime())) {
+        duration_months = Math.max(0, (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth()))
+      }
+    }
     return {
       id: r.id as string,
       title: r.title as string,
@@ -139,6 +165,7 @@ export async function getDashboardData(
       country: (r.country as string | null) ?? null,
       status: r.status as ReferenceRow['status'],
       created_at: r.created_at as string,
+      updated_at: (r.updated_at as string | null) ?? null,
       company_id: r.company_id as string,
       company_name: company?.name ?? '—',
       contact_id: (r.contact_id as string | null) ?? null,
@@ -146,6 +173,11 @@ export async function getDashboardData(
       contact_display: contactDisplay ?? null,
       file_path: (r.file_path as string | null) ?? null,
       is_favorited: favoriteIds.has(r.id as string),
+      tags: (r.tags as string | null) ?? null,
+      project_status: (r.project_status as 'active' | 'completed' | null) ?? null,
+      project_start: (r.project_start as string | null) ?? null,
+      project_end: (r.project_end as string | null) ?? null,
+      duration_months,
     }
   })
 
@@ -225,6 +257,14 @@ export async function updateReference(id: string, formData: FormData) {
   const status = allowed.includes(statusRaw as ReferenceRow['status'])
     ? (statusRaw as ReferenceRow['status'])
     : 'draft'
+  const tags = formData.get('tags')?.toString()?.trim() ?? null
+  const projectStatusRaw = formData.get('project_status')?.toString()
+  const project_status: 'active' | 'completed' | null =
+    projectStatusRaw === 'active' || projectStatusRaw === 'completed'
+      ? projectStatusRaw
+      : null
+  const project_start = formData.get('project_start')?.toString()?.trim() || null
+  const project_end = formData.get('project_end')?.toString()?.trim() || null
 
   if (!title) {
     throw new Error('Titel ist erforderlich.')
@@ -272,6 +312,10 @@ export async function updateReference(id: string, formData: FormData) {
     status: string
     updated_at: string
     file_path?: string
+    tags: string | null
+    project_status: 'active' | 'completed' | null
+    project_start: string | null
+    project_end: string | null
   } = {
     title,
     summary,
@@ -280,6 +324,10 @@ export async function updateReference(id: string, formData: FormData) {
     contact_id: contactId,
     status,
     updated_at: new Date().toISOString(),
+    tags,
+    project_status,
+    project_start,
+    project_end,
   }
   if (filePath !== undefined) {
     updatePayload.file_path = filePath

@@ -30,6 +30,14 @@ export async function createReference(
   const contactId =
     contactIdRaw && contactIdRaw !== '__none__' ? contactIdRaw : null
   const statusRaw = formData.get('status')?.toString()
+  const tags = formData.get('tags')?.toString()?.trim() || null
+  const projectStatusRaw = formData.get('project_status')?.toString()
+  const project_status: 'active' | 'completed' | null =
+    projectStatusRaw === 'active' || projectStatusRaw === 'completed'
+      ? projectStatusRaw
+      : null
+  const project_start = formData.get('project_start')?.toString()?.trim() || null
+  const project_end = formData.get('project_end')?.toString()?.trim() || null
 
   if (!title) {
     return { success: false, error: 'Titel ist erforderlich.' }
@@ -119,6 +127,10 @@ export async function createReference(
       contact_id: contactId,
       status,
       file_path: filePath,
+      tags,
+      project_status,
+      project_start: project_start || null,
+      project_end: project_end || null,
     })
     .select('id')
     .single()

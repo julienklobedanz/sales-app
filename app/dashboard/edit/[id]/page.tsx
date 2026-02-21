@@ -27,6 +27,10 @@ export default async function EditReferencePage({
       contact_id,
       status,
       file_path,
+      tags,
+      project_status,
+      project_start,
+      project_end,
       companies ( name )
     `)
     .eq('id', id)
@@ -63,6 +67,10 @@ export default async function EditReferencePage({
     contact_id: row.contact_id ?? null,
     status: row.status as ReferenceFormInitialData['status'],
     file_path: row.file_path ?? null,
+    tags: row.tags ?? null,
+    project_status: (row.project_status as 'active' | 'completed' | null) ?? null,
+    project_start: row.project_start ?? null,
+    project_end: row.project_end ?? null,
   }
 
   return (

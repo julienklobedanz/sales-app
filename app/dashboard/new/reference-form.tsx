@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useState, useEffect, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { createReference, type CreateReferenceResult } from './actions'
+import { createReference } from './actions'
 import { updateReference } from '../actions'
 import { CreateContactDialog } from './create-contact-dialog'
 
@@ -55,6 +55,12 @@ const STATUS_OPTIONS = [
   { value: 'restricted', label: 'Eingeschränkt (Einzelfreigabe nötig)' },
 ] as const
 
+const PROJECT_STATUS_OPTIONS = [
+  { value: '__none__', label: '— Keine Angabe' },
+  { value: 'active', label: 'Aktiv' },
+  { value: 'completed', label: 'Abgeschlossen' },
+] as const
+
 type Company = { id: string; name: string }
 
 export type ContactPerson = {
@@ -81,13 +87,10 @@ export type ReferenceFormInitialData = {
     | 'anonymous'
     | 'restricted'
   file_path?: string | null
-}
-
-function formAction(
-  _prev: CreateReferenceResult | null,
-  formData: FormData
-): Promise<CreateReferenceResult> {
-  return createReference(formData)
+  tags?: string | null
+  project_status?: 'active' | 'completed' | null
+  project_start?: string | null
+  project_end?: string | null
 }
 
 export function ReferenceForm({
@@ -100,7 +103,6 @@ export function ReferenceForm({
   initialData?: ReferenceFormInitialData
 }) {
   const router = useRouter()
-  const [state, formActionWithState, isPending] = useActionState(formAction, null)
   const [editSubmitting, setEditSubmitting] = useState(false)
   const [companyId, setCompanyId] = useState('')
   const [industry, setIndustry] = useState(initialData?.industry ?? '')
@@ -109,35 +111,59 @@ export function ReferenceForm({
   const [contactId, setContactId] = useState(
     initialData?.contact_id ? initialData.contact_id : '__none__'
   )
-  const handledStateRef = useRef<CreateReferenceResult | null>(null)
+  const [tags, setTags] = useState(initialData?.tags ?? '')
+  const [projectStatus, setProjectStatus] = useState(
+    initialData?.project_status ?? '__none__'
+  )
+  const [projectStart, setProjectStart] = useState(
+    initialData?.project_start ?? ''
+  )
+  const [projectEnd, setProjectEnd] = useState(initialData?.project_end ?? '')
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [createSubmitting, setCreateSubmitting] = useState(false)
 
   const isEditMode = !!initialData
-  const submitting = isEditMode ? editSubmitting : isPending
+  const submitting = isEditMode ? editSubmitting : createSubmitting
 
   const handleContactCreated = (newId: string) => {
     setContactId(newId)
     router.refresh()
   }
 
-  useEffect(() => {
-    if (!state) return
-    if (state.success && handledStateRef.current !== state) {
-      handledStateRef.current = state
-      toast.success('Referenz wurde angelegt.')
-      router.push('/dashboard')
-      router.refresh()
+  function buildFormData(form: HTMLFormElement): FormData {
+    const formData = new FormData(form)
+    if (selectedFile) {
+      formData.set('file', selectedFile)
     }
-    if (!state.success && 'error' in state && handledStateRef.current !== state) {
-      handledStateRef.current = state
-      toast.error(state.error)
+    return formData
+  }
+
+  async function handleCreateSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setCreateSubmitting(true)
+    const form = event.currentTarget
+    const formData = buildFormData(form)
+    try {
+      const result = await createReference(formData)
+      if (result.success) {
+        toast.success('Referenz wurde angelegt.')
+        router.push('/dashboard')
+        router.refresh()
+      } else {
+        toast.error(result.error)
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Fehler beim Anlegen')
+    } finally {
+      setCreateSubmitting(false)
     }
-  }, [state, router])
+  }
 
   async function handleEditSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!initialData?.id) return
     setEditSubmitting(true)
-    const formData = new FormData(event.currentTarget)
+    const formData = buildFormData(event.currentTarget)
     try {
       await updateReference(initialData.id, formData)
       toast.success('Referenz erfolgreich aktualisiert')
@@ -297,20 +323,77 @@ export function ReferenceForm({
         </div>
       </div>
 
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="project_status">Projektstatus</Label>
+          <input
+            type="hidden"
+            name="project_status"
+            value={projectStatus === '__none__' ? '' : projectStatus}
+          />
+          <Select
+            value={projectStatus || '__none__'}
+            onValueChange={setProjectStatus}
+            disabled={submitting}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Auswählen …" />
+            </SelectTrigger>
+            <SelectContent>
+              {PROJECT_STATUS_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="tags">Tags</Label>
+          <Input
+            id="tags"
+            name="tags"
+            placeholder="z. B. Cloud, ERP, SAP"
+            disabled={submitting}
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="project_start">Projektstart</Label>
+          <Input
+            id="project_start"
+            name="project_start"
+            type="date"
+            disabled={submitting}
+            value={projectStart}
+            onChange={(e) => setProjectStart(e.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="project_end">Projektende</Label>
+          <Input
+            id="project_end"
+            name="project_end"
+            type="date"
+            disabled={submitting}
+            value={projectEnd}
+            onChange={(e) => setProjectEnd(e.target.value)}
+          />
+        </div>
+      </div>
+
       <div className="space-y-2">
-        <Label htmlFor="file">PDF Anhang</Label>
-        <Input
-          id="file"
-          name="file"
-          type="file"
-          accept="application/pdf"
+        <Label>PDF Anhang</Label>
+        <FileDropZone
+          selectedFile={selectedFile}
+          onFileSelect={setSelectedFile}
           disabled={submitting}
+          existingFilePath={initialData?.file_path}
         />
-        {initialData?.file_path && (
-          <p className="text-muted-foreground text-xs">
-            Aktuell hinterlegt: {initialData.file_path.split('/').pop()}
-          </p>
-        )}
       </div>
 
       {/* Status Selection */}
@@ -373,12 +456,109 @@ export function ReferenceForm({
             {formContent}
           </form>
         ) : (
-          <form action={formActionWithState} className="space-y-6">
+          <form onSubmit={handleCreateSubmit} className="space-y-6">
             {formContent}
           </form>
         )}
       </CardContent>
     </Card>
+  )
+}
+
+function FileDropZone({
+  selectedFile,
+  onFileSelect,
+  disabled,
+  existingFilePath,
+}: {
+  selectedFile: File | null
+  onFileSelect: (file: File | null) => void
+  disabled: boolean
+  existingFilePath?: string | null
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [isDragging, setIsDragging] = useState(false)
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!disabled) setIsDragging(true)
+  }
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+  }
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+    if (disabled) return
+    const file = e.dataTransfer.files?.[0]
+    if (file?.type === 'application/pdf') {
+      onFileSelect(file)
+    } else if (file) {
+      toast.error('Bitte nur PDF-Dateien hochladen.')
+    }
+  }
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    onFileSelect(file ?? null)
+  }
+  const handleClick = () => {
+    if (!disabled) inputRef.current?.click()
+  }
+
+  const displayName = selectedFile?.name ?? (existingFilePath ? existingFilePath.split('/').pop() : null)
+
+  return (
+    <div className="space-y-2">
+      <input
+        ref={inputRef}
+        type="file"
+        accept="application/pdf"
+        className="hidden"
+        onChange={handleChange}
+        aria-hidden
+      />
+      <div
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => e.key === 'Enter' && handleClick()}
+        onClick={handleClick}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={`flex min-h-[100px] cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-4 text-center transition-colors ${
+          isDragging
+            ? 'border-primary bg-primary/5'
+            : 'border-muted-foreground/25 hover:border-muted-foreground/50 hover:bg-muted/50'
+        } ${disabled ? 'pointer-events-none opacity-60' : ''}`}
+      >
+        {displayName ? (
+          <>
+            <span className="text-sm font-medium text-foreground">{displayName}</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={(e) => {
+                e.stopPropagation()
+                onFileSelect(null)
+                if (inputRef.current) inputRef.current.value = ''
+              }}
+            >
+              Entfernen
+            </Button>
+          </>
+        ) : (
+          <span className="text-muted-foreground text-sm">
+            PDF hier ablegen oder klicken zum Auswählen
+          </span>
+        )}
+      </div>
+    </div>
   )
 }
 
