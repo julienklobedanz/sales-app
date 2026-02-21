@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutGridIcon,
-  StarIcon,
+  FileTextIcon,
   SettingsIcon,
   ClockIcon,
   GalleryVerticalEnd,
@@ -14,13 +14,13 @@ import {
   LogOut,
   ShieldCheckIcon,
   BriefcaseIcon,
+  HandshakeIcon,
 } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -88,7 +88,7 @@ export function DashboardShell({
   const userEmail = user.email ?? ''
 
   return (
-    <SidebarProvider defaultOpen={true}>
+    <SidebarProvider defaultOpen={false}>
       <Sidebar collapsible="icon">
         <SidebarHeader>
           <SidebarMenu>
@@ -110,80 +110,64 @@ export function DashboardShell({
 
         <SidebarContent>
           <SidebarGroup>
-            <SidebarGroupLabel>Platform</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === '/dashboard'}
-                    tooltip="Explorer"
-                  >
-                    <Link href="/dashboard">
-                      <LayoutGridIcon />
-                      <span>Explorer</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                {profile.role === 'admin' && (
+                {isAdmin ? (
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       asChild
-                      isActive={pathname?.startsWith('/dashboard/requests')}
-                      tooltip="Anfragen"
+                      isActive={pathname === '/dashboard'}
+                      tooltip="Dashboard"
                     >
-                      <Link href="/dashboard/requests">
-                        <ClockIcon />
-                        <span>Anfragen</span>
+                      <Link href="/dashboard">
+                        <LayoutGridIcon />
+                        <span>Dashboard</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ) : (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname === '/dashboard'}
+                      tooltip="Referenzen"
+                    >
+                      <Link href="/dashboard">
+                        <FileTextIcon />
+                        <span>Referenzen</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
-                {profile.role === 'sales' && (
-                  <>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={pathname?.startsWith('/dashboard/favorites')}
-                        tooltip="Favoriten"
-                      >
-                        <Link href="/dashboard/favorites">
-                          <StarIcon />
-                          <span>Favoriten</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={pathname?.startsWith('/dashboard/requests')}
-                        tooltip="Meine Anfragen"
-                      >
-                        <Link href="/dashboard/requests">
-                          <ClockIcon />
-                          <span>Meine Anfragen</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  </>
-                )}
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname?.startsWith('/dashboard/requests')}
+                    tooltip={isAdmin ? 'Anfragen' : 'Meine Anfragen'}
+                  >
+                    <Link href="/dashboard/requests">
+                      <ClockIcon />
+                      <span>{isAdmin ? 'Anfragen' : 'Meine Anfragen'}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname?.startsWith('/dashboard/deals')}
+                    tooltip="Deals"
+                  >
+                    <Link href="/dashboard/deals">
+                      <HandshakeIcon />
+                      <span>Deals</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
 
-          {isAdmin && (
-            <SidebarGroup>
-              <SidebarGroupLabel>Admin</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {/* Admin-Menüpunkte z. B. Nutzerverwaltung, Einstellungen */}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          )}
-
           <SidebarGroup className="mt-auto">
-            <SidebarGroupLabel>Support & Einstellungen</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>

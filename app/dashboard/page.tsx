@@ -4,7 +4,9 @@ import { getDashboardData } from './actions'
 import { DashboardOverview } from './dashboard-overview'
 import type { Profile } from './dashboard-shell'
 
-export default async function DashboardPage() {
+type Props = { searchParams: Promise<{ favoriten?: string }> }
+
+export default async function DashboardPage({ searchParams }: Props) {
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
@@ -23,6 +25,8 @@ export default async function DashboardPage() {
     redirect('/onboarding')
   }
 
+  const params = await searchParams
+  const initialFavoritesOnly = params.favoriten === '1'
   const { references, totalCount } = await getDashboardData()
 
   return (
@@ -30,6 +34,7 @@ export default async function DashboardPage() {
       references={references}
       totalCount={totalCount}
       profile={profile as Profile}
+      initialFavoritesOnly={initialFavoritesOnly}
     />
   )
 }

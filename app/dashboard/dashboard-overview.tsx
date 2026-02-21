@@ -111,15 +111,18 @@ export function DashboardOverview({
   totalCount,
   profile,
   title = 'Dashboard',
+  initialFavoritesOnly = false,
 }: {
   references: ReferenceRow[]
   totalCount: number
   profile: Profile
   title?: string
+  initialFavoritesOnly?: boolean
 }) {
   const router = useRouter()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [favoritesOnly, setFavoritesOnly] = useState(initialFavoritesOnly)
   const [selectedRef, setSelectedRef] = useState<ReferenceRow | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [visibleColumns, setVisibleColumns] = useState({
@@ -140,11 +143,14 @@ export function DashboardOverview({
     }
   }
 
-  // Client-seitiges Filtering (Sales: draft nie anzeigen)
+  // Client-seitiges Filtering (Sales: draft nie anzeigen; optional nur Favoriten)
   const filteredReferences = useMemo(() => {
     let list = initialReferences
     if (profile.role === 'sales') {
       list = list.filter((r) => r.status !== 'draft')
+    }
+    if (favoritesOnly) {
+      list = list.filter((r) => r.is_favorited)
     }
     if (search.trim()) {
       const q = search.trim().toLowerCase()
@@ -158,7 +164,7 @@ export function DashboardOverview({
       list = list.filter((r) => r.status === statusFilter)
     }
     return list
-  }, [initialReferences, profile.role, search, statusFilter])
+  }, [initialReferences, profile.role, search, statusFilter, favoritesOnly])
 
   const openDetail = (ref: ReferenceRow) => {
     setSelectedRef(ref)
@@ -297,6 +303,16 @@ export function DashboardOverview({
                 <SelectItem value="restricted">Eingeschränkt</SelectItem>
               </SelectContent>
             </Select>
+
+            <Button
+              variant={favoritesOnly ? 'secondary' : 'outline'}
+              size="sm"
+              className="h-9 shrink-0"
+              onClick={() => setFavoritesOnly((v) => !v)}
+            >
+              <Star className={`mr-2 size-4 ${favoritesOnly ? 'fill-yellow-400 text-yellow-400' : ''}`} />
+              Nur Favoriten
+            </Button>
 
             {/* Spalten ein/ausblenden */}
             <DropdownMenu>
