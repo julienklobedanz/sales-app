@@ -1,7 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { MagicLinkForm } from './magic-link-form'
+import { LoginForm } from './login-form'
 
 export default function LoginPage() {
   return (
@@ -12,11 +10,11 @@ export default function LoginPage() {
             Anmelden
           </CardTitle>
           <CardDescription>
-            Gib deine E-Mail ein – wir schicken dir einen Magic Link zum Einloggen.
+            Mit E-Mail und Passwort anmelden.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <MagicLinkForm />
+          <LoginForm />
         </CardContent>
       </Card>
     </div>

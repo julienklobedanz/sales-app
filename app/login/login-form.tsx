@@ -3,21 +3,20 @@
 import { useActionState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { signInWithEmail, type SignInResult } from './actions'
+import { Label } from '@/components/ui/label'
+import { signInWithPassword, type SignInResult } from './actions'
 
 function formAction(_prev: SignInResult | null, formData: FormData) {
-  return signInWithEmail(formData)
+  return signInWithPassword(formData)
 }
 
-export function MagicLinkForm() {
+export function LoginForm() {
   const [state, formActionWithState, isPending] = useActionState(formAction, null)
 
   return (
     <form action={formActionWithState} className="space-y-4">
       <div className="space-y-2">
-        <label htmlFor="email" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-          E-Mail
-        </label>
+        <Label htmlFor="email">E-Mail</Label>
         <Input
           id="email"
           name="email"
@@ -29,18 +28,26 @@ export function MagicLinkForm() {
           className="w-full"
         />
       </div>
+      <div className="space-y-2">
+        <Label htmlFor="password">Passwort</Label>
+        <Input
+          id="password"
+          name="password"
+          type="password"
+          placeholder="••••••••"
+          required
+          disabled={isPending}
+          autoComplete="current-password"
+          className="w-full"
+        />
+      </div>
       {state?.error && (
         <p className="text-sm text-destructive" role="alert">
           {state.error}
         </p>
       )}
-      {state?.success && (
-        <p className="text-sm text-green-600 dark:text-green-400" role="status">
-          Magic Link gesendet! Prüfe deine E-Mails und klicke den Link.
-        </p>
-      )}
       <Button type="submit" className="w-full" size="lg" disabled={isPending}>
-        {isPending ? 'Wird gesendet …' : 'Magic Link senden'}
+        {isPending ? 'Wird angemeldet …' : 'Anmelden'}
       </Button>
     </form>
   )

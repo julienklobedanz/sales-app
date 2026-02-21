@@ -1,30 +1,28 @@
 'use server'
 
+import { redirect } from 'next/navigation'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
 export type SignInResult = { error?: string; success?: boolean }
 
-export async function signInWithEmail(formData: FormData): Promise<SignInResult> {
+export async function signInWithPassword(
+  formData: FormData
+): Promise<SignInResult> {
   const email = formData.get('email')?.toString()?.trim()
+  const password = formData.get('password')?.toString()
+
   if (!email) return { error: 'Bitte E-Mail-Adresse eingeben.' }
-
-  // Origin säubern (Slash am Ende entfernen)
-  let origin = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').trim().replace(/\/$/, '')
-
-  if (!origin.startsWith('http')) {
-    origin = `https://${origin}`
-  }
+  if (!password) return { error: 'Bitte Passwort eingeben.' }
 
   const supabase = await createServerSupabaseClient()
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: {
-      // Sicherer Pfad ohne Risiko von doppelten Slashes
-      emailRedirectTo: `${origin}/auth/callback`,
-    },
-  })
+  const { error } = await supabase.auth.signInWithPassword({ email, password })
 
-  if (error) return { error: error.message }
+  if (error) {
+    if (error.message.includes('Invalid login credentials')) {
+      return { error: 'E-Mail oder Passwort falsch.' }
+    }
+    return { error: error.message }
+  }
 
-  return { success: true }
+  redirect('/dashboard')
 }
