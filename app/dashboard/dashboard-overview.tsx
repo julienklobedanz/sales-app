@@ -320,29 +320,25 @@ export function DashboardOverview({
 
       {/* 3. Toolbar & Tabelle */}
       <div className="space-y-4">
-        {/* Toolbar: Suche (breit), Filter, Button (rechts) */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          {/* Linke Seite: Suche (Breiter) & Filter */}
-          <div className="flex flex-1 items-center gap-2">
-            <div className="relative max-w-lg flex-1">
-              <SearchIcon className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Referenzen suchen..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="h-9 w-full pl-9"
-              />
-            </div>
+        {/* Toolbar: Suche füllt Platz, daneben Status, Favoriten, Spalten (und ggf. Button) */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-3">
+          {/* Suche nimmt restlichen Platz; Filter/Spalten direkt nebeneinander */}
+          <div className="relative flex-1 min-w-0">
+            <SearchIcon className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Referenzen suchen..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-9 w-full pl-9"
+            />
+          </div>
 
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="h-9 w-[180px] shrink-0">
-                <div className="flex items-center gap-2">
-                  <SlidersHorizontal className="size-3.5" />
-                  <SelectValue placeholder="Alle Status" />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Alle Status</SelectItem>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="h-9 w-[140px] shrink-0">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alle Status</SelectItem>
                 <SelectItem value="draft">Entwurf</SelectItem>
                 <SelectItem value="pending">In Prüfung</SelectItem>
                 <SelectItem value="external">Extern frei</SelectItem>
@@ -352,24 +348,23 @@ export function DashboardOverview({
               </SelectContent>
             </Select>
 
-            <Button
-              variant={favoritesOnly ? 'secondary' : 'outline'}
-              size="sm"
-              className="h-9 shrink-0"
-              onClick={() => setFavoritesOnly((v) => !v)}
-            >
-              <Star className={`mr-2 size-4 ${favoritesOnly ? 'fill-yellow-400 text-yellow-400' : ''}`} />
-              Nur Favoriten
-            </Button>
+          <Button
+            variant={favoritesOnly ? 'secondary' : 'outline'}
+            size="sm"
+            className="h-9 shrink-0"
+            onClick={() => setFavoritesOnly((v) => !v)}
+          >
+            <Star className={`mr-2 size-4 ${favoritesOnly ? 'fill-yellow-400 text-yellow-400' : ''}`} />
+            Nur Favoriten
+          </Button>
 
-            {/* Spalten ein/ausblenden */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="ml-auto hidden h-9 lg:flex">
-                  <SlidersHorizontal className="mr-2 h-4 w-4" />
-                  Spalten
-                </Button>
-              </DropdownMenuTrigger>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-9 shrink-0 hidden lg:flex">
+                <SlidersHorizontal className="mr-2 h-4 w-4" />
+                Spalten
+              </Button>
+            </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-[220px]">
                 <DropdownMenuLabel>Sichtbarkeit</DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -400,11 +395,10 @@ export function DashboardOverview({
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
-          </div>
 
-          {/* Nur Admins sehen den "Erstellen"-Button; Sales sieht hier nichts */}
+          {/* Nur Admins: Erstellen-Button rechts */}
           {profile.role === 'admin' && (
-            <Link href="/dashboard/new">
+            <Link href="/dashboard/new" className="shrink-0">
               <Button className="w-full sm:w-auto">
                 <PlusCircleIcon className="mr-2 size-4" />
                 Referenz erstellen
