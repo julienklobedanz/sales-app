@@ -1,3 +1,4 @@
+import { cookies } from 'next/headers'
 import {
   Card,
   CardContent,
@@ -20,7 +21,10 @@ type Props = { searchParams: Promise<{ invite?: string }> }
 
 export default async function OnboardingPage({ searchParams }: Props) {
   const params = await searchParams
-  const inviteToken = params.invite?.trim() || null
+  let inviteToken = params.invite?.trim() || null
+  if (!inviteToken) {
+    inviteToken = (await cookies()).get('invite_token')?.value?.trim() || null
+  }
 
   let inviteOrganizationName: string | null = null
   if (inviteToken) {
