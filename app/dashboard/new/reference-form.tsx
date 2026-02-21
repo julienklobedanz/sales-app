@@ -341,7 +341,10 @@ export function ReferenceForm({
           />
           <Select
             value={projectStatus || '__none__'}
-            onValueChange={setProjectStatus}
+            onValueChange={(val) => {
+              setProjectStatus(val)
+              if (val === 'active' || val === '__none__') setProjectEnd('')
+            }}
             disabled={submitting}
           >
             <SelectTrigger className="w-full">
@@ -388,15 +391,30 @@ export function ReferenceForm({
               <span className="text-destructive ml-1">*</span>
             )}
           </Label>
-          <Input
-            id="project_end"
-            name="project_end"
-            type="date"
-            disabled={submitting}
-            value={projectEnd}
-            onChange={(e) => setProjectEnd(e.target.value)}
-            required={projectStatus === 'completed'}
-          />
+          <div className="flex gap-2">
+            <Input
+              id="project_end"
+              name="project_end"
+              type="date"
+              disabled={submitting}
+              value={projectEnd}
+              onChange={(e) => setProjectEnd(e.target.value)}
+              required={projectStatus === 'completed'}
+              className="flex-1"
+            />
+            {projectStatus !== 'completed' && projectEnd && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-9 shrink-0"
+                disabled={submitting}
+                onClick={() => setProjectEnd('')}
+              >
+                Leeren
+              </Button>
+            )}
+          </div>
           <p className="text-muted-foreground text-xs">
             {projectStatus === 'completed'
               ? 'Bei abgeschlossenen Projekten erforderlich.'
