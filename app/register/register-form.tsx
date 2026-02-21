@@ -11,11 +11,12 @@ function formAction(_prev: SignUpResult | null, formData: FormData) {
   return signUp(formData)
 }
 
-export function RegisterForm() {
+export function RegisterForm({ inviteToken = null }: { inviteToken?: string | null }) {
   const [state, formActionWithState, isPending] = useActionState(formAction, null)
 
   return (
     <form action={formActionWithState} className="space-y-4">
+      {inviteToken ? <input type="hidden" name="invite_token" value={inviteToken} /> : null}
       <div className="space-y-2">
         <Label htmlFor="email">E-Mail</Label>
         <Input

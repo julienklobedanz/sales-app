@@ -10,11 +10,12 @@ function formAction(_prev: SignInResult | null, formData: FormData) {
   return signInWithPassword(formData)
 }
 
-export function LoginForm() {
+export function LoginForm({ inviteToken = null }: { inviteToken?: string | null }) {
   const [state, formActionWithState, isPending] = useActionState(formAction, null)
 
   return (
     <form action={formActionWithState} className="space-y-4">
+      {inviteToken ? <input type="hidden" name="invite_token" value={inviteToken} /> : null}
       <div className="space-y-2">
         <Label htmlFor="email">E-Mail</Label>
         <Input

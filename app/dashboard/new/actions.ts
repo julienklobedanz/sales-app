@@ -41,6 +41,22 @@ export async function createReference(
 
   const supabase = await createServerSupabaseClient()
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .single()
+
+  const organizationId = profile?.organization_id ?? null
+  if (!organizationId) {
+    return { success: false, error: 'Dein Profil ist keiner Organisation zugeordnet. Bitte Einstellungen prüfen.' }
+  }
+
   let resolvedCompanyId: string
 
   if (companyId && companyId !== '__new__') {
@@ -62,7 +78,11 @@ export async function createReference(
 
     const { data: newCompany, error: insertError } = await supabase
       .from('companies')
-      .insert({ name: nameToUse, industry: industry ?? undefined })
+      .insert({
+        name: nameToUse,
+        industry: industry ?? undefined,
+        organization_id: organizationId,
+      })
       .select('id')
       .single()
 
@@ -125,6 +145,22 @@ export async function createReference(
 export async function createContact(formData: FormData) {
   const supabase = await createServerSupabaseClient()
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .single()
+
+  const organizationId = profile?.organization_id ?? null
+  if (!organizationId) {
+    return { success: false, error: 'Dein Profil ist keiner Organisation zugeordnet.' }
+  }
+
   const firstName = formData.get('firstName')?.toString()?.trim()
   const lastName = formData.get('lastName')?.toString()?.trim()
   const email = formData.get('email')?.toString()?.trim()
@@ -139,6 +175,7 @@ export async function createContact(formData: FormData) {
       first_name: firstName,
       last_name: lastName,
       email,
+      organization_id: organizationId,
     })
     .select()
     .single()

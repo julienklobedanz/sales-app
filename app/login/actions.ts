@@ -24,5 +24,9 @@ export async function signInWithPassword(
     return { error: error.message }
   }
 
+  const inviteToken = formData.get('invite_token')?.toString()?.trim()
+  if (inviteToken) {
+    redirect(`/onboarding?invite=${encodeURIComponent(inviteToken)}`)
+  }
   redirect('/dashboard')
 }

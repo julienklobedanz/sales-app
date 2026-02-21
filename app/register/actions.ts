@@ -26,8 +26,12 @@ export async function signUp(formData: FormData): Promise<SignUpResult> {
   }
 
   // Mit E-Mail-Bestätigung: oft keine Session bis Bestätigung → Erfolg anzeigen
-  // Ohne Bestätigung: Session wird gesetzt → direkt zum Dashboard
+  // Ohne Bestätigung: Session wird gesetzt → Onboarding (ggf. mit Einladung) oder Dashboard
   if (data.session) {
+    const inviteToken = formData.get('invite_token')?.toString()?.trim()
+    if (inviteToken) {
+      redirect(`/onboarding?invite=${encodeURIComponent(inviteToken)}`)
+    }
     redirect('/dashboard')
   }
 

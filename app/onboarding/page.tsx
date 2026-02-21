@@ -14,8 +14,28 @@ import {
   BriefcaseIcon,
   ShieldCheckIcon,
 } from 'lucide-react'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 
-export default function OnboardingPage() {
+type Props = { searchParams: Promise<{ invite?: string }> }
+
+export default async function OnboardingPage({ searchParams }: Props) {
+  const params = await searchParams
+  const inviteToken = params.invite?.trim() || null
+
+  let inviteOrganizationName: string | null = null
+  if (inviteToken) {
+    const supabase = await createServerSupabaseClient()
+    const { data } = await supabase.rpc('get_invite_by_token', {
+      invite_token: inviteToken,
+    })
+    const parsed = data as { organization_name?: string } | null
+    if (parsed?.organization_name) {
+      inviteOrganizationName = parsed.organization_name
+    }
+  }
+
+  const isInvite = Boolean(inviteToken && inviteOrganizationName)
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
       <Card className="w-full max-w-lg">
@@ -23,14 +43,20 @@ export default function OnboardingPage() {
           <div className="bg-primary/10 mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full">
             <BriefcaseIcon className="text-primary h-6 w-6" />
           </div>
-          <CardTitle className="text-2xl">Willkommen bei Refstack</CardTitle>
+          <CardTitle className="text-2xl">
+            {isInvite ? 'Team beitreten' : 'Willkommen bei Refstack'}
+          </CardTitle>
           <CardDescription>
-            Bitte vervollständige dein Profil, damit wir die Ansicht für dich
-            anpassen können.
+            {isInvite
+              ? `Du trittst „${inviteOrganizationName}“ bei. Vervollständige dein Profil.`
+              : 'Bitte vervollständige dein Profil, damit wir die Ansicht für dich anpassen können.'}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form action={completeOnboarding} className="space-y-6">
+            {inviteToken ? (
+              <input type="hidden" name="invite_token" value={inviteToken} />
+            ) : null}
             <div className="space-y-2">
               <Label htmlFor="full_name">Dein vollständiger Name</Label>
               <Input
@@ -40,6 +66,20 @@ export default function OnboardingPage() {
                 required
               />
             </div>
+
+            {!isInvite && (
+            <div className="space-y-2">
+              <Label htmlFor="organization_name">Firmenname (deine Organisation)</Label>
+              <Input
+                id="organization_name"
+                name="organization_name"
+                placeholder="Mein Unternehmen"
+              />
+              <p className="text-muted-foreground text-xs">
+                Alle Daten (Referenzen, Kontakte) werden dieser Firma zugeordnet. Teammitglieder derselben Firma sehen dieselben Daten.
+              </p>
+            </div>
+            )}
 
             <div className="space-y-2">
               <Label>Deine Rolle im Unternehmen</Label>

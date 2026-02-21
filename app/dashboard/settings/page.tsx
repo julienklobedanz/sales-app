@@ -15,6 +15,7 @@ import {
 import { User, Shield, Save } from 'lucide-react'
 import { updateProfile } from './actions'
 import { SettingsForm } from './settings-form'
+import { InviteCard } from './invite-card'
 
 export default async function SettingsPage() {
   const supabase = await createServerSupabaseClient()
@@ -45,6 +46,7 @@ export default async function SettingsPage() {
           fullName={profile?.full_name ?? ''}
           role={profile?.role ?? 'sales'}
         />
+        <InviteCard />
       </div>
     </div>
   )

@@ -46,6 +46,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Einladungstoken in Cookie legen, damit es nach E-Mail-Bestätigung im Onboarding verfügbar ist
+  const invite = request.nextUrl.searchParams.get('invite')
+  if (invite && (request.nextUrl.pathname === '/register' || request.nextUrl.pathname === '/login')) {
+    supabaseResponse.cookies.set('invite_token', invite, {
+      path: '/',
+      maxAge: 86400, // 24 h
+      httpOnly: true,
+      sameSite: 'lax',
+    })
+  }
+
   return supabaseResponse
 }
 
