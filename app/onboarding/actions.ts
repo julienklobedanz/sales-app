@@ -47,19 +47,17 @@ export async function completeOnboarding(formData: FormData) {
     organizationId = existingProfile?.organization_id ?? null
   }
 
-  // Immer noch keine Organisation → neue anlegen (neuer Nutzer ohne Einladung)
+  // Immer noch keine Organisation → neue anlegen (per RPC, umgeht RLS beim ersten Onboarding)
   if (!organizationId) {
-    const { data: newOrg, error: orgError } = await supabase
-      .from('organizations')
-      .insert({ name: organizationName })
-      .select('id')
-      .single()
+    const { data: newOrgId, error: orgError } = await supabase.rpc('create_organization', {
+      org_name: organizationName,
+    })
 
-    if (orgError || !newOrg?.id) {
+    if (orgError || !newOrgId) {
       console.error(orgError)
       throw new Error('Fehler beim Anlegen der Organisation')
     }
-    organizationId = newOrg.id
+    organizationId = newOrgId as string
   }
 
   const { error } = await supabase.from('profiles').upsert({
