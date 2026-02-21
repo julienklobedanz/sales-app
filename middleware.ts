@@ -31,9 +31,10 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   // Auth-Protection: Nur mit gültiger Session (z. B. /dashboard), sonst Redirect zu /login.
-  // Öffentlich: /login, /auth (inkl. /auth/callback), /signup, /onboarding, /approval (No-Login-Freigabe)
+  // Öffentlich: /login, /register, /auth (inkl. /auth/callback), /signup, /onboarding, /approval (No-Login-Freigabe)
   const isAuthRoute =
     request.nextUrl.pathname.startsWith('/login') ||
+    request.nextUrl.pathname.startsWith('/register') ||
     request.nextUrl.pathname.startsWith('/auth') ||
     request.nextUrl.pathname.startsWith('/signup') ||
     request.nextUrl.pathname.startsWith('/onboarding') ||
