@@ -343,7 +343,7 @@ export function ReferenceForm({
             value={projectStatus || '__none__'}
             onValueChange={(val) => {
               setProjectStatus(val)
-              if (val === 'active' || val === '__none__') setProjectEnd('')
+              if (val === 'active') setProjectEnd('')
             }}
             disabled={submitting}
           >
@@ -395,15 +395,17 @@ export function ReferenceForm({
             id="project_end"
             name="project_end"
             type="date"
-            disabled={submitting || projectStatus !== 'completed'}
-            value={projectStatus === 'completed' ? projectEnd : ''}
+            disabled={submitting || projectStatus === 'active'}
+            value={projectStatus === 'active' ? '' : projectEnd}
             onChange={(e) => setProjectEnd(e.target.value)}
             required={projectStatus === 'completed'}
           />
           <p className="text-muted-foreground text-xs">
             {projectStatus === 'completed'
               ? 'Bei abgeschlossenen Projekten erforderlich.'
-              : 'Bei aktivem Projekt nicht relevant (Feld ausgegraut).'}
+              : projectStatus === 'active'
+                ? 'Bei aktivem Projekt nicht relevant.'
+                : 'Optional, bei aktivem Projekt leer lassen.'}
           </p>
         </div>
       </div>
