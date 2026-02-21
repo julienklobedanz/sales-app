@@ -1,7 +1,6 @@
 'use client'
 
 import { useActionState } from 'react'
-import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -23,11 +22,11 @@ export function RegisterForm({ inviteToken = null }: { inviteToken?: string | nu
           id="email"
           name="email"
           type="email"
-          placeholder="du@beispiel.de"
+          placeholder="name@beispiel.de"
           required
           disabled={isPending}
           autoComplete="email"
-          className="w-full"
+          className="h-10"
         />
       </div>
       <div className="space-y-2">
@@ -41,7 +40,7 @@ export function RegisterForm({ inviteToken = null }: { inviteToken?: string | nu
           minLength={6}
           disabled={isPending}
           autoComplete="new-password"
-          className="w-full"
+          className="h-10"
         />
       </div>
       {state?.error && (
@@ -54,7 +53,7 @@ export function RegisterForm({ inviteToken = null }: { inviteToken?: string | nu
           Konto erstellt. Prüfe deine E-Mails und bestätige den Link – danach kannst du dich anmelden.
         </p>
       )}
-      <Button type="submit" className="w-full" size="lg" disabled={isPending}>
+      <Button type="submit" className="w-full h-10" disabled={isPending}>
         {isPending ? 'Wird erstellt …' : 'Konto erstellen'}
       </Button>
     </form>

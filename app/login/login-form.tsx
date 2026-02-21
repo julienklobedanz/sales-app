@@ -22,11 +22,11 @@ export function LoginForm({ inviteToken = null }: { inviteToken?: string | null 
           id="email"
           name="email"
           type="email"
-          placeholder="du@beispiel.de"
+          placeholder="name@beispiel.de"
           required
           disabled={isPending}
           autoComplete="email"
-          className="w-full"
+          className="h-10"
         />
       </div>
       <div className="space-y-2">
@@ -39,7 +39,7 @@ export function LoginForm({ inviteToken = null }: { inviteToken?: string | null 
           required
           disabled={isPending}
           autoComplete="current-password"
-          className="w-full"
+          className="h-10"
         />
       </div>
       {state?.error && (
@@ -47,7 +47,7 @@ export function LoginForm({ inviteToken = null }: { inviteToken?: string | null 
           {state.error}
         </p>
       )}
-      <Button type="submit" className="w-full" size="lg" disabled={isPending}>
+      <Button type="submit" className="w-full h-10" disabled={isPending}>
         {isPending ? 'Wird angemeldet …' : 'Anmelden'}
       </Button>
     </form>
