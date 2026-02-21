@@ -42,6 +42,9 @@ export async function createReference(
   if (!title) {
     return { success: false, error: 'Titel ist erforderlich.' }
   }
+  if (project_status === 'completed' && !project_end) {
+    return { success: false, error: 'Bei abgeschlossenem Projekt ist das Projektende erforderlich.' }
+  }
 
   const status = REFERENCE_STATUSES.includes(statusRaw as (typeof REFERENCE_STATUSES)[number])
     ? (statusRaw as (typeof REFERENCE_STATUSES)[number])

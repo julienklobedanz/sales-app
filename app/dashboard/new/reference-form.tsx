@@ -140,6 +140,10 @@ export function ReferenceForm({
 
   async function handleCreateSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (projectStatus === 'completed' && !projectEnd.trim()) {
+      toast.error('Bei abgeschlossenem Projekt ist das Projektende erforderlich.')
+      return
+    }
     setCreateSubmitting(true)
     const form = event.currentTarget
     const formData = buildFormData(form)
@@ -162,6 +166,10 @@ export function ReferenceForm({
   async function handleEditSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!initialData?.id) return
+    if (projectStatus === 'completed' && !projectEnd.trim()) {
+      toast.error('Bei abgeschlossenem Projekt ist das Projektende erforderlich.')
+      return
+    }
     setEditSubmitting(true)
     const formData = buildFormData(event.currentTarget)
     try {
@@ -374,7 +382,12 @@ export function ReferenceForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="project_end">Projektende</Label>
+          <Label htmlFor="project_end">
+            Projektende
+            {projectStatus === 'completed' && (
+              <span className="text-destructive ml-1">*</span>
+            )}
+          </Label>
           <Input
             id="project_end"
             name="project_end"
@@ -382,7 +395,13 @@ export function ReferenceForm({
             disabled={submitting}
             value={projectEnd}
             onChange={(e) => setProjectEnd(e.target.value)}
+            required={projectStatus === 'completed'}
           />
+          <p className="text-muted-foreground text-xs">
+            {projectStatus === 'completed'
+              ? 'Bei abgeschlossenen Projekten erforderlich.'
+              : 'Bei aktivem Projekt leer lassen.'}
+          </p>
         </div>
       </div>
 

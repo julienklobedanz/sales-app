@@ -269,6 +269,9 @@ export async function updateReference(id: string, formData: FormData) {
   if (!title) {
     throw new Error('Titel ist erforderlich.')
   }
+  if (project_status === 'completed' && !project_end) {
+    throw new Error('Bei abgeschlossenem Projekt ist das Projektende erforderlich.')
+  }
 
   const { data: ref, error: fetchError } = await supabase
     .from('references')
