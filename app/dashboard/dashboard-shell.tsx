@@ -6,7 +6,6 @@ import {
   LayoutGridIcon,
   FileTextIcon,
   SettingsIcon,
-  ClockIcon,
   GalleryVerticalEnd,
   LifeBuoy,
   Send,
@@ -15,6 +14,7 @@ import {
   ShieldCheckIcon,
   BriefcaseIcon,
   HandshakeIcon,
+  FilePen,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -113,56 +113,72 @@ export function DashboardShell({
             <SidebarGroupContent>
               <SidebarMenu>
                 {isAdmin ? (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={pathname === '/dashboard'}
-                      tooltip="Dashboard"
-                    >
-                      <Link href="/dashboard">
-                        <LayoutGridIcon />
-                        <span>Dashboard</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  <>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={pathname === '/dashboard'}
+                        tooltip="Dashboard"
+                      >
+                        <Link href="/dashboard">
+                          <LayoutGridIcon />
+                          <span>Dashboard</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={pathname?.startsWith('/dashboard/entwuerfe')}
+                        tooltip="Entwürfe"
+                      >
+                        <Link href="/dashboard/entwuerfe">
+                          <FilePen />
+                          <span>Entwürfe</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  </>
                 ) : (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={pathname === '/dashboard'}
-                      tooltip="Referenzen"
-                    >
-                      <Link href="/dashboard">
-                        <FileTextIcon />
-                        <span>Referenzen</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  <>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={pathname === '/dashboard'}
+                        tooltip="Dashboard"
+                      >
+                        <Link href="/dashboard">
+                          <LayoutGridIcon />
+                          <span>Dashboard</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={pathname === '/dashboard'}
+                        tooltip="Referenzen"
+                      >
+                        <Link href="/dashboard">
+                          <FileTextIcon />
+                          <span>Referenzen</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={pathname?.startsWith('/dashboard/deals')}
+                        tooltip="Deals"
+                      >
+                        <Link href="/dashboard/deals">
+                          <HandshakeIcon />
+                          <span>Deals</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  </>
                 )}
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname?.startsWith('/dashboard/requests')}
-                    tooltip={isAdmin ? 'Anfragen' : 'Meine Anfragen'}
-                  >
-                    <Link href="/dashboard/requests">
-                      <ClockIcon />
-                      <span>{isAdmin ? 'Anfragen' : 'Meine Anfragen'}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname?.startsWith('/dashboard/deals')}
-                    tooltip="Deals"
-                  >
-                    <Link href="/dashboard/deals">
-                      <HandshakeIcon />
-                      <span>Deals</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

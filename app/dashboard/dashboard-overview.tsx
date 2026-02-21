@@ -112,16 +112,18 @@ export function DashboardOverview({
   profile,
   title = 'Dashboard',
   initialFavoritesOnly = false,
+  initialStatusFilter = 'all',
 }: {
   references: ReferenceRow[]
   totalCount: number
   profile: Profile
   title?: string
   initialFavoritesOnly?: boolean
+  initialStatusFilter?: string
 }) {
   const router = useRouter()
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [statusFilter, setStatusFilter] = useState<string>(initialStatusFilter)
   const [favoritesOnly, setFavoritesOnly] = useState(initialFavoritesOnly)
   const [selectedRef, setSelectedRef] = useState<ReferenceRow | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
