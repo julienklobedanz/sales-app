@@ -16,7 +16,17 @@ export async function signUp(formData: FormData): Promise<SignUpResult> {
   }
 
   const supabase = await createServerSupabaseClient()
-  const { data, error } = await supabase.auth.signUp({ email, password })
+
+  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || '').trim().replace(/\/$/, '') || 'http://localhost:3000'
+  const redirectTo = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: `${redirectTo}/auth/callback`,
+    },
+  })
 
   if (error) {
     if (error.message.includes('already registered')) {
