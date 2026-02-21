@@ -391,34 +391,19 @@ export function ReferenceForm({
               <span className="text-destructive ml-1">*</span>
             )}
           </Label>
-          <div className="flex gap-2">
-            <Input
-              id="project_end"
-              name="project_end"
-              type="date"
-              disabled={submitting}
-              value={projectEnd}
-              onChange={(e) => setProjectEnd(e.target.value)}
-              required={projectStatus === 'completed'}
-              className="flex-1"
-            />
-            {projectStatus !== 'completed' && projectEnd && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-9 shrink-0"
-                disabled={submitting}
-                onClick={() => setProjectEnd('')}
-              >
-                Leeren
-              </Button>
-            )}
-          </div>
+          <Input
+            id="project_end"
+            name="project_end"
+            type="date"
+            disabled={submitting || projectStatus !== 'completed'}
+            value={projectStatus === 'completed' ? projectEnd : ''}
+            onChange={(e) => setProjectEnd(e.target.value)}
+            required={projectStatus === 'completed'}
+          />
           <p className="text-muted-foreground text-xs">
             {projectStatus === 'completed'
               ? 'Bei abgeschlossenen Projekten erforderlich.'
-              : 'Bei aktivem Projekt leer lassen.'}
+              : 'Bei aktivem Projekt nicht relevant (Feld ausgegraut).'}
           </p>
         </div>
       </div>
