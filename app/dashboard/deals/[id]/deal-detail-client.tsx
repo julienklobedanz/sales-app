@@ -30,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { DEAL_STATUS_LABELS, type DealWithReferences } from '../actions'
+import { DEAL_STATUS_LABELS, type DealWithReferences } from '../types'
 import { submitReferenceRequest, addReferenceToDeal, removeReferenceFromDeal } from '../actions'
 import { FileTextIcon, SendIcon, PlusCircleIcon, Trash2Icon } from 'lucide-react'
 import { toast } from 'sonner'

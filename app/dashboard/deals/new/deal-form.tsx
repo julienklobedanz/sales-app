@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { createDeal } from '../actions'
-import { DEAL_STATUS_LABELS, type DealStatus } from '../actions'
+import { DEAL_STATUS_LABELS, type DealStatus } from '../types'
 import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 

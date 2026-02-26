@@ -19,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { DEAL_STATUS_LABELS, type DealRow } from './actions'
+import { DEAL_STATUS_LABELS, type DealRow } from './types'
 import { HandshakeIcon, TimerIcon, PlusCircleIcon } from 'lucide-react'
 
 const REFERENCE_DAYS = 180
