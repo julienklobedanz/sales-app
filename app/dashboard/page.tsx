@@ -34,6 +34,7 @@ export default async function DashboardPage({ searchParams }: Props) {
       references={references}
       totalCount={totalCount}
       profile={profile as Profile}
+      title="Referenzen"
       initialFavoritesOnly={initialFavoritesOnly}
     />
   )

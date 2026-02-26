@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
-  LayoutGridIcon,
   FileTextIcon,
   SettingsIcon,
   GalleryVerticalEnd,
@@ -118,11 +117,11 @@ export function DashboardShell({
                       <SidebarMenuButton
                         asChild
                         isActive={pathname === '/dashboard'}
-                        tooltip="Dashboard"
+                        tooltip="Referenzen"
                       >
                         <Link href="/dashboard">
-                          <LayoutGridIcon />
-                          <span>Dashboard</span>
+                          <FileTextIcon />
+                          <span>Referenzen</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -138,21 +137,21 @@ export function DashboardShell({
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
-                  </>
-                ) : (
-                  <>
                     <SidebarMenuItem>
                       <SidebarMenuButton
                         asChild
-                        isActive={pathname === '/dashboard'}
-                        tooltip="Dashboard"
+                        isActive={pathname?.startsWith('/dashboard/deals')}
+                        tooltip="Deals"
                       >
-                        <Link href="/dashboard">
-                          <LayoutGridIcon />
-                          <span>Dashboard</span>
+                        <Link href="/dashboard/deals">
+                          <HandshakeIcon />
+                          <span>Deals</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
+                  </>
+                ) : (
+                  <>
                     <SidebarMenuItem>
                       <SidebarMenuButton
                         asChild

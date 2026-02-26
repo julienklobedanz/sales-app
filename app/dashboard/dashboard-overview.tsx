@@ -62,9 +62,6 @@ import {
   CopyIcon,
   FileTextIcon,
   SearchIcon,
-  BarChart3,
-  FileEdit,
-  Clock,
   CheckCircle,
   Send,
   Mail,
@@ -159,7 +156,7 @@ export function DashboardOverview({
   references: initialReferences,
   totalCount,
   profile,
-  title = 'Dashboard',
+  title = 'Referenzen',
   initialFavoritesOnly = false,
   initialStatusFilter = 'all',
 }: {
@@ -260,65 +257,14 @@ export function DashboardOverview({
     }
   }
 
-  // Quick Stats berechnen
-  const draftCount = initialReferences.filter((r) => r.status === 'draft').length
-  const pendingCount = initialReferences.filter((r) => r.status === 'pending').length
-  const approvedCount = initialReferences.filter((r) =>
-    ['external', 'internal', 'anonymous', 'restricted'].includes(r.status)
-  ).length
-
   return (
     <div className="flex flex-col space-y-8 pt-6">
-      {/* 1. Header Bereich (Nur Titel) */}
+      {/* 1. Header: Referenzen (Einstieg für beide Rollen) */}
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">{title}</h2>
       </div>
 
-      {/* 2. KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Gesamt</CardTitle>
-            <BarChart3 className="text-muted-foreground size-4" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalCount}</div>
-            <p className="text-xs text-muted-foreground">Referenzen in Datenbank</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Entwürfe</CardTitle>
-            <FileEdit className="text-muted-foreground size-4" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{draftCount}</div>
-            <p className="text-xs text-muted-foreground">In Bearbeitung</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ausstehend</CardTitle>
-            <Clock className="text-muted-foreground size-4" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{pendingCount}</div>
-            <p className="text-xs text-muted-foreground">Warten auf Freigabe</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Freigegeben</CardTitle>
-            <CheckCircle className="text-muted-foreground size-4" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{approvedCount}</div>
-            <p className="text-xs text-muted-foreground">Verfügbar für Sales</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* 3. Toolbar & Tabelle */}
+      {/* 2. Toolbar & Tabelle */}
       <div className="space-y-4">
         {/* Toolbar: Suche füllt Platz, daneben Status, Favoriten, Spalten (und ggf. Button) */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-3">
