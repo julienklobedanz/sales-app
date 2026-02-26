@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
   Card,
@@ -19,8 +20,18 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { DEAL_STATUS_LABELS, type DealRow } from './types'
-import { HandshakeIcon, TimerIcon, PlusCircleIcon } from 'lucide-react'
+import type { DealWithReferences } from './types'
+import type { RefOption } from './deal-detail-content'
+import { DealDetailContent } from './deal-detail-content'
+import { getDealWithReferences } from './actions'
+import { HandshakeIcon, TimerIcon, PlusCircleIcon, Loader2 } from 'lucide-react'
 
 const REFERENCE_DAYS = 180
 
@@ -67,9 +78,33 @@ function ProgressBar({ dateStr }: { dateStr: string }) {
   )
 }
 
-type Props = { deals: DealRow[]; expiring: DealRow[] }
+type Props = { deals: DealRow[]; expiring: DealRow[]; allReferences: RefOption[]; initialOpenDealId?: string | null }
 
-export function DealsClientContent({ deals, expiring }: Props) {
+export function DealsClientContent({ deals, expiring, allReferences, initialOpenDealId }: Props) {
+  const [selectedDealId, setSelectedDealId] = useState<string | null>(initialOpenDealId ?? null)
+  const [selectedDeal, setSelectedDeal] = useState<DealWithReferences | null>(null)
+  const [loadingDeal, setLoadingDeal] = useState(false)
+
+  useEffect(() => {
+    if (initialOpenDealId) setSelectedDealId(initialOpenDealId)
+  }, [initialOpenDealId])
+
+  useEffect(() => {
+    if (!selectedDealId) {
+      setSelectedDeal(null)
+      return
+    }
+    setLoadingDeal(true)
+    getDealWithReferences(selectedDealId)
+      .then((data) => {
+        setSelectedDeal(data ?? null)
+      })
+      .finally(() => setLoadingDeal(false))
+  }, [selectedDealId])
+
+  const openDealSheet = (id: string) => setSelectedDealId(id)
+  const closeDealSheet = () => setSelectedDealId(null)
+
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <Card>
@@ -123,11 +158,9 @@ export function DealsClientContent({ deals, expiring }: Props) {
                       {deal.expiry_date ? formatDate(deal.expiry_date) : '—'}
                     </TableCell>
                     <TableCell>
-                      <Link href={`/dashboard/deals/${deal.id}`}>
-                        <Button variant="ghost" size="sm">
-                          Öffnen
-                        </Button>
-                      </Link>
+                      <Button variant="ghost" size="sm" onClick={() => openDealSheet(deal.id)}>
+                        Öffnen
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -162,12 +195,13 @@ export function DealsClientContent({ deals, expiring }: Props) {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <Link
-                        href={`/dashboard/deals/${deal.id}`}
-                        className="font-medium hover:underline"
+                      <button
+                        type="button"
+                        onClick={() => openDealSheet(deal.id)}
+                        className="font-medium hover:underline text-left"
                       >
                         {deal.title}
-                      </Link>
+                      </button>
                       {deal.company_name && (
                         <p className="text-muted-foreground text-sm">{deal.company_name}</p>
                       )}
@@ -175,7 +209,12 @@ export function DealsClientContent({ deals, expiring }: Props) {
                     <ExpiryBadge dateStr={deal.expiry_date!} />
                   </div>
                   <ProgressBar dateStr={deal.expiry_date!} />
-                  <div className="flex items-center gap-2 pt-1">
+                  <div className="flex items-center justify-end pt-1">
+                    <Button variant="outline" size="sm" onClick={() => openDealSheet(deal.id)}>
+                      Öffnen
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-2 pt-0">
                     {deal.account_manager_id && (
                       <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
                         <Avatar className="h-5 w-5">
@@ -193,6 +232,26 @@ export function DealsClientContent({ deals, expiring }: Props) {
           )}
         </CardContent>
       </Card>
+
+      <Sheet open={!!selectedDealId} onOpenChange={(open) => !open && closeDealSheet()}>
+        <SheetContent className="flex flex-col gap-0 p-0 sm:max-w-sm md:w-[380px] md:max-w-[380px] overflow-y-auto">
+          <SheetHeader className="shrink-0 border-b px-4 py-4">
+            <SheetTitle>
+              {selectedDeal ? selectedDeal.title : 'Deal'}
+            </SheetTitle>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto px-4 py-4">
+            {loadingDeal && (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="size-8 animate-spin text-muted-foreground" />
+              </div>
+            )}
+            {!loadingDeal && selectedDeal && (
+              <DealDetailContent deal={selectedDeal} allReferences={allReferences} />
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }

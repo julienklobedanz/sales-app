@@ -30,12 +30,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { DEAL_STATUS_LABELS, type DealWithReferences } from '../types'
-import { submitReferenceRequest, addReferenceToDeal, removeReferenceFromDeal } from '../actions'
+import { DEAL_STATUS_LABELS, type DealWithReferences } from './types'
+import { submitReferenceRequest, addReferenceToDeal, removeReferenceFromDeal } from './actions'
 import { FileTextIcon, SendIcon, PlusCircleIcon, Trash2Icon } from 'lucide-react'
 import { toast } from 'sonner'
 
-type RefOption = { id: string; title: string; company_name: string }
+export type RefOption = { id: string; title: string; company_name: string }
 
 function formatDate(iso: string) {
   const d = new Date(iso)
@@ -45,7 +45,7 @@ function formatDate(iso: string) {
   return `${day}.${month}.${year}`
 }
 
-export function DealDetailClient({
+export function DealDetailContent({
   deal,
   allReferences,
 }: {
@@ -99,7 +99,7 @@ export function DealDetailClient({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">{deal.title}</h1>
+        <h2 className="text-xl font-semibold leading-tight tracking-tight">{deal.title}</h2>
         <div className="mt-1 flex flex-wrap items-center gap-2">
           <Badge variant="outline">{DEAL_STATUS_LABELS[deal.status]}</Badge>
           {deal.company_name && (
@@ -112,11 +112,11 @@ export function DealDetailClient({
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Deal-Infos</CardTitle>
-          <CardDescription>Unternehmen, Volumen, Verantwortliche.</CardDescription>
+        <CardHeader className="py-3">
+          <CardTitle className="text-sm">Deal-Infos</CardTitle>
+          <CardDescription className="text-xs">Unternehmen, Volumen, Verantwortliche.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-2 text-sm">
+        <CardContent className="space-y-2 py-0 text-sm">
           {deal.company_name && <p><strong>Unternehmen:</strong> {deal.company_name}</p>}
           {deal.industry && <p><strong>Branche:</strong> {deal.industry}</p>}
           {deal.volume && <p><strong>Volumen:</strong> {deal.volume}</p>}
@@ -127,11 +127,11 @@ export function DealDetailClient({
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Verknüpfte Referenzen</CardTitle>
-          <CardDescription>Mit diesem Deal verknüpfte Referenzen.</CardDescription>
+        <CardHeader className="py-3">
+          <CardTitle className="text-sm">Verknüpfte Referenzen</CardTitle>
+          <CardDescription className="text-xs">Mit diesem Deal verknüpfte Referenzen.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 py-0">
           {deal.references.length === 0 ? (
             <p className="text-muted-foreground text-sm">Noch keine Referenzen verknüpft.</p>
           ) : (
@@ -139,11 +139,11 @@ export function DealDetailClient({
               {deal.references.map((ref) => (
                 <li key={ref.id} className="flex items-center gap-2">
                   <FileTextIcon className="size-4 shrink-0 text-muted-foreground" />
-                  <Link href={`/dashboard/edit/${ref.id}`} className="min-w-0 flex-1 hover:underline truncate">
+                  <Link href={`/dashboard/edit/${ref.id}`} className="min-w-0 flex-1 hover:underline truncate text-sm">
                     {ref.title}
                   </Link>
-                  <span className="text-muted-foreground text-sm shrink-0">({ref.company_name})</span>
-                  <Button variant="ghost" size="sm" onClick={() => handleRemoveReference(ref.id)}>
+                  <span className="text-muted-foreground text-xs shrink-0">({ref.company_name})</span>
+                  <Button variant="ghost" size="sm" className="h-7" onClick={() => handleRemoveReference(ref.id)}>
                     <Trash2Icon className="size-4" />
                   </Button>
                 </li>
@@ -153,7 +153,7 @@ export function DealDetailClient({
           {availableRefs.length > 0 && (
             <div className="flex gap-2 pt-2">
               <Select value={linkRefId || '__none__'} onValueChange={(v) => setLinkRefId(v === '__none__' ? '' : v)}>
-                <SelectTrigger className="max-w-[280px]">
+                <SelectTrigger className="max-w-[240px] h-8 text-xs">
                   <SelectValue placeholder="Referenz verknüpfen …" />
                 </SelectTrigger>
                 <SelectContent>
@@ -163,7 +163,7 @@ export function DealDetailClient({
                   ))}
                 </SelectContent>
               </Select>
-              <Button size="sm" onClick={handleAddReference} disabled={!linkRefId || linking}>
+              <Button size="sm" className="h-8" onClick={handleAddReference} disabled={!linkRefId || linking}>
                 <PlusCircleIcon className="mr-1 size-4" />
                 Verknüpfen
               </Button>
@@ -173,16 +173,16 @@ export function DealDetailClient({
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Referenzbedarf melden</CardTitle>
-          <CardDescription>
-            Keine passende Referenz in der App? Melden Sie den Bedarf an Ihren Reference Manager – er erhält eine E-Mail mit Ihrer Nachricht und den Deal-Infos.
+        <CardHeader className="py-3">
+          <CardTitle className="text-sm">Referenzbedarf melden</CardTitle>
+          <CardDescription className="text-xs">
+            Keine passende Referenz? Nachricht an den Reference Manager senden.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="py-0">
           <Dialog open={modalOpen} onOpenChange={setModalOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button size="sm">
                 <SendIcon className="mr-2 size-4" />
                 Referenzbedarf melden
               </Button>
@@ -191,7 +191,7 @@ export function DealDetailClient({
               <DialogHeader>
                 <DialogTitle>Referenzbedarf melden</DialogTitle>
                 <DialogDescription>
-                  Beschreiben Sie kurz, welche Art von Referenz Sie für diesen Deal benötigen. Der Reference Manager erhält eine E-Mail mit Ihrer Nachricht und den folgenden Deal-Infos.
+                  Beschreiben Sie kurz, welche Art von Referenz Sie für diesen Deal benötigen.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
@@ -202,10 +202,10 @@ export function DealDetailClient({
                   {deal.volume && <p><strong>Volumen:</strong> {deal.volume}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="ref-request-message">Ihre Nachricht an den Reference Manager *</Label>
+                  <Label htmlFor="ref-request-message">Ihre Nachricht *</Label>
                   <Textarea
                     id="ref-request-message"
-                    placeholder="z. B. Wir brauchen eine Referenz aus dem Finanzsektor mit Cloud-Migration …"
+                    placeholder="z. B. Referenz aus dem Finanzsektor mit Cloud-Migration …"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     rows={4}

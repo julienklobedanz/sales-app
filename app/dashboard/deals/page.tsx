@@ -1,9 +1,11 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { getDeals, getExpiringDeals } from './actions'
+import { getDeals, getExpiringDeals, getReferencesForOrg } from './actions'
 import { DealsClientContent } from './deals-client'
 
-export default async function DealsPage() {
+type Props = { searchParams: Promise<{ open?: string }> }
+
+export default async function DealsPage({ searchParams }: Props) {
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
@@ -19,7 +21,12 @@ export default async function DealsPage() {
 
   if (!profile) redirect('/onboarding')
 
-  const [deals, expiring] = await Promise.all([getDeals(), getExpiringDeals()])
+  const params = await searchParams
+  const [deals, expiring, allReferences] = await Promise.all([
+    getDeals(),
+    getExpiringDeals(),
+    getReferencesForOrg(),
+  ])
 
   return (
     <div className="flex flex-col gap-8 pt-6">
@@ -30,7 +37,12 @@ export default async function DealsPage() {
         </p>
       </div>
 
-      <DealsClientContent deals={deals} expiring={expiring} />
+      <DealsClientContent
+        deals={deals}
+        expiring={expiring}
+        allReferences={allReferences}
+        initialOpenDealId={params.open ?? null}
+      />
     </div>
   )
 }

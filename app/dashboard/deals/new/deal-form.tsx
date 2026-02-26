@@ -56,7 +56,7 @@ export function DealForm({
     setPending(false)
     if (result.success && result.id) {
       toast.success('Deal angelegt.')
-      router.push(`/dashboard/deals/${result.id}`)
+      router.push(`/dashboard/deals?open=${result.id}`)
       router.refresh()
     } else {
       toast.error(result.error ?? 'Fehler beim Anlegen.')
