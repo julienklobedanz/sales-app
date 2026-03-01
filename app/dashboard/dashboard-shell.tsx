@@ -118,7 +118,7 @@ export function DashboardShell({
                         asChild
                         isActive={pathname === '/dashboard'}
                         tooltip="Referenzen"
-                        className="data-[active=true]:bg-muted data-[active=true]:text-foreground"
+                        className="data-[active=true]:bg-[var(--sidebar-accent-active)] data-[active=true]:text-sidebar-accent-foreground"
                       >
                         <Link href="/dashboard">
                           <FileTextIcon />
@@ -131,7 +131,7 @@ export function DashboardShell({
                         asChild
                         isActive={pathname?.startsWith('/dashboard/entwuerfe')}
                         tooltip="Entwürfe"
-                        className="data-[active=true]:bg-muted data-[active=true]:text-foreground"
+                        className="data-[active=true]:bg-[var(--sidebar-accent-active)] data-[active=true]:text-sidebar-accent-foreground"
                       >
                         <Link href="/dashboard/entwuerfe">
                           <FilePen />
@@ -144,7 +144,7 @@ export function DashboardShell({
                         asChild
                         isActive={pathname?.startsWith('/dashboard/deals')}
                         tooltip="Deals"
-                        className="data-[active=true]:bg-muted data-[active=true]:text-foreground"
+                        className="data-[active=true]:bg-[var(--sidebar-accent-active)] data-[active=true]:text-sidebar-accent-foreground"
                       >
                         <Link href="/dashboard/deals">
                           <HandshakeIcon />
@@ -160,7 +160,7 @@ export function DashboardShell({
                         asChild
                         isActive={pathname === '/dashboard'}
                         tooltip="Referenzen"
-                        className="data-[active=true]:bg-muted data-[active=true]:text-foreground"
+                        className="data-[active=true]:bg-[var(--sidebar-accent-active)] data-[active=true]:text-sidebar-accent-foreground"
                       >
                         <Link href="/dashboard">
                           <FileTextIcon />
@@ -173,7 +173,7 @@ export function DashboardShell({
                         asChild
                         isActive={pathname?.startsWith('/dashboard/deals')}
                         tooltip="Deals"
-                        className="data-[active=true]:bg-muted data-[active=true]:text-foreground"
+                        className="data-[active=true]:bg-[var(--sidebar-accent-active)] data-[active=true]:text-sidebar-accent-foreground"
                       >
                         <Link href="/dashboard/deals">
                           <HandshakeIcon />
