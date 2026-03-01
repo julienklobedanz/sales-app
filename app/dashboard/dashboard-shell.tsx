@@ -118,10 +118,10 @@ export function DashboardShell({
                         asChild
                         isActive={pathname === '/dashboard'}
                         tooltip="Referenzen"
-                        className="data-[active=true]:bg-sidebar-accent-active data-[active=true]:text-sidebar-accent-foreground"
+                        className="data-[active=true]:bg-muted data-[active=true]:text-foreground"
                       >
                         <Link href="/dashboard">
-                          <FileTextIcon className="size-6 shrink-0" />
+                          <FileTextIcon />
                           <span>Referenzen</span>
                         </Link>
                       </SidebarMenuButton>
@@ -131,10 +131,10 @@ export function DashboardShell({
                         asChild
                         isActive={pathname?.startsWith('/dashboard/entwuerfe')}
                         tooltip="Entwürfe"
-                        className="data-[active=true]:bg-sidebar-accent-active data-[active=true]:text-sidebar-accent-foreground"
+                        className="data-[active=true]:bg-muted data-[active=true]:text-foreground"
                       >
                         <Link href="/dashboard/entwuerfe">
-                          <FilePen className="size-6 shrink-0" />
+                          <FilePen />
                           <span>Entwürfe</span>
                         </Link>
                       </SidebarMenuButton>
@@ -144,10 +144,10 @@ export function DashboardShell({
                         asChild
                         isActive={pathname?.startsWith('/dashboard/deals')}
                         tooltip="Deals"
-                        className="data-[active=true]:bg-sidebar-accent-active data-[active=true]:text-sidebar-accent-foreground"
+                        className="data-[active=true]:bg-muted data-[active=true]:text-foreground"
                       >
                         <Link href="/dashboard/deals">
-                          <HandshakeIcon className="size-6 shrink-0" />
+                          <HandshakeIcon />
                           <span>Deals</span>
                         </Link>
                       </SidebarMenuButton>
@@ -160,10 +160,10 @@ export function DashboardShell({
                         asChild
                         isActive={pathname === '/dashboard'}
                         tooltip="Referenzen"
-                        className="data-[active=true]:bg-sidebar-accent-active data-[active=true]:text-sidebar-accent-foreground"
+                        className="data-[active=true]:bg-muted data-[active=true]:text-foreground"
                       >
                         <Link href="/dashboard">
-                          <FileTextIcon className="size-6 shrink-0" />
+                          <FileTextIcon />
                           <span>Referenzen</span>
                         </Link>
                       </SidebarMenuButton>
@@ -173,10 +173,10 @@ export function DashboardShell({
                         asChild
                         isActive={pathname?.startsWith('/dashboard/deals')}
                         tooltip="Deals"
-                        className="data-[active=true]:bg-sidebar-accent-active data-[active=true]:text-sidebar-accent-foreground"
+                        className="data-[active=true]:bg-muted data-[active=true]:text-foreground"
                       >
                         <Link href="/dashboard/deals">
-                          <HandshakeIcon className="size-6 shrink-0" />
+                          <HandshakeIcon />
                           <span>Deals</span>
                         </Link>
                       </SidebarMenuButton>
