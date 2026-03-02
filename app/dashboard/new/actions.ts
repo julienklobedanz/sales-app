@@ -23,6 +23,10 @@ const COUNTRY_MAP: Record<string, string> = {
   'united kingdom': 'Großbritannien', uk: 'Großbritannien', großbritannien: 'Großbritannien',
   'united states': 'USA', usa: 'USA', us: 'USA',
 }
+const COUNTRY_CODE_MAP: Record<string, string> = {
+  DE: 'Deutschland', AT: 'Österreich', CH: 'Schweiz', FR: 'Frankreich',
+  GB: 'Großbritannien', US: 'USA',
+}
 
 export type EnrichCompanyResult =
   | { success: true; company_id: string; company_name: string; website_url: string | null; industry: string | null; headquarters: string | null; country: string | null; employee_count: number | null; logo_url: string | null }
@@ -63,9 +67,13 @@ function mapBrandfetchIndustry(name: string | undefined): string | null {
   return INDUSTRY_DEFAULT
 }
 
-function mapBrandfetchCountry(name: string | undefined): string | null {
-  if (!name) return null
-  const key = name.trim().toLowerCase()
+function mapBrandfetchCountry(countryName: string | undefined, countryCode?: string | undefined): string | null {
+  if (countryCode) {
+    const mapped = COUNTRY_CODE_MAP[countryCode.trim().toUpperCase()]
+    if (mapped) return mapped
+  }
+  if (!countryName) return null
+  const key = countryName.trim().toLowerCase()
   return COUNTRY_MAP[key] ?? null
 }
 
@@ -169,7 +177,7 @@ async function fetchBrandfetchData(normalizedDomain: string): Promise<FetchEnric
     company?: {
       employees?: number | null
       industries?: { name?: string }[]
-      location?: { city?: string; country?: string; region?: string }
+      location?: { city?: string; country?: string; countryCode?: string; region?: string }
     }
     logos?: { formats?: { src?: string }[] }[]
   }
@@ -187,7 +195,7 @@ async function fetchBrandfetchData(normalizedDomain: string): Promise<FetchEnric
   const industry = mapBrandfetchIndustry(firstIndustry)
   const loc = data.company?.location
   const headquarters = [loc?.city, loc?.country].filter(Boolean).join(', ') || null
-  const country = mapBrandfetchCountry(loc?.country ?? undefined)
+  const country = mapBrandfetchCountry(loc?.country, loc?.countryCode)
   const logoUrl =
     data.logos?.[0]?.formats?.[0]?.src ?? data.logos?.find((l) => l.formats?.length)?.formats?.[0]?.src ?? null
 

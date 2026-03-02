@@ -128,6 +128,7 @@ export function ReferenceForm({
   const [companyId, setCompanyId] = useState('')
   const [industry, setIndustry] = useState(initialData?.industry ?? '')
   const [country, setCountry] = useState(initialData?.country ?? '')
+  const [headquarters, setHeadquarters] = useState('')
   const [website, setWebsite] = useState(initialData?.website ?? '')
   const [employeeCount, setEmployeeCount] = useState(
     initialData?.employee_count != null ? `${initialData.employee_count}` : ''
@@ -164,6 +165,7 @@ export function ReferenceForm({
   const [projectEnd, setProjectEnd] = useState(initialData?.project_end ?? '')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [enrichedLogoUrl, setEnrichedLogoUrl] = useState<string | null>(null)
   const [createSubmitting, setCreateSubmitting] = useState(false)
   const [newCompanyName, setNewCompanyName] = useState('')
   const [enrichLoading, setEnrichLoading] = useState(false)
@@ -192,7 +194,9 @@ export function ReferenceForm({
             setWebsite(result.website_url ?? '')
             setIndustry(result.industry ?? '')
             setCountry(result.country ?? '')
+            setHeadquarters(result.headquarters ?? '')
             setEmployeeCount(result.employee_count != null ? String(result.employee_count) : '')
+            setEnrichedLogoUrl(result.logo_url ?? null)
             setNewCompanyName('')
             toast.success('Unternehmensdaten wurden geladen.')
           } else {
@@ -221,7 +225,9 @@ export function ReferenceForm({
             setWebsite(result.website_url ?? '')
             setIndustry(result.industry ?? '')
             setCountry(result.country ?? '')
+            setHeadquarters(result.headquarters ?? '')
             setEmployeeCount(result.employee_count != null ? String(result.employee_count) : '')
+            setEnrichedLogoUrl(result.logo_url ?? null)
             toast.success('Unternehmensdaten wurden geladen.')
           } else {
             toast.error(result.error)
@@ -343,8 +349,12 @@ export function ReferenceForm({
           <Label htmlFor="logo">Logo (optional)</Label>
           <LogoDropZone
             selectedFile={logoFile}
-            onFileSelect={setLogoFile}
+            onFileSelect={(file) => {
+              setLogoFile(file)
+              if (file) setEnrichedLogoUrl(null)
+            }}
             disabled={submitting}
+            enrichedLogoUrl={enrichedLogoUrl}
           />
         </div>
       </div>
@@ -530,6 +540,9 @@ export function ReferenceForm({
               ))}
             </SelectContent>
           </Select>
+          {headquarters ? (
+            <p className="text-muted-foreground text-xs">Standort: {headquarters}</p>
+          ) : null}
         </div>
       </div>
 
@@ -870,10 +883,12 @@ function LogoDropZone({
   selectedFile,
   onFileSelect,
   disabled,
+  enrichedLogoUrl = null,
 }: {
   selectedFile: File | null
   onFileSelect: (file: File | null) => void
   disabled: boolean
+  enrichedLogoUrl?: string | null
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [isDragging, setIsDragging] = useState(false)
@@ -907,6 +922,8 @@ function LogoDropZone({
     }
   }
 
+  const showEnrichedLogo = !selectedFile && enrichedLogoUrl
+
   return (
     <div className="space-y-2">
       <input
@@ -926,7 +943,7 @@ function LogoDropZone({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={[
-          'flex aspect-square max-w-[120px] cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed text-center text-[11px] text-muted-foreground transition-colors',
+          'flex aspect-square max-w-[120px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-dashed text-center text-[11px] text-muted-foreground transition-colors',
           isDragging
             ? 'border-primary bg-primary/5'
             : 'border-muted-foreground/25 hover:border-muted-foreground/50 hover:bg-muted/50',
@@ -935,6 +952,12 @@ function LogoDropZone({
       >
         {selectedFile ? (
           <span className="px-1">{selectedFile.name}</span>
+        ) : showEnrichedLogo ? (
+          <img
+            src={enrichedLogoUrl}
+            alt="Firmenlogo"
+            className="h-full w-full object-contain p-1"
+          />
         ) : (
           <span>Logo hier ablegen oder klicken</span>
         )}
