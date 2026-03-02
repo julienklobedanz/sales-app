@@ -146,7 +146,15 @@ export function ReferenceForm({
   const [contactId, setContactId] = useState(
     initialData?.contact_id ? initialData.contact_id : '__none__'
   )
-  const [tags, setTags] = useState(initialData?.tags ?? '')
+  const [tags, setTags] = useState<string[]>(() =>
+    initialData?.tags
+      ? initialData.tags
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : []
+  )
+  const [tagInputValue, setTagInputValue] = useState('')
   const [projectStatus, setProjectStatus] = useState(
     initialData?.project_status ?? '__none__'
   )
@@ -171,6 +179,7 @@ export function ReferenceForm({
     if (selectedFile) {
       formData.set('file', selectedFile)
     }
+    formData.set('tags', tags.join(', '))
     return formData
   }
 
@@ -248,7 +257,7 @@ export function ReferenceForm({
           )}
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 sm:flex sm:flex-col sm:items-end">
           <Label htmlFor="logo">Logo (optional)</Label>
           <LogoDropZone
             selectedFile={logoFile}
@@ -298,15 +307,47 @@ export function ReferenceForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="tags">Tags</Label>
-        <Input
-          id="tags"
-          name="tags"
-          placeholder="z. B. Cloud, ERP, SAP"
-          disabled={submitting}
-          value={tags}
-          onChange={(e) => setTags(e.target.value)}
-        />
+        <Label htmlFor="tags-input">Tags</Label>
+        <input type="hidden" name="tags" value={tags.join(', ')} />
+        <div className="flex min-h-9 flex-wrap items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+          {tags.map((tag) => (
+            <span
+              key={tag}
+              className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium"
+            >
+              {tag}
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={() => setTags((prev) => prev.filter((t) => t !== tag))}
+                className="rounded-full hover:bg-muted-foreground/20 -mr-0.5 p-0.5"
+                aria-label={`Tag „${tag}" entfernen`}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+          <input
+            id="tags-input"
+            type="text"
+            placeholder={tags.length === 0 ? 'z. B. Cloud, ERP, SAP (Komma für neue Kapsel)' : 'Weiterer Tag…'}
+            disabled={submitting}
+            value={tagInputValue}
+            onChange={(e) => setTagInputValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === ',') {
+                e.preventDefault()
+                const value = tagInputValue.trim()
+                if (value) {
+                  setTags((prev) => [...prev, value])
+                  setTagInputValue('')
+                }
+              }
+            }}
+            className="min-w-[120px] flex-1 border-0 bg-transparent p-0 text-sm outline-none placeholder:text-muted-foreground"
+          />
+        </div>
+        <p className="text-muted-foreground text-xs">Eingabe mit Komma abschließen, um einen Tag als Kapsel zu übernehmen.</p>
       </div>
 
       <div className="space-y-2">
