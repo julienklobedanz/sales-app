@@ -173,7 +173,7 @@ export function DealsClientContent({ deals, expiring, allReferences, initialOpen
               <CardTitle>Auslaufende Deals</CardTitle>
             </div>
             <CardDescription>
-              Deals mit Ablaufdatum <12 Monaten – rechtzeitig informiert bleiben.
+              Deals mit Ablaufdatum &lt; 12 Monaten – rechtzeitig informiert bleiben.
             </CardDescription>
           </div>
           <Link href="/dashboard/deals/new">
