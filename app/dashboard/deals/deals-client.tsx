@@ -107,7 +107,7 @@ export function DealsClientContent({ deals, expiring, allReferences, initialOpen
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      <Card>
+      <Card className="flex min-h-[380px] flex-col">
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <div>
             <div className="flex items-center gap-2">
@@ -125,15 +125,10 @@ export function DealsClientContent({ deals, expiring, allReferences, initialOpen
             </Button>
           </Link>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-1">
           {deals.length === 0 ? (
             <div className="rounded-lg border border-dashed bg-muted/30 p-8 text-center text-muted-foreground">
               <p className="text-sm">Noch keine Deals angelegt.</p>
-              <Link href="/dashboard/deals/new">
-                <Button variant="outline" size="sm" className="mt-3">
-                  Deal anlegen
-                </Button>
-              </Link>
             </div>
           ) : (
             <Table>
@@ -170,17 +165,25 @@ export function DealsClientContent({ deals, expiring, allReferences, initialOpen
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <TimerIcon className="size-5 text-muted-foreground" />
-            <CardTitle>Auslaufende Deals</CardTitle>
+      <Card className="flex min-h-[380px] flex-col">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div>
+            <div className="flex items-center gap-2">
+              <TimerIcon className="size-5 text-muted-foreground" />
+              <CardTitle>Auslaufende Deals</CardTitle>
+            </div>
+            <CardDescription>
+              Deals mit Ablaufdatum in den nächsten 180 Tagen – rechtzeitig informiert bleiben.
+            </CardDescription>
           </div>
-          <CardDescription>
-            Deals mit Ablaufdatum in den nächsten 180 Tagen – rechtzeitig informiert bleiben.
-          </CardDescription>
+          <Link href="/dashboard/deals/new">
+            <Button size="sm">
+              <PlusCircleIcon className="mr-2 size-4" />
+              + Deal anlegen
+            </Button>
+          </Link>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-1">
           {expiring.length === 0 ? (
             <div className="rounded-lg border border-dashed bg-muted/30 p-8 text-center text-muted-foreground">
               <p className="text-sm">Keine auslaufenden Deals.</p>

@@ -481,14 +481,20 @@ export function DashboardOverview({
                             </Button>
                           </Link>
                         )}
-                      {search.trim() &&
-                        profile.role === 'sales' && (
-                          <Link href="/dashboard/deals">
+                      {profile.role === 'sales' && (
+                        <div className="flex flex-wrap items-center justify-center gap-2">
+                          <Link href="/dashboard/deals/new">
                             <Button className="mt-1">
-                              Lege deinen Deal an
+                              Lege deinen ersten Deal an
                             </Button>
                           </Link>
-                        )}
+                          <Link href="/dashboard/deals/new">
+                            <Button className="mt-1">
+                              Auslaufenden Deal hinzufügen
+                            </Button>
+                          </Link>
+                        </div>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

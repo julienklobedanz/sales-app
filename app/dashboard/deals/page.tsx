@@ -33,7 +33,7 @@ export default async function DealsPage({ searchParams }: Props) {
       <div>
         <h2 className="text-3xl font-bold tracking-tight">Deals</h2>
         <p className="text-muted-foreground mt-1">
-          Aktuelle Deals und auslaufende Deals – Bedarfe einsehen und Referenzen verknüpfen.
+          Sichere deine nächsten Abschlüsse: Teile deine aktuellen Deals mit deinen Kollegen, erhalte Aufmerksamkeit und behalte auslaufende Deals im Überblick.
         </p>
       </div>
 
