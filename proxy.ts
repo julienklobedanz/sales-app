@@ -2,7 +2,6 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function proxy(request: NextRequest) {
-  // 1. Create the base response once
   let supabaseResponse = NextResponse.next({
     request,
   })
@@ -16,7 +15,12 @@ export async function proxy(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          // 2. Optimized: Update the EXISTING response instead of recreating it
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          )
+          supabaseResponse = NextResponse.next({
+            request,
+          })
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           )
@@ -25,9 +29,11 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  // 3. Update session
+  // Session aktualisieren (getUser/getClaims) – wichtig für gültige Tokens
   const { data: { user } } = await supabase.auth.getUser()
 
+  // Auth-Protection: Nur mit gültiger Session (z. B. /dashboard), sonst Redirect zu /login.
+  // Öffentlich: /login, /register, /auth (inkl. /auth/callback), /signup, /onboarding, /approval (No-Login-Freigabe)
   const isAuthRoute =
     request.nextUrl.pathname.startsWith('/login') ||
     request.nextUrl.pathname.startsWith('/register') ||
@@ -42,11 +48,12 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Einladungstoken in Cookie legen, damit es nach E-Mail-Bestätigung im Onboarding verfügbar ist
   const invite = request.nextUrl.searchParams.get('invite')
   if (invite && (request.nextUrl.pathname === '/register' || request.nextUrl.pathname === '/login')) {
     supabaseResponse.cookies.set('invite_token', invite, {
       path: '/',
-      maxAge: 86400, 
+      maxAge: 86400, // 24 h
       httpOnly: true,
       sameSite: 'lax',
     })
@@ -58,8 +65,8 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Optimized matcher for Next.js 16 Proxy
+     * Alle Pfade außer statische Dateien; /login, /auth, /approval, /onboarding sind per isAuthRoute öffentlich.
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
