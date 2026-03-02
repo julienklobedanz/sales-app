@@ -63,6 +63,10 @@ import {
   MapPinIcon,
   ExternalLinkIcon,
   CalendarIcon,
+  TagIcon,
+  ActivityIcon,
+  TimerIcon,
+  HistoryIcon,
   UserIcon,
   MoreHorizontal,
   CopyIcon,
@@ -73,6 +77,7 @@ import {
   Mail,
   Star,
   XIcon,
+  FileDownIcon,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -706,6 +711,14 @@ export function DashboardOverview({
               <div className="flex-1 overflow-y-auto px-4 py-4">
                 {/* Abstand zwischen Abschnitten: space-y-8 | Abstand innerhalb Abschnitt: space-y-4 | Mehr Abstand oben vor Übersicht: pt-6 */}
                 <div className="space-y-8 pt-6">
+                  {/* Freigabeprozess */}
+                  <section className="space-y-4">
+                    <h3 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
+                      Freigabeprozess
+                    </h3>
+                    <div className="h-[120px] rounded-lg border bg-muted/10" />
+                  </section>
+
                   {/* Übersicht */}
                   <section className="space-y-4">
                     <h3 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
@@ -720,7 +733,7 @@ export function DashboardOverview({
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1 col-span-2">
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-                          Tags
+                          <TagIcon className="size-3" /> Tags
                         </span>
                         <div className="flex flex-wrap gap-1.5 pl-4">
                           {selectedRef.tags
@@ -759,7 +772,7 @@ export function DashboardOverview({
                       </div>
                       <div className="space-y-1">
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-                          Projektstatus
+                          <ActivityIcon className="size-3" /> Projektstatus
                         </span>
                         <p className="text-foreground pl-4 text-xs font-medium">
                           {selectedRef.project_status
@@ -769,7 +782,7 @@ export function DashboardOverview({
                       </div>
                       <div className="space-y-1">
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-                          Dauer
+                          <TimerIcon className="size-3" /> Dauer
                         </span>
                         <p className="text-foreground pl-4 text-xs font-medium">
                           {selectedRef.duration_months != null
@@ -806,7 +819,7 @@ export function DashboardOverview({
                       </div>
                       <div className="space-y-1">
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-                          Letzte Änderung
+                          <HistoryIcon className="size-3" /> Letzte Änderung
                         </span>
                         <p className="text-foreground pl-4 text-xs font-medium">
                           {selectedRef.updated_at ? formatDate(selectedRef.updated_at) : '—'}
@@ -882,6 +895,33 @@ export function DashboardOverview({
               {/* Fixierter Footer (rollenabhängig) */}
               <SheetFooter className="z-10 flex-col gap-2 border-t bg-muted/20 px-4 py-3 sm:flex-row sm:justify-between">
                 <div className="flex w-full gap-2 sm:w-auto">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="shrink-0"
+                    asChild
+                    disabled={!selectedRef.file_path}
+                  >
+                    <a
+                      href={
+                        selectedRef.file_path
+                          ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/references/${selectedRef.file_path}`
+                          : '#'
+                      }
+                      download
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => {
+                        if (!selectedRef.file_path) {
+                          e.preventDefault()
+                          toast.error('Kein PDF vorhanden.')
+                        }
+                      }}
+                    >
+                      <FileDownIcon className="mr-2 size-4" />
+                      Download
+                    </a>
+                  </Button>
                   {profile.role === 'admin' && (
                     <>
                       <Button

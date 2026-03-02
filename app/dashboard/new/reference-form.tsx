@@ -47,13 +47,29 @@ const COUNTRIES = [
 ]
 
 const STATUS_OPTIONS = [
-  { value: 'draft', label: 'Entwurf (Privat)' },
-  { value: 'pending', label: 'Zur Prüfung einreichen' },
-  { value: 'external', label: 'Extern Freigegeben (Öffentlich)' },
-  { value: 'internal', label: 'Intern Freigegeben (Nur Lesezugriff)' },
-  { value: 'anonymous', label: 'Anonymisiert (Ohne Firmenname)' },
-  { value: 'restricted', label: 'Eingeschränkt (Einzelfreigabe nötig)' },
+  { value: 'draft', label: 'Entwurf' },
+  { value: 'pending', label: 'In Prüfung' },
+  { value: 'anonymous', label: 'Anonymisiert' },
+  { value: 'restricted', label: 'Beschränkt' },
+  { value: 'external', label: 'Extern' },
+  { value: 'internal', label: 'Intern' },
 ] as const
+
+const STATUS_HELP_TEXT: Record<
+  ReferenceFormInitialData['status'],
+  string
+> = {
+  draft: 'Nur intern sichtbar, nicht für Sales; Referenz ist noch in Bearbeitung.',
+  pending:
+    'Für Sales sichtbar; kann individuell beim Account Owner zur Freigabe angefragt werden.',
+  anonymous:
+    'Nutzung ohne Kundennamen/Kontaktdaten (Referenz darf genannt werden, aber anonymisiert).',
+  restricted:
+    'Nutzung nur nach Einzelfreigabe durch den Account Owner beim Kunden (Freigabeprozess per Anfrage).',
+  external:
+    'Vollständig freigegeben und für alle Bids nutzbar; Ansprechpartner steht für Referenzcalls bereit.',
+  internal: 'Nur intern nutzbar, nicht extern teilbar.',
+}
 
 const PROJECT_STATUS_OPTIONS = [
   { value: '__none__', label: '— Keine Angabe' },
@@ -107,7 +123,13 @@ export function ReferenceForm({
   const [companyId, setCompanyId] = useState('')
   const [industry, setIndustry] = useState(initialData?.industry ?? '')
   const [country, setCountry] = useState(initialData?.country ?? '')
-  const [status, setStatus] = useState(initialData?.status ?? 'draft')
+  const [status, setStatus] = useState<ReferenceFormInitialData['status']>(
+    initialData?.status ?? 'draft'
+  )
+  const [ndaDeal, setNdaDeal] = useState(false)
+  const statusBeforeNdaRef = useRef<ReferenceFormInitialData['status']>(
+    initialData?.status ?? 'draft'
+  )
   const [contactId, setContactId] = useState(
     initialData?.contact_id ? initialData.contact_id : '__none__'
   )
@@ -420,29 +442,67 @@ export function ReferenceForm({
         />
       </div>
 
-      {/* Status Selection */}
-      <div className="space-y-2">
-        <Label htmlFor="status">Status / Freigabestufe</Label>
-        <input type="hidden" name="status" value={status} />
-        <Select
-          value={status}
-          onValueChange={(val) => setStatus(val as typeof status)}
-          disabled={submitting}
-        >
-          <SelectTrigger id="status" className="w-full sm:w-[180px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {STATUS_OPTIONS.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <p className="text-muted-foreground text-[10px] italic">
-          Hinweis: &quot;Extern&quot; ist sofort für alle Sales Reps nutzbar.
-        </p>
+      {/* Status + NDA */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="status">Status / Freigabestufe</Label>
+          <input type="hidden" name="status" value={status} />
+          <Select
+            value={status}
+            onValueChange={(val) => {
+              const next = val as ReferenceFormInitialData['status']
+              setStatus(next)
+              if (ndaDeal && next !== 'internal') {
+                // Falls Status manuell geändert wird, lösen wir NDA-Modus wieder auf
+                setNdaDeal(false)
+                statusBeforeNdaRef.current = next
+              }
+            }}
+            disabled={submitting || ndaDeal}
+          >
+            <SelectTrigger id="status" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {STATUS_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-muted-foreground text-[10px] italic">
+            {ndaDeal
+              ? 'NDA Deal aktiv: Status wird automatisch auf „Intern“ gesetzt.'
+              : STATUS_HELP_TEXT[status]}
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="nda_deal">NDA Deal</Label>
+          <div className="flex items-center gap-3 rounded-md border bg-muted/20 px-3 py-2">
+            <input
+              id="nda_deal"
+              type="checkbox"
+              checked={ndaDeal}
+              disabled={submitting}
+              onChange={(e) => {
+                const checked = e.target.checked
+                setNdaDeal(checked)
+                if (checked) {
+                  statusBeforeNdaRef.current = status
+                  setStatus('internal')
+                } else {
+                  setStatus(statusBeforeNdaRef.current ?? 'draft')
+                }
+              }}
+              className="h-4 w-4 rounded border-muted-foreground/40"
+            />
+            <span className="text-sm text-muted-foreground">
+              Markiert diese Referenz automatisch als intern.
+            </span>
+          </div>
+        </div>
       </div>
 
       <div className="flex gap-3 pt-2">
