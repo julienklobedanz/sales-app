@@ -23,10 +23,14 @@ export type ReferenceRow = {
   updated_at: string | null
   company_id: string
   company_name: string
-  website?: string | null
+  website: string | null
+  employee_count: number | null
+  volume_eur: string | null
+  contract_type: string | null
   contact_id?: string | null
   contact_email?: string | null
   contact_display?: string | null
+  customer_contact: string | null
   file_path?: string | null
   is_favorited: boolean
   tags: string | null
@@ -66,6 +70,10 @@ export async function getDashboardData(
       summary,
       industry,
       country,
+      website,
+      employee_count,
+      volume_eur,
+      contract_type,
       status,
       created_at,
       updated_at,
@@ -163,6 +171,10 @@ export async function getDashboardData(
       summary: (r.summary as string | null) ?? null,
       industry: (r.industry as string | null) ?? null,
       country: (r.country as string | null) ?? null,
+      website: (r.website as string | null) ?? null,
+      employee_count: (r.employee_count as number | null) ?? null,
+      volume_eur: (r.volume_eur as string | null) ?? null,
+      contract_type: (r.contract_type as string | null) ?? null,
       status: r.status as ReferenceRow['status'],
       created_at: r.created_at as string,
       updated_at: (r.updated_at as string | null) ?? null,
@@ -171,6 +183,7 @@ export async function getDashboardData(
       contact_id: (r.contact_id as string | null) ?? null,
       contact_email: contact?.email ?? null,
       contact_display: contactDisplay ?? null,
+      customer_contact: (r.customer_contact as string | null) ?? null,
       file_path: (r.file_path as string | null) ?? null,
       is_favorited: favoriteIds.has(r.id as string),
       tags: (r.tags as string | null) ?? null,
@@ -258,6 +271,16 @@ export async function updateReference(id: string, formData: FormData) {
     ? (statusRaw as ReferenceRow['status'])
     : 'draft'
   const tags = formData.get('tags')?.toString()?.trim() ?? null
+  const website = formData.get('website')?.toString()?.trim() ?? null
+  const employeeCountRaw = formData.get('employee_count')?.toString()?.trim() ?? null
+  const employee_count =
+    employeeCountRaw && !Number.isNaN(Number(employeeCountRaw))
+      ? Math.max(0, Math.trunc(Number(employeeCountRaw)))
+      : null
+  const volume_eur = formData.get('volume_eur')?.toString()?.trim() ?? null
+  const contract_type = formData.get('contract_type')?.toString()?.trim() ?? null
+  const customer_contact =
+    formData.get('customer_contact')?.toString()?.trim() ?? null
   const projectStatusRaw = formData.get('project_status')?.toString()
   const project_status: 'active' | 'completed' | null =
     projectStatusRaw === 'active' || projectStatusRaw === 'completed'
@@ -316,6 +339,11 @@ export async function updateReference(id: string, formData: FormData) {
     updated_at: string
     file_path?: string
     tags: string | null
+    website: string | null
+    employee_count: number | null
+    volume_eur: string | null
+    contract_type: string | null
+    customer_contact: string | null
     project_status: 'active' | 'completed' | null
     project_start: string | null
     project_end: string | null
@@ -328,6 +356,11 @@ export async function updateReference(id: string, formData: FormData) {
     status,
     updated_at: new Date().toISOString(),
     tags,
+    website,
+    employee_count,
+    volume_eur,
+    contract_type,
+    customer_contact,
     project_status,
     project_start,
     project_end,

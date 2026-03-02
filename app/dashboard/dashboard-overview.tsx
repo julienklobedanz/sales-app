@@ -808,7 +808,11 @@ export function DashboardOverview({
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
                           <UserIcon className="size-3" /> Mitarbeiteranzahl
                         </span>
-                        <p className="text-foreground pl-4 text-xs font-medium">—</p>
+                        <p className="text-foreground pl-4 text-xs font-medium">
+                          {selectedRef.employee_count != null
+                            ? `${selectedRef.employee_count}`
+                            : '—'}
+                        </p>
                       </div>
 
                       {/* Row 3 */}
@@ -859,13 +863,17 @@ export function DashboardOverview({
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
                           <FileTextIcon className="size-3" /> Volumen (€)
                         </span>
-                        <p className="text-foreground pl-4 text-xs font-medium">—</p>
+                        <p className="text-foreground pl-4 text-xs font-medium">
+                          {selectedRef.volume_eur || '—'}
+                        </p>
                       </div>
                       <div className="space-y-1">
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
                           <FileTextIcon className="size-3" /> Vertragsart
                         </span>
-                        <p className="text-foreground pl-4 text-xs font-medium">—</p>
+                        <p className="text-foreground pl-4 text-xs font-medium">
+                          {selectedRef.contract_type || '—'}
+                        </p>
                       </div>
 
                       {/* Row 5 */}
@@ -887,14 +895,28 @@ export function DashboardOverview({
                       </div>
                     </div>
                     <Separator className="!my-4" />
-                    <div className="space-y-1">
-                      <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-                        <UserIcon className="size-3" /> Interner Kontakt
-                      </span>
-                      <p className="pl-4 text-xs font-medium">
-                        {selectedRef.contact_display || selectedRef.contact_email || 'Nicht zugewiesen'}
-                      </p>
-                      <p className="text-muted-foreground pl-4 text-[10px]">Account Owner</p>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div className="space-y-1">
+                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+                          <UserIcon className="size-3" /> Interner Kontakt
+                        </span>
+                        <p className="pl-4 text-xs font-medium">
+                          {selectedRef.contact_display ||
+                            selectedRef.contact_email ||
+                            'Nicht zugewiesen'}
+                        </p>
+                        <p className="text-muted-foreground pl-4 text-[10px]">
+                          Account Owner
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+                          <UserIcon className="size-3" /> Kundenansprechpartner
+                        </span>
+                        <p className="pl-4 text-xs font-medium">
+                          {selectedRef.customer_contact || '—'}
+                        </p>
+                      </div>
                     </div>
                   </section>
 
@@ -953,7 +975,8 @@ export function DashboardOverview({
               </div>
 
               {/* Fixierter Footer (rollenabhängig) */}
-              <SheetFooter className="z-10 flex-col gap-2 border-t bg-muted/20 px-4 py-3 sm:flex-row sm:justify-between">
+              <SheetFooter className="z-10 flex-col gap-2 border-t bg-muted/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                {/* Linke Seite: Download + Bearbeiten */}
                 <div className="flex w-full gap-2 sm:w-auto">
                   <Button
                     variant="secondary"
@@ -983,28 +1006,20 @@ export function DashboardOverview({
                     </a>
                   </Button>
                   {profile.role === 'admin' && (
-                    <>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                        onClick={(e) => handleDelete(selectedRef.id, e)}
-                      >
-                        <Trash2Icon className="mr-2 size-4" /> Löschen
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          router.push(`/dashboard/edit/${selectedRef.id}`)
-                        }
-                      >
-                        <PencilIcon className="mr-2 size-4" /> Bearbeiten
-                      </Button>
-                    </>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        router.push(`/dashboard/edit/${selectedRef.id}`)
+                      }
+                    >
+                      <PencilIcon className="mr-2 size-4" /> Bearbeiten
+                    </Button>
                   )}
                 </div>
-                <div className="flex w-full gap-2 sm:w-auto">
+
+                {/* Rechte Seite: Freigabe anfragen / Account Owner + Löschen ganz rechts */}
+                <div className="flex w-full justify-end gap-2 sm:w-auto">
                   {profile.role === 'sales' &&
                     (selectedRef.status === 'restricted' ||
                       selectedRef.status === 'internal') && (
@@ -1014,7 +1029,7 @@ export function DashboardOverview({
                           handleRequestSpecificApproval(selectedRef.id)
                         }
                       >
-                        <Send className="mr-2 size-4" /> Einzelfreigabe anfragen
+                        <Send className="mr-2 size-4" /> Freigabe anfragen
                       </Button>
                     )}
                   {profile.role === 'admin' &&
@@ -1023,9 +1038,19 @@ export function DashboardOverview({
                         size="sm"
                         onClick={() => handleSubmitForApproval(selectedRef.id)}
                       >
-                        <Mail className="mr-2 size-4" /> Account Owner kontaktieren
+                        <Mail className="mr-2 size-4" /> Freigabe anfragen
                       </Button>
                     )}
+                  {profile.role === 'admin' && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="ml-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      onClick={(e) => handleDelete(selectedRef.id, e)}
+                    >
+                      <Trash2Icon className="mr-2 size-4" /> Löschen
+                    </Button>
+                  )}
                 </div>
               </SheetFooter>
             </TooltipProvider>

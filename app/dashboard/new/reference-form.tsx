@@ -94,6 +94,11 @@ export type ReferenceFormInitialData = {
   summary: string | null
   industry: string | null
   country: string | null
+  website?: string | null
+  employee_count?: number | null
+  volume_eur?: string | null
+  contract_type?: string | null
+  customer_contact?: string | null
   contact_id?: string | null
   status:
     | 'draft'
@@ -123,6 +128,14 @@ export function ReferenceForm({
   const [companyId, setCompanyId] = useState('')
   const [industry, setIndustry] = useState(initialData?.industry ?? '')
   const [country, setCountry] = useState(initialData?.country ?? '')
+  const [website, setWebsite] = useState(initialData?.website ?? '')
+  const [employeeCount, setEmployeeCount] = useState(
+    initialData?.employee_count != null ? `${initialData.employee_count}` : ''
+  )
+  const [volumeEur, setVolumeEur] = useState(initialData?.volume_eur ?? '')
+  const [contractType, setContractType] = useState(
+    initialData?.contract_type ?? ''
+  )
   const [status, setStatus] = useState<ReferenceFormInitialData['status']>(
     initialData?.status ?? 'draft'
   )
@@ -273,6 +286,18 @@ export function ReferenceForm({
       </div>
 
       <div className="space-y-2">
+        <Label htmlFor="tags">Tags</Label>
+        <Input
+          id="tags"
+          name="tags"
+          placeholder="z. B. Cloud, ERP, SAP"
+          disabled={submitting}
+          value={tags}
+          onChange={(e) => setTags(e.target.value)}
+        />
+      </div>
+
+      <div className="space-y-2">
         <Label htmlFor="contactId">Interner Kontakt / Account Owner</Label>
         <div className="flex gap-2">
           <div className="flex-1">
@@ -309,6 +334,17 @@ export function ReferenceForm({
         </p>
       </div>
 
+      <div className="space-y-2">
+        <Label htmlFor="customer_contact">Kundenansprechpartner</Label>
+        <Input
+          id="customer_contact"
+          name="customer_contact"
+          placeholder="z. B. Max Mustermann, CIO"
+          disabled={submitting}
+          defaultValue={initialData?.customer_contact ?? ''}
+        />
+      </div>
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label>Industrie</Label>
@@ -332,7 +368,7 @@ export function ReferenceForm({
         </div>
 
         <div className="space-y-2">
-          <Label>Land</Label>
+          <Label>HQ</Label>
           <input type="hidden" name="country" value={country} />
           <Select
             value={country || undefined}
@@ -355,43 +391,58 @@ export function ReferenceForm({
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="project_status">Projektstatus</Label>
-          <input
-            type="hidden"
-            name="project_status"
-            value={projectStatus === '__none__' ? '' : projectStatus}
-          />
-          <Select
-            value={projectStatus || '__none__'}
-            onValueChange={(val) => {
-              setProjectStatus(val)
-              if (val === 'active') setProjectEnd('')
-            }}
+          <Label htmlFor="website">Website</Label>
+          <Input
+            id="website"
+            name="website"
+            type="url"
+            placeholder="z. B. https://example.com"
             disabled={submitting}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Auswählen …" />
-            </SelectTrigger>
-            <SelectContent>
-              {PROJECT_STATUS_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            value={website}
+            onChange={(e) => setWebsite(e.target.value)}
+          />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="tags">Tags</Label>
+          <Label htmlFor="employee_count">Mitarbeiteranzahl</Label>
           <Input
-            id="tags"
-            name="tags"
-            placeholder="z. B. Cloud, ERP, SAP"
+            id="employee_count"
+            name="employee_count"
+            type="number"
+            inputMode="numeric"
+            placeholder="z. B. 12000"
             disabled={submitting}
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
+            value={employeeCount}
+            onChange={(e) => setEmployeeCount(e.target.value)}
           />
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="project_status">Projektstatus</Label>
+        <input
+          type="hidden"
+          name="project_status"
+          value={projectStatus === '__none__' ? '' : projectStatus}
+        />
+        <Select
+          value={projectStatus || '__none__'}
+          onValueChange={(val) => {
+            setProjectStatus(val)
+            if (val === 'active') setProjectEnd('')
+          }}
+          disabled={submitting}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Auswählen …" />
+          </SelectTrigger>
+          <SelectContent>
+            {PROJECT_STATUS_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -429,6 +480,31 @@ export function ReferenceForm({
                 ? 'Bei aktivem Projekt nicht relevant.'
                 : 'Optional, bei aktivem Projekt leer lassen.'}
           </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="volume_eur">Volumen (€)</Label>
+          <Input
+            id="volume_eur"
+            name="volume_eur"
+            placeholder="z. B. €5M"
+            disabled={submitting}
+            value={volumeEur}
+            onChange={(e) => setVolumeEur(e.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="contract_type">Vertragsart</Label>
+          <Input
+            id="contract_type"
+            name="contract_type"
+            placeholder="z. B. Time & Material oder Fixed Term Contract"
+            disabled={submitting}
+            value={contractType}
+            onChange={(e) => setContractType(e.target.value)}
+          />
         </div>
       </div>
 

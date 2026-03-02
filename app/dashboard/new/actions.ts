@@ -31,6 +31,15 @@ export async function createReference(
     contactIdRaw && contactIdRaw !== '__none__' ? contactIdRaw : null
   const statusRaw = formData.get('status')?.toString()
   const tags = formData.get('tags')?.toString()?.trim() || null
+  const website = formData.get('website')?.toString()?.trim() || null
+  const employeeCountRaw = formData.get('employee_count')?.toString()?.trim() || null
+  const employee_count =
+    employeeCountRaw && !Number.isNaN(Number(employeeCountRaw))
+      ? Math.max(0, Math.trunc(Number(employeeCountRaw)))
+      : null
+  const volume_eur = formData.get('volume_eur')?.toString()?.trim() || null
+  const contract_type = formData.get('contract_type')?.toString()?.trim() || null
+  const customer_contact = formData.get('customer_contact')?.toString()?.trim() || null
   const projectStatusRaw = formData.get('project_status')?.toString()
   const project_status: 'active' | 'completed' | null =
     projectStatusRaw === 'active' || projectStatusRaw === 'completed'
@@ -164,6 +173,11 @@ export async function createReference(
       summary: summary || null,
       industry,
       country,
+      website,
+      employee_count,
+      volume_eur,
+      contract_type,
+      customer_contact,
       contact_id: contactId,
       status,
       file_path: filePath,
