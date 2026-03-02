@@ -182,10 +182,10 @@ function diffMonthsUtc(startIso: string, endIso: string) {
 // --- Freigabe-Stepper ---
 
 const APPROVAL_STEPS = [
-  { id: 'creation', label: 'Erstellung', sub: 'In Bearbeitung', icon: PencilIcon },
-  { id: 'validation', label: 'Validierung', sub: 'Wartet auf Validierung', icon: SearchIcon },
-  { id: 'approval', label: 'Freigabe', sub: 'Wartet auf Freigabe', icon: HandshakeIcon },
-  { id: 'publishing', label: 'Veröffentlichung', sub: 'Verfügbar für Sales', icon: RocketIcon },
+  { id: 'creation', label: 'Erstellung', sub: 'In Bearbeitung', icon: Pencil },
+  { id: 'validation', label: 'Validierung', sub: 'Wartet auf Validierung', icon: Search },
+  { id: 'approval', label: 'Freigabe', sub: 'Wartet auf Freigabe', icon: Handshake },
+  { id: 'publishing', label: 'Veröffentlichung', sub: 'Verfügbar für Sales', icon: Rocket },
 ] as const
 
 type ApprovalStepId = (typeof APPROVAL_STEPS)[number]['id']
