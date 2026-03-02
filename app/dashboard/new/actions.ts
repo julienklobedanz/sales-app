@@ -28,10 +28,30 @@ export type EnrichCompanyResult =
   | { success: true; company_id: string; company_name: string; website_url: string | null; industry: string | null; headquarters: string | null; country: string | null; employee_count: number | null; logo_url: string | null }
   | { success: false; error: string }
 
+/** Nur Abfrage – keine DB-Schreiboperation. Für Bearbeiten-Formular. */
+export type FetchEnrichmentResult =
+  | { success: true; company_name: string; website_url: string | null; industry: string | null; headquarters: string | null; country: string | null; employee_count: number | null; logo_url: string | null; description: string | null }
+  | { success: false; error: string }
+
 function normalizeDomain(input: string): string {
   const t = input.trim().toLowerCase()
   const withoutProtocol = t.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]
   return withoutProtocol || t
+}
+
+/** Leitet eine Domain aus der Eingabe ab: "siemens.de" → "siemens.de", "BMW" → "bmw.com" */
+function inputToDomain(input: string): string | null {
+  const t = input.trim()
+  if (!t) return null
+  const normalized = normalizeDomain(t)
+  if (normalized.includes('.')) return normalized
+  const slug = t
+    .toLowerCase()
+    .replace(/\s+/g, '')
+    .replace(/\b(gmbh|ag|inc|corp|co|llc)\b/gi, '')
+    .replace(/[^a-z0-9-]/gi, '')
+  if (slug.length < 2) return null
+  return `${slug}.com`
 }
 
 function mapBrandfetchIndustry(name: string | undefined): string | null {
@@ -60,60 +80,15 @@ export async function enrichAndSaveCompany(domain: string): Promise<EnrichCompan
     return { success: false, error: 'Dein Profil ist keiner Organisation zugeordnet.' }
   }
 
-  const apiKey = process.env.BRANDFETCH_API_KEY
-  if (!apiKey) return { success: false, error: 'Brandfetch API ist nicht konfiguriert (BRANDFETCH_API_KEY).' }
-
-  const normalizedDomain = normalizeDomain(domain)
+  const normalizedDomain = inputToDomain(domain) ?? normalizeDomain(domain)
   if (!normalizedDomain || !normalizedDomain.includes('.')) {
-    return { success: false, error: 'Ungültige Domain.' }
+    return { success: false, error: 'Bitte eine Domain (z. B. bmw.de) oder einen Firmennamen (z. B. BMW) eingeben.' }
   }
 
-  let res: Response
-  try {
-    res = await fetch(`https://api.brandfetch.io/v2/brands/domain/${encodeURIComponent(normalizedDomain)}`, {
-      headers: { Authorization: `Bearer ${apiKey}` },
-      next: { revalidate: 0 },
-    })
-  } catch (e) {
-    return { success: false, error: 'Brandfetch-Anfrage fehlgeschlagen.' }
-  }
+  const fetched = await fetchBrandfetchData(normalizedDomain)
+  if (!fetched.success) return fetched
 
-  if (!res.ok) {
-    if (res.status === 404) return { success: false, error: 'Unternehmen für diese Domain nicht gefunden.' }
-    if (res.status === 401) return { success: false, error: 'Brandfetch API-Schlüssel ungültig.' }
-    if (res.status === 429) return { success: false, error: 'Brandfetch-Limit erreicht. Bitte später erneut versuchen.' }
-    return { success: false, error: `Brandfetch-Fehler: ${res.status}` }
-  }
-
-  let data: {
-    name?: string | null
-    domain?: string | null
-    description?: string | null
-    company?: {
-      employees?: number | null
-      industries?: { name?: string }[]
-      location?: { city?: string; country?: string; region?: string }
-    }
-    logos?: { formats?: { src?: string }[] }[]
-  }
-  try {
-    data = await res.json()
-  } catch {
-    return { success: false, error: 'Ungültige Brandfetch-Antwort.' }
-  }
-
-  const companyName = (data.name ?? data.domain ?? normalizedDomain).toString().trim() || normalizedDomain
-  const websiteUrl = data.domain ? `https://${data.domain.toString().replace(/^https?:\/\//, '')}` : `https://${normalizedDomain}`
-  const description = data.description?.toString().trim() || null
-  const employeeCount = typeof data.company?.employees === 'number' ? data.company.employees : null
-  const firstIndustry = data.company?.industries?.[0]?.name
-  const industry = mapBrandfetchIndustry(firstIndustry)
-  const loc = data.company?.location
-  const headquarters = [loc?.city, loc?.country].filter(Boolean).join(', ') || null
-  const country = mapBrandfetchCountry(loc?.country ?? undefined)
-
-  const logoUrl =
-    data.logos?.[0]?.formats?.[0]?.src ?? data.logos?.find((l) => l.formats?.length)?.formats?.[0]?.src ?? null
+  const { company_name: companyName, website_url: websiteUrl, industry, headquarters, country, employee_count: employeeCount, logo_url: logoUrl, description } = fetched
 
   const { data: existing } = await supabase
     .from('companies')
@@ -164,6 +139,78 @@ export async function enrichAndSaveCompany(domain: string): Promise<EnrichCompan
     employee_count: employeeCount,
     logo_url: logoUrl,
   }
+}
+
+async function fetchBrandfetchData(normalizedDomain: string): Promise<FetchEnrichmentResult> {
+  const apiKey = process.env.BRANDFETCH_API_KEY
+  if (!apiKey) return { success: false, error: 'Brandfetch API ist nicht konfiguriert (BRANDFETCH_API_KEY).' }
+
+  let res: Response
+  try {
+    res = await fetch(`https://api.brandfetch.io/v2/brands/domain/${encodeURIComponent(normalizedDomain)}`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      next: { revalidate: 0 },
+    })
+  } catch {
+    return { success: false, error: 'Brandfetch-Anfrage fehlgeschlagen.' }
+  }
+
+  if (!res.ok) {
+    if (res.status === 404) return { success: false, error: 'Unternehmen für diese Domain nicht gefunden.' }
+    if (res.status === 401) return { success: false, error: 'Brandfetch API-Schlüssel ungültig.' }
+    if (res.status === 429) return { success: false, error: 'Brandfetch-Limit erreicht.' }
+    return { success: false, error: `Brandfetch-Fehler: ${res.status}` }
+  }
+
+  let data: {
+    name?: string | null
+    domain?: string | null
+    description?: string | null
+    company?: {
+      employees?: number | null
+      industries?: { name?: string }[]
+      location?: { city?: string; country?: string; region?: string }
+    }
+    logos?: { formats?: { src?: string }[] }[]
+  }
+  try {
+    data = await res.json()
+  } catch {
+    return { success: false, error: 'Ungültige Brandfetch-Antwort.' }
+  }
+
+  const companyName = (data.name ?? data.domain ?? normalizedDomain).toString().trim() || normalizedDomain
+  const websiteUrl = data.domain ? `https://${data.domain.toString().replace(/^https?:\/\//, '')}` : `https://${normalizedDomain}`
+  const description = data.description?.toString().trim() || null
+  const employeeCount = typeof data.company?.employees === 'number' ? data.company.employees : null
+  const firstIndustry = data.company?.industries?.[0]?.name
+  const industry = mapBrandfetchIndustry(firstIndustry)
+  const loc = data.company?.location
+  const headquarters = [loc?.city, loc?.country].filter(Boolean).join(', ') || null
+  const country = mapBrandfetchCountry(loc?.country ?? undefined)
+  const logoUrl =
+    data.logos?.[0]?.formats?.[0]?.src ?? data.logos?.find((l) => l.formats?.length)?.formats?.[0]?.src ?? null
+
+  return {
+    success: true,
+    company_name: companyName,
+    website_url: websiteUrl || null,
+    industry,
+    headquarters,
+    country,
+    employee_count: employeeCount,
+    logo_url: logoUrl,
+    description,
+  }
+}
+
+/** Nur Brandfetch-Daten abrufen (kein Speichern in DB). Für Referenz bearbeiten. */
+export async function fetchCompanyEnrichment(input: string): Promise<FetchEnrichmentResult> {
+  const domain = inputToDomain(input) ?? normalizeDomain(input)
+  if (!domain || !domain.includes('.')) {
+    return { success: false, error: 'Bitte eine Domain (z. B. bmw.de) oder einen Firmennamen (z. B. BMW) eingeben.' }
+  }
+  return fetchBrandfetchData(domain)
 }
 
 export type CreateReferenceResult =

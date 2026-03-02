@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { createReference, enrichAndSaveCompany } from './actions'
+import { createReference, enrichAndSaveCompany, fetchCompanyEnrichment } from './actions'
 import { updateReference } from '../actions'
 import { CreateContactDialog } from './create-contact-dialog'
 
@@ -169,6 +169,8 @@ export function ReferenceForm({
   const [enrichLoading, setEnrichLoading] = useState(false)
   const [enrichedCompany, setEnrichedCompany] = useState<Company | null>(null)
   const enrichDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [editCompanyName, setEditCompanyName] = useState(initialData?.company_name ?? '')
+  const editEnrichDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const isEditMode = !!initialData
   const displayCompanies = enrichedCompany && !companies.some((c) => c.id === enrichedCompany.id)
@@ -176,9 +178,8 @@ export function ReferenceForm({
     : companies
 
   useEffect(() => {
-    if (!newCompanyName.trim() || !newCompanyName.includes('.')) return
-    const raw = newCompanyName.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]
-    if (raw.length < 4) return
+    const trimmed = newCompanyName.trim()
+    if (trimmed.length < 2) return
     if (enrichDebounceRef.current) clearTimeout(enrichDebounceRef.current)
     enrichDebounceRef.current = setTimeout(() => {
       enrichDebounceRef.current = null
@@ -204,6 +205,35 @@ export function ReferenceForm({
       if (enrichDebounceRef.current) clearTimeout(enrichDebounceRef.current)
     }
   }, [newCompanyName])
+
+  useEffect(() => {
+    if (!isEditMode) return
+    const trimmed = editCompanyName.trim()
+    if (trimmed.length < 2) return
+    if (editEnrichDebounceRef.current) clearTimeout(editEnrichDebounceRef.current)
+    editEnrichDebounceRef.current = setTimeout(() => {
+      editEnrichDebounceRef.current = null
+      setEnrichLoading(true)
+      fetchCompanyEnrichment(editCompanyName.trim())
+        .then((result) => {
+          if (result.success) {
+            setEditCompanyName(result.company_name)
+            setWebsite(result.website_url ?? '')
+            setIndustry(result.industry ?? '')
+            setCountry(result.country ?? '')
+            setEmployeeCount(result.employee_count != null ? String(result.employee_count) : '')
+            toast.success('Unternehmensdaten wurden geladen.')
+          } else {
+            toast.error(result.error)
+          }
+        })
+        .finally(() => setEnrichLoading(false))
+    }, 800)
+    return () => {
+      if (editEnrichDebounceRef.current) clearTimeout(editEnrichDebounceRef.current)
+    }
+  }, [isEditMode, editCompanyName])
+
   const submitting = isEditMode ? editSubmitting : createSubmitting
 
   const handleContactCreated = (newId: string) => {
@@ -275,14 +305,22 @@ export function ReferenceForm({
             Unternehmen
           </Label>
           {isEditMode ? (
-            <Input
-              id="company_name"
-              name="company_name"
-              placeholder="z. B. Acme GmbH"
-              required
-              disabled={submitting}
-              defaultValue={initialData.company_name}
-            />
+            <div className="relative">
+              <Input
+                id="company_name"
+                name="company_name"
+                placeholder="z. B. BMW oder bmw.de für Auto-Fill"
+                required
+                disabled={submitting}
+                value={editCompanyName}
+                onChange={(e) => setEditCompanyName(e.target.value)}
+              />
+              {enrichLoading && (
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  <Loader2 className="size-4 animate-spin" />
+                </span>
+              )}
+            </div>
           ) : (
             <>
               <div className="relative">
@@ -809,7 +847,7 @@ function FileDropZone({
               variant="ghost"
               size="sm"
               className="h-7 text-xs"
-              onClick={(e) => {
+              onClick={(e: React.MouseEvent) => {
                 e.stopPropagation()
                 onFileSelect(null)
                 if (inputRef.current) inputRef.current.value = ''
