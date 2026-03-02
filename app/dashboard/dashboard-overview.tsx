@@ -471,7 +471,25 @@ export function DashboardOverview({
                     }
                     className="h-24 text-center text-muted-foreground"
                   >
-                    Keine Referenzen gefunden.
+                    <div className="flex flex-col items-center justify-center gap-3 py-2">
+                      <p>Keine Referenzen gefunden.</p>
+                      {search.trim() &&
+                        profile.role === 'admin' && (
+                          <Link href="/dashboard/new">
+                            <Button className="mt-1">
+                              Erstelle deine erste Referenz
+                            </Button>
+                          </Link>
+                        )}
+                      {search.trim() &&
+                        profile.role === 'sales' && (
+                          <Link href="/dashboard/deals">
+                            <Button className="mt-1">
+                              Lege deinen Deal an
+                            </Button>
+                          </Link>
+                        )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : (
