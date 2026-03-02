@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -66,6 +66,7 @@ import {
   Send,
   Mail,
   Star,
+  XIcon,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -171,6 +172,8 @@ export function DashboardOverview({
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>(initialStatusFilter)
   const [favoritesOnly, setFavoritesOnly] = useState(initialFavoritesOnly)
+  const [rfpFiles, setRfpFiles] = useState<File[]>([])
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [selectedRef, setSelectedRef] = useState<ReferenceRow | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [visibleColumns, setVisibleColumns] = useState<
@@ -257,6 +260,45 @@ export function DashboardOverview({
     }
   }
 
+  const handleRfpFilesAdd = (fileList: FileList | null) => {
+    if (!fileList) return
+    const acceptedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ]
+    const newFiles = Array.from(fileList).filter(
+      (file) =>
+        acceptedTypes.includes(file.type) ||
+        file.name.toLowerCase().endsWith('.pdf') ||
+        file.name.toLowerCase().endsWith('.doc') ||
+        file.name.toLowerCase().endsWith('.docx')
+    )
+
+    if (!newFiles.length) return
+
+    setRfpFiles((prev) => {
+      const existingNames = new Set(prev.map((f) => f.name))
+      const uniqueNewFiles = newFiles.filter((f) => !existingNames.has(f.name))
+      return [...prev, ...uniqueNewFiles]
+    })
+  }
+
+  const handleRfpFileRemove = (name: string) => {
+    setRfpFiles((prev) => prev.filter((file) => file.name !== name))
+  }
+
+  const handleRfpDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    handleRfpFilesAdd(event.dataTransfer.files)
+  }
+
+  const handleRfpDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+  }
+
   return (
     <div className="flex flex-col space-y-8 pt-6">
       {/* 1. Header: Referenzen (Einstieg für beide Rollen) */}
@@ -265,10 +307,10 @@ export function DashboardOverview({
       </div>
 
       {/* 2. Toolbar & Tabelle */}
-      <div className="space-y-4">
-        {/* Toolbar: Suche füllt Platz, daneben Status, Favoriten, Spalten (und ggf. Button) */}
+        <div className="space-y-4">
+        {/* Toolbar: Suche füllt Platz, daneben Dropzone, Status, Favoriten, Spalten (und ggf. Button) */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-3">
-          {/* Suche nimmt restlichen Platz; Filter/Spalten direkt nebeneinander */}
+          {/* Suche nimmt restlichen Platz; rechts davon Dropzone & Filter */}
           <div className="relative flex-1 min-w-0">
             <SearchIcon className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -279,20 +321,42 @@ export function DashboardOverview({
             />
           </div>
 
+          {/* Temporäre Dropzone für RFP-Dokumente */}
+          <div
+            className="h-9 w-[180px] shrink-0 cursor-pointer rounded-md border border-dashed border-muted-foreground/40 bg-muted/40 px-3 text-xs text-muted-foreground hover:bg-muted flex items-center justify-center text-center"
+            onClick={() => fileInputRef.current?.click()}
+            onDrop={handleRfpDrop}
+            onDragOver={handleRfpDragOver}
+          >
+            <span className="truncate">
+              {rfpFiles.length === 0
+                ? 'RFP-Dateien hier ablegen'
+                : `${rfpFiles.length} RFP-Datei${rfpFiles.length > 1 ? 'en' : ''} ausgewählt`}
+            </span>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              className="hidden"
+              onChange={(event) => handleRfpFilesAdd(event.target.files)}
+            />
+          </div>
+
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="h-9 w-[140px] shrink-0">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Alle Status</SelectItem>
-                <SelectItem value="draft">Entwurf</SelectItem>
-                <SelectItem value="pending">In Prüfung</SelectItem>
-                <SelectItem value="external">Extern frei</SelectItem>
-                <SelectItem value="internal">Intern frei</SelectItem>
-                <SelectItem value="anonymous">Anonym</SelectItem>
-                <SelectItem value="restricted">Eingeschränkt</SelectItem>
-              </SelectContent>
-            </Select>
+              <SelectItem value="draft">Entwurf</SelectItem>
+              <SelectItem value="pending">In Prüfung</SelectItem>
+              <SelectItem value="external">Extern frei</SelectItem>
+              <SelectItem value="internal">Intern frei</SelectItem>
+              <SelectItem value="anonymous">Anonym</SelectItem>
+              <SelectItem value="restricted">Eingeschränkt</SelectItem>
+            </SelectContent>
+          </Select>
 
           <Button
             variant={favoritesOnly ? 'secondary' : 'outline'}
@@ -306,41 +370,45 @@ export function DashboardOverview({
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-9 shrink-0 hidden lg:flex">
+              <Button
+                variant="outline"
+                size="sm"
+                className="hidden h-9 shrink-0 lg:flex"
+              >
                 <SlidersHorizontal className="mr-2 h-4 w-4" />
                 Spalten
               </Button>
             </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-[220px]">
-                <DropdownMenuLabel>Sichtbarkeit</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {COLUMN_KEYS.map((column) => (
-                  <DropdownMenuItem
-                    key={column}
-                    onSelect={(e) => {
-                      e.preventDefault()
-                      setVisibleColumns((prev) => ({
-                        ...prev,
-                        [column]: !prev[column],
-                      }))
-                    }}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div
-                        className={`h-4 w-4 border rounded-sm flex items-center justify-center ${
-                          visibleColumns[column] ? 'bg-primary border-primary' : ''
-                        }`}
-                      >
-                        {visibleColumns[column] && (
-                          <CheckCircle className="h-3 w-3 text-white" />
-                        )}
-                      </div>
-                      <span>{COLUMN_LABELS[column]}</span>
+            <DropdownMenuContent align="end" className="w-[220px]">
+              <DropdownMenuLabel>Sichtbarkeit</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {COLUMN_KEYS.map((column) => (
+                <DropdownMenuItem
+                  key={column}
+                  onSelect={(e) => {
+                    e.preventDefault()
+                    setVisibleColumns((prev) => ({
+                      ...prev,
+                      [column]: !prev[column],
+                    }))
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`flex h-4 w-4 items-center justify-center rounded-sm border ${
+                        visibleColumns[column] ? 'bg-primary border-primary' : ''
+                      }`}
+                    >
+                      {visibleColumns[column] && (
+                        <CheckCircle className="h-3 w-3 text-white" />
+                      )}
                     </div>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+                    <span>{COLUMN_LABELS[column]}</span>
+                  </div>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* Nur Admins: Erstellen-Button rechts */}
           {profile.role === 'admin' && (
@@ -352,6 +420,27 @@ export function DashboardOverview({
             </Link>
           )}
         </div>
+
+        {rfpFiles.length > 0 && (
+          <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+            {rfpFiles.map((file) => (
+              <div
+                key={file.name}
+                className="flex items-center gap-1 rounded-full bg-muted px-3 py-1"
+              >
+                <span className="max-w-[160px] truncate">{file.name}</span>
+                <button
+                  type="button"
+                  onClick={() => handleRfpFileRemove(file.name)}
+                  className="inline-flex size-4 items-center justify-center rounded-full text-muted-foreground/70 hover:bg-muted-foreground/10 hover:text-foreground"
+                  aria-label={`${file.name} entfernen`}
+                >
+                  <XIcon className="size-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="rounded-md border bg-card overflow-x-auto">
           <Table>

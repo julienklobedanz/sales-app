@@ -69,6 +69,7 @@ export async function createReference(
   }
 
   let resolvedCompanyId: string
+  let createdCompanyId: string | null = null
 
   if (companyId && companyId !== '__new__') {
     const { data: company, error: fetchError } = await supabase
@@ -87,23 +88,59 @@ export async function createReference(
       return { success: false, error: 'Bitte Firmennamen eingeben oder ein Unternehmen wählen.' }
     }
 
-    const { data: newCompany, error: insertError } = await supabase
+    // 1) Prüfen, ob es die Firma (für diese Organisation) bereits gibt
+    const { data: existingCompany, error: existingError } = await supabase
       .from('companies')
-      .insert({
-        name: nameToUse,
-        industry: industry ?? undefined,
-        organization_id: organizationId,
-      })
       .select('id')
-      .single()
+      .eq('organization_id', organizationId)
+      .ilike('name', nameToUse)
+      .maybeSingle()
 
-    if (insertError) {
-      return { success: false, error: insertError.message }
+    if (existingError) {
+      return { success: false, error: existingError.message }
     }
-    if (!newCompany?.id) {
-      return { success: false, error: 'Firma konnte nicht angelegt werden.' }
+
+    if (existingCompany?.id) {
+      // Bereits vorhandene Firma wiederverwenden – keine Duplikate
+      resolvedCompanyId = existingCompany.id
+    } else {
+      // 2) Neue Firma anlegen
+      const { data: newCompany, error: insertError } = await supabase
+        .from('companies')
+        .insert({
+          name: nameToUse,
+          industry: industry ?? undefined,
+          organization_id: organizationId,
+        })
+        .select('id')
+        .single()
+
+      if (insertError) {
+        // Falls es serverseitig bereits einen Unique-Constraint gibt, kann hier ein Konflikt hochkommen
+        if ((insertError as { code?: string }).code === '23505') {
+          // Bei Unique-Verletzung nochmal versuchen, die bestehende Firma zu laden
+          const { data: conflictCompany } = await supabase
+            .from('companies')
+            .select('id')
+            .eq('organization_id', organizationId)
+            .ilike('name', nameToUse)
+            .maybeSingle()
+          if (conflictCompany?.id) {
+            resolvedCompanyId = conflictCompany.id
+          } else {
+            return { success: false, error: insertError.message }
+          }
+        } else {
+          return { success: false, error: insertError.message }
+        }
+      } else {
+        if (!newCompany?.id) {
+          return { success: false, error: 'Firma konnte nicht angelegt werden.' }
+        }
+        resolvedCompanyId = newCompany.id
+        createdCompanyId = newCompany.id
+      }
     }
-    resolvedCompanyId = newCompany.id
   }
 
   let filePath: string | null = null
@@ -138,10 +175,15 @@ export async function createReference(
     .select('id')
     .single()
 
-  if (refError) {
-    return { success: false, error: refError.message }
-  }
-  if (!reference?.id) {
+  if (refError || !reference?.id) {
+    // Falls in diesem Request eine neue Firma angelegt wurde, aber die Referenz fehlschlägt:
+    // Firma wieder aufräumen, damit keine verwaisten Einträge entstehen.
+    if (createdCompanyId) {
+      await supabase.from('companies').delete().eq('id', createdCompanyId)
+    }
+    if (refError) {
+      return { success: false, error: refError.message }
+    }
     return { success: false, error: 'Referenz konnte nicht gespeichert werden.' }
   }
 
