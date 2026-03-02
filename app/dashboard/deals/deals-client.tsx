@@ -107,7 +107,7 @@ export function DealsClientContent({ deals, expiring, allReferences, initialOpen
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      <Card className="flex min-h-[380px] flex-col">
+      <Card className="flex min-h-[520px] flex-col">
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <div>
             <div className="flex items-center gap-2">
@@ -165,7 +165,7 @@ export function DealsClientContent({ deals, expiring, allReferences, initialOpen
         </CardContent>
       </Card>
 
-      <Card className="flex min-h-[380px] flex-col">
+      <Card className="flex min-h-[520px] flex-col">
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <div>
             <div className="flex items-center gap-2">

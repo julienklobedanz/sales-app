@@ -43,6 +43,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { Separator } from '@/components/ui/separator'
 import type { ReferenceRow } from './actions'
 import { deleteReference, submitForApproval, toggleFavorite } from './actions'
@@ -639,16 +645,16 @@ export function DashboardOverview({
 
       {/* 4. Detail Sheet */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent className="flex flex-col gap-0 p-0 sm:max-w-sm md:w-[380px] md:max-w-[380px]">
+        <SheetContent className="flex flex-col gap-0 p-0 sm:max-w-xl md:w-[640px] md:max-w-[640px] lg:w-[720px]">
           {selectedRef && (
-            <>
+            <TooltipProvider delayDuration={150}>
               {/* Fixierter Header */}
               <SheetHeader className="z-10 border-b bg-background px-4 py-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-1 min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <SheetTitle className="text-lg font-semibold leading-tight tracking-tight truncate">
-                        {selectedRef.company_name}
+                        {selectedRef.title}
                       </SheetTitle>
                       <Button
                         variant="ghost"
@@ -666,15 +672,33 @@ export function DashboardOverview({
                       </Button>
                     </div>
                     <SheetDescription className="text-muted-foreground line-clamp-2 text-xs">
-                      {selectedRef.title}
+                      {selectedRef.company_name}
                     </SheetDescription>
                   </div>
-                  <Badge
-                    variant={STATUS_BADGE_VARIANT[selectedRef.status] ?? 'outline'}
-                    className="shrink-0 text-xs"
-                  >
-                    {STATUS_LABELS[selectedRef.status] ?? selectedRef.status}
-                  </Badge>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge
+                        variant={STATUS_BADGE_VARIANT[selectedRef.status] ?? 'outline'}
+                        className="shrink-0 text-xs cursor-default"
+                      >
+                        {STATUS_LABELS[selectedRef.status] ?? selectedRef.status}
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs text-xs leading-snug">
+                      {selectedRef.status === 'draft' &&
+                        'Entwurf: nur intern in deiner Firma sichtbar, nicht für Sales; Referenz ist noch in Bearbeitung.'}
+                      {selectedRef.status === 'pending' &&
+                        'In Prüfung: für Sales sichtbar; kann individuell beim Account Owner zur Freigabe angefragt werden.'}
+                      {selectedRef.status === 'anonymous' &&
+                        'Anonymisiert: Referenz darf genutzt werden, jedoch ohne Nennung des Kundennamens oder Kontaktangaben.'}
+                      {selectedRef.status === 'restricted' &&
+                        'Beschränkt: Für jede Nutzung ist eine Einzelfreigabe durch den Account Owner beim Kunden nötig.'}
+                      {selectedRef.status === 'external' &&
+                        'Extern: Vollständig freigegeben, für alle Bids nutzbar; der genannte Ansprechpartner steht für Referenzcalls bereit.'}
+                      {selectedRef.status === 'internal' &&
+                        'Intern: Nur intern im Unternehmen sichtbar und nutzbar, nicht extern teilbar.'}
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               </SheetHeader>
 
@@ -698,9 +722,24 @@ export function DashboardOverview({
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
                           Tags
                         </span>
-                        <p className="text-foreground pl-4 text-xs font-medium">
-                          {selectedRef.tags || '—'}
-                        </p>
+                        <div className="flex flex-wrap gap-1.5 pl-4">
+                          {selectedRef.tags
+                            ? selectedRef.tags
+                                .split(',')
+                                .map((tag) => tag.trim())
+                                .filter(Boolean)
+                                .map((tag) => (
+                                  <span
+                                    key={tag}
+                                    className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground"
+                                  >
+                                    {tag}
+                                  </span>
+                                ))
+                            : (
+                              <span className="text-xs font-medium text-foreground">—</span>
+                            )}
+                        </div>
                       </div>
                       <div className="space-y-1">
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
@@ -889,7 +928,7 @@ export function DashboardOverview({
                     )}
                 </div>
               </SheetFooter>
-            </>
+            </TooltipProvider>
           )}
         </SheetContent>
       </Sheet>
