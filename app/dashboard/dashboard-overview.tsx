@@ -49,6 +49,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import type { ReferenceRow } from './actions'
 import { deleteReference, submitForApproval, toggleFavorite } from './actions'
@@ -170,6 +176,106 @@ function diffMonthsUtc(startIso: string, endIso: string) {
     0,
     (e.getUTCFullYear() - s.getUTCFullYear()) * 12 +
       (e.getUTCMonth() - s.getUTCMonth())
+  )
+}
+
+// --- Freigabe-Stepper ---
+
+const APPROVAL_STEPS = [
+  { id: 'creation', label: 'Erstellung', sub: 'In Bearbeitung', icon: PencilIcon },
+  { id: 'validation', label: 'Validierung', sub: 'Wartet auf Validierung', icon: SearchIcon },
+  { id: 'approval', label: 'Freigabe', sub: 'Wartet auf Freigabe', icon: HandshakeIcon },
+  { id: 'publishing', label: 'Veröffentlichung', sub: 'Verfügbar für Sales', icon: RocketIcon },
+] as const
+
+type ApprovalStepId = (typeof APPROVAL_STEPS)[number]['id']
+
+function getCurrentApprovalStep(status: ReferenceRow['status']): ApprovalStepId {
+  if (status === 'draft') return 'creation'
+  if (status === 'pending') return 'approval'
+  return 'publishing'
+}
+
+function ApprovalStepper({
+  status,
+  accountOwner,
+}: {
+  status: ReferenceRow['status']
+  accountOwner?: string | null
+}) {
+  const currentId = getCurrentApprovalStep(status)
+  const currentIndex = APPROVAL_STEPS.findIndex((s) => s.id === currentId)
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-4">
+        {APPROVAL_STEPS.map((step, index) => {
+          const isCompleted = index < currentIndex
+          const isActive = index === currentIndex
+          const Icon = step.icon
+          return (
+            <React.Fragment key={step.id}>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex flex-col items-center gap-2 focus:outline-none"
+                  >
+                    <Avatar
+                      size="sm"
+                      className={[
+                        'border-2',
+                        isCompleted
+                          ? 'border-emerald-500 bg-emerald-500 text-emerald-50'
+                          : isActive
+                            ? 'border-yellow-400 bg-background'
+                            : 'border-muted-foreground/30 bg-background text-muted-foreground',
+                      ].join(' ')}
+                    >
+                      <AvatarFallback className="bg-transparent text-current">
+                        <Icon className="size-3" />
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="text-center">
+                      <div className="text-[11px] font-semibold">
+                        {step.label}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {step.sub}
+                      </div>
+                    </div>
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="max-w-sm text-xs">
+                  <p className="font-semibold mb-1">{step.label}</p>
+                  <p className="text-muted-foreground mb-2">{step.sub}</p>
+                  {step.id === 'approval' && accountOwner && (
+                    <p className="text-muted-foreground">
+                      Anfrage an <span className="font-medium">{accountOwner}</span>{' '}
+                      möglich.
+                    </p>
+                  )}
+                  {step.id === 'publishing' && (
+                    <p className="text-muted-foreground">
+                      Die Referenz ist in diesem Schritt für Sales sichtbar und nutzbar,
+                      abhängig vom gewählten Freigabestatus.
+                    </p>
+                  )}
+                </PopoverContent>
+              </Popover>
+              {index < APPROVAL_STEPS.length - 1 && (
+                <Separator
+                  className={[
+                    'hidden flex-1 sm:block h-[2px]',
+                    isCompleted ? 'bg-emerald-500' : 'bg-muted-foreground/30',
+                  ].join(' ')}
+                />
+              )}
+            </React.Fragment>
+          )
+        })}
+      </div>
+    </div>
   )
 }
 
@@ -722,12 +828,19 @@ export function DashboardOverview({
               <div className="flex-1 overflow-y-auto px-4 py-4">
                 {/* Abstand zwischen Abschnitten: space-y-8 | Abstand innerhalb Abschnitt: space-y-4 | Mehr Abstand oben vor Übersicht: pt-6 */}
                 <div className="space-y-8 pt-6">
-                  {/* Freigabeprozess */}
+                  {/* Freigabestatus */}
                   <section className="space-y-4">
                     <h3 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
-                      Freigabeprozess
+                      Freigabestatus
                     </h3>
-                    <div className="h-[120px] rounded-lg border bg-muted/10" />
+                    <div className="rounded-lg border bg-muted/10 p-4">
+                      <ApprovalStepper
+                        status={selectedRef.status}
+                        accountOwner={
+                          selectedRef.contact_display || selectedRef.contact_email
+                        }
+                      />
+                    </div>
                   </section>
 
                   {/* Übersicht */}

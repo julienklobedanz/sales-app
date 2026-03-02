@@ -155,6 +155,7 @@ export function ReferenceForm({
   )
   const [projectEnd, setProjectEnd] = useState(initialData?.project_end ?? '')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [logoFile, setLogoFile] = useState<File | null>(null)
   const [createSubmitting, setCreateSubmitting] = useState(false)
 
   const isEditMode = !!initialData
@@ -221,29 +222,40 @@ export function ReferenceForm({
 
   const formContent = (
     <>
-      {/* Unternehmen: im Edit-Modus Name bearbeitbar, sonst CompanySelect */}
-      <div className="space-y-2">
-        <Label htmlFor={isEditMode ? 'company_name' : 'companyId'}>
-          Unternehmen
-        </Label>
-        {isEditMode ? (
-          <Input
-            id="company_name"
-            name="company_name"
-            placeholder="z. B. Acme GmbH"
-            required
-            disabled={submitting}
-            defaultValue={initialData.company_name}
-          />
-        ) : (
-          <>
-            <CompanySelect
-              companies={companies}
-              companyId={companyId}
-              onCompanyIdChange={setCompanyId}
+      {/* Unternehmen + Logo */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,1.6fr)_minmax(0,0.9fr)] items-start">
+        <div className="space-y-2">
+          <Label htmlFor={isEditMode ? 'company_name' : 'companyId'}>
+            Unternehmen
+          </Label>
+          {isEditMode ? (
+            <Input
+              id="company_name"
+              name="company_name"
+              placeholder="z. B. Acme GmbH"
+              required
+              disabled={submitting}
+              defaultValue={initialData.company_name}
             />
-          </>
-        )}
+          ) : (
+            <>
+              <CompanySelect
+                companies={companies}
+                companyId={companyId}
+                onCompanyIdChange={setCompanyId}
+              />
+            </>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="logo">Logo (optional)</Label>
+          <LogoDropZone
+            selectedFile={logoFile}
+            onFileSelect={setLogoFile}
+            disabled={submitting}
+          />
+        </div>
       </div>
 
       {!isEditMode && (
@@ -716,6 +728,83 @@ function FileDropZone({
           <span className="text-muted-foreground text-sm">
             PDF hier ablegen oder klicken zum Auswählen
           </span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function LogoDropZone({
+  selectedFile,
+  onFileSelect,
+  disabled,
+}: {
+  selectedFile: File | null
+  onFileSelect: (file: File | null) => void
+  disabled: boolean
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [isDragging, setIsDragging] = useState(false)
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!disabled) setIsDragging(true)
+  }
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+  }
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+    if (disabled) return
+    const file = e.dataTransfer.files?.[0]
+    if (file && file.type.startsWith('image/')) {
+      onFileSelect(file)
+    }
+  }
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file && file.type.startsWith('image/')) {
+      onFileSelect(file)
+    } else {
+      onFileSelect(null)
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleChange}
+        aria-hidden
+      />
+      <div
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => e.key === 'Enter' && !disabled && inputRef.current?.click()}
+        onClick={() => !disabled && inputRef.current?.click()}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={[
+          'flex aspect-square max-w-[120px] cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed text-center text-[11px] text-muted-foreground transition-colors',
+          isDragging
+            ? 'border-primary bg-primary/5'
+            : 'border-muted-foreground/25 hover:border-muted-foreground/50 hover:bg-muted/50',
+          disabled ? 'pointer-events-none opacity-60' : '',
+        ].join(' ')}
+      >
+        {selectedFile ? (
+          <span className="px-1">{selectedFile.name}</span>
+        ) : (
+          <span>Logo hier ablegen oder klicken</span>
         )}
       </div>
     </div>
