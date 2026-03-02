@@ -4,6 +4,168 @@ import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { submitForApproval } from '../actions'
 
+// Mapping für Brandfetch → Formular (Industrie-Dropdown)
+const INDUSTRIES_MAP: { keywords: string[]; value: string }[] = [
+  { keywords: ['software', 'it ', 'technology', 'tech', 'internet', 'computer'], value: 'IT & Software' },
+  { keywords: ['finance', 'finanz', 'banking', 'insurance', 'versicherung'], value: 'Finanzdienstleistungen' },
+  { keywords: ['health', 'gesundheit', 'medical', 'pharma'], value: 'Gesundheitswesen' },
+  { keywords: ['manufacturing', 'industrie', 'production', 'automotive', 'engineering'], value: 'Industrie & Produktion' },
+  { keywords: ['retail', 'handel', 'ecommerce', 'consumer'], value: 'Handel' },
+  { keywords: ['government', 'public', 'öffentlich', 'defence', 'administration'], value: 'Öffentlicher Sektor' },
+]
+const INDUSTRY_DEFAULT = 'Sonstige'
+
+const COUNTRY_MAP: Record<string, string> = {
+  germany: 'Deutschland', deutschland: 'Deutschland',
+  austria: 'Österreich', österreich: 'Österreich',
+  switzerland: 'Schweiz', schweiz: 'Schweiz',
+  france: 'Frankreich', frankreich: 'Frankreich',
+  'united kingdom': 'Großbritannien', uk: 'Großbritannien', großbritannien: 'Großbritannien',
+  'united states': 'USA', usa: 'USA', us: 'USA',
+}
+
+export type EnrichCompanyResult =
+  | { success: true; company_id: string; company_name: string; website_url: string | null; industry: string | null; headquarters: string | null; country: string | null; employee_count: number | null; logo_url: string | null }
+  | { success: false; error: string }
+
+function normalizeDomain(input: string): string {
+  const t = input.trim().toLowerCase()
+  const withoutProtocol = t.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]
+  return withoutProtocol || t
+}
+
+function mapBrandfetchIndustry(name: string | undefined): string | null {
+  if (!name) return null
+  const lower = name.toLowerCase()
+  for (const { keywords, value } of INDUSTRIES_MAP) {
+    if (keywords.some((k) => lower.includes(k))) return value
+  }
+  return INDUSTRY_DEFAULT
+}
+
+function mapBrandfetchCountry(name: string | undefined): string | null {
+  if (!name) return null
+  const key = name.trim().toLowerCase()
+  return COUNTRY_MAP[key] ?? null
+}
+
+export async function enrichAndSaveCompany(domain: string): Promise<EnrichCompanyResult> {
+  const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+
+  const { data: profile } = await supabase.from('profiles').select('organization_id').eq('id', user.id).single()
+  const organizationId = profile?.organization_id ?? null
+  if (!organizationId) {
+    return { success: false, error: 'Dein Profil ist keiner Organisation zugeordnet.' }
+  }
+
+  const apiKey = process.env.BRANDFETCH_API_KEY
+  if (!apiKey) return { success: false, error: 'Brandfetch API ist nicht konfiguriert (BRANDFETCH_API_KEY).' }
+
+  const normalizedDomain = normalizeDomain(domain)
+  if (!normalizedDomain || !normalizedDomain.includes('.')) {
+    return { success: false, error: 'Ungültige Domain.' }
+  }
+
+  let res: Response
+  try {
+    res = await fetch(`https://api.brandfetch.io/v2/brands/domain/${encodeURIComponent(normalizedDomain)}`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      next: { revalidate: 0 },
+    })
+  } catch (e) {
+    return { success: false, error: 'Brandfetch-Anfrage fehlgeschlagen.' }
+  }
+
+  if (!res.ok) {
+    if (res.status === 404) return { success: false, error: 'Unternehmen für diese Domain nicht gefunden.' }
+    if (res.status === 401) return { success: false, error: 'Brandfetch API-Schlüssel ungültig.' }
+    if (res.status === 429) return { success: false, error: 'Brandfetch-Limit erreicht. Bitte später erneut versuchen.' }
+    return { success: false, error: `Brandfetch-Fehler: ${res.status}` }
+  }
+
+  let data: {
+    name?: string | null
+    domain?: string | null
+    description?: string | null
+    company?: {
+      employees?: number | null
+      industries?: { name?: string }[]
+      location?: { city?: string; country?: string; region?: string }
+    }
+    logos?: { formats?: { src?: string }[] }[]
+  }
+  try {
+    data = await res.json()
+  } catch {
+    return { success: false, error: 'Ungültige Brandfetch-Antwort.' }
+  }
+
+  const companyName = (data.name ?? data.domain ?? normalizedDomain).toString().trim() || normalizedDomain
+  const websiteUrl = data.domain ? `https://${data.domain.toString().replace(/^https?:\/\//, '')}` : `https://${normalizedDomain}`
+  const description = data.description?.toString().trim() || null
+  const employeeCount = typeof data.company?.employees === 'number' ? data.company.employees : null
+  const firstIndustry = data.company?.industries?.[0]?.name
+  const industry = mapBrandfetchIndustry(firstIndustry)
+  const loc = data.company?.location
+  const headquarters = [loc?.city, loc?.country].filter(Boolean).join(', ') || null
+  const country = mapBrandfetchCountry(loc?.country ?? undefined)
+
+  const logoUrl =
+    data.logos?.[0]?.formats?.[0]?.src ?? data.logos?.find((l) => l.formats?.length)?.formats?.[0]?.src ?? null
+
+  const { data: existing } = await supabase
+    .from('companies')
+    .select('id')
+    .eq('organization_id', organizationId)
+    .ilike('name', companyName)
+    .maybeSingle()
+
+  const payload = {
+    name: companyName,
+    organization_id: organizationId,
+    website_url: websiteUrl || null,
+    employee_count: employeeCount,
+    headquarters: headquarters || null,
+    description: description || null,
+    industry: industry || null,
+  }
+
+  if (existing?.id) {
+    const { error } = await supabase.from('companies').update(payload).eq('id', existing.id)
+    if (error) return { success: false, error: error.message }
+    revalidatePath('/dashboard/new')
+    return {
+      success: true,
+      company_id: existing.id,
+      company_name: companyName,
+      website_url: websiteUrl || null,
+      industry,
+      headquarters,
+      country,
+      employee_count: employeeCount,
+      logo_url: logoUrl,
+    }
+  }
+
+  const { data: inserted, error } = await supabase.from('companies').insert(payload).select('id').single()
+  if (error) return { success: false, error: error.message }
+  if (!inserted?.id) return { success: false, error: 'Firma konnte nicht angelegt werden.' }
+  revalidatePath('/dashboard/new')
+  return {
+    success: true,
+    company_id: inserted.id,
+    company_name: companyName,
+    website_url: websiteUrl || null,
+    industry,
+    headquarters,
+    country,
+    employee_count: employeeCount,
+    logo_url: logoUrl,
+  }
+}
+
 export type CreateReferenceResult =
   | { success: true; referenceId: string }
   | { success: false; error: string }

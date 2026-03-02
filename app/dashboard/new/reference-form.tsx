@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { createReference } from './actions'
+import { createReference, enrichAndSaveCompany } from './actions'
 import { updateReference } from '../actions'
 import { CreateContactDialog } from './create-contact-dialog'
 
@@ -165,8 +165,45 @@ export function ReferenceForm({
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [createSubmitting, setCreateSubmitting] = useState(false)
+  const [newCompanyName, setNewCompanyName] = useState('')
+  const [enrichLoading, setEnrichLoading] = useState(false)
+  const [enrichedCompany, setEnrichedCompany] = useState<Company | null>(null)
+  const enrichDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const isEditMode = !!initialData
+  const displayCompanies = enrichedCompany && !companies.some((c) => c.id === enrichedCompany.id)
+    ? [...companies, enrichedCompany]
+    : companies
+
+  useEffect(() => {
+    if (!newCompanyName.trim() || !newCompanyName.includes('.')) return
+    const raw = newCompanyName.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]
+    if (raw.length < 4) return
+    if (enrichDebounceRef.current) clearTimeout(enrichDebounceRef.current)
+    enrichDebounceRef.current = window.setTimeout(() => {
+      enrichDebounceRef.current = null
+      setEnrichLoading(true)
+      enrichAndSaveCompany(newCompanyName.trim())
+        .then((result) => {
+          if (result.success) {
+            setCompanyId(result.company_id)
+            setEnrichedCompany({ id: result.company_id, name: result.company_name })
+            setWebsite(result.website_url ?? '')
+            setIndustry(result.industry ?? '')
+            setCountry(result.country ?? '')
+            setEmployeeCount(result.employee_count != null ? String(result.employee_count) : '')
+            setNewCompanyName('')
+            toast.success('Unternehmensdaten wurden geladen.')
+          } else {
+            toast.error(result.error)
+          }
+        })
+        .finally(() => setEnrichLoading(false))
+    }, 800)
+    return () => {
+      if (enrichDebounceRef.current) clearTimeout(enrichDebounceRef.current)
+    }
+  }, [newCompanyName])
   const submitting = isEditMode ? editSubmitting : createSubmitting
 
   const handleContactCreated = (newId: string) => {
@@ -248,11 +285,18 @@ export function ReferenceForm({
             />
           ) : (
             <>
-              <CompanySelect
-                companies={companies}
-                companyId={companyId}
-                onCompanyIdChange={setCompanyId}
-              />
+              <div className="relative">
+                <CompanySelect
+                  companies={displayCompanies}
+                  companyId={companyId}
+                  onCompanyIdChange={setCompanyId}
+                />
+                {companyId === '__new__' && enrichLoading && (
+                  <span className="pointer-events-none absolute right-9 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    <Loader2 className="size-4 animate-spin" />
+                  </span>
+                )}
+              </div>
             </>
           )}
         </div>
@@ -272,13 +316,22 @@ export function ReferenceForm({
           id="new-company-wrap"
           className={`space-y-2 ${companyId === '__new__' ? '' : 'hidden'}`}
         >
-          <Label htmlFor="newCompanyName">Name der neuen Firma</Label>
-          <Input
-            id="newCompanyName"
-            name="newCompanyName"
-            placeholder="z. B. Acme GmbH"
-            disabled={submitting}
-          />
+          <Label htmlFor="newCompanyName">Name der neuen Firma oder Domain (z. B. siemens.de)</Label>
+          <div className="relative">
+            <Input
+              id="newCompanyName"
+              name="newCompanyName"
+              placeholder="z. B. Acme GmbH oder siemens.de für Auto-Fill"
+              disabled={submitting}
+              value={newCompanyName}
+              onChange={(e) => setNewCompanyName(e.target.value)}
+            />
+            {enrichLoading && (
+              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                <Loader2 className="size-4 animate-spin" />
+              </span>
+            )}
+          </div>
         </div>
       )}
 
