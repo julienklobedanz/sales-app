@@ -62,7 +62,7 @@ import type { Profile } from './dashboard-shell'
 import {
   PlusCircleIcon,
   SlidersHorizontal,
-  PencilIcon,
+  PencilIcon as Pencil,
   Trash2Icon,
   GlobeIcon,
   Building2Icon,
@@ -77,7 +77,9 @@ import {
   MoreHorizontal,
   CopyIcon,
   FileTextIcon,
-  SearchIcon,
+  SearchIcon as Search,
+  HandshakeIcon as Handshake,
+  RocketIcon as Rocket,
   CheckCircle,
   Send,
   Mail,
@@ -440,7 +442,7 @@ export function DashboardOverview({
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-3">
           {/* Suche nimmt restlichen Platz; rechts davon Dropzone & Filter */}
           <div className="relative flex-1 min-w-0">
-            <SearchIcon className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Referenzen suchen..."
               value={search}
@@ -727,7 +729,7 @@ export function DashboardOverview({
                           <DropdownMenuItem
                             onSelect={() => router.push(`/dashboard/edit/${ref.id}`)}
                           >
-                            <PencilIcon className="mr-2 h-4 w-4" />
+                            <Pencil className="mr-2 h-4 w-4" />
                             Bearbeiten
                           </DropdownMenuItem>
                           <DropdownMenuItem
@@ -1126,7 +1128,7 @@ export function DashboardOverview({
                         router.push(`/dashboard/edit/${selectedRef.id}`)
                       }
                     >
-                      <PencilIcon className="mr-2 size-4" /> Bearbeiten
+                      <Pencil className="mr-2 size-4" /> Bearbeiten
                     </Button>
                   )}
                 </div>
