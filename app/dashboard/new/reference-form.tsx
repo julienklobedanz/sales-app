@@ -180,7 +180,7 @@ export function ReferenceForm({
     const raw = newCompanyName.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]
     if (raw.length < 4) return
     if (enrichDebounceRef.current) clearTimeout(enrichDebounceRef.current)
-    enrichDebounceRef.current = window.setTimeout(() => {
+    enrichDebounceRef.current = setTimeout(() => {
       enrichDebounceRef.current = null
       setEnrichLoading(true)
       enrichAndSaveCompany(newCompanyName.trim())
