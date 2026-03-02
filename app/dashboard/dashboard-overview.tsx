@@ -162,6 +162,17 @@ function formatDate(iso: string) {
   return `${day}.${month}.${year}`
 }
 
+function diffMonthsUtc(startIso: string, endIso: string) {
+  const s = new Date(startIso)
+  const e = new Date(endIso)
+  if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime())) return null
+  return Math.max(
+    0,
+    (e.getUTCFullYear() - s.getUTCFullYear()) * 12 +
+      (e.getUTCMonth() - s.getUTCMonth())
+  )
+}
+
 // --- Hauptkomponente ---
 
 export function DashboardOverview({
@@ -754,6 +765,8 @@ export function DashboardOverview({
                             )}
                         </div>
                       </div>
+
+                      {/* Row 1 */}
                       <div className="space-y-1">
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
                           <Building2Icon className="size-3" /> Industrie
@@ -764,32 +777,14 @@ export function DashboardOverview({
                       </div>
                       <div className="space-y-1">
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-                          <MapPinIcon className="size-3" /> Region
+                          <MapPinIcon className="size-3" /> HQ
                         </span>
                         <p className="text-foreground pl-4 text-xs font-medium">
                           {selectedRef.country || '—'}
                         </p>
                       </div>
-                      <div className="space-y-1">
-                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-                          <ActivityIcon className="size-3" /> Projektstatus
-                        </span>
-                        <p className="text-foreground pl-4 text-xs font-medium">
-                          {selectedRef.project_status
-                            ? PROJECT_STATUS_LABELS[selectedRef.project_status] ?? selectedRef.project_status
-                            : '—'}
-                        </p>
-                      </div>
-                      <div className="space-y-1">
-                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-                          <TimerIcon className="size-3" /> Dauer
-                        </span>
-                        <p className="text-foreground pl-4 text-xs font-medium">
-                          {selectedRef.duration_months != null
-                            ? `${selectedRef.duration_months} Monate`
-                            : '—'}
-                        </p>
-                      </div>
+
+                      {/* Row 2 */}
                       <div className="space-y-1">
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
                           <GlobeIcon className="size-3" /> Website
@@ -811,18 +806,83 @@ export function DashboardOverview({
                       </div>
                       <div className="space-y-1">
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-                          <CalendarIcon className="size-3" /> Erstellt
+                          <UserIcon className="size-3" /> Mitarbeiteranzahl
+                        </span>
+                        <p className="text-foreground pl-4 text-xs font-medium">—</p>
+                      </div>
+
+                      {/* Row 3 */}
+                      <div className="space-y-1">
+                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+                          <CalendarIcon className="size-3" /> Projektstart
                         </span>
                         <p className="text-foreground pl-4 text-xs font-medium">
-                          {formatDate(selectedRef.created_at)}
+                          {selectedRef.project_start ? formatDate(selectedRef.project_start) : '—'}
                         </p>
                       </div>
+                      <div className="space-y-1">
+                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+                          <TimerIcon className="size-3" /> Projektende / Dauer
+                        </span>
+                        {(() => {
+                          const start = selectedRef.project_start
+                          const end = selectedRef.project_end
+                          const status = selectedRef.project_status
+
+                          const label =
+                            status === 'active'
+                              ? 'Aktiv'
+                              : end
+                                ? formatDate(end)
+                                : '—'
+
+                          const nowIso = new Date().toISOString()
+                          const duration =
+                            selectedRef.duration_months != null
+                              ? selectedRef.duration_months
+                              : start && end
+                                ? diffMonthsUtc(start, end)
+                                : status === 'active' && start
+                                  ? diffMonthsUtc(start, nowIso)
+                                  : null
+
+                          return (
+                            <p className="text-foreground pl-4 text-xs font-medium">
+                              {duration != null ? `${label} (${duration} Monate)` : label}
+                            </p>
+                          )
+                        })()}
+                      </div>
+
+                      {/* Row 4 */}
+                      <div className="space-y-1">
+                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+                          <FileTextIcon className="size-3" /> Volumen (€)
+                        </span>
+                        <p className="text-foreground pl-4 text-xs font-medium">—</p>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+                          <FileTextIcon className="size-3" /> Vertragsart
+                        </span>
+                        <p className="text-foreground pl-4 text-xs font-medium">—</p>
+                      </div>
+
+                      {/* Row 5 */}
                       <div className="space-y-1">
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
                           <HistoryIcon className="size-3" /> Letzte Änderung
                         </span>
                         <p className="text-foreground pl-4 text-xs font-medium">
                           {selectedRef.updated_at ? formatDate(selectedRef.updated_at) : '—'}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+                          <CalendarIcon className="size-3" /> Erstellt
+                        </span>
+                        <p className="text-foreground pl-4 text-xs font-medium">
+                          {formatDate(selectedRef.created_at)}
                         </p>
                       </div>
                     </div>
