@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
@@ -40,6 +41,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { DashboardHeader } from './dashboard-header'
+import { SupportTicketModal } from '@/components/dashboard/SupportTicketModal'
 import { createClient } from '@/lib/supabase/client'
 import { type User } from '@supabase/supabase-js'
 import { updateUserRole } from './actions'
@@ -79,6 +81,9 @@ export function DashboardShell({
   }
 
   const isAdmin = profile.role === 'admin'
+
+  const [ticketModalOpen, setTicketModalOpen] = useState(false)
+  const [ticketModalType, setTicketModalType] = useState<'support' | 'feedback'>('support')
 
   const userInitials =
     user.email?.slice(0, 2).toUpperCase() || 'U'
@@ -192,18 +197,32 @@ export function DashboardShell({
               <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild size="sm" tooltip="Support">
-                    <Link href="#">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTicketModalType('support')
+                        setTicketModalOpen(true)
+                      }}
+                      className="w-full"
+                    >
                       <LifeBuoy />
                       <span>Hilfe & Support</span>
-                    </Link>
+                    </button>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild size="sm" tooltip="Feedback">
-                    <Link href="#">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTicketModalType('feedback')
+                        setTicketModalOpen(true)
+                      }}
+                      className="w-full"
+                    >
                       <Send />
                       <span>Feedback senden</span>
-                    </Link>
+                    </button>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
@@ -315,6 +334,11 @@ export function DashboardShell({
         <DashboardHeader />
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">{children}</div>
       </SidebarInset>
+      <SupportTicketModal
+        isOpen={ticketModalOpen}
+        onOpenChange={setTicketModalOpen}
+        type={ticketModalType}
+      />
     </SidebarProvider>
   )
 }
