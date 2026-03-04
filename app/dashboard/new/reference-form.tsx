@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/select'
 import { createReference, enrichAndSaveCompany, fetchCompanyEnrichment } from './actions'
 import { updateReference } from '../actions'
+import { extractDataFromDocument } from './extract-reference-data'
 import { CreateContactDialog } from './create-contact-dialog'
 
 const INDUSTRIES = [
@@ -126,6 +127,8 @@ export function ReferenceForm({
   const router = useRouter()
   const [editSubmitting, setEditSubmitting] = useState(false)
   const [companyId, setCompanyId] = useState('')
+  const [title, setTitle] = useState(initialData?.title ?? '')
+  const [summary, setSummary] = useState(initialData?.summary ?? '')
   const [industry, setIndustry] = useState(initialData?.industry ?? '')
   const [country, setCountry] = useState(initialData?.country ?? '')
   const [headquarters, setHeadquarters] = useState('')
@@ -173,6 +176,7 @@ export function ReferenceForm({
   const enrichDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [editCompanyName, setEditCompanyName] = useState(initialData?.company_name ?? '')
   const editEnrichDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [magicImportLoading, setMagicImportLoading] = useState(false)
 
   const isEditMode = !!initialData
   const displayCompanies = enrichedCompany && !companies.some((c) => c.id === enrichedCompany.id)
@@ -302,8 +306,43 @@ export function ReferenceForm({
     }
   }
 
+  async function handleMagicImport(file: File) {
+    const formData = new FormData()
+    formData.set('file', file)
+    setMagicImportLoading(true)
+    try {
+      const result = await extractDataFromDocument(formData)
+      if (result.success) {
+        const d = result.data
+        if (d.title != null) setTitle(d.title)
+        if (d.summary != null) setSummary(d.summary)
+        if (d.industry != null) setIndustry(d.industry)
+        if (d.volume_eur != null) setVolumeEur(d.volume_eur)
+        if (d.employee_count != null) setEmployeeCount(String(d.employee_count))
+        if (Array.isArray(d.tags) && d.tags.length > 0) {
+          setTags(d.tags)
+          setTagInputValue('')
+        }
+        toast.success('Daten aus dem Dokument übernommen. Bitte prüfen und ggf. anpassen.')
+      } else {
+        toast.error(result.error)
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Extraktion fehlgeschlagen.')
+    } finally {
+      setMagicImportLoading(false)
+    }
+  }
+
   const formContent = (
     <>
+      {!isEditMode && (
+        <MagicImportDropzone
+          onFileAccept={handleMagicImport}
+          loading={magicImportLoading}
+          disabled={submitting}
+        />
+      )}
       {/* Unternehmen + Logo */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,1.6fr)_minmax(0,0.9fr)] items-start">
         <div className="space-y-2">
@@ -391,7 +430,8 @@ export function ReferenceForm({
           placeholder="z. B. Cloud Transformation 2024"
           required
           disabled={submitting}
-          defaultValue={initialData?.title}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
         />
       </div>
 
@@ -403,7 +443,8 @@ export function ReferenceForm({
           placeholder="Kurze Beschreibung der Referenz …"
           rows={4}
           disabled={submitting}
-          defaultValue={initialData?.summary ?? ''}
+          value={summary}
+          onChange={(e) => setSummary(e.target.value)}
         />
       </div>
 
@@ -960,6 +1001,97 @@ function LogoDropZone({
           />
         ) : (
           <span>Logo hier ablegen oder klicken</span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function MagicImportDropzone({
+  onFileAccept,
+  loading,
+  disabled,
+}: {
+  onFileAccept: (file: File) => void
+  loading: boolean
+  disabled: boolean
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [isDragging, setIsDragging] = useState(false)
+
+  const acceptTypes = 'application/pdf,.pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx'
+
+  const validateAndAccept = (file: File) => {
+    const ok =
+      file.type === 'application/pdf' ||
+      file.type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
+      /\.(pdf|pptx)$/i.test(file.name)
+    if (ok) onFileAccept(file)
+    else toast.error('Nur PDF- oder PPTX-Dateien werden unterstützt.')
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!disabled && !loading) setIsDragging(true)
+  }
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+  }
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+    if (disabled || loading) return
+    const file = e.dataTransfer.files?.[0]
+    if (file) validateAndAccept(file)
+  }
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) validateAndAccept(file)
+    e.target.value = ''
+  }
+
+  return (
+    <div className="space-y-2">
+      <input
+        ref={inputRef}
+        type="file"
+        accept={acceptTypes}
+        className="hidden"
+        onChange={handleChange}
+        aria-hidden
+      />
+      <div
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => e.key === 'Enter' && !disabled && !loading && inputRef.current?.click()}
+        onClick={() => !disabled && !loading && inputRef.current?.click()}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={[
+          'flex min-h-[100px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-6 text-center transition-colors',
+          isDragging && !loading ? 'border-primary bg-primary/5' : 'border-muted-foreground/30 bg-muted/20 hover:border-muted-foreground/50 hover:bg-muted/30',
+          (disabled || loading) ? 'pointer-events-none opacity-70' : '',
+        ].join(' ')}
+      >
+        {loading ? (
+          <>
+            <Loader2 className="text-muted-foreground size-8 animate-spin" />
+            <span className="text-muted-foreground text-sm font-medium">Extrahiere Daten…</span>
+          </>
+        ) : (
+          <>
+            <p className="text-foreground text-sm font-medium">
+              Hast du schon ein Referenzdokument?
+            </p>
+            <p className="text-muted-foreground max-w-md text-sm">
+              Lege jetzt deine .pptx- oder PDF-Datei hier ab, um das Formular automatisch zu befüllen.
+            </p>
+          </>
         )}
       </div>
     </div>

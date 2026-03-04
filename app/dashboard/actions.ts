@@ -232,6 +232,106 @@ export async function toggleFavorite(referenceId: string) {
   revalidatePath('/dashboard/favorites')
 }
 
+export type BulkImportReferencesResult =
+  | { success: true; created: number }
+  | { success: false; error: string }
+
+const BULK_IMPORT_MAX_FILES = 20
+const BULK_IMPORT_COMPANY_NAME = 'Import (Entwürfe)'
+
+export async function bulkCreateReferencesFromFiles(
+  formData: FormData
+): Promise<BulkImportReferencesResult> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, organization_id')
+    .eq('id', user.id)
+    .single()
+
+  if (profile?.role !== 'admin') {
+    return { success: false, error: 'Nur Admins können Referenzen im Bulk importieren.' }
+  }
+
+  const organizationId = profile?.organization_id ?? null
+  if (!organizationId) {
+    return { success: false, error: 'Dein Profil ist keiner Organisation zugeordnet.' }
+  }
+
+  const files = formData.getAll('files') as File[]
+  if (!files?.length) return { success: false, error: 'Keine Dateien übergeben.' }
+  if (files.length > BULK_IMPORT_MAX_FILES) {
+    return { success: false, error: `Maximal ${BULK_IMPORT_MAX_FILES} Dateien erlaubt.` }
+  }
+
+  let companyId: string
+  const { data: existingCompany } = await supabase
+    .from('companies')
+    .select('id')
+    .eq('organization_id', organizationId)
+    .ilike('name', BULK_IMPORT_COMPANY_NAME)
+    .maybeSingle()
+
+  if (existingCompany?.id) {
+    companyId = existingCompany.id
+  } else {
+    const { data: newCompany, error: companyError } = await supabase
+      .from('companies')
+      .insert({
+        name: BULK_IMPORT_COMPANY_NAME,
+        organization_id: organizationId,
+      })
+      .select('id')
+      .single()
+    if (companyError || !newCompany?.id) {
+      return { success: false, error: companyError?.message ?? 'Unternehmen für Import konnte nicht angelegt werden.' }
+    }
+    companyId = newCompany.id
+  }
+
+  let created = 0
+  for (const file of files) {
+    if (!(file instanceof File) || !file.name?.trim()) continue
+    let filePath: string | null = null
+    if (file.size > 0) {
+      const fileName = `${Date.now()}-${created}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('references')
+        .upload(fileName, file)
+      if (!uploadError && uploadData?.path) filePath = uploadData.path
+    }
+    const title = file.name.replace(/\.[^.]+$/, '').trim() || file.name
+    const { error: insertError } = await supabase.from('references').insert({
+      company_id: companyId,
+      title,
+      summary: null,
+      industry: null,
+      country: null,
+      status: 'draft',
+      contact_id: null,
+      file_path: filePath,
+      tags: null,
+      project_status: null,
+      project_start: null,
+      project_end: null,
+      website: null,
+      employee_count: null,
+      volume_eur: null,
+      contract_type: null,
+      customer_contact: null,
+    })
+    if (!insertError) created++
+  }
+
+  revalidatePath('/dashboard')
+  return { success: true, created }
+}
+
 export async function deleteReference(id: string) {
   const supabase = await createServerSupabaseClient()
 

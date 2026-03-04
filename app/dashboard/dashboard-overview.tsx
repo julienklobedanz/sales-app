@@ -58,7 +58,7 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import type { ReferenceRow } from './actions'
-import { deleteReference, submitForApproval, toggleFavorite } from './actions'
+import { bulkCreateReferencesFromFiles, deleteReference, submitForApproval, toggleFavorite } from './actions'
 import type { Profile } from './dashboard-shell'
 import {
   PlusCircleIcon,
@@ -87,7 +87,17 @@ import {
   Star,
   XIcon,
   FileDownIcon,
+  UploadIcon,
+  Loader2,
 } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { toast } from 'sonner'
 
 // --- Konstanten & Hilfsfunktionen ---
@@ -307,6 +317,10 @@ export function DashboardOverview({
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [selectedRef, setSelectedRef] = useState<ReferenceRow | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [bulkImportOpen, setBulkImportOpen] = useState(false)
+  const [bulkImportFiles, setBulkImportFiles] = useState<File[]>([])
+  const [bulkImportLoading, setBulkImportLoading] = useState(false)
+  const bulkImportDropRef = useRef<HTMLInputElement>(null)
   const [visibleColumns, setVisibleColumns] = useState<
     Record<(typeof COLUMN_KEYS)[number], boolean>
   >(DEFAULT_VISIBLE)
@@ -541,14 +555,27 @@ export function DashboardOverview({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Nur Admins: Erstellen-Button rechts */}
+          {/* Nur Admins: Erstellen- und Bulk-Import-Button rechts */}
           {profile.role === 'admin' && (
-            <Link href="/dashboard/new" className="shrink-0">
-              <Button className="w-full sm:w-auto">
-                <PlusCircleIcon className="mr-2 size-4" />
-                Referenz erstellen
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
+              <Link href="/dashboard/new">
+                <Button className="w-full sm:w-auto">
+                  <PlusCircleIcon className="mr-2 size-4" />
+                  Referenz erstellen
+                </Button>
+              </Link>
+              <Button
+                variant="outline"
+                className="w-full sm:w-auto"
+                onClick={() => {
+                  setBulkImportFiles([])
+                  setBulkImportOpen(true)
+                }}
+              >
+                <UploadIcon className="mr-2 size-4" />
+                Referenzen importieren
               </Button>
-            </Link>
+            </div>
           )}
         </div>
 
@@ -1173,6 +1200,113 @@ export function DashboardOverview({
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Bulk-Import-Modal (nur Admin) */}
+      {profile.role === 'admin' && (
+        <Dialog open={bulkImportOpen} onOpenChange={setBulkImportOpen}>
+          <DialogContent className="sm:max-w-md" showCloseButton={!bulkImportLoading}>
+            <DialogHeader>
+              <DialogTitle>Referenzen importieren</DialogTitle>
+              <DialogDescription>
+                Bis zu 20 Dateien ablegen. Pro Datei wird eine Referenz als Entwurf angelegt und mit deiner Organisation verknüpft.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <input
+                ref={bulkImportDropRef}
+                type="file"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  const list = e.target.files ? Array.from(e.target.files) : []
+                  setBulkImportFiles((prev) => {
+                    const next = [...prev, ...list].slice(0, 20)
+                    return next
+                  })
+                  e.target.value = ''
+                }}
+              />
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => !bulkImportLoading && bulkImportDropRef.current?.click()}
+                onKeyDown={(e) => e.key === 'Enter' && !bulkImportLoading && bulkImportDropRef.current?.click()}
+                onDragOver={(e) => { e.preventDefault(); e.stopPropagation() }}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  if (bulkImportLoading) return
+                  const list = e.dataTransfer.files ? Array.from(e.dataTransfer.files) : []
+                  setBulkImportFiles((prev) => [...prev, ...list].slice(0, 20))
+                }}
+                className="flex min-h-[120px] cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-4 text-center text-sm text-muted-foreground transition-colors hover:border-muted-foreground/50 hover:bg-muted/30 disabled:pointer-events-none disabled:opacity-60"
+              >
+                <UploadIcon className="size-8" />
+                <span>Dateien hier ablegen oder klicken (max. 20)</span>
+              </div>
+              {bulkImportFiles.length > 0 && (
+                <ul className="max-h-[180px] space-y-1 overflow-y-auto rounded border bg-muted/20 p-2 text-sm">
+                  {bulkImportFiles.map((f, i) => (
+                    <li key={`${f.name}-${i}`} className="flex items-center justify-between gap-2">
+                      <span className="truncate">{f.name}</span>
+                      <button
+                        type="button"
+                        disabled={bulkImportLoading}
+                        onClick={() => setBulkImportFiles((prev) => prev.filter((_, j) => j !== i))}
+                        className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                        aria-label="Entfernen"
+                      >
+                        <XIcon className="size-4" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                disabled={bulkImportLoading}
+                onClick={() => setBulkImportOpen(false)}
+              >
+                Abbrechen
+              </Button>
+              <Button
+                disabled={bulkImportFiles.length === 0 || bulkImportLoading}
+                onClick={async () => {
+                  setBulkImportLoading(true)
+                  try {
+                    const formData = new FormData()
+                    bulkImportFiles.forEach((f) => formData.append('files', f))
+                    const result = await bulkCreateReferencesFromFiles(formData)
+                    if (result.success) {
+                      toast.success(`${result.created} Entwurf${result.created !== 1 ? 'e' : ''} erfolgreich erstellt.`)
+                      setBulkImportOpen(false)
+                      setBulkImportFiles([])
+                      router.refresh()
+                    } else {
+                      toast.error(result.error)
+                    }
+                  } catch (e) {
+                    toast.error(e instanceof Error ? e.message : 'Import fehlgeschlagen.')
+                  } finally {
+                    setBulkImportLoading(false)
+                  }
+                }}
+              >
+                {bulkImportLoading ? (
+                  <>
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                    Import läuft…
+                  </>
+                ) : (
+                  `Import starten (${bulkImportFiles.length})`
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }
