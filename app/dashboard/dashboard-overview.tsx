@@ -364,7 +364,6 @@ export function DashboardOverview({
   const openDetail = (ref: ReferenceRow) => {
     setSelectedRef(ref)
     setSheetOpen(true)
-    setSelectedRefIds((prev) => new Set(prev).add(ref.id))
   }
 
   const toggleCart = (refId: string, e?: React.MouseEvent) => {
@@ -592,7 +591,7 @@ export function DashboardOverview({
             <DropdownMenuContent align="end" className="w-[240px]">
               {selectedRefIds.size === 0 ? (
                 <p className="px-2 py-3 text-sm text-muted-foreground">
-                  Keine Referenzen ausgewählt. Nutze die Checkboxen oder klicke eine Zeile an.
+                  Keine Referenzen ausgewählt. Nutze die Checkboxen links in der Tabelle, um Referenzen in den Warenkorb zu legen.
                 </p>
               ) : (
                 <>
