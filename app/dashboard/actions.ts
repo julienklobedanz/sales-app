@@ -287,7 +287,7 @@ export async function bulkCreateReferencesFromFiles(
   }
 
   const groupsJson = formData.get('groups') as string | null
-  const groups: BulkImportGroup[] = groupsJson ? (JSON.parse(groupsJson) as BulkImportGroup[]) : null
+  const groups: BulkImportGroup[] = groupsJson ? (JSON.parse(groupsJson) as BulkImportGroup[]) : []
   const files = formData.getAll('files') as File[]
 
   const totalFiles = files?.length ?? 0
@@ -419,7 +419,7 @@ export async function bulkCreateReferencesFromFiles(
         const ext = file.name.includes('.') ? file.name.split('.').pop() ?? '' : ''
         await supabase.from('reference_assets').insert({
           reference_id: refRow.id,
-          file_path,
+          filePath,
           file_name: file.name,
           file_type: ext || null,
           category: 'other',
