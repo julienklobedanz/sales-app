@@ -89,6 +89,7 @@ import {
   FileDownIcon,
   UploadIcon,
   Loader2,
+  ShoppingCartIcon,
 } from 'lucide-react'
 import {
   Dialog,
@@ -321,6 +322,7 @@ export function DashboardOverview({
   const [bulkImportFiles, setBulkImportFiles] = useState<File[]>([])
   const [bulkImportLoading, setBulkImportLoading] = useState(false)
   const bulkImportDropRef = useRef<HTMLInputElement>(null)
+  const [selectedRefIds, setSelectedRefIds] = useState<Set<string>>(() => new Set())
   const [visibleColumns, setVisibleColumns] = useState<
     Record<(typeof COLUMN_KEYS)[number], boolean>
   >(DEFAULT_VISIBLE)
@@ -362,7 +364,23 @@ export function DashboardOverview({
   const openDetail = (ref: ReferenceRow) => {
     setSelectedRef(ref)
     setSheetOpen(true)
+    setSelectedRefIds((prev) => new Set(prev).add(ref.id))
   }
+
+  const toggleCart = (refId: string, e?: React.MouseEvent) => {
+    e?.stopPropagation()
+    setSelectedRefIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(refId)) next.delete(refId)
+      else next.add(refId)
+      return next
+    })
+  }
+
+  const selectedRefs = useMemo(
+    () => initialReferences.filter((r) => selectedRefIds.has(r.id)),
+    [initialReferences, selectedRefIds]
+  )
 
   const handleDelete = async (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation()
@@ -530,7 +548,7 @@ export function DashboardOverview({
               {COLUMN_KEYS.map((column) => (
                 <DropdownMenuItem
                   key={column}
-                  onSelect={(e) => {
+                  onSelect={(e: Event) => {
                     e.preventDefault()
                     setVisibleColumns((prev) => ({
                       ...prev,
@@ -552,6 +570,83 @@ export function DashboardOverview({
                   </div>
                 </DropdownMenuItem>
               ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="default"
+                size="sm"
+                className="h-9 shrink-0 bg-foreground text-background hover:bg-foreground/90"
+              >
+                <ShoppingCartIcon className="mr-2 size-4" />
+                Warenkorb
+                {selectedRefIds.size > 0 && (
+                  <span className="ml-1.5 rounded-full bg-background/20 px-1.5 py-0.5 text-xs">
+                    {selectedRefIds.size}
+                  </span>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[240px]">
+              {selectedRefIds.size === 0 ? (
+                <p className="px-2 py-3 text-sm text-muted-foreground">
+                  Keine Referenzen ausgewählt. Nutze die Checkboxen oder klicke eine Zeile an.
+                </p>
+              ) : (
+                <>
+                  <DropdownMenuLabel>
+                    {selectedRefIds.size} Referenz{selectedRefIds.size !== 1 ? 'en' : ''} im Warenkorb
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {profile.role === 'sales' && (
+                    <DropdownMenuItem
+                      onClick={async () => {
+                        const base = process.env.NEXT_PUBLIC_SUPABASE_URL
+                        const withFile = selectedRefs.filter((r) => r.file_path)
+                        if (withFile.length === 0) {
+                          toast.error('Keine der ausgewählten Referenzen hat ein Dokument zum Herunterladen.')
+                          return
+                        }
+                        withFile.forEach((r) => {
+                          const url = `${base}/storage/v1/object/public/references/${r.file_path}`
+                          window.open(url, '_blank', 'noopener,noreferrer')
+                        })
+                        toast.success(`${withFile.length} Referenz${withFile.length !== 1 ? 'en' : ''} werden heruntergeladen.`)
+                      }}
+                    >
+                      <FileDownIcon className="mr-2 size-4" />
+                      Ausgewählte herunterladen
+                    </DropdownMenuItem>
+                  )}
+                  {profile.role === 'admin' && (
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onClick={async () => {
+                        for (const id of selectedRefIds) {
+                          try {
+                            await deleteReference(id)
+                          } catch {
+                            toast.error(`Fehler beim Löschen einer Referenz.`)
+                            return
+                          }
+                        }
+                        setSelectedRefIds(new Set())
+                        toast.success(`${selectedRefIds.size} Referenz${selectedRefIds.size !== 1 ? 'en' : ''} gelöscht.`)
+                        router.refresh()
+                      }}
+                    >
+                      <Trash2Icon className="mr-2 size-4" />
+                      Ausgewählte löschen
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setSelectedRefIds(new Set())}>
+                    Auswahl aufheben
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -604,6 +699,7 @@ export function DashboardOverview({
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[44px]"></TableHead>
                 {visibleColumns.status && <TableHead>{COLUMN_LABELS.status}</TableHead>}
                 {visibleColumns.company && <TableHead className="w-[180px]">{COLUMN_LABELS.company}</TableHead>}
                 {visibleColumns.title && <TableHead>{COLUMN_LABELS.title}</TableHead>}
@@ -625,7 +721,7 @@ export function DashboardOverview({
                 <TableRow>
                   <TableCell
                     colSpan={
-                      COLUMN_KEYS.filter((k) => visibleColumns[k]).length + 2
+                      COLUMN_KEYS.filter((k) => visibleColumns[k]).length + 3
                     }
                     className="h-24 text-center text-muted-foreground"
                   >
@@ -663,6 +759,19 @@ export function DashboardOverview({
                     className="cursor-pointer hover:bg-muted/50 group"
                     onClick={() => openDetail(ref)}
                   >
+                    <TableCell
+                      className="w-[44px] pr-0"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedRefIds.has(ref.id)}
+                        onChange={() => toggleCart(ref.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="size-4 rounded border-muted-foreground/50"
+                        aria-label={`${ref.title} in Warenkorb`}
+                      />
+                    </TableCell>
                     {visibleColumns.status && (
                       <TableCell>
                         <Badge variant={STATUS_BADGE_VARIANT[ref.status] ?? 'outline'}>
@@ -679,8 +788,26 @@ export function DashboardOverview({
                       </TableCell>
                     )}
                     {visibleColumns.tags && (
-                      <TableCell className="max-w-[120px] truncate text-sm">
-                        {ref.tags ?? '—'}
+                      <TableCell className="max-w-[140px]">
+                        {ref.tags ? (
+                          <div className="flex flex-wrap gap-1">
+                            {ref.tags
+                              .split(',')
+                              .map((t) => t.trim())
+                              .filter(Boolean)
+                              .slice(0, 3)
+                              .map((tag) => (
+                                <span
+                                  key={tag}
+                                  className="inline-flex rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                          </div>
+                        ) : (
+                          '—'
+                        )}
                       </TableCell>
                     )}
                     {visibleColumns.industry && <TableCell>{ref.industry ?? '—'}</TableCell>}
@@ -721,12 +848,12 @@ export function DashboardOverview({
                         {ref.updated_at ? formatDate(ref.updated_at) : '—'}
                       </TableCell>
                     )}
-                    <TableCell className="pr-0" onClick={(e) => e.stopPropagation()}>
+                    <TableCell className="pr-0" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
                       <Button
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 hover:bg-transparent"
-                        onClick={(e) => handleToggleFavorite(ref.id, e)}
+                        onClick={(e: React.MouseEvent) => handleToggleFavorite(ref.id, e)}
                       >
                         <Star
                           className={`size-4 ${
@@ -737,7 +864,7 @@ export function DashboardOverview({
                         />
                       </Button>
                     </TableCell>
-                    <TableCell onClick={(e) => e.stopPropagation()}>
+                    <TableCell onClick={(e: React.MouseEvent) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
@@ -761,7 +888,7 @@ export function DashboardOverview({
                             Bearbeiten
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onSelect={(e) =>
+                            onSelect={(e: Event) =>
                               handleCopyId(
                                 ref.id,
                                 e as unknown as React.MouseEvent
@@ -773,7 +900,7 @@ export function DashboardOverview({
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            onSelect={(e) => {
+                            onSelect={(e: Event) => {
                               handleDelete(
                                 ref.id,
                                 e as unknown as React.MouseEvent
@@ -812,7 +939,7 @@ export function DashboardOverview({
                         variant="ghost"
                         size="icon"
                         className="h-6 w-6 shrink-0 -mt-1 hover:bg-transparent"
-                        onClick={(e) => handleToggleFavorite(selectedRef.id, e)}
+                        onClick={(e: React.MouseEvent) => handleToggleFavorite(selectedRef.id, e)}
                       >
                         <Star
                           className={`size-4 ${
@@ -1189,7 +1316,7 @@ export function DashboardOverview({
                       variant="ghost"
                       size="sm"
                       className="ml-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                      onClick={(e) => handleDelete(selectedRef.id, e)}
+                      onClick={(e: React.MouseEvent) => handleDelete(selectedRef.id, e)}
                     >
                       <Trash2Icon className="mr-2 size-4" /> Löschen
                     </Button>
