@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -57,8 +57,16 @@ import {
 } from '@/components/ui/popover'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
-import type { ReferenceRow } from './actions'
-import { bulkCreateReferencesFromFiles, deleteReference, submitForApproval, toggleFavorite } from './actions'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import type { ReferenceRow, ReferenceAssetRow } from './actions'
+import {
+  bulkCreateReferencesFromFiles,
+  deleteReference,
+  getReferenceAssets,
+  submitForApproval,
+  toggleFavorite,
+  updateReferenceAssetCategory,
+} from './actions'
 import type { Profile } from './dashboard-shell'
 import {
   PlusCircleIcon,
@@ -99,6 +107,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
 
 // --- Konstanten & Hilfsfunktionen ---
@@ -318,11 +336,102 @@ export function DashboardOverview({
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [selectedRef, setSelectedRef] = useState<ReferenceRow | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [detailAssets, setDetailAssets] = useState<ReferenceAssetRow[]>([])
+  const [detailAssetsLoading, setDetailAssetsLoading] = useState(false)
+  useEffect(() => {
+    if (selectedRef?.id && sheetOpen) {
+      setDetailAssetsLoading(true)
+      getReferenceAssets(selectedRef.id)
+        .then(setDetailAssets)
+        .finally(() => setDetailAssetsLoading(false))
+    } else {
+      setDetailAssets([])
+    }
+  }, [selectedRef?.id, sheetOpen])
   const [bulkImportOpen, setBulkImportOpen] = useState(false)
-  const [bulkImportFiles, setBulkImportFiles] = useState<File[]>([])
+  type BulkImportGroupItem = { id: string; projectName: string; files: File[] }
+  const [bulkImportGroups, setBulkImportGroups] = useState<BulkImportGroupItem[]>([])
   const [bulkImportLoading, setBulkImportLoading] = useState(false)
   const bulkImportDropRef = useRef<HTMLInputElement>(null)
+
+  const totalBulkImportFiles = bulkImportGroups.reduce((s, g) => s + g.files.length, 0)
+
+  function addBulkImportFiles(newFiles: File[]) {
+    setBulkImportGroups((prev) => {
+      const currentTotal = prev.reduce((s, g) => s + g.files.length, 0)
+      const capped = newFiles.slice(0, Math.max(0, 20 - currentTotal))
+      if (capped.length === 0) return prev
+      const newGroups: BulkImportGroupItem[] = capped.map((file) => ({
+        id: `g-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        projectName: file.name.replace(/\.[^.]+$/, '').trim() || file.name,
+        files: [file],
+      }))
+      const next = [...prev, ...newGroups]
+      return autoGroupByPrefix(next)
+    })
+  }
+
+  function autoGroupByPrefix(groups: BulkImportGroupItem[]): BulkImportGroupItem[] {
+    const byPrefix = new Map<string, File[]>()
+    for (const group of groups) {
+      for (const file of group.files) {
+        const baseName = file.name.replace(/\.[^.]+$/, '').trim()
+        const prefix = baseName.includes('_') ? baseName.split('_')[0]!.trim() : baseName || file.name
+        if (!byPrefix.has(prefix)) byPrefix.set(prefix, [])
+        byPrefix.get(prefix)!.push(file)
+      }
+    }
+    const result: BulkImportGroupItem[] = Array.from(byPrefix.entries()).map(
+      ([_, files]) => ({
+        id: `g-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        projectName: files[0]?.name.replace(/\.[^.]+$/, '').trim() ?? 'Referenz',
+        files,
+      })
+    )
+    const autoGroupedCount = result.filter((g) => g.files.length > 1).reduce((s, g) => s + g.files.length, 0)
+    if (autoGroupedCount > 0) {
+      toast.info(`${autoGroupedCount} Dateien wurden automatisch gruppiert, da sie zusammenzugehören scheinen.`)
+    }
+    return result
+  }
+
+  function removeBulkImportFile(groupId: string, fileIndex: number) {
+    setBulkImportGroups((prev) =>
+      prev
+        .map((g) =>
+          g.id === groupId
+            ? { ...g, files: g.files.filter((_, i) => i !== fileIndex) }
+            : g
+        )
+        .filter((g) => g.files.length > 0)
+    )
+  }
+
+  function moveFileToGroup(
+    fromGroupIndex: number,
+    fromFileIndex: number,
+    toGroupIndex: number
+  ) {
+    if (fromGroupIndex === toGroupIndex) return
+    setBulkImportGroups((prev) => {
+      const next = prev.map((g) => ({ ...g, files: [...g.files] }))
+      const file = next[fromGroupIndex]?.files[fromFileIndex]
+      if (!file) return prev
+      next[fromGroupIndex]!.files = next[fromGroupIndex]!.files.filter((_, i) => i !== fromFileIndex)
+      const target = next[toGroupIndex]
+      if (target) target.files.push(file)
+      return next.filter((g) => g.files.length > 0)
+    })
+  }
+
+  function setBulkImportGroupName(groupId: string, projectName: string) {
+    setBulkImportGroups((prev) =>
+      prev.map((g) => (g.id === groupId ? { ...g, projectName } : g))
+    )
+  }
   const [selectedRefIds, setSelectedRefIds] = useState<Set<string>>(() => new Set())
+  const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
+  const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false)
   const [visibleColumns, setVisibleColumns] = useState<
     Record<(typeof COLUMN_KEYS)[number], boolean>
   >(DEFAULT_VISIBLE)
@@ -483,17 +592,17 @@ export function DashboardOverview({
             />
           </div>
 
-          {/* Temporäre Dropzone für RFP-Dokumente */}
+          {/* RFP-Abgleich */}
           <div
-            className="h-9 w-[180px] shrink-0 cursor-pointer rounded-md border border-dashed border-muted-foreground/40 bg-muted/40 px-3 text-xs text-muted-foreground hover:bg-muted flex items-center justify-center text-center"
+            className="h-9 w-[120px] shrink-0 cursor-pointer rounded-md border border-dashed border-muted-foreground/40 bg-muted/40 px-3 text-xs text-muted-foreground hover:bg-muted flex items-center justify-center text-center"
             onClick={() => fileInputRef.current?.click()}
             onDrop={handleRfpDrop}
             onDragOver={handleRfpDragOver}
           >
             <span className="truncate">
               {rfpFiles.length === 0
-                ? 'RFP-Dateien hier ablegen'
-                : `${rfpFiles.length} RFP-Datei${rfpFiles.length > 1 ? 'en' : ''} ausgewählt`}
+                ? 'RFP-Abgleich'
+                : `${rfpFiles.length} ausgewählt`}
             </span>
             <input
               ref={fileInputRef}
@@ -506,11 +615,11 @@ export function DashboardOverview({
           </div>
 
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="h-9 w-[140px] shrink-0">
+            <SelectTrigger className="h-9 w-[120px] shrink-0">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Alle Status</SelectItem>
+              <SelectItem value="all">Status</SelectItem>
               <SelectItem value="draft">Entwurf</SelectItem>
               <SelectItem value="pending">In Prüfung</SelectItem>
               <SelectItem value="external">Extern frei</SelectItem>
@@ -520,22 +629,12 @@ export function DashboardOverview({
             </SelectContent>
           </Select>
 
-          <Button
-            variant={favoritesOnly ? 'secondary' : 'outline'}
-            size="sm"
-            className="h-9 shrink-0"
-            onClick={() => setFavoritesOnly((v) => !v)}
-          >
-            <Star className={`mr-2 size-4 ${favoritesOnly ? 'fill-yellow-400 text-yellow-400' : ''}`} />
-            Nur Favoriten
-          </Button>
-
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
                 size="sm"
-                className="hidden h-9 shrink-0 lg:flex"
+                className="h-9 shrink-0"
               >
                 <SlidersHorizontal className="mr-2 h-4 w-4" />
                 Spalten
@@ -572,17 +671,51 @@ export function DashboardOverview({
             </DropdownMenuContent>
           </DropdownMenu>
 
+          <Button
+            variant={favoritesOnly ? 'secondary' : 'outline'}
+            size="sm"
+            className="h-9 shrink-0"
+            onClick={() => setFavoritesOnly((v) => !v)}
+          >
+            <Star className={`mr-2 size-4 ${favoritesOnly ? 'fill-yellow-400 text-yellow-400' : ''}`} />
+            Favoriten
+          </Button>
+
+          {/* Admin: Importieren, Erstellen */}
+          {profile.role === 'admin' && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 shrink-0"
+                onClick={() => {
+                  setBulkImportGroups([])
+                  setBulkImportOpen(true)
+                }}
+              >
+                <UploadIcon className="mr-2 size-4" />
+                Importieren
+              </Button>
+              <Link href="/dashboard/new">
+                <Button size="sm" className="h-9 shrink-0">
+                  <PlusCircleIcon className="mr-2 size-4" />
+                  Erstellen
+                </Button>
+              </Link>
+            </>
+          )}
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="default"
-                size="sm"
-                className="h-9 shrink-0 bg-foreground text-background hover:bg-foreground/90"
+                size="icon"
+                className="h-9 w-9 shrink-0 bg-foreground text-background hover:bg-foreground/90 relative"
+                aria-label={selectedRefIds.size > 0 ? `Warenkorb (${selectedRefIds.size} Referenzen)` : 'Warenkorb'}
               >
-                <ShoppingCartIcon className="mr-2 size-4" />
-                Warenkorb
+                <ShoppingCartIcon className="size-4" />
                 {selectedRefIds.size > 0 && (
-                  <span className="ml-1.5 rounded-full bg-background/20 px-1.5 py-0.5 text-xs">
+                  <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-background/90 px-1 text-[10px] font-medium text-foreground">
                     {selectedRefIds.size}
                   </span>
                 )}
@@ -622,18 +755,9 @@ export function DashboardOverview({
                   {profile.role === 'admin' && (
                     <DropdownMenuItem
                       className="text-destructive focus:text-destructive"
-                      onClick={async () => {
-                        for (const id of selectedRefIds) {
-                          try {
-                            await deleteReference(id)
-                          } catch {
-                            toast.error(`Fehler beim Löschen einer Referenz.`)
-                            return
-                          }
-                        }
-                        setSelectedRefIds(new Set())
-                        toast.success(`${selectedRefIds.size} Referenz${selectedRefIds.size !== 1 ? 'en' : ''} gelöscht.`)
-                        router.refresh()
+                      onSelect={(e: Event) => {
+                        e.preventDefault()
+                        setBulkDeleteConfirmOpen(true)
                       }}
                     >
                       <Trash2Icon className="mr-2 size-4" />
@@ -649,27 +773,65 @@ export function DashboardOverview({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Nur Admins: Erstellen- und Bulk-Import-Button rechts */}
+          {/* Sicherheitsabfrage: Ausgewählte Referenzen löschen (nur Admin) */}
           {profile.role === 'admin' && (
-            <div className="flex shrink-0 flex-wrap items-center gap-2">
-              <Link href="/dashboard/new">
-                <Button className="w-full sm:w-auto">
-                  <PlusCircleIcon className="mr-2 size-4" />
-                  Referenz erstellen
-                </Button>
-              </Link>
-              <Button
-                variant="outline"
-                className="w-full sm:w-auto"
-                onClick={() => {
-                  setBulkImportFiles([])
-                  setBulkImportOpen(true)
-                }}
-              >
-                <UploadIcon className="mr-2 size-4" />
-                Referenzen importieren
-              </Button>
-            </div>
+            <AlertDialog
+              open={bulkDeleteConfirmOpen}
+              onOpenChange={(open: boolean) => {
+                if (!bulkDeleteLoading) setBulkDeleteConfirmOpen(open)
+              }}
+            >
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Referenzen löschen</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Möchtest du die {selectedRefIds.size} ausgewählten Referenz{selectedRefIds.size !== 1 ? 'en' : ''} wirklich dauerhaft löschen?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={bulkDeleteLoading}>
+                    Abbrechen
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    disabled={bulkDeleteLoading}
+                    onClick={async (e: React.MouseEvent) => {
+                      e.preventDefault()
+                      setBulkDeleteLoading(true)
+                      try {
+                        const ids = Array.from(selectedRefIds)
+                        for (const id of ids) {
+                          try {
+                            await deleteReference(id)
+                          } catch {
+                            toast.error('Fehler beim Löschen einer Referenz.')
+                            setBulkDeleteLoading(false)
+                            setBulkDeleteConfirmOpen(false)
+                            return
+                          }
+                        }
+                        const count = ids.length
+                        setSelectedRefIds(new Set())
+                        setBulkDeleteConfirmOpen(false)
+                        toast.success(`${count} Referenz${count !== 1 ? 'en' : ''} gelöscht.`)
+                        router.refresh()
+                      } finally {
+                        setBulkDeleteLoading(false)
+                      }
+                    }}
+                  >
+                    {bulkDeleteLoading ? (
+                      <>
+                        <Loader2 className="mr-2 size-4 animate-spin" />
+                        Wird gelöscht…
+                      </>
+                    ) : (
+                      'Dauerhaft löschen'
+                    )}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
         </div>
 
@@ -1010,6 +1172,29 @@ export function DashboardOverview({
                           'Keine Zusammenfassung hinterlegt.'}
                       </p>
                     </div>
+                    {(selectedRef.customer_challenge || selectedRef.our_solution) && (
+                      <div className="rounded-lg border border-amber-200/50 bg-amber-50/30 dark:border-amber-800/40 dark:bg-amber-950/20 p-4 space-y-3">
+                        <p className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
+                          Storytelling
+                        </p>
+                        {selectedRef.customer_challenge && (
+                          <div>
+                            <p className="text-muted-foreground text-[11px] font-medium mb-0.5">Herausforderung des Kunden</p>
+                            <p className="text-foreground text-sm leading-relaxed">
+                              {selectedRef.customer_challenge}
+                            </p>
+                          </div>
+                        )}
+                        {selectedRef.our_solution && (
+                          <div>
+                            <p className="text-muted-foreground text-[11px] font-medium mb-0.5">Unsere Lösung</p>
+                            <p className="text-foreground text-sm leading-relaxed">
+                              {selectedRef.our_solution}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1 col-span-2">
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
@@ -1145,6 +1330,24 @@ export function DashboardOverview({
                         </p>
                       </div>
 
+                      {/* Incumbent & Wettbewerber */}
+                      <div className="space-y-1">
+                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+                          <Building2Icon className="size-3" /> Incumbent
+                        </span>
+                        <p className="text-foreground pl-4 text-xs font-medium">
+                          {selectedRef.incumbent_provider || '—'}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+                          <Handshake className="size-3" /> Wettbewerber
+                        </span>
+                        <p className="text-foreground pl-4 text-xs font-medium">
+                          {selectedRef.competitors || '—'}
+                        </p>
+                      </div>
+
                       {/* Row 5 */}
                       <div className="space-y-1">
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
@@ -1189,39 +1392,111 @@ export function DashboardOverview({
                     </div>
                   </section>
 
-                  {/* Dateien */}
+                  {/* Dateien (Assets nach Kategorie) */}
                   <section className="space-y-4">
                     <h3 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
                       Dateien
                     </h3>
-                    {selectedRef.file_path ? (
-                      <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
-                        <div className="flex min-w-0 items-center gap-3">
-                          <div className="rounded bg-red-100 p-1.5 text-red-600 shrink-0">
-                            <FileTextIcon className="size-4" />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-xs font-medium truncate">Case Study PDF</p>
-                            <p className="text-muted-foreground truncate text-[10px]">
-                              {selectedRef.file_path.split('/').pop()}
-                            </p>
-                          </div>
-                        </div>
-                        <Button variant="outline" size="sm" className="shrink-0 h-7 text-xs" asChild>
-                          <a
-                            href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/references/${selectedRef.file_path}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <ExternalLinkIcon className="mr-1 size-3" /> Öffnen
-                          </a>
-                        </Button>
+                    {detailAssetsLoading ? (
+                      <div className="flex h-24 items-center justify-center rounded-lg border border-dashed text-muted-foreground text-sm">
+                        Dateien werden geladen…
                       </div>
-                    ) : (
+                    ) : detailAssets.length === 0 && !selectedRef.file_path ? (
                       <div className="text-muted-foreground bg-muted/10 flex h-24 flex-col items-center justify-center gap-1 rounded-lg border border-dashed text-xs">
                         <span>📎</span>
                         <p>Keine Dateien vorhanden.</p>
                       </div>
+                    ) : (
+                      <Tabs defaultValue="sales" className="w-full">
+                        <TabsList className="grid w-full grid-cols-3">
+                          <TabsTrigger value="sales">Sales Material</TabsTrigger>
+                          <TabsTrigger value="contract">Verträge</TabsTrigger>
+                          <TabsTrigger value="other">Sonstiges</TabsTrigger>
+                        </TabsList>
+                        {(['sales', 'contract', 'other'] as const).map((cat) => {
+                          const legacyFile =
+                            cat === 'other' && detailAssets.length === 0 && selectedRef.file_path
+                              ? { path: selectedRef.file_path, name: selectedRef.file_path.split('/').pop() ?? 'Dokument', isLegacy: true as const }
+                              : null
+                          const assetsInCat = detailAssets.filter((a) => a.category === cat)
+                          const hasLegacy = !!legacyFile
+                          const hasItems = assetsInCat.length > 0 || hasLegacy
+                          return (
+                            <TabsContent key={cat} value={cat} className="mt-2">
+                              {!hasItems ? (
+                                <p className="text-muted-foreground py-4 text-center text-sm">Keine Dateien in dieser Kategorie.</p>
+                              ) : (
+                                <ul className="space-y-2">
+                                  {legacyFile && (
+                                    <li className="flex items-center justify-between gap-2 rounded-lg border p-3">
+                                      <div className="flex min-w-0 items-center gap-2">
+                                        <FileTextIcon className="size-4 shrink-0 text-muted-foreground" />
+                                        <span className="truncate text-sm">{legacyFile.name}</span>
+                                      </div>
+                                      <Button variant="outline" size="sm" className="h-7 shrink-0 text-xs" asChild>
+                                        <a
+                                          href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/references/${legacyFile.path}`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                        >
+                                          <ExternalLinkIcon className="mr-1 size-3" /> Öffnen
+                                        </a>
+                                      </Button>
+                                    </li>
+                                  )}
+                                  {assetsInCat.map((asset) => (
+                                    <li
+                                      key={asset.id}
+                                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3"
+                                    >
+                                      <div className="flex min-w-0 flex-1 items-center gap-2">
+                                        <FileTextIcon className="size-4 shrink-0 text-muted-foreground" />
+                                        <span className="truncate text-sm">{asset.file_name || asset.file_path.split('/').pop() || 'Dokument'}</span>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        {profile.role === 'admin' && (
+                                          <Select
+                                            value={asset.category}
+                                            onValueChange={async (value: 'sales' | 'contract' | 'other') => {
+                                              const res = await updateReferenceAssetCategory(asset.id, value)
+                                              if (res.success) {
+                                                setDetailAssets((prev) =>
+                                                  prev.map((a) => (a.id === asset.id ? { ...a, category: value } : a))
+                                                )
+                                                toast.success('Kategorie aktualisiert.')
+                                              } else {
+                                                toast.error(res.error ?? 'Fehler beim Aktualisieren.')
+                                              }
+                                            }}
+                                          >
+                                            <SelectTrigger className="h-8 w-[130px] text-xs">
+                                              <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              <SelectItem value="sales">Sales Material</SelectItem>
+                                              <SelectItem value="contract">Verträge</SelectItem>
+                                              <SelectItem value="other">Sonstiges</SelectItem>
+                                            </SelectContent>
+                                          </Select>
+                                        )}
+                                        <Button variant="outline" size="sm" className="h-7 shrink-0 text-xs" asChild>
+                                          <a
+                                            href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/references/${asset.file_path}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                          >
+                                            <ExternalLinkIcon className="mr-1 size-3" /> Öffnen
+                                          </a>
+                                        </Button>
+                                      </div>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </TabsContent>
+                          )
+                        })}
+                      </Tabs>
                     )}
                   </section>
 
@@ -1330,11 +1605,11 @@ export function DashboardOverview({
       {/* Bulk-Import-Modal (nur Admin) */}
       {profile.role === 'admin' && (
         <Dialog open={bulkImportOpen} onOpenChange={setBulkImportOpen}>
-          <DialogContent className="sm:max-w-md" showCloseButton={!bulkImportLoading}>
+          <DialogContent className="sm:max-w-lg" showCloseButton={!bulkImportLoading}>
             <DialogHeader>
               <DialogTitle>Referenzen importieren</DialogTitle>
               <DialogDescription>
-                Bis zu 20 Dateien ablegen. Pro Datei wird eine Referenz als Entwurf angelegt und mit deiner Organisation verknüpft.
+                Bis zu 20 Dateien ablegen. Pro Gruppe wird eine Referenz mit mehreren Assets angelegt. Ziehe Dateikarten auf eine andere, um sie zu einer Projekt-Gruppe zu bündeln.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
@@ -1342,13 +1617,11 @@ export function DashboardOverview({
                 ref={bulkImportDropRef}
                 type="file"
                 multiple
+                accept=".pdf,.pptx,.ppt"
                 className="hidden"
                 onChange={(e) => {
                   const list = e.target.files ? Array.from(e.target.files) : []
-                  setBulkImportFiles((prev) => {
-                    const next = [...prev, ...list].slice(0, 20)
-                    return next
-                  })
+                  addBulkImportFiles(list)
                   e.target.value = ''
                 }}
               />
@@ -1363,30 +1636,75 @@ export function DashboardOverview({
                   e.stopPropagation()
                   if (bulkImportLoading) return
                   const list = e.dataTransfer.files ? Array.from(e.dataTransfer.files) : []
-                  setBulkImportFiles((prev) => [...prev, ...list].slice(0, 20))
+                  addBulkImportFiles(list)
                 }}
-                className="flex min-h-[120px] cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-4 text-center text-sm text-muted-foreground transition-colors hover:border-muted-foreground/50 hover:bg-muted/30 disabled:pointer-events-none disabled:opacity-60"
+                className="flex min-h-[100px] cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-4 text-center text-sm text-muted-foreground transition-colors hover:border-muted-foreground/50 hover:bg-muted/30 disabled:pointer-events-none disabled:opacity-60"
               >
                 <UploadIcon className="size-8" />
                 <span>Dateien hier ablegen oder klicken (max. 20)</span>
               </div>
-              {bulkImportFiles.length > 0 && (
-                <ul className="max-h-[180px] space-y-1 overflow-y-auto rounded border bg-muted/20 p-2 text-sm">
-                  {bulkImportFiles.map((f, i) => (
-                    <li key={`${f.name}-${i}`} className="flex items-center justify-between gap-2">
-                      <span className="truncate">{f.name}</span>
-                      <button
-                        type="button"
+              {bulkImportGroups.length > 0 && (
+                <div className="max-h-[280px] space-y-3 overflow-y-auto">
+                  {bulkImportGroups.map((group, groupIndex) => (
+                    <div
+                      key={group.id}
+                      className="rounded-lg border border-border bg-muted/10 p-3"
+                    >
+                      <label className="mb-2 block text-xs font-medium text-muted-foreground">
+                        Projektname
+                      </label>
+                      <Input
+                        value={group.projectName}
+                        onChange={(e) => setBulkImportGroupName(group.id, e.target.value)}
                         disabled={bulkImportLoading}
-                        onClick={() => setBulkImportFiles((prev) => prev.filter((_, j) => j !== i))}
-                        className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-                        aria-label="Entfernen"
-                      >
-                        <XIcon className="size-4" />
-                      </button>
-                    </li>
+                        className="mb-2 h-8 text-sm"
+                        placeholder="Name der Referenz"
+                      />
+                      <div className="flex flex-wrap gap-2">
+                        {group.files.map((file, fileIndex) => (
+                          <div
+                            key={`${group.id}-${fileIndex}-${file.name}`}
+                            draggable={!bulkImportLoading}
+                            onDragStart={(e: React.DragEvent) => {
+                              if (bulkImportLoading) return
+                              e.dataTransfer.setData('text/plain', `${groupIndex}-${fileIndex}`)
+                              e.dataTransfer.effectAllowed = 'move'
+                            }}
+                            onDragOver={(e: React.DragEvent) => {
+                              e.preventDefault()
+                              e.dataTransfer.dropEffect = 'move'
+                            }}
+                            onDrop={(e: React.DragEvent) => {
+                              e.preventDefault()
+                              if (bulkImportLoading) return
+                              const raw = e.dataTransfer.getData('text/plain')
+                              const [fromGi, fromFi] = raw.split('-').map(Number)
+                              if (Number.isFinite(fromGi) && Number.isFinite(fromFi) && (fromGi !== groupIndex || fromFi !== fileIndex)) {
+                                moveFileToGroup(fromGi, fromFi, groupIndex)
+                              }
+                            }}
+                            className="flex cursor-grab items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1.5 text-sm shadow-sm active:cursor-grabbing"
+                          >
+                            <FileTextIcon className="size-3.5 shrink-0 text-muted-foreground" />
+                            <span className="max-w-[140px] truncate">{file.name}</span>
+                            <button
+                              type="button"
+                              disabled={bulkImportLoading}
+                              onClick={(e: React.MouseEvent) => {
+                                e.stopPropagation()
+                                removeBulkImportFile(group.id, fileIndex)
+                              }}
+                              className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                              aria-label={`${file.name} entfernen`}
+                            >
+                              <XIcon className="size-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   ))}
-                </ul>
+                </div>
               )}
             </div>
             <DialogFooter>
@@ -1398,17 +1716,28 @@ export function DashboardOverview({
                 Abbrechen
               </Button>
               <Button
-                disabled={bulkImportFiles.length === 0 || bulkImportLoading}
+                disabled={totalBulkImportFiles === 0 || bulkImportLoading}
                 onClick={async () => {
                   setBulkImportLoading(true)
                   try {
                     const formData = new FormData()
-                    bulkImportFiles.forEach((f) => formData.append('files', f))
+                    formData.append(
+                      'groups',
+                      JSON.stringify(
+                        bulkImportGroups.map((g) => ({
+                          projectName: g.projectName,
+                          fileCount: g.files.length,
+                        }))
+                      )
+                    )
+                    bulkImportGroups.forEach((g) => {
+                      g.files.forEach((f) => formData.append('files', f))
+                    })
                     const result = await bulkCreateReferencesFromFiles(formData)
                     if (result.success) {
-                      toast.success(`${result.created} Entwurf${result.created !== 1 ? 'e' : ''} erfolgreich erstellt.`)
+                      toast.success(`${result.created} Referenz${result.created !== 1 ? 'en' : ''} (Entwürfe) erfolgreich erstellt.`)
                       setBulkImportOpen(false)
-                      setBulkImportFiles([])
+                      setBulkImportGroups([])
                       router.refresh()
                     } else {
                       toast.error(result.error)
@@ -1426,7 +1755,7 @@ export function DashboardOverview({
                     Import läuft…
                   </>
                 ) : (
-                  `Import starten (${bulkImportFiles.length})`
+                  `Import starten (${bulkImportGroups.length} Gruppe${bulkImportGroups.length !== 1 ? 'n' : ''}, ${totalBulkImportFiles} Dateien)`
                 )}
               </Button>
             </DialogFooter>

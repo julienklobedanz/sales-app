@@ -256,6 +256,10 @@ export async function createReference(
       : null
   const volume_eur = formData.get('volume_eur')?.toString()?.trim() || null
   const contract_type = formData.get('contract_type')?.toString()?.trim() || null
+  const incumbent_provider = formData.get('incumbent_provider')?.toString()?.trim() || null
+  const competitors = formData.get('competitors')?.toString()?.trim() || null
+  const customer_challenge = formData.get('customer_challenge')?.toString()?.trim() || null
+  const our_solution = formData.get('our_solution')?.toString()?.trim() || null
   const customer_contact = formData.get('customer_contact')?.toString()?.trim() || null
   const projectStatusRaw = formData.get('project_status')?.toString()
   const project_status: 'active' | 'completed' | null =
@@ -394,6 +398,10 @@ export async function createReference(
       employee_count,
       volume_eur,
       contract_type,
+      incumbent_provider,
+      competitors,
+      customer_challenge,
+      our_solution,
       customer_contact,
       contact_id: contactId,
       status,

@@ -99,6 +99,10 @@ export type ReferenceFormInitialData = {
   employee_count?: number | null
   volume_eur?: string | null
   contract_type?: string | null
+  incumbent_provider?: string | null
+  competitors?: string | null
+  customer_challenge?: string | null
+  our_solution?: string | null
   customer_contact?: string | null
   contact_id?: string | null
   status:
@@ -139,6 +143,18 @@ export function ReferenceForm({
   const [volumeEur, setVolumeEur] = useState(initialData?.volume_eur ?? '')
   const [contractType, setContractType] = useState(
     initialData?.contract_type ?? ''
+  )
+  const [incumbentProvider, setIncumbentProvider] = useState(
+    initialData?.incumbent_provider ?? ''
+  )
+  const [competitors, setCompetitors] = useState(
+    initialData?.competitors ?? ''
+  )
+  const [customerChallenge, setCustomerChallenge] = useState(
+    initialData?.customer_challenge ?? ''
+  )
+  const [ourSolution, setOurSolution] = useState(
+    initialData?.our_solution ?? ''
   )
   const [status, setStatus] = useState<ReferenceFormInitialData['status']>(
     initialData?.status ?? 'draft'
@@ -448,6 +464,43 @@ export function ReferenceForm({
         />
       </div>
 
+      {/* Storytelling: Herausforderung & Lösung */}
+      <div className="space-y-3 rounded-lg border border-amber-200/50 bg-amber-50/30 dark:border-amber-800/40 dark:bg-amber-950/20 p-4">
+        <p className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
+          Storytelling – Kern des Projekts
+        </p>
+        <div className="space-y-2">
+          <Label htmlFor="customer_challenge" className="text-sm font-medium">
+            Herausforderung des Kunden
+          </Label>
+          <Textarea
+            id="customer_challenge"
+            name="customer_challenge"
+            placeholder="Welche Herausforderung oder welches Ziel hatte der Kunde?"
+            rows={3}
+            disabled={submitting}
+            value={customerChallenge}
+            onChange={(e) => setCustomerChallenge(e.target.value)}
+            className="text-sm leading-relaxed"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="our_solution" className="text-sm font-medium">
+            Unsere Lösung
+          </Label>
+          <Textarea
+            id="our_solution"
+            name="our_solution"
+            placeholder="Wie haben wir die Herausforderung gelöst?"
+            rows={3}
+            disabled={submitting}
+            value={ourSolution}
+            onChange={(e) => setOurSolution(e.target.value)}
+            className="text-sm leading-relaxed"
+          />
+        </div>
+      </div>
+
       <div className="space-y-2">
         <Label htmlFor="tags-input">Tags</Label>
         <input type="hidden" name="tags" value={tags.join(', ')} />
@@ -702,6 +755,31 @@ export function ReferenceForm({
             disabled={submitting}
             value={contractType}
             onChange={(e) => setContractType(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="incumbent_provider">Aktueller Dienstleister (Incumbent)</Label>
+          <Input
+            id="incumbent_provider"
+            name="incumbent_provider"
+            placeholder="z. B. bisheriger Anbieter"
+            disabled={submitting}
+            value={incumbentProvider}
+            onChange={(e) => setIncumbentProvider(e.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="competitors">Weitere beteiligte Wettbewerber</Label>
+          <Input
+            id="competitors"
+            name="competitors"
+            placeholder="z. B. Mitbewerber im Ausschreibungsverfahren"
+            disabled={submitting}
+            value={competitors}
+            onChange={(e) => setCompetitors(e.target.value)}
           />
         </div>
       </div>
