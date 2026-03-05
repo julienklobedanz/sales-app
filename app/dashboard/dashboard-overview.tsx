@@ -58,12 +58,14 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import type { ReferenceRow, ReferenceAssetRow } from './actions'
+import type { ReferenceRow, ReferenceAssetRow, DeletedReferenceRow } from './actions'
 import {
   bulkCreateReferencesFromFiles,
   deleteReference,
   getReferenceAssets,
+  getDeletedReferences,
   hardDeleteReference,
+  emptyTrash,
   restoreReference,
   submitForApproval,
   toggleFavorite,
@@ -100,6 +102,7 @@ import {
   UploadIcon,
   Loader2,
   ShoppingCartIcon,
+  RefreshCw,
 } from 'lucide-react'
 import {
   Dialog,
@@ -323,7 +326,6 @@ export function DashboardOverview({
   title = 'Referenzen',
   initialFavoritesOnly = false,
   initialStatusFilter = 'all',
-  viewMode = 'active',
 }: {
   references: ReferenceRow[]
   totalCount: number
@@ -332,7 +334,6 @@ export function DashboardOverview({
   title?: string
   initialFavoritesOnly?: boolean
   initialStatusFilter?: string
-  viewMode?: 'active' | 'trash'
 }) {
   const router = useRouter()
   const [search, setSearch] = useState('')
@@ -362,7 +363,11 @@ export function DashboardOverview({
 
   const totalBulkImportFiles = bulkImportGroups.reduce((s, g) => s + g.files.length, 0)
 
-  const isTrashView = viewMode === 'trash'
+  const [trashOpen, setTrashOpen] = useState(false)
+  const [trashItems, setTrashItems] = useState<DeletedReferenceRow[]>([])
+  const [trashLoading, setTrashLoading] = useState(false)
+  const [confirmEmptyOpen, setConfirmEmptyOpen] = useState(false)
+  const [emptyingTrash, setEmptyingTrash] = useState(false)
 
   function addBulkImportFiles(newFiles: File[]) {
     setBulkImportGroups((prev) => {
@@ -458,10 +463,10 @@ export function DashboardOverview({
   // Client-seitiges Filtering (Sales: draft nie anzeigen; optional nur Favoriten)
   const filteredReferences = useMemo(() => {
     let list = initialReferences
-    if (profile.role === 'sales' && !isTrashView) {
+    if (profile.role === 'sales') {
       list = list.filter((r) => r.status !== 'draft')
     }
-    if (favoritesOnly && !isTrashView) {
+    if (favoritesOnly) {
       list = list.filter((r) => r.is_favorited)
     }
     if (search.trim()) {
@@ -491,40 +496,6 @@ export function DashboardOverview({
       else next.add(refId)
       return next
     })
-  }
-
-  const handleRestoreSelected = async () => {
-    const ids = Array.from(selectedRefIds)
-    if (!ids.length) return
-    try {
-      for (const id of ids) {
-        await restoreReference(id)
-      }
-      toast.success(
-        `${ids.length} Referenz${ids.length !== 1 ? 'en' : ''} wiederhergestellt.`
-      )
-      setSelectedRefIds(new Set())
-      router.refresh()
-    } catch {
-      toast.error('Fehler beim Wiederherstellen der Referenzen.')
-    }
-  }
-
-  const handleHardDeleteSelected = async () => {
-    const ids = Array.from(selectedRefIds)
-    if (!ids.length) return
-    try {
-      for (const id of ids) {
-        await hardDeleteReference(id)
-      }
-      toast.success(
-        `${ids.length} Referenz${ids.length !== 1 ? 'en' : ''} endgültig gelöscht.`
-      )
-      setSelectedRefIds(new Set())
-      router.refresh()
-    } catch {
-      toast.error('Fehler beim endgültigen Löschen der Referenzen.')
-    }
   }
 
   const selectedRefs = useMemo(
@@ -613,69 +584,77 @@ export function DashboardOverview({
   }
 
   return (
-    <div className="flex flex-col space-y-8 pt-6">
-      {/* 1. Header: Referenzen (Einstieg für beide Rollen) */}
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col space-y-6 pt-6">
+      {/* Header: Titel + Aktionen */}
+      <div className="flex items-center justify-between gap-4">
         <h2 className="text-3xl font-bold tracking-tight">{title}</h2>
+        <div className="flex items-center gap-2">
+          {/* Papierkorb-Icon */}
+          <button
+            type="button"
+            aria-label={
+              deletedCount > 0
+                ? `Papierkorb (${deletedCount} Einträge)`
+                : 'Papierkorb'
+            }
+            onClick={async () => {
+              if (deletedCount === 0) return
+              setTrashOpen(true)
+              setTrashLoading(true)
+              try {
+                const items = await getDeletedReferences()
+                setTrashItems(items)
+              } finally {
+                setTrashLoading(false)
+              }
+            }}
+            className="relative inline-flex h-9 w-9 items-center justify-center rounded-md border border-transparent bg-background text-muted-foreground hover:bg-muted disabled:cursor-default disabled:opacity-60"
+            disabled={deletedCount === 0}
+          >
+            <Trash2Icon
+              className={[
+                'size-4',
+                deletedCount > 0
+                  ? 'text-destructive'
+                  : 'text-muted-foreground/50',
+              ].join(' ')}
+            />
+            {deletedCount > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-medium text-destructive-foreground">
+                {deletedCount}
+              </span>
+            )}
+          </button>
+          {/* Warenkorb */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="default"
+                size="icon"
+                className="h-9 w-9 shrink-0 bg-foreground text-background hover:bg-foreground/90 relative"
+                aria-label={
+                  selectedRefIds.size > 0
+                    ? `Warenkorb (${selectedRefIds.size} Referenzen)`
+                    : 'Warenkorb'
+                }
+              >
+                <ShoppingCartIcon className="size-4" />
+                {selectedRefIds.size > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-background/90 px-1 text-[10px] font-medium text-foreground">
+                    {selectedRefIds.size}
+                  </span>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[240px]">
+              {/* ... bestehender Warenkorb-Content ... */}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
-      {/* 2. Toolbar & Tabelle */}
+      {/* Toolbar & Tabelle */}
       <div className="space-y-4">
-        {/* Ansicht-Filter: Aktiv / Papierkorb */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="inline-flex items-center gap-2 rounded-md border bg-muted/40 p-1">
-            <Button
-              type="button"
-              variant={!isTrashView ? 'default' : 'ghost'}
-              size="sm"
-              className="h-7 px-3 text-xs"
-              onClick={() => {
-                if (isTrashView) {
-                  router.push('/dashboard')
-                }
-              }}
-            >
-              Aktive Referenzen
-            </Button>
-            {deletedCount > 0 && (
-              <Button
-                type="button"
-                variant={isTrashView ? 'default' : 'ghost'}
-                size="sm"
-                className="h-7 px-3 text-xs"
-                onClick={() => {
-                  if (!isTrashView) {
-                    router.push('/dashboard?papierkorb=1')
-                  }
-                }}
-              >
-                Papierkorb ({deletedCount})
-              </Button>
-            )}
-          </div>
-          {isTrashView && selectedRefIds.size > 0 && (
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-8"
-                onClick={handleRestoreSelected}
-              >
-                Wiederherstellen
-              </Button>
-              <Button
-                type="button"
-                variant="destructive"
-                size="sm"
-                className="h-8"
-                onClick={handleHardDeleteSelected}
-              >
-                Endgültig löschen
-              </Button>
-            </div>
-          )}
-        </div>
         {/* Toolbar: Suche füllt Platz, daneben Dropzone, Status, Favoriten, Spalten (und ggf. Button) */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-3">
           {/* Suche nimmt restlichen Platz; rechts davon Dropzone & Filter */}
@@ -1179,6 +1158,174 @@ export function DashboardOverview({
           </Table>
         </div>
       </div>
+
+      {/* Papierkorb-Modal */}
+      <Dialog
+        open={trashOpen}
+        onOpenChange={(open) => {
+          setTrashOpen(open)
+          if (!open) {
+            setTrashItems([])
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              Papierkorb ({deletedCount})
+            </DialogTitle>
+            <DialogDescription>
+              Gelöschte Referenzen können hier wiederhergestellt oder endgültig entfernt werden.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            {trashLoading ? (
+              <div className="flex h-24 items-center justify-center text-sm text-muted-foreground">
+                <Loader2 className="mr-2 size-4 animate-spin" />
+                Lädt gelöschte Referenzen…
+              </div>
+            ) : trashItems.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Aktuell befinden sich keine Referenzen im Papierkorb.
+              </p>
+            ) : (
+              <ul className="max-h-72 space-y-2 overflow-y-auto pr-1 text-xs">
+                {trashItems.map((item) => (
+                  <li
+                    key={item.id}
+                    className="flex items-center justify-between gap-2 rounded-md border bg-muted/40 px-3 py-2"
+                  >
+                    <div className="min-w-0">
+                      <div className="truncate font-medium">
+                        {item.title}
+                      </div>
+                      <div className="truncate text-[11px] text-muted-foreground">
+                        {item.company_name}
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={async () => {
+                          try {
+                            await restoreReference(item.id)
+                            setTrashItems((prev) =>
+                              prev.filter((x) => x.id !== item.id)
+                            )
+                            toast.success('Referenz wiederhergestellt.')
+                            router.refresh()
+                          } catch {
+                            toast.error('Fehler beim Wiederherstellen.')
+                          }
+                        }}
+                      >
+                        <RefreshCw className="size-3.5" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive hover:bg-destructive/10"
+                        onClick={async () => {
+                          try {
+                            await hardDeleteReference(item.id)
+                            setTrashItems((prev) =>
+                              prev.filter((x) => x.id !== item.id)
+                            )
+                            toast.success('Referenz endgültig gelöscht.')
+                            router.refresh()
+                          } catch {
+                            toast.error('Fehler beim endgültigen Löschen.')
+                          }
+                        }}
+                      >
+                        <Trash2Icon className="size-3.5" />
+                      </Button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          {trashItems.length > 0 && (
+            <DialogFooter>
+              <AlertDialog
+                open={confirmEmptyOpen}
+                onOpenChange={(open) => {
+                  if (!emptyingTrash) setConfirmEmptyOpen(open)
+                }}
+              >
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Papierkorb unwiderruflich leeren?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Bist du sicher? Alle {trashItems.length} Referenzen im Papierkorb
+                      werden endgültig gelöscht und können nicht wiederhergestellt werden.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={emptyingTrash}>
+                      Abbrechen
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      disabled={emptyingTrash}
+                      onClick={async (e) => {
+                        e.preventDefault()
+                        setEmptyingTrash(true)
+                        try {
+                          const result = await emptyTrash()
+                          if (result.success) {
+                            toast.success(
+                              `Papierkorb geleert (${result.deleted} Referenz${
+                                result.deleted !== 1 ? 'en' : ''
+                              }).`
+                            )
+                            setTrashItems([])
+                            setConfirmEmptyOpen(false)
+                            setTrashOpen(false)
+                            router.refresh()
+                          } else {
+                            toast.error(
+                              result.error ?? 'Fehler beim endgültigen Löschen.'
+                            )
+                          }
+                        } catch {
+                          toast.error('Fehler beim endgültigen Löschen.')
+                        } finally {
+                          setEmptyingTrash(false)
+                        }
+                      }}
+                    >
+                      {emptyingTrash ? (
+                        <>
+                          <Loader2 className="mr-2 size-4 animate-spin" />
+                          Wird geleert…
+                        </>
+                      ) : (
+                        'Ja, alles löschen'
+                      )}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                className="mt-2 sm:mt-0"
+                disabled={emptyingTrash}
+                onClick={() => setConfirmEmptyOpen(true)}
+              >
+                Papierkorb unwiderruflich leeren
+              </Button>
+            </DialogFooter>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* 4. Detail Sheet */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>

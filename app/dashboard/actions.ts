@@ -50,6 +50,12 @@ export type GetDashboardDataResult = {
   deletedCount: number
 }
 
+export type DeletedReferenceRow = {
+  id: string
+  title: string
+  company_name: string
+}
+
 export type RequestItem = {
   id: string
   reference_id: string
@@ -61,8 +67,7 @@ export type RequestItem = {
 }
 
 export async function getDashboardData(
-  onlyFavorites = false,
-  view: 'active' | 'trash' = 'active'
+  onlyFavorites = false
 ): Promise<GetDashboardDataResult> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -100,15 +105,11 @@ export async function getDashboardData(
   let rows: Record<string, unknown>[] | null = null
   let error: { message: string; details?: string } | null = null
 
-  let baseQuery = supabase.from('references').select(fullSelect)
-
-  if (view === 'active') {
-    baseQuery = baseQuery.is('deleted_at', null)
-  } else {
-    baseQuery = baseQuery.not('deleted_at', 'is', null)
-  }
-
-  const result = await baseQuery.order('created_at', { ascending: false })
+  const result = await supabase
+    .from('references')
+    .select(fullSelect)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false })
 
   error = result.error
   rows = result.data
@@ -116,7 +117,9 @@ export async function getDashboardData(
   // Fallback: Ohne contact_id und contact_persons (falls Schema noch nicht migriert)
   if (error) {
     console.error('[getDashboardData] Supabase error:', error.message, error.details)
-    let fallbackQuery = supabase.from('references').select(`
+    const fallback = await supabase
+      .from('references')
+      .select(`
         id,
         title,
         summary,
@@ -142,14 +145,8 @@ export async function getDashboardData(
         project_end,
         companies ( name )
       `)
-
-    if (view === 'active') {
-      fallbackQuery = fallbackQuery.is('deleted_at', null)
-    } else {
-      fallbackQuery = fallbackQuery.not('deleted_at', 'is', null)
-    }
-
-    const fallback = await fallbackQuery.order('created_at', { ascending: false })
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
     if (fallback.error) {
       console.error('[getDashboardData] Fallback error:', fallback.error.message)
       return { references: [], totalCount: 0, deletedCount: 0 }
@@ -227,7 +224,7 @@ export async function getDashboardData(
     }
   })
 
-  if (view === 'active' && onlyFavorites) {
+  if (onlyFavorites) {
     references = references.filter((r) => r.is_favorited)
   }
 
@@ -241,6 +238,37 @@ export async function getDashboardData(
     totalCount: references.length,
     deletedCount: deletedCount ?? 0,
   }
+}
+
+export async function getDeletedReferences(): Promise<DeletedReferenceRow[]> {
+  const supabase = await createServerSupabaseClient()
+
+  const { data, error } = await supabase
+    .from('references')
+    .select(
+      `
+        id,
+        title,
+        companies ( name )
+      `
+    )
+    .not('deleted_at', 'is', null)
+    .order('created_at', { ascending: false })
+
+  if (error || !data) return []
+
+  return data.map((r: any) => {
+    const raw = r.companies
+    const company =
+      Array.isArray(raw) && raw.length > 0
+        ? (raw[0] as { name?: string })
+        : (raw as { name?: string } | null)
+    return {
+      id: r.id as string,
+      title: (r.title as string) ?? '',
+      company_name: company?.name ?? '—',
+    }
+  })
 }
 
 export async function toggleFavorite(referenceId: string) {
@@ -494,6 +522,34 @@ export async function hardDeleteReference(id: string) {
   }
 
   revalidatePath('/dashboard')
+}
+
+export async function emptyTrash(): Promise<{
+  success: boolean
+  deleted: number
+  error?: string
+}> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) {
+    return { success: false, deleted: 0, error: 'Nicht angemeldet.' }
+  }
+
+  const { data, error } = await supabase
+    .from('references')
+    .delete()
+    .not('deleted_at', 'is', null)
+    .select('id')
+
+  if (error) {
+    return { success: false, deleted: 0, error: error.message }
+  }
+
+  const deleted = (data as { id: string }[] | null)?.length ?? 0
+  revalidatePath('/dashboard')
+  return { success: true, deleted }
 }
 
 export async function updateReference(id: string, formData: FormData) {

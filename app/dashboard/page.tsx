@@ -5,7 +5,7 @@ import { DashboardOverview } from './dashboard-overview'
 import type { Profile } from './dashboard-shell'
 
 type Props = {
-  searchParams: Promise<{ favoriten?: string; papierkorb?: string }>
+  searchParams: Promise<{ favoriten?: string }>
 }
 
 export default async function DashboardPage({ searchParams }: Props) {
@@ -29,10 +29,8 @@ export default async function DashboardPage({ searchParams }: Props) {
 
   const params = await searchParams
   const initialFavoritesOnly = params.favoriten === '1'
-  const isTrashView = params.papierkorb === '1'
   const { references, totalCount, deletedCount } = await getDashboardData(
-    initialFavoritesOnly,
-    isTrashView ? 'trash' : 'active'
+    initialFavoritesOnly
   )
 
   return (
@@ -40,7 +38,6 @@ export default async function DashboardPage({ searchParams }: Props) {
       references={references}
       totalCount={totalCount}
       deletedCount={deletedCount}
-      viewMode={isTrashView ? 'trash' : 'active'}
       profile={profile as Profile}
       title="Referenzen"
       initialFavoritesOnly={initialFavoritesOnly}
