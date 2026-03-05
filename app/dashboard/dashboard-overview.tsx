@@ -70,6 +70,8 @@ import {
   submitForApproval,
   toggleFavorite,
   updateReferenceAssetCategory,
+  mergeDuplicateCompanies,
+  cleanupCompanyDomainNames,
 } from './actions'
 import type { Profile } from './dashboard-shell'
 import {
@@ -364,6 +366,7 @@ export function DashboardOverview({
   const [trashLoading, setTrashLoading] = useState(false)
   const [confirmEmptyOpen, setConfirmEmptyOpen] = useState(false)
   const [emptyingTrash, setEmptyingTrash] = useState(false)
+  const [cleanupLoading, setCleanupLoading] = useState(false)
 
   function addBulkImportFiles(newFiles: File[]) {
     setBulkImportGroups((prev) => {
@@ -585,6 +588,38 @@ export function DashboardOverview({
       <div className="flex items-center justify-between gap-4">
         <h2 className="text-3xl font-bold tracking-tight">{title}</h2>
         <div className="flex items-center gap-2">
+          {/* Temporär: Admin Cleanup */}
+          {profile.role === 'admin' && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 shrink-0"
+              disabled={cleanupLoading}
+              onClick={async () => {
+                setCleanupLoading(true)
+                try {
+                  const mergeResult = await mergeDuplicateCompanies()
+                  const cleanupResult = await cleanupCompanyDomainNames()
+                  if (!mergeResult.success) {
+                    toast.error(mergeResult.error)
+                  } else if (!cleanupResult.success) {
+                    toast.error(cleanupResult.error)
+                  } else {
+                    toast.success(
+                      `Bereinigung abgeschlossen: ${mergeResult.merged} Referenz(en) umgebogen, ${mergeResult.deleted} Dubletten gelöscht, ${cleanupResult.updated} Firmennamen korrigiert.`
+                    )
+                    router.refresh()
+                  }
+                } catch (e) {
+                  toast.error(e instanceof Error ? e.message : 'Cleanup fehlgeschlagen.')
+                } finally {
+                  setCleanupLoading(false)
+                }
+              }}
+            >
+              {cleanupLoading ? <Loader2 className="size-4 animate-spin" /> : 'Cleanup'}
+            </Button>
+          )}
           {/* Papierkorb-Icon */}
           <button
             type="button"

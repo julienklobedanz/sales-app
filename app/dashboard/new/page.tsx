@@ -12,10 +12,10 @@ export default async function NewReferencePage() {
     redirect('/login')
   }
 
-  // 1. Firmen laden
+  // 1. Firmen laden (inkl. logo_url für Anzeige bei Auswahl)
   const { data: companies } = await supabase
     .from('companies')
-    .select('id, name')
+    .select('id, name, logo_url')
     .order('name')
 
   // 2. Kontaktpersonen laden

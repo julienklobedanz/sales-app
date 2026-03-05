@@ -14,7 +14,7 @@ export type ExtractDataFromDocumentResult =
   | { success: false; error: string }
 
 const INDUSTRIES_LIST =
-  'IT & Software, Finanzdienstleistungen, Gesundheitswesen, Industrie & Produktion, Handel, Öffentlicher Sektor, Sonstige'
+  'Financial Services & Insurance, Retail & Consumer Goods (CPG), Manufacturing & Automotive, Technology, Media & Telecom (TMT), Energy, Resources & Utilities, Healthcare & Life Sciences, Public Sector & Education, Professional Services & Logistics, Travel, Transport & Hospitality, Sonstige'
 
 const ACCEPTED_TYPES = {
   'application/pdf': true,

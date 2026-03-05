@@ -52,7 +52,7 @@ export default async function EditReferencePage({
   // 2. Optionen für Dropdowns laden
   const { data: companies } = await supabase
     .from('companies')
-    .select('id, name')
+    .select('id, name, logo_url')
     .order('name')
   const { data: contacts } = await supabase
     .from('contact_persons')
@@ -65,10 +65,12 @@ export default async function EditReferencePage({
       : (row.companies as { name?: string } | null)
   const company_name = company?.name ?? ''
 
+  const companyLogoUrl = companies?.find((c: { id: string }) => c.id === row.company_id)?.logo_url ?? null
   const initialData: ReferenceFormInitialData = {
     id: row.id,
     company_id: row.company_id,
     company_name,
+    company_logo_url: companyLogoUrl,
     title: row.title,
     summary: row.summary ?? null,
     industry: row.industry ?? null,

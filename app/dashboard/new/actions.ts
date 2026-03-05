@@ -6,12 +6,15 @@ import { submitForApproval } from '../actions'
 
 // Mapping für Brandfetch → Formular (Industrie-Dropdown)
 const INDUSTRIES_MAP: { keywords: string[]; value: string }[] = [
-  { keywords: ['software', 'it ', 'technology', 'tech', 'internet', 'computer'], value: 'IT & Software' },
-  { keywords: ['finance', 'finanz', 'banking', 'insurance', 'versicherung'], value: 'Finanzdienstleistungen' },
-  { keywords: ['health', 'gesundheit', 'medical', 'pharma'], value: 'Gesundheitswesen' },
-  { keywords: ['manufacturing', 'industrie', 'production', 'automotive', 'engineering'], value: 'Industrie & Produktion' },
-  { keywords: ['retail', 'handel', 'ecommerce', 'consumer'], value: 'Handel' },
-  { keywords: ['government', 'public', 'öffentlich', 'defence', 'administration'], value: 'Öffentlicher Sektor' },
+  { keywords: ['finance', 'finanz', 'banking', 'insurance', 'versicherung'], value: 'Financial Services & Insurance' },
+  { keywords: ['retail', 'handel', 'ecommerce', 'consumer', 'cpg'], value: 'Retail & Consumer Goods (CPG)' },
+  { keywords: ['manufacturing', 'industrie', 'production', 'automotive', 'engineering'], value: 'Manufacturing & Automotive' },
+  { keywords: ['software', 'it ', 'technology', 'tech', 'internet', 'computer', 'media', 'telecom', 'tmt'], value: 'Technology, Media & Telecom (TMT)' },
+  { keywords: ['energy', 'utilities', 'resources', 'oil', 'gas', 'mining'], value: 'Energy, Resources & Utilities' },
+  { keywords: ['health', 'gesundheit', 'medical', 'pharma', 'life sciences'], value: 'Healthcare & Life Sciences' },
+  { keywords: ['government', 'public', 'öffentlich', 'defence', 'administration', 'education'], value: 'Public Sector & Education' },
+  { keywords: ['professional services', 'consulting', 'logistics'], value: 'Professional Services & Logistics' },
+  { keywords: ['travel', 'transport', 'hospitality', 'tourism'], value: 'Travel, Transport & Hospitality' },
 ]
 const INDUSTRY_DEFAULT = 'Sonstige'
 
@@ -77,6 +80,21 @@ function mapBrandfetchCountry(countryName: string | undefined, countryCode?: str
   return COUNTRY_MAP[key] ?? null
 }
 
+/** Prüft, ob der String wie eine technische URL/Domain aussieht (z. B. "biontechse.com"). */
+function looksLikeDomain(s: string): boolean {
+  const t = s.trim().toLowerCase()
+  if (!t || t.includes(' ')) return false
+  return /\.(com|de|net|org|io|eu|co|ai|cloud|global)$/i.test(t) || /\.[a-z]{2,}$/i.test(t)
+}
+
+/** Konvertiert Domain zu lesbarem Namen: TLD entfernen, großschreiben (z. B. "biontechse.com" → "Biontechse"). */
+function domainToDisplayName(domain: string): string {
+  const withoutProtocol = domain.trim().replace(/^https?:\/\//i, '').replace(/^www\./i, '').split('/')[0] ?? domain
+  const withoutTld = withoutProtocol.replace(/\.(com|de|net|org|io|eu|co|ai|cloud|global|[a-z]{2,})$/i, '').trim()
+  const name = withoutTld || withoutProtocol
+  return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase()
+}
+
 export async function enrichAndSaveCompany(domain: string): Promise<EnrichCompanyResult> {
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -98,17 +116,31 @@ export async function enrichAndSaveCompany(domain: string): Promise<EnrichCompan
 
   const { company_name: companyName, website_url: websiteUrl, industry, headquarters, country, employee_count: employeeCount, logo_url: logoUrl, description } = fetched
 
-  const { data: existing } = await supabase
+  const { data: existingByName } = await supabase
     .from('companies')
     .select('id')
     .eq('organization_id', organizationId)
     .ilike('name', companyName)
     .maybeSingle()
 
+  let existing = existingByName
+  if (!existing?.id && normalizedDomain) {
+    const domainPattern = `%${normalizedDomain}%`
+    const { data: existingByDomain } = await supabase
+      .from('companies')
+      .select('id')
+      .eq('organization_id', organizationId)
+      .ilike('website_url', domainPattern)
+      .limit(1)
+      .maybeSingle()
+    existing = existingByDomain ?? null
+  }
+
   const payload = {
     name: companyName,
     organization_id: organizationId,
     website_url: websiteUrl || null,
+    logo_url: logoUrl || null,
     employee_count: employeeCount,
     headquarters: headquarters || null,
     description: description || null,
@@ -172,6 +204,7 @@ async function fetchBrandfetchData(normalizedDomain: string): Promise<FetchEnric
 
   let data: {
     name?: string | null
+    brand?: string | null
     domain?: string | null
     description?: string | null
     company?: {
@@ -187,8 +220,14 @@ async function fetchBrandfetchData(normalizedDomain: string): Promise<FetchEnric
     return { success: false, error: 'Ungültige Brandfetch-Antwort.' }
   }
 
-  const companyName = (data.name ?? data.domain ?? normalizedDomain).toString().trim() || normalizedDomain
-  const websiteUrl = data.domain ? `https://${data.domain.toString().replace(/^https?:\/\//, '')}` : `https://${normalizedDomain}`
+  const rawName = (data.name ?? data.brand ?? data.domain ?? normalizedDomain).toString().trim() || normalizedDomain
+  let companyName: string
+  if (looksLikeDomain(rawName)) {
+    companyName = domainToDisplayName(rawName)
+  } else {
+    companyName = rawName
+  }
+  const websiteUrl = data.domain ? `https://${data.domain.toString().replace(/^https?:\/\//, '').replace(/^www\./, '')}` : `https://${normalizedDomain}`
   const description = data.description?.toString().trim() || null
   const employeeCount = typeof data.company?.employees === 'number' ? data.company.employees : null
   const firstIndustry = data.company?.industries?.[0]?.name
@@ -318,13 +357,15 @@ export async function createReference(
     }
     resolvedCompanyId = company.id
   } else {
-    const nameToUse = newCompanyName?.trim()
+    let nameToUse = newCompanyName?.trim()
     if (!nameToUse) {
       return { success: false, error: 'Bitte Firmennamen eingeben oder ein Unternehmen wählen.' }
     }
+    const normalizedDomainForMatch = normalizeDomain(nameToUse)
+    const displayName = looksLikeDomain(nameToUse) ? domainToDisplayName(nameToUse) : nameToUse
 
-    // 1) Prüfen, ob es die Firma (für diese Organisation) bereits gibt
-    const { data: existingCompany, error: existingError } = await supabase
+    // 1) Prüfen, ob die Firma bereits existiert: nach Name (case-insensitive) ODER Domain (website_url)
+    const { data: existingByName, error: existingError } = await supabase
       .from('companies')
       .select('id')
       .eq('organization_id', organizationId)
@@ -335,15 +376,26 @@ export async function createReference(
       return { success: false, error: existingError.message }
     }
 
+    let existingCompany = existingByName
+    if (!existingCompany?.id && normalizedDomainForMatch.includes('.')) {
+      const { data: existingByDomain } = await supabase
+        .from('companies')
+        .select('id')
+        .eq('organization_id', organizationId)
+        .ilike('website_url', `%${normalizedDomainForMatch}%`)
+        .limit(1)
+        .maybeSingle()
+      existingCompany = existingByDomain ?? null
+    }
+
     if (existingCompany?.id) {
-      // Bereits vorhandene Firma wiederverwenden – keine Duplikate
       resolvedCompanyId = existingCompany.id
     } else {
-      // 2) Neue Firma anlegen
+      // 2) Neue Firma anlegen (lesbarer Name, falls Eingabe eine Domain war)
       const { data: newCompany, error: insertError } = await supabase
         .from('companies')
         .insert({
-          name: nameToUse,
+          name: displayName,
           industry: industry ?? undefined,
           organization_id: organizationId,
         })
@@ -351,15 +403,9 @@ export async function createReference(
         .single()
 
       if (insertError) {
-        // Falls es serverseitig bereits einen Unique-Constraint gibt, kann hier ein Konflikt hochkommen
         if ((insertError as { code?: string }).code === '23505') {
-          // Bei Unique-Verletzung nochmal versuchen, die bestehende Firma zu laden
-          const { data: conflictCompany } = await supabase
-            .from('companies')
-            .select('id')
-            .eq('organization_id', organizationId)
-            .ilike('name', nameToUse)
-            .maybeSingle()
+          const { data: c1 } = await supabase.from('companies').select('id').eq('organization_id', organizationId).ilike('name', displayName).maybeSingle()
+          const conflictCompany = c1 ?? (await supabase.from('companies').select('id').eq('organization_id', organizationId).ilike('name', nameToUse).maybeSingle()).data
           if (conflictCompany?.id) {
             resolvedCompanyId = conflictCompany.id
           } else {

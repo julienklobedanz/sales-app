@@ -39,12 +39,15 @@ import { extractDataFromDocument } from './extract-reference-data'
 import { CreateContactDialog } from './create-contact-dialog'
 
 const INDUSTRIES = [
-  'IT & Software',
-  'Finanzdienstleistungen',
-  'Gesundheitswesen',
-  'Industrie & Produktion',
-  'Handel',
-  'Öffentlicher Sektor',
+  'Financial Services & Insurance',
+  'Retail & Consumer Goods (CPG)',
+  'Manufacturing & Automotive',
+  'Technology, Media & Telecom (TMT)',
+  'Energy, Resources & Utilities',
+  'Healthcare & Life Sciences',
+  'Public Sector & Education',
+  'Professional Services & Logistics',
+  'Travel, Transport & Hospitality',
   'Sonstige',
 ]
 
@@ -81,7 +84,7 @@ const PROJECT_STATUS_OPTIONS = [
   { value: 'completed', label: 'Abgeschlossen' },
 ] as const
 
-type Company = { id: string; name: string }
+type Company = { id: string; name: string; logo_url?: string | null }
 
 export type ContactPerson = {
   id: string
@@ -94,6 +97,7 @@ export type ReferenceFormInitialData = {
   id: string
   company_id: string
   company_name: string
+  company_logo_url?: string | null
   title: string
   summary: string | null
   industry: string | null
@@ -184,7 +188,7 @@ export function ReferenceForm({
   const [projectEnd, setProjectEnd] = useState(initialData?.project_end ?? '')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [logoFile, setLogoFile] = useState<File | null>(null)
-  const [enrichedLogoUrl, setEnrichedLogoUrl] = useState<string | null>(null)
+  const [enrichedLogoUrl, setEnrichedLogoUrl] = useState<string | null>(initialData?.company_logo_url ?? null)
   const [createSubmitting, setCreateSubmitting] = useState(false)
   const [newCompanyName, setNewCompanyName] = useState('')
   const [enrichLoading, setEnrichLoading] = useState(false)
@@ -212,7 +216,7 @@ export function ReferenceForm({
         .then((result) => {
           if (result.success) {
             setCompanyId(result.company_id)
-            setEnrichedCompany({ id: result.company_id, name: result.company_name })
+            setEnrichedCompany({ id: result.company_id, name: result.company_name, logo_url: result.logo_url ?? null })
             setWebsite(result.website_url ?? '')
             setIndustry(result.industry ?? '')
             setCountry(result.country ?? '')
@@ -426,6 +430,7 @@ export function ReferenceForm({
                 onSelectCompany={(company) => {
                   setCompanyId(company.id)
                   setNewCompanyName(company.name)
+                  setEnrichedLogoUrl(company.logo_url ?? null)
                 }}
                 loading={enrichLoading}
                 disabled={submitting}
