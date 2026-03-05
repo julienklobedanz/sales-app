@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Building2Icon } from 'lucide-react'
 import {
   Card,
   CardContent,
@@ -15,6 +15,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Switch } from '@/components/ui/switch'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   Select,
   SelectContent,
@@ -22,6 +24,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
 import { createReference, enrichAndSaveCompany, fetchCompanyEnrichment } from './actions'
 import { updateReference } from '../actions'
 import { extractDataFromDocument } from './extract-reference-data'
@@ -49,27 +59,19 @@ const COUNTRIES = [
 
 const STATUS_OPTIONS = [
   { value: 'draft', label: 'Entwurf' },
-  { value: 'pending', label: 'In Prüfung' },
-  { value: 'anonymous', label: 'Anonymisiert' },
-  { value: 'restricted', label: 'Beschränkt' },
-  { value: 'external', label: 'Extern' },
-  { value: 'internal', label: 'Intern' },
+  { value: 'internal_only', label: 'Nur Intern' },
+  { value: 'approved', label: 'Extern freigegeben' },
+  { value: 'anonymized', label: 'Anonymisiert' },
 ] as const
 
-const STATUS_HELP_TEXT: Record<
-  ReferenceFormInitialData['status'],
-  string
-> = {
-  draft: 'Nur intern sichtbar, nicht für Sales; Referenz ist noch in Bearbeitung.',
-  pending:
-    'Für Sales sichtbar; kann individuell beim Account Owner zur Freigabe angefragt werden.',
-  anonymous:
-    'Nutzung ohne Kundennamen/Kontaktdaten (Referenz darf genannt werden, aber anonymisiert).',
-  restricted:
-    'Nutzung nur nach Einzelfreigabe durch den Account Owner beim Kunden (Freigabeprozess per Anfrage).',
-  external:
-    'Vollständig freigegeben und für alle Bids nutzbar; Ansprechpartner steht für Referenzcalls bereit.',
-  internal: 'Nur intern nutzbar, nicht extern teilbar.',
+const STATUS_HELP_TEXT: Record<ReferenceFormInitialData['status'], string> = {
+  draft: 'Entwurf: In Arbeit, nur für den Ersteller sichtbar.',
+  internal_only:
+    'Nur Intern: Verifiziert, aber sensible Daten (Preise/Namen) dürfen das Haus nicht verlassen.',
+  approved:
+    'Extern freigegeben: Offiziell vom Kunden und Marketing freigegeben für Sales-Pitches.',
+  anonymized:
+    'Anonymisiert: Name und Logo entfernt (z. B. „Großbank“), bereit für öffentliche Case Studies.',
 }
 
 const PROJECT_STATUS_OPTIONS = [
@@ -105,13 +107,7 @@ export type ReferenceFormInitialData = {
   our_solution?: string | null
   customer_contact?: string | null
   contact_id?: string | null
-  status:
-    | 'draft'
-    | 'pending'
-    | 'external'
-    | 'internal'
-    | 'anonymous'
-    | 'restricted'
+  status: 'draft' | 'internal_only' | 'approved' | 'anonymized'
   file_path?: string | null
   tags?: string | null
   project_status?: 'active' | 'completed' | null
@@ -163,6 +159,9 @@ export function ReferenceForm({
   const statusBeforeNdaRef = useRef<ReferenceFormInitialData['status']>(
     initialData?.status ?? 'draft'
   )
+  const statusBeforeAnonymizedRef = useRef<ReferenceFormInitialData['status']>(
+    initialData?.status ?? 'draft'
+  )
   const [contactId, setContactId] = useState(
     initialData?.contact_id ? initialData.contact_id : '__none__'
   )
@@ -200,6 +199,7 @@ export function ReferenceForm({
     : companies
 
   useEffect(() => {
+    if (companyId) return
     const trimmed = newCompanyName.trim()
     if (trimmed.length < 2) return
     if (enrichDebounceRef.current) clearTimeout(enrichDebounceRef.current)
@@ -261,9 +261,14 @@ export function ReferenceForm({
   }, [isEditMode, editCompanyName])
 
   const submitting = isEditMode ? editSubmitting : createSubmitting
+  const isAnonymized = status === 'anonymized'
 
   const handleContactCreated = (newId: string) => {
     setContactId(newId)
+    router.refresh()
+  }
+
+  const handleCustomerContactCreated = (_newId: string) => {
     router.refresh()
   }
 
@@ -362,9 +367,26 @@ export function ReferenceForm({
       {/* Unternehmen + Logo */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,1.6fr)_minmax(0,0.9fr)] items-start">
         <div className="space-y-2">
-          <Label htmlFor={isEditMode ? 'company_name' : 'companyId'}>
-            Unternehmen
-          </Label>
+          <div className="flex items-center justify-between gap-3">
+            <Label htmlFor={isEditMode ? 'company_name' : 'companyId'}>
+              Unternehmen
+            </Label>
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-muted-foreground">Referenz anonymisieren</span>
+              <Switch
+                checked={isAnonymized}
+                disabled={submitting}
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    statusBeforeAnonymizedRef.current = status
+                    setStatus('anonymized')
+                  } else {
+                    setStatus(statusBeforeAnonymizedRef.current ?? 'draft')
+                  }
+                }}
+              />
+            </div>
+          </div>
           {isEditMode ? (
             <div className="relative">
               <Input
@@ -384,59 +406,53 @@ export function ReferenceForm({
             </div>
           ) : (
             <>
-              <div className="relative">
-                <CompanySelect
-                  companies={displayCompanies}
-                  companyId={companyId}
-                  onCompanyIdChange={setCompanyId}
-                />
-                {companyId === '__new__' && enrichLoading && (
-                  <span className="pointer-events-none absolute right-9 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    <Loader2 className="size-4 animate-spin" />
-                  </span>
-                )}
-              </div>
+              <CompanyCombobox
+                companies={displayCompanies}
+                value={
+                  (companyId &&
+                    displayCompanies.find((c) => c.id === companyId)?.name) ||
+                  newCompanyName
+                }
+                onValueChange={(val) => {
+                  setNewCompanyName(val)
+                  setCompanyId('')
+                }}
+                onSelectCompany={(company) => {
+                  setCompanyId(company.id)
+                  setNewCompanyName(company.name)
+                }}
+                loading={enrichLoading}
+                disabled={submitting}
+              />
+              <input type="hidden" name="companyId" value={companyId} />
+              <input type="hidden" name="newCompanyName" value={newCompanyName} />
             </>
           )}
         </div>
 
         <div className="space-y-2 sm:flex sm:flex-col sm:items-end">
           <Label htmlFor="logo">Logo (optional)</Label>
-          <LogoDropZone
-            selectedFile={logoFile}
-            onFileSelect={(file) => {
-              setLogoFile(file)
-              if (file) setEnrichedLogoUrl(null)
-            }}
-            disabled={submitting}
-            enrichedLogoUrl={enrichedLogoUrl}
-          />
+          {isAnonymized ? (
+            <div className="flex aspect-square max-w-[120px] flex-col items-center justify-center rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 px-3 text-center text-[11px] text-muted-foreground">
+              <Building2Icon className="mb-1 size-5 text-muted-foreground" />
+              <span>Logo ausgeblendet</span>
+              <span className="mt-0.5 text-[10px] text-muted-foreground/80">
+                ({isEditMode ? initialData?.company_name ?? 'Kunde' : newCompanyName || 'Kunde'})
+              </span>
+            </div>
+          ) : (
+            <LogoDropZone
+              selectedFile={logoFile}
+              onFileSelect={(file) => {
+                setLogoFile(file)
+                if (file) setEnrichedLogoUrl(null)
+              }}
+              disabled={submitting}
+              enrichedLogoUrl={enrichedLogoUrl}
+            />
+          )}
         </div>
       </div>
-
-      {!isEditMode && (
-        <div
-          id="new-company-wrap"
-          className={`space-y-2 ${companyId === '__new__' ? '' : 'hidden'}`}
-        >
-          <Label htmlFor="newCompanyName">Name der neuen Firma oder Domain (z. B. siemens.de)</Label>
-          <div className="relative">
-            <Input
-              id="newCompanyName"
-              name="newCompanyName"
-              placeholder="z. B. Acme GmbH oder siemens.de für Auto-Fill"
-              disabled={submitting}
-              value={newCompanyName}
-              onChange={(e) => setNewCompanyName(e.target.value)}
-            />
-            {enrichLoading && (
-              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                <Loader2 className="size-4 animate-spin" />
-              </span>
-            )}
-          </div>
-        </div>
-      )}
 
       <div className="space-y-2">
         <Label htmlFor="title">Titel</Label>
@@ -584,13 +600,18 @@ export function ReferenceForm({
 
       <div className="space-y-2">
         <Label htmlFor="customer_contact">Kundenansprechpartner</Label>
-        <Input
-          id="customer_contact"
-          name="customer_contact"
-          placeholder="z. B. Max Mustermann, CIO"
-          disabled={submitting}
-          defaultValue={initialData?.customer_contact ?? ''}
-        />
+        <div className="flex gap-2">
+          <div className="flex-1">
+            <Input
+              id="customer_contact"
+              name="customer_contact"
+              placeholder="z. B. Max Mustermann, CIO"
+              disabled={submitting}
+              defaultValue={initialData?.customer_contact ?? ''}
+            />
+          </div>
+          <CreateContactDialog onContactCreated={handleCustomerContactCreated} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -804,7 +825,7 @@ export function ReferenceForm({
             onValueChange={(val) => {
               const next = val as ReferenceFormInitialData['status']
               setStatus(next)
-              if (ndaDeal && next !== 'internal') {
+              if (ndaDeal && next !== 'internal_only') {
                 // Falls Status manuell geändert wird, lösen wir NDA-Modus wieder auf
                 setNdaDeal(false)
                 statusBeforeNdaRef.current = next
@@ -831,28 +852,25 @@ export function ReferenceForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="nda_deal">NDA Deal</Label>
-          <div className="flex items-center gap-3 rounded-md border bg-muted/20 px-3 py-2">
-            <input
+          <Label htmlFor="nda_deal">Vertraulicher NDA-Deal</Label>
+          <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/20 px-3 py-2">
+            <span className="text-sm text-muted-foreground">
+              Verhindert versehentliche externe Freigaben.
+            </span>
+            <Switch
               id="nda_deal"
-              type="checkbox"
               checked={ndaDeal}
               disabled={submitting}
-              onChange={(e) => {
-                const checked = e.target.checked
+              onCheckedChange={(checked) => {
                 setNdaDeal(checked)
                 if (checked) {
                   statusBeforeNdaRef.current = status
-                  setStatus('internal')
+                  setStatus('internal_only')
                 } else {
                   setStatus(statusBeforeNdaRef.current ?? 'draft')
                 }
               }}
-              className="h-4 w-4 rounded border-muted-foreground/40"
             />
-            <span className="text-sm text-muted-foreground">
-              Markiert diese Referenz automatisch als intern.
-            </span>
           </div>
         </div>
       </div>
@@ -1011,6 +1029,7 @@ function LogoDropZone({
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [isDragging, setIsDragging] = useState(false)
+  const [logoOnDarkBg, setLogoOnDarkBg] = useState(false)
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
@@ -1041,6 +1060,31 @@ function LogoDropZone({
     }
   }
 
+  const handleLogoLoaded = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    try {
+      const img = e.currentTarget
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
+      const width = (canvas.width = 8)
+      const height = (canvas.height = 8)
+      ctx.drawImage(img, 0, 0, width, height)
+      const data = ctx.getImageData(0, 0, width, height).data
+      let sum = 0
+      const pixels = width * height
+      for (let i = 0; i < pixels; i++) {
+        const r = data[i * 4]
+        const g = data[i * 4 + 1]
+        const b = data[i * 4 + 2]
+        sum += (r + g + b) / 3
+      }
+      const avg = sum / pixels
+      setLogoOnDarkBg(avg > 210)
+    } catch {
+      // Canvas-Zugriff kann bei externen Bildern fehlschlagen (CORS) – dann einfach Standard-Hintergrund nutzen.
+    }
+  }
+
   const showEnrichedLogo = !selectedFile && enrichedLogoUrl
 
   return (
@@ -1062,21 +1106,32 @@ function LogoDropZone({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={[
-          'flex aspect-square max-w-[120px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-dashed text-center text-[11px] text-muted-foreground transition-colors',
-          isDragging
-            ? 'border-primary bg-primary/5'
-            : 'border-muted-foreground/25 hover:border-muted-foreground/50 hover:bg-muted/50',
+          'flex aspect-square max-w-[120px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg text-center text-[11px] text-muted-foreground transition-colors',
+          showEnrichedLogo
+            ? 'border border-muted-foreground/25 bg-background'
+            : isDragging
+              ? 'border-2 border-primary bg-primary/5'
+              : 'border-2 border-dashed border-muted-foreground/25 hover:border-muted-foreground/50 hover:bg-muted/50',
           disabled ? 'pointer-events-none opacity-60' : '',
         ].join(' ')}
       >
         {selectedFile ? (
           <span className="px-1">{selectedFile.name}</span>
         ) : showEnrichedLogo ? (
-          <img
-            src={enrichedLogoUrl}
-            alt="Firmenlogo"
-            className="h-full w-full object-contain p-1"
-          />
+          <div
+            className={[
+              'flex h-full w-full items-center justify-center rounded-md',
+              logoOnDarkBg ? 'bg-neutral-900' : 'bg-transparent',
+            ].join(' ')}
+          >
+            <img
+              src={enrichedLogoUrl}
+              alt="Firmenlogo"
+              className="max-h-full max-w-full object-contain p-1"
+              onLoad={handleLogoLoaded}
+              crossOrigin="anonymous"
+            />
+          </div>
         ) : (
           <span>Logo hier ablegen oder klicken</span>
         )}
@@ -1176,40 +1231,72 @@ function MagicImportDropzone({
   )
 }
 
-function CompanySelect({
+function CompanyCombobox({
   companies,
-  companyId,
-  onCompanyIdChange,
+  value,
+  onValueChange,
+  onSelectCompany,
+  loading,
+  disabled,
 }: {
   companies: Company[]
-  companyId: string
-  onCompanyIdChange: (value: string) => void
+  value: string
+  onValueChange: (value: string) => void
+  onSelectCompany: (company: Company) => void
+  loading: boolean
+  disabled: boolean
 }) {
+  const [open, setOpen] = useState(false)
+  const hasValue = value.trim().length > 0
+
   return (
-    <>
-      <input type="hidden" name="companyId" value={companyId} />
-      <Select
-        value={companyId || undefined}
-        onValueChange={(value) => {
-          onCompanyIdChange(value ?? '')
-          const wrap = document.getElementById('new-company-wrap')
-          if (wrap) {
-            wrap.classList.toggle('hidden', value !== '__new__')
-          }
-        }}
-      >
-        <SelectTrigger className="w-full" id="companyId">
-          <SelectValue placeholder="Unternehmen wählen …" />
-        </SelectTrigger>
-        <SelectContent>
-          {companies.map((c) => (
-            <SelectItem key={c.id} value={c.id}>
-              {c.name}
-            </SelectItem>
-          ))}
-          <SelectItem value="__new__">Neue Firma anlegen</SelectItem>
-        </SelectContent>
-      </Select>
-    </>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          disabled={disabled}
+          className="flex w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-left text-sm ring-offset-background transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <span
+            className={
+              hasValue ? 'truncate' : 'text-muted-foreground truncate'
+            }
+          >
+            {hasValue ? value : 'Unternehmen eingeben oder auswählen …'}
+          </span>
+          {loading && (
+            <Loader2 className="ml-2 size-4 animate-spin text-muted-foreground" />
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="p-0" align="start">
+        <Command>
+          <CommandInput
+            placeholder="Name oder Domain eingeben …"
+            value={value}
+            onValueChange={(val) => onValueChange(val)}
+          />
+          <CommandList>
+            <CommandEmpty>
+              Keine Treffer. Neuer Name wird verwendet.
+            </CommandEmpty>
+            <CommandGroup heading="Unternehmen">
+              {companies.map((company) => (
+                <CommandItem
+                  key={company.id}
+                  value={company.name}
+                  onSelect={() => {
+                    onSelectCompany(company)
+                    setOpen(false)
+                  }}
+                >
+                  {company.name}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   )
 }

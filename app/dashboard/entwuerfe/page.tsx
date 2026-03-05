@@ -20,12 +20,13 @@ export default async function EntwuerfePage() {
 
   if (!profile) redirect('/onboarding')
 
-  const { references, totalCount } = await getDashboardData()
+  const { references, totalCount, deletedCount } = await getDashboardData()
 
   return (
     <DashboardOverview
       references={references}
       totalCount={totalCount}
+      deletedCount={deletedCount}
       profile={profile as Profile}
       title="Entwürfe"
       initialStatusFilter="draft"

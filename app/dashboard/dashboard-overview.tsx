@@ -63,6 +63,8 @@ import {
   bulkCreateReferencesFromFiles,
   deleteReference,
   getReferenceAssets,
+  hardDeleteReference,
+  restoreReference,
   submitForApproval,
   toggleFavorite,
   updateReferenceAssetCategory,
@@ -316,17 +318,21 @@ function ApprovalStepper({
 export function DashboardOverview({
   references: initialReferences,
   totalCount,
+  deletedCount,
   profile,
   title = 'Referenzen',
   initialFavoritesOnly = false,
   initialStatusFilter = 'all',
+  viewMode = 'active',
 }: {
   references: ReferenceRow[]
   totalCount: number
+  deletedCount: number
   profile: Profile
   title?: string
   initialFavoritesOnly?: boolean
   initialStatusFilter?: string
+  viewMode?: 'active' | 'trash'
 }) {
   const router = useRouter()
   const [search, setSearch] = useState('')
@@ -355,6 +361,8 @@ export function DashboardOverview({
   const bulkImportDropRef = useRef<HTMLInputElement>(null)
 
   const totalBulkImportFiles = bulkImportGroups.reduce((s, g) => s + g.files.length, 0)
+
+  const isTrashView = viewMode === 'trash'
 
   function addBulkImportFiles(newFiles: File[]) {
     setBulkImportGroups((prev) => {
@@ -450,10 +458,10 @@ export function DashboardOverview({
   // Client-seitiges Filtering (Sales: draft nie anzeigen; optional nur Favoriten)
   const filteredReferences = useMemo(() => {
     let list = initialReferences
-    if (profile.role === 'sales') {
+    if (profile.role === 'sales' && !isTrashView) {
       list = list.filter((r) => r.status !== 'draft')
     }
-    if (favoritesOnly) {
+    if (favoritesOnly && !isTrashView) {
       list = list.filter((r) => r.is_favorited)
     }
     if (search.trim()) {
@@ -483,6 +491,40 @@ export function DashboardOverview({
       else next.add(refId)
       return next
     })
+  }
+
+  const handleRestoreSelected = async () => {
+    const ids = Array.from(selectedRefIds)
+    if (!ids.length) return
+    try {
+      for (const id of ids) {
+        await restoreReference(id)
+      }
+      toast.success(
+        `${ids.length} Referenz${ids.length !== 1 ? 'en' : ''} wiederhergestellt.`
+      )
+      setSelectedRefIds(new Set())
+      router.refresh()
+    } catch {
+      toast.error('Fehler beim Wiederherstellen der Referenzen.')
+    }
+  }
+
+  const handleHardDeleteSelected = async () => {
+    const ids = Array.from(selectedRefIds)
+    if (!ids.length) return
+    try {
+      for (const id of ids) {
+        await hardDeleteReference(id)
+      }
+      toast.success(
+        `${ids.length} Referenz${ids.length !== 1 ? 'en' : ''} endgültig gelöscht.`
+      )
+      setSelectedRefIds(new Set())
+      router.refresh()
+    } catch {
+      toast.error('Fehler beim endgültigen Löschen der Referenzen.')
+    }
   }
 
   const selectedRefs = useMemo(
@@ -578,7 +620,62 @@ export function DashboardOverview({
       </div>
 
       {/* 2. Toolbar & Tabelle */}
-        <div className="space-y-4">
+      <div className="space-y-4">
+        {/* Ansicht-Filter: Aktiv / Papierkorb */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="inline-flex items-center gap-2 rounded-md border bg-muted/40 p-1">
+            <Button
+              type="button"
+              variant={!isTrashView ? 'default' : 'ghost'}
+              size="sm"
+              className="h-7 px-3 text-xs"
+              onClick={() => {
+                if (isTrashView) {
+                  router.push('/dashboard')
+                }
+              }}
+            >
+              Aktive Referenzen
+            </Button>
+            {deletedCount > 0 && (
+              <Button
+                type="button"
+                variant={isTrashView ? 'default' : 'ghost'}
+                size="sm"
+                className="h-7 px-3 text-xs"
+                onClick={() => {
+                  if (!isTrashView) {
+                    router.push('/dashboard?papierkorb=1')
+                  }
+                }}
+              >
+                Papierkorb ({deletedCount})
+              </Button>
+            )}
+          </div>
+          {isTrashView && selectedRefIds.size > 0 && (
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8"
+                onClick={handleRestoreSelected}
+              >
+                Wiederherstellen
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                className="h-8"
+                onClick={handleHardDeleteSelected}
+              >
+                Endgültig löschen
+              </Button>
+            </div>
+          )}
+        </div>
         {/* Toolbar: Suche füllt Platz, daneben Dropzone, Status, Favoriten, Spalten (und ggf. Button) */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-3">
           {/* Suche nimmt restlichen Platz; rechts davon Dropzone & Filter */}

@@ -101,6 +101,17 @@ export function CreateContactDialog({
                 required
               />
             </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="phone" className="text-right">
+                Telefonnummer
+              </Label>
+              <Input
+                id="phone"
+                name="phone"
+                className="col-span-3"
+                type="tel"
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button type="submit" disabled={loading}>
