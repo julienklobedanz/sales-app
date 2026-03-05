@@ -14,11 +14,9 @@ export type ReferenceRow = {
   country: string | null
   status:
     | 'draft'
-    | 'pending'
-    | 'external'
-    | 'internal'
-    | 'anonymous'
-    | 'restricted'
+    | 'internal_only'
+    | 'approved'
+    | 'anonymized'
   created_at: string
   updated_at: string | null
   company_id: string
@@ -566,11 +564,9 @@ export async function updateReference(id: string, formData: FormData) {
   const statusRaw = formData.get('status')?.toString()
   const allowed: ReferenceRow['status'][] = [
     'draft',
-    'pending',
-    'external',
-    'internal',
-    'anonymous',
-    'restricted',
+    'internal_only',
+    'approved',
+    'anonymized',
   ]
   const status = allowed.includes(statusRaw as ReferenceRow['status'])
     ? (statusRaw as ReferenceRow['status'])
@@ -695,9 +691,8 @@ export async function updateReference(id: string, formData: FormData) {
     throw new Error(error.message)
   }
 
-  if (status === 'pending') {
-    await submitForApproval(id)
-  }
+  // Bei Freigabe-Workflows bleibt die Statuslogik im 4-Status-Modell,
+  // daher ist kein automatischer Wechsel auf einen Legacy-Status mehr nötig.
 
   revalidatePath('/dashboard')
   revalidatePath(`/dashboard/edit/${id}`)

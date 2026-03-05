@@ -66,8 +66,8 @@ export function CreateContactDialog({
               Fügen Sie einen neuen Account Owner oder Ansprechpartner hinzu.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
+          <div className="grid gap-6 py-6">
+            <div className="grid grid-cols-4 items-center gap-6">
               <Label htmlFor="firstName" className="text-right">
                 Vorname
               </Label>
@@ -78,7 +78,7 @@ export function CreateContactDialog({
                 required
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
+            <div className="grid grid-cols-4 items-center gap-6">
               <Label htmlFor="lastName" className="text-right">
                 Nachname
               </Label>
@@ -89,7 +89,7 @@ export function CreateContactDialog({
                 required
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
+            <div className="grid grid-cols-4 items-center gap-6">
               <Label htmlFor="email" className="text-right">
                 E-Mail
               </Label>
@@ -101,7 +101,7 @@ export function CreateContactDialog({
                 required
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
+            <div className="grid grid-cols-4 items-center gap-6">
               <Label htmlFor="phone" className="text-right">
                 Telefonnummer
               </Label>

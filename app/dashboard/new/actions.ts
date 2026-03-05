@@ -227,11 +227,9 @@ export type CreateReferenceResult =
 
 const REFERENCE_STATUSES = [
   'draft',
-  'pending',
-  'external',
-  'internal',
-  'anonymous',
-  'restricted',
+  'internal_only',
+  'approved',
+  'anonymized',
 ] as const
 
 export async function createReference(
@@ -276,9 +274,16 @@ export async function createReference(
     return { success: false, error: 'Bei abgeschlossenem Projekt ist das Projektende erforderlich.' }
   }
 
-  const status = REFERENCE_STATUSES.includes(statusRaw as (typeof REFERENCE_STATUSES)[number])
+  const submitMode = formData.get('submitMode')?.toString()
+  const rawStatus = REFERENCE_STATUSES.includes(
+    statusRaw as (typeof REFERENCE_STATUSES)[number]
+  )
     ? (statusRaw as (typeof REFERENCE_STATUSES)[number])
     : 'draft'
+  const status =
+    submitMode === 'draft'
+      ? 'draft'
+      : rawStatus
 
   const supabase = await createServerSupabaseClient()
 
@@ -426,13 +431,8 @@ export async function createReference(
     return { success: false, error: 'Referenz konnte nicht gespeichert werden.' }
   }
 
-  if (status === 'pending') {
-    try {
-      await submitForApproval(reference.id)
-    } catch (e) {
-      console.error('submitForApproval nach Create:', e)
-    }
-  }
+  // Freigabe-Anfragen werden im 4-Status-Modell explizit ausgelöst,
+  // daher wird der Status hier nicht mehr automatisch auf einen Zwischenstatus gesetzt.
 
   revalidatePath('/dashboard')
   return { success: true, referenceId: reference.id }

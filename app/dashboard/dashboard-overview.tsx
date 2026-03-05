@@ -128,23 +128,19 @@ import { toast } from 'sonner'
 
 const STATUS_LABELS: Record<string, string> = {
   draft: 'Entwurf',
-  pending: 'In Prüfung',
-  external: 'Extern Frei',
-  internal: 'Nur Intern',
-  anonymous: 'Anonym',
-  restricted: 'Eingeschränkt',
+  internal_only: 'Nur Intern',
+  approved: 'Extern freigegeben',
+  anonymized: 'Anonymisiert',
 }
 
-const STATUS_BADGE_VARIANT: Record<
-  string,
-  'secondary' | 'outline' | 'default'
-> = {
-  draft: 'secondary',
-  pending: 'outline',
-  external: 'default',
-  internal: 'outline',
-  anonymous: 'outline',
-  restricted: 'outline',
+const STATUS_BADGE_CLASSES: Record<string, string> = {
+  draft: 'border border-muted-foreground/30 bg-muted text-foreground',
+  internal_only:
+    'border border-amber-300 bg-amber-50 text-amber-800',
+  approved:
+    'border border-emerald-300 bg-emerald-50 text-emerald-800',
+  anonymized:
+    'border border-sky-300 bg-sky-50 text-sky-800',
 }
 
 const PROJECT_STATUS_LABELS: Record<string, string> = {
@@ -229,7 +225,7 @@ type ApprovalStepId = (typeof APPROVAL_STEPS)[number]['id']
 
 function getCurrentApprovalStep(status: ReferenceRow['status']): ApprovalStepId {
   if (status === 'draft') return 'creation'
-  if (status === 'pending') return 'approval'
+  if (status === 'internal_only') return 'validation'
   return 'publishing'
 }
 
@@ -697,11 +693,9 @@ export function DashboardOverview({
             <SelectContent>
               <SelectItem value="all">Status</SelectItem>
               <SelectItem value="draft">Entwurf</SelectItem>
-              <SelectItem value="pending">In Prüfung</SelectItem>
-              <SelectItem value="external">Extern frei</SelectItem>
-              <SelectItem value="internal">Intern frei</SelectItem>
-              <SelectItem value="anonymous">Anonym</SelectItem>
-              <SelectItem value="restricted">Eingeschränkt</SelectItem>
+              <SelectItem value="internal_only">Nur Intern</SelectItem>
+              <SelectItem value="approved">Extern freigegeben</SelectItem>
+              <SelectItem value="anonymized">Anonymisiert</SelectItem>
             </SelectContent>
           </Select>
 
@@ -1011,7 +1005,13 @@ export function DashboardOverview({
                     </TableCell>
                     {visibleColumns.status && (
                       <TableCell>
-                        <Badge variant={STATUS_BADGE_VARIANT[ref.status] ?? 'outline'}>
+                        <Badge
+                          variant="outline"
+                          className={
+                            STATUS_BADGE_CLASSES[ref.status] ??
+                            'border bg-muted text-foreground'
+                          }
+                        >
                           {STATUS_LABELS[ref.status] ?? ref.status}
                         </Badge>
                       </TableCell>
@@ -1362,25 +1362,25 @@ export function DashboardOverview({
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Badge
-                        variant={STATUS_BADGE_VARIANT[selectedRef.status] ?? 'outline'}
-                        className="shrink-0 text-xs cursor-default"
+                        variant="outline"
+                        className={[
+                          'shrink-0 text-xs cursor-default',
+                          STATUS_BADGE_CLASSES[selectedRef.status] ??
+                            'border bg-muted text-foreground',
+                        ].join(' ')}
                       >
                         {STATUS_LABELS[selectedRef.status] ?? selectedRef.status}
                       </Badge>
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs text-xs leading-snug">
                       {selectedRef.status === 'draft' &&
-                        'Entwurf: nur intern in deiner Firma sichtbar, nicht für Sales; Referenz ist noch in Bearbeitung.'}
-                      {selectedRef.status === 'pending' &&
-                        'In Prüfung: für Sales sichtbar; kann individuell beim Account Owner zur Freigabe angefragt werden.'}
-                      {selectedRef.status === 'anonymous' &&
-                        'Anonymisiert: Referenz darf genutzt werden, jedoch ohne Nennung des Kundennamens oder Kontaktangaben.'}
-                      {selectedRef.status === 'restricted' &&
-                        'Beschränkt: Für jede Nutzung ist eine Einzelfreigabe durch den Account Owner beim Kunden nötig.'}
-                      {selectedRef.status === 'external' &&
-                        'Extern: Vollständig freigegeben, für alle Bids nutzbar; der genannte Ansprechpartner steht für Referenzcalls bereit.'}
-                      {selectedRef.status === 'internal' &&
-                        'Intern: Nur intern im Unternehmen sichtbar und nutzbar, nicht extern teilbar.'}
+                        'Entwurf: In Arbeit, nur für den Ersteller sichtbar.'}
+                      {selectedRef.status === 'internal_only' &&
+                        'Nur Intern: Verifiziert, aber sensible Daten (Preise/Namen) dürfen das Haus nicht verlassen.'}
+                      {selectedRef.status === 'approved' &&
+                        'Extern freigegeben: Offiziell vom Kunden und Marketing freigegeben für Sales-Pitches.'}
+                      {selectedRef.status === 'anonymized' &&
+                        'Anonymisiert: Name und Logo entfernt (z. B. „Großbank“), bereit für öffentliche Case Studies.'}
                     </TooltipContent>
                   </Tooltip>
                 </div>
@@ -1809,8 +1809,7 @@ export function DashboardOverview({
                 {/* Rechte Seite: Freigabe anfragen / Account Owner + Löschen ganz rechts */}
                 <div className="flex w-full justify-end gap-2 sm:w-auto">
                   {profile.role === 'sales' &&
-                    (selectedRef.status === 'restricted' ||
-                      selectedRef.status === 'internal') && (
+                    selectedRef.status === 'internal_only' && (
                       <Button
                         size="sm"
                         onClick={() =>

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Loader2, Building2Icon } from 'lucide-react'
+import { Loader2, Building2Icon, Save } from 'lucide-react'
 import {
   Card,
   CardContent,
@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
@@ -358,11 +359,14 @@ export function ReferenceForm({
   const formContent = (
     <>
       {!isEditMode && (
-        <MagicImportDropzone
-          onFileAccept={handleMagicImport}
-          loading={magicImportLoading}
-          disabled={submitting}
-        />
+        <div className="space-y-4">
+          <MagicImportDropzone
+            onFileAccept={handleMagicImport}
+            loading={magicImportLoading}
+            disabled={submitting}
+          />
+          <Separator className="mt-2" />
+        </div>
       )}
       {/* Unternehmen + Logo */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,1.6fr)_minmax(0,0.9fr)] items-start">
@@ -561,56 +565,63 @@ export function ReferenceForm({
         <p className="text-muted-foreground text-xs">Eingabe mit Komma abschließen, um einen Tag als Kapsel zu übernehmen.</p>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="contactId">Interner Kontakt / Account Owner</Label>
-        <div className="flex gap-2">
-          <div className="flex-1">
-            <input
-              type="hidden"
-              name="contactId"
-              value={contactId === '__none__' ? '' : contactId}
-            />
-            <Select
-              value={contactId || '__none__'}
-              onValueChange={(v) => setContactId(v ?? '__none__')}
-              disabled={submitting}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Person auswählen …" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__">Keine</SelectItem>
-                {contacts.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {[c.first_name, c.last_name].filter(Boolean).join(' ') ||
-                      c.email ||
-                      c.id}
-                    {c.email ? ` (${c.email})` : ''}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <Label htmlFor="contactId">Interner Kontakt / Account Owner</Label>
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <input
+                type="hidden"
+                name="contactId"
+                value={contactId === '__none__' ? '' : contactId}
+              />
+              <Select
+                value={contactId || '__none__'}
+                onValueChange={(v) => setContactId(v ?? '__none__')}
+                disabled={submitting}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Person auswählen …" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Keine</SelectItem>
+                  {contacts.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {[c.first_name, c.last_name].filter(Boolean).join(' ') ||
+                        c.email ||
+                        c.id}
+                      {c.email ? ` (${c.email})` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <CreateContactDialog onContactCreated={handleContactCreated} />
           </div>
-          <CreateContactDialog onContactCreated={handleContactCreated} />
+          <p className="text-muted-foreground text-xs">
+            Wird für Freigabe-Anfragen per E-Mail benachrichtigt.
+          </p>
         </div>
-        <p className="text-muted-foreground text-xs">
-          Wird für Freigabe-Anfragen per E-Mail benachrichtigt.
-        </p>
-      </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="customer_contact">Kundenansprechpartner</Label>
-        <div className="flex gap-2">
-          <div className="flex-1">
-            <Input
-              id="customer_contact"
-              name="customer_contact"
-              placeholder="z. B. Max Mustermann, CIO"
-              disabled={submitting}
-              defaultValue={initialData?.customer_contact ?? ''}
-            />
+        <div className="space-y-2">
+          <h4 className="text-xs uppercase tracking-wider text-muted-foreground">
+            Externer Kontakt
+          </h4>
+          <div className="space-y-2">
+            <Label htmlFor="customer_contact">Kundenansprechpartner</Label>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Input
+                  id="customer_contact"
+                  name="customer_contact"
+                  placeholder="z. B. Max Mustermann, CIO"
+                  disabled={submitting}
+                  defaultValue={initialData?.customer_contact ?? ''}
+                />
+              </div>
+              <CreateContactDialog onContactCreated={handleCustomerContactCreated} />
+            </div>
           </div>
-          <CreateContactDialog onContactCreated={handleCustomerContactCreated} />
         </div>
       </div>
 
@@ -875,7 +886,17 @@ export function ReferenceForm({
         </div>
       </div>
 
-      <div className="flex gap-3 pt-2">
+      <div className="flex flex-wrap gap-3 pt-2">
+        <Button
+          type="submit"
+          name="submitMode"
+          value="draft"
+          variant="outline"
+          disabled={submitting}
+        >
+          <Save className="mr-2 h-4 w-4" />
+          Entwurf speichern
+        </Button>
         <Button type="submit" disabled={submitting}>
           {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {isEditMode ? 'Änderungen speichern' : 'Referenz anlegen'}
@@ -1247,55 +1268,48 @@ function CompanyCombobox({
   disabled: boolean
 }) {
   const [open, setOpen] = useState(false)
-  const hasValue = value.trim().length > 0
+  const trimmed = value.trim().toLowerCase()
+  const filtered = companies.filter((c) =>
+    trimmed ? c.name.toLowerCase().includes(trimmed) : true
+  )
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button
-          type="button"
+        <Input
+          type="text"
           disabled={disabled}
-          className="flex w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-left text-sm ring-offset-background transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <span
-            className={
-              hasValue ? 'truncate' : 'text-muted-foreground truncate'
-            }
-          >
-            {hasValue ? value : 'Unternehmen eingeben oder auswählen …'}
-          </span>
-          {loading && (
-            <Loader2 className="ml-2 size-4 animate-spin text-muted-foreground" />
-          )}
-        </button>
+          value={value}
+          onChange={(e) => {
+            onValueChange(e.target.value)
+            if (!open) setOpen(true)
+          }}
+          onFocus={() => setOpen(true)}
+          placeholder="Unternehmen eingeben oder auswählen …"
+          className="w-full cursor-text"
+        />
       </PopoverTrigger>
-      <PopoverContent className="p-0" align="start">
-        <Command>
-          <CommandInput
-            placeholder="Name oder Domain eingeben …"
-            value={value}
-            onValueChange={(val) => onValueChange(val)}
-          />
-          <CommandList>
-            <CommandEmpty>
+      <PopoverContent className="w-full p-0" align="start" sideOffset={4}>
+        <div className="max-h-60 overflow-y-auto py-1 text-sm">
+          {filtered.map((company) => (
+            <button
+              key={company.id}
+              type="button"
+              className="flex w-full cursor-pointer items-center px-3 py-1.5 text-left hover:bg-muted"
+              onClick={() => {
+                onSelectCompany(company)
+                setOpen(false)
+              }}
+            >
+              <span className="truncate">{company.name}</span>
+            </button>
+          ))}
+          {filtered.length === 0 && (
+            <div className="px-3 py-2 text-xs text-muted-foreground">
               Keine Treffer. Neuer Name wird verwendet.
-            </CommandEmpty>
-            <CommandGroup heading="Unternehmen">
-              {companies.map((company) => (
-                <CommandItem
-                  key={company.id}
-                  value={company.name}
-                  onSelect={() => {
-                    onSelectCompany(company)
-                    setOpen(false)
-                  }}
-                >
-                  {company.name}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
+            </div>
+          )}
+        </div>
       </PopoverContent>
     </Popover>
   )
