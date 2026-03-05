@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Loader2, Building2Icon, Save } from 'lucide-react'
+import { Loader2, Building2Icon, Save, Plus } from 'lucide-react'
 import {
   Card,
   CardContent,
@@ -204,10 +204,11 @@ export function ReferenceForm({
     const trimmed = newCompanyName.trim()
     if (trimmed.length < 2) return
     if (enrichDebounceRef.current) clearTimeout(enrichDebounceRef.current)
+    const nameToFetch = newCompanyName.trim()
     enrichDebounceRef.current = setTimeout(() => {
       enrichDebounceRef.current = null
       setEnrichLoading(true)
-      enrichAndSaveCompany(newCompanyName.trim())
+      enrichAndSaveCompany(nameToFetch)
         .then((result) => {
           if (result.success) {
             setCompanyId(result.company_id)
@@ -218,14 +219,14 @@ export function ReferenceForm({
             setHeadquarters(result.headquarters ?? '')
             setEmployeeCount(result.employee_count != null ? String(result.employee_count) : '')
             setEnrichedLogoUrl(result.logo_url ?? null)
-            setNewCompanyName('')
+            setNewCompanyName(result.company_name)
             toast.success('Unternehmensdaten wurden geladen.')
           } else {
             toast.error(result.error)
           }
         })
         .finally(() => setEnrichLoading(false))
-    }, 800)
+    }, 2000)
     return () => {
       if (enrichDebounceRef.current) clearTimeout(enrichDebounceRef.current)
     }
@@ -236,10 +237,11 @@ export function ReferenceForm({
     const trimmed = editCompanyName.trim()
     if (trimmed.length < 2) return
     if (editEnrichDebounceRef.current) clearTimeout(editEnrichDebounceRef.current)
+    const nameToFetch = editCompanyName.trim()
     editEnrichDebounceRef.current = setTimeout(() => {
       editEnrichDebounceRef.current = null
       setEnrichLoading(true)
-      fetchCompanyEnrichment(editCompanyName.trim())
+      fetchCompanyEnrichment(nameToFetch)
         .then((result) => {
           if (result.success) {
             setEditCompanyName(result.company_name)
@@ -255,7 +257,7 @@ export function ReferenceForm({
           }
         })
         .finally(() => setEnrichLoading(false))
-    }, 800)
+    }, 2000)
     return () => {
       if (editEnrichDebounceRef.current) clearTimeout(editEnrichDebounceRef.current)
     }
@@ -376,7 +378,7 @@ export function ReferenceForm({
               Unternehmen
             </Label>
             <div className="flex items-center gap-2 text-xs">
-              <span className="text-muted-foreground">Referenz anonymisieren</span>
+              <span className="text-muted-foreground">Anonymisieren</span>
               <Switch
                 checked={isAnonymized}
                 disabled={submitting}
@@ -545,7 +547,7 @@ export function ReferenceForm({
           <input
             id="tags-input"
             type="text"
-            placeholder={tags.length === 0 ? 'z. B. Cloud, ERP, SAP (Komma für neue Kapsel)' : 'Weiterer Tag…'}
+            placeholder={tags.length === 0 ? 'z.B. Cloud, Cybersecurity, SAP (mehrere Themen durch Komma trennen)' : 'Weiterer Tag…'}
             disabled={submitting}
             value={tagInputValue}
             onChange={(e) => setTagInputValue(e.target.value)}
@@ -562,7 +564,6 @@ export function ReferenceForm({
             className="min-w-[120px] flex-1 border-0 bg-transparent p-0 text-sm outline-none placeholder:text-muted-foreground"
           />
         </div>
-        <p className="text-muted-foreground text-xs">Eingabe mit Komma abschließen, um einen Tag als Kapsel zu übernehmen.</p>
       </div>
 
       <div className="space-y-6">
@@ -598,7 +599,7 @@ export function ReferenceForm({
             </div>
             <CreateContactDialog onContactCreated={handleContactCreated} />
           </div>
-          <p className="text-muted-foreground text-xs">
+          <p className="text-muted-foreground text-[10px] italic">
             Wird für Freigabe-Anfragen per E-Mail benachrichtigt.
           </p>
         </div>
@@ -666,9 +667,6 @@ export function ReferenceForm({
               ))}
             </SelectContent>
           </Select>
-          {headquarters ? (
-            <p className="text-muted-foreground text-xs">Standort: {headquarters}</p>
-          ) : null}
         </div>
       </div>
 
@@ -756,7 +754,7 @@ export function ReferenceForm({
             onChange={(e) => setProjectEnd(e.target.value)}
             required={projectStatus === 'completed'}
           />
-          <p className="text-muted-foreground text-xs">
+          <p className="text-muted-foreground text-[10px] italic">
             {projectStatus === 'completed'
               ? 'Bei abgeschlossenen Projekten erforderlich.'
               : projectStatus === 'active'
@@ -887,6 +885,14 @@ export function ReferenceForm({
       </div>
 
       <div className="flex flex-wrap gap-3 pt-2">
+        <Button type="submit" disabled={submitting}>
+          {submitting ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Plus className="mr-2 h-4 w-4" />
+          )}
+          {isEditMode ? 'Änderungen speichern' : 'Erstellen'}
+        </Button>
         <Button
           type="submit"
           name="submitMode"
@@ -895,11 +901,7 @@ export function ReferenceForm({
           disabled={submitting}
         >
           <Save className="mr-2 h-4 w-4" />
-          Entwurf speichern
-        </Button>
-        <Button type="submit" disabled={submitting}>
-          {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {isEditMode ? 'Änderungen speichern' : 'Referenz anlegen'}
+          Speichern
         </Button>
         <Button
           type="button"
@@ -1272,9 +1274,10 @@ function CompanyCombobox({
   const filtered = companies.filter((c) =>
     trimmed ? c.name.toLowerCase().includes(trimmed) : true
   )
+  const showList = open && value.trim().length > 0
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={showList} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Input
           type="text"
@@ -1282,14 +1285,22 @@ function CompanyCombobox({
           value={value}
           onChange={(e) => {
             onValueChange(e.target.value)
-            if (!open) setOpen(true)
+            const next = e.target.value.trim().length > 0
+            setOpen(next)
           }}
-          onFocus={() => setOpen(true)}
-          placeholder="Unternehmen eingeben oder auswählen …"
+          onFocus={() => {
+            if (value.trim().length > 0) setOpen(true)
+          }}
+          placeholder="Unternehmen eingeben"
           className="w-full cursor-text"
         />
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start" sideOffset={4}>
+      <PopoverContent
+        className="w-full p-0"
+        align="start"
+        sideOffset={4}
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
         <div className="max-h-60 overflow-y-auto py-1 text-sm">
           {filtered.map((company) => (
             <button

@@ -621,31 +621,6 @@ export function DashboardOverview({
               </span>
             )}
           </button>
-          {/* Warenkorb */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="default"
-                size="icon"
-                className="h-9 w-9 shrink-0 bg-foreground text-background hover:bg-foreground/90 relative"
-                aria-label={
-                  selectedRefIds.size > 0
-                    ? `Warenkorb (${selectedRefIds.size} Referenzen)`
-                    : 'Warenkorb'
-                }
-              >
-                <ShoppingCartIcon className="size-4" />
-                {selectedRefIds.size > 0 && (
-                  <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-background/90 px-1 text-[10px] font-medium text-foreground">
-                    {selectedRefIds.size}
-                  </span>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[240px]">
-              {/* ... bestehender Warenkorb-Content ... */}
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
       </div>
 
