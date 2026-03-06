@@ -462,6 +462,7 @@ export function DashboardOverview({
   }
   const [selectedRefIds, setSelectedRefIds] = useState<Set<string>>(() => new Set())
   const [previewRefs, setPreviewRefs] = useState<ReferenceRow[] | null>(null)
+  const [singleRefPreviewRef, setSingleRefPreviewRef] = useState<ReferenceRow | null>(null)
   const selectAllCheckboxRef = useRef<HTMLInputElement | null>(null)
   const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
   const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false)
@@ -2078,9 +2079,9 @@ export function DashboardOverview({
         </DialogContent>
       </Dialog>
 
-      {/* 4. Detail (zentrales Modal) */}
+      {/* 4. Detail (zentrales Modal) – onOpenAutoFocus verhindert Fokus auf Eye-Icon und damit sofortigen Tooltip */}
       <Dialog open={sheetOpen} onOpenChange={setSheetOpen}>
-        <DialogContent className="flex max-h-[85vh] flex-col gap-0 overflow-hidden px-8 py-6 sm:max-w-4xl lg:max-w-5xl md:px-16 lg:px-20">
+        <DialogContent className="flex max-h-[85vh] flex-col gap-0 overflow-hidden px-8 py-6 sm:max-w-4xl lg:max-w-5xl md:px-16 lg:px-20" onOpenAutoFocus={(e) => e.preventDefault()}>
           {selectedRef && (
             <TooltipProvider delayDuration={150}>
               {/* Fixierter Header */}
@@ -2099,8 +2100,7 @@ export function DashboardOverview({
                             className="h-6 w-6 shrink-0 -mt-1 hover:bg-transparent"
                             onClick={(e: React.MouseEvent) => {
                               e.stopPropagation()
-                              setPreviewRefs([selectedRef])
-                              setSheetOpen(false)
+                              setSingleRefPreviewRef(selectedRef)
                             }}
                             aria-label="Vorschau (Kundenansicht)"
                           >
@@ -2637,6 +2637,25 @@ export function DashboardOverview({
               </DialogFooter>
             </TooltipProvider>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Vorschau-Popover aus dem Detail-Modal: liegt über dem Detail, gleiches Luxury-Design, Schließen bringt zurück ins Detail */}
+      <Dialog open={singleRefPreviewRef !== null} onOpenChange={(open) => !open && setSingleRefPreviewRef(null)}>
+        <DialogContent
+          showCloseButton={false}
+          className="z-[60] max-h-[90vh] w-[calc(100vw-2rem)] max-w-4xl overflow-hidden rounded-xl border bg-background p-0 shadow-xl"
+        >
+          <div className="flex flex-col">
+            <div className="preview-modal-scroll overflow-y-auto p-8 md:p-16 lg:p-24">
+              {singleRefPreviewRef && <ReferenceReader ref={singleRefPreviewRef} />}
+            </div>
+            <div className="flex shrink-0 justify-center border-t bg-muted/30 px-8 py-4 md:px-16 lg:px-24">
+              <Button variant="outline" onClick={() => setSingleRefPreviewRef(null)}>
+                Schließen
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 

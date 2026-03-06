@@ -113,8 +113,8 @@ export function DashboardShell({
           </SidebarMenu>
         </SidebarHeader>
 
-        <SidebarContent className="gap-0.5">
-          <SidebarGroup className="px-2 py-1">
+        <SidebarContent className="gap-0">
+          <SidebarGroup className="space-y-0 px-2 py-0">
             <SidebarGroupContent>
               <SidebarMenu className="gap-0.5">
                 {isAdmin ? (
@@ -158,6 +158,19 @@ export function DashboardShell({
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={pathname?.startsWith('/dashboard/companies')}
+                        tooltip="ClientOS – Firmenübersicht, Executive Profiling & Stakeholder-Mapping (in Vorbereitung)"
+                        className="data-[active=true]:bg-muted data-[active=true]:text-foreground"
+                      >
+                        <Link href="/dashboard/companies">
+                          <Award />
+                          <span>ClientOS</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
                   </>
                 ) : (
                   <>
@@ -187,33 +200,26 @@ export function DashboardShell({
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={pathname?.startsWith('/dashboard/companies')}
+                        tooltip="ClientOS – Firmenübersicht, Executive Profiling & Stakeholder-Mapping (in Vorbereitung)"
+                        className="data-[active=true]:bg-muted data-[active=true]:text-foreground"
+                      >
+                        <Link href="/dashboard/companies">
+                          <Award />
+                          <span>ClientOS</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
                   </>
                 )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
 
-          <SidebarGroup className="px-2 py-1">
-            <SidebarGroupContent>
-              <SidebarMenu className="gap-0.5">
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname?.startsWith('/dashboard/companies')}
-                    tooltip="ClientOS – Firmenübersicht, Executive Profiling & Stakeholder-Mapping (in Vorbereitung)"
-                    className="data-[active=true]:bg-muted data-[active=true]:text-foreground"
-                  >
-                    <Link href="/dashboard/companies">
-                      <Award />
-                      <span>ClientOS</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-
-          <SidebarGroup className="mt-auto px-2 py-1">
+          <SidebarGroup className="mt-auto space-y-0 px-2 py-0">
             <SidebarGroupContent>
               <SidebarMenu className="gap-0.5">
                 <SidebarMenuItem>
