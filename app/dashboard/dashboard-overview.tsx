@@ -100,6 +100,7 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  Filter,
 } from 'lucide-react'
 import {
   Dialog,
@@ -338,9 +339,17 @@ export function DashboardOverview({
   const router = useRouter()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>(initialStatusFilter)
+  const [companyFilter, setCompanyFilter] = useState<string>('all')
+  const [tagsFilter, setTagsFilter] = useState<string>('all')
   const [industryFilter, setIndustryFilter] = useState<string>('all')
   const [countryFilter, setCountryFilter] = useState<string>('all')
   const [projectStatusFilter, setProjectStatusFilter] = useState<string>('all')
+  const [statusSearch, setStatusSearch] = useState('')
+  const [companySearch, setCompanySearch] = useState('')
+  const [tagsSearch, setTagsSearch] = useState('')
+  const [industrySearch, setIndustrySearch] = useState('')
+  const [countrySearch, setCountrySearch] = useState('')
+  const [projectStatusSearch, setProjectStatusSearch] = useState('')
   const [sortKey, setSortKey] = useState<(typeof COLUMN_KEYS)[number] | null>(null)
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [favoritesOnly, setFavoritesOnly] = useState(initialFavoritesOnly)
@@ -468,18 +477,33 @@ export function DashboardOverview({
 
   // Eindeutige Werte für Filter-Dropdowns (aus aktuellen Referenzen)
   const filterOptions = useMemo(() => {
+    const statuses = new Set<string>()
     const industries = new Set<string>()
     const countries = new Set<string>()
     const projectStatuses = new Set<string>()
+    const companies = new Set<string>()
+    const tags = new Set<string>()
     for (const r of initialReferences) {
+      statuses.add(r.status)
       if (r.industry) industries.add(r.industry)
       if (r.country) countries.add(r.country)
       if (r.project_status) projectStatuses.add(r.project_status)
+      if (r.company_name) companies.add(r.company_name)
+      if (r.tags) {
+        r.tags
+          .split(',')
+          .map((t) => t.trim())
+          .filter(Boolean)
+          .forEach((t) => tags.add(t))
+      }
     }
     return {
+      statuses: Array.from(statuses).sort(),
       industries: Array.from(industries).sort(),
       countries: Array.from(countries).sort(),
       projectStatuses: Array.from(projectStatuses).sort(),
+      companies: Array.from(companies).sort((a, b) => a.localeCompare(b, 'de')),
+      tags: Array.from(tags).sort((a, b) => a.localeCompare(b, 'de')),
     }
   }, [initialReferences])
 
@@ -522,6 +546,19 @@ export function DashboardOverview({
     if (statusFilter !== 'all') {
       list = list.filter((r) => r.status === statusFilter)
     }
+    if (companyFilter !== 'all') {
+      list = list.filter((r) => r.company_name === companyFilter)
+    }
+    if (tagsFilter !== 'all') {
+      list = list.filter((r) => {
+        if (!r.tags) return false
+        const tagList = r.tags
+          .split(',')
+          .map((t) => t.trim())
+          .filter(Boolean)
+        return tagList.includes(tagsFilter)
+      })
+    }
     if (industryFilter !== 'all') {
       list = list.filter((r) => (r.industry ?? '') === industryFilter)
     }
@@ -550,6 +587,8 @@ export function DashboardOverview({
     profile.role,
     search,
     statusFilter,
+    companyFilter,
+    tagsFilter,
     industryFilter,
     countryFilter,
     projectStatusFilter,
@@ -668,7 +707,7 @@ export function DashboardOverview({
   }
 
   return (
-    <div className="flex flex-col space-y-6 pt-6">
+    <div className="flex flex-col space-y-6 px-6 pt-6 md:px-12 lg:px-20">
       {/* Header: Titel + Aktionen */}
       <div className="flex items-center justify-between gap-4">
         <h2 className="text-3xl font-bold tracking-tight">{title}</h2>
@@ -714,27 +753,28 @@ export function DashboardOverview({
 
       {/* Toolbar & Tabelle */}
       <div className="space-y-4">
-        {/* Toolbar: Suche füllt Platz, daneben Dropzone, Status, Favoriten, Spalten (und ggf. Button) */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-3">
-          {/* Suche nimmt restlichen Platz; rechts davon Dropzone & Filter */}
-          <div className="relative flex-1 min-w-0">
-            <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        {/* Toolbar: Suche oberste Priorität (flex-1), daneben RFP, Spalten, Favoriten etc. */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          {/* Suche: immer sichtbar, nimmt verfügbaren Platz */}
+          <div className="relative min-w-0 flex-1 basis-0 sm:basis-auto">
+            <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
             <Input
               placeholder="Referenzen suchen..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-9 w-full pl-9"
+              className="h-9 w-full min-w-[140px] pl-9"
             />
           </div>
 
           {/* RFP-Abgleich */}
           <div
-            className="h-9 w-[120px] shrink-0 cursor-pointer rounded-md border border-dashed border-muted-foreground/40 bg-muted/40 px-3 text-xs text-muted-foreground hover:bg-muted flex items-center justify-center text-center"
+            className="flex h-9 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-md border border-dashed border-muted-foreground/40 bg-muted/40 px-3 text-xs text-muted-foreground hover:bg-muted min-w-[2.25rem] lg:min-w-[120px]"
             onClick={() => fileInputRef.current?.click()}
             onDrop={handleRfpDrop}
             onDragOver={handleRfpDragOver}
           >
-            <span className="truncate">
+            <UploadIcon className="size-4 shrink-0 lg:mr-1" aria-hidden />
+            <span className="hidden truncate lg:inline">
               {rfpFiles.length === 0
                 ? 'RFP-Abgleich'
                 : `${rfpFiles.length} ausgewählt`}
@@ -749,64 +789,16 @@ export function DashboardOverview({
             />
           </div>
 
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="h-9 w-[120px] shrink-0">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Status</SelectItem>
-              <SelectItem value="draft">Entwurf</SelectItem>
-              <SelectItem value="internal_only">Nur Intern</SelectItem>
-              <SelectItem value="approved">Extern freigegeben</SelectItem>
-              <SelectItem value="anonymized">Anonymisiert</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={industryFilter} onValueChange={setIndustryFilter}>
-            <SelectTrigger className="h-9 w-[140px] shrink-0">
-              <SelectValue placeholder="Industrie" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Industrie</SelectItem>
-              {filterOptions.industries.map((ind) => (
-                <SelectItem key={ind} value={ind}>{ind}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={countryFilter} onValueChange={setCountryFilter}>
-            <SelectTrigger className="h-9 w-[120px] shrink-0">
-              <SelectValue placeholder="HQ" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">HQ</SelectItem>
-              {filterOptions.countries.map((c) => (
-                <SelectItem key={c} value={c}>{c}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={projectStatusFilter} onValueChange={setProjectStatusFilter}>
-            <SelectTrigger className="h-9 w-[130px] shrink-0">
-              <SelectValue placeholder="Projektstatus" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Projektstatus</SelectItem>
-              {filterOptions.projectStatuses.map((ps) => (
-                <SelectItem key={ps} value={ps}>{ps === 'active' ? 'Aktiv' : 'Abgeschlossen'}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
                 size="sm"
                 className="h-9 shrink-0"
+                aria-label="Spalten ein-/ausblenden"
               >
-                <SlidersHorizontal className="mr-2 h-4 w-4" />
-                Spalten
+                <SlidersHorizontal className="h-4 w-4 lg:mr-2" />
+                <span className="hidden lg:inline">Spalten</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-[220px]">
@@ -845,9 +837,10 @@ export function DashboardOverview({
             size="sm"
             className="h-9 shrink-0"
             onClick={() => setFavoritesOnly((v) => !v)}
+            aria-label={favoritesOnly ? 'Favoriten aus' : 'Nur Favoriten'}
           >
-            <Star className={`mr-2 size-4 ${favoritesOnly ? 'fill-yellow-400 text-yellow-400' : ''}`} />
-            Favoriten
+            <Star className={`size-4 lg:mr-2 ${favoritesOnly ? 'fill-yellow-400 text-yellow-400' : ''}`} />
+            <span className="hidden lg:inline">Favoriten</span>
           </Button>
 
           {/* Admin: Importieren, Erstellen */}
@@ -861,17 +854,19 @@ export function DashboardOverview({
                   setBulkImportGroups([])
                   setBulkImportOpen(true)
                 }}
+                aria-label="Referenzen importieren"
               >
-                <UploadIcon className="mr-2 size-4" />
-                Importieren
+                <UploadIcon className="size-4 lg:mr-2" />
+                <span className="hidden lg:inline">Importieren</span>
               </Button>
               <Button
                 size="sm"
                 className="h-9 shrink-0"
                 onClick={() => setNewRefModalOpen(true)}
+                aria-label="Neue Referenz erstellen"
               >
-                <PlusCircleIcon className="mr-2 size-4" />
-                Erstellen
+                <PlusCircleIcon className="size-4 lg:mr-2" />
+                <span className="hidden lg:inline">Erstellen</span>
               </Button>
             </>
           )}
@@ -1027,104 +1022,602 @@ export function DashboardOverview({
           </div>
         )}
 
-        <div className="rounded-md border bg-card overflow-x-auto">
-          <Table>
+        <div className="min-w-0 overflow-x-auto rounded-md border bg-card">
+          <Table className="min-w-[800px]">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[44px]"></TableHead>
                 {visibleColumns.status && (
                   <TableHead>
-                    <button type="button" className="flex items-center gap-1 hover:opacity-80" onClick={() => handleSort('status')}>
-                      {COLUMN_LABELS.status}
-                      {sortKey === 'status' ? (sortDir === 'asc' ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />) : <ArrowUpDown className="size-3.5 text-muted-foreground" />}
-                    </button>
+                    <div className="flex items-center justify-between gap-1">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            className={`flex items-center gap-1 text-left hover:opacity-80 ${statusFilter !== 'all' ? 'font-semibold text-foreground' : ''}`}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <span>{COLUMN_LABELS.status}</span>
+                            {statusFilter !== 'all' && <Filter className="size-3.5 shrink-0 text-primary" aria-hidden />}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="w-56"
+                          align="start"
+                          onClick={(e) => e.stopPropagation()}
+                          onOpenAutoFocus={(e) => e.preventDefault()}
+                        >
+                          <Input
+                            autoFocus
+                            placeholder="Status suchen…"
+                            value={statusSearch}
+                            onChange={(e) => setStatusSearch(e.target.value)}
+                            className="h-8 text-xs"
+                          />
+                          <div className="mt-2 max-h-56 space-y-1 overflow-y-auto text-sm">
+                            {['all', ...filterOptions.statuses].filter((value) => {
+                              if (!statusSearch.trim()) return true
+                              const label =
+                                value === 'all'
+                                  ? 'Alle'
+                                  : STATUS_LABELS[value as ReferenceRow['status']] ?? value
+                              return label.toLowerCase().includes(statusSearch.trim().toLowerCase())
+                            }).map((value) => {
+                              const isAll = value === 'all'
+                              const label =
+                                isAll
+                                  ? 'Alle'
+                                  : STATUS_LABELS[value as ReferenceRow['status']] ?? value
+                              const selected = statusFilter === value
+                              return (
+                                <button
+                                  key={value}
+                                  type="button"
+                                  onClick={() => {
+                                    setStatusFilter(value)
+                                  }}
+                                  className="flex w-full items-center justify-between gap-2 rounded-md px-1.5 py-1 text-left hover:bg-muted"
+                                >
+                                  <span className="truncate">{label}</span>
+                                  <div
+                                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-input ${
+                                      selected ? 'bg-primary border-primary' : 'bg-muted'
+                                    }`}
+                                  >
+                                    {selected && <span className="h-2 w-2 rounded-full bg-primary-foreground" />}
+                                  </div>
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                      <button
+                        type="button"
+                        className="flex items-center gap-1 hover:opacity-80"
+                        onClick={() => handleSort('status')}
+                      >
+                        {sortKey === 'status' ? (
+                          sortDir === 'asc' ? (
+                            <ArrowUp className="size-3.5" />
+                          ) : (
+                            <ArrowDown className="size-3.5" />
+                          )
+                        ) : (
+                          <ArrowUpDown className="size-3.5 text-muted-foreground" />
+                        )}
+                      </button>
+                    </div>
                   </TableHead>
                 )}
                 {visibleColumns.company && (
                   <TableHead className="w-[180px]">
-                    <button type="button" className="flex items-center gap-1 hover:opacity-80" onClick={() => handleSort('company')}>
-                      {COLUMN_LABELS.company}
-                      {sortKey === 'company' ? (sortDir === 'asc' ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />) : <ArrowUpDown className="size-3.5 text-muted-foreground" />}
-                    </button>
+                    <div className="flex items-center justify-between gap-1">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            className={`flex items-center gap-1 text-left hover:opacity-80 ${companyFilter !== 'all' ? 'font-semibold text-foreground' : ''}`}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <span>{COLUMN_LABELS.company}</span>
+                            {companyFilter !== 'all' && <Filter className="size-3.5 shrink-0 text-primary" aria-hidden />}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="w-64"
+                          align="start"
+                          onClick={(e) => e.stopPropagation()}
+                          onOpenAutoFocus={(e) => e.preventDefault()}
+                        >
+                          <Input
+                            autoFocus
+                            placeholder="Unternehmen suchen…"
+                            value={companySearch}
+                            onChange={(e) => setCompanySearch(e.target.value)}
+                            className="h-8 text-xs"
+                          />
+                          <div className="mt-2 max-h-56 space-y-1 overflow-y-auto text-sm">
+                            {['all', ...filterOptions.companies].filter((value) => {
+                              if (!companySearch.trim()) return true
+                              const label = value === 'all' ? 'Alle' : value
+                              return label.toLowerCase().includes(companySearch.trim().toLowerCase())
+                            }).map((value) => {
+                              const isAll = value === 'all'
+                              const label = isAll ? 'Alle' : value
+                              const selected = companyFilter === value
+                              return (
+                                <button
+                                  key={value}
+                                  type="button"
+                                  onClick={() => {
+                                    setCompanyFilter(value)
+                                  }}
+                                  className="flex w-full items-center justify-between gap-2 rounded-md px-1.5 py-1 text-left hover:bg-muted"
+                                >
+                                  <span className="truncate">{label}</span>
+                                  <div
+                                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-input ${
+                                      selected ? 'bg-primary border-primary' : 'bg-muted'
+                                    }`}
+                                  >
+                                    {selected && <span className="h-2 w-2 rounded-full bg-primary-foreground" />}
+                                  </div>
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                      <button
+                        type="button"
+                        className="flex items-center gap-1 hover:opacity-80"
+                        onClick={() => handleSort('company')}
+                      >
+                        {sortKey === 'company' ? (
+                          sortDir === 'asc' ? (
+                            <ArrowUp className="size-3.5" />
+                          ) : (
+                            <ArrowDown className="size-3.5" />
+                          )
+                        ) : (
+                          <ArrowUpDown className="size-3.5 text-muted-foreground" />
+                        )}
+                      </button>
+                    </div>
                   </TableHead>
                 )}
                 {visibleColumns.title && (
                   <TableHead>
-                    <button type="button" className="flex items-center gap-1 hover:opacity-80" onClick={() => handleSort('title')}>
+                    <button
+                      type="button"
+                      className="flex items-center gap-1 hover:opacity-80"
+                      onClick={() => handleSort('title')}
+                    >
                       {COLUMN_LABELS.title}
-                      {sortKey === 'title' ? (sortDir === 'asc' ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />) : <ArrowUpDown className="size-3.5 text-muted-foreground" />}
+                      {sortKey === 'title' ? (
+                        sortDir === 'asc' ? (
+                          <ArrowUp className="size-3.5" />
+                        ) : (
+                          <ArrowDown className="size-3.5" />
+                        )
+                      ) : (
+                        <ArrowUpDown className="size-3.5 text-muted-foreground" />
+                      )}
                     </button>
                   </TableHead>
                 )}
                 {visibleColumns.tags && (
                   <TableHead className="max-w-[120px]">
-                    <button type="button" className="flex items-center gap-1 hover:opacity-80" onClick={() => handleSort('tags')}>
-                      {COLUMN_LABELS.tags}
-                      {sortKey === 'tags' ? (sortDir === 'asc' ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />) : <ArrowUpDown className="size-3.5 text-muted-foreground" />}
-                    </button>
+                    <div className="flex items-center justify-between gap-1">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            className={`flex items-center gap-1 text-left hover:opacity-80 ${tagsFilter !== 'all' ? 'font-semibold text-foreground' : ''}`}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <span>{COLUMN_LABELS.tags}</span>
+                            {tagsFilter !== 'all' && <Filter className="size-3.5 shrink-0 text-primary" aria-hidden />}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="w-64"
+                          align="start"
+                          onClick={(e) => e.stopPropagation()}
+                          onOpenAutoFocus={(e) => e.preventDefault()}
+                        >
+                          <Input
+                            autoFocus
+                            placeholder="Tags suchen…"
+                            value={tagsSearch}
+                            onChange={(e) => setTagsSearch(e.target.value)}
+                            className="h-8 text-xs"
+                          />
+                          <div className="mt-2 max-h-56 space-y-1 overflow-y-auto text-sm">
+                            {['all', ...filterOptions.tags].filter((value) => {
+                              if (!tagsSearch.trim()) return true
+                              const label = value === 'all' ? 'Alle' : value
+                              return label.toLowerCase().includes(tagsSearch.trim().toLowerCase())
+                            }).map((value) => {
+                              const isAll = value === 'all'
+                              const label = isAll ? 'Alle' : value
+                              const selected = tagsFilter === value
+                              return (
+                                <button
+                                  key={value}
+                                  type="button"
+                                  onClick={() => {
+                                    setTagsFilter(value)
+                                  }}
+                                  className="flex w-full items-center justify-between gap-2 rounded-md px-1.5 py-1 text-left hover:bg-muted"
+                                >
+                                  <span className="truncate">{label}</span>
+                                  <div
+                                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-input ${
+                                      selected ? 'bg-primary border-primary' : 'bg-muted'
+                                    }`}
+                                  >
+                                    {selected && <span className="h-2 w-2 rounded-full bg-primary-foreground" />}
+                                  </div>
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                      <button
+                        type="button"
+                        className="flex items-center gap-1 hover:opacity-80"
+                        onClick={() => handleSort('tags')}
+                      >
+                        {sortKey === 'tags' ? (
+                          sortDir === 'asc' ? (
+                            <ArrowUp className="size-3.5" />
+                          ) : (
+                            <ArrowDown className="size-3.5" />
+                          )
+                        ) : (
+                          <ArrowUpDown className="size-3.5 text-muted-foreground" />
+                        )}
+                      </button>
+                    </div>
                   </TableHead>
                 )}
                 {visibleColumns.industry && (
                   <TableHead>
-                    <button type="button" className="flex items-center gap-1 hover:opacity-80" onClick={() => handleSort('industry')}>
-                      {COLUMN_LABELS.industry}
-                      {sortKey === 'industry' ? (sortDir === 'asc' ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />) : <ArrowUpDown className="size-3.5 text-muted-foreground" />}
-                    </button>
+                    <div className="flex items-center justify-between gap-1">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            className={`flex items-center gap-1 text-left hover:opacity-80 ${industryFilter !== 'all' ? 'font-semibold text-foreground' : ''}`}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <span>{COLUMN_LABELS.industry}</span>
+                            {industryFilter !== 'all' && <Filter className="size-3.5 shrink-0 text-primary" aria-hidden />}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="w-64"
+                          align="start"
+                          onClick={(e) => e.stopPropagation()}
+                          onOpenAutoFocus={(e) => e.preventDefault()}
+                        >
+                          <Input
+                            autoFocus
+                            placeholder="Industrie suchen…"
+                            value={industrySearch}
+                            onChange={(e) => setIndustrySearch(e.target.value)}
+                            className="h-8 text-xs"
+                          />
+                          <div className="mt-2 max-h-56 space-y-1 overflow-y-auto text-sm">
+                            {['all', ...filterOptions.industries].filter((value) => {
+                              if (!industrySearch.trim()) return true
+                              const label = value === 'all' ? 'Alle' : value
+                              return label.toLowerCase().includes(industrySearch.trim().toLowerCase())
+                            }).map((value) => {
+                              const isAll = value === 'all'
+                              const label = isAll ? 'Alle' : value
+                              const selected = industryFilter === value
+                              return (
+                                <button
+                                  key={value}
+                                  type="button"
+                                  onClick={() => {
+                                    setIndustryFilter(value)
+                                  }}
+                                  className="flex w-full items-center justify-between gap-2 rounded-md px-1.5 py-1 text-left hover:bg-muted"
+                                >
+                                  <span className="truncate">{label}</span>
+                                  <div
+                                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-input ${
+                                      selected ? 'bg-primary border-primary' : 'bg-muted'
+                                    }`}
+                                  >
+                                    {selected && <span className="h-2 w-2 rounded-full bg-primary-foreground" />}
+                                  </div>
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                      <button
+                        type="button"
+                        className="flex items-center gap-1 hover:opacity-80"
+                        onClick={() => handleSort('industry')}
+                      >
+                        {sortKey === 'industry' ? (
+                          sortDir === 'asc' ? (
+                            <ArrowUp className="size-3.5" />
+                          ) : (
+                            <ArrowDown className="size-3.5" />
+                          )
+                        ) : (
+                          <ArrowUpDown className="size-3.5 text-muted-foreground" />
+                        )}
+                      </button>
+                    </div>
                   </TableHead>
                 )}
                 {visibleColumns.country && (
                   <TableHead>
-                    <button type="button" className="flex items-center gap-1 hover:opacity-80" onClick={() => handleSort('country')}>
-                      {COLUMN_LABELS.country}
-                      {sortKey === 'country' ? (sortDir === 'asc' ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />) : <ArrowUpDown className="size-3.5 text-muted-foreground" />}
-                    </button>
+                    <div className="flex items-center justify-between gap-1">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            className={`flex items-center gap-1 text-left hover:opacity-80 ${countryFilter !== 'all' ? 'font-semibold text-foreground' : ''}`}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <span>{COLUMN_LABELS.country}</span>
+                            {countryFilter !== 'all' && <Filter className="size-3.5 shrink-0 text-primary" aria-hidden />}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="w-56"
+                          align="start"
+                          onClick={(e) => e.stopPropagation()}
+                          onOpenAutoFocus={(e) => e.preventDefault()}
+                        >
+                          <Input
+                            autoFocus
+                            placeholder="HQ suchen…"
+                            value={countrySearch}
+                            onChange={(e) => setCountrySearch(e.target.value)}
+                            className="h-8 text-xs"
+                          />
+                          <div className="mt-2 max-h-56 space-y-1 overflow-y-auto text-sm">
+                            {['all', ...filterOptions.countries].filter((value) => {
+                              if (!countrySearch.trim()) return true
+                              const label = value === 'all' ? 'Alle' : value
+                              return label.toLowerCase().includes(countrySearch.trim().toLowerCase())
+                            }).map((value) => {
+                              const isAll = value === 'all'
+                              const label = isAll ? 'Alle' : value
+                              const selected = countryFilter === value
+                              return (
+                                <button
+                                  key={value}
+                                  type="button"
+                                  onClick={() => {
+                                    setCountryFilter(value)
+                                  }}
+                                  className="flex w-full items-center justify-between gap-2 rounded-md px-1.5 py-1 text-left hover:bg-muted"
+                                >
+                                  <span className="truncate">{label}</span>
+                                  <div
+                                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-input ${
+                                      selected ? 'bg-primary border-primary' : 'bg-muted'
+                                    }`}
+                                  >
+                                    {selected && <span className="h-2 w-2 rounded-full bg-primary-foreground" />}
+                                  </div>
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                      <button
+                        type="button"
+                        className="flex items-center gap-1 hover:opacity-80"
+                        onClick={() => handleSort('country')}
+                      >
+                        {sortKey === 'country' ? (
+                          sortDir === 'asc' ? (
+                            <ArrowUp className="size-3.5" />
+                          ) : (
+                            <ArrowDown className="size-3.5" />
+                          )
+                        ) : (
+                          <ArrowUpDown className="size-3.5 text-muted-foreground" />
+                        )}
+                      </button>
+                    </div>
                   </TableHead>
                 )}
                 {visibleColumns.project_status && (
                   <TableHead>
-                    <button type="button" className="flex items-center gap-1 hover:opacity-80" onClick={() => handleSort('project_status')}>
-                      {COLUMN_LABELS.project_status}
-                      {sortKey === 'project_status' ? (sortDir === 'asc' ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />) : <ArrowUpDown className="size-3.5 text-muted-foreground" />}
-                    </button>
+                    <div className="flex items-center justify-between gap-1">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            className={`flex items-center gap-1 text-left hover:opacity-80 ${projectStatusFilter !== 'all' ? 'font-semibold text-foreground' : ''}`}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <span>{COLUMN_LABELS.project_status}</span>
+                            {projectStatusFilter !== 'all' && <Filter className="size-3.5 shrink-0 text-primary" aria-hidden />}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="w-64"
+                          align="start"
+                          onClick={(e) => e.stopPropagation()}
+                          onOpenAutoFocus={(e) => e.preventDefault()}
+                        >
+                          <Input
+                            autoFocus
+                            placeholder="Projektstatus suchen…"
+                            value={projectStatusSearch}
+                            onChange={(e) => setProjectStatusSearch(e.target.value)}
+                            className="h-8 text-xs"
+                          />
+                          <div className="mt-2 max-h-56 space-y-1 overflow-y-auto text-sm">
+                            {['all', ...filterOptions.projectStatuses].filter((value) => {
+                              if (!projectStatusSearch.trim()) return true
+                              const label =
+                                value === 'all'
+                                  ? 'Alle'
+                                  : value === 'active'
+                                    ? 'Aktiv'
+                                    : 'Abgeschlossen'
+                              return label.toLowerCase().includes(projectStatusSearch.trim().toLowerCase())
+                            }).map((value) => {
+                              const isAll = value === 'all'
+                              const label =
+                                isAll ? 'Alle' : value === 'active' ? 'Aktiv' : 'Abgeschlossen'
+                              const selected = projectStatusFilter === value
+                              return (
+                                <button
+                                  key={value}
+                                  type="button"
+                                  onClick={() => {
+                                    setProjectStatusFilter(value)
+                                  }}
+                                  className="flex w-full items-center justify-between gap-2 rounded-md px-1.5 py-1 text-left hover:bg-muted"
+                                >
+                                  <span className="truncate">{label}</span>
+                                  <div
+                                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-input ${
+                                      selected ? 'bg-primary border-primary' : 'bg-muted'
+                                    }`}
+                                  >
+                                    {selected && <span className="h-2 w-2 rounded-full bg-primary-foreground" />}
+                                  </div>
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                      <button
+                        type="button"
+                        className="flex items-center gap-1 hover:opacity-80"
+                        onClick={() => handleSort('project_status')}
+                      >
+                        {sortKey === 'project_status' ? (
+                          sortDir === 'asc' ? (
+                            <ArrowUp className="size-3.5" />
+                          ) : (
+                            <ArrowDown className="size-3.5" />
+                          )
+                        ) : (
+                          <ArrowUpDown className="size-3.5 text-muted-foreground" />
+                        )}
+                      </button>
+                    </div>
                   </TableHead>
                 )}
                 {visibleColumns.project_start && (
                   <TableHead className="text-right">
-                    <button type="button" className="ml-auto flex items-center gap-1 hover:opacity-80" onClick={() => handleSort('project_start')}>
+                    <button
+                      type="button"
+                      className="ml-auto flex items-center gap-1 hover:opacity-80"
+                      onClick={() => handleSort('project_start')}
+                    >
                       {COLUMN_LABELS.project_start}
-                      {sortKey === 'project_start' ? (sortDir === 'asc' ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />) : <ArrowUpDown className="size-3.5 text-muted-foreground" />}
+                      {sortKey === 'project_start' ? (
+                        sortDir === 'asc' ? (
+                          <ArrowUp className="size-3.5" />
+                        ) : (
+                          <ArrowDown className="size-3.5" />
+                        )
+                      ) : (
+                        <ArrowUpDown className="size-3.5 text-muted-foreground" />
+                      )}
                     </button>
                   </TableHead>
                 )}
                 {visibleColumns.project_end && (
                   <TableHead className="text-right">
-                    <button type="button" className="ml-auto flex items-center gap-1 hover:opacity-80" onClick={() => handleSort('project_end')}>
+                    <button
+                      type="button"
+                      className="ml-auto flex items-center gap-1 hover:opacity-80"
+                      onClick={() => handleSort('project_end')}
+                    >
                       {COLUMN_LABELS.project_end}
-                      {sortKey === 'project_end' ? (sortDir === 'asc' ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />) : <ArrowUpDown className="size-3.5 text-muted-foreground" />}
+                      {sortKey === 'project_end' ? (
+                        sortDir === 'asc' ? (
+                          <ArrowUp className="size-3.5" />
+                        ) : (
+                          <ArrowDown className="size-3.5" />
+                        )
+                      ) : (
+                        <ArrowUpDown className="size-3.5 text-muted-foreground" />
+                      )}
                     </button>
                   </TableHead>
                 )}
                 {visibleColumns.duration_months && (
                   <TableHead className="text-right">
-                    <button type="button" className="ml-auto flex items-center gap-1 hover:opacity-80" onClick={() => handleSort('duration_months')}>
+                    <button
+                      type="button"
+                      className="ml-auto flex items-center gap-1 hover:opacity-80"
+                      onClick={() => handleSort('duration_months')}
+                    >
                       {COLUMN_LABELS.duration_months}
-                      {sortKey === 'duration_months' ? (sortDir === 'asc' ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />) : <ArrowUpDown className="size-3.5 text-muted-foreground" />}
+                      {sortKey === 'duration_months' ? (
+                        sortDir === 'asc' ? (
+                          <ArrowUp className="size-3.5" />
+                        ) : (
+                          <ArrowDown className="size-3.5" />
+                        )
+                      ) : (
+                        <ArrowUpDown className="size-3.5 text-muted-foreground" />
+                      )}
                     </button>
                   </TableHead>
                 )}
                 {visibleColumns.created_at && (
                   <TableHead className="text-right">
-                    <button type="button" className="ml-auto flex items-center gap-1 hover:opacity-80" onClick={() => handleSort('created_at')}>
+                    <button
+                      type="button"
+                      className="ml-auto flex items-center gap-1 hover:opacity-80"
+                      onClick={() => handleSort('created_at')}
+                    >
                       {COLUMN_LABELS.created_at}
-                      {sortKey === 'created_at' ? (sortDir === 'asc' ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />) : <ArrowUpDown className="size-3.5 text-muted-foreground" />}
+                      {sortKey === 'created_at' ? (
+                        sortDir === 'asc' ? (
+                          <ArrowUp className="size-3.5" />
+                        ) : (
+                          <ArrowDown className="size-3.5" />
+                        )
+                      ) : (
+                        <ArrowUpDown className="size-3.5 text-muted-foreground" />
+                      )}
                     </button>
                   </TableHead>
                 )}
                 {visibleColumns.updated_at && (
                   <TableHead className="text-right">
-                    <button type="button" className="ml-auto flex items-center gap-1 hover:opacity-80" onClick={() => handleSort('updated_at')}>
+                    <button
+                      type="button"
+                      className="ml-auto flex items-center gap-1 hover:opacity-80"
+                      onClick={() => handleSort('updated_at')}
+                    >
                       {COLUMN_LABELS.updated_at}
-                      {sortKey === 'updated_at' ? (sortDir === 'asc' ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />) : <ArrowUpDown className="size-3.5 text-muted-foreground" />}
+                      {sortKey === 'updated_at' ? (
+                        sortDir === 'asc' ? (
+                          <ArrowUp className="size-3.5" />
+                        ) : (
+                          <ArrowDown className="size-3.5" />
+                        )
+                      ) : (
+                        <ArrowUpDown className="size-3.5 text-muted-foreground" />
+                      )}
                     </button>
                   </TableHead>
                 )}
@@ -1515,11 +2008,11 @@ export function DashboardOverview({
 
       {/* 4. Detail (zentrales Modal) */}
       <Dialog open={sheetOpen} onOpenChange={setSheetOpen}>
-        <DialogContent className="flex max-h-[90vh] flex-col gap-0 p-0 sm:max-w-xl md:max-w-[640px] overflow-hidden">
+        <DialogContent className="flex max-h-[90vh] flex-col gap-0 overflow-hidden px-6 py-0 sm:max-w-xl md:max-w-[640px] md:px-10">
           {selectedRef && (
             <TooltipProvider delayDuration={150}>
               {/* Fixierter Header */}
-              <DialogHeader className="z-10 shrink-0 border-b bg-background px-4 py-4">
+              <DialogHeader className="z-10 shrink-0 border-b bg-background px-0 py-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-1 min-w-0 flex-1">
                     <div className="flex items-center gap-2">
@@ -2019,7 +2512,7 @@ export function DashboardOverview({
       {/* Neue Referenz (zentrales Modal) */}
       {profile.role === 'admin' && (
         <Dialog open={newRefModalOpen} onOpenChange={setNewRefModalOpen}>
-          <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl p-0 gap-0 border-0">
+          <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl gap-0 border-0 px-6 py-0 md:px-10">
             <ReferenceForm
               companies={companies}
               contacts={contacts}
