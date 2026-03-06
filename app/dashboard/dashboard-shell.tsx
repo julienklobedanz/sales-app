@@ -13,6 +13,7 @@ import {
   LogOut,
   ShieldCheckIcon,
   Award,
+  Briefcase,
   HandshakeIcon,
   FilePen,
 } from 'lucide-react'
@@ -322,7 +323,7 @@ export function DashboardShell({
                     <DropdownMenuItem
                       onSelect={() => handleRoleChange('sales')}
                     >
-                      <BriefcaseIcon className="mr-2 size-4 text-primary" />
+                      <Briefcase className="mr-2 size-4 text-primary" />
                       Sales Representative
                     </DropdownMenuItem>
                   </DropdownMenuGroup>

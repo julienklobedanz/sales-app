@@ -4,6 +4,8 @@ import { getDashboardData } from './actions'
 import { DashboardOverview } from './dashboard-overview'
 import type { Profile } from './dashboard-shell'
 
+export const dynamic = 'force-dynamic'
+
 type Props = {
   searchParams: Promise<{ favoriten?: string }>
 }

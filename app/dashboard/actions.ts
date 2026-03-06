@@ -4,7 +4,11 @@ import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+function getResend(): Resend | null {
+  const key = process.env.RESEND_API_KEY
+  if (!key) return null
+  return new Resend(key)
+}
 
 export type ReferenceRow = {
   id: string
@@ -835,7 +839,8 @@ export async function submitForApproval(id: string) {
       ? contact.email
       : null
 
-  if (contactEmail && process.env.RESEND_API_KEY) {
+  const resend = getResend()
+  if (contactEmail && resend) {
     try {
       const baseUrl =
         process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'

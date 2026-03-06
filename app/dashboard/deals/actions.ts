@@ -5,7 +5,11 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { Resend } from 'resend'
 import type { DealRow, DealStatus, DealWithReferences } from './types'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+function getResend(): Resend | null {
+  const key = process.env.RESEND_API_KEY
+  if (!key) return null
+  return new Resend(key)
+}
 
 export async function getDeals(): Promise<DealRow[]> {
   const supabase = await createServerSupabaseClient()
@@ -290,7 +294,8 @@ export async function submitReferenceRequest(
     return { success: false, error: 'REFERENCE_MANAGER_EMAIL ist nicht konfiguriert. Bitte in den Einstellungen hinterlegen.' }
   }
 
-  if (process.env.RESEND_API_KEY) {
+  const resend = getResend()
+  if (resend) {
     try {
       const requesterName = profile?.full_name ?? user.email ?? 'Ein Nutzer'
       await resend.emails.send({

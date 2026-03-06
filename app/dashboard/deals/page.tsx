@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation'
 import { getDeals, getExpiringDeals, getReferencesForOrg } from './actions'
 import { DealsClientContent } from './deals-client'
 
+export const dynamic = 'force-dynamic'
+
 type Props = { searchParams: Promise<{ open?: string }> }
 
 export default async function DealsPage({ searchParams }: Props) {
