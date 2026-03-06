@@ -65,6 +65,7 @@ import {
   submitForApproval,
   toggleFavorite,
   updateReferenceAssetCategory,
+  updateReferenceDetailFields,
 } from './actions'
 import type { Profile } from './dashboard-shell'
 import {
@@ -82,6 +83,7 @@ import {
   TimerIcon,
   HistoryIcon,
   UserIcon,
+  Users,
   MoreHorizontal,
   CopyIcon,
   FileTextIcon,
@@ -463,6 +465,10 @@ export function DashboardOverview({
   const [selectedRefIds, setSelectedRefIds] = useState<Set<string>>(() => new Set())
   const [previewRefs, setPreviewRefs] = useState<ReferenceRow[] | null>(null)
   const [singleRefPreviewRef, setSingleRefPreviewRef] = useState<ReferenceRow | null>(null)
+  const [detailProjectStatus, setDetailProjectStatus] = useState<ReferenceRow['project_status']>(null)
+  const [detailIncumbent, setDetailIncumbent] = useState('')
+  const [detailCompetitors, setDetailCompetitors] = useState('')
+  const [detailSaveLoading, setDetailSaveLoading] = useState(false)
   const selectAllCheckboxRef = useRef<HTMLInputElement | null>(null)
   const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
   const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false)
@@ -650,6 +656,14 @@ export function DashboardOverview({
       document.body.style.overflow = prev
     }
   }, [previewOpen])
+
+  useEffect(() => {
+    if (selectedRef) {
+      setDetailProjectStatus(selectedRef.project_status ?? null)
+      setDetailIncumbent(selectedRef.incumbent_provider ?? '')
+      setDetailCompetitors(selectedRef.competitors ?? '')
+    }
+  }, [selectedRef?.id, selectedRef?.project_status, selectedRef?.incumbent_provider, selectedRef?.competitors])
 
   const handleDelete = async (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation()
@@ -2136,6 +2150,37 @@ export function DashboardOverview({
                         NDA-geschützt
                       </Badge>
                     )}
+                    {profile.role === 'admin' ? (
+                      <Select
+                        value={detailProjectStatus ?? '__none__'}
+                        onValueChange={async (val) => {
+                          const v = val === '__none__' ? null : (val as ReferenceRow['project_status'])
+                          setDetailProjectStatus(v)
+                          try {
+                            await updateReferenceDetailFields(selectedRef.id, { project_status: v })
+                            setSelectedRef((prev) => (prev && prev.id === selectedRef.id ? { ...prev, project_status: v } : prev))
+                            toast.success('Projektstatus aktualisiert')
+                          } catch {
+                            toast.error('Speichern fehlgeschlagen')
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="h-7 w-[130px] gap-1 border-muted text-xs">
+                          <ActivityIcon className="size-3" />
+                          <SelectValue placeholder="Projektstatus" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">— Keine Angabe</SelectItem>
+                          <SelectItem value="active">Aktiv</SelectItem>
+                          <SelectItem value="completed">Abgeschlossen</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Badge variant="outline" className="gap-1 text-xs">
+                        <ActivityIcon className="size-3" />
+                        {PROJECT_STATUS_LABELS[selectedRef.project_status ?? ''] ?? selectedRef.project_status ?? '—'}
+                      </Badge>
+                    )}
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Badge
@@ -2303,6 +2348,82 @@ export function DashboardOverview({
                     </div>
                   </section>
 
+                  {/* Marktumfeld: Dienstleister & Wettbewerber (editierbar für Admin) */}
+                  <section className="space-y-3">
+                    <h3 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
+                      Marktumfeld
+                    </h3>
+                    <div className="grid grid-cols-1 gap-4 rounded-lg border bg-muted/20 p-4 sm:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+                          <Building2Icon className="size-3" /> Aktueller Dienstleister
+                        </span>
+                        {profile.role === 'admin' ? (
+                          <Input
+                            value={detailIncumbent}
+                            onChange={(e) => setDetailIncumbent(e.target.value)}
+                            placeholder="z. B. Voranbieter / Incumbent"
+                            className="h-8 text-sm"
+                          />
+                        ) : (
+                          <p className={`pl-4 text-xs font-medium ${selectedRef.incumbent_provider ? 'text-foreground' : 'text-muted-foreground'}`}>
+                            {selectedRef.incumbent_provider || '—'}
+                          </p>
+                        )}
+                      </div>
+                      <div className="space-y-1.5">
+                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+                          <Users className="size-3" /> Beteiligte Wettbewerber
+                        </span>
+                        {profile.role === 'admin' ? (
+                          <Input
+                            value={detailCompetitors}
+                            onChange={(e) => setDetailCompetitors(e.target.value)}
+                            placeholder="z. B. gegen wen gewonnen"
+                            className="h-8 text-sm"
+                          />
+                        ) : (
+                          <p className={`pl-4 text-xs font-medium ${selectedRef.competitors ? 'text-foreground' : 'text-muted-foreground'}`}>
+                            {selectedRef.competitors || '—'}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    {profile.role === 'admin' && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        disabled={detailSaveLoading}
+                        onClick={async () => {
+                          setDetailSaveLoading(true)
+                          try {
+                            await updateReferenceDetailFields(selectedRef.id, {
+                              incumbent_provider: detailIncumbent.trim() || null,
+                              competitors: detailCompetitors.trim() || null,
+                            })
+                            setSelectedRef((prev) =>
+                              prev && prev.id === selectedRef.id
+                                ? {
+                                    ...prev,
+                                    incumbent_provider: detailIncumbent.trim() || null,
+                                    competitors: detailCompetitors.trim() || null,
+                                  }
+                                : prev
+                            )
+                            toast.success('Marktumfeld gespeichert')
+                          } catch {
+                            toast.error('Speichern fehlgeschlagen')
+                          } finally {
+                            setDetailSaveLoading(false)
+                          }
+                        }}
+                      >
+                        {detailSaveLoading ? <Loader2 className="mr-2 size-3.5 animate-spin" /> : null}
+                        Änderungen speichern
+                      </Button>
+                    )}
+                  </section>
+
                   {/* Block B: Projekt-Details */}
                   <section className="space-y-3">
                     <h3 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
@@ -2323,22 +2444,6 @@ export function DashboardOverview({
                         </span>
                         <p className={`pl-4 text-xs font-medium ${selectedRef.contract_type ? 'text-foreground' : 'text-muted-foreground'}`}>
                           {selectedRef.contract_type || '—'}
-                        </p>
-                      </div>
-                      <div className="space-y-0.5">
-                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-                          <Building2Icon className="size-3" /> Incumbent
-                        </span>
-                        <p className={`pl-4 text-xs font-medium ${selectedRef.incumbent_provider ? 'text-foreground' : 'text-muted-foreground'}`}>
-                          {selectedRef.incumbent_provider || '—'}
-                        </p>
-                      </div>
-                      <div className="space-y-0.5">
-                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-                          <Handshake className="size-3" /> Wettbewerber
-                        </span>
-                        <p className={`pl-4 text-xs font-medium ${selectedRef.competitors ? 'text-foreground' : 'text-muted-foreground'}`}>
-                          {selectedRef.competitors || '—'}
                         </p>
                       </div>
                     </div>
