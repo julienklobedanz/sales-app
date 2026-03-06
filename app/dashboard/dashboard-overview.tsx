@@ -753,8 +753,8 @@ export function DashboardOverview({
 
       {/* Toolbar & Tabelle */}
       <div className="space-y-4">
-        {/* Toolbar: Suche oberste Priorität (flex-1), daneben RFP, Spalten, Favoriten etc. */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        {/* Toolbar: eine Zeile, keine Umbrüche. Suche flex-1, rechts Icons. */}
+        <div className="flex flex-nowrap items-center gap-2 sm:gap-3 overflow-x-auto">
           {/* Suche: immer sichtbar, nimmt verfügbaren Platz */}
           <div className="relative min-w-0 flex-1 basis-0 sm:basis-auto">
             <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
@@ -2008,7 +2008,7 @@ export function DashboardOverview({
 
       {/* 4. Detail (zentrales Modal) */}
       <Dialog open={sheetOpen} onOpenChange={setSheetOpen}>
-        <DialogContent className="flex max-h-[90vh] flex-col gap-0 overflow-hidden px-6 py-0 sm:max-w-xl md:max-w-[640px] md:px-10">
+        <DialogContent className="flex max-h-[85vh] flex-col gap-0 overflow-hidden px-6 py-0 sm:max-w-4xl lg:max-w-5xl md:px-12">
           {selectedRef && (
             <TooltipProvider delayDuration={150}>
               {/* Fixierter Header */}
@@ -2512,7 +2512,7 @@ export function DashboardOverview({
       {/* Neue Referenz (zentrales Modal) */}
       {profile.role === 'admin' && (
         <Dialog open={newRefModalOpen} onOpenChange={setNewRefModalOpen}>
-          <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl gap-0 border-0 px-6 py-0 md:px-10">
+          <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-4xl lg:max-w-5xl gap-0 border-0 px-6 py-0 md:px-12">
             <ReferenceForm
               companies={companies}
               contacts={contacts}

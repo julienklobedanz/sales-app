@@ -199,12 +199,12 @@ export function DashboardShell({
                   <SidebarMenuButton
                     asChild
                     isActive={pathname?.startsWith('/dashboard/companies')}
-                    tooltip="Client Insights – Firmenübersicht, Executive Profiling & Stakeholder-Mapping (in Vorbereitung)"
+                    tooltip="ClientOS – Firmenübersicht, Executive Profiling & Stakeholder-Mapping (in Vorbereitung)"
                     className="data-[active=true]:bg-muted data-[active=true]:text-foreground"
                   >
                     <Link href="/dashboard/companies">
                       <BriefcaseIcon />
-                      <span>Client Insights</span>
+                      <span>ClientOS</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
