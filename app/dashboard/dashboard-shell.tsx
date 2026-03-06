@@ -12,7 +12,7 @@ import {
   ChevronsUpDown,
   LogOut,
   ShieldCheckIcon,
-  BriefcaseIcon,
+  Award,
   HandshakeIcon,
   FilePen,
 } from 'lucide-react'
@@ -203,7 +203,7 @@ export function DashboardShell({
                     className="data-[active=true]:bg-muted data-[active=true]:text-foreground"
                   >
                     <Link href="/dashboard/companies">
-                      <BriefcaseIcon />
+                      <Award />
                       <span>ClientOS</span>
                     </Link>
                   </SidebarMenuButton>
