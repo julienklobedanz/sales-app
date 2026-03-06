@@ -54,6 +54,24 @@ export type GetDashboardDataResult = {
   deletedCount: number
 }
 
+/** Mapping alter/legacy Status-Werte auf das 4-Status-Modell (Daten-Wiederherstellung) */
+const STATUS_MAP: Record<string, ReferenceRow['status']> = {
+  draft: 'draft',
+  internal_only: 'internal_only',
+  approved: 'approved',
+  anonymized: 'anonymized',
+  pending: 'internal_only',
+  external: 'approved',
+  internal: 'internal_only',
+  anonymous: 'anonymized',
+  restricted: 'internal_only',
+}
+const VALID_STATUSES: ReferenceRow['status'][] = ['draft', 'internal_only', 'approved', 'anonymized']
+function normalizeStatus(raw: unknown): ReferenceRow['status'] {
+  const s = String(raw ?? '').toLowerCase().trim()
+  return STATUS_MAP[s] ?? (VALID_STATUSES.includes(s as ReferenceRow['status']) ? (s as ReferenceRow['status']) : 'draft')
+}
+
 export type DeletedReferenceRow = {
   id: string
   title: string
@@ -119,45 +137,76 @@ export async function getDashboardData(
   error = result.error
   rows = result.data
 
-  // Fallback: Ohne contact_id und contact_persons (falls Schema noch nicht migriert)
+  const fullSelectNoRelations = `
+    id, title, summary, industry, country, website, employee_count,
+    volume_eur, contract_type, incumbent_provider, competitors,
+    customer_challenge, our_solution, status, created_at, updated_at,
+    company_id, contact_id, file_path, tags, project_status, project_start, project_end,
+    is_nda_deal,
+    companies ( name, logo_url )
+  `
+  const fullSelectMinimal = `
+    id, title, summary, industry, country, website, employee_count,
+    volume_eur, contract_type, incumbent_provider, competitors,
+    customer_challenge, our_solution, status, created_at, updated_at,
+    company_id, contact_id, file_path, tags, project_status, project_start, project_end,
+    companies ( name, logo_url )
+  `
+
+  // Fallback 1: Ohne contact_persons (falls FK/Schema fehlt), weiter mit deleted_at-Filter
   if (error) {
     console.error('[getDashboardData] Supabase error:', error.message, error.details)
     const fallback = await supabase
       .from('references')
-      .select(`
-        id,
-        title,
-        summary,
-        industry,
-        country,
-        website,
-        employee_count,
-        volume_eur,
-        contract_type,
-        incumbent_provider,
-        competitors,
-        customer_challenge,
-        our_solution,
-        status,
-        created_at,
-        updated_at,
-        company_id,
-        contact_id,
-        file_path,
-        tags,
-        project_status,
-        project_start,
-        project_end,
-        is_nda_deal,
-        companies ( name, logo_url )
-      `)
+      .select(fullSelectNoRelations)
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
-    if (fallback.error) {
-      console.error('[getDashboardData] Fallback error:', fallback.error.message)
-      return { references: [], totalCount: 0, deletedCount: 0 }
+    if (!fallback.error) {
+      rows = fallback.data
+      error = null
     }
-    rows = fallback.data
+  }
+
+  // Fallback 2: deleted_at-Spalte fehlt oder Filter schlägt fehl – ohne Filter laden, dann in JS filtern
+  if (error) {
+    const withDeletedColumn = await supabase
+      .from('references')
+      .select(fullSelectNoRelations + ', deleted_at')
+      .order('created_at', { ascending: false })
+    if (!withDeletedColumn.error && withDeletedColumn.data) {
+      const data = withDeletedColumn.data as unknown as Record<string, unknown>[]
+      rows = data.filter((r) => r.deleted_at == null || r.deleted_at === undefined)
+      error = null
+    }
+  }
+
+  // Fallback 3: Tabelle hat deleted_at gar nicht – alle Zeilen verwenden
+  if (error) {
+    const noDeletedFilter = await supabase
+      .from('references')
+      .select(fullSelectNoRelations)
+      .order('created_at', { ascending: false })
+    if (!noDeletedFilter.error) {
+      rows = noDeletedFilter.data
+      error = null
+    }
+  }
+
+  // Fallback 4: is_nda_deal oder andere Spalte fehlt – minimale Spaltenliste
+  if (error) {
+    const minimal = await supabase
+      .from('references')
+      .select(fullSelectMinimal)
+      .order('created_at', { ascending: false })
+    if (!minimal.error) {
+      rows = minimal.data
+      error = null
+    }
+  }
+
+  if (error) {
+    console.error('[getDashboardData] All fallbacks failed:', error.message)
+    return { references: [], totalCount: 0, deletedCount: 0 }
   }
 
   // Favoriten des aktuellen Users (Set für schnellen Lookup)
@@ -211,7 +260,7 @@ export async function getDashboardData(
       competitors: (r.competitors as string | null) ?? null,
       customer_challenge: (r.customer_challenge as string | null) ?? null,
       our_solution: (r.our_solution as string | null) ?? null,
-      status: r.status as ReferenceRow['status'],
+      status: normalizeStatus(r.status),
       created_at: r.created_at as string,
       updated_at: (r.updated_at as string | null) ?? null,
       company_id: r.company_id as string,
@@ -236,15 +285,19 @@ export async function getDashboardData(
     references = references.filter((r) => r.is_favorited)
   }
 
-  const { count: deletedCount } = await supabase
+  let deletedCount = 0
+  const deletedResult = await supabase
     .from('references')
     .select('id', { count: 'exact', head: true })
     .not('deleted_at', 'is', null)
+  if (!deletedResult.error) {
+    deletedCount = deletedResult.count ?? 0
+  }
 
   return {
     references,
     totalCount: references.length,
-    deletedCount: deletedCount ?? 0,
+    deletedCount,
   }
 }
 
@@ -264,6 +317,7 @@ export async function getDeletedReferences(): Promise<DeletedReferenceRow[]> {
     .order('created_at', { ascending: false })
 
   if (error || !data) return []
+  // Spalte deleted_at kann fehlen (Migration noch nicht gelaufen) – dann keine gelöschten Einträge
 
   return data.map((r: any) => {
     const raw = r.companies
