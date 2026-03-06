@@ -305,6 +305,8 @@ export async function createReference(
       : null
   const project_start = formData.get('project_start')?.toString()?.trim() || null
   const project_end = formData.get('project_end')?.toString()?.trim() || null
+  const ndaDealRaw = formData.get('nda_deal')?.toString()
+  const is_nda_deal = ndaDealRaw === '1' || ndaDealRaw === 'true'
 
   if (!title) {
     return { success: false, error: 'Titel ist erforderlich.' }
@@ -461,6 +463,7 @@ export async function createReference(
       project_status,
       project_start: project_start || null,
       project_end: project_end || null,
+      is_nda_deal,
     })
     .select('id')
     .single()

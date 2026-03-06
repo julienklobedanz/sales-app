@@ -7,6 +7,9 @@ export type ExtractedReferenceData = {
   volume_eur: string | null
   employee_count: number | null
   tags: string[]
+  company_name: string | null
+  customer_challenge: string | null
+  our_solution: string | null
 }
 
 export type ExtractDataFromDocumentResult =
@@ -61,7 +64,10 @@ JSON-Schema:
   "industry": "einer der erlaubten Industrien oder null",
   "volume_eur": "string z.B. '5M' oder '500000' oder null",
   "employee_count": Zahl oder null,
-  "tags": ["tag1", "tag2"]
+  "tags": ["tag1", "tag2"],
+  "company_name": "Firmenname / Kundenname aus dem Dokument oder null",
+  "customer_challenge": "Herausforderung des Kunden (kurz, 1-2 Sätze) oder null",
+  "our_solution": "Unsere Lösung / angebotene Lösung (kurz, 1-2 Sätze) oder null"
 }
 
 Dokumenttext:
@@ -99,6 +105,9 @@ ${documentText.slice(0, 12000)}
     volume_eur: typeof parsed.volume_eur === 'string' ? parsed.volume_eur : null,
     employee_count: typeof parsed.employee_count === 'number' ? parsed.employee_count : null,
     tags: Array.isArray(parsed.tags) ? parsed.tags.filter((t): t is string => typeof t === 'string') : [],
+    company_name: typeof parsed.company_name === 'string' ? parsed.company_name : null,
+    customer_challenge: typeof parsed.customer_challenge === 'string' ? parsed.customer_challenge : null,
+    our_solution: typeof parsed.our_solution === 'string' ? parsed.our_solution : null,
   }
 }
 

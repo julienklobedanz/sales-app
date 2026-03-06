@@ -3,6 +3,7 @@
 import React from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import {
   Card,
@@ -101,7 +102,9 @@ import {
   ArrowUp,
   ArrowDown,
   Filter,
+  Eye,
 } from 'lucide-react'
+import { ReferenceReader } from './reference-reader'
 import {
   Dialog,
   DialogContent,
@@ -458,6 +461,8 @@ export function DashboardOverview({
     )
   }
   const [selectedRefIds, setSelectedRefIds] = useState<Set<string>>(() => new Set())
+  const [previewRefs, setPreviewRefs] = useState<ReferenceRow[] | null>(null)
+  const selectAllCheckboxRef = useRef<HTMLInputElement | null>(null)
   const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
   const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false)
   const [visibleColumns, setVisibleColumns] = useState<
@@ -625,6 +630,15 @@ export function DashboardOverview({
     () => initialReferences.filter((r) => selectedRefIds.has(r.id)),
     [initialReferences, selectedRefIds]
   )
+
+  useEffect(() => {
+    const el = selectAllCheckboxRef.current
+    if (!el) return
+    el.indeterminate =
+      selectedRefIds.size > 0 &&
+      filteredReferences.length > 0 &&
+      selectedRefIds.size < filteredReferences.length
+  }, [selectedRefIds.size, filteredReferences.length])
 
   const handleDelete = async (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation()
@@ -871,6 +885,19 @@ export function DashboardOverview({
             </>
           )}
 
+          {selectedRefIds.size > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 shrink-0 gap-1.5"
+              onClick={() => setPreviewRefs(selectedRefs)}
+              aria-label={`Vorschau (${selectedRefIds.size} Referenz${selectedRefIds.size !== 1 ? 'en' : ''})`}
+            >
+              <Eye className="size-4" />
+              <span className="hidden sm:inline">Vorschau ({selectedRefIds.size})</span>
+            </Button>
+          )}
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -1026,7 +1053,29 @@ export function DashboardOverview({
           <Table className="min-w-[800px]">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[44px]"></TableHead>
+                <TableHead className="w-[44px] pr-0">
+                  <input
+                    type="checkbox"
+                    ref={selectAllCheckboxRef}
+                    checked={
+                      filteredReferences.length > 0 &&
+                      filteredReferences.every((r) => selectedRefIds.has(r.id))
+                    }
+                    onChange={() => {
+                      if (
+                        filteredReferences.every((r) => selectedRefIds.has(r.id))
+                      ) {
+                        setSelectedRefIds(new Set())
+                      } else {
+                        setSelectedRefIds(
+                          new Set(filteredReferences.map((r) => r.id))
+                        )
+                      }
+                    }}
+                    className="size-4 rounded border-muted-foreground/50"
+                    aria-label="Alle auswählen"
+                  />
+                </TableHead>
                 {visibleColumns.status && (
                   <TableHead>
                     <div className="flex items-center justify-between gap-1">
@@ -2008,17 +2057,35 @@ export function DashboardOverview({
 
       {/* 4. Detail (zentrales Modal) */}
       <Dialog open={sheetOpen} onOpenChange={setSheetOpen}>
-        <DialogContent className="flex max-h-[85vh] flex-col gap-0 overflow-hidden px-6 py-0 sm:max-w-4xl lg:max-w-5xl md:px-12">
+        <DialogContent className="flex max-h-[85vh] flex-col gap-0 overflow-hidden px-8 py-6 sm:max-w-4xl lg:max-w-5xl md:px-16 lg:px-20">
           {selectedRef && (
             <TooltipProvider delayDuration={150}>
               {/* Fixierter Header */}
-              <DialogHeader className="z-10 shrink-0 border-b bg-background px-0 py-4">
+              <DialogHeader className="z-10 shrink-0 border-b bg-background px-0 pb-4 pt-0">
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-1 min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <DialogTitle className="text-lg font-semibold leading-tight tracking-tight truncate">
                         {selectedRef.title}
                       </DialogTitle>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 shrink-0 -mt-1 hover:bg-transparent"
+                            onClick={(e: React.MouseEvent) => {
+                              e.stopPropagation()
+                              setPreviewRefs([selectedRef])
+                              setSheetOpen(false)
+                            }}
+                            aria-label="Vorschau (Kundenansicht)"
+                          >
+                            <Eye className="size-4 text-muted-foreground" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Vorschau (Kundenansicht)</TooltipContent>
+                      </Tooltip>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -2035,22 +2102,30 @@ export function DashboardOverview({
                       </Button>
                     </div>
                     <DialogDescription className="text-muted-foreground line-clamp-2 text-xs">
-                      {selectedRef.company_name}
+                      {selectedRef.status === 'anonymized'
+                        ? 'Anonymisierter Kunde'
+                        : selectedRef.company_name}
                     </DialogDescription>
                   </div>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Badge
-                        variant="outline"
-                        className={[
-                          'shrink-0 text-xs cursor-default',
-                          STATUS_BADGE_CLASSES[selectedRef.status] ??
-                            'border bg-muted text-foreground',
-                        ].join(' ')}
-                      >
-                        {STATUS_LABELS[selectedRef.status] ?? selectedRef.status}
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
+                    {selectedRef.is_nda_deal && (
+                      <Badge variant="secondary" className="text-xs cursor-default">
+                        NDA-geschützt
                       </Badge>
-                    </TooltipTrigger>
+                    )}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge
+                          variant="outline"
+                          className={[
+                            'text-xs cursor-default',
+                            STATUS_BADGE_CLASSES[selectedRef.status] ??
+                              'border bg-muted text-foreground',
+                          ].join(' ')}
+                        >
+                          {STATUS_LABELS[selectedRef.status] ?? selectedRef.status}
+                        </Badge>
+                      </TooltipTrigger>
                     <TooltipContent className="max-w-xs text-xs leading-snug">
                       {selectedRef.status === 'draft' &&
                         'Entwurf: In Arbeit, nur für den Ersteller sichtbar.'}
@@ -2062,13 +2137,32 @@ export function DashboardOverview({
                         'Anonymisiert: Name und Logo entfernt (z. B. „Großbank“), bereit für öffentliche Case Studies.'}
                     </TooltipContent>
                   </Tooltip>
+                  </div>
                 </div>
               </DialogHeader>
 
               {/* Ein scrollbarer Bereich: Übersicht, Dateien, Historie untereinander */}
-              <div className="flex-1 overflow-y-auto px-4 py-4">
-                {/* Abstand zwischen Abschnitten: space-y-8 | Abstand innerhalb Abschnitt: space-y-4 | Mehr Abstand oben vor Übersicht: pt-6 */}
-                <div className="space-y-8 pt-6">
+              <div className="flex-1 overflow-y-auto px-6 py-6 md:px-8 md:py-8">
+                {/* Abstand zwischen Abschnitten: space-y-8 | Abstand innerhalb Abschnitt: space-y-4 */}
+                <div className="space-y-8 pt-4">
+                  {/* Logo rechtsbündig über der Übersicht */}
+                  <div className="flex justify-end">
+                    {selectedRef.status === 'anonymized' ? (
+                      <div className="flex size-16 items-center justify-center rounded-lg border border-dashed border-muted-foreground/40 bg-muted/50">
+                        <Building2Icon className="size-8 text-muted-foreground" />
+                      </div>
+                    ) : selectedRef.company_logo_url ? (
+                      <div className="relative size-16 shrink-0 overflow-hidden rounded-lg border bg-muted">
+                        <Image
+                          src={selectedRef.company_logo_url}
+                          alt=""
+                          fill
+                          className="object-contain"
+                          sizes="64px"
+                        />
+                      </div>
+                    ) : null}
+                  </div>
                   {/* Übersicht */}
                   <section className="space-y-4">
                     <h3 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
@@ -2080,74 +2174,83 @@ export function DashboardOverview({
                           'Keine Zusammenfassung hinterlegt.'}
                       </p>
                     </div>
-                    {(selectedRef.customer_challenge || selectedRef.our_solution) && (
-                      <div className="rounded-lg border border-amber-200/50 bg-amber-50/30 dark:border-amber-800/40 dark:bg-amber-950/20 p-4 space-y-3">
-                        <p className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
-                          Storytelling
-                        </p>
-                        {selectedRef.customer_challenge && (
-                          <div>
-                            <p className="text-muted-foreground text-[11px] font-medium mb-0.5">Herausforderung des Kunden</p>
-                            <p className="text-foreground text-sm leading-relaxed">
-                              {selectedRef.customer_challenge}
-                            </p>
-                          </div>
-                        )}
-                        {selectedRef.our_solution && (
-                          <div>
-                            <p className="text-muted-foreground text-[11px] font-medium mb-0.5">Unsere Lösung</p>
-                            <p className="text-foreground text-sm leading-relaxed">
-                              {selectedRef.our_solution}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1 col-span-2">
-                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-                          <TagIcon className="size-3" /> Tags
-                        </span>
-                        <div className="flex flex-wrap gap-1.5 pl-4">
-                          {selectedRef.tags
-                            ? selectedRef.tags
-                                .split(',')
-                                .map((tag) => tag.trim())
-                                .filter(Boolean)
-                                .map((tag) => (
-                                  <span
-                                    key={tag}
-                                    className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground"
-                                  >
-                                    {tag}
-                                  </span>
-                                ))
-                            : (
-                              <span className="text-xs font-medium text-foreground">—</span>
-                            )}
-                        </div>
-                      </div>
+                  </section>
 
-                      {/* Row 1 */}
-                      <div className="space-y-1">
+                  {/* Storytelling – Kern des Projekts (prominent, wie im Formular) */}
+                  <section className="space-y-3 rounded-lg border border-amber-200/60 bg-amber-50/50 dark:border-amber-800/50 dark:bg-amber-950/30 p-5">
+                    <h3 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
+                      Storytelling – Kern des Projekts
+                    </h3>
+                    {selectedRef.customer_challenge ? (
+                      <div>
+                        <p className="text-muted-foreground text-[11px] font-medium mb-1">Herausforderung des Kunden</p>
+                        <p className="text-foreground text-sm leading-relaxed">
+                          {selectedRef.customer_challenge}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground text-sm italic">Keine Herausforderung hinterlegt.</p>
+                    )}
+                    {selectedRef.our_solution ? (
+                      <div>
+                        <p className="text-muted-foreground text-[11px] font-medium mb-1">Unsere Lösung</p>
+                        <p className="text-foreground text-sm leading-relaxed">
+                          {selectedRef.our_solution}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground text-sm italic">Keine Lösung hinterlegt.</p>
+                    )}
+                  </section>
+
+                  {/* Tags */}
+                  <section className="space-y-2">
+                    <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+                      <TagIcon className="size-3" /> Tags
+                    </span>
+                    <div className="flex flex-wrap gap-1.5 pl-4">
+                      {selectedRef.tags
+                        ? selectedRef.tags
+                            .split(',')
+                            .map((tag) => tag.trim())
+                            .filter(Boolean)
+                            .map((tag) => (
+                              <span
+                                key={tag}
+                                className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground"
+                              >
+                                {tag}
+                              </span>
+                            ))
+                        : (
+                          <span className="text-xs font-medium text-muted-foreground">—</span>
+                        )}
+                    </div>
+                  </section>
+
+                  {/* Block A: Unternehmens-Details */}
+                  <section className="space-y-3">
+                    <h3 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
+                      Unternehmens-Details
+                    </h3>
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-3 rounded-lg border bg-muted/20 p-4">
+                      <div className="space-y-0.5">
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
                           <Building2Icon className="size-3" /> Industrie
                         </span>
-                        <p className="text-foreground pl-4 text-xs font-medium">
+                        <p className={`pl-4 text-xs font-medium ${selectedRef.industry ? 'text-foreground' : 'text-muted-foreground'}`}>
                           {selectedRef.industry || '—'}
                         </p>
                       </div>
-                      <div className="space-y-1">
+                      <div className="space-y-0.5">
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
                           <MapPinIcon className="size-3" /> HQ
                         </span>
-                        <p className="text-foreground pl-4 text-xs font-medium">
+                        <p className={`pl-4 text-xs font-medium ${selectedRef.country ? 'text-foreground' : 'text-muted-foreground'}`}>
                           {selectedRef.country || '—'}
                         </p>
                       </div>
-
-                      {/* Row 2 */}
-                      <div className="space-y-1">
+                      <div className="space-y-0.5">
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
                           <GlobeIcon className="size-3" /> Website
                         </span>
@@ -2162,31 +2265,74 @@ export function DashboardOverview({
                               Öffnen <ExternalLinkIcon className="size-3" />
                             </a>
                           ) : (
-                            <p className="text-foreground text-xs font-medium">—</p>
+                            <p className="text-xs font-medium text-muted-foreground">—</p>
                           )}
                         </div>
                       </div>
-                      <div className="space-y-1">
+                      <div className="space-y-0.5">
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
                           <UserIcon className="size-3" /> Mitarbeiteranzahl
                         </span>
-                        <p className="text-foreground pl-4 text-xs font-medium">
-                          {selectedRef.employee_count != null
-                            ? `${selectedRef.employee_count}`
-                            : '—'}
+                        <p className={`pl-4 text-xs font-medium ${selectedRef.employee_count != null ? 'text-foreground' : 'text-muted-foreground'}`}>
+                          {selectedRef.employee_count != null ? `${selectedRef.employee_count}` : '—'}
                         </p>
                       </div>
+                    </div>
+                  </section>
 
-                      {/* Row 3 */}
-                      <div className="space-y-1">
+                  {/* Block B: Projekt-Details */}
+                  <section className="space-y-3">
+                    <h3 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
+                      Projekt-Details
+                    </h3>
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-3 rounded-lg border bg-muted/20 p-4">
+                      <div className="space-y-0.5">
+                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+                          <FileTextIcon className="size-3" /> Volumen (€)
+                        </span>
+                        <p className={`pl-4 text-xs font-medium ${selectedRef.volume_eur ? 'text-foreground' : 'text-muted-foreground'}`}>
+                          {selectedRef.volume_eur || '—'}
+                        </p>
+                      </div>
+                      <div className="space-y-0.5">
+                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+                          <FileTextIcon className="size-3" /> Vertragsart
+                        </span>
+                        <p className={`pl-4 text-xs font-medium ${selectedRef.contract_type ? 'text-foreground' : 'text-muted-foreground'}`}>
+                          {selectedRef.contract_type || '—'}
+                        </p>
+                      </div>
+                      <div className="space-y-0.5">
+                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+                          <Building2Icon className="size-3" /> Incumbent
+                        </span>
+                        <p className={`pl-4 text-xs font-medium ${selectedRef.incumbent_provider ? 'text-foreground' : 'text-muted-foreground'}`}>
+                          {selectedRef.incumbent_provider || '—'}
+                        </p>
+                      </div>
+                      <div className="space-y-0.5">
+                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+                          <Handshake className="size-3" /> Wettbewerber
+                        </span>
+                        <p className={`pl-4 text-xs font-medium ${selectedRef.competitors ? 'text-foreground' : 'text-muted-foreground'}`}>
+                          {selectedRef.competitors || '—'}
+                        </p>
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* Projektzeitraum, Erstellt / Geändert, Kontakte */}
+                  <section className="space-y-3">
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-3 rounded-lg border bg-muted/20 p-4">
+                      <div className="space-y-0.5">
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
                           <CalendarIcon className="size-3" /> Projektstart
                         </span>
-                        <p className="text-foreground pl-4 text-xs font-medium">
+                        <p className={`pl-4 text-xs font-medium ${selectedRef.project_start ? 'text-foreground' : 'text-muted-foreground'}`}>
                           {selectedRef.project_start ? formatDate(selectedRef.project_start) : '—'}
                         </p>
                       </div>
-                      <div className="space-y-1">
+                      <div className="space-y-0.5">
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
                           <TimerIcon className="size-3" /> Projektende / Dauer
                         </span>
@@ -2194,14 +2340,12 @@ export function DashboardOverview({
                           const start = selectedRef.project_start
                           const end = selectedRef.project_end
                           const status = selectedRef.project_status
-
                           const label =
                             status === 'active'
                               ? 'Aktiv'
                               : end
                                 ? formatDate(end)
                                 : '—'
-
                           const nowIso = new Date().toISOString()
                           const duration =
                             selectedRef.duration_months != null
@@ -2211,70 +2355,34 @@ export function DashboardOverview({
                                 : status === 'active' && start
                                   ? diffMonthsUtc(start, nowIso)
                                   : null
-
                           return (
-                            <p className="text-foreground pl-4 text-xs font-medium">
+                            <p className="pl-4 text-xs font-medium text-foreground">
                               {duration != null ? `${label} (${duration} Monate)` : label}
                             </p>
                           )
                         })()}
                       </div>
-
-                      {/* Row 4 */}
-                      <div className="space-y-1">
-                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-                          <FileTextIcon className="size-3" /> Volumen (€)
-                        </span>
-                        <p className="text-foreground pl-4 text-xs font-medium">
-                          {selectedRef.volume_eur || '—'}
-                        </p>
-                      </div>
-                      <div className="space-y-1">
-                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-                          <FileTextIcon className="size-3" /> Vertragsart
-                        </span>
-                        <p className="text-foreground pl-4 text-xs font-medium">
-                          {selectedRef.contract_type || '—'}
-                        </p>
-                      </div>
-
-                      {/* Incumbent & Wettbewerber */}
-                      <div className="space-y-1">
-                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-                          <Building2Icon className="size-3" /> Incumbent
-                        </span>
-                        <p className="text-foreground pl-4 text-xs font-medium">
-                          {selectedRef.incumbent_provider || '—'}
-                        </p>
-                      </div>
-                      <div className="space-y-1">
-                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-                          <Handshake className="size-3" /> Wettbewerber
-                        </span>
-                        <p className="text-foreground pl-4 text-xs font-medium">
-                          {selectedRef.competitors || '—'}
-                        </p>
-                      </div>
-
-                      {/* Row 5 */}
-                      <div className="space-y-1">
+                      <div className="space-y-0.5">
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
                           <HistoryIcon className="size-3" /> Letzte Änderung
                         </span>
-                        <p className="text-foreground pl-4 text-xs font-medium">
+                        <p className={`pl-4 text-xs font-medium ${selectedRef.updated_at ? 'text-foreground' : 'text-muted-foreground'}`}>
                           {selectedRef.updated_at ? formatDate(selectedRef.updated_at) : '—'}
                         </p>
                       </div>
-                      <div className="space-y-1">
+                      <div className="space-y-0.5">
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
                           <CalendarIcon className="size-3" /> Erstellt
                         </span>
-                        <p className="text-foreground pl-4 text-xs font-medium">
+                        <p className="pl-4 text-xs font-medium text-foreground">
                           {formatDate(selectedRef.created_at)}
                         </p>
                       </div>
                     </div>
                     <Separator className="!my-4" />
+                    <h3 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
+                      Kontakte
+                    </h3>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <div className="space-y-1">
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
@@ -2293,7 +2401,7 @@ export function DashboardOverview({
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
                           <UserIcon className="size-3" /> Kundenansprechpartner
                         </span>
-                        <p className="pl-4 text-xs font-medium">
+                        <p className={`pl-4 text-xs font-medium ${selectedRef.customer_contact ? 'text-foreground' : 'text-muted-foreground'}`}>
                           {selectedRef.customer_contact || '—'}
                         </p>
                       </div>
@@ -2427,7 +2535,7 @@ export function DashboardOverview({
               </div>
 
               {/* Fixierter Footer (rollenabhängig) */}
-              <DialogFooter className="z-10 shrink-0 flex-col gap-2 border-t bg-muted/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <DialogFooter className="z-10 shrink-0 flex-col gap-2 border-t bg-muted/20 px-0 pt-4 pb-0 sm:flex-row sm:items-center sm:justify-between">
                 {/* Linke Seite: Download + Bearbeiten */}
                 <div className="flex w-full gap-2 sm:w-auto">
                   <Button
@@ -2509,16 +2617,65 @@ export function DashboardOverview({
         </DialogContent>
       </Dialog>
 
-      {/* Neue Referenz (zentrales Modal) */}
+      {/* Portfolio-/Reader-Vorschau (Full-Screen): Kundenansicht für eine oder mehrere Referenzen */}
+      <Dialog
+        open={previewRefs !== null && previewRefs.length > 0}
+        onOpenChange={(open) => !open && setPreviewRefs(null)}
+      >
+        <DialogContent className="fixed inset-0 z-50 max-h-none h-screen max-w-none w-screen rounded-none border-0 flex flex-col gap-0 p-0 overflow-hidden">
+          <div className="flex shrink-0 items-center justify-between border-b bg-background px-6 py-4">
+            <h2 className="text-lg font-semibold">
+              {previewRefs && previewRefs.length > 1
+                ? `Portfolio-Vorschau (${previewRefs.length} Referenzen)`
+                : 'Vorschau – Kundenansicht'}
+            </h2>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setPreviewRefs(null)}
+              aria-label="Schließen"
+            >
+              <XIcon className="size-5" />
+            </Button>
+          </div>
+          <div className="flex-1 overflow-y-auto py-8">
+            <div className="mx-auto flex max-w-3xl flex-col gap-12 px-6">
+              {previewRefs?.map((ref) => (
+                <ReferenceReader key={ref.id} ref={ref} />
+              ))}
+            </div>
+          </div>
+          <div className="flex shrink-0 flex-wrap items-center justify-center gap-3 border-t bg-muted/30 px-6 py-4">
+            <Button variant="outline" size="sm" disabled className="opacity-70">
+              PDF Export (Coming Soon)
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const url = typeof window !== 'undefined' ? window.location.href : ''
+                void navigator.clipboard?.writeText(url).then(() => toast.success('Link in Zwischenablage kopiert.'))
+              }}
+            >
+              <CopyIcon className="mr-2 size-4" />
+              Link teilen
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Neue Referenz (zentrales Modal) – gleiche Breite wie Detail, mehr Whitespace, Formular zentriert */}
       {profile.role === 'admin' && (
         <Dialog open={newRefModalOpen} onOpenChange={setNewRefModalOpen}>
-          <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-4xl lg:max-w-5xl gap-0 border-0 px-6 py-0 md:px-12">
-            <ReferenceForm
-              companies={companies}
-              contacts={contacts}
-              onSuccess={() => setNewRefModalOpen(false)}
-              onClose={() => setNewRefModalOpen(false)}
-            />
+          <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-4xl lg:max-w-5xl gap-0 border-0 px-8 py-6 md:px-16 lg:px-20">
+            <div className="flex flex-col items-center w-full">
+              <ReferenceForm
+                companies={companies}
+                contacts={contacts}
+                onSuccess={() => setNewRefModalOpen(false)}
+                onClose={() => setNewRefModalOpen(false)}
+              />
+            </div>
           </DialogContent>
         </Dialog>
       )}

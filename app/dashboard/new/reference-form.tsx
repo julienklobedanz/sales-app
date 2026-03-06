@@ -118,6 +118,7 @@ export type ReferenceFormInitialData = {
   project_status?: 'active' | 'completed' | null
   project_start?: string | null
   project_end?: string | null
+  is_nda_deal?: boolean
 }
 
 export function ReferenceForm({
@@ -166,7 +167,7 @@ export function ReferenceForm({
   const [status, setStatus] = useState<ReferenceFormInitialData['status']>(
     initialData?.status ?? 'draft'
   )
-  const [ndaDeal, setNdaDeal] = useState(false)
+  const [ndaDeal, setNdaDeal] = useState(initialData?.is_nda_deal ?? false)
   const statusBeforeNdaRef = useRef<ReferenceFormInitialData['status']>(
     initialData?.status ?? 'draft'
   )
@@ -292,6 +293,7 @@ export function ReferenceForm({
       formData.set('file', selectedFile)
     }
     formData.set('tags', tags.join(', '))
+    formData.set('nda_deal', ndaDeal ? '1' : '0')
     return formData
   }
 
@@ -368,6 +370,9 @@ export function ReferenceForm({
           setTags(d.tags)
           setTagInputValue('')
         }
+        if (d.company_name != null) setNewCompanyName(d.company_name)
+        if (d.customer_challenge != null) setCustomerChallenge(d.customer_challenge)
+        if (d.our_solution != null) setOurSolution(d.our_solution)
         toast.success('Daten aus dem Dokument übernommen. Bitte prüfen und ggf. anpassen.')
       } else {
         toast.error(result.error)

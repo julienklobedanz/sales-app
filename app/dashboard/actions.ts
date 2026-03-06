@@ -25,6 +25,7 @@ export type ReferenceRow = {
   updated_at: string | null
   company_id: string
   company_name: string
+  company_logo_url?: string | null
   website: string | null
   employee_count: number | null
   volume_eur: string | null
@@ -44,6 +45,7 @@ export type ReferenceRow = {
   project_start: string | null
   project_end: string | null
   duration_months: number | null
+  is_nda_deal?: boolean
 }
 
 export type GetDashboardDataResult = {
@@ -101,7 +103,8 @@ export async function getDashboardData(
       project_status,
       project_start,
       project_end,
-      companies ( name ),
+      is_nda_deal,
+      companies ( name, logo_url ),
       contact_persons!references_contact_id_fkey ( email, first_name, last_name )
     `
   let rows: Record<string, unknown>[] | null = null
@@ -145,7 +148,8 @@ export async function getDashboardData(
         project_status,
         project_start,
         project_end,
-        companies ( name )
+        is_nda_deal,
+        companies ( name, logo_url )
       `)
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
@@ -172,8 +176,8 @@ export async function getDashboardData(
     const raw = r.companies
     const company =
       Array.isArray(raw) && raw.length > 0
-        ? (raw[0] as { name?: string })
-        : (raw as { name?: string } | null)
+        ? (raw[0] as { name?: string; logo_url?: string | null })
+        : (raw as { name?: string; logo_url?: string | null } | null)
     const contactRaw = r.contact_persons
     const contact = contactRaw
       ? Array.isArray(contactRaw) && contactRaw.length > 0
@@ -212,6 +216,7 @@ export async function getDashboardData(
       updated_at: (r.updated_at as string | null) ?? null,
       company_id: r.company_id as string,
       company_name: company?.name ?? '—',
+      company_logo_url: company?.logo_url ?? null,
       contact_id: (r.contact_id as string | null) ?? null,
       contact_email: contact?.email ?? null,
       contact_display: contactDisplay ?? null,
@@ -223,6 +228,7 @@ export async function getDashboardData(
       project_start: (r.project_start as string | null) ?? null,
       project_end: (r.project_end as string | null) ?? null,
       duration_months,
+      is_nda_deal: (r.is_nda_deal as boolean | undefined) ?? false,
     }
   })
 
@@ -263,8 +269,8 @@ export async function getDeletedReferences(): Promise<DeletedReferenceRow[]> {
     const raw = r.companies
     const company =
       Array.isArray(raw) && raw.length > 0
-        ? (raw[0] as { name?: string })
-        : (raw as { name?: string } | null)
+        ? (raw[0] as { name?: string; logo_url?: string | null })
+        : (raw as { name?: string; logo_url?: string | null } | null)
     return {
       id: r.id as string,
       title: (r.title as string) ?? '',
@@ -566,15 +572,19 @@ export async function updateReference(id: string, formData: FormData) {
   const contactId =
     contactIdRaw && contactIdRaw !== '__none__' ? contactIdRaw : null
   const statusRaw = formData.get('status')?.toString()
+  const submitMode = formData.get('submitMode')?.toString()
   const allowed: ReferenceRow['status'][] = [
     'draft',
     'internal_only',
     'approved',
     'anonymized',
   ]
-  const status = allowed.includes(statusRaw as ReferenceRow['status'])
-    ? (statusRaw as ReferenceRow['status'])
-    : 'draft'
+  const status =
+    submitMode === 'draft'
+      ? 'draft'
+      : allowed.includes(statusRaw as ReferenceRow['status'])
+        ? (statusRaw as ReferenceRow['status'])
+        : 'draft'
   const tags = formData.get('tags')?.toString()?.trim() ?? null
   const website = formData.get('website')?.toString()?.trim() ?? null
   const employeeCountRaw = formData.get('employee_count')?.toString()?.trim() ?? null
@@ -597,6 +607,8 @@ export async function updateReference(id: string, formData: FormData) {
       : null
   const project_start = formData.get('project_start')?.toString()?.trim() || null
   const project_end = formData.get('project_end')?.toString()?.trim() || null
+  const ndaDealRaw = formData.get('nda_deal')?.toString()
+  const is_nda_deal = ndaDealRaw === '1' || ndaDealRaw === 'true'
 
   if (!title) {
     throw new Error('Titel ist erforderlich.')
@@ -660,6 +672,7 @@ export async function updateReference(id: string, formData: FormData) {
     project_status: 'active' | 'completed' | null
     project_start: string | null
     project_end: string | null
+    is_nda_deal: boolean
   } = {
     title,
     summary,
@@ -681,6 +694,7 @@ export async function updateReference(id: string, formData: FormData) {
     project_status,
     project_start,
     project_end,
+    is_nda_deal,
   }
   if (filePath !== undefined) {
     updatePayload.file_path = filePath
