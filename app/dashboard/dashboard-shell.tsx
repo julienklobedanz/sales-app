@@ -113,10 +113,10 @@ export function DashboardShell({
           </SidebarMenu>
         </SidebarHeader>
 
-        <SidebarContent>
-          <SidebarGroup>
+        <SidebarContent className="gap-0.5">
+          <SidebarGroup className="px-2 py-1">
             <SidebarGroupContent>
-              <SidebarMenu>
+              <SidebarMenu className="gap-0.5">
                 {isAdmin ? (
                   <>
                     <SidebarMenuItem>
@@ -193,9 +193,9 @@ export function DashboardShell({
             </SidebarGroupContent>
           </SidebarGroup>
 
-          <SidebarGroup>
+          <SidebarGroup className="px-2 py-1">
             <SidebarGroupContent>
-              <SidebarMenu>
+              <SidebarMenu className="gap-0.5">
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
@@ -213,9 +213,9 @@ export function DashboardShell({
             </SidebarGroupContent>
           </SidebarGroup>
 
-          <SidebarGroup className="mt-auto">
+          <SidebarGroup className="mt-auto px-2 py-1">
             <SidebarGroupContent>
-              <SidebarMenu>
+              <SidebarMenu className="gap-0.5">
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild size="sm" tooltip="Support">
                     <button

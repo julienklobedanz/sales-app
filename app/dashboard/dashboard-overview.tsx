@@ -640,6 +640,16 @@ export function DashboardOverview({
       selectedRefIds.size < filteredReferences.length
   }, [selectedRefIds.size, filteredReferences.length])
 
+  const previewOpen = previewRefs !== null && previewRefs.length > 0
+  useEffect(() => {
+    if (!previewOpen) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [previewOpen])
+
   const handleDelete = async (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation()
 
@@ -767,22 +777,22 @@ export function DashboardOverview({
 
       {/* Toolbar & Tabelle */}
       <div className="space-y-4">
-        {/* Toolbar: eine Zeile, keine Umbrüche. Suche flex-1, rechts Icons. */}
-        <div className="flex flex-nowrap items-center gap-2 sm:gap-3 overflow-x-auto">
+        {/* Toolbar: eine Zeile, kein horizontaler Scroll. Suche flex-1, Buttons adaptiv mit Transitions. */}
+        <div className="flex flex-nowrap items-center gap-2 sm:gap-3 min-w-0 overflow-x-hidden transition-all duration-300">
           {/* Suche: immer sichtbar, nimmt verfügbaren Platz */}
-          <div className="relative min-w-0 flex-1 basis-0 sm:basis-auto">
+          <div className="relative min-w-0 flex-1 basis-0 sm:basis-auto transition-all duration-300">
             <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
             <Input
               placeholder="Referenzen suchen..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-9 w-full min-w-[140px] pl-9"
+              className="h-9 w-full min-w-0 pl-9"
             />
           </div>
 
           {/* RFP-Abgleich */}
           <div
-            className="flex h-9 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-md border border-dashed border-muted-foreground/40 bg-muted/40 px-3 text-xs text-muted-foreground hover:bg-muted min-w-[2.25rem] lg:min-w-[120px]"
+            className="flex h-9 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-md border border-dashed border-muted-foreground/40 bg-muted/40 px-3 text-xs text-muted-foreground hover:bg-muted min-w-[2.25rem] lg:min-w-[120px] transition-all duration-300"
             onClick={() => fileInputRef.current?.click()}
             onDrop={handleRfpDrop}
             onDragOver={handleRfpDragOver}
@@ -808,10 +818,10 @@ export function DashboardOverview({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-9 shrink-0"
+                className="h-9 shrink-0 transition-all duration-300"
                 aria-label="Spalten ein-/ausblenden"
               >
-                <SlidersHorizontal className="h-4 w-4 lg:mr-2" />
+                <SlidersHorizontal className="h-4 w-4 lg:mr-2 shrink-0" />
                 <span className="hidden lg:inline">Spalten</span>
               </Button>
             </DropdownMenuTrigger>
@@ -849,52 +859,65 @@ export function DashboardOverview({
           <Button
             variant={favoritesOnly ? 'secondary' : 'outline'}
             size="sm"
-            className="h-9 shrink-0"
+            className="h-9 shrink-0 transition-all duration-300"
             onClick={() => setFavoritesOnly((v) => !v)}
             aria-label={favoritesOnly ? 'Favoriten aus' : 'Nur Favoriten'}
           >
-            <Star className={`size-4 lg:mr-2 ${favoritesOnly ? 'fill-yellow-400 text-yellow-400' : ''}`} />
+            <Star className={`size-4 shrink-0 lg:mr-2 ${favoritesOnly ? 'fill-yellow-400 text-yellow-400' : ''}`} />
             <span className="hidden lg:inline">Favoriten</span>
           </Button>
 
-          {/* Admin: Importieren, Erstellen */}
+          {/* Admin: Importieren -> Vorschau (X) -> Erstellen -> Warenkorb */}
           {profile.role === 'admin' && (
             <>
               <Button
                 variant="outline"
                 size="sm"
-                className="h-9 shrink-0"
+                className="h-9 shrink-0 transition-all duration-300"
                 onClick={() => {
                   setBulkImportGroups([])
                   setBulkImportOpen(true)
                 }}
                 aria-label="Referenzen importieren"
               >
-                <UploadIcon className="size-4 lg:mr-2" />
+                <UploadIcon className="size-4 shrink-0 lg:mr-2" />
                 <span className="hidden lg:inline">Importieren</span>
               </Button>
+              {selectedRefIds.size > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 shrink-0 gap-1.5 transition-all duration-300"
+                  onClick={() => setPreviewRefs(selectedRefs)}
+                  aria-label={`Vorschau (${selectedRefIds.size} Referenz${selectedRefIds.size !== 1 ? 'en' : ''})`}
+                >
+                  <Eye className="size-4 shrink-0" />
+                  <span className="hidden lg:inline">Vorschau ({selectedRefIds.size})</span>
+                </Button>
+              )}
               <Button
                 size="sm"
-                className="h-9 shrink-0"
+                className="h-9 shrink-0 transition-all duration-300"
                 onClick={() => setNewRefModalOpen(true)}
                 aria-label="Neue Referenz erstellen"
               >
-                <PlusCircleIcon className="size-4 lg:mr-2" />
+                <PlusCircleIcon className="size-4 shrink-0 lg:mr-2" />
                 <span className="hidden lg:inline">Erstellen</span>
               </Button>
             </>
           )}
 
-          {selectedRefIds.size > 0 && (
+          {/* Sales: Vorschau-Button wenn Auswahl, dann Warenkorb */}
+          {profile.role === 'sales' && selectedRefIds.size > 0 && (
             <Button
               variant="outline"
               size="sm"
-              className="h-9 shrink-0 gap-1.5"
+              className="h-9 shrink-0 gap-1.5 transition-all duration-300"
               onClick={() => setPreviewRefs(selectedRefs)}
               aria-label={`Vorschau (${selectedRefIds.size} Referenz${selectedRefIds.size !== 1 ? 'en' : ''})`}
             >
-              <Eye className="size-4" />
-              <span className="hidden sm:inline">Vorschau ({selectedRefIds.size})</span>
+              <Eye className="size-4 shrink-0" />
+              <span className="hidden lg:inline">Vorschau ({selectedRefIds.size})</span>
             </Button>
           )}
 
@@ -903,7 +926,7 @@ export function DashboardOverview({
               <Button
                 variant="default"
                 size="icon"
-                className="h-9 w-9 shrink-0 bg-foreground text-background hover:bg-foreground/90 relative"
+                className="h-9 w-9 shrink-0 bg-foreground text-background hover:bg-foreground/90 relative transition-all duration-300"
                 aria-label={selectedRefIds.size > 0 ? `Warenkorb (${selectedRefIds.size} Referenzen)` : 'Warenkorb'}
               >
                 <ShoppingCartIcon className="size-4" />
@@ -2617,49 +2640,49 @@ export function DashboardOverview({
         </DialogContent>
       </Dialog>
 
-      {/* Portfolio-/Reader-Vorschau (Full-Screen): Kundenansicht für eine oder mehrere Referenzen */}
+      {/* Portfolio-/Reader-Vorschau (Full-Screen): fixed inset-0, kein Springen; Header/Footer fix, nur Story scrollt */}
       <Dialog
         open={previewRefs !== null && previewRefs.length > 0}
         onOpenChange={(open) => !open && setPreviewRefs(null)}
       >
-        <DialogContent className="fixed inset-0 z-50 max-h-none h-screen max-w-none w-screen rounded-none border-0 flex flex-col gap-0 p-0 overflow-hidden">
-          <div className="flex shrink-0 items-center justify-between border-b bg-background px-6 py-4">
-            <h2 className="text-lg font-semibold">
-              {previewRefs && previewRefs.length > 1
-                ? `Portfolio-Vorschau (${previewRefs.length} Referenzen)`
-                : 'Vorschau – Kundenansicht'}
-            </h2>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setPreviewRefs(null)}
-              aria-label="Schließen"
-            >
-              <XIcon className="size-5" />
-            </Button>
-          </div>
-          <div className="flex-1 overflow-y-auto py-8">
-            <div className="mx-auto flex max-w-3xl flex-col gap-12 px-6">
+        <DialogContent showCloseButton={false} className="fixed inset-0 z-50 flex flex-col rounded-none border-0 p-0 overflow-hidden bg-background !top-0 !left-0 !right-0 !bottom-0 !translate-x-0 !translate-y-0 !w-full !h-full">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <header className="flex shrink-0 items-center justify-between border-b bg-background px-6 py-4">
+              <h2 className="text-lg font-semibold">
+                {previewRefs && previewRefs.length > 1
+                  ? `Portfolio-Vorschau (${previewRefs.length} Referenzen)`
+                  : 'Vorschau – Kundenansicht'}
+              </h2>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setPreviewRefs(null)}
+                aria-label="Schließen"
+              >
+                <XIcon className="size-5" />
+              </Button>
+            </header>
+            <div className="preview-modal-scroll flex-1 min-h-0 overflow-y-auto p-8 md:p-16 lg:p-24 space-y-20 max-w-[100vw]">
               {previewRefs?.map((ref) => (
                 <ReferenceReader key={ref.id} ref={ref} />
               ))}
             </div>
-          </div>
-          <div className="flex shrink-0 flex-wrap items-center justify-center gap-3 border-t bg-muted/30 px-6 py-4">
-            <Button variant="outline" size="sm" disabled className="opacity-70">
-              PDF Export (Coming Soon)
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const url = typeof window !== 'undefined' ? window.location.href : ''
-                void navigator.clipboard?.writeText(url).then(() => toast.success('Link in Zwischenablage kopiert.'))
-              }}
-            >
-              <CopyIcon className="mr-2 size-4" />
-              Link teilen
-            </Button>
+            <footer className="flex shrink-0 flex-wrap items-center justify-center gap-3 border-t bg-muted/30 px-6 py-4">
+              <Button variant="outline" size="sm" disabled className="opacity-70">
+                PDF Export (Coming Soon)
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const url = typeof window !== 'undefined' ? window.location.href : ''
+                  void navigator.clipboard?.writeText(url).then(() => toast.success('Link in Zwischenablage kopiert.'))
+                }}
+              >
+                <CopyIcon className="mr-2 size-4" />
+                Link teilen
+              </Button>
+            </footer>
           </div>
         </DialogContent>
       </Dialog>
