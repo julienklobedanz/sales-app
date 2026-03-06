@@ -92,7 +92,7 @@ export function DashboardShell({
   const userEmail = user.email ?? ''
 
   return (
-    <SidebarProvider defaultOpen={false}>
+    <SidebarProvider defaultOpen={true}>
       <Sidebar collapsible="icon">
         <SidebarHeader>
           <SidebarMenu>
@@ -188,6 +188,26 @@ export function DashboardShell({
                     </SidebarMenuItem>
                   </>
                 )}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname?.startsWith('/dashboard/companies')}
+                    tooltip="Client Insights – Firmenübersicht, Executive Profiling & Stakeholder-Mapping (in Vorbereitung)"
+                    className="data-[active=true]:bg-muted data-[active=true]:text-foreground"
+                  >
+                    <Link href="/dashboard/companies">
+                      <BriefcaseIcon />
+                      <span>Client Insights</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

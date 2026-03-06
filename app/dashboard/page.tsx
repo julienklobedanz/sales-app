@@ -33,6 +33,15 @@ export default async function DashboardPage({ searchParams }: Props) {
     initialFavoritesOnly
   )
 
+  const { data: companies } = await supabase
+    .from('companies')
+    .select('id, name, logo_url')
+    .order('name')
+  const { data: contacts } = await supabase
+    .from('contact_persons')
+    .select('*')
+    .order('last_name')
+
   return (
     <DashboardOverview
       references={references}
@@ -41,6 +50,8 @@ export default async function DashboardPage({ searchParams }: Props) {
       profile={profile as Profile}
       title="Referenzen"
       initialFavoritesOnly={initialFavoritesOnly}
+      companies={companies ?? []}
+      contacts={contacts ?? []}
     />
   )
 }

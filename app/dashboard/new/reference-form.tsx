@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Loader2, Building2Icon, Save, Plus } from 'lucide-react'
+import { Loader2, Building2Icon, Save, Plus, Sparkles } from 'lucide-react'
 import {
   Card,
   CardContent,
@@ -34,7 +34,7 @@ import {
   CommandList,
 } from '@/components/ui/command'
 import { createReference, enrichAndSaveCompany, fetchCompanyEnrichment } from './actions'
-import { updateReference } from '../actions'
+import { updateReference, generateSummaryFromStory } from '../actions'
 import { extractDataFromDocument } from './extract-reference-data'
 import { CreateContactDialog } from './create-contact-dialog'
 
@@ -124,10 +124,16 @@ export function ReferenceForm({
   companies = [],
   contacts = [],
   initialData,
+  onSuccess,
+  onClose,
 }: {
   companies?: Company[]
   contacts?: ContactPerson[]
   initialData?: ReferenceFormInitialData
+  /** Wenn gesetzt (z. B. bei Modal-Einbettung), wird nach erfolgreichem Anlegen/Bearbeiten aufgerufen statt zu navigieren. */
+  onSuccess?: () => void
+  /** Bei Modal-Einbettung: wird bei Abbrechen aufgerufen. */
+  onClose?: () => void
 }) {
   const router = useRouter()
   const [editSubmitting, setEditSubmitting] = useState(false)
@@ -197,6 +203,7 @@ export function ReferenceForm({
   const [editCompanyName, setEditCompanyName] = useState(initialData?.company_name ?? '')
   const editEnrichDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [magicImportLoading, setMagicImportLoading] = useState(false)
+  const [summaryLoading, setSummaryLoading] = useState(false)
 
   const isEditMode = !!initialData
   const displayCompanies = enrichedCompany && !companies.some((c) => c.id === enrichedCompany.id)
@@ -301,8 +308,13 @@ export function ReferenceForm({
       const result = await createReference(formData)
       if (result.success) {
         toast.success('Referenz wurde angelegt.')
-        router.push('/dashboard')
-        router.refresh()
+        if (onSuccess) {
+          onSuccess()
+          router.refresh()
+        } else {
+          router.push('/dashboard')
+          router.refresh()
+        }
       } else {
         toast.error(result.error)
       }
@@ -325,8 +337,13 @@ export function ReferenceForm({
     try {
       await updateReference(initialData.id, formData)
       toast.success('Referenz erfolgreich aktualisiert')
-      router.push('/dashboard')
-      router.refresh()
+      if (onSuccess) {
+        onSuccess()
+        router.refresh()
+      } else {
+        router.push('/dashboard')
+        router.refresh()
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Fehler beim Speichern')
     } finally {
@@ -444,7 +461,7 @@ export function ReferenceForm({
         <div className="space-y-2 sm:flex sm:flex-col sm:items-end">
           <Label htmlFor="logo">Logo (optional)</Label>
           {isAnonymized ? (
-            <div className="flex aspect-square max-w-[120px] flex-col items-center justify-center rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 px-3 text-center text-[11px] text-muted-foreground">
+            <div className="flex aspect-square max-w-[60px] flex-col items-center justify-center rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 px-2 text-center text-[10px] text-muted-foreground">
               <Building2Icon className="mb-1 size-5 text-muted-foreground" />
               <span>Logo ausgeblendet</span>
               <span className="mt-0.5 text-[10px] text-muted-foreground/80">
@@ -479,7 +496,33 @@ export function ReferenceForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="summary">Zusammenfassung</Label>
+        <div className="flex items-center justify-between gap-2">
+          <Label htmlFor="summary">Zusammenfassung</Label>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="shrink-0 gap-1.5"
+            disabled={submitting || summaryLoading}
+            onClick={async () => {
+              setSummaryLoading(true)
+              try {
+                const result = await generateSummaryFromStory(customerChallenge, ourSolution)
+                if (result.success) {
+                  setSummary(result.summary)
+                  toast.success('KI-Zusammenfassung übernommen.')
+                } else {
+                  toast.error(result.error)
+                }
+              } finally {
+                setSummaryLoading(false)
+              }
+            }}
+          >
+            {summaryLoading ? <Loader2 className="size-3.5 animate-spin" /> : <Sparkles className="size-3.5" />}
+            KI-Vorschlag
+          </Button>
+        </div>
         <Textarea
           id="summary"
           name="summary"
@@ -906,13 +949,13 @@ export function ReferenceForm({
           disabled={submitting}
         >
           <Save className="mr-2 h-4 w-4" />
-          Speichern
+          Entwurf speichern
         </Button>
         <Button
           type="button"
           variant="outline"
           disabled={submitting}
-          onClick={() => router.push('/dashboard')}
+          onClick={() => (onClose ? onClose() : router.push('/dashboard'))}
         >
           Abbrechen
         </Button>
@@ -1134,7 +1177,7 @@ function LogoDropZone({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={[
-          'flex aspect-square max-w-[120px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg text-center text-[11px] text-muted-foreground transition-colors',
+          'flex aspect-square max-w-[60px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg text-center text-[11px] text-muted-foreground transition-colors',
           showEnrichedLogo
             ? 'border border-muted-foreground/25 bg-background'
             : isDragging

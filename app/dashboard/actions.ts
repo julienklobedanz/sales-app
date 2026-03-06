@@ -990,6 +990,68 @@ export async function updateUserRole(role: 'admin' | 'sales') {
   revalidatePath('/dashboard')
 }
 
+/** KI-Zusammenfassung: Aus Herausforderung + Lösung eine prägnante, vertriebsorientierte Zusammenfassung per OpenAI (gpt-4o-mini). */
+export type GenerateSummaryResult =
+  | { success: true; summary: string }
+  | { success: false; error: string }
+
+export async function generateSummaryFromStory(
+  customerChallenge: string | null,
+  ourSolution: string | null
+): Promise<GenerateSummaryResult> {
+  const challenge = customerChallenge?.trim() ?? ''
+  const solution = ourSolution?.trim() ?? ''
+  if (!challenge && !solution) {
+    return { success: false, error: 'Keine Inhalte für Herausforderung oder Lösung angegeben.' }
+  }
+
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey) {
+    return { success: false, error: 'OpenAI API ist nicht konfiguriert (OPENAI_API_KEY).' }
+  }
+
+  const prompt = `Du bist ein Vertriebs-Assistent. Erstelle aus den folgenden Angaben eine prägnante, vertriebsorientierte Zusammenfassung in 3–4 Sätzen auf Deutsch. Betone den Mehrwert und das Ergebnis für den Kunden. Schreibe nur die Zusammenfassung, ohne Überschriften oder Bullet-Points.
+
+Herausforderung des Kunden:
+${challenge}
+
+Unsere Lösung:
+${solution}
+
+Zusammenfassung:`
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.4,
+        max_tokens: 300,
+      }),
+    })
+
+    if (!response.ok) {
+      const err = await response.text()
+      return { success: false, error: `OpenAI: ${response.status} – ${err.slice(0, 200)}` }
+    }
+
+    const json = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> }
+    const summary = json?.choices?.[0]?.message?.content?.trim()
+    if (!summary) {
+      return { success: false, error: 'Keine Antwort von der KI erhalten.' }
+    }
+    return { success: true, summary }
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'Unbekannter Fehler'
+    return { success: false, error: message }
+  }
+}
+
 /** Prüft, ob der String wie eine Domain aussieht (z. B. "biontechse.com"). */
 function looksLikeDomain(s: string): boolean {
   const t = s.trim().toLowerCase()

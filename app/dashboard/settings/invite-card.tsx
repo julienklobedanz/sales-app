@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,11 +14,27 @@ import {
 import { UserPlus, Copy, Link2 } from 'lucide-react'
 import { createInvite } from './invite-actions'
 
+/** Ersetzt Platzhalter-URL (z. B. [sales-app]) durch die aktuelle Origin, damit der User keinen ungültigen Link kopiert. */
+function resolveInviteLink(link: string | null): string {
+  if (!link) return ''
+  if (typeof window === 'undefined') return link
+  const hasPlaceholder = link.includes('[') || link.includes('sales-app')
+  if (!hasPlaceholder) return link
+  const match = link.match(/\/register\?invite=([^&]+)/)
+  if (match) {
+    return `${window.location.origin}/register?invite=${match[1]}`
+  }
+  const pathWithQuery = link.replace(/^https?:\/\/[^/]+/, '') || '/register'
+  return `${window.location.origin}${pathWithQuery}`
+}
+
 export function InviteCard() {
   const [link, setLink] = useState<string | null>(null)
   const [expiresAt, setExpiresAt] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const displayLink = useMemo(() => resolveInviteLink(link), [link])
 
   async function handleCreateInvite() {
     setPending(true)
@@ -35,8 +51,9 @@ export function InviteCard() {
   }
 
   function handleCopy() {
-    if (!link) return
-    navigator.clipboard.writeText(link)
+    const toCopy = displayLink || link
+    if (!toCopy) return
+    navigator.clipboard.writeText(toCopy)
     toast.success('Link in Zwischenablage kopiert')
   }
 
@@ -77,7 +94,7 @@ export function InviteCard() {
             <div className="flex gap-2">
               <Input
                 readOnly
-                value={link}
+                value={displayLink}
                 className="font-mono text-xs"
               />
               <Button type="button" variant="secondary" size="icon" onClick={handleCopy} title="Kopieren">

@@ -29,14 +29,6 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-} from '@/components/ui/sheet'
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -59,6 +51,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type { ReferenceRow, ReferenceAssetRow, DeletedReferenceRow } from './actions'
+import { ReferenceForm } from './new/reference-form'
+import type { ReferenceFormInitialData } from './new/reference-form'
 import {
   bulkCreateReferencesFromFiles,
   deleteReference,
@@ -70,8 +64,6 @@ import {
   submitForApproval,
   toggleFavorite,
   updateReferenceAssetCategory,
-  mergeDuplicateCompanies,
-  cleanupCompanyDomainNames,
 } from './actions'
 import type { Profile } from './dashboard-shell'
 import {
@@ -105,6 +97,9 @@ import {
   Loader2,
   ShoppingCartIcon,
   RefreshCw,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react'
 import {
   Dialog,
@@ -185,7 +180,7 @@ const COLUMN_LABELS: Record<(typeof COLUMN_KEYS)[number], string> = {
   title: 'Titel',
   tags: 'Tags',
   industry: 'Industrie',
-  country: 'Land',
+  country: 'HQ',
   project_status: 'Projektstatus',
   project_start: 'Projektstart',
   project_end: 'Projektende',
@@ -316,6 +311,9 @@ function ApprovalStepper({
 
 // --- Hauptkomponente ---
 
+type CompanyOption = { id: string; name: string; logo_url?: string | null }
+type ContactOption = { id: string; first_name: string | null; last_name: string | null; email: string | null }
+
 export function DashboardOverview({
   references: initialReferences,
   totalCount,
@@ -324,6 +322,8 @@ export function DashboardOverview({
   title = 'Referenzen',
   initialFavoritesOnly = false,
   initialStatusFilter = 'all',
+  companies = [],
+  contacts = [],
 }: {
   references: ReferenceRow[]
   totalCount: number
@@ -332,10 +332,17 @@ export function DashboardOverview({
   title?: string
   initialFavoritesOnly?: boolean
   initialStatusFilter?: string
+  companies?: CompanyOption[]
+  contacts?: ContactOption[]
 }) {
   const router = useRouter()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>(initialStatusFilter)
+  const [industryFilter, setIndustryFilter] = useState<string>('all')
+  const [countryFilter, setCountryFilter] = useState<string>('all')
+  const [projectStatusFilter, setProjectStatusFilter] = useState<string>('all')
+  const [sortKey, setSortKey] = useState<(typeof COLUMN_KEYS)[number] | null>(null)
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [favoritesOnly, setFavoritesOnly] = useState(initialFavoritesOnly)
   const [rfpFiles, setRfpFiles] = useState<File[]>([])
   const fileInputRef = useRef<HTMLInputElement | null>(null)
@@ -366,7 +373,7 @@ export function DashboardOverview({
   const [trashLoading, setTrashLoading] = useState(false)
   const [confirmEmptyOpen, setConfirmEmptyOpen] = useState(false)
   const [emptyingTrash, setEmptyingTrash] = useState(false)
-  const [cleanupLoading, setCleanupLoading] = useState(false)
+  const [newRefModalOpen, setNewRefModalOpen] = useState(false)
 
   function addBulkImportFiles(newFiles: File[]) {
     setBulkImportGroups((prev) => {
@@ -459,7 +466,43 @@ export function DashboardOverview({
     }
   }
 
-  // Client-seitiges Filtering (Sales: draft nie anzeigen; optional nur Favoriten)
+  // Eindeutige Werte für Filter-Dropdowns (aus aktuellen Referenzen)
+  const filterOptions = useMemo(() => {
+    const industries = new Set<string>()
+    const countries = new Set<string>()
+    const projectStatuses = new Set<string>()
+    for (const r of initialReferences) {
+      if (r.industry) industries.add(r.industry)
+      if (r.country) countries.add(r.country)
+      if (r.project_status) projectStatuses.add(r.project_status)
+    }
+    return {
+      industries: Array.from(industries).sort(),
+      countries: Array.from(countries).sort(),
+      projectStatuses: Array.from(projectStatuses).sort(),
+    }
+  }, [initialReferences])
+
+  // Sortier-Hilfe: Vergleichswerte pro Spalte
+  const getSortValue = (ref: ReferenceRow, key: (typeof COLUMN_KEYS)[number]): string | number => {
+    switch (key) {
+      case 'status': return ref.status
+      case 'company': return (ref.company_name ?? '').toLowerCase()
+      case 'title': return (ref.title ?? '').toLowerCase()
+      case 'tags': return (ref.tags ?? '').toLowerCase()
+      case 'industry': return (ref.industry ?? '').toLowerCase()
+      case 'country': return (ref.country ?? '').toLowerCase()
+      case 'project_status': return ref.project_status ?? ''
+      case 'project_start': return ref.project_start ? new Date(ref.project_start).getTime() : 0
+      case 'project_end': return ref.project_end ? new Date(ref.project_end).getTime() : 0
+      case 'duration_months': return ref.duration_months ?? 0
+      case 'created_at': return new Date(ref.created_at).getTime()
+      case 'updated_at': return ref.updated_at ? new Date(ref.updated_at).getTime() : 0
+      default: return ''
+    }
+  }
+
+  // Client-seitiges Filtering (Sales: draft nie anzeigen; optional nur Favoriten) + Sortierung
   const filteredReferences = useMemo(() => {
     let list = initialReferences
     if (profile.role === 'sales') {
@@ -479,8 +522,50 @@ export function DashboardOverview({
     if (statusFilter !== 'all') {
       list = list.filter((r) => r.status === statusFilter)
     }
+    if (industryFilter !== 'all') {
+      list = list.filter((r) => (r.industry ?? '') === industryFilter)
+    }
+    if (countryFilter !== 'all') {
+      list = list.filter((r) => (r.country ?? '') === countryFilter)
+    }
+    if (projectStatusFilter !== 'all') {
+      list = list.filter((r) => (r.project_status ?? '') === projectStatusFilter)
+    }
+    if (sortKey) {
+      list = [...list].sort((a, b) => {
+        const va = getSortValue(a, sortKey)
+        const vb = getSortValue(b, sortKey)
+        if (typeof va === 'number' && typeof vb === 'number') {
+          return sortDir === 'asc' ? va - vb : vb - va
+        }
+        const sa = String(va)
+        const sb = String(vb)
+        const cmp = sa.localeCompare(sb, 'de')
+        return sortDir === 'asc' ? cmp : -cmp
+      })
+    }
     return list
-  }, [initialReferences, profile.role, search, statusFilter, favoritesOnly])
+  }, [
+    initialReferences,
+    profile.role,
+    search,
+    statusFilter,
+    industryFilter,
+    countryFilter,
+    projectStatusFilter,
+    favoritesOnly,
+    sortKey,
+    sortDir,
+  ])
+
+  const handleSort = (column: (typeof COLUMN_KEYS)[number]) => {
+    if (sortKey === column) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortKey(column)
+      setSortDir('asc')
+    }
+  }
 
   const openDetail = (ref: ReferenceRow) => {
     setSelectedRef(ref)
@@ -588,38 +673,6 @@ export function DashboardOverview({
       <div className="flex items-center justify-between gap-4">
         <h2 className="text-3xl font-bold tracking-tight">{title}</h2>
         <div className="flex items-center gap-2">
-          {/* Temporär: Admin Cleanup */}
-          {profile.role === 'admin' && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9 shrink-0"
-              disabled={cleanupLoading}
-              onClick={async () => {
-                setCleanupLoading(true)
-                try {
-                  const mergeResult = await mergeDuplicateCompanies()
-                  const cleanupResult = await cleanupCompanyDomainNames()
-                  if (!mergeResult.success) {
-                    toast.error(mergeResult.error)
-                  } else if (!cleanupResult.success) {
-                    toast.error(cleanupResult.error)
-                  } else {
-                    toast.success(
-                      `Bereinigung abgeschlossen: ${mergeResult.merged} Referenz(en) umgebogen, ${mergeResult.deleted} Dubletten gelöscht, ${cleanupResult.updated} Firmennamen korrigiert.`
-                    )
-                    router.refresh()
-                  }
-                } catch (e) {
-                  toast.error(e instanceof Error ? e.message : 'Cleanup fehlgeschlagen.')
-                } finally {
-                  setCleanupLoading(false)
-                }
-              }}
-            >
-              {cleanupLoading ? <Loader2 className="size-4 animate-spin" /> : 'Cleanup'}
-            </Button>
-          )}
           {/* Papierkorb-Icon */}
           <button
             type="button"
@@ -709,6 +762,42 @@ export function DashboardOverview({
             </SelectContent>
           </Select>
 
+          <Select value={industryFilter} onValueChange={setIndustryFilter}>
+            <SelectTrigger className="h-9 w-[140px] shrink-0">
+              <SelectValue placeholder="Industrie" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Industrie</SelectItem>
+              {filterOptions.industries.map((ind) => (
+                <SelectItem key={ind} value={ind}>{ind}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={countryFilter} onValueChange={setCountryFilter}>
+            <SelectTrigger className="h-9 w-[120px] shrink-0">
+              <SelectValue placeholder="HQ" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">HQ</SelectItem>
+              {filterOptions.countries.map((c) => (
+                <SelectItem key={c} value={c}>{c}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={projectStatusFilter} onValueChange={setProjectStatusFilter}>
+            <SelectTrigger className="h-9 w-[130px] shrink-0">
+              <SelectValue placeholder="Projektstatus" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Projektstatus</SelectItem>
+              {filterOptions.projectStatuses.map((ps) => (
+                <SelectItem key={ps} value={ps}>{ps === 'active' ? 'Aktiv' : 'Abgeschlossen'}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -736,12 +825,12 @@ export function DashboardOverview({
                 >
                   <div className="flex items-center gap-2">
                     <div
-                      className={`flex h-4 w-4 items-center justify-center rounded-sm border ${
-                        visibleColumns[column] ? 'bg-primary border-primary' : ''
+                      className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-input ${
+                        visibleColumns[column] ? 'bg-primary border-primary' : 'bg-muted'
                       }`}
                     >
                       {visibleColumns[column] && (
-                        <CheckCircle className="h-3 w-3 text-white" />
+                        <span className="h-2 w-2 rounded-full bg-primary-foreground" />
                       )}
                     </div>
                     <span>{COLUMN_LABELS[column]}</span>
@@ -776,12 +865,14 @@ export function DashboardOverview({
                 <UploadIcon className="mr-2 size-4" />
                 Importieren
               </Button>
-              <Link href="/dashboard/new">
-                <Button size="sm" className="h-9 shrink-0">
-                  <PlusCircleIcon className="mr-2 size-4" />
-                  Erstellen
-                </Button>
-              </Link>
+              <Button
+                size="sm"
+                className="h-9 shrink-0"
+                onClick={() => setNewRefModalOpen(true)}
+              >
+                <PlusCircleIcon className="mr-2 size-4" />
+                Erstellen
+              </Button>
             </>
           )}
 
@@ -941,18 +1032,102 @@ export function DashboardOverview({
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[44px]"></TableHead>
-                {visibleColumns.status && <TableHead>{COLUMN_LABELS.status}</TableHead>}
-                {visibleColumns.company && <TableHead className="w-[180px]">{COLUMN_LABELS.company}</TableHead>}
-                {visibleColumns.title && <TableHead>{COLUMN_LABELS.title}</TableHead>}
-                {visibleColumns.tags && <TableHead className="max-w-[120px]">{COLUMN_LABELS.tags}</TableHead>}
-                {visibleColumns.industry && <TableHead>{COLUMN_LABELS.industry}</TableHead>}
-                {visibleColumns.country && <TableHead>{COLUMN_LABELS.country}</TableHead>}
-                {visibleColumns.project_status && <TableHead>{COLUMN_LABELS.project_status}</TableHead>}
-                {visibleColumns.project_start && <TableHead className="text-right">{COLUMN_LABELS.project_start}</TableHead>}
-                {visibleColumns.project_end && <TableHead className="text-right">{COLUMN_LABELS.project_end}</TableHead>}
-                {visibleColumns.duration_months && <TableHead className="text-right">{COLUMN_LABELS.duration_months}</TableHead>}
-                {visibleColumns.created_at && <TableHead className="text-right">{COLUMN_LABELS.created_at}</TableHead>}
-                {visibleColumns.updated_at && <TableHead className="text-right">{COLUMN_LABELS.updated_at}</TableHead>}
+                {visibleColumns.status && (
+                  <TableHead>
+                    <button type="button" className="flex items-center gap-1 hover:opacity-80" onClick={() => handleSort('status')}>
+                      {COLUMN_LABELS.status}
+                      {sortKey === 'status' ? (sortDir === 'asc' ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />) : <ArrowUpDown className="size-3.5 text-muted-foreground" />}
+                    </button>
+                  </TableHead>
+                )}
+                {visibleColumns.company && (
+                  <TableHead className="w-[180px]">
+                    <button type="button" className="flex items-center gap-1 hover:opacity-80" onClick={() => handleSort('company')}>
+                      {COLUMN_LABELS.company}
+                      {sortKey === 'company' ? (sortDir === 'asc' ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />) : <ArrowUpDown className="size-3.5 text-muted-foreground" />}
+                    </button>
+                  </TableHead>
+                )}
+                {visibleColumns.title && (
+                  <TableHead>
+                    <button type="button" className="flex items-center gap-1 hover:opacity-80" onClick={() => handleSort('title')}>
+                      {COLUMN_LABELS.title}
+                      {sortKey === 'title' ? (sortDir === 'asc' ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />) : <ArrowUpDown className="size-3.5 text-muted-foreground" />}
+                    </button>
+                  </TableHead>
+                )}
+                {visibleColumns.tags && (
+                  <TableHead className="max-w-[120px]">
+                    <button type="button" className="flex items-center gap-1 hover:opacity-80" onClick={() => handleSort('tags')}>
+                      {COLUMN_LABELS.tags}
+                      {sortKey === 'tags' ? (sortDir === 'asc' ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />) : <ArrowUpDown className="size-3.5 text-muted-foreground" />}
+                    </button>
+                  </TableHead>
+                )}
+                {visibleColumns.industry && (
+                  <TableHead>
+                    <button type="button" className="flex items-center gap-1 hover:opacity-80" onClick={() => handleSort('industry')}>
+                      {COLUMN_LABELS.industry}
+                      {sortKey === 'industry' ? (sortDir === 'asc' ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />) : <ArrowUpDown className="size-3.5 text-muted-foreground" />}
+                    </button>
+                  </TableHead>
+                )}
+                {visibleColumns.country && (
+                  <TableHead>
+                    <button type="button" className="flex items-center gap-1 hover:opacity-80" onClick={() => handleSort('country')}>
+                      {COLUMN_LABELS.country}
+                      {sortKey === 'country' ? (sortDir === 'asc' ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />) : <ArrowUpDown className="size-3.5 text-muted-foreground" />}
+                    </button>
+                  </TableHead>
+                )}
+                {visibleColumns.project_status && (
+                  <TableHead>
+                    <button type="button" className="flex items-center gap-1 hover:opacity-80" onClick={() => handleSort('project_status')}>
+                      {COLUMN_LABELS.project_status}
+                      {sortKey === 'project_status' ? (sortDir === 'asc' ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />) : <ArrowUpDown className="size-3.5 text-muted-foreground" />}
+                    </button>
+                  </TableHead>
+                )}
+                {visibleColumns.project_start && (
+                  <TableHead className="text-right">
+                    <button type="button" className="ml-auto flex items-center gap-1 hover:opacity-80" onClick={() => handleSort('project_start')}>
+                      {COLUMN_LABELS.project_start}
+                      {sortKey === 'project_start' ? (sortDir === 'asc' ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />) : <ArrowUpDown className="size-3.5 text-muted-foreground" />}
+                    </button>
+                  </TableHead>
+                )}
+                {visibleColumns.project_end && (
+                  <TableHead className="text-right">
+                    <button type="button" className="ml-auto flex items-center gap-1 hover:opacity-80" onClick={() => handleSort('project_end')}>
+                      {COLUMN_LABELS.project_end}
+                      {sortKey === 'project_end' ? (sortDir === 'asc' ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />) : <ArrowUpDown className="size-3.5 text-muted-foreground" />}
+                    </button>
+                  </TableHead>
+                )}
+                {visibleColumns.duration_months && (
+                  <TableHead className="text-right">
+                    <button type="button" className="ml-auto flex items-center gap-1 hover:opacity-80" onClick={() => handleSort('duration_months')}>
+                      {COLUMN_LABELS.duration_months}
+                      {sortKey === 'duration_months' ? (sortDir === 'asc' ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />) : <ArrowUpDown className="size-3.5 text-muted-foreground" />}
+                    </button>
+                  </TableHead>
+                )}
+                {visibleColumns.created_at && (
+                  <TableHead className="text-right">
+                    <button type="button" className="ml-auto flex items-center gap-1 hover:opacity-80" onClick={() => handleSort('created_at')}>
+                      {COLUMN_LABELS.created_at}
+                      {sortKey === 'created_at' ? (sortDir === 'asc' ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />) : <ArrowUpDown className="size-3.5 text-muted-foreground" />}
+                    </button>
+                  </TableHead>
+                )}
+                {visibleColumns.updated_at && (
+                  <TableHead className="text-right">
+                    <button type="button" className="ml-auto flex items-center gap-1 hover:opacity-80" onClick={() => handleSort('updated_at')}>
+                      {COLUMN_LABELS.updated_at}
+                      {sortKey === 'updated_at' ? (sortDir === 'asc' ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />) : <ArrowUpDown className="size-3.5 text-muted-foreground" />}
+                    </button>
+                  </TableHead>
+                )}
                 <TableHead className="w-[40px]"></TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
@@ -970,11 +1145,12 @@ export function DashboardOverview({
                       <p>Keine Referenzen gefunden.</p>
                       {search.trim() &&
                         profile.role === 'admin' && (
-                          <Link href="/dashboard/new">
-                            <Button className="mt-1">
-                              Erstelle deine erste Referenz
-                            </Button>
-                          </Link>
+                          <Button
+                            className="mt-1"
+                            onClick={() => setNewRefModalOpen(true)}
+                          >
+                            Erstelle deine erste Referenz
+                          </Button>
                         )}
                       {profile.role === 'sales' && (
                         <div className="flex flex-wrap items-center justify-center gap-2">
@@ -1337,19 +1513,19 @@ export function DashboardOverview({
         </DialogContent>
       </Dialog>
 
-      {/* 4. Detail Sheet */}
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent className="flex flex-col gap-0 p-0 sm:max-w-xl md:w-[640px] md:max-w-[640px] lg:w-[720px]">
+      {/* 4. Detail (zentrales Modal) */}
+      <Dialog open={sheetOpen} onOpenChange={setSheetOpen}>
+        <DialogContent className="flex max-h-[90vh] flex-col gap-0 p-0 sm:max-w-xl md:max-w-[640px] overflow-hidden">
           {selectedRef && (
             <TooltipProvider delayDuration={150}>
               {/* Fixierter Header */}
-              <SheetHeader className="z-10 border-b bg-background px-4 py-4">
+              <DialogHeader className="z-10 shrink-0 border-b bg-background px-4 py-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-1 min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <SheetTitle className="text-lg font-semibold leading-tight tracking-tight truncate">
+                      <DialogTitle className="text-lg font-semibold leading-tight tracking-tight truncate">
                         {selectedRef.title}
-                      </SheetTitle>
+                      </DialogTitle>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -1365,9 +1541,9 @@ export function DashboardOverview({
                         />
                       </Button>
                     </div>
-                    <SheetDescription className="text-muted-foreground line-clamp-2 text-xs">
+                    <DialogDescription className="text-muted-foreground line-clamp-2 text-xs">
                       {selectedRef.company_name}
-                    </SheetDescription>
+                    </DialogDescription>
                   </div>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -1394,27 +1570,12 @@ export function DashboardOverview({
                     </TooltipContent>
                   </Tooltip>
                 </div>
-              </SheetHeader>
+              </DialogHeader>
 
               {/* Ein scrollbarer Bereich: Übersicht, Dateien, Historie untereinander */}
               <div className="flex-1 overflow-y-auto px-4 py-4">
                 {/* Abstand zwischen Abschnitten: space-y-8 | Abstand innerhalb Abschnitt: space-y-4 | Mehr Abstand oben vor Übersicht: pt-6 */}
                 <div className="space-y-8 pt-6">
-                  {/* Freigabestatus */}
-                  <section className="space-y-4">
-                    <h3 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
-                      Freigabestatus
-                    </h3>
-                    <div className="rounded-lg border bg-muted/10 p-4">
-                      <ApprovalStepper
-                        status={selectedRef.status}
-                        accountOwner={
-                          selectedRef.contact_display || selectedRef.contact_email
-                        }
-                      />
-                    </div>
-                  </section>
-
                   {/* Übersicht */}
                   <section className="space-y-4">
                     <h3 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
@@ -1773,7 +1934,7 @@ export function DashboardOverview({
               </div>
 
               {/* Fixierter Footer (rollenabhängig) */}
-              <SheetFooter className="z-10 flex-col gap-2 border-t bg-muted/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <DialogFooter className="z-10 shrink-0 flex-col gap-2 border-t bg-muted/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                 {/* Linke Seite: Download + Bearbeiten */}
                 <div className="flex w-full gap-2 sm:w-auto">
                   <Button
@@ -1849,11 +2010,25 @@ export function DashboardOverview({
                     </Button>
                   )}
                 </div>
-              </SheetFooter>
+              </DialogFooter>
             </TooltipProvider>
           )}
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
+
+      {/* Neue Referenz (zentrales Modal) */}
+      {profile.role === 'admin' && (
+        <Dialog open={newRefModalOpen} onOpenChange={setNewRefModalOpen}>
+          <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl p-0 gap-0 border-0">
+            <ReferenceForm
+              companies={companies}
+              contacts={contacts}
+              onSuccess={() => setNewRefModalOpen(false)}
+              onClose={() => setNewRefModalOpen(false)}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Bulk-Import-Modal (nur Admin) */}
       {profile.role === 'admin' && (
