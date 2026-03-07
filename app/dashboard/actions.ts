@@ -842,6 +842,7 @@ export async function createSharedPortfolio(referenceIds: string[]): Promise<{ s
       return { success: true, url, slug }
     }
     if ((error as { code?: string }).code === '23505') continue // unique violation, retry
+    console.error('[createSharedPortfolio] shared_portfolios insert failed (Schema/Berechtigung?):', error.message, error)
     return { success: false, error: error.message }
   }
   return { success: false, error: 'Slug-Kollision. Bitte erneut versuchen.' }

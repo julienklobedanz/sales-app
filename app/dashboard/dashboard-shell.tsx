@@ -86,11 +86,24 @@ export function DashboardShell({
   const [ticketModalOpen, setTicketModalOpen] = useState(false)
   const [ticketModalType, setTicketModalType] = useState<'support' | 'feedback'>('support')
 
-  const userInitials =
-    user.email?.slice(0, 2).toUpperCase() || 'U'
   const userName =
     profile.full_name ?? user.user_metadata?.full_name ?? user.email ?? 'Benutzer'
   const userEmail = user.email ?? ''
+  const userInitials = (() => {
+    const name = (profile.full_name ?? user.user_metadata?.full_name ?? '').trim()
+    if (name) {
+      const words = name.split(/\s+/).filter(Boolean)
+      if (words.length >= 2) {
+        const a = words[0]?.charAt(0) ?? ''
+        const b = words[1]?.charAt(0) ?? ''
+        return (a + b).toUpperCase() || 'U'
+      }
+      const firstWord = words[0] ?? ''
+      if (firstWord.length >= 2) return firstWord.slice(0, 2).toUpperCase()
+      if (firstWord.length === 1) return firstWord.toUpperCase()
+    }
+    return user.email?.slice(0, 2).toUpperCase() ?? 'U'
+  })()
 
   return (
     <SidebarProvider defaultOpen={true}>

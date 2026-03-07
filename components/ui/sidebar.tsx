@@ -27,6 +27,7 @@ import {
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
+const SIDEBAR_STORAGE_KEY = "sidebar_open"
 const SIDEBAR_WIDTH = "16rem"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
@@ -69,12 +70,18 @@ function SidebarProvider({
   const isMobile = useIsMobile()
   const [openMobile, setOpenMobile] = React.useState(false)
 
-  // Initial state from cookie (persisted across refresh/restart), fallback to defaultOpen
+  // Initial state: Cookie oder localStorage (persistiert über Refresh). Kein Eintrag = standardmäßig ausgeklappt (defaultOpen).
   const [_open, _setOpen] = React.useState(() => {
-    if (typeof document === 'undefined') return defaultOpen
-    const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${SIDEBAR_COOKIE_NAME}=([^;]*)`))
-    if (match) return match[1].trim() === 'true'
-    return defaultOpen
+    if (typeof document === "undefined") return defaultOpen
+    try {
+      const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${SIDEBAR_COOKIE_NAME}=([^;]*)`))
+      if (match) return match[1].trim() === "true"
+      const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY)
+      if (stored !== null) return stored === "true"
+    } catch {
+      // localStorage/cookie nicht verfügbar (z. B. privates Fenster)
+    }
+    return defaultOpen // ausgeklappt, wenn kein gespeicherter Zustand
   })
   const open = openProp ?? _open
   const setOpen = React.useCallback(
@@ -86,8 +93,13 @@ function SidebarProvider({
         _setOpen(openState)
       }
 
-      // This sets the cookie to keep the sidebar state.
+      // Cookie + localStorage für Sidebar-Persistenz (bleibt nach Refresh erhalten)
       document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+      try {
+        localStorage.setItem(SIDEBAR_STORAGE_KEY, String(openState))
+      } catch {
+        // localStorage nicht verfügbar
+      }
     },
     [setOpenProp, open]
   )

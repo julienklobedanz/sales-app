@@ -1,5 +1,6 @@
 -- Public Sharing: shared_portfolios für Kundenlinks (Slug, Referenzen, Killswitch)
-CREATE TABLE IF NOT EXISTS shared_portfolios (
+-- Explizit im Schema public, damit PostgREST die Tabelle findet
+CREATE TABLE IF NOT EXISTS public.shared_portfolios (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   slug text NOT NULL UNIQUE,
   reference_ids uuid[] NOT NULL DEFAULT '{}',
