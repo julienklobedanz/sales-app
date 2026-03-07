@@ -207,11 +207,6 @@ export function ReferenceForm({
     initialData?.customer_contact_id ? initialData.customer_contact_id : '__none__'
   )
   const [additionalCustomerContacts, setAdditionalCustomerContacts] = useState<ExternalContactDisplay[]>([])
-  const [customerContactRole, setCustomerContactRole] = useState(() => {
-    const cc = initialData?.customer_contact
-    if (!cc || !cc.includes(', ')) return ''
-    return cc.slice(cc.lastIndexOf(', ') + 2).trim()
-  })
   const [tags, setTags] = useState<string[]>(() =>
     initialData?.tags
       ? initialData.tags
@@ -312,12 +307,25 @@ export function ReferenceForm({
 
   const submitting = isEditMode ? editSubmitting : createSubmitting
   const isAnonymized = status === 'anonymized'
-  const displayContacts = [...contacts, ...additionalContacts]
+  const contactsRaw = [...contacts, ...additionalContacts]
+  const seenContactIds = new Set<string>()
+  const displayContacts = contactsRaw.filter((c) => {
+    if (seenContactIds.has(c.id)) return false
+    seenContactIds.add(c.id)
+    return true
+  })
   const currentCompanyId = isEditMode ? initialData?.company_id : companyId
-  const displayCustomerContacts: ExternalContactDisplay[] = [
+  // Nach ID deduplizieren: zuerst Server-Kontakte, dann neu angelegte (keine Dopplung in der Liste)
+  const customerContactsRaw: ExternalContactDisplay[] = [
     ...externalContacts.filter((c) => c.company_id === currentCompanyId),
     ...additionalCustomerContacts,
   ]
+  const seenCustomerIds = new Set<string>()
+  const displayCustomerContacts = customerContactsRaw.filter((c) => {
+    if (seenCustomerIds.has(c.id)) return false
+    seenCustomerIds.add(c.id)
+    return true
+  })
 
   const handleContactCreated = (contact: CreatedContact) => {
     const person: ContactPerson = {
@@ -330,17 +338,16 @@ export function ReferenceForm({
     setContactId(contact.id)
   }
 
-  const handleCustomerContactCreated = (contact: ExternalContact | CreatedContact, role?: string) => {
+  const handleCustomerContactCreated = (contact: ExternalContact | CreatedContact, _role?: string) => {
     const display: ExternalContactDisplay = {
       id: contact.id,
       first_name: contact.first_name,
       last_name: contact.last_name,
       email: contact.email,
-      role: 'role' in contact && contact.role != null ? contact.role : role ?? undefined,
+      role: 'role' in contact && contact.role != null ? contact.role : undefined,
     }
     setAdditionalCustomerContacts((prev) => [...prev, display])
     setCustomerContactId(contact.id)
-    if (display.role) setCustomerContactRole(display.role)
   }
 
   function buildFormData(form: HTMLFormElement): FormData {
@@ -352,11 +359,10 @@ export function ReferenceForm({
     formData.set('nda_deal', ndaDeal ? '1' : '0')
     formData.set('customer_contact_id', customer_contact_id === '__none__' ? '' : customer_contact_id)
     const selectedCustomer = displayCustomerContacts.find((c) => c.id === customer_contact_id)
-    const roleDisplay = customerContactRole || selectedCustomer?.role
     const customerDisplay =
       selectedCustomer
         ? [selectedCustomer.first_name, selectedCustomer.last_name].filter(Boolean).join(' ') +
-          (roleDisplay ? `, ${roleDisplay}` : '')
+          (selectedCustomer.role ? `, ${selectedCustomer.role}` : '')
         : ''
     formData.set('customer_contact', customerDisplay)
     return formData
@@ -775,20 +781,6 @@ export function ReferenceForm({
               disabled={!currentCompanyId}
             />
           </div>
-          {customer_contact_id && customer_contact_id !== '__none__' && (
-            <div className="mt-2">
-              <Label htmlFor="customer_contact_role" className="text-xs text-muted-foreground">Rolle (optional)</Label>
-              <Input
-                id="customer_contact_role"
-                name="customer_contact_role"
-                placeholder="z. B. CIO, Projektleiter"
-                disabled={submitting}
-                value={customerContactRole}
-                onChange={(e) => setCustomerContactRole(e.target.value)}
-                className="mt-1"
-              />
-            </div>
-          )}
         </div>
       </div>
 
