@@ -144,10 +144,6 @@ export function CreateContactDialog({
           size="icon"
           title={variant === 'external' && disabled ? 'Bitte zuerst ein Unternehmen auswählen' : 'Neuen Kontakt anlegen'}
           disabled={disabled}
-          onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-          }}
         >
           <PlusCircle className="h-4 w-4" />
         </Button>
