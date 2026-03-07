@@ -67,7 +67,6 @@ import {
   submitForApproval,
   toggleFavorite,
   updateReferenceAssetCategory,
-  updateReferenceDetailFields,
 } from './actions'
 import type { Profile } from './dashboard-shell'
 import {
@@ -472,7 +471,6 @@ export function DashboardOverview({
   }
   const [selectedRefIds, setSelectedRefIds] = useState<Set<string>>(() => new Set())
   const [previewRefs, setPreviewRefs] = useState<ReferenceRow[] | null>(null)
-  const [singleRefPreviewRef, setSingleRefPreviewRef] = useState<ReferenceRow | null>(null)
   const [shareLinkPopoverRef, setShareLinkPopoverRef] = useState<ReferenceRow | null>(null)
   const [shareLinkUrl, setShareLinkUrl] = useState<string | null>(null)
   const [shareLinkLoading, setShareLinkLoading] = useState(false)
@@ -487,10 +485,6 @@ export function DashboardOverview({
       .then((existing) => setShareLinkUrl(existing?.url ?? null))
       .finally(() => setShareLinkLoading(false))
   }, [shareLinkPopoverRef?.id])
-  const [detailProjectStatus, setDetailProjectStatus] = useState<ReferenceRow['project_status']>(null)
-  const [detailIncumbent, setDetailIncumbent] = useState('')
-  const [detailCompetitors, setDetailCompetitors] = useState('')
-  const [detailSaveLoading, setDetailSaveLoading] = useState(false)
   const selectAllCheckboxRef = useRef<HTMLInputElement | null>(null)
   const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
   const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false)
@@ -679,14 +673,6 @@ export function DashboardOverview({
       document.body.style.overflow = prev
     }
   }, [previewOpen])
-
-  useEffect(() => {
-    if (selectedRef) {
-      setDetailProjectStatus(selectedRef.project_status ?? null)
-      setDetailIncumbent(selectedRef.incumbent_provider ?? '')
-      setDetailCompetitors(selectedRef.competitors ?? '')
-    }
-  }, [selectedRef?.id, selectedRef?.project_status, selectedRef?.incumbent_provider, selectedRef?.competitors])
 
   const handleDelete = async (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation()
@@ -2154,23 +2140,6 @@ export function DashboardOverview({
                       <DialogTitle className="text-lg font-semibold leading-tight tracking-tight truncate">
                         {selectedRef.title}
                       </DialogTitle>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 shrink-0 -mt-1 hover:bg-transparent"
-                            onClick={(e: React.MouseEvent) => {
-                              e.stopPropagation()
-                              setSingleRefPreviewRef(selectedRef)
-                            }}
-                            aria-label="Vorschau (Kundenansicht)"
-                          >
-                            <Eye className="size-4 text-muted-foreground" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Vorschau (Kundenansicht)</TooltipContent>
-                      </Tooltip>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -2186,7 +2155,7 @@ export function DashboardOverview({
                         />
                       </Button>
                     </div>
-                    <DialogDescription className="text-muted-foreground line-clamp-2 text-xs">
+                    <DialogDescription className="text-muted-foreground line-clamp-2 text-sm font-medium">
                       {selectedRef.status === 'anonymized'
                         ? 'Anonymisierter Kunde'
                         : selectedRef.company_name}
@@ -2196,37 +2165,6 @@ export function DashboardOverview({
                     {selectedRef.is_nda_deal && (
                       <Badge variant="secondary" className="text-xs cursor-default">
                         NDA-geschützt
-                      </Badge>
-                    )}
-                    {profile.role === 'admin' ? (
-                      <Select
-                        value={detailProjectStatus ?? '__none__'}
-                        onValueChange={async (val) => {
-                          const v = val === '__none__' ? null : (val as ReferenceRow['project_status'])
-                          setDetailProjectStatus(v)
-                          try {
-                            await updateReferenceDetailFields(selectedRef.id, { project_status: v })
-                            setSelectedRef((prev) => (prev && prev.id === selectedRef.id ? { ...prev, project_status: v } : prev))
-                            toast.success('Projektstatus aktualisiert')
-                          } catch {
-                            toast.error('Speichern fehlgeschlagen')
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="h-7 w-[130px] gap-1 border-muted text-xs">
-                          <ActivityIcon className="size-3" />
-                          <SelectValue placeholder="Projektstatus" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__none__">— Keine Angabe</SelectItem>
-                          <SelectItem value="active">Aktiv</SelectItem>
-                          <SelectItem value="completed">Abgeschlossen</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <Badge variant="outline" className="gap-1 text-xs">
-                        <ActivityIcon className="size-3" />
-                        {PROJECT_STATUS_LABELS[selectedRef.project_status ?? ''] ?? selectedRef.project_status ?? '—'}
                       </Badge>
                     )}
                     <Tooltip>
@@ -2261,8 +2199,8 @@ export function DashboardOverview({
               <div className="flex-1 overflow-y-auto px-6 py-6 md:px-8 md:py-8">
                 {/* Abstand zwischen Abschnitten: space-y-8 | Abstand innerhalb Abschnitt: space-y-4 */}
                 <div className="space-y-8 pt-4">
-                  {/* Logo rechtsbündig über der Übersicht */}
-                  <div className="flex justify-end">
+                  {/* Logo rechtsbündig über der Übersicht (vorübergehend ausgeblendet) */}
+                  {/* <div className="flex justify-end">
                     {selectedRef.status === 'anonymized' ? (
                       <div className="flex size-16 items-center justify-center rounded-lg border border-dashed border-muted-foreground/40 bg-muted/50">
                         <Building2Icon className="size-8 text-muted-foreground" />
@@ -2278,7 +2216,7 @@ export function DashboardOverview({
                         />
                       </div>
                     ) : null}
-                  </div>
+                  </div> */}
                   {/* Übersicht */}
                   <section className="space-y-4">
                     <h3 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
@@ -2292,32 +2230,32 @@ export function DashboardOverview({
                     </div>
                   </section>
 
-                  {/* Storytelling – Kern des Projekts (prominent, wie im Formular) */}
-                  <section className="space-y-3 rounded-lg border border-amber-200/60 bg-amber-50/50 dark:border-amber-800/50 dark:bg-amber-950/30 p-5">
-                    <h3 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
-                      Storytelling – Kern des Projekts
-                    </h3>
-                    {selectedRef.customer_challenge ? (
-                      <div>
-                        <p className="text-muted-foreground text-[11px] font-medium mb-1">Herausforderung des Kunden</p>
-                        <p className="text-foreground text-sm leading-relaxed">
-                          {selectedRef.customer_challenge}
-                        </p>
+                  {/* Herausforderung & Lösung (gleiche Optik wie übriger Inhalt) */}
+                  {(selectedRef.customer_challenge || selectedRef.our_solution) ? (
+                    <section className="space-y-4">
+                      <h3 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
+                        Herausforderung & Lösung
+                      </h3>
+                      <div className="rounded-lg border bg-muted/40 p-4 space-y-4">
+                        {selectedRef.customer_challenge ? (
+                          <div>
+                            <p className="text-muted-foreground text-[11px] font-medium mb-1">Herausforderung des Kunden</p>
+                            <p className="text-foreground text-sm leading-relaxed">
+                              {selectedRef.customer_challenge}
+                            </p>
+                          </div>
+                        ) : null}
+                        {selectedRef.our_solution ? (
+                          <div>
+                            <p className="text-muted-foreground text-[11px] font-medium mb-1">Unsere Lösung</p>
+                            <p className="text-foreground text-sm leading-relaxed">
+                              {selectedRef.our_solution}
+                            </p>
+                          </div>
+                        ) : null}
                       </div>
-                    ) : (
-                      <p className="text-muted-foreground text-sm italic">Keine Herausforderung hinterlegt.</p>
-                    )}
-                    {selectedRef.our_solution ? (
-                      <div>
-                        <p className="text-muted-foreground text-[11px] font-medium mb-1">Unsere Lösung</p>
-                        <p className="text-foreground text-sm leading-relaxed">
-                          {selectedRef.our_solution}
-                        </p>
-                      </div>
-                    ) : (
-                      <p className="text-muted-foreground text-sm italic">Keine Lösung hinterlegt.</p>
-                    )}
-                  </section>
+                    </section>
+                  ) : null}
 
                   {/* Tags */}
                   <section className="space-y-2">
@@ -2396,7 +2334,7 @@ export function DashboardOverview({
                     </div>
                   </section>
 
-                  {/* Marktumfeld: Dienstleister & Wettbewerber (editierbar für Admin) */}
+                  {/* Marktumfeld: nur Anzeige (Bearbeitung im Bearbeitungsmodus) */}
                   <section className="space-y-3">
                     <h3 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
                       Marktumfeld
@@ -2406,73 +2344,22 @@ export function DashboardOverview({
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
                           <Building2Icon className="size-3" /> Aktueller Dienstleister
                         </span>
-                        {profile.role === 'admin' ? (
-                          <Input
-                            value={detailIncumbent}
-                            onChange={(e) => setDetailIncumbent(e.target.value)}
-                            placeholder="z. B. Voranbieter / Incumbent"
-                            className="h-8 text-sm"
-                          />
-                        ) : (
-                          <p className={`pl-4 text-xs font-medium ${selectedRef.incumbent_provider ? 'text-foreground' : 'text-muted-foreground'}`}>
-                            {selectedRef.incumbent_provider || '—'}
-                          </p>
-                        )}
+                        <p className={`pl-4 text-xs font-medium ${selectedRef.incumbent_provider ? 'text-foreground' : 'text-muted-foreground'}`}>
+                          {selectedRef.incumbent_provider || '—'}
+                        </p>
                       </div>
                       <div className="space-y-1.5">
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
                           <Users className="size-3" /> Beteiligte Wettbewerber
                         </span>
-                        {profile.role === 'admin' ? (
-                          <Input
-                            value={detailCompetitors}
-                            onChange={(e) => setDetailCompetitors(e.target.value)}
-                            placeholder="z. B. gegen wen gewonnen"
-                            className="h-8 text-sm"
-                          />
-                        ) : (
-                          <p className={`pl-4 text-xs font-medium ${selectedRef.competitors ? 'text-foreground' : 'text-muted-foreground'}`}>
-                            {selectedRef.competitors || '—'}
-                          </p>
-                        )}
+                        <p className={`pl-4 text-xs font-medium ${selectedRef.competitors ? 'text-foreground' : 'text-muted-foreground'}`}>
+                          {selectedRef.competitors || '—'}
+                        </p>
                       </div>
                     </div>
-                    {profile.role === 'admin' && (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        disabled={detailSaveLoading}
-                        onClick={async () => {
-                          setDetailSaveLoading(true)
-                          try {
-                            await updateReferenceDetailFields(selectedRef.id, {
-                              incumbent_provider: detailIncumbent.trim() || null,
-                              competitors: detailCompetitors.trim() || null,
-                            })
-                            setSelectedRef((prev) =>
-                              prev && prev.id === selectedRef.id
-                                ? {
-                                    ...prev,
-                                    incumbent_provider: detailIncumbent.trim() || null,
-                                    competitors: detailCompetitors.trim() || null,
-                                  }
-                                : prev
-                            )
-                            toast.success('Marktumfeld gespeichert')
-                          } catch {
-                            toast.error('Speichern fehlgeschlagen')
-                          } finally {
-                            setDetailSaveLoading(false)
-                          }
-                        }}
-                      >
-                        {detailSaveLoading ? <Loader2 className="mr-2 size-3.5 animate-spin" /> : null}
-                        Änderungen speichern
-                      </Button>
-                    )}
                   </section>
 
-                  {/* Block B: Projekt-Details */}
+                  {/* Projekt-Details (eine Card: Volumen, Vertragsart, Zeitraum, Erstellt/Geändert) */}
                   <section className="space-y-3">
                     <h3 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
                       Projekt-Details
@@ -2494,12 +2381,6 @@ export function DashboardOverview({
                           {selectedRef.contract_type || '—'}
                         </p>
                       </div>
-                    </div>
-                  </section>
-
-                  {/* Projektzeitraum, Erstellt / Geändert, Kontakte */}
-                  <section className="space-y-3">
-                    <div className="grid grid-cols-2 gap-x-6 gap-y-3 rounded-lg border bg-muted/20 p-4">
                       <div className="space-y-0.5">
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
                           <CalendarIcon className="size-3" /> Projektstart
@@ -2555,7 +2436,10 @@ export function DashboardOverview({
                         </p>
                       </div>
                     </div>
-                    <Separator className="!my-4" />
+                  </section>
+
+                  {/* Kontakte: alle Kontaktdaten, Rolle wie beim internen Kontakt unterhalb des Namens */}
+                  <section className="space-y-3">
                     <h3 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
                       Kontakte
                     </h3>
@@ -2569,6 +2453,11 @@ export function DashboardOverview({
                             selectedRef.contact_email ||
                             'Nicht zugewiesen'}
                         </p>
+                        {selectedRef.contact_email && (
+                          <p className="text-muted-foreground pl-4 text-[10px]">
+                            <a href={`mailto:${selectedRef.contact_email}`} className="hover:underline">{selectedRef.contact_email}</a>
+                          </p>
+                        )}
                         <p className="text-muted-foreground pl-4 text-[10px]">
                           Account Owner
                         </p>
@@ -2577,9 +2466,29 @@ export function DashboardOverview({
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
                           <UserIcon className="size-3" /> Kundenansprechpartner
                         </span>
-                        <p className={`pl-4 text-xs font-medium ${selectedRef.customer_contact ? 'text-foreground' : 'text-muted-foreground'}`}>
-                          {selectedRef.customer_contact || '—'}
-                        </p>
+                        {(() => {
+                          const ext = selectedRef.customer_contact_id && externalContacts?.find((c) => c.id === selectedRef.customer_contact_id)
+                          const displayName = selectedRef.customer_contact || (ext ? [ext.first_name, ext.last_name].filter(Boolean).join(' ') : null) || '—'
+                          const email = ext?.email ?? null
+                          const role = ext?.role ?? null
+                          return (
+                            <>
+                              <p className={`pl-4 text-xs font-medium ${displayName !== '—' ? 'text-foreground' : 'text-muted-foreground'}`}>
+                                {displayName}
+                              </p>
+                              {email && (
+                                <p className="text-muted-foreground pl-4 text-[10px]">
+                                  <a href={`mailto:${email}`} className="hover:underline">{email}</a>
+                                </p>
+                              )}
+                              {role && (
+                                <p className="text-muted-foreground pl-4 text-[10px]">
+                                  {role}
+                                </p>
+                              )}
+                            </>
+                          )
+                        })()}
                       </div>
                     </div>
                   </section>
@@ -2692,7 +2601,7 @@ export function DashboardOverview({
                     )}
                   </section>
 
-                  {/* Historie */}
+                  {/* Historie: Erstellung und letzte Bearbeitung (Detail-Audit z. B. Status/Ansprechpartner würde separates Audit-Log erfordern) */}
                   <section className="space-y-4">
                     <h3 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
                       Historie
@@ -2705,6 +2614,15 @@ export function DashboardOverview({
                           {formatDate(selectedRef.created_at)}
                         </p>
                       </div>
+                      {selectedRef.updated_at && selectedRef.updated_at !== selectedRef.created_at && (
+                        <div className="relative">
+                          <span className="bg-muted-foreground/50 ring-background absolute -left-[17px] top-0.5 h-2 w-2 rounded-full ring-2" />
+                          <p className="text-xs font-medium">Letzte Änderung</p>
+                          <p className="text-muted-foreground mt-1 text-[10px]">
+                            {formatDate(selectedRef.updated_at)}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </section>
                 </div>
@@ -2897,25 +2815,6 @@ export function DashboardOverview({
                   setShareLinkUrl(null)
                 }}
               >
-                Schließen
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Vorschau-Popover aus dem Detail-Modal: liegt über dem Detail, gleiches Luxury-Design, Schließen bringt zurück ins Detail */}
-      <Dialog open={singleRefPreviewRef !== null} onOpenChange={(open) => !open && setSingleRefPreviewRef(null)}>
-        <DialogContent
-          showCloseButton={false}
-          className="z-[60] max-h-[90vh] w-[calc(100vw-2rem)] max-w-4xl overflow-hidden rounded-xl border bg-background p-0 shadow-xl"
-        >
-          <div className="flex flex-col">
-            <div className="preview-modal-scroll overflow-y-auto p-8 md:p-16 lg:p-24">
-              {singleRefPreviewRef && <ReferenceReader ref={singleRefPreviewRef} />}
-            </div>
-            <div className="flex shrink-0 justify-center border-t bg-muted/30 px-8 py-4 md:px-16 lg:px-24">
-              <Button variant="outline" onClick={() => setSingleRefPreviewRef(null)}>
                 Schließen
               </Button>
             </div>
