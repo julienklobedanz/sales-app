@@ -2467,7 +2467,9 @@ export function DashboardOverview({
                           <UserIcon className="size-3" /> Kundenansprechpartner
                         </span>
                         {(() => {
-                          const ext = selectedRef.customer_contact_id && externalContacts?.find((c) => c.id === selectedRef.customer_contact_id)
+                          const ext = selectedRef.customer_contact_id
+                            ? externalContacts?.find((c) => c.id === selectedRef.customer_contact_id)
+                            : undefined
                           const displayName = selectedRef.customer_contact || (ext ? [ext.first_name, ext.last_name].filter(Boolean).join(' ') : null) || '—'
                           const email = ext?.email ?? null
                           const role = ext?.role ?? null
