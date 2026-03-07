@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { createContact } from './actions'
+import { createContact, createExternalContact, type ExternalContact } from './actions'
 
 /** Einfache Formatprüfungen für Kontaktfelder */
 const NAME_REGEX = /^[\p{L}\p{M}\s\-']{2,}$/u
@@ -67,10 +67,16 @@ export type CreatedContact = {
 export function CreateContactDialog({
   onContactCreated,
   variant = 'internal',
+  companyId,
+  disabled,
 }: {
   /** Bei variant="internal": (contact) => void. Bei variant="external": (contact, role?) => void. */
-  onContactCreated: (contact: CreatedContact, role?: string) => void
+  onContactCreated: (contact: CreatedContact | ExternalContact, role?: string) => void
   variant?: 'internal' | 'external'
+  /** Für variant="external": Unternehmen des Kunden (Pflicht). */
+  companyId?: string
+  /** Externer Dialog: deaktivieren, wenn kein Unternehmen ausgewählt. */
+  disabled?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -78,6 +84,7 @@ export function CreateContactDialog({
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    event.stopPropagation()
     const formData = new FormData(event.currentTarget)
     const errors = validateContact(formData)
     const hasErrors = Object.keys(errors).length > 0
@@ -87,17 +94,32 @@ export function CreateContactDialog({
       toast.error(firstMessage)
       return
     }
+    if (variant === 'external' && !companyId) {
+      toast.error('Bitte zuerst ein Unternehmen auswählen.')
+      return
+    }
     setLoading(true)
     setFieldErrors({})
     try {
-      const result = await createContact(formData)
-      if (result.success && result.contact) {
-        toast.success('Kontakt angelegt')
-        const role = variant === 'external' ? formData.get('role')?.toString()?.trim() : undefined
-        onContactCreated(result.contact as CreatedContact, role)
-        setOpen(false)
+      if (variant === 'external') {
+        formData.set('companyId', companyId!)
+        const result = await createExternalContact(formData)
+        if (result.success && result.contact) {
+          toast.success('Kundenansprechpartner angelegt')
+          onContactCreated(result.contact, result.contact.role ?? undefined)
+          setOpen(false)
+        } else {
+          toast.error(result.error || 'Fehler beim Anlegen')
+        }
       } else {
-        toast.error(result.error || 'Fehler beim Anlegen')
+        const result = await createContact(formData)
+        if (result.success && result.contact) {
+          toast.success('Kontakt angelegt')
+          onContactCreated(result.contact as CreatedContact)
+          setOpen(false)
+        } else {
+          toast.error(result.error || 'Fehler beim Anlegen')
+        }
       }
     } catch (e) {
       toast.error('Ein unerwarteter Fehler ist aufgetreten')
@@ -120,13 +142,18 @@ export function CreateContactDialog({
           type="button"
           variant="outline"
           size="icon"
-          title="Neuen Kontakt anlegen"
+          title={variant === 'external' && disabled ? 'Bitte zuerst ein Unternehmen auswählen' : 'Neuen Kontakt anlegen'}
+          disabled={disabled}
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+          }}
         >
           <PlusCircle className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
-        <form onSubmit={handleSubmit}>
+      <DialogContent className="sm:max-w-[425px]" onClick={(e) => e.stopPropagation()}>
+        <form onSubmit={handleSubmit} onClick={(e) => e.stopPropagation()}>
           <DialogHeader>
             <DialogTitle>Neuen Kontakt anlegen</DialogTitle>
             <DialogDescription>

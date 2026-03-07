@@ -18,10 +18,22 @@ export default async function NewReferencePage() {
     .select('id, name, logo_url')
     .order('name')
 
-  // 2. Kontaktpersonen laden
+  // 2. Kontaktpersonen (interne) laden
   const { data: contacts } = await supabase
     .from('contact_persons')
     .select('*')
+    .order('last_name')
+
+  // 3. Externe Kontakte (Kundenansprechpartner) laden – Formular filtert nach company_id
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .single()
+  const { data: externalContacts } = await supabase
+    .from('external_contacts')
+    .select('id, company_id, first_name, last_name, email, role')
+    .eq('organization_id', profile?.organization_id ?? '')
     .order('last_name')
 
   return (
@@ -36,6 +48,7 @@ export default async function NewReferencePage() {
         <ReferenceForm
           companies={companies ?? []}
           contacts={contacts ?? []}
+          externalContacts={externalContacts ?? []}
         />
       </div>
     </div>

@@ -13,6 +13,7 @@ export default async function EditReferencePage({
 }) {
   const { id } = await params
   const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
   // 1. Referenz laden (mit contact_id)
   const { data: row, error } = await supabase
@@ -59,6 +60,16 @@ export default async function EditReferencePage({
   const { data: contacts } = await supabase
     .from('contact_persons')
     .select('*')
+    .order('last_name')
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user?.id ?? '')
+    .single()
+  const { data: externalContacts } = await supabase
+    .from('external_contacts')
+    .select('id, company_id, first_name, last_name, email, role')
+    .eq('organization_id', profile?.organization_id ?? '')
     .order('last_name')
 
   const company =
@@ -113,6 +124,7 @@ export default async function EditReferencePage({
           <ReferenceForm
             companies={companies ?? []}
             contacts={contacts ?? []}
+            externalContacts={externalContacts ?? []}
             initialData={initialData}
           />
         </div>

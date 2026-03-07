@@ -43,6 +43,11 @@ export default async function DashboardPage({ searchParams }: Props) {
     .from('contact_persons')
     .select('*')
     .order('last_name')
+  const { data: externalContacts } = await supabase
+    .from('external_contacts')
+    .select('id, company_id, first_name, last_name, email, role')
+    .eq('organization_id', profile.organization_id ?? '')
+    .order('last_name')
 
   return (
     <DashboardOverview
@@ -54,6 +59,7 @@ export default async function DashboardPage({ searchParams }: Props) {
       initialFavoritesOnly={initialFavoritesOnly}
       companies={companies ?? []}
       contacts={contacts ?? []}
+      externalContacts={externalContacts ?? []}
     />
   )
 }

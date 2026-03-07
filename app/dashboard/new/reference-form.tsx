@@ -37,6 +37,7 @@ import { createReference, enrichAndSaveCompany, fetchCompanyEnrichment } from '.
 import { updateReference, generateSummaryFromStory } from '../actions'
 import { extractDataFromDocument } from './extract-reference-data'
 import { CreateContactDialog, type CreatedContact } from './create-contact-dialog'
+import type { ExternalContact } from './actions'
 
 const INDUSTRIES = [
   'Finanzdienstleistungen & Versicherung',
@@ -103,6 +104,16 @@ export type ContactPerson = {
   email: string | null
 }
 
+/** Für Dropdown Kundenansprechpartner (externer Kontakt mit optionaler Rolle). */
+export type ExternalContactDisplay = {
+  id: string
+  first_name: string | null
+  last_name: string | null
+  email: string | null
+  role?: string | null
+  company_id?: string
+}
+
 export type ReferenceFormInitialData = {
   id: string
   company_id: string
@@ -135,12 +146,15 @@ export type ReferenceFormInitialData = {
 export function ReferenceForm({
   companies = [],
   contacts = [],
+  externalContacts = [],
   initialData,
   onSuccess,
   onClose,
 }: {
   companies?: Company[]
   contacts?: ContactPerson[]
+  /** Externe Kontakte (Kundenansprechpartner), werden nach company_id gefiltert. */
+  externalContacts?: ExternalContact[]
   initialData?: ReferenceFormInitialData
   /** Wenn gesetzt (z. B. bei Modal-Einbettung), wird nach erfolgreichem Anlegen/Bearbeiten aufgerufen statt zu navigieren. */
   onSuccess?: () => void
@@ -192,7 +206,7 @@ export function ReferenceForm({
   const [customer_contact_id, setCustomerContactId] = useState(
     initialData?.customer_contact_id ? initialData.customer_contact_id : '__none__'
   )
-  const [additionalCustomerContacts, setAdditionalCustomerContacts] = useState<ContactPerson[]>([])
+  const [additionalCustomerContacts, setAdditionalCustomerContacts] = useState<ExternalContactDisplay[]>([])
   const [customerContactRole, setCustomerContactRole] = useState(() => {
     const cc = initialData?.customer_contact
     if (!cc || !cc.includes(', ')) return ''
@@ -201,7 +215,7 @@ export function ReferenceForm({
   const [tags, setTags] = useState<string[]>(() =>
     initialData?.tags
       ? initialData.tags
-          .split(',')
+          .split(/\s+/)
           .map((s) => s.trim())
           .filter(Boolean)
       : []
@@ -299,7 +313,11 @@ export function ReferenceForm({
   const submitting = isEditMode ? editSubmitting : createSubmitting
   const isAnonymized = status === 'anonymized'
   const displayContacts = [...contacts, ...additionalContacts]
-  const displayCustomerContacts = [...contacts, ...additionalCustomerContacts]
+  const currentCompanyId = isEditMode ? initialData?.company_id : companyId
+  const displayCustomerContacts: ExternalContactDisplay[] = [
+    ...externalContacts.filter((c) => c.company_id === currentCompanyId),
+    ...additionalCustomerContacts,
+  ]
 
   const handleContactCreated = (contact: CreatedContact) => {
     const person: ContactPerson = {
@@ -310,20 +328,19 @@ export function ReferenceForm({
     }
     setAdditionalContacts((prev) => [...prev, person])
     setContactId(contact.id)
-    router.refresh()
   }
 
-  const handleCustomerContactCreated = (contact: CreatedContact, role?: string) => {
-    const person: ContactPerson = {
+  const handleCustomerContactCreated = (contact: ExternalContact | CreatedContact, role?: string) => {
+    const display: ExternalContactDisplay = {
       id: contact.id,
       first_name: contact.first_name,
       last_name: contact.last_name,
       email: contact.email,
+      role: 'role' in contact && contact.role != null ? contact.role : role ?? undefined,
     }
-    setAdditionalCustomerContacts((prev) => [...prev, person])
+    setAdditionalCustomerContacts((prev) => [...prev, display])
     setCustomerContactId(contact.id)
-    if (role) setCustomerContactRole(role)
-    router.refresh()
+    if (display.role) setCustomerContactRole(display.role)
   }
 
   function buildFormData(form: HTMLFormElement): FormData {
@@ -331,14 +348,15 @@ export function ReferenceForm({
     if (selectedFile) {
       formData.set('file', selectedFile)
     }
-    formData.set('tags', tags.join(', '))
+    formData.set('tags', tags.join(' '))
     formData.set('nda_deal', ndaDeal ? '1' : '0')
     formData.set('customer_contact_id', customer_contact_id === '__none__' ? '' : customer_contact_id)
     const selectedCustomer = displayCustomerContacts.find((c) => c.id === customer_contact_id)
+    const roleDisplay = customerContactRole || selectedCustomer?.role
     const customerDisplay =
       selectedCustomer
         ? [selectedCustomer.first_name, selectedCustomer.last_name].filter(Boolean).join(' ') +
-          (customerContactRole ? `, ${customerContactRole}` : '')
+          (roleDisplay ? `, ${roleDisplay}` : '')
         : ''
     formData.set('customer_contact', customerDisplay)
     return formData
@@ -641,7 +659,7 @@ export function ReferenceForm({
 
       <div className="space-y-2">
         <Label htmlFor="tags-input">Tags</Label>
-        <input type="hidden" name="tags" value={tags.join(', ')} />
+        <input type="hidden" name="tags" value={tags.join(' ')} />
         <div className="flex min-h-9 flex-wrap items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
           {tags.map((tag) => (
             <span
@@ -663,12 +681,12 @@ export function ReferenceForm({
           <input
             id="tags-input"
             type="text"
-            placeholder={tags.length === 0 ? 'z.B. Cloud, Cybersecurity, SAP (mehrere Themen durch Komma trennen)' : 'Weiterer Tag…'}
+            placeholder={tags.length === 0 ? 'z.B. Cloud Cybersecurity SAP (mehrere Tags durch Leerzeichen trennen)' : 'Weiterer Tag…'}
             disabled={submitting}
             value={tagInputValue}
             onChange={(e) => setTagInputValue(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === ',') {
+              if (e.key === ' ') {
                 e.preventDefault()
                 const value = tagInputValue.trim()
                 if (value) {
@@ -750,7 +768,12 @@ export function ReferenceForm({
                 </SelectContent>
               </Select>
             </div>
-            <CreateContactDialog variant="external" onContactCreated={handleCustomerContactCreated} />
+            <CreateContactDialog
+              variant="external"
+              companyId={currentCompanyId || undefined}
+              onContactCreated={handleCustomerContactCreated}
+              disabled={!currentCompanyId}
+            />
           </div>
           {customer_contact_id && customer_contact_id !== '__none__' && (
             <div className="mt-2">

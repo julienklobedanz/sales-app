@@ -336,6 +336,7 @@ export function DashboardOverview({
   initialStatusFilter = 'all',
   companies = [],
   contacts = [],
+  externalContacts = [],
 }: {
   references: ReferenceRow[]
   totalCount: number
@@ -346,6 +347,7 @@ export function DashboardOverview({
   initialStatusFilter?: string
   companies?: CompanyOption[]
   contacts?: ContactOption[]
+  externalContacts?: { id: string; company_id: string; first_name: string | null; last_name: string | null; email: string | null; role: string | null }[]
 }) {
   const router = useRouter()
   const [search, setSearch] = useState('')
@@ -523,7 +525,7 @@ export function DashboardOverview({
       if (r.company_name) companies.add(r.company_name)
       if (r.tags) {
         r.tags
-          .split(',')
+          .split(/[\s,]+/)
           .map((t) => t.trim())
           .filter(Boolean)
           .forEach((t) => tags.add(t))
@@ -586,7 +588,7 @@ export function DashboardOverview({
       list = list.filter((r) => {
         if (!r.tags) return false
         const tagList = r.tags
-          .split(',')
+          .split(/[\s,]+/)
           .map((t) => t.trim())
           .filter(Boolean)
         return tagList.includes(tagsFilter)
@@ -1836,7 +1838,7 @@ export function DashboardOverview({
                         {ref.tags ? (
                           <div className="flex flex-wrap gap-1">
                             {ref.tags
-                              .split(',')
+                              .split(/[\s,]+/)
                               .map((t) => t.trim())
                               .filter(Boolean)
                               .slice(0, 3)
@@ -2325,7 +2327,7 @@ export function DashboardOverview({
                     <div className="flex flex-wrap gap-1.5 pl-4">
                       {selectedRef.tags
                         ? selectedRef.tags
-                            .split(',')
+                            .split(/[\s,]+/)
                             .map((tag) => tag.trim())
                             .filter(Boolean)
                             .map((tag) => (
@@ -2976,6 +2978,7 @@ export function DashboardOverview({
               <ReferenceForm
                 companies={companies}
                 contacts={contacts}
+                externalContacts={externalContacts}
                 onSuccess={() => setNewRefModalOpen(false)}
                 onClose={() => setNewRefModalOpen(false)}
               />

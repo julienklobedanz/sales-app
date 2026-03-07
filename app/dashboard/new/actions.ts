@@ -547,3 +547,80 @@ export async function createContact(formData: FormData) {
 
   return { success: true, contact: data }
 }
+
+export type ExternalContact = {
+  id: string
+  company_id: string
+  first_name: string | null
+  last_name: string | null
+  email: string | null
+  role: string | null
+}
+
+export async function createExternalContact(
+  formData: FormData
+): Promise<{ success: false; error: string } | { success: true; contact: ExternalContact }> {
+  const supabase = await createServerSupabaseClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .single()
+
+  const organizationId = profile?.organization_id ?? null
+  if (!organizationId) {
+    return { success: false, error: 'Dein Profil ist keiner Organisation zugeordnet.' }
+  }
+
+  const companyId = formData.get('companyId')?.toString()?.trim()
+  if (!companyId) {
+    return { success: false, error: 'Bitte zuerst ein Unternehmen auswählen.' }
+  }
+
+  const firstName = formData.get('firstName')?.toString()?.trim()
+  const lastName = formData.get('lastName')?.toString()?.trim()
+  const email = formData.get('email')?.toString()?.trim()
+  const role = formData.get('role')?.toString()?.trim() || null
+
+  if (!firstName || !lastName || !email) {
+    return { success: false, error: 'Vorname, Nachname und E-Mail sind erforderlich.' }
+  }
+
+  const { data, error } = await supabase
+    .from('external_contacts')
+    .insert({
+      organization_id: organizationId,
+      company_id: companyId,
+      first_name: firstName,
+      last_name: lastName,
+      email,
+      role,
+    })
+    .select('id, company_id, first_name, last_name, email, role')
+    .single()
+
+  if (error) {
+    return { success: false, error: error.message }
+  }
+
+  revalidatePath('/dashboard/new')
+  revalidatePath('/dashboard/edit/[id]', 'page')
+
+  return {
+    success: true,
+    contact: {
+      id: data.id,
+      company_id: data.company_id,
+      first_name: data.first_name,
+      last_name: data.last_name,
+      email: data.email,
+      role: data.role,
+    },
+  }
+}

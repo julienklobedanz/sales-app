@@ -91,7 +91,7 @@ export function ReferenceReader({ ref: refData }: { ref: ReferenceRow }) {
       {refData.tags && refData.tags.trim() && (
         <div className="flex flex-wrap justify-center gap-2">
           {refData.tags
-            .split(',')
+            .split(/[\s,]+/)
             .map((t) => t.trim())
             .filter(Boolean)
             .map((tag) => (
