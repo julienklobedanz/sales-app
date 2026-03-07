@@ -121,6 +121,7 @@ export type ReferenceFormInitialData = {
   customer_challenge?: string | null
   our_solution?: string | null
   customer_contact?: string | null
+  customer_contact_id?: string | null
   contact_id?: string | null
   status: 'draft' | 'internal_only' | 'approved' | 'anonymized'
   file_path?: string | null
@@ -188,9 +189,15 @@ export function ReferenceForm({
     initialData?.contact_id ? initialData.contact_id : '__none__'
   )
   const [additionalContacts, setAdditionalContacts] = useState<ContactPerson[]>([])
-  const [customerContact, setCustomerContact] = useState(
-    initialData?.customer_contact ?? ''
+  const [customer_contact_id, setCustomerContactId] = useState(
+    initialData?.customer_contact_id ? initialData.customer_contact_id : '__none__'
   )
+  const [additionalCustomerContacts, setAdditionalCustomerContacts] = useState<ContactPerson[]>([])
+  const [customerContactRole, setCustomerContactRole] = useState(() => {
+    const cc = initialData?.customer_contact
+    if (!cc || !cc.includes(', ')) return ''
+    return cc.slice(cc.lastIndexOf(', ') + 2).trim()
+  })
   const [tags, setTags] = useState<string[]>(() =>
     initialData?.tags
       ? initialData.tags
@@ -292,6 +299,7 @@ export function ReferenceForm({
   const submitting = isEditMode ? editSubmitting : createSubmitting
   const isAnonymized = status === 'anonymized'
   const displayContacts = [...contacts, ...additionalContacts]
+  const displayCustomerContacts = [...contacts, ...additionalCustomerContacts]
 
   const handleContactCreated = (contact: CreatedContact) => {
     const person: ContactPerson = {
@@ -306,8 +314,15 @@ export function ReferenceForm({
   }
 
   const handleCustomerContactCreated = (contact: CreatedContact, role?: string) => {
-    const name = [contact.first_name, contact.last_name].filter(Boolean).join(' ')
-    setCustomerContact(role ? `${name}, ${role}` : name)
+    const person: ContactPerson = {
+      id: contact.id,
+      first_name: contact.first_name,
+      last_name: contact.last_name,
+      email: contact.email,
+    }
+    setAdditionalCustomerContacts((prev) => [...prev, person])
+    setCustomerContactId(contact.id)
+    if (role) setCustomerContactRole(role)
     router.refresh()
   }
 
@@ -318,6 +333,14 @@ export function ReferenceForm({
     }
     formData.set('tags', tags.join(', '))
     formData.set('nda_deal', ndaDeal ? '1' : '0')
+    formData.set('customer_contact_id', customer_contact_id === '__none__' ? '' : customer_contact_id)
+    const selectedCustomer = displayCustomerContacts.find((c) => c.id === customer_contact_id)
+    const customerDisplay =
+      selectedCustomer
+        ? [selectedCustomer.first_name, selectedCustomer.last_name].filter(Boolean).join(' ') +
+          (customerContactRole ? `, ${customerContactRole}` : '')
+        : ''
+    formData.set('customer_contact', customerDisplay)
     return formData
   }
 
@@ -698,20 +721,51 @@ export function ReferenceForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="customer_contact">Kundenansprechpartner</Label>
+          <Label htmlFor="customer_contact_id">Kundenansprechpartner</Label>
           <div className="flex gap-2">
             <div className="flex-1">
-              <Input
-                id="customer_contact"
-                name="customer_contact"
-                placeholder="z. B. Max Mustermann, CIO"
-                disabled={submitting}
-                value={customerContact}
-                onChange={(e) => setCustomerContact(e.target.value)}
+              <input
+                type="hidden"
+                name="customer_contact_id"
+                value={customer_contact_id === '__none__' ? '' : customer_contact_id}
               />
+              <Select
+                value={customer_contact_id || '__none__'}
+                onValueChange={(v) => setCustomerContactId(v ?? '__none__')}
+                disabled={submitting}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Person auswählen …" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Keine</SelectItem>
+                  {displayCustomerContacts.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {[c.first_name, c.last_name].filter(Boolean).join(' ') ||
+                        c.email ||
+                        c.id}
+                      {c.email ? ` (${c.email})` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <CreateContactDialog variant="external" onContactCreated={handleCustomerContactCreated} />
           </div>
+          {customer_contact_id && customer_contact_id !== '__none__' && (
+            <div className="mt-2">
+              <Label htmlFor="customer_contact_role" className="text-xs text-muted-foreground">Rolle (optional)</Label>
+              <Input
+                id="customer_contact_role"
+                name="customer_contact_role"
+                placeholder="z. B. CIO, Projektleiter"
+                disabled={submitting}
+                value={customerContactRole}
+                onChange={(e) => setCustomerContactRole(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+          )}
         </div>
       </div>
 

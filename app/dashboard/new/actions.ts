@@ -298,6 +298,9 @@ export async function createReference(
   const customer_challenge = formData.get('customer_challenge')?.toString()?.trim() || null
   const our_solution = formData.get('our_solution')?.toString()?.trim() || null
   const customer_contact = formData.get('customer_contact')?.toString()?.trim() || null
+  const customer_contact_id_raw = formData.get('customer_contact_id')?.toString()?.trim() || null
+  const customer_contact_id =
+    customer_contact_id_raw && customer_contact_id_raw !== '__none__' ? customer_contact_id_raw : null
   const projectStatusRaw = formData.get('project_status')?.toString()
   const project_status: 'active' | 'completed' | null =
     projectStatusRaw === 'active' || projectStatusRaw === 'completed'
@@ -465,6 +468,7 @@ export async function createReference(
       customer_challenge,
       our_solution,
       customer_contact,
+      customer_contact_id,
       contact_id: contactId,
       status,
       file_path: filePath,

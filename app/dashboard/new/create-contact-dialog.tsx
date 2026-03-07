@@ -22,25 +22,39 @@ const NAME_REGEX = /^[\p{L}\p{M}\s\-']{2,}$/u
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const PHONE_REGEX = /^[\d\s+\-()]{6,}$/
 
-function validateContact(formData: FormData): string | null {
+export type FieldErrors = {
+  firstName?: string
+  lastName?: string
+  email?: string
+  phone?: string
+}
+
+function validateContact(formData: FormData): FieldErrors {
+  const errors: FieldErrors = {}
   const firstName = formData.get('firstName')?.toString()?.trim() ?? ''
   const lastName = formData.get('lastName')?.toString()?.trim() ?? ''
   const email = formData.get('email')?.toString()?.trim() ?? ''
   const phone = formData.get('phone')?.toString()?.trim() ?? ''
 
-  if (!NAME_REGEX.test(firstName)) {
-    return 'Bitte einen gültigen Vornamen eingeben (mind. 2 Zeichen, nur Buchstaben).'
+  if (!firstName) {
+    errors.firstName = 'Vorname ist erforderlich.'
+  } else if (!NAME_REGEX.test(firstName)) {
+    errors.firstName = 'Vorname: mind. 2 Zeichen, nur Buchstaben (inkl. Umlaute), Leerzeichen, Bindestrich oder Apostroph.'
   }
-  if (!NAME_REGEX.test(lastName)) {
-    return 'Bitte einen gültigen Nachnamen eingeben (mind. 2 Zeichen, nur Buchstaben).'
+  if (!lastName) {
+    errors.lastName = 'Nachname ist erforderlich.'
+  } else if (!NAME_REGEX.test(lastName)) {
+    errors.lastName = 'Nachname: mind. 2 Zeichen, nur Buchstaben (inkl. Umlaute), Leerzeichen, Bindestrich oder Apostroph.'
   }
-  if (!EMAIL_REGEX.test(email)) {
-    return 'Bitte eine gültige E-Mail-Adresse eingeben.'
+  if (!email) {
+    errors.email = 'E-Mail ist erforderlich.'
+  } else if (!EMAIL_REGEX.test(email)) {
+    errors.email = 'Bitte eine gültige E-Mail-Adresse eingeben (z. B. name@beispiel.de).'
   }
   if (phone && !PHONE_REGEX.test(phone)) {
-    return 'Bitte eine gültige Telefonnummer eingeben (Ziffern, Leerzeichen, + - ( )).'
+    errors.phone = 'Telefon: mind. 6 Zeichen, nur Ziffern, Leerzeichen, + - ( ) erlaubt.'
   }
-  return null
+  return errors
 }
 
 export type CreatedContact = {
@@ -60,16 +74,21 @@ export function CreateContactDialog({
 }) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const formData = new FormData(event.currentTarget)
-    const validationError = validateContact(formData)
-    if (validationError) {
-      toast.error(validationError)
+    const errors = validateContact(formData)
+    const hasErrors = Object.keys(errors).length > 0
+    setFieldErrors(errors)
+    if (hasErrors) {
+      const firstMessage = errors.firstName ?? errors.lastName ?? errors.email ?? errors.phone
+      toast.error(firstMessage)
       return
     }
     setLoading(true)
+    setFieldErrors({})
     try {
       const result = await createContact(formData)
       if (result.success && result.contact) {
@@ -87,10 +106,15 @@ export function CreateContactDialog({
     }
   }
 
+  const handleOpenChange = (next: boolean) => {
+    if (!next) setFieldErrors({})
+    setOpen(next)
+  }
+
   const isExternal = variant === 'external'
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button
           type="button"
@@ -116,50 +140,86 @@ export function CreateContactDialog({
               <Label htmlFor="firstName" className="text-right">
                 Vorname
               </Label>
-              <Input
-                id="firstName"
-                name="firstName"
-                className="col-span-3"
-                required
-                placeholder="z. B. Max"
-              />
+              <div className="col-span-3 space-y-1">
+                <Input
+                  id="firstName"
+                  name="firstName"
+                  className={fieldErrors.firstName ? 'border-destructive' : ''}
+                  required
+                  placeholder="z. B. Max"
+                  aria-invalid={!!fieldErrors.firstName}
+                  aria-describedby={fieldErrors.firstName ? 'firstName-error' : undefined}
+                />
+                {fieldErrors.firstName && (
+                  <p id="firstName-error" className="text-xs text-destructive" role="alert">
+                    {fieldErrors.firstName}
+                  </p>
+                )}
+              </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-6">
               <Label htmlFor="lastName" className="text-right">
                 Nachname
               </Label>
-              <Input
-                id="lastName"
-                name="lastName"
-                className="col-span-3"
-                required
-                placeholder="z. B. Mustermann"
-              />
+              <div className="col-span-3 space-y-1">
+                <Input
+                  id="lastName"
+                  name="lastName"
+                  className={fieldErrors.lastName ? 'border-destructive' : ''}
+                  required
+                  placeholder="z. B. Mustermann"
+                  aria-invalid={!!fieldErrors.lastName}
+                  aria-describedby={fieldErrors.lastName ? 'lastName-error' : undefined}
+                />
+                {fieldErrors.lastName && (
+                  <p id="lastName-error" className="text-xs text-destructive" role="alert">
+                    {fieldErrors.lastName}
+                  </p>
+                )}
+              </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-6">
               <Label htmlFor="email" className="text-right">
                 E-Mail
               </Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                className="col-span-3"
-                required
-                placeholder="z. B. max@beispiel.de"
-              />
+              <div className="col-span-3 space-y-1">
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  className={fieldErrors.email ? 'border-destructive' : ''}
+                  required
+                  placeholder="z. B. max@beispiel.de"
+                  aria-invalid={!!fieldErrors.email}
+                  aria-describedby={fieldErrors.email ? 'email-error' : undefined}
+                />
+                {fieldErrors.email && (
+                  <p id="email-error" className="text-xs text-destructive" role="alert">
+                    {fieldErrors.email}
+                  </p>
+                )}
+              </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-6">
               <Label htmlFor="phone" className="text-right">
                 Telefon
               </Label>
-              <Input
-                id="phone"
-                name="phone"
-                className="col-span-3"
-                type="tel"
-                placeholder="z. B. +49 30 123456"
-              />
+              <div className="col-span-3 space-y-1">
+                <Input
+                  id="phone"
+                  name="phone"
+                  className={fieldErrors.phone ? 'border-destructive' : ''}
+                  type="tel"
+                  placeholder="z. B. +49 30 123456"
+                  aria-invalid={!!fieldErrors.phone}
+                  aria-describedby={fieldErrors.phone ? 'phone-error' : undefined}
+                />
+                {fieldErrors.phone && (
+                  <p id="phone-error" className="text-xs text-destructive" role="alert">
+                    {fieldErrors.phone}
+                  </p>
+                )}
+              </div>
             </div>
             {isExternal && (
               <div className="grid grid-cols-4 items-center gap-6">

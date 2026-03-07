@@ -38,6 +38,7 @@ export type ReferenceRow = {
   contact_id?: string | null
   contact_email?: string | null
   contact_display?: string | null
+  customer_contact_id?: string | null
   customer_contact: string | null
   file_path?: string | null
   is_favorited: boolean
@@ -119,6 +120,8 @@ export async function getDashboardData(
       updated_at,
       company_id,
       contact_id,
+      customer_contact_id,
+      customer_contact,
       file_path,
       tags,
       project_status,
@@ -144,7 +147,8 @@ export async function getDashboardData(
     id, title, summary, industry, country, website, employee_count,
     volume_eur, contract_type, incumbent_provider, competitors,
     customer_challenge, our_solution, status, created_at, updated_at,
-    company_id, contact_id, file_path, tags, project_status, project_start, project_end,
+    company_id, contact_id, customer_contact_id, customer_contact, file_path, tags,
+    project_status, project_start, project_end,
     is_nda_deal,
     companies ( name, logo_url )
   `
@@ -152,7 +156,8 @@ export async function getDashboardData(
     id, title, summary, industry, country, website, employee_count,
     volume_eur, contract_type, incumbent_provider, competitors,
     customer_challenge, our_solution, status, created_at, updated_at,
-    company_id, contact_id, file_path, tags, project_status, project_start, project_end,
+    company_id, contact_id, file_path, tags,
+    project_status, project_start, project_end,
     companies ( name, logo_url )
   `
 
@@ -272,6 +277,7 @@ export async function getDashboardData(
       contact_id: (r.contact_id as string | null) ?? null,
       contact_email: contact?.email ?? null,
       contact_display: contactDisplay ?? null,
+      customer_contact_id: (r.customer_contact_id as string | null) ?? null,
       customer_contact: (r.customer_contact as string | null) ?? null,
       file_path: (r.file_path as string | null) ?? null,
       is_favorited: favoriteIds.has(r.id as string),
@@ -675,6 +681,9 @@ export async function updateReference(id: string, formData: FormData) {
   const our_solution = formData.get('our_solution')?.toString()?.trim() ?? null
   const customer_contact =
     formData.get('customer_contact')?.toString()?.trim() ?? null
+  const customer_contact_id_raw = formData.get('customer_contact_id')?.toString()?.trim() ?? null
+  const customer_contact_id =
+    customer_contact_id_raw && customer_contact_id_raw !== '__none__' ? customer_contact_id_raw : null
   const projectStatusRaw = formData.get('project_status')?.toString()
   const project_status: 'active' | 'completed' | null =
     projectStatusRaw === 'active' || projectStatusRaw === 'completed'
@@ -740,6 +749,7 @@ export async function updateReference(id: string, formData: FormData) {
     industry: string | null
     country: string | null
     contact_id: string | null
+    customer_contact_id: string | null
     status: string
     updated_at: string
     file_path?: string
@@ -763,6 +773,7 @@ export async function updateReference(id: string, formData: FormData) {
     industry,
     country,
     contact_id: contactId,
+    customer_contact_id,
     status,
     updated_at: new Date().toISOString(),
     tags,
