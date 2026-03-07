@@ -4,17 +4,17 @@ import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { submitForApproval } from '../actions'
 
-// Mapping für Brandfetch → Formular (Industrie-Dropdown)
+// Mapping für Brandfetch → Formular (Industrie-Dropdown, deutsch)
 const INDUSTRIES_MAP: { keywords: string[]; value: string }[] = [
-  { keywords: ['finance', 'finanz', 'banking', 'insurance', 'versicherung'], value: 'Financial Services & Insurance' },
-  { keywords: ['retail', 'handel', 'ecommerce', 'consumer', 'cpg'], value: 'Retail & Consumer Goods (CPG)' },
-  { keywords: ['manufacturing', 'industrie', 'production', 'automotive', 'engineering'], value: 'Manufacturing & Automotive' },
-  { keywords: ['software', 'it ', 'technology', 'tech', 'internet', 'computer', 'media', 'telecom', 'tmt'], value: 'Technology, Media & Telecom (TMT)' },
-  { keywords: ['energy', 'utilities', 'resources', 'oil', 'gas', 'mining'], value: 'Energy, Resources & Utilities' },
-  { keywords: ['health', 'gesundheit', 'medical', 'pharma', 'life sciences'], value: 'Healthcare & Life Sciences' },
-  { keywords: ['government', 'public', 'öffentlich', 'defence', 'administration', 'education'], value: 'Public Sector & Education' },
-  { keywords: ['professional services', 'consulting', 'logistics'], value: 'Professional Services & Logistics' },
-  { keywords: ['travel', 'transport', 'hospitality', 'tourism'], value: 'Travel, Transport & Hospitality' },
+  { keywords: ['finance', 'finanz', 'banking', 'insurance', 'versicherung'], value: 'Finanzdienstleistungen & Versicherung' },
+  { keywords: ['retail', 'handel', 'ecommerce', 'consumer', 'cpg'], value: 'Handel & Konsumgüter' },
+  { keywords: ['manufacturing', 'industrie', 'production', 'automotive', 'engineering'], value: 'Industrie & Automotive' },
+  { keywords: ['software', 'it ', 'technology', 'tech', 'internet', 'computer', 'media', 'telecom', 'tmt'], value: 'Technologie, Medien & Telekommunikation' },
+  { keywords: ['energy', 'utilities', 'resources', 'oil', 'gas', 'mining'], value: 'Energie, Rohstoffe & Versorgung' },
+  { keywords: ['health', 'gesundheit', 'medical', 'pharma', 'life sciences'], value: 'Gesundheitswesen & Life Sciences' },
+  { keywords: ['government', 'public', 'öffentlich', 'defence', 'administration', 'education'], value: 'Öffentlicher Sektor & Bildung' },
+  { keywords: ['professional services', 'consulting', 'logistics'], value: 'Beratung & Logistik' },
+  { keywords: ['travel', 'transport', 'hospitality', 'tourism'], value: 'Reise, Transport & Gastgewerbe' },
 ]
 const INDUSTRY_DEFAULT = 'Sonstige'
 
@@ -310,6 +310,15 @@ export async function createReference(
 
   if (!title) {
     return { success: false, error: 'Titel ist erforderlich.' }
+  }
+  if (!contactId) {
+    return { success: false, error: 'Ansprechpartner intern ist erforderlich.' }
+  }
+  if (!project_status) {
+    return { success: false, error: 'Projektstatus ist erforderlich.' }
+  }
+  if (!project_start) {
+    return { success: false, error: 'Projektstart ist erforderlich.' }
   }
   if (project_status === 'completed' && !project_end) {
     return { success: false, error: 'Bei abgeschlossenem Projekt ist das Projektende erforderlich.' }

@@ -688,6 +688,15 @@ export async function updateReference(id: string, formData: FormData) {
   if (!title) {
     throw new Error('Titel ist erforderlich.')
   }
+  if (!contactId) {
+    throw new Error('Ansprechpartner intern ist erforderlich.')
+  }
+  if (!project_status) {
+    throw new Error('Projektstatus ist erforderlich.')
+  }
+  if (!project_start) {
+    throw new Error('Projektstart ist erforderlich.')
+  }
   if (project_status === 'completed' && !project_end) {
     throw new Error('Bei abgeschlossenem Projekt ist das Projektende erforderlich.')
   }

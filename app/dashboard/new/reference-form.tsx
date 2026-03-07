@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Loader2, Building2Icon, Save, Plus, Sparkles } from 'lucide-react'
+import { Loader2, Building2Icon, Plus, Sparkles } from 'lucide-react'
 import {
   Card,
   CardContent,
@@ -36,18 +36,18 @@ import {
 import { createReference, enrichAndSaveCompany, fetchCompanyEnrichment } from './actions'
 import { updateReference, generateSummaryFromStory } from '../actions'
 import { extractDataFromDocument } from './extract-reference-data'
-import { CreateContactDialog } from './create-contact-dialog'
+import { CreateContactDialog, type CreatedContact } from './create-contact-dialog'
 
 const INDUSTRIES = [
-  'Financial Services & Insurance',
-  'Retail & Consumer Goods (CPG)',
-  'Manufacturing & Automotive',
-  'Technology, Media & Telecom (TMT)',
-  'Energy, Resources & Utilities',
-  'Healthcare & Life Sciences',
-  'Public Sector & Education',
-  'Professional Services & Logistics',
-  'Travel, Transport & Hospitality',
+  'Finanzdienstleistungen & Versicherung',
+  'Handel & Konsumgüter',
+  'Industrie & Automotive',
+  'Technologie, Medien & Telekommunikation',
+  'Energie, Rohstoffe & Versorgung',
+  'Gesundheitswesen & Life Sciences',
+  'Öffentlicher Sektor & Bildung',
+  'Beratung & Logistik',
+  'Reise, Transport & Gastgewerbe',
   'Sonstige',
 ]
 
@@ -82,6 +82,16 @@ const PROJECT_STATUS_OPTIONS = [
   { value: '__none__', label: '— Keine Angabe' },
   { value: 'active', label: 'Aktiv' },
   { value: 'completed', label: 'Abgeschlossen' },
+] as const
+
+const CONTRACT_TYPE_OPTIONS = [
+  'Time & Material',
+  'Festpreis (Fixed Price)',
+  'Rahmenvertrag',
+  'Projektvertrag',
+  'Wartungsvertrag',
+  'SaaS / Subscription',
+  'Sonstige',
 ] as const
 
 type Company = { id: string; name: string; logo_url?: string | null }
@@ -176,6 +186,10 @@ export function ReferenceForm({
   )
   const [contactId, setContactId] = useState(
     initialData?.contact_id ? initialData.contact_id : '__none__'
+  )
+  const [additionalContacts, setAdditionalContacts] = useState<ContactPerson[]>([])
+  const [customerContact, setCustomerContact] = useState(
+    initialData?.customer_contact ?? ''
   )
   const [tags, setTags] = useState<string[]>(() =>
     initialData?.tags
@@ -277,13 +291,23 @@ export function ReferenceForm({
 
   const submitting = isEditMode ? editSubmitting : createSubmitting
   const isAnonymized = status === 'anonymized'
+  const displayContacts = [...contacts, ...additionalContacts]
 
-  const handleContactCreated = (newId: string) => {
-    setContactId(newId)
+  const handleContactCreated = (contact: CreatedContact) => {
+    const person: ContactPerson = {
+      id: contact.id,
+      first_name: contact.first_name,
+      last_name: contact.last_name,
+      email: contact.email,
+    }
+    setAdditionalContacts((prev) => [...prev, person])
+    setContactId(contact.id)
     router.refresh()
   }
 
-  const handleCustomerContactCreated = (_newId: string) => {
+  const handleCustomerContactCreated = (contact: CreatedContact, role?: string) => {
+    const name = [contact.first_name, contact.last_name].filter(Boolean).join(' ')
+    setCustomerContact(role ? `${name}, ${role}` : name)
     router.refresh()
   }
 
@@ -299,6 +323,26 @@ export function ReferenceForm({
 
   async function handleCreateSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (!title.trim()) {
+      toast.error('Titel ist ein Pflichtfeld.')
+      return
+    }
+    if (!isEditMode && !companyId && !newCompanyName.trim()) {
+      toast.error('Unternehmen ist ein Pflichtfeld.')
+      return
+    }
+    if (contactId === '__none__' || !contactId) {
+      toast.error('Ansprechpartner intern ist ein Pflichtfeld.')
+      return
+    }
+    if (projectStatus === '__none__' || !projectStatus) {
+      toast.error('Projektstatus ist ein Pflichtfeld.')
+      return
+    }
+    if (!projectStart.trim()) {
+      toast.error('Projektstart ist ein Pflichtfeld.')
+      return
+    }
     if (projectStatus === 'completed' && !projectEnd.trim()) {
       toast.error('Bei abgeschlossenem Projekt ist das Projektende erforderlich.')
       return
@@ -330,6 +374,22 @@ export function ReferenceForm({
   async function handleEditSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!initialData?.id) return
+    if (!title.trim()) {
+      toast.error('Titel ist ein Pflichtfeld.')
+      return
+    }
+    if (contactId === '__none__' || !contactId) {
+      toast.error('Ansprechpartner intern ist ein Pflichtfeld.')
+      return
+    }
+    if (projectStatus === '__none__' || !projectStatus) {
+      toast.error('Projektstatus ist ein Pflichtfeld.')
+      return
+    }
+    if (!projectStart.trim()) {
+      toast.error('Projektstart ist ein Pflichtfeld.')
+      return
+    }
     if (projectStatus === 'completed' && !projectEnd.trim()) {
       toast.error('Bei abgeschlossenem Projekt ist das Projektende erforderlich.')
       return
@@ -399,26 +459,9 @@ export function ReferenceForm({
       {/* Unternehmen + Logo */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,1.6fr)_minmax(0,0.9fr)] items-start">
         <div className="space-y-2">
-          <div className="flex items-center justify-between gap-3">
-            <Label htmlFor={isEditMode ? 'company_name' : 'companyId'}>
-              Unternehmen
-            </Label>
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-muted-foreground">Anonymisieren</span>
-              <Switch
-                checked={isAnonymized}
-                disabled={submitting}
-                onCheckedChange={(checked) => {
-                  if (checked) {
-                    statusBeforeAnonymizedRef.current = status
-                    setStatus('anonymized')
-                  } else {
-                    setStatus(statusBeforeAnonymizedRef.current ?? 'draft')
-                  }
-                }}
-              />
-            </div>
-          </div>
+          <Label htmlFor={isEditMode ? 'company_name' : 'companyId'}>
+            Unternehmen <span className="text-destructive">*</span>
+          </Label>
           {isEditMode ? (
             <div className="relative">
               <Input
@@ -464,7 +507,7 @@ export function ReferenceForm({
         </div>
 
         <div className="space-y-2 sm:flex sm:flex-col sm:items-end">
-          <Label htmlFor="logo">Logo (optional)</Label>
+          <Label htmlFor="logo">Logo</Label>
           {isAnonymized ? (
             <div className="flex aspect-square max-w-[60px] flex-col items-center justify-center rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 px-2 text-center text-[10px] text-muted-foreground">
               <Building2Icon className="mb-1 size-5 text-muted-foreground" />
@@ -488,7 +531,7 @@ export function ReferenceForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="title">Titel</Label>
+        <Label htmlFor="title">Titel <span className="text-destructive">*</span></Label>
         <Input
           id="title"
           name="title"
@@ -540,10 +583,7 @@ export function ReferenceForm({
       </div>
 
       {/* Storytelling: Herausforderung & Lösung */}
-      <div className="space-y-3 rounded-lg border border-amber-200/50 bg-amber-50/30 dark:border-amber-800/40 dark:bg-amber-950/20 p-4">
-        <p className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
-          Storytelling – Kern des Projekts
-        </p>
+      <div className="space-y-3">
         <div className="space-y-2">
           <Label htmlFor="customer_challenge" className="text-sm font-medium">
             Herausforderung des Kunden
@@ -621,7 +661,7 @@ export function ReferenceForm({
 
       <div className="space-y-6">
         <div className="space-y-2">
-          <Label htmlFor="contactId">Interner Kontakt / Account Owner</Label>
+          <Label htmlFor="contactId">Ansprechpartner intern <span className="text-destructive">*</span></Label>
           <div className="flex gap-2">
             <div className="flex-1">
               <input
@@ -639,7 +679,7 @@ export function ReferenceForm({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">Keine</SelectItem>
-                  {contacts.map((c) => (
+                  {displayContacts.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
                       {[c.first_name, c.last_name].filter(Boolean).join(' ') ||
                         c.email ||
@@ -658,23 +698,19 @@ export function ReferenceForm({
         </div>
 
         <div className="space-y-2">
-          <h4 className="text-xs uppercase tracking-wider text-muted-foreground">
-            Externer Kontakt
-          </h4>
-          <div className="space-y-2">
-            <Label htmlFor="customer_contact">Kundenansprechpartner</Label>
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <Input
-                  id="customer_contact"
-                  name="customer_contact"
-                  placeholder="z. B. Max Mustermann, CIO"
-                  disabled={submitting}
-                  defaultValue={initialData?.customer_contact ?? ''}
-                />
-              </div>
-              <CreateContactDialog onContactCreated={handleCustomerContactCreated} />
+          <Label htmlFor="customer_contact">Kundenansprechpartner</Label>
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <Input
+                id="customer_contact"
+                name="customer_contact"
+                placeholder="z. B. Max Mustermann, CIO"
+                disabled={submitting}
+                value={customerContact}
+                onChange={(e) => setCustomerContact(e.target.value)}
+              />
             </div>
+            <CreateContactDialog variant="external" onContactCreated={handleCustomerContactCreated} />
           </div>
         </div>
       </div>
@@ -752,7 +788,7 @@ export function ReferenceForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="project_status">Projektstatus</Label>
+          <Label htmlFor="project_status">Projektstatus <span className="text-destructive">*</span></Label>
         <input
           type="hidden"
           name="project_status"
@@ -781,7 +817,7 @@ export function ReferenceForm({
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="project_start">Projektstart</Label>
+          <Label htmlFor="project_start">Projektstart <span className="text-destructive">*</span></Label>
           <Input
             id="project_start"
             name="project_start"
@@ -812,7 +848,7 @@ export function ReferenceForm({
               ? 'Bei abgeschlossenen Projekten erforderlich.'
               : projectStatus === 'active'
                 ? 'Bei aktivem Projekt nicht relevant.'
-                : 'Optional, bei aktivem Projekt leer lassen.'}
+                : ''}
           </p>
         </div>
       </div>
@@ -831,14 +867,23 @@ export function ReferenceForm({
         </div>
         <div className="space-y-2">
           <Label htmlFor="contract_type">Vertragsart</Label>
-          <Input
-            id="contract_type"
-            name="contract_type"
-            placeholder="z. B. Time & Material oder Fixed Term Contract"
+          <input type="hidden" name="contract_type" value={contractType} />
+          <Select
+            value={contractType || undefined}
+            onValueChange={setContractType}
             disabled={submitting}
-            value={contractType}
-            onChange={(e) => setContractType(e.target.value)}
-          />
+          >
+            <SelectTrigger id="contract_type" className="w-full">
+              <SelectValue placeholder="Auswählen …" />
+            </SelectTrigger>
+            <SelectContent>
+              {CONTRACT_TYPE_OPTIONS.map((opt) => (
+                <SelectItem key={opt} value={opt}>
+                  {opt}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -917,7 +962,7 @@ export function ReferenceForm({
           <Label htmlFor="nda_deal">Vertraulicher NDA-Deal</Label>
           <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/20 px-3 py-2">
             <span className="text-sm text-muted-foreground">
-              Verhindert versehentliche externe Freigaben.
+              Deal unter NDA; Status bleibt auf „Nur Intern“.
             </span>
             <Switch
               id="nda_deal"
@@ -945,16 +990,6 @@ export function ReferenceForm({
             <Plus className="mr-2 h-4 w-4" />
           )}
           {isEditMode ? 'Änderungen speichern' : 'Erstellen'}
-        </Button>
-        <Button
-          type="submit"
-          name="submitMode"
-          value="draft"
-          variant="outline"
-          disabled={submitting}
-        >
-          <Save className="mr-2 h-4 w-4" />
-          Entwurf speichern
         </Button>
         <Button
           type="button"
