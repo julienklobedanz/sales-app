@@ -109,7 +109,7 @@ export function CreateContactDialog({
           onContactCreated(result.contact, result.contact.role ?? undefined)
           setOpen(false)
         } else {
-          toast.error(result.error || 'Fehler beim Anlegen')
+          toast.error(!result.success && 'error' in result ? result.error : 'Fehler beim Anlegen')
         }
       } else {
         const result = await createContact(formData)
@@ -118,7 +118,7 @@ export function CreateContactDialog({
           onContactCreated(result.contact as CreatedContact)
           setOpen(false)
         } else {
-          toast.error(result.error || 'Fehler beim Anlegen')
+          toast.error(!result.success && 'error' in result ? result.error : 'Fehler beim Anlegen')
         }
       }
     } catch (e) {
