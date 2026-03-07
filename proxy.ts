@@ -33,14 +33,15 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   // Auth-Protection: Nur mit gültiger Session (z. B. /dashboard), sonst Redirect zu /login.
-  // Öffentlich: /login, /register, /auth (inkl. /auth/callback), /signup, /onboarding, /approval (No-Login-Freigabe)
+  // Öffentlich: /login, /register, /auth, /signup, /onboarding, /approval, /p (Kundenlinks)
   const isAuthRoute =
     request.nextUrl.pathname.startsWith('/login') ||
     request.nextUrl.pathname.startsWith('/register') ||
     request.nextUrl.pathname.startsWith('/auth') ||
     request.nextUrl.pathname.startsWith('/signup') ||
     request.nextUrl.pathname.startsWith('/onboarding') ||
-    request.nextUrl.pathname.startsWith('/approval')
+    request.nextUrl.pathname.startsWith('/approval') ||
+    request.nextUrl.pathname.startsWith('/p/')
 
   if (!user && !isAuthRoute) {
     const url = request.nextUrl.clone()

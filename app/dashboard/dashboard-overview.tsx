@@ -56,9 +56,11 @@ import { ReferenceForm } from './new/reference-form'
 import type { ReferenceFormInitialData } from './new/reference-form'
 import {
   bulkCreateReferencesFromFiles,
+  createSharedPortfolio,
   deleteReference,
-  getReferenceAssets,
   getDeletedReferences,
+  getExistingShareForReference,
+  getReferenceAssets,
   hardDeleteReference,
   emptyTrash,
   restoreReference,
@@ -105,6 +107,7 @@ import {
   ArrowDown,
   Filter,
   Eye,
+  Link as LinkIcon,
 } from 'lucide-react'
 import { ReferenceReader } from './reference-reader'
 import {
@@ -151,7 +154,7 @@ const PROJECT_STATUS_LABELS: Record<string, string> = {
   completed: 'Abgeschlossen',
 }
 
-/** Spalten-Keys und Standard-Sichtbarkeit: nur Status, Unternehmen, Titel, Tags, Projektstatus, Letzte Änderung */
+/** Spalten-Keys und Standard-Sichtbarkeit: nur Status, Unternehmen, Titel, Tags, Projektstatus, Views, Letzte Änderung */
 const COLUMN_KEYS = [
   'status',
   'company',
@@ -165,6 +168,7 @@ const COLUMN_KEYS = [
   'duration_months',
   'created_at',
   'updated_at',
+  'views',
 ] as const
 const DEFAULT_VISIBLE: Record<(typeof COLUMN_KEYS)[number], boolean> = {
   status: true,
@@ -179,6 +183,7 @@ const DEFAULT_VISIBLE: Record<(typeof COLUMN_KEYS)[number], boolean> = {
   duration_months: false,
   created_at: false,
   updated_at: true,
+  views: true,
 }
 const COLUMN_LABELS: Record<(typeof COLUMN_KEYS)[number], string> = {
   status: 'Status',
@@ -193,6 +198,7 @@ const COLUMN_LABELS: Record<(typeof COLUMN_KEYS)[number], string> = {
   duration_months: 'Dauer (Monate)',
   created_at: 'Hinzugefügt am',
   updated_at: 'Letzte Änderung',
+  views: 'Views',
 }
 
 /** Deterministisches Datumsformat (Server = Client), vermeidet Hydration-Fehler durch toLocaleDateString. */
@@ -465,6 +471,20 @@ export function DashboardOverview({
   const [selectedRefIds, setSelectedRefIds] = useState<Set<string>>(() => new Set())
   const [previewRefs, setPreviewRefs] = useState<ReferenceRow[] | null>(null)
   const [singleRefPreviewRef, setSingleRefPreviewRef] = useState<ReferenceRow | null>(null)
+  const [shareLinkPopoverRef, setShareLinkPopoverRef] = useState<ReferenceRow | null>(null)
+  const [shareLinkUrl, setShareLinkUrl] = useState<string | null>(null)
+  const [shareLinkLoading, setShareLinkLoading] = useState(false)
+  const [shareLinkGenerateLoading, setShareLinkGenerateLoading] = useState(false)
+  useEffect(() => {
+    if (!shareLinkPopoverRef) {
+      setShareLinkUrl(null)
+      return
+    }
+    setShareLinkLoading(true)
+    getExistingShareForReference(shareLinkPopoverRef.id)
+      .then((existing) => setShareLinkUrl(existing?.url ?? null))
+      .finally(() => setShareLinkLoading(false))
+  }, [shareLinkPopoverRef?.id])
   const [detailProjectStatus, setDetailProjectStatus] = useState<ReferenceRow['project_status']>(null)
   const [detailIncumbent, setDetailIncumbent] = useState('')
   const [detailCompetitors, setDetailCompetitors] = useState('')
@@ -534,6 +554,7 @@ export function DashboardOverview({
       case 'duration_months': return ref.duration_months ?? 0
       case 'created_at': return new Date(ref.created_at).getTime()
       case 'updated_at': return ref.updated_at ? new Date(ref.updated_at).getTime() : 0
+      case 'views': return ref.total_share_views ?? 0
       default: return ''
     }
   }
@@ -1708,6 +1729,26 @@ export function DashboardOverview({
                     </button>
                   </TableHead>
                 )}
+                {visibleColumns.views && (
+                  <TableHead className="text-right">
+                    <button
+                      type="button"
+                      className="ml-auto flex items-center gap-1 hover:opacity-80"
+                      onClick={() => handleSort('views')}
+                    >
+                      {COLUMN_LABELS.views}
+                      {sortKey === 'views' ? (
+                        sortDir === 'asc' ? (
+                          <ArrowUp className="size-3.5" />
+                        ) : (
+                          <ArrowDown className="size-3.5" />
+                        )
+                      ) : (
+                        <ArrowUpDown className="size-3.5 text-muted-foreground" />
+                      )}
+                    </button>
+                  </TableHead>
+                )}
                 <TableHead className="w-[40px]"></TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
@@ -1849,6 +1890,11 @@ export function DashboardOverview({
                     {visibleColumns.updated_at && (
                       <TableCell className="text-right text-muted-foreground text-sm">
                         {ref.updated_at ? formatDate(ref.updated_at) : '—'}
+                      </TableCell>
+                    )}
+                    {visibleColumns.views && (
+                      <TableCell className="text-right text-muted-foreground text-sm tabular-nums">
+                        {ref.total_share_views ?? 0}
                       </TableCell>
                     )}
                     <TableCell className="pr-0" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
@@ -2693,6 +2739,14 @@ export function DashboardOverview({
                       Download
                     </a>
                   </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShareLinkPopoverRef(selectedRef)}
+                    title="Kundenlink erstellen"
+                  >
+                    <LinkIcon className="mr-2 size-4" /> Kundenlink erstellen
+                  </Button>
                   {profile.role === 'admin' && (
                     <Button
                       variant="ghost"
@@ -2742,6 +2796,109 @@ export function DashboardOverview({
               </DialogFooter>
             </TooltipProvider>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Kundenlink-Popover: Link generieren / anzeigen + Copy + ReferenceReader-Vorschau */}
+      <Dialog
+        open={shareLinkPopoverRef !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShareLinkPopoverRef(null)
+            setShareLinkUrl(null)
+          }
+        }}
+      >
+        <DialogContent
+          showCloseButton={false}
+          className="z-[60] max-h-[90vh] w-[calc(100vw-2rem)] max-w-4xl overflow-hidden rounded-xl border bg-background p-0 shadow-xl"
+        >
+          <div className="flex flex-col">
+            <div className="preview-modal-scroll overflow-y-auto p-8 md:p-16 lg:p-24">
+              <div className="mx-auto max-w-2xl space-y-6">
+                <h3 className="text-lg font-semibold">Kundenlink erstellen</h3>
+                <div className="space-y-3">
+                  {shareLinkLoading ? (
+                    <p className="text-muted-foreground flex items-center gap-2 text-sm">
+                      <Loader2 className="size-4 animate-spin" /> Wird geladen…
+                    </p>
+                  ) : shareLinkUrl ? (
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(shareLinkUrl!)
+                          toast.success('Link in Zwischenablage kopiert')
+                        } catch {
+                          toast.error('Kopieren fehlgeschlagen')
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          navigator.clipboard.writeText(shareLinkUrl!).then(
+                            () => toast.success('Link in Zwischenablage kopiert'),
+                            () => toast.error('Kopieren fehlgeschlagen')
+                          )
+                        }
+                      }}
+                      className="bg-muted/50 hover:bg-muted border-muted-foreground/20 flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2.5 text-left text-sm transition-colors"
+                      title="Klicken zum Kopieren"
+                    >
+                      <span className="min-w-0 flex-1 truncate font-mono text-foreground">{shareLinkUrl}</span>
+                      <span className="text-muted-foreground shrink-0 text-xs">Klicken zum Kopieren</span>
+                    </div>
+                  ) : (
+                    <Button
+                      disabled={shareLinkGenerateLoading}
+                      onClick={async () => {
+                        if (!shareLinkPopoverRef) return
+                        setShareLinkGenerateLoading(true)
+                        try {
+                          const result = await createSharedPortfolio([shareLinkPopoverRef.id])
+                          if (result.success) {
+                            setShareLinkUrl(result.url)
+                            toast.success('Kundenlink erstellt')
+                          } else {
+                            toast.error(result.error ?? 'Erstellen fehlgeschlagen')
+                          }
+                        } finally {
+                          setShareLinkGenerateLoading(false)
+                        }
+                      }}
+                    >
+                      {shareLinkGenerateLoading ? (
+                        <Loader2 className="mr-2 size-4 animate-spin" />
+                      ) : (
+                        <LinkIcon className="mr-2 size-4" />
+                      )}
+                      Link generieren
+                    </Button>
+                  )}
+                </div>
+                {shareLinkPopoverRef && (
+                  <div className="pt-4">
+                    <p className="text-muted-foreground mb-3 text-xs font-medium uppercase tracking-wider">
+                      Kundenansicht (Vorschau)
+                    </p>
+                    <ReferenceReader ref={shareLinkPopoverRef} />
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="flex shrink-0 justify-center border-t bg-muted/30 px-8 py-4 md:px-16 lg:px-24">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShareLinkPopoverRef(null)
+                  setShareLinkUrl(null)
+                }}
+              >
+                Schließen
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 

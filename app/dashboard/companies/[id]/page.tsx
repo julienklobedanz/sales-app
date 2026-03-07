@@ -6,6 +6,7 @@ import {
   getCompanyStrategy,
   getStakeholders,
   getReferencesByCompanyId,
+  getRoadmapProjects,
 } from '../actions'
 import { ChevronRight } from 'lucide-react'
 
@@ -36,10 +37,11 @@ export default async function CompanyDetailPage({
 
   if (!company) notFound()
 
-  const [strategy, stakeholders, references] = await Promise.all([
+  const [strategy, stakeholders, references, roadmapProjects] = await Promise.all([
     getCompanyStrategy(id),
     getStakeholders(id),
     getReferencesByCompanyId(id),
+    getRoadmapProjects(id),
   ])
 
   return (
@@ -59,6 +61,7 @@ export default async function CompanyDetailPage({
         strategy={strategy}
         stakeholders={stakeholders}
         references={references}
+        roadmapProjects={roadmapProjects}
       />
     </div>
   )
