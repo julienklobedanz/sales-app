@@ -148,19 +148,6 @@ export function DashboardShell({
                     <SidebarMenuItem>
                       <SidebarMenuButton
                         asChild
-                        isActive={pathname?.startsWith('/dashboard/entwuerfe')}
-                        tooltip="Entwürfe"
-                        className="data-[active=true]:bg-muted data-[active=true]:text-foreground"
-                      >
-                        <Link href="/dashboard/entwuerfe">
-                          <FilePen />
-                          <span>Entwürfe</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        asChild
                         isActive={pathname?.startsWith('/dashboard/deals')}
                         tooltip="Deals"
                         className="data-[active=true]:bg-muted data-[active=true]:text-foreground"

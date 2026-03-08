@@ -50,6 +50,10 @@ export type ReferenceRow = {
   is_nda_deal?: boolean
   /** Summe der view_count aller Sharing-Links, die diese Referenz enthalten */
   total_share_views?: number
+  /** Anzahl der Shared-Portfolios, die diese Referenz enthalten („Link erstellen“-Klicks) */
+  share_link_count?: number
+  /** Anzahl der Deals, mit denen diese Referenz verknüpft ist */
+  deal_link_count?: number
 }
 
 export type GetDashboardDataResult = {
@@ -295,6 +299,7 @@ export async function getDashboardData(
   }
 
   const viewsByRefId = new Map<string, number>()
+  const shareCountByRefId = new Map<string, number>()
   const { data: portfolioRows } = await supabase
     .from('shared_portfolios')
     .select('reference_ids, view_count')
@@ -304,12 +309,27 @@ export async function getDashboardData(
       const v = (row.view_count as number) ?? 0
       for (const id of ids) {
         viewsByRefId.set(id, (viewsByRefId.get(id) ?? 0) + v)
+        shareCountByRefId.set(id, (shareCountByRefId.get(id) ?? 0) + 1)
       }
     }
   }
+
+  const dealLinkCountByRefId = new Map<string, number>()
+  const { data: dealRefRows } = await supabase
+    .from('deal_references')
+    .select('reference_id')
+  if (dealRefRows?.length) {
+    for (const row of dealRefRows) {
+      const id = (row as { reference_id?: string }).reference_id
+      if (id) dealLinkCountByRefId.set(id, (dealLinkCountByRefId.get(id) ?? 0) + 1)
+    }
+  }
+
   references = references.map((r) => ({
     ...r,
     total_share_views: viewsByRefId.get(r.id) ?? 0,
+    share_link_count: shareCountByRefId.get(r.id) ?? 0,
+    deal_link_count: dealLinkCountByRefId.get(r.id) ?? 0,
   }))
 
   let deletedCount = 0

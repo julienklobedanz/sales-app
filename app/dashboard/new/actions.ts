@@ -555,6 +555,7 @@ export type ExternalContact = {
   last_name: string | null
   email: string | null
   role: string | null
+  phone?: string | null
 }
 
 export async function createExternalContact(
@@ -587,6 +588,7 @@ export async function createExternalContact(
   const lastName = formData.get('lastName')?.toString()?.trim()
   const email = formData.get('email')?.toString()?.trim()
   const role = formData.get('role')?.toString()?.trim() || null
+  const phone = formData.get('phone')?.toString()?.trim() || null
 
   if (!firstName || !lastName || !email) {
     return { success: false, error: 'Vorname, Nachname und E-Mail sind erforderlich.' }
@@ -601,8 +603,9 @@ export async function createExternalContact(
       last_name: lastName,
       email,
       role,
+      phone,
     })
-    .select('id, company_id, first_name, last_name, email, role')
+    .select('id, company_id, first_name, last_name, email, role, phone')
     .single()
 
   if (error) {
@@ -621,6 +624,7 @@ export async function createExternalContact(
       last_name: data.last_name,
       email: data.email,
       role: data.role,
+      phone: data.phone ?? null,
     },
   }
 }

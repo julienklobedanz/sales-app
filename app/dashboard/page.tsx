@@ -45,7 +45,7 @@ export default async function DashboardPage({ searchParams }: Props) {
     .order('last_name')
   const { data: externalContacts } = await supabase
     .from('external_contacts')
-    .select('id, company_id, first_name, last_name, email, role')
+    .select('id, company_id, first_name, last_name, email, role, phone')
     .eq('organization_id', profile.organization_id ?? '')
     .order('last_name')
 

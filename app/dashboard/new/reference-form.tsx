@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Loader2, Building2Icon, Plus, Sparkles } from 'lucide-react'
+import { Loader2, Building2Icon, Plus, Sparkles, Mail, Phone } from 'lucide-react'
 import {
   Card,
   CardContent,
@@ -112,6 +112,7 @@ export type ExternalContactDisplay = {
   email: string | null
   role?: string | null
   company_id?: string
+  phone?: string | null
 }
 
 export type ReferenceFormInitialData = {
@@ -210,7 +211,7 @@ export function ReferenceForm({
   const [tags, setTags] = useState<string[]>(() =>
     initialData?.tags
       ? initialData.tags
-          .split(/\s+/)
+          .split(',')
           .map((s) => s.trim())
           .filter(Boolean)
       : []
@@ -241,39 +242,7 @@ export function ReferenceForm({
     ? [...companies, enrichedCompany]
     : companies
 
-  useEffect(() => {
-    if (companyId) return
-    const trimmed = newCompanyName.trim()
-    if (trimmed.length < 2) return
-    if (enrichDebounceRef.current) clearTimeout(enrichDebounceRef.current)
-    const nameToFetch = newCompanyName.trim()
-    enrichDebounceRef.current = setTimeout(() => {
-      enrichDebounceRef.current = null
-      setEnrichLoading(true)
-      enrichAndSaveCompany(nameToFetch)
-        .then((result) => {
-          if (result.success) {
-            setCompanyId(result.company_id)
-            setEnrichedCompany({ id: result.company_id, name: result.company_name, logo_url: result.logo_url ?? null })
-            setWebsite(result.website_url ?? '')
-            setIndustry(result.industry ?? '')
-            setCountry(result.country ?? '')
-            setHeadquarters(result.headquarters ?? '')
-            setEmployeeCount(result.employee_count != null ? String(result.employee_count) : '')
-            setEnrichedLogoUrl(result.logo_url ?? null)
-            setNewCompanyName(result.company_name)
-            toast.success('Unternehmensdaten wurden geladen.')
-          } else {
-            toast.error(result.error)
-          }
-        })
-        .finally(() => setEnrichLoading(false))
-    }, 2000)
-    return () => {
-      if (enrichDebounceRef.current) clearTimeout(enrichDebounceRef.current)
-    }
-  }, [newCompanyName])
-
+  /** Brandfetch wird nur nach Auswahl im Dropdown aufgerufen, nicht beim Tippen. */
   useEffect(() => {
     if (!isEditMode) return
     const trimmed = editCompanyName.trim()
@@ -345,6 +314,7 @@ export function ReferenceForm({
       last_name: contact.last_name,
       email: contact.email,
       role: 'role' in contact && contact.role != null ? contact.role : undefined,
+      phone: 'phone' in contact ? contact.phone ?? undefined : undefined,
     }
     setAdditionalCustomerContacts((prev) => [...prev, display])
     setCustomerContactId(contact.id)
@@ -355,7 +325,7 @@ export function ReferenceForm({
     if (selectedFile) {
       formData.set('file', selectedFile)
     }
-    formData.set('tags', tags.join(' '))
+    formData.set('tags', tags.join(','))
     formData.set('nda_deal', ndaDeal ? '1' : '0')
     formData.set('customer_contact_id', customer_contact_id === '__none__' ? '' : customer_contact_id)
     const selectedCustomer = displayCustomerContacts.find((c) => c.id === customer_contact_id)
@@ -543,6 +513,23 @@ export function ReferenceForm({
                   setCompanyId(company.id)
                   setNewCompanyName(company.name)
                   setEnrichedLogoUrl(company.logo_url ?? null)
+                  setEnrichLoading(true)
+                  enrichAndSaveCompany(company.name)
+                    .then((result) => {
+                      if (result.success) {
+                        setCompanyId(result.company_id)
+                        setEnrichedCompany({ id: result.company_id, name: result.company_name, logo_url: result.logo_url ?? null })
+                        setWebsite(result.website_url ?? '')
+                        setIndustry(result.industry ?? '')
+                        setCountry(result.country ?? '')
+                        setHeadquarters(result.headquarters ?? '')
+                        setEmployeeCount(result.employee_count != null ? String(result.employee_count) : '')
+                        setEnrichedLogoUrl(result.logo_url ?? null)
+                        setNewCompanyName(result.company_name)
+                        toast.success('Unternehmensdaten wurden geladen.')
+                      }
+                    })
+                    .finally(() => setEnrichLoading(false))
                 }}
                 loading={enrichLoading}
                 disabled={submitting}
@@ -687,12 +674,12 @@ export function ReferenceForm({
           <input
             id="tags-input"
             type="text"
-            placeholder={tags.length === 0 ? 'z.B. Cloud Cybersecurity SAP (mehrere Tags durch Leerzeichen trennen)' : 'Weiterer Tag…'}
+            placeholder={tags.length === 0 ? 'z.B. Cloud, Cybersecurity, SAP (mehrere Themen durch Komma trennen)' : 'Weiterer Tag…'}
             disabled={submitting}
             value={tagInputValue}
             onChange={(e) => setTagInputValue(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === ' ') {
+              if (e.key === ',') {
                 e.preventDefault()
                 const value = tagInputValue.trim()
                 if (value) {
@@ -737,8 +724,19 @@ export function ReferenceForm({
                 </SelectContent>
               </Select>
             </div>
-            <CreateContactDialog onContactCreated={handleContactCreated} />
+                <CreateContactDialog onContactCreated={handleContactCreated} />
           </div>
+          {contactId && contactId !== '__none__' && (() => {
+            const c = displayContacts.find((x) => x.id === contactId)
+            return c?.email ? (
+              <div className="flex flex-wrap items-center gap-2 text-muted-foreground text-[10px]">
+                <a href={`mailto:${c.email}`} className="inline-flex items-center gap-1 hover:underline">
+                  <Mail className="size-3.5" />
+                  {c.email}
+                </a>
+              </div>
+            ) : null
+          })()}
           <p className="text-muted-foreground text-[10px] italic">
             Wird für Freigabe-Anfragen per E-Mail benachrichtigt.
           </p>
@@ -781,6 +779,30 @@ export function ReferenceForm({
               disabled={!currentCompanyId}
             />
           </div>
+          {customer_contact_id && customer_contact_id !== '__none__' && (() => {
+            const c = displayCustomerContacts.find((x) => x.id === customer_contact_id)
+            return (c?.email || c?.phone) ? (
+              <div className="flex flex-wrap items-center gap-3 text-muted-foreground text-[10px]">
+                {c.email && (
+                  <a href={`mailto:${c.email}`} className="inline-flex items-center gap-1 hover:underline">
+                    <Mail className="size-3.5" />
+                    {c.email}
+                  </a>
+                )}
+                {c.phone && (
+                  <a href={`tel:${c.phone}`} className="inline-flex items-center gap-1 hover:underline">
+                    <Phone className="size-3.5" />
+                    {c.phone}
+                  </a>
+                )}
+              </div>
+            ) : null
+          })()}
+          {!currentCompanyId && (
+            <p className="text-muted-foreground text-[10px] italic">
+              Feld wird aktiviert, sobald oben ein Unternehmen ausgewählt wurde.
+            </p>
+          )}
         </div>
       </div>
 
@@ -842,7 +864,7 @@ export function ReferenceForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="employee_count">Mitarbeiteranzahl</Label>
+          <Label htmlFor="employee_count">Mitarbeiter</Label>
           <Input
             id="employee_count"
             name="employee_count"
@@ -928,10 +950,12 @@ export function ReferenceForm({
           <Input
             id="volume_eur"
             name="volume_eur"
-            placeholder="z. B. €5M"
+            type="text"
+            inputMode="numeric"
+            placeholder="z. B. 5000000"
             disabled={submitting}
             value={volumeEur}
-            onChange={(e) => setVolumeEur(e.target.value)}
+            onChange={(e) => setVolumeEur(e.target.value.replace(/\D/g, '') || '')}
           />
         </div>
         <div className="space-y-2">
@@ -1028,11 +1052,7 @@ export function ReferenceForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="nda_deal">Vertraulicher NDA-Deal</Label>
-          <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/20 px-3 py-2">
-            <span className="text-sm text-muted-foreground">
-              Deal unter NDA; Status bleibt auf „Nur Intern“.
-            </span>
+          <div className="flex items-center gap-3">
             <Switch
               id="nda_deal"
               checked={ndaDeal}
@@ -1047,6 +1067,7 @@ export function ReferenceForm({
                 }
               }}
             />
+            <Label htmlFor="nda_deal" className="cursor-pointer font-normal">Vertraulicher NDA Deal?</Label>
           </div>
         </div>
       </div>
@@ -1286,12 +1307,12 @@ function LogoDropZone({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={[
-          'flex aspect-square max-w-[60px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg text-center text-[11px] text-muted-foreground transition-colors',
+          'flex min-h-[72px] min-w-[72px] w-20 h-20 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border-2 text-center text-[11px] text-muted-foreground transition-colors',
           showEnrichedLogo
             ? 'border border-muted-foreground/25 bg-background'
             : isDragging
-              ? 'border-2 border-primary bg-primary/5'
-              : 'border-2 border-dashed border-muted-foreground/25 hover:border-muted-foreground/50 hover:bg-muted/50',
+              ? 'border-primary bg-primary/5'
+              : 'border-dashed border-muted-foreground/25 hover:border-muted-foreground/50 hover:bg-muted/50',
           disabled ? 'pointer-events-none opacity-60' : '',
         ].join(' ')}
       >

@@ -94,6 +94,7 @@ import {
   CheckCircle,
   Send,
   Mail,
+  Phone,
   Star,
   XIcon,
   FileDownIcon,
@@ -153,7 +154,7 @@ const PROJECT_STATUS_LABELS: Record<string, string> = {
   completed: 'Abgeschlossen',
 }
 
-/** Spalten-Keys und Standard-Sichtbarkeit: nur Status, Unternehmen, Titel, Tags, Projektstatus, Views, Letzte Änderung */
+/** Spalten-Keys und Standard-Sichtbarkeit: Status, Unternehmen, Titel, Tags, Projektstatus, Letzte Änderung */
 const COLUMN_KEYS = [
   'status',
   'company',
@@ -167,7 +168,6 @@ const COLUMN_KEYS = [
   'duration_months',
   'created_at',
   'updated_at',
-  'views',
 ] as const
 const DEFAULT_VISIBLE: Record<(typeof COLUMN_KEYS)[number], boolean> = {
   status: true,
@@ -182,7 +182,6 @@ const DEFAULT_VISIBLE: Record<(typeof COLUMN_KEYS)[number], boolean> = {
   duration_months: false,
   created_at: false,
   updated_at: true,
-  views: true,
 }
 const COLUMN_LABELS: Record<(typeof COLUMN_KEYS)[number], string> = {
   status: 'Status',
@@ -197,7 +196,6 @@ const COLUMN_LABELS: Record<(typeof COLUMN_KEYS)[number], string> = {
   duration_months: 'Dauer (Monate)',
   created_at: 'Hinzugefügt am',
   updated_at: 'Letzte Änderung',
-  views: 'Views',
 }
 
 /** Deterministisches Datumsformat (Server = Client), vermeidet Hydration-Fehler durch toLocaleDateString. */
@@ -207,6 +205,14 @@ function formatDate(iso: string) {
   const month = (d.getUTCMonth() + 1).toString().padStart(2, '0')
   const year = d.getUTCFullYear()
   return `${day}.${month}.${year}`
+}
+
+/** Tausender-Trennzeichen (de-DE: 5.000.000) */
+function formatNumber(value: number | string | null | undefined): string {
+  if (value == null || value === '') return '—'
+  const n = typeof value === 'string' ? parseInt(value.replace(/\D/g, ''), 10) : Number(value)
+  if (Number.isNaN(n)) return String(value)
+  return n.toLocaleString('de-DE')
 }
 
 function diffMonthsUtc(startIso: string, endIso: string) {
@@ -346,7 +352,7 @@ export function DashboardOverview({
   initialStatusFilter?: string
   companies?: CompanyOption[]
   contacts?: ContactOption[]
-  externalContacts?: { id: string; company_id: string; first_name: string | null; last_name: string | null; email: string | null; role: string | null }[]
+  externalContacts?: { id: string; company_id: string; first_name: string | null; last_name: string | null; email: string | null; role: string | null; phone?: string | null }[]
 }) {
   const router = useRouter()
   const [search, setSearch] = useState('')
@@ -550,7 +556,6 @@ export function DashboardOverview({
       case 'duration_months': return ref.duration_months ?? 0
       case 'created_at': return new Date(ref.created_at).getTime()
       case 'updated_at': return ref.updated_at ? new Date(ref.updated_at).getTime() : 0
-      case 'views': return ref.total_share_views ?? 0
       default: return ''
     }
   }
@@ -920,6 +925,16 @@ export function DashboardOverview({
                 </Button>
               )}
               <Button
+                variant="outline"
+                size="sm"
+                className={`h-9 shrink-0 transition-all duration-300 bg-background ${statusFilter === 'draft' ? 'border-primary ring-1 ring-primary' : ''}`}
+                onClick={() => setStatusFilter(statusFilter === 'draft' ? 'all' : 'draft')}
+                aria-label={statusFilter === 'draft' ? 'Alle Referenzen anzeigen' : 'Nur Entwürfe'}
+              >
+                <FileTextIcon className="size-4 shrink-0 lg:mr-2" />
+                <span className="hidden lg:inline">Entwürfe</span>
+              </Button>
+              <Button
                 size="sm"
                 className="h-9 shrink-0 transition-all duration-300"
                 onClick={() => setNewRefModalOpen(true)}
@@ -1125,7 +1140,7 @@ export function DashboardOverview({
                 </TableHead>
                 {visibleColumns.status && (
                   <TableHead>
-                    <div className="flex items-center justify-between gap-1">
+                    <div className="flex items-center justify-between gap-0.5">
                       <Popover>
                         <PopoverTrigger asChild>
                           <button
@@ -1190,7 +1205,7 @@ export function DashboardOverview({
                       </Popover>
                       <button
                         type="button"
-                        className="flex items-center gap-1 hover:opacity-80"
+                        className="flex items-center gap-0.5 hover:opacity-80"
                         onClick={() => handleSort('status')}
                       >
                         {sortKey === 'status' ? (
@@ -1208,7 +1223,7 @@ export function DashboardOverview({
                 )}
                 {visibleColumns.company && (
                   <TableHead className="w-[180px]">
-                    <div className="flex items-center justify-between gap-1">
+                    <div className="flex items-center justify-between gap-0.5">
                       <Popover>
                         <PopoverTrigger asChild>
                           <button
@@ -1267,7 +1282,7 @@ export function DashboardOverview({
                       </Popover>
                       <button
                         type="button"
-                        className="flex items-center gap-1 hover:opacity-80"
+                        className="flex items-center gap-0.5 hover:opacity-80"
                         onClick={() => handleSort('company')}
                       >
                         {sortKey === 'company' ? (
@@ -1287,8 +1302,8 @@ export function DashboardOverview({
                   <TableHead>
                     <button
                       type="button"
-                      className="flex items-center gap-1 hover:opacity-80"
-                      onClick={() => handleSort('title')}
+className="flex items-center gap-0.5 hover:opacity-80"
+                        onClick={() => handleSort('title')}
                     >
                       {COLUMN_LABELS.title}
                       {sortKey === 'title' ? (
@@ -1305,7 +1320,7 @@ export function DashboardOverview({
                 )}
                 {visibleColumns.tags && (
                   <TableHead className="max-w-[120px]">
-                    <div className="flex items-center justify-between gap-1">
+                    <div className="flex items-center justify-between gap-0.5">
                       <Popover>
                         <PopoverTrigger asChild>
                           <button
@@ -1364,7 +1379,7 @@ export function DashboardOverview({
                       </Popover>
                       <button
                         type="button"
-                        className="flex items-center gap-1 hover:opacity-80"
+                        className="flex items-center gap-0.5 hover:opacity-80"
                         onClick={() => handleSort('tags')}
                       >
                         {sortKey === 'tags' ? (
@@ -1382,7 +1397,7 @@ export function DashboardOverview({
                 )}
                 {visibleColumns.industry && (
                   <TableHead>
-                    <div className="flex items-center justify-between gap-1">
+                    <div className="flex items-center justify-between gap-0.5">
                       <Popover>
                         <PopoverTrigger asChild>
                           <button
@@ -1441,7 +1456,7 @@ export function DashboardOverview({
                       </Popover>
                       <button
                         type="button"
-                        className="flex items-center gap-1 hover:opacity-80"
+                        className="flex items-center gap-0.5 hover:opacity-80"
                         onClick={() => handleSort('industry')}
                       >
                         {sortKey === 'industry' ? (
@@ -1459,7 +1474,7 @@ export function DashboardOverview({
                 )}
                 {visibleColumns.country && (
                   <TableHead>
-                    <div className="flex items-center justify-between gap-1">
+                    <div className="flex items-center justify-between gap-0.5">
                       <Popover>
                         <PopoverTrigger asChild>
                           <button
@@ -1518,7 +1533,7 @@ export function DashboardOverview({
                       </Popover>
                       <button
                         type="button"
-                        className="flex items-center gap-1 hover:opacity-80"
+                        className="flex items-center gap-0.5 hover:opacity-80"
                         onClick={() => handleSort('country')}
                       >
                         {sortKey === 'country' ? (
@@ -1536,7 +1551,7 @@ export function DashboardOverview({
                 )}
                 {visibleColumns.project_status && (
                   <TableHead>
-                    <div className="flex items-center justify-between gap-1">
+                    <div className="flex items-center justify-between gap-0.5">
                       <Popover>
                         <PopoverTrigger asChild>
                           <button
@@ -1601,7 +1616,7 @@ export function DashboardOverview({
                       </Popover>
                       <button
                         type="button"
-                        className="flex items-center gap-1 hover:opacity-80"
+                        className="flex items-center gap-0.5 hover:opacity-80"
                         onClick={() => handleSort('project_status')}
                       >
                         {sortKey === 'project_status' ? (
@@ -1621,7 +1636,7 @@ export function DashboardOverview({
                   <TableHead className="text-right">
                     <button
                       type="button"
-                      className="ml-auto flex items-center gap-1 hover:opacity-80"
+                      className="ml-auto flex items-center gap-0.5 hover:opacity-80"
                       onClick={() => handleSort('project_start')}
                     >
                       {COLUMN_LABELS.project_start}
@@ -1641,7 +1656,7 @@ export function DashboardOverview({
                   <TableHead className="text-right">
                     <button
                       type="button"
-                      className="ml-auto flex items-center gap-1 hover:opacity-80"
+                      className="ml-auto flex items-center gap-0.5 hover:opacity-80"
                       onClick={() => handleSort('project_end')}
                     >
                       {COLUMN_LABELS.project_end}
@@ -1661,7 +1676,7 @@ export function DashboardOverview({
                   <TableHead className="text-right">
                     <button
                       type="button"
-                      className="ml-auto flex items-center gap-1 hover:opacity-80"
+                      className="ml-auto flex items-center gap-0.5 hover:opacity-80"
                       onClick={() => handleSort('duration_months')}
                     >
                       {COLUMN_LABELS.duration_months}
@@ -1681,7 +1696,7 @@ export function DashboardOverview({
                   <TableHead className="text-right">
                     <button
                       type="button"
-                      className="ml-auto flex items-center gap-1 hover:opacity-80"
+                      className="ml-auto flex items-center gap-0.5 hover:opacity-80"
                       onClick={() => handleSort('created_at')}
                     >
                       {COLUMN_LABELS.created_at}
@@ -1701,31 +1716,11 @@ export function DashboardOverview({
                   <TableHead className="text-right">
                     <button
                       type="button"
-                      className="ml-auto flex items-center gap-1 hover:opacity-80"
+                      className="ml-auto flex items-center gap-0.5 hover:opacity-80"
                       onClick={() => handleSort('updated_at')}
                     >
                       {COLUMN_LABELS.updated_at}
                       {sortKey === 'updated_at' ? (
-                        sortDir === 'asc' ? (
-                          <ArrowUp className="size-3.5" />
-                        ) : (
-                          <ArrowDown className="size-3.5" />
-                        )
-                      ) : (
-                        <ArrowUpDown className="size-3.5 text-muted-foreground" />
-                      )}
-                    </button>
-                  </TableHead>
-                )}
-                {visibleColumns.views && (
-                  <TableHead className="text-right">
-                    <button
-                      type="button"
-                      className="ml-auto flex items-center gap-1 hover:opacity-80"
-                      onClick={() => handleSort('views')}
-                    >
-                      {COLUMN_LABELS.views}
-                      {sortKey === 'views' ? (
                         sortDir === 'asc' ? (
                           <ArrowUp className="size-3.5" />
                         ) : (
@@ -1878,11 +1873,6 @@ export function DashboardOverview({
                     {visibleColumns.updated_at && (
                       <TableCell className="text-right text-muted-foreground text-sm">
                         {ref.updated_at ? formatDate(ref.updated_at) : '—'}
-                      </TableCell>
-                    )}
-                    {visibleColumns.views && (
-                      <TableCell className="text-right text-muted-foreground text-sm tabular-nums">
-                        {ref.total_share_views ?? 0}
                       </TableCell>
                     )}
                     <TableCell className="pr-0" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
@@ -2193,6 +2183,24 @@ export function DashboardOverview({
                   </Tooltip>
                   </div>
                 </div>
+                {/* Nutzungs-Statistik unter Freigabestufe: Views + Verknüpfungen */}
+                <div className="mt-3 flex flex-wrap items-center gap-4 text-muted-foreground text-xs">
+                  <span className="flex items-center gap-1.5">
+                    <Eye className="size-3.5" aria-hidden />
+                    {formatNumber(selectedRef.total_share_views ?? 0)} Aufrufe
+                  </span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="flex items-center gap-1.5">
+                        <LinkIcon className="size-3.5" aria-hidden />
+                        {(selectedRef.deal_link_count ?? 0) + (selectedRef.share_link_count ?? 0)} Verknüpfungen
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent className="text-xs">
+                      {selectedRef.deal_link_count ?? 0}× mit Deal verknüpft · {(selectedRef.share_link_count ?? 0)}× Kundenlink erstellt
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
               </DialogHeader>
 
               {/* Ein scrollbarer Bereich: Übersicht, Dateien, Historie untereinander */}
@@ -2325,10 +2333,10 @@ export function DashboardOverview({
                       </div>
                       <div className="space-y-0.5">
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-                          <UserIcon className="size-3" /> Mitarbeiteranzahl
+                          <UserIcon className="size-3" /> Mitarbeiter
                         </span>
                         <p className={`pl-4 text-xs font-medium ${selectedRef.employee_count != null ? 'text-foreground' : 'text-muted-foreground'}`}>
-                          {selectedRef.employee_count != null ? `${selectedRef.employee_count}` : '—'}
+                          {formatNumber(selectedRef.employee_count)}
                         </p>
                       </div>
                     </div>
@@ -2370,7 +2378,7 @@ export function DashboardOverview({
                           <FileTextIcon className="size-3" /> Volumen (€)
                         </span>
                         <p className={`pl-4 text-xs font-medium ${selectedRef.volume_eur ? 'text-foreground' : 'text-muted-foreground'}`}>
-                          {selectedRef.volume_eur || '—'}
+                          {selectedRef.volume_eur ? formatNumber(selectedRef.volume_eur) : '—'}
                         </p>
                       </div>
                       <div className="space-y-0.5">
@@ -2446,18 +2454,26 @@ export function DashboardOverview({
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <div className="space-y-1">
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-                          <UserIcon className="size-3" /> Interner Kontakt
+                          <UserIcon className="size-3" /> Interner Ansprechpartner
                         </span>
                         <p className="pl-4 text-xs font-medium">
                           {selectedRef.contact_display ||
                             selectedRef.contact_email ||
                             'Nicht zugewiesen'}
                         </p>
-                        {selectedRef.contact_email && (
-                          <p className="text-muted-foreground pl-4 text-[10px]">
-                            <a href={`mailto:${selectedRef.contact_email}`} className="hover:underline">{selectedRef.contact_email}</a>
-                          </p>
-                        )}
+                        <div className="text-muted-foreground flex flex-wrap items-center gap-2 pl-4">
+                          {selectedRef.contact_email && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <a href={`mailto:${selectedRef.contact_email}`} className="inline-flex items-center gap-1 text-[10px] hover:underline">
+                                  <Mail className="size-3.5" />
+                                  {selectedRef.contact_email}
+                                </a>
+                              </TooltipTrigger>
+                              <TooltipContent>E-Mail: {selectedRef.contact_email}</TooltipContent>
+                            </Tooltip>
+                          )}
+                        </div>
                         <p className="text-muted-foreground pl-4 text-[10px]">
                           Account Owner
                         </p>
@@ -2472,17 +2488,37 @@ export function DashboardOverview({
                             : undefined
                           const displayName = selectedRef.customer_contact || (ext ? [ext.first_name, ext.last_name].filter(Boolean).join(' ') : null) || '—'
                           const email = ext?.email ?? null
+                          const phone = ext?.phone ?? null
                           const role = ext?.role ?? null
                           return (
                             <>
                               <p className={`pl-4 text-xs font-medium ${displayName !== '—' ? 'text-foreground' : 'text-muted-foreground'}`}>
                                 {displayName}
                               </p>
-                              {email && (
-                                <p className="text-muted-foreground pl-4 text-[10px]">
-                                  <a href={`mailto:${email}`} className="hover:underline">{email}</a>
-                                </p>
-                              )}
+                              <div className="text-muted-foreground flex flex-wrap items-center gap-2 pl-4">
+                                {email && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <a href={`mailto:${email}`} className="inline-flex items-center gap-1 text-[10px] hover:underline">
+                                        <Mail className="size-3.5" />
+                                        {email}
+                                      </a>
+                                    </TooltipTrigger>
+                                    <TooltipContent>E-Mail: {email}</TooltipContent>
+                                  </Tooltip>
+                                )}
+                                {phone && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <a href={`tel:${phone}`} className="inline-flex items-center gap-1 text-[10px] hover:underline">
+                                        <Phone className="size-3.5" />
+                                        {phone}
+                                      </a>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Telefon: {phone}</TooltipContent>
+                                  </Tooltip>
+                                )}
+                              </div>
                               {role && (
                                 <p className="text-muted-foreground pl-4 text-[10px]">
                                   {role}
@@ -2721,7 +2757,7 @@ export function DashboardOverview({
         </DialogContent>
       </Dialog>
 
-      {/* Kundenlink-Popover: Link generieren / anzeigen + Copy + ReferenceReader-Vorschau */}
+      {/* Kundenlink-Popover: Link erstellen / anzeigen + Copy + ReferenceReader-Vorschau */}
       <Dialog
         open={shareLinkPopoverRef !== null}
         onOpenChange={(open) => {
@@ -2795,7 +2831,7 @@ export function DashboardOverview({
                       ) : (
                         <LinkIcon className="mr-2 size-4" />
                       )}
-                      Link generieren
+                      Link erstellen
                     </Button>
                   )}
                 </div>
