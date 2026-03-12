@@ -12,7 +12,7 @@ import {
   ChevronsUpDown,
   LogOut,
   ShieldCheckIcon,
-  Award,
+  BrainCircuit,
   Briefcase,
   HandshakeIcon,
   FilePen,
@@ -162,12 +162,12 @@ export function DashboardShell({
                       <SidebarMenuButton
                         asChild
                         isActive={pathname?.startsWith('/dashboard/companies')}
-                        tooltip="ClientOS – Firmenübersicht, Executive Profiling & Stakeholder-Mapping (in Vorbereitung)"
+                        tooltip="Client Intelligence – Firmenübersicht, Executive Profiling & Stakeholder-Mapping (in Vorbereitung)"
                         className="data-[active=true]:bg-muted data-[active=true]:text-foreground"
                       >
                         <Link href="/dashboard/companies">
-                          <Award />
-                          <span>ClientOS</span>
+                          <BrainCircuit />
+                          <span>Client Intelligence</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -204,12 +204,12 @@ export function DashboardShell({
                       <SidebarMenuButton
                         asChild
                         isActive={pathname?.startsWith('/dashboard/companies')}
-                        tooltip="ClientOS – Firmenübersicht, Executive Profiling & Stakeholder-Mapping (in Vorbereitung)"
+                        tooltip="Client Intelligence – Firmenübersicht, Executive Profiling & Stakeholder-Mapping (in Vorbereitung)"
                         className="data-[active=true]:bg-muted data-[active=true]:text-foreground"
                       >
                         <Link href="/dashboard/companies">
-                          <Award />
-                          <span>ClientOS</span>
+                          <BrainCircuit />
+                          <span>Client Intelligence</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

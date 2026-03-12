@@ -48,7 +48,7 @@ export default async function CompanyDetailPage({
     <div className="space-y-6 px-6 py-6 md:px-12 lg:px-20">
       <nav className="flex items-center gap-2 text-sm text-muted-foreground">
         <Link href="/dashboard/companies" className="hover:text-foreground">
-          ClientOS
+          Client Intelligence
         </Link>
         <ChevronRight className="size-4" />
         <span className="text-foreground font-medium truncate max-w-[200px] sm:max-w-none">

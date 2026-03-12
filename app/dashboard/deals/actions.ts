@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { Resend } from 'resend'
+import * as XLSX from 'xlsx'
 import type { DealRow, DealStatus, DealWithReferences } from './types'
 
 function getResend(): Resend | null {
@@ -29,6 +30,7 @@ export async function getDeals(): Promise<DealRow[]> {
       company_id,
       industry,
       volume,
+      incumbent_provider,
       is_public,
       account_manager_id,
       sales_manager_id,
@@ -42,6 +44,38 @@ export async function getDeals(): Promise<DealRow[]> {
     .order('expiry_date', { ascending: true, nullsFirst: false })
 
   if (error) return []
+
+  const dealIds = (rows ?? []).map((r) => r.id)
+  const linkedRefsMap: Record<string, { id: string; title: string; company_name: string; logo_url?: string | null }[]> = {}
+  dealIds.forEach((id) => { linkedRefsMap[id] = [] })
+
+  if (dealIds.length > 0) {
+    const { data: drRows } = await supabase
+      .from('deal_references')
+      .select('deal_id, reference_id')
+      .in('deal_id', dealIds)
+    const refIds = [...new Set((drRows ?? []).map((r) => r.reference_id).filter(Boolean))] as string[]
+    if (refIds.length > 0) {
+      const { data: refs } = await supabase
+        .from('references')
+        .select('id, title, companies(name, logo_url)')
+        .in('id', refIds)
+      const refMap: Record<string, { id: string; title: string; company_name: string; logo_url?: string | null }> = {}
+      for (const r of refs ?? []) {
+        const company = Array.isArray(r.companies) ? (r.companies as { name?: string; logo_url?: string | null }[])[0] : (r.companies as { name?: string; logo_url?: string | null } | null)
+        refMap[r.id] = {
+          id: r.id,
+          title: r.title ?? '',
+          company_name: company?.name ?? '—',
+          logo_url: company?.logo_url ?? null,
+        }
+      }
+      for (const dr of drRows ?? []) {
+        const ref = refMap[dr.reference_id]
+        if (ref && linkedRefsMap[dr.deal_id]) linkedRefsMap[dr.deal_id].push(ref)
+      }
+    }
+  }
 
   const accountManagerIds = [
     ...new Set((rows ?? []).map((r) => r.account_manager_id).filter(Boolean)),
@@ -71,6 +105,7 @@ export async function getDeals(): Promise<DealRow[]> {
       company_name: company?.name ?? null,
       industry: r.industry ?? null,
       volume: r.volume ?? null,
+      incumbent_provider: (r as { incumbent_provider?: string | null }).incumbent_provider ?? null,
       is_public: r.is_public ?? true,
       account_manager_id: r.account_manager_id ?? null,
       account_manager_name: r.account_manager_id ? names[r.account_manager_id] ?? null : null,
@@ -80,6 +115,7 @@ export async function getDeals(): Promise<DealRow[]> {
       expiry_date: r.expiry_date ?? null,
       created_at: r.created_at,
       updated_at: r.updated_at ?? null,
+      linked_refs: linkedRefsMap[r.id] ?? [],
     }
   })
 }
@@ -114,6 +150,7 @@ export async function getDealWithReferences(id: string): Promise<DealWithReferen
       company_id,
       industry,
       volume,
+      incumbent_provider,
       is_public,
       account_manager_id,
       sales_manager_id,
@@ -167,6 +204,7 @@ export async function getDealWithReferences(id: string): Promise<DealWithReferen
     company_name: (company as { name?: string })?.name ?? null,
     industry: deal.industry ?? null,
     volume: deal.volume ?? null,
+    incumbent_provider: (deal as { incumbent_provider?: string | null }).incumbent_provider ?? null,
     is_public: deal.is_public ?? true,
     account_manager_id: deal.account_manager_id ?? null,
     account_manager_name: accountManagerName,
@@ -195,6 +233,7 @@ export async function createDeal(formData: FormData): Promise<{ success: boolean
   const companyId = formData.get('company_id')?.toString() || null
   const industry = formData.get('industry')?.toString()?.trim() || null
   const volume = formData.get('volume')?.toString()?.trim() || null
+  const incumbent_provider = formData.get('incumbent_provider')?.toString()?.trim() || null
   const is_public = formData.get('is_public') !== 'false'
   const account_manager_id = formData.get('account_manager_id')?.toString() || null
   const sales_manager_id = formData.get('sales_manager_id')?.toString() || null
@@ -209,6 +248,7 @@ export async function createDeal(formData: FormData): Promise<{ success: boolean
       company_id: companyId || null,
       industry,
       volume,
+      incumbent_provider: incumbent_provider || null,
       is_public,
       account_manager_id: account_manager_id || null,
       sales_manager_id: sales_manager_id || null,
@@ -222,6 +262,69 @@ export async function createDeal(formData: FormData): Promise<{ success: boolean
   revalidatePath('/dashboard/deals')
   revalidatePath(`/dashboard/deals/${deal.id}`)
   return { success: true, id: deal.id }
+}
+
+export type MatchSuggestion = { id: string; title: string; company_name: string; logo_url?: string | null }
+
+/** Pro Deal: Anzahl passender Referenzen (Branche) + Top-3-Vorschläge für Smart Match. */
+export async function getMatchingReferencesForDeals(
+  dealIds: string[]
+): Promise<Record<string, { count: number; suggestions: MatchSuggestion[] }>> {
+  const result: Record<string, { count: number; suggestions: MatchSuggestion[] }> = {}
+  dealIds.forEach((id) => { result[id] = { count: 0, suggestions: [] } })
+  if (dealIds.length === 0) return result
+
+  const supabase = await createServerSupabaseClient()
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', (await supabase.auth.getUser()).data.user?.id)
+    .single()
+  const orgId = profile?.organization_id
+  if (!orgId) return result
+
+  const { data: deals } = await supabase
+    .from('deals')
+    .select('id, industry')
+    .in('id', dealIds)
+    .eq('organization_id', orgId)
+  const dealIndustries: Record<string, string | null> = {}
+  ;(deals ?? []).forEach((d) => { dealIndustries[d.id] = d.industry ?? null })
+
+  const { data: drRows } = await supabase
+    .from('deal_references')
+    .select('deal_id, reference_id')
+    .in('deal_id', dealIds)
+  const linkedByDeal: Record<string, Set<string>> = {}
+  dealIds.forEach((id) => { linkedByDeal[id] = new Set() })
+  ;(drRows ?? []).forEach((r) => linkedByDeal[r.deal_id]?.add(r.reference_id))
+
+  const { data: refs } = await supabase
+    .from('references')
+    .select('id, title, industry, companies(name, logo_url)')
+    .order('title')
+  if (!refs?.length) return result
+
+  const refList = refs.map((r) => {
+    const company = Array.isArray(r.companies) ? (r.companies as { name?: string; logo_url?: string | null }[])[0] : (r.companies as { name?: string; logo_url?: string | null } | null)
+    return {
+      id: r.id,
+      title: r.title ?? '',
+      industry: r.industry ?? null,
+      company_name: company?.name ?? '—',
+      logo_url: company?.logo_url ?? null,
+    }
+  })
+
+  for (const dealId of dealIds) {
+    const industry = dealIndustries[dealId] ?? null
+    const linked = linkedByDeal[dealId] ?? new Set<string>()
+    const matching = industry
+      ? refList.filter((r) => r.industry === industry && !linked.has(r.id))
+      : []
+    result[dealId] = { count: matching.length, suggestions: matching.slice(0, 3) }
+  }
+  return result
 }
 
 /** Referenzen der eigenen Org (id, title, company_name) für Verknüpfung mit Deal */
@@ -271,6 +374,78 @@ export async function removeReferenceFromDeal(dealId: string, referenceId: strin
   revalidatePath('/dashboard/deals')
   revalidatePath(`/dashboard/deals/${dealId}`)
   return {}
+}
+
+/** Marktlisten (xlsx) importieren: Zeilen als Expiring Deals anlegen. */
+export async function importDealsFromXlsx(formData: FormData): Promise<{ success: boolean; created?: number; error?: string }> {
+  const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+
+  const { data: profile } = await supabase.from('profiles').select('organization_id').eq('id', user.id).single()
+  const orgId = profile?.organization_id
+  if (!orgId) return { success: false, error: 'Keine Organisation zugeordnet.' }
+
+  const file = formData.get('file') as File | null
+  if (!file || !(file instanceof File)) return { success: false, error: 'Keine Datei übergeben.' }
+  const buf = Buffer.from(await file.arrayBuffer())
+  let workbook: XLSX.WorkBook
+  try {
+    workbook = XLSX.read(buf, { type: 'buffer' })
+  } catch (e) {
+    console.error('importDealsFromXlsx parse error:', e)
+    return { success: false, error: 'Ungültige Excel-Datei.' }
+  }
+  const sheet = workbook.Sheets[workbook.SheetNames[0]]
+  if (!sheet) return { success: false, error: 'Kein Arbeitsblatt in der Datei.' }
+  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' })
+  if (!rows.length) return { success: false, error: 'Keine Datenzeilen in der Datei.' }
+
+  const col = (obj: Record<string, unknown>, ...names: string[]) => {
+    const objKeys = Object.keys(obj)
+    for (const n of names) {
+      const lower = n.trim().toLowerCase()
+      const k = objKeys.find((key) => key.trim().toLowerCase().includes(lower) || lower.includes(key.trim().toLowerCase()))
+      if (k) {
+        const v = obj[k]
+        return typeof v === 'string' ? v.trim() : v != null ? String(v).trim() : ''
+      }
+    }
+    return ''
+  }
+
+  let created = 0
+  for (const row of rows) {
+    const title = col(row, 'titel', 'title', 'name') || col(row, 'deal', 'bezeichnung')
+    if (!title) continue
+    const industry = col(row, 'branche', 'industry', 'sector')
+    const volume = col(row, 'volumen', 'volume', 'value', 'wert')
+    const incumbent_provider = col(row, 'anbieter', 'incumbent', 'provider', 'aktueller anbieter', 'current provider')
+    let expiry_date: string | null = null
+    const dateVal = col(row, 'ablauf', 'expiry', 'expiry date', 'datum', 'date', 'end')
+    if (dateVal) {
+      const d = new Date(dateVal)
+      if (!Number.isNaN(d.getTime())) expiry_date = d.toISOString().slice(0, 10)
+    }
+    const { error } = await supabase.from('deals').insert({
+      organization_id: orgId,
+      title,
+      company_id: null,
+      industry: industry || null,
+      volume: volume || null,
+      incumbent_provider: incumbent_provider || null,
+      is_public: true,
+      status: 'in_negotiation',
+      expiry_date,
+    })
+    if (error) {
+      console.error('importDealsFromXlsx insert error:', error)
+      continue
+    }
+    created++
+  }
+  revalidatePath('/dashboard/deals')
+  return { success: true, created }
 }
 
 /** Referenzbedarf melden: E-Mail an Reference Manager (Admins der Org). Verwendet REFERENCE_MANAGER_EMAIL oder erste Admin-E-Mail. */
