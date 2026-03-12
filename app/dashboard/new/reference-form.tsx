@@ -455,7 +455,15 @@ export function ReferenceForm({
         toast.error(result.error)
       }
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Extraktion fehlgeschlagen.')
+      const message = e instanceof Error ? e.message : 'Extraktion fehlgeschlagen.'
+      // Vercel / Next.js gibt bei Proxy-/Timeout-Fehlern oft nur "Unexpected Server Response" zurück
+      if (typeof message === 'string' && message.toLowerCase().includes('unexpected')) {
+        toast.error(
+          'Die Datei konnte nicht verarbeitet werden (Proxy/Timeout). Bitte kleinere Datei verwenden (max. 4,5 MB) oder später erneut versuchen.'
+        )
+      } else {
+        toast.error(message)
+      }
     } finally {
       setMagicImportLoading(false)
     }
@@ -1451,7 +1459,9 @@ function MagicImportDropzone({
         {loading ? (
           <>
             <Loader2 className="text-muted-foreground size-8 animate-spin" />
-            <span className="text-muted-foreground text-sm font-medium">Extrahiere Daten…</span>
+            <span className="text-muted-foreground text-sm font-medium">
+              KI analysiert Dokument… Bitte warten (bis zu 30 Sek.)
+            </span>
           </>
         ) : (
           <>

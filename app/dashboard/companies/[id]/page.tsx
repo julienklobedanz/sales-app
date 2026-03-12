@@ -15,9 +15,9 @@ import { ChevronRight } from 'lucide-react'
 export default async function CompanyDetailPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
-  const { id } = params
+  const { id } = await params
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },

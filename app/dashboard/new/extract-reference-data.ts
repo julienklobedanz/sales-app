@@ -1,5 +1,7 @@
 'use server'
 
+export const maxDuration = 60
+
 export type ExtractedReferenceData = {
   title: string | null
   summary: string | null
@@ -124,6 +126,7 @@ export async function extractDataFromDocument(formData: FormData): Promise<Extra
     const fileName = file.name ?? 'unbenannt'
     const size = file.size
 
+    console.log('Starte Parsing für Datei:', fileName, 'Größe:', size)
     console.log('extractDataFromDocument: received file', { fileName, mimeType, size })
 
     if (size > MAX_FILE_BYTES) {
