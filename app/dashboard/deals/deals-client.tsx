@@ -106,8 +106,8 @@ export function DealsClientContent({ deals, expiring, allReferences, initialOpen
   const closeDealSheet = () => setSelectedDealId(null)
 
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
-      <Card className="flex min-h-[520px] flex-col">
+    <div className="grid min-h-[70vh] gap-6 lg:grid-cols-2">
+      <Card className="flex min-h-[520px] flex-1 flex-col">
         <CardHeader className="flex min-h-[5.5rem] flex-row items-center justify-between space-y-0">
           <div>
             <div className="flex items-center gap-2">
@@ -165,7 +165,7 @@ export function DealsClientContent({ deals, expiring, allReferences, initialOpen
         </CardContent>
       </Card>
 
-      <Card className="flex min-h-[520px] flex-col">
+      <Card className="flex min-h-[520px] flex-1 flex-col">
         <CardHeader className="flex min-h-[5.5rem] flex-row items-center justify-between space-y-0">
           <div>
             <div className="flex items-center gap-2">

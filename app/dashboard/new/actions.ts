@@ -32,12 +32,28 @@ const COUNTRY_CODE_MAP: Record<string, string> = {
 }
 
 export type EnrichCompanyResult =
-  | { success: true; company_id: string; company_name: string; website_url: string | null; industry: string | null; headquarters: string | null; country: string | null; employee_count: number | null; logo_url: string | null }
+  | {
+      success: true
+      company_id: string
+      company_name: string
+      website_url: string | null
+      industry: string | null
+      headquarters: string | null
+      country: string | null
+      employee_count: number | null
+      logo_url: string | null
+    }
   | { success: false; error: string }
 
 /** Nur Abfrage – keine DB-Schreiboperation. Für Bearbeiten-Formular. */
 export type FetchEnrichmentResult =
   | { success: true; company_name: string; website_url: string | null; industry: string | null; headquarters: string | null; country: string | null; employee_count: number | null; logo_url: string | null; description: string | null }
+  | { success: false; error: string }
+
+export type CompanySearchSuggestion = { id: string; name: string; logo_url?: string | null }
+
+export type CompanySearchResult =
+  | { success: true; suggestions: CompanySearchSuggestion[] }
   | { success: false; error: string }
 
 function normalizeDomain(input: string): string {
@@ -93,6 +109,71 @@ function domainToDisplayName(domain: string): string {
   const withoutTld = withoutProtocol.replace(/\.(com|de|net|org|io|eu|co|ai|cloud|global|[a-z]{2,})$/i, '').trim()
   const name = withoutTld || withoutProtocol
   return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase()
+}
+
+/** Sucht Unternehmensvorschläge für die Combobox (lokal in der Organisation, optional erweitert um Brandfetch-Daten). */
+export async function searchCompanySuggestions(input: string): Promise<CompanySearchResult> {
+  const query = input.trim()
+  if (!query) {
+    return { success: true, suggestions: [] }
+  }
+
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .single()
+  const organizationId = profile?.organization_id ?? null
+  if (!organizationId) {
+    return { success: false, error: 'Dein Profil ist keiner Organisation zugeordnet.' }
+  }
+
+  const pattern = `%${query}%`
+
+  // 1. Schnelle Suche in bestehenden Companies der Organisation
+  const { data: companies, error } = await supabase
+    .from('companies')
+    .select('id, name, logo_url')
+    .eq('organization_id', organizationId)
+    .ilike('name', pattern)
+    .order('name')
+    .limit(10)
+
+  if (error) {
+    console.error('searchCompanySuggestions companies error:', error)
+    return { success: false, error: error.message }
+  }
+
+  let suggestions: CompanySearchSuggestion[] = (companies ?? []).map((c) => ({
+    id: c.id,
+    name: c.name,
+    logo_url: (c as { logo_url?: string | null }).logo_url ?? null,
+  }))
+
+  // 2. Falls lokal nichts gefunden wurde, optional Brandfetch-Daten als Einzeltreffer vorschlagen
+  if (suggestions.length === 0) {
+    const domain = inputToDomain(query) ?? normalizeDomain(query)
+    if (domain && domain.includes('.')) {
+      const fetched = await fetchBrandfetchData(domain)
+      if (fetched.success) {
+        suggestions = [
+          {
+            id: `brandfetch:${domain}`,
+            name: fetched.company_name,
+            logo_url: fetched.logo_url,
+          },
+        ]
+      }
+    }
+  }
+
+  return { success: true, suggestions }
 }
 
 export async function enrichAndSaveCompany(domain: string): Promise<EnrichCompanyResult> {

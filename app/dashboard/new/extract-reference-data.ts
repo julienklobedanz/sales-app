@@ -117,33 +117,71 @@ export async function extractDataFromDocument(formData: FormData): Promise<Extra
     return { success: false, error: 'Keine Datei übergeben.' }
   }
 
-  const type = file.type as keyof typeof ACCEPTED_TYPES
-  if (!ACCEPTED_TYPES[type]) {
+  const mimeType = file.type
+  const fileName = file.name ?? 'unbenannt'
+  const size = file.size
+
+  console.log('extractDataFromDocument: received file', {
+    fileName,
+    mimeType,
+    size,
+  })
+
+  const isPdf =
+    mimeType === 'application/pdf' || /\.pdf$/i.test(fileName)
+  const isPptx =
+    mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
+    /\.pptx$/i.test(fileName)
+
+  if (!isPdf && !isPptx) {
+    console.error('extractDataFromDocument: unsupported file type', {
+      fileName,
+      mimeType,
+    })
     return { success: false, error: 'Nur PDF- oder PPTX-Dateien werden unterstützt.' }
   }
 
   let documentText: string
   try {
     const buffer = Buffer.from(await file.arrayBuffer())
-    if (type === 'application/pdf') {
+    if (isPdf) {
       documentText = await extractTextFromPdf(buffer)
     } else {
       documentText = await extractTextFromPptx(buffer)
     }
   } catch (e) {
-    console.error('Text extraction error:', e)
+    console.error('extractDataFromDocument: Text extraction error', {
+      fileName,
+      mimeType,
+      error: e,
+    })
     return { success: false, error: 'Text konnte nicht aus dem Dokument gelesen werden.' }
   }
 
   if (!documentText || documentText.trim().length < 50) {
+    console.warn('extractDataFromDocument: extracted text too short', {
+      fileName,
+      mimeType,
+      length: documentText?.length ?? 0,
+    })
     return { success: false, error: 'Das Dokument enthält zu wenig Text für eine Extraktion.' }
   }
 
   try {
+    console.log('extractDataFromDocument: sending text to LLM', {
+      fileName,
+      mimeType,
+      length: documentText.length,
+    })
     const data = await extractWithLLM(documentText)
     return { success: true, data }
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Extraktion fehlgeschlagen.'
+    console.error('extractDataFromDocument: LLM extraction error', {
+      fileName,
+      mimeType,
+      error: e,
+    })
     return { success: false, error: message }
   }
 }

@@ -33,7 +33,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
-import { createReference, enrichAndSaveCompany, fetchCompanyEnrichment } from './actions'
+import { createReference, enrichAndSaveCompany, fetchCompanyEnrichment, searchCompanySuggestions } from './actions'
 import { updateReference, generateSummaryFromStory } from '../actions'
 import { extractDataFromDocument } from './extract-reference-data'
 import { CreateContactDialog, type CreatedContact } from './create-contact-dialog'
@@ -508,6 +508,37 @@ export function ReferenceForm({
                 onValueChange={(val) => {
                   setNewCompanyName(val)
                   setCompanyId('')
+                }}
+                onConfirmValue={(val) => {
+                  setNewCompanyName(val)
+                  setCompanyId('')
+                  setEnrichLoading(true)
+                  enrichAndSaveCompany(val)
+                    .then((result) => {
+                      if (result.success) {
+                        setCompanyId(result.company_id)
+                        setEnrichedCompany({
+                          id: result.company_id,
+                          name: result.company_name,
+                          logo_url: result.logo_url ?? null,
+                        })
+                        setWebsite(result.website_url ?? '')
+                        setIndustry(result.industry ?? '')
+                        setCountry(result.country ?? '')
+                        setHeadquarters(result.headquarters ?? '')
+                        setEmployeeCount(
+                          result.employee_count != null
+                            ? String(result.employee_count)
+                            : ''
+                        )
+                        setEnrichedLogoUrl(result.logo_url ?? null)
+                        setNewCompanyName(result.company_name)
+                        toast.success('Unternehmensdaten wurden geladen.')
+                      } else {
+                        toast.error(result.error)
+                      }
+                    })
+                    .finally(() => setEnrichLoading(false))
                 }}
                 onSelectCompany={(company) => {
                   setCompanyId(company.id)
@@ -1437,6 +1468,7 @@ function CompanyCombobox({
   value,
   onValueChange,
   onSelectCompany,
+  onConfirmValue,
   loading,
   disabled,
 }: {
@@ -1444,15 +1476,63 @@ function CompanyCombobox({
   value: string
   onValueChange: (value: string) => void
   onSelectCompany: (company: Company) => void
+  onConfirmValue?: (value: string) => void
   loading: boolean
   disabled: boolean
 }) {
   const [open, setOpen] = useState(false)
+  const [remoteSuggestions, setRemoteSuggestions] = useState<Company[]>([])
+  const [searching, setSearching] = useState(false)
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   const trimmed = value.trim().toLowerCase()
-  const filtered = companies.filter((c) =>
+  const localFiltered = companies.filter((c) =>
     trimmed ? c.name.toLowerCase().includes(trimmed) : true
   )
+  const mergedSuggestions: Company[] = [
+    ...localFiltered,
+    ...remoteSuggestions.filter(
+      (r) => !companies.some((c) => c.id === r.id)
+    ),
+  ]
   const showList = open && value.trim().length > 0
+
+  useEffect(() => {
+    const q = value.trim()
+    if (!q) {
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
+      setRemoteSuggestions([])
+      setSearching(false)
+      return
+    }
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
+    searchTimeoutRef.current = setTimeout(() => {
+      setSearching(true)
+      searchCompanySuggestions(q)
+        .then((result) => {
+          if (result.success) {
+            const suggestions = (result.suggestions ?? []).map<Company>((s) => ({
+              id: s.id,
+              name: s.name,
+              logo_url: s.logo_url ?? null,
+            }))
+            setRemoteSuggestions(suggestions)
+          } else {
+            console.error('Unternehmenssuche fehlgeschlagen:', result.error)
+            setRemoteSuggestions([])
+          }
+        })
+        .finally(() => {
+          setSearching(false)
+        })
+    }, 300)
+  }, [value])
+
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
+    }
+  }, [])
 
   return (
     <Popover open={showList} onOpenChange={setOpen}>
@@ -1469,6 +1549,15 @@ function CompanyCombobox({
           onFocus={() => {
             if (value.trim().length > 0) setOpen(true)
           }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              const current = e.currentTarget.value.trim()
+              if (!current) return
+              e.preventDefault()
+              setOpen(false)
+              onConfirmValue?.(current)
+            }
+          }}
           placeholder="Unternehmen eingeben"
           className="w-full cursor-text"
         />
@@ -1480,22 +1569,39 @@ function CompanyCombobox({
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <div className="max-h-60 overflow-y-auto py-1 text-sm">
-          {filtered.map((company) => (
+          {mergedSuggestions.map((company) => (
             <button
               key={company.id}
               type="button"
-              className="flex w-full cursor-pointer items-center px-3 py-1.5 text-left hover:bg-muted"
+              className="flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-left hover:bg-muted"
               onClick={() => {
                 onSelectCompany(company)
                 setOpen(false)
               }}
             >
+              {company.logo_url ? (
+                <img
+                  src={company.logo_url}
+                  alt=""
+                  className="h-5 w-5 flex-shrink-0 rounded object-contain"
+                />
+              ) : (
+                <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded bg-muted text-[10px] text-muted-foreground">
+                  <Building2Icon className="h-3 w-3" />
+                </span>
+              )}
               <span className="truncate">{company.name}</span>
             </button>
           ))}
-          {filtered.length === 0 && (
+          {mergedSuggestions.length === 0 && !searching && !loading && (
             <div className="px-3 py-2 text-xs text-muted-foreground">
               Keine Treffer. Neuer Name wird verwendet.
+            </div>
+          )}
+          {(searching || loading) && (
+            <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Suche nach Unternehmen …
             </div>
           )}
         </div>
