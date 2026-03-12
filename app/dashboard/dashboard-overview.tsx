@@ -2910,7 +2910,7 @@ className="flex items-center gap-0.5 hover:opacity-80"
       {/* Neue Referenz (zentrales Modal) – breites Layout, mehr White Space */}
       {profile.role === 'admin' && (
         <Dialog open={newRefModalOpen} onOpenChange={setNewRefModalOpen}>
-          <DialogContent className="max-h-[90vh] min-h-[60vh] overflow-y-auto w-[calc(100vw-2rem)] max-w-[90vw] sm:max-w-4xl lg:max-w-7xl xl:max-w-[min(90vw,1400px)] gap-0 border-0 px-6 py-6 md:px-12 md:py-10 lg:px-16 lg:py-12">
+          <DialogContent className="max-h-[90vh] min-h-[60vh] overflow-y-auto w-[calc(100vw-2rem)] max-w-[90vw] lg:max-w-7xl gap-0 border-0 px-6 py-6 md:px-12 md:py-10 lg:px-16 lg:py-12">
             <div className="flex flex-col items-center w-full max-w-full">
               <ReferenceForm
                 companies={companies}
