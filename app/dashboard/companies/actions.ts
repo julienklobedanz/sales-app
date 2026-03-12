@@ -172,8 +172,8 @@ function normalizeTags(tags: string | null | undefined): Set<string> {
   return new Set(
     tags
       .split(',')
-      .map((t) => t.trim().toLowerCase())
-      .filter(Boolean)
+      .map((t: string) => t.trim().toLowerCase())
+      .filter((t: string): t is string => Boolean(t))
   )
 }
 
@@ -250,7 +250,7 @@ export async function getRecommendedReferences(
     const tagMatch =
       projectTagSet.size > 0 &&
       refTagSet.size > 0 &&
-      [...projectTagSet].some((t) => refTagSet.has(t))
+      [...projectTagSet].some((t: string) => refTagSet.has(t))
     const sizeRegion = sizeRegionMatch(companyHeadquarters, refCountry(r))
 
     let points =
@@ -474,11 +474,11 @@ export async function getRecommendedReferencesForAccount(
     .eq('company_id', companyId)
     .maybeSingle()
   const companyIndustry = (company?.industry ?? '').trim().toLowerCase()
-  const goalsTags = (strategy?.company_goals ?? '')
+  const goalsTags: string[] = (strategy?.company_goals ?? '')
     .split(/[\s,;]+/)
-    .map((t) => t.trim().toLowerCase())
-    .filter(Boolean)
-  const projectTagSet = new Set(goalsTags)
+    .map((t: string) => t.trim().toLowerCase())
+    .filter((t: string): t is string => Boolean(t))
+  const projectTagSet = new Set<string>(goalsTags)
   const companyHeadquarters = company?.headquarters ?? null
 
   const { data: refRows } = await supabase
@@ -509,7 +509,7 @@ export async function getRecommendedReferencesForAccount(
     const tagMatch =
       projectTagSet.size > 0 &&
       refTagSet.size > 0 &&
-      [...projectTagSet].some((t) => refTagSet.has(t))
+      [...projectTagSet].some((t: string) => refTagSet.has(t))
     const sizeRegion = sizeRegionMatch(companyHeadquarters, refCountry(r))
     let points =
       (industryMatch ? 50 : 0) + (tagMatch ? 30 : 0) + (sizeRegion ? 20 : 0)
@@ -558,8 +558,10 @@ export async function generateOnePagerHtml(
   const challenges = strategy?.red_flags ?? ''
   const valueProp = strategy?.value_proposition ?? ''
   const nextSteps = strategy?.next_steps ?? ''
-  const execSummary = (stakeholders?.data ?? []).map((s) => `${s.name}${s.title ? ` (${s.title})` : ''}: ${(s.priorities_topics ?? '').trim() || '—'}`).join('\n')
-  const refList = refs.map((r) => r.title).join(', ') || '—'
+  type StakeholderData = { name: string; title?: string | null; role: string; priorities_topics?: string | null }
+  const stakeholderList: StakeholderData[] = stakeholders ?? []
+  const execSummary = stakeholderList.map((s: StakeholderData) => `${s.name}${s.title ? ` (${s.title})` : ''}: ${(s.priorities_topics ?? '').trim() || '—'}`).join('\n')
+  const refList = refs.map((r: CompanyRefRow) => r.title).join(', ') || '—'
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>One-Pager ${escapeHtml(company.name)}</title><style>body{font-family:system-ui,sans-serif;max-width:800px;margin:2rem auto;padding:0 1rem;line-height:1.5;} h1{font-size:1.5rem;} h2{font-size:1.1rem;margin-top:1.5rem;} ul{margin:0.25rem 0;} .meta{color:#666;font-size:0.9rem;}</style></head><body>
 <h1>${escapeHtml(company.name)}</h1>
 <p class="meta">${escapeHtml(company.industry ?? '')}</p>
