@@ -5,6 +5,8 @@ import { ReferenceForm } from './reference-form'
 import { Button } from '@/components/ui/button'
 import { ArrowLeftIcon } from 'lucide-react'
 
+export const maxDuration = 60
+
 export default async function NewReferencePage() {
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()

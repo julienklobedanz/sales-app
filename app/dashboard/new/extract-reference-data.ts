@@ -1,22 +1,9 @@
 'use server'
 
-export const maxDuration = 60
-
-export type ExtractedReferenceData = {
-  title: string | null
-  summary: string | null
-  industry: string | null
-  volume_eur: string | null
-  employee_count: number | null
-  tags: string[]
-  company_name: string | null
-  customer_challenge: string | null
-  our_solution: string | null
-}
-
-export type ExtractDataFromDocumentResult =
-  | { success: true; data: ExtractedReferenceData }
-  | { success: false; error: string }
+import type {
+  ExtractedReferenceData,
+  ExtractDataFromDocumentResult,
+} from './types'
 
 const INDUSTRIES_LIST =
   'Financial Services & Insurance, Retail & Consumer Goods (CPG), Manufacturing & Automotive, Technology, Media & Telecom (TMT), Energy, Resources & Utilities, Healthcare & Life Sciences, Public Sector & Education, Professional Services & Logistics, Travel, Transport & Hospitality, Sonstige'
