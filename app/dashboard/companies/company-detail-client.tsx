@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { toast } from 'sonner'
@@ -16,6 +16,14 @@ import {
   Sparkles,
   Link as LinkIcon,
   Star,
+  Target,
+  Radar,
+  Map,
+  TrendingUp,
+  FileCheck,
+  ExternalLink,
+  Calendar,
+  Newspaper,
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -52,17 +60,22 @@ import type {
   CompanyRefRow,
   RoadmapProjectRow,
   RecommendedReference,
+  DealSignalRow,
 } from './actions'
 import {
   upsertCompanyStrategy,
   getStakeholders,
   createStakeholder,
+  updateStakeholder,
   deleteStakeholder,
   getRoadmapProjects,
   upsertRoadmapProject,
   deleteRoadmapProject,
   getRecommendedReferences,
   getReferencesForOrg,
+  getRecommendedReferencesForAccount,
+  updateCompanyAccountStatus,
+  generateOnePagerHtml,
 } from './actions'
 import { createSharedPortfolio, getExistingShareForReference, getReferencesByIds } from '../actions'
 import type { ReferenceRow } from '../actions'
@@ -106,6 +119,7 @@ type Company = {
   website_url: string | null
   headquarters: string | null
   industry: string | null
+  account_status?: string | null
 }
 
 type Props = {
@@ -114,26 +128,42 @@ type Props = {
   stakeholders: StakeholderRow[]
   references: CompanyRefRow[]
   roadmapProjects: RoadmapProjectRow[]
+  expiringDeals: DealSignalRow[]
+  recommendedRefs: RecommendedReference[]
 }
 
+const ACCOUNT_STATUS_OPTIONS: { value: string; label: string }[] = [
+  { value: 'at_risk', label: 'Account at Risk' },
+  { value: 'warmup', label: 'Warm-up' },
+  { value: 'expansion', label: 'Expansion' },
+]
+
 export function CompanyDetailClient({
-  company,
+  company: initialCompany,
   strategy: initialStrategy,
   stakeholders: initialStakeholders,
   references,
   roadmapProjects: initialRoadmapProjects,
+  expiringDeals,
+  recommendedRefs: initialRecommendedRefs,
 }: Props) {
+  const [company, setCompany] = useState(initialCompany)
   const [strategy, setStrategy] = useState(initialStrategy)
   const [goals, setGoals] = useState(initialStrategy?.company_goals ?? '')
   const [redFlags, setRedFlags] = useState(initialStrategy?.red_flags ?? '')
+  const [valueProposition, setValueProposition] = useState(initialStrategy?.value_proposition ?? '')
   const [competition, setCompetition] = useState(initialStrategy?.competition ?? '')
   const [nextSteps, setNextSteps] = useState(initialStrategy?.next_steps ?? '')
   const [strategySaving, setStrategySaving] = useState(false)
   const [stakeholders, setStakeholders] = useState(initialStakeholders)
   const [stakeholderModalOpen, setStakeholderModalOpen] = useState(false)
+  const [editingStakeholder, setEditingStakeholder] = useState<StakeholderRow | null>(null)
   const [newName, setNewName] = useState('')
   const [newTitle, setNewTitle] = useState('')
   const [newRole, setNewRole] = useState<StakeholderRole>('champion')
+  const [newLinkedIn, setNewLinkedIn] = useState('')
+  const [newPriorities, setNewPriorities] = useState('')
+  const [newLastContact, setNewLastContact] = useState('')
   const [stakeholderSaving, setStakeholderSaving] = useState(false)
   const [roadmapProjects, setRoadmapProjects] = useState(initialRoadmapProjects)
   const [roadmapModalOpen, setRoadmapModalOpen] = useState(false)
@@ -154,6 +184,22 @@ export function CompanyDetailClient({
   const [shareLinkGenerateLoading, setShareLinkGenerateLoading] = useState(false)
   const [sharePreviewRefs, setSharePreviewRefs] = useState<ReferenceRow[]>([])
   const [selectedRecommendRefIds, setSelectedRecommendRefIds] = useState<Set<string>>(new Set())
+  const [onePagerLoading, setOnePagerLoading] = useState(false)
+  const [statusSaving, setStatusSaving] = useState(false)
+
+  const intelligenceScore = useMemo(() => {
+    let filled = 0
+    const total = 8
+    if ((goals || '').trim()) filled++
+    if ((valueProposition || '').trim()) filled++
+    if ((redFlags || '').trim()) filled++
+    if (stakeholders.length > 0) filled++
+    if (roadmapProjects.length > 0) filled++
+    if (references.length > 0) filled++
+    if (expiringDeals.length > 0 || true) filled++ // Market Signals: Platzhalter zählt
+    if (company.account_status) filled++
+    return Math.round((filled / total) * 100)
+  }, [goals, valueProposition, redFlags, stakeholders.length, roadmapProjects.length, references.length, expiringDeals.length, company.account_status])
 
   const handleSaveStrategy = async () => {
     setStrategySaving(true)
@@ -163,14 +209,16 @@ export function CompanyDetailClient({
         red_flags: redFlags || null,
         competition: competition || null,
         next_steps: nextSteps || null,
+        value_proposition: valueProposition || null,
       })
       if (res.success) {
         setStrategy((prev) => ({
-          ...(prev ?? { id: '', company_id: company.id, updated_at: null }),
+          ...(prev ?? { id: '', company_id: company.id, updated_at: null, value_proposition: null }),
           company_goals: goals || null,
           red_flags: redFlags || null,
           competition: competition || null,
           next_steps: nextSteps || null,
+          value_proposition: valueProposition || null,
         }))
         toast.success('Strategie gespeichert.')
       } else {
@@ -180,6 +228,67 @@ export function CompanyDetailClient({
       toast.error('Verbindungsfehler. Bitte erneut versuchen.')
     } finally {
       setStrategySaving(false)
+    }
+  }
+
+  const handleAccountStatusChange = async (value: string | null) => {
+    const status = value === 'at_risk' || value === 'warmup' || value === 'expansion' ? value : null
+    setStatusSaving(true)
+    try {
+      const res = await updateCompanyAccountStatus(company.id, status)
+      if (res.success) {
+        setCompany((prev) => ({ ...prev!, account_status: status }))
+        toast.success('Status aktualisiert.')
+      } else toast.error(res.error)
+    } finally {
+      setStatusSaving(false)
+    }
+  }
+
+  const openEditStakeholder = (s: StakeholderRow) => {
+    setEditingStakeholder(s)
+    setNewLinkedIn(s.linkedin_url ?? '')
+    setNewPriorities(s.priorities_topics ?? '')
+    setNewLastContact(s.last_contact_at ? s.last_contact_at.slice(0, 10) : '')
+  }
+  const saveStakeholderProfile = async () => {
+    if (!editingStakeholder) return
+    setStakeholderSaving(true)
+    try {
+      const res = await updateStakeholder(editingStakeholder.id, {
+        linkedin_url: newLinkedIn || null,
+        priorities_topics: newPriorities || null,
+        last_contact_at: newLastContact || null,
+      })
+      if (res.success) {
+        const list = await getStakeholders(company.id)
+        setStakeholders(list)
+        setEditingStakeholder(null)
+        toast.success('Profil aktualisiert.')
+      } else toast.error(res.error)
+    } finally {
+      setStakeholderSaving(false)
+    }
+  }
+
+  const handleGenerateOnePager = async () => {
+    setOnePagerLoading(true)
+    try {
+      const result = await generateOnePagerHtml(company.id)
+      if (result.success && result.html) {
+        const w = window.open('', '_blank')
+        if (w) {
+          w.document.write(result.html)
+          w.document.close()
+          w.focus()
+          setTimeout(() => w.print(), 300)
+        }
+        toast.success('One-Pager geöffnet – Drucken oder als PDF speichern.')
+      } else toast.error(result.error ?? 'Generierung fehlgeschlagen.')
+    } catch {
+      toast.error('One-Pager konnte nicht erstellt werden.')
+    } finally {
+      setOnePagerLoading(false)
     }
   }
 
@@ -341,48 +450,84 @@ export function CompanyDetailClient({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-wrap items-start gap-4">
-        {company.logo_url ? (
-          <div className="relative size-16 shrink-0 rounded-lg border bg-muted overflow-hidden">
-            <Image
-              src={company.logo_url}
-              alt=""
-              fill
-              className="object-contain"
-              sizes="64px"
-            />
-          </div>
-        ) : (
-          <div className="flex size-16 shrink-0 items-center justify-center rounded-lg border bg-muted">
-            <Building2Icon className="size-8 text-muted-foreground" />
-          </div>
-        )}
-        <div className="min-w-0 flex-1">
-          <h1 className="text-2xl font-semibold tracking-tight">{company.name}</h1>
-          {company.industry && (
-            <p className="text-sm text-muted-foreground mt-0.5">{company.industry}</p>
+      {/* Header: Logo, Name, Status Badge, Intelligence Score */}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex flex-wrap items-start gap-4">
+          {company.logo_url ? (
+            <div className="relative size-16 shrink-0 rounded-lg border bg-muted overflow-hidden">
+              <Image
+                src={company.logo_url}
+                alt=""
+                fill
+                className="object-contain"
+                sizes="64px"
+              />
+            </div>
+          ) : (
+            <div className="flex size-16 shrink-0 items-center justify-center rounded-lg border bg-muted">
+              <Building2Icon className="size-8 text-muted-foreground" />
+            </div>
           )}
-          {company.headquarters && (
-            <p className="text-sm text-muted-foreground">{company.headquarters}</p>
-          )}
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-2xl font-semibold tracking-tight">{company.name}</h1>
+              <Select
+                value={company.account_status ?? '__none__'}
+                onValueChange={(v) => handleAccountStatusChange(v === '__none__' ? null : v)}
+                disabled={statusSaving}
+              >
+                <SelectTrigger className="w-[160px] h-8 text-xs">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">— Status —</SelectItem>
+                  {ACCOUNT_STATUS_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {company.industry && (
+              <p className="text-sm text-muted-foreground mt-0.5">{company.industry}</p>
+            )}
+            {company.headquarters && (
+              <p className="text-sm text-muted-foreground">{company.headquarters}</p>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-2 rounded-lg border bg-muted/50 px-3 py-2">
+          <Target className="size-4 text-muted-foreground" />
+          <span className="text-sm font-medium">Intelligence Score</span>
+          <span className="text-lg font-semibold tabular-nums">{intelligenceScore}%</span>
         </div>
       </div>
 
-      <Tabs defaultValue="roadmap" className="w-full">
-        <TabsList className="w-full justify-start">
-          <TabsTrigger value="roadmap">Opportunity Roadmap</TabsTrigger>
-          <TabsTrigger value="stakeholders">Stakeholder-Mapping</TabsTrigger>
-          <TabsTrigger value="references">Referenz-Archiv</TabsTrigger>
+      <Tabs defaultValue="strategy" className="w-full">
+        <TabsList className="w-full flex flex-wrap justify-start gap-1 h-auto p-1">
+          <TabsTrigger value="strategy" className="gap-1.5">
+            <Target className="size-3.5" /> Strategy
+          </TabsTrigger>
+          <TabsTrigger value="executive" className="gap-1.5">
+            <Radar className="size-3.5" /> Executive Radar
+          </TabsTrigger>
+          <TabsTrigger value="relationship" className="gap-1.5">
+            <Map className="size-3.5" /> Relationship Map
+          </TabsTrigger>
+          <TabsTrigger value="signals" className="gap-1.5">
+            <TrendingUp className="size-3.5" /> Market Signals
+          </TabsTrigger>
+          <TabsTrigger value="proof" className="gap-1.5">
+            <FileCheck className="size-3.5" /> Proof Points
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="roadmap" className="mt-6 space-y-6">
-          {/* Unternehmens-Ziele (Goals) – klare Trennung von der Roadmap */}
+        <TabsContent value="strategy" className="mt-6 space-y-6">
+          {/* Strategy: Ziele, Value Proposition, Herausforderungen */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Unternehmens-Ziele & Strategie</CardTitle>
+              <CardTitle className="text-lg">Strategy (Die Basis)</CardTitle>
               <p className="text-sm text-muted-foreground">
-                Ziele, Risiken und nächste Schritte für diesen Account.
+                Unternehmensziele, Value Proposition und Herausforderungen.
               </p>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -397,21 +542,31 @@ export function CompanyDetailClient({
                 />
               </div>
               <div className="space-y-2">
-                <Label>Red Flags (Risiken im Deal)</Label>
+                <Label>Value Proposition (Warum gewinnen wir hier?)</Label>
                 <Textarea
-                  value={redFlags}
-                  onChange={(e) => setRedFlags(e.target.value)}
-                  placeholder="Risiken notieren …"
+                  value={valueProposition}
+                  onChange={(e) => setValueProposition(e.target.value)}
+                  placeholder="Warum gewinnen wir bei diesem Kunden? …"
                   rows={2}
                   className="resize-none"
                 />
               </div>
               <div className="space-y-2">
-                <Label>Wettbewerb (Wer funkt uns dazwischen?)</Label>
+                <Label>Herausforderungen / Red Flags</Label>
+                <Textarea
+                  value={redFlags}
+                  onChange={(e) => setRedFlags(e.target.value)}
+                  placeholder="Risiken, Pain Points …"
+                  rows={2}
+                  className="resize-none"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Wettbewerb</Label>
                 <Textarea
                   value={competition}
                   onChange={(e) => setCompetition(e.target.value)}
-                  placeholder="Wettbewerber …"
+                  placeholder="Wer funkt uns dazwischen? …"
                   rows={2}
                   className="resize-none"
                 />
@@ -433,13 +588,13 @@ export function CompanyDetailClient({
             </CardContent>
           </Card>
 
-          {/* Opportunity Roadmap – Projekte mit project_name, estimated_value, status, target_date */}
+          {/* Timeline: Opportunity Roadmap (visuell) */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <div>
-                <CardTitle className="text-lg">Opportunity Roadmap</CardTitle>
+                <CardTitle className="text-lg">Opportunity Roadmap (Timeline)</CardTitle>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Projekte und Pipeline mit Name, Wert, Status und Zieltermin.
+                  Projekte und Pipeline – visuell nach Zieltermin.
                 </p>
               </div>
               <Button size="sm" onClick={() => openRoadmapModal()}>
@@ -453,34 +608,27 @@ export function CompanyDetailClient({
                   Noch keine Projekte in der Roadmap. Klicke auf „Projekt hinzufügen“.
                 </p>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b text-left text-muted-foreground">
-                        <th className="pb-2 pr-4 font-medium">Projekt</th>
-                        <th className="pb-2 pr-4 font-medium">Wert</th>
-                        <th className="pb-2 pr-4 font-medium">Status</th>
-                        <th className="pb-2 pr-4 font-medium">Zieltermin</th>
-                        <th className="w-8 pb-2" />
-                        <th className="w-10 pb-2" />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {roadmapProjects.map((p) => (
-                        <tr key={p.id} className="border-b last:border-0">
-                          <td className="py-3 pr-4 font-medium">{p.project_name}</td>
-                          <td className="py-3 pr-4">{p.estimated_value ?? '—'}</td>
-                          <td className="py-3 pr-4">{p.status ?? '—'}</td>
-                          <td className="py-3 pr-4">
-                            {p.target_date
-                              ? new Date(p.target_date).toLocaleDateString('de-DE', {
-                                  day: '2-digit',
-                                  month: '2-digit',
-                                  year: 'numeric',
-                                })
-                              : '—'}
-                          </td>
-                          <td className="py-3 pr-2">
+                <div className="relative space-y-0">
+                  {/* Vertical timeline line */}
+                  <div className="absolute left-[11px] top-2 bottom-2 w-px bg-border" />
+                  {roadmapProjects.map((p) => (
+                    <div key={p.id} className="relative flex gap-4 pb-6 last:pb-0">
+                      <div className="relative z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-primary bg-background" />
+                      <div className="flex-1 min-w-0 pt-0.5">
+                        <div className="font-medium">{p.project_name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          Wert: {p.estimated_value ?? '—'} · Status: {p.status ?? '—'}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {p.target_date
+                            ? new Date(p.target_date).toLocaleDateString('de-DE', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                              })
+                            : '—'}
+                        </div>
+                        <div className="flex items-center gap-1 mt-2">
                             <Popover
                               open={recommendPopoverProjectId === p.id}
                               onOpenChange={(open) => setRecommendPopoverProjectId(open ? p.id : null)}
@@ -613,31 +761,26 @@ export function CompanyDetailClient({
                                 )}
                               </PopoverContent>
                             </Popover>
-                          </td>
-                          <td className="py-3">
-                            <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 text-xs"
-                                onClick={() => openRoadmapModal(p)}
-                              >
-                                Bearbeiten
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 text-xs text-destructive hover:text-destructive"
-                                onClick={() => handleDeleteRoadmapProject(p.id)}
-                              >
-                                Löschen
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={() => openRoadmapModal(p)}
+                          >
+                            Bearbeiten
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs text-destructive hover:text-destructive"
+                            onClick={() => handleDeleteRoadmapProject(p.id)}
+                          >
+                            Löschen
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </CardContent>
@@ -794,14 +937,14 @@ export function CompanyDetailClient({
           </Dialog>
         </TabsContent>
 
-        <TabsContent value="stakeholders" className="mt-6">
+        <TabsContent value="executive" className="mt-6">
           <div className="flex items-center justify-between gap-4 mb-4">
             <p className="text-sm text-muted-foreground">
-              Schachfiguren im Deal – Rollen und Ansprechpartner.
+              C-Level-Entscheider – Profiling mit Prioritäten und Tracking-Feed (Platzhalter).
             </p>
             <Button onClick={() => setStakeholderModalOpen(true)} size="sm">
               <Plus className="size-4 mr-2" />
-              Stakeholder hinzufügen
+              Entscheider hinzufügen
             </Button>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -811,29 +954,45 @@ export function CompanyDetailClient({
               return (
                 <Card key={s.id}>
                   <CardHeader className="pb-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <Icon className={`size-5 shrink-0 ${config.className}`} />
-                        <div className="min-w-0">
-                          <CardTitle className="text-base truncate">{s.name}</CardTitle>
-                          {s.title && (
-                            <p className="text-xs text-muted-foreground truncate">{s.title}</p>
-                          )}
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground text-lg font-medium">
+                        {(s.name || '?').slice(0, 2).toUpperCase()}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <CardTitle className="text-base truncate">{s.name}</CardTitle>
+                        {s.title && <p className="text-xs text-muted-foreground truncate">{s.title}</p>}
+                        <span className={`text-xs font-medium ${config.className}`}>{config.label}</span>
+                        {s.linkedin_url && (
+                          <a
+                            href={s.linkedin_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 mt-1 text-xs text-primary hover:underline"
+                          >
+                            <ExternalLink className="size-3" /> LinkedIn
+                          </a>
+                        )}
+                        {s.priorities_topics && (
+                          <p className="text-xs text-muted-foreground mt-1">Prioritäten: {s.priorities_topics}</p>
+                        )}
+                        <div className="mt-2 rounded border bg-muted/30 p-2 text-xs text-muted-foreground">
+                          Tracking-Feed (Platzhalter – News/Updates später)
+                        </div>
+                        <div className="flex gap-1 mt-2">
+                          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => openEditStakeholder(s)}>
+                            Profil bearbeiten
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs text-destructive hover:text-destructive"
+                            onClick={() => handleDeleteStakeholder(s.id)}
+                          >
+                            Entfernen
+                          </Button>
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="shrink-0 h-8 w-8 text-muted-foreground hover:text-destructive"
-                        onClick={() => handleDeleteStakeholder(s.id)}
-                        aria-label="Stakeholder entfernen"
-                      >
-                        ×
-                      </Button>
                     </div>
-                    <span className={`text-xs font-medium ${config.className}`}>
-                      {config.label}
-                    </span>
                   </CardHeader>
                 </Card>
               )
@@ -841,7 +1000,7 @@ export function CompanyDetailClient({
           </div>
           {stakeholders.length === 0 && (
             <p className="py-8 text-center text-sm text-muted-foreground">
-              Noch keine Stakeholder angelegt. Klicke auf „Stakeholder hinzufügen“.
+              Noch keine Entscheider angelegt. Klicke auf „Entscheider hinzufügen“.
             </p>
           )}
 
@@ -899,15 +1058,210 @@ export function CompanyDetailClient({
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          <Dialog open={!!editingStakeholder} onOpenChange={(open) => !open && setEditingStakeholder(null)}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Profil bearbeiten</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label>LinkedIn-URL</Label>
+                  <Input
+                    value={newLinkedIn}
+                    onChange={(e) => setNewLinkedIn(e.target.value)}
+                    placeholder="https://linkedin.com/in/…"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Prioritäten / Themen</Label>
+                  <Textarea
+                    value={newPriorities}
+                    onChange={(e) => setNewPriorities(e.target.value)}
+                    placeholder="z. B. Digitalisierung, Cloud, Kostenreduktion"
+                    rows={2}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Letzter Kontakt</Label>
+                  <Input
+                    type="date"
+                    value={newLastContact}
+                    onChange={(e) => setNewLastContact(e.target.value)}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setEditingStakeholder(null)}>Abbrechen</Button>
+                <Button onClick={saveStakeholderProfile} disabled={stakeholderSaving}>
+                  {stakeholderSaving && <Loader2 className="size-4 animate-spin mr-2" />}
+                  Speichern
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
-        <TabsContent value="references" className="mt-6">
+        <TabsContent value="relationship" className="mt-6">
+          <div className="flex items-center justify-between gap-4 mb-4">
+            <p className="text-sm text-muted-foreground">
+              Kontakte nach Status: Champion, Blocker, Neutral. Letzter Kontakt für Beziehungsintensität.
+            </p>
+            <Button onClick={() => setStakeholderModalOpen(true)} size="sm">
+              <Plus className="size-4 mr-2" />
+              Kontakt hinzufügen
+            </Button>
+          </div>
+          <div className="space-y-6">
+            {(['champion', 'blocker', 'economic_buyer', 'technical_buyer', 'user_buyer'] as const).map((role) => {
+              const list = stakeholders.filter((s) => s.role === role)
+              const config = STAKEHOLDER_ROLE_CONFIG[role]
+              const Icon = config.Icon
+              const groupLabel = role === 'economic_buyer' || role === 'technical_buyer' || role === 'user_buyer' ? 'Neutral' : config.label
+              if (list.length === 0) return null
+              return (
+                <Card key={role}>
+                  <CardHeader className="py-3">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Icon className={`size-4 ${config.className}`} />
+                      {groupLabel}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {list.map((s) => (
+                      <div key={s.id} className="flex items-center justify-between gap-2 rounded-lg border p-3">
+                        <div>
+                          <p className="font-medium text-sm">{s.name}</p>
+                          {s.title && <p className="text-xs text-muted-foreground">{s.title}</p>}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {s.last_contact_at ? (
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Calendar className="size-3" />
+                              {new Date(s.last_contact_at).toLocaleDateString('de-DE')}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Kein Kontakt</span>
+                          )}
+                          <Button variant="ghost" size="sm" className="h-7" onClick={() => openEditStakeholder(s)}>
+                            Bearbeiten
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-7 text-destructive" onClick={() => handleDeleteStakeholder(s.id)}>×</Button>
+                        </div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+          {stakeholders.length === 0 && (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              Noch keine Kontakte. Klicke auf „Kontakt hinzufügen“.
+            </p>
+          )}
+        </TabsContent>
+
+        <TabsContent value="signals" className="mt-6 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Projekte & Referenzen</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Alle dieser Firma zugeordneten Referenzen.
-              </p>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <TrendingUp className="size-5" />
+                Expiring Deals (Verträge laufen aus)
+              </CardTitle>
+              <CardDescription>
+                Verträge bei diesem Kunden – eigene und von Wettbewerbern – mit Ablaufdatum.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {expiringDeals.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                  Keine auslaufenden Deals für diesen Account.
+                </p>
+              ) : (
+                <ul className="space-y-3">
+                  {expiringDeals.map((d) => (
+                    <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3">
+                      <div>
+                        <p className="font-medium text-sm">{d.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Ablauf: {d.expiry_date ? new Date(d.expiry_date).toLocaleDateString('de-DE') : '—'}
+                          {d.incumbent_provider && ` · Anbieter: ${d.incumbent_provider}`}
+                          {d.volume && ` · ${d.volume}`}
+                        </p>
+                      </div>
+                      <Badge variant="outline">{d.status}</Badge>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Newspaper className="size-5" />
+                Company News
+              </CardTitle>
+              <CardDescription>
+                Quartalszahlen, Pressemeldungen (Platzhalter – Quellen werden später aus dem Internet gezogen).
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-lg border border-dashed bg-muted/30 p-6 text-center text-sm text-muted-foreground">
+                <Newspaper className="size-8 mx-auto mb-2 opacity-50" />
+                <p>Company News werden hier als Zusammenfassung mit Quellen-Kapsel angezeigt.</p>
+                <p className="mt-1 text-xs">Klick auf Quelle führt zur Originalmeldung.</p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="proof" className="mt-6 space-y-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <p className="text-sm text-muted-foreground">
+              Beweis-Archiv (Referenzen) – priorisiert zu Strategy. Smart Match schlägt passende Referenzen vor.
+            </p>
+            <Button onClick={handleGenerateOnePager} disabled={onePagerLoading}>
+              {onePagerLoading ? <Loader2 className="size-4 animate-spin mr-2" /> : <FileCheck className="size-4 mr-2" />}
+              One-Pager generieren
+            </Button>
+          </div>
+          {initialRecommendedRefs.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Sparkles className="size-5" />
+                  Smart Match
+                </CardTitle>
+                <CardDescription>
+                  Für {company.name} passen diese Referenzen (Branche/Herausforderungen). Willst du sie hinzufügen?
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-2">
+                  {initialRecommendedRefs.map((ref) => (
+                    <li key={ref.id} className="flex items-center justify-between gap-2 rounded-lg border p-2">
+                      <div>
+                        <span className="font-medium text-sm">{ref.title}</span>
+                        {ref.company_name && <span className="text-xs text-muted-foreground ml-2">({ref.company_name})</span>}
+                        {ref.score > 0 && <Badge variant="outline" className="ml-2 text-xs">{ref.score}%</Badge>}
+                      </div>
+                      <Link href={`/dashboard?ref=${ref.id}`} className="text-xs text-primary hover:underline">
+                        Zur Referenz
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Beweis-Archiv (Referenzen)</CardTitle>
+              <CardDescription>
+                Alle dieser Firma zugeordneten Referenzen – priorisiert zu den in Strategy definierten Zielen.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {references.length === 0 ? (

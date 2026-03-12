@@ -7,6 +7,8 @@ import {
   getStakeholders,
   getReferencesByCompanyId,
   getRoadmapProjects,
+  getExpiringDealsByCompanyId,
+  getRecommendedReferencesForAccount,
 } from '../actions'
 import { ChevronRight } from 'lucide-react'
 
@@ -31,17 +33,19 @@ export default async function CompanyDetailPage({
 
   const { data: company } = await supabase
     .from('companies')
-    .select('id, name, logo_url, website_url, headquarters, industry')
+    .select('id, name, logo_url, website_url, headquarters, industry, account_status')
     .eq('id', id)
     .single()
 
   if (!company) notFound()
 
-  const [strategy, stakeholders, references, roadmapProjects] = await Promise.all([
+  const [strategy, stakeholders, references, roadmapProjects, expiringDeals, recommendedRefs] = await Promise.all([
     getCompanyStrategy(id),
     getStakeholders(id),
     getReferencesByCompanyId(id),
     getRoadmapProjects(id),
+    getExpiringDealsByCompanyId(id),
+    getRecommendedReferencesForAccount(id),
   ])
 
   return (
@@ -62,6 +66,8 @@ export default async function CompanyDetailPage({
         stakeholders={stakeholders}
         references={references}
         roadmapProjects={roadmapProjects}
+        expiringDeals={expiringDeals}
+        recommendedRefs={recommendedRefs}
       />
     </div>
   )

@@ -10,6 +10,7 @@ export type CompanyStrategyRow = {
   red_flags: string | null
   competition: string | null
   next_steps: string | null
+  value_proposition?: string | null
   updated_at: string | null
 }
 
@@ -26,6 +27,10 @@ export type StakeholderRow = {
   name: string
   title: string | null
   role: StakeholderRole
+  linkedin_url?: string | null
+  priorities_topics?: string | null
+  last_contact_at?: string | null
+  sentiment?: string | null
   created_at: string
   updated_at: string | null
 }
@@ -69,7 +74,7 @@ export async function getCompanyStrategy(
   const supabase = await createServerSupabaseClient()
   const { data } = await supabase
     .from('company_strategies')
-    .select('id, company_id, company_goals, red_flags, competition, next_steps, updated_at')
+    .select('id, company_id, company_goals, red_flags, competition, next_steps, value_proposition, updated_at')
     .eq('company_id', companyId)
     .maybeSingle()
   return data as CompanyStrategyRow | null
@@ -82,6 +87,7 @@ export async function upsertCompanyStrategy(
     red_flags?: string | null
     competition?: string | null
     next_steps?: string | null
+    value_proposition?: string | null
   }
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createServerSupabaseClient()
@@ -92,6 +98,7 @@ export async function upsertCompanyStrategy(
       red_flags: payload.red_flags ?? null,
       competition: payload.competition ?? null,
       next_steps: payload.next_steps ?? null,
+      value_proposition: payload.value_proposition ?? null,
       updated_at: new Date().toISOString(),
     },
     { onConflict: 'company_id' }
@@ -318,7 +325,15 @@ export async function getStakeholders(companyId: string): Promise<StakeholderRow
 
 export async function createStakeholder(
   companyId: string,
-  payload: { name: string; title?: string | null; role: StakeholderRole }
+  payload: {
+    name: string
+    title?: string | null
+    role: StakeholderRole
+    linkedin_url?: string | null
+    priorities_topics?: string | null
+    last_contact_at?: string | null
+    sentiment?: string | null
+  }
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createServerSupabaseClient()
   const { error } = await supabase.from('stakeholders').insert({
@@ -326,6 +341,10 @@ export async function createStakeholder(
     name: payload.name.trim(),
     title: payload.title?.trim() || null,
     role: payload.role,
+    linkedin_url: payload.linkedin_url?.trim() || null,
+    priorities_topics: payload.priorities_topics?.trim() || null,
+    last_contact_at: payload.last_contact_at || null,
+    sentiment: payload.sentiment?.trim() || null,
   })
   if (error) return { success: false, error: error.message }
   revalidatePath(`/dashboard/companies/${companyId}`)
@@ -334,7 +353,15 @@ export async function createStakeholder(
 
 export async function updateStakeholder(
   id: string,
-  payload: { name?: string; title?: string | null; role?: StakeholderRole }
+  payload: {
+    name?: string
+    title?: string | null
+    role?: StakeholderRole
+    linkedin_url?: string | null
+    priorities_topics?: string | null
+    last_contact_at?: string | null
+    sentiment?: string | null
+  }
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createServerSupabaseClient()
   const { data: row } = await supabase
@@ -342,15 +369,15 @@ export async function updateStakeholder(
     .select('company_id')
     .eq('id', id)
     .single()
-  const { error } = await supabase
-    .from('stakeholders')
-    .update({
-      ...(payload.name !== undefined && { name: payload.name.trim() }),
-      ...(payload.title !== undefined && { title: payload.title?.trim() || null }),
-      ...(payload.role !== undefined && { role: payload.role }),
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', id)
+  const update: Record<string, unknown> = { updated_at: new Date().toISOString() }
+  if (payload.name !== undefined) update.name = payload.name.trim()
+  if (payload.title !== undefined) update.title = payload.title?.trim() || null
+  if (payload.role !== undefined) update.role = payload.role
+  if (payload.linkedin_url !== undefined) update.linkedin_url = payload.linkedin_url?.trim() || null
+  if (payload.priorities_topics !== undefined) update.priorities_topics = payload.priorities_topics?.trim() || null
+  if (payload.last_contact_at !== undefined) update.last_contact_at = payload.last_contact_at || null
+  if (payload.sentiment !== undefined) update.sentiment = payload.sentiment?.trim() || null
+  const { error } = await supabase.from('stakeholders').update(update).eq('id', id)
   if (error) return { success: false, error: error.message }
   if (row?.company_id) revalidatePath(`/dashboard/companies/${row.company_id}`)
   return { success: true }
@@ -381,3 +408,182 @@ export async function getReferencesByCompanyId(
     .order('created_at', { ascending: false })
   return (data ?? []) as CompanyRefRow[]
 }
+
+/** Expiring Deals für einen Account (Market Signals Tab). */
+export type DealSignalRow = {
+  id: string
+  title: string
+  expiry_date: string | null
+  volume: string | null
+  incumbent_provider: string | null
+  status: string
+}
+export async function getExpiringDealsByCompanyId(
+  companyId: string
+): Promise<DealSignalRow[]> {
+  const supabase = await createServerSupabaseClient()
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', (await supabase.auth.getUser()).data.user?.id)
+    .single()
+  const orgId = profile?.organization_id
+  if (!orgId) return []
+  const now = new Date()
+  const in180 = new Date(now)
+  in180.setDate(in180.getDate() + 180)
+  const { data } = await supabase
+    .from('deals')
+    .select('id, title, expiry_date, volume, incumbent_provider, status')
+    .eq('company_id', companyId)
+    .eq('organization_id', orgId)
+    .not('expiry_date', 'is', null)
+    .lte('expiry_date', in180.toISOString().slice(0, 10))
+    .order('expiry_date', { ascending: true })
+  return (data ?? []) as DealSignalRow[]
+}
+
+export async function updateCompanyAccountStatus(
+  companyId: string,
+  account_status: 'at_risk' | 'warmup' | 'expansion' | null
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createServerSupabaseClient()
+  const { error } = await supabase
+    .from('companies')
+    .update({ account_status } as { account_status: string | null })
+    .eq('id', companyId)
+  if (error) return { success: false, error: error.message }
+  revalidatePath('/dashboard/companies')
+  revalidatePath(`/dashboard/companies/${companyId}`)
+  return { success: true }
+}
+
+/** Smart Match für Account: Referenzen aus der Org, die zu diesem Kunden passen (Branche/Herausforderungen). */
+export async function getRecommendedReferencesForAccount(
+  companyId: string
+): Promise<RecommendedReference[]> {
+  const supabase = await createServerSupabaseClient()
+  const { data: company } = await supabase
+    .from('companies')
+    .select('industry, headquarters')
+    .eq('id', companyId)
+    .single()
+  const { data: strategy } = await supabase
+    .from('company_strategies')
+    .select('company_goals')
+    .eq('company_id', companyId)
+    .maybeSingle()
+  const companyIndustry = (company?.industry ?? '').trim().toLowerCase()
+  const goalsTags = (strategy?.company_goals ?? '')
+    .split(/[\s,;]+/)
+    .map((t) => t.trim().toLowerCase())
+    .filter(Boolean)
+  const projectTagSet = new Set(goalsTags)
+  const companyHeadquarters = company?.headquarters ?? null
+
+  const { data: refRows } = await supabase
+    .from('references')
+    .select('id, title, industry, tags, country, created_at, companies(name)')
+    .is('deleted_at', null)
+    .neq('company_id', companyId)
+
+  if (!refRows?.length) return []
+  const twelveMonthsAgo = new Date()
+  twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12)
+  const refCountry = (r: (typeof refRows)[0]) => (r.country as string | null) ?? null
+  const companyName = (r: (typeof refRows)[0]) => {
+    const c = r.companies
+    if (Array.isArray(c) && c.length > 0) return (c[0] as { name?: string }).name ?? null
+    return (c as { name?: string } | null)?.name ?? null
+  }
+  const scored: {
+    ref: (typeof refRows)[0]
+    matchType: RecommendedReference['matchType']
+    score: number
+    matchReasons: RecommendedReference['matchReasons']
+  }[] = []
+  for (const r of refRows) {
+    const refIndustry = (r.industry as string ?? '').trim().toLowerCase()
+    const refTagSet = normalizeTags(r.tags as string | null)
+    const industryMatch = !!companyIndustry && companyIndustry === refIndustry
+    const tagMatch =
+      projectTagSet.size > 0 &&
+      refTagSet.size > 0 &&
+      [...projectTagSet].some((t) => refTagSet.has(t))
+    const sizeRegion = sizeRegionMatch(companyHeadquarters, refCountry(r))
+    let points =
+      (industryMatch ? 50 : 0) + (tagMatch ? 30 : 0) + (sizeRegion ? 20 : 0)
+    if (points === 0) continue
+    const createdAt = r.created_at as string | null | undefined
+    if (createdAt && new Date(createdAt) >= twelveMonthsAgo) points = Math.min(100, points + 10)
+    let matchType: RecommendedReference['matchType'] = 'industry_only'
+    if (industryMatch && tagMatch) matchType = 'industry_and_tags'
+    else if (tagMatch) matchType = 'tags_only'
+    scored.push({
+      ref: r,
+      matchType,
+      score: points,
+      matchReasons: { industry: industryMatch, tags: tagMatch, sizeRegion },
+    })
+  }
+  scored.sort((a, b) => b.score - a.score)
+  return scored.slice(0, 5).map(({ ref, matchType, score, matchReasons }) => ({
+    id: ref.id,
+    title: (ref.title as string) ?? '',
+    company_name: companyName(ref),
+    matchType,
+    score,
+    matchReasons,
+  }))
+}
+
+/** One-Pager HTML für Druck/PDF: Strategy + Stakeholder-Prioritäten + Referenzen. */
+export async function generateOnePagerHtml(
+  companyId: string
+): Promise<{ success: boolean; html?: string; error?: string }> {
+  const supabase = await createServerSupabaseClient()
+  const [
+    { data: company },
+    { data: strategy },
+    { data: stakeholders },
+    refs,
+  ] = await Promise.all([
+    supabase.from('companies').select('name, industry').eq('id', companyId).single(),
+    supabase.from('company_strategies').select('company_goals, red_flags, value_proposition, next_steps').eq('company_id', companyId).maybeSingle(),
+    supabase.from('stakeholders').select('name, title, role, priorities_topics').eq('company_id', companyId),
+    getReferencesByCompanyId(companyId),
+  ])
+  if (!company) return { success: false, error: 'Unternehmen nicht gefunden.' }
+  const goals = strategy?.company_goals ?? ''
+  const challenges = strategy?.red_flags ?? ''
+  const valueProp = strategy?.value_proposition ?? ''
+  const nextSteps = strategy?.next_steps ?? ''
+  const execSummary = (stakeholders?.data ?? []).map((s) => `${s.name}${s.title ? ` (${s.title})` : ''}: ${(s.priorities_topics ?? '').trim() || '—'}`).join('\n')
+  const refList = refs.map((r) => r.title).join(', ') || '—'
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>One-Pager ${escapeHtml(company.name)}</title><style>body{font-family:system-ui,sans-serif;max-width:800px;margin:2rem auto;padding:0 1rem;line-height:1.5;} h1{font-size:1.5rem;} h2{font-size:1.1rem;margin-top:1.5rem;} ul{margin:0.25rem 0;} .meta{color:#666;font-size:0.9rem;}</style></head><body>
+<h1>${escapeHtml(company.name)}</h1>
+<p class="meta">${escapeHtml(company.industry ?? '')}</p>
+<h2>Unternehmensziele</h2>
+<p>${escapeHtml(goals) || '—'}</p>
+<h2>Value Proposition (Warum gewinnen wir hier?)</h2>
+<p>${escapeHtml(valueProp) || '—'}</p>
+<h2>Herausforderungen / Red Flags</h2>
+<p>${escapeHtml(challenges) || '—'}</p>
+<h2>Entscheider & Prioritäten</h2>
+<pre style="white-space:pre-wrap;font-size:0.9rem;">${escapeHtml(execSummary) || '—'}</pre>
+<h2>Nächste Schritte</h2>
+<p>${escapeHtml(nextSteps) || '—'}</p>
+<h2>Referenzen / Proof Points</h2>
+<p>${escapeHtml(refList)}</p>
+<p class="meta" style="margin-top:2rem;">Erstellt mit Client Intelligence · ${new Date().toLocaleDateString('de-DE')}</p>
+</body></html>`
+  return { success: true, html }
+}
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
