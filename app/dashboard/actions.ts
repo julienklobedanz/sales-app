@@ -881,7 +881,16 @@ export async function createSharedPortfolio(referenceIds: string[]): Promise<{ s
       const url = pathPrefix ? `${pathPrefix}/${slug}` : `/p/${slug}`
       return { success: true, url, slug }
     }
-    if ((error as { code?: string }).code === '23505') continue // unique violation, retry
+    const code = (error as { code?: string }).code
+    if (code === '23505') continue // unique violation, retry
+    if (code === '42P01' || /shared_portfolios/i.test(error.message)) {
+      console.error('[createSharedPortfolio] shared_portfolios Tabelle fehlt oder Schema-Cache veraltet:', error)
+      return {
+        success: false,
+        error:
+          'Kundenlink konnte nicht erstellt werden, da die Tabelle "shared_portfolios" in der Datenbank fehlt oder das Schema noch nicht aktualisiert wurde. Bitte Migration in Supabase ausführen.',
+      }
+    }
     console.error('[createSharedPortfolio] shared_portfolios insert failed (Schema/Berechtigung?):', error.message, error)
     return { success: false, error: error.message }
   }
@@ -893,12 +902,22 @@ export async function getExistingShareForReference(referenceId: string): Promise
   const supabase = await createServerSupabaseClient()
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || ''
   const pathPrefix = baseUrl ? `${baseUrl.replace(/\/$/, '')}/p` : '/p'
-  const { data: rows } = await supabase
+  const { data: rows, error } = await supabase
     .from('shared_portfolios')
     .select('slug')
     .eq('is_active', true)
     .contains('reference_ids', [referenceId])
     .limit(1)
+  if (error) {
+    const code = (error as { code?: string }).code
+    if (code === '42P01' || /shared_portfolios/i.test(error.message)) {
+      console.error('[getExistingShareForReference] shared_portfolios Tabelle fehlt oder Schema-Cache veraltet:', error)
+      // Kein harter Fehler im UI – einfach so tun, als gäbe es keinen bestehenden Link
+      return null
+    }
+    console.error('[getExistingShareForReference] Fehler beim Laden von shared_portfolios:', error)
+    return null
+  }
   const row = rows?.[0]
   if (!row?.slug) return null
   return { slug: row.slug, url: pathPrefix ? `${pathPrefix}/${row.slug}` : `/p/${row.slug}` }
