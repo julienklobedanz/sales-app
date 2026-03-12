@@ -49,19 +49,21 @@ Erlaubte Werte für "industry" (genau einer): ${INDUSTRIES_LIST}
 JSON-Schema:
 {
   "title": "string oder null",
-  "summary": "string oder null",
+  "summary": "sehr kurze Zusammenfassung (max. 2 Sätze) oder null",
   "industry": "einer der erlaubten Industrien oder null",
   "volume_eur": "string z.B. '5M' oder '500000' oder null",
   "employee_count": Zahl oder null,
   "tags": ["tag1", "tag2"],
   "company_name": "Firmenname / Kundenname aus dem Dokument oder null",
-  "customer_challenge": "Herausforderung des Kunden (kurz, 1-2 Sätze) oder null",
-  "our_solution": "Unsere Lösung / angebotene Lösung (kurz, 1-2 Sätze) oder null"
+  "customer_challenge": "Herausforderung des Kunden (sehr kurz, 1 Satz) oder null",
+  "our_solution": "Unsere Lösung / angebotene Lösung (sehr kurz, 1 Satz) oder null"
 }
 
-Dokumenttext:
+Schreibe alle Textfelder so knapp wie möglich. Verwende KEINE Zeilenumbrüche in Strings.
+
+Dokumenttext (Ausschnitt):
 ---
-${documentText.slice(0, 12000)}
+${documentText.slice(0, 8000)}
 ---`
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -74,6 +76,7 @@ ${documentText.slice(0, 12000)}
       model: 'gpt-4o-mini',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.2,
+      max_tokens: 400,
     }),
   })
 
@@ -152,7 +155,11 @@ export async function extractDataFromDocument(formData: FormData): Promise<Extra
         message: err.message,
         stack: err.stack,
       })
-      return { success: false, error: 'Text konnte nicht aus dem Dokument gelesen werden.' }
+      return {
+        success: false,
+        error:
+          'Text konnte nicht aus dem Dokument gelesen werden. Das Dokument könnte bildbasiert oder geschützt sein – bitte die Felder manuell ausfüllen.',
+      }
     }
 
     if (!documentText || documentText.trim().length < 50) {
@@ -161,7 +168,11 @@ export async function extractDataFromDocument(formData: FormData): Promise<Extra
         mimeType,
         length: documentText?.length ?? 0,
       })
-      return { success: false, error: 'Das Dokument enthält zu wenig Text für eine Extraktion.' }
+      return {
+        success: false,
+        error:
+          'Das Dokument enthält zu wenig erkennbaren Text für eine Extraktion (möglicherweise ein Scan/Bild-PDF). Bitte die Felder manuell ausfüllen.',
+      }
     }
 
     try {

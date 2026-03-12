@@ -452,7 +452,10 @@ export function ReferenceForm({
         if (d.our_solution != null) setOurSolution(d.our_solution)
         toast.success('Daten aus dem Dokument übernommen. Bitte prüfen und ggf. anpassen.')
       } else {
-        toast.error(result.error)
+        toast.error(
+          result.error ||
+            'Automatisches Ausfüllen fehlgeschlagen. Du kannst die Daten aber manuell eingeben.'
+        )
       }
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Extraktion fehlgeschlagen.'
@@ -462,7 +465,10 @@ export function ReferenceForm({
           'Die Datei konnte nicht verarbeitet werden (Proxy/Timeout). Bitte kleinere Datei verwenden (max. 4,5 MB) oder später erneut versuchen.'
         )
       } else {
-        toast.error(message)
+        toast.error(
+          message ||
+            'Automatisches Ausfüllen fehlgeschlagen. Du kannst die Daten aber manuell eingeben.'
+        )
       }
     } finally {
       setMagicImportLoading(false)
