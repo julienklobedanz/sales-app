@@ -1125,7 +1125,7 @@ export function ReferenceForm({
   )
 
   return (
-    <Card className="w-full max-w-2xl">
+    <Card className="w-full max-w-4xl min-w-0">
       <CardHeader>
         <CardTitle>
           {isEditMode ? 'Referenz bearbeiten' : 'Neue Referenz'}
@@ -1138,11 +1138,11 @@ export function ReferenceForm({
       </CardHeader>
       <CardContent>
         {isEditMode ? (
-          <form onSubmit={handleEditSubmit} className="space-y-6">
+          <form onSubmit={handleEditSubmit} className="w-full min-w-0 space-y-6">
             {formContent}
           </form>
         ) : (
-          <form onSubmit={handleCreateSubmit} className="space-y-6">
+          <form onSubmit={handleCreateSubmit} className="w-full min-w-0 space-y-6">
             {formContent}
           </form>
         )}
@@ -1386,7 +1386,12 @@ function MagicImportDropzone({
 
   const acceptTypes = 'application/pdf,.pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx'
 
+  const MAX_SIZE_BYTES = 4.5 * 1024 * 1024 // 4.5MB
   const validateAndAccept = (file: File) => {
+    if (file.size > MAX_SIZE_BYTES) {
+      toast.error('Datei zu groß für automatische Erkennung (Max 4.5MB).')
+      return
+    }
     const ok =
       file.type === 'application/pdf' ||
       file.type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||

@@ -111,77 +111,90 @@ ${documentText.slice(0, 12000)}
   }
 }
 
+const MAX_FILE_BYTES = 4.5 * 1024 * 1024 // 4.5MB
+
 export async function extractDataFromDocument(formData: FormData): Promise<ExtractDataFromDocumentResult> {
-  const file = formData.get('file') as File | null
-  if (!file || !(file instanceof File)) {
-    return { success: false, error: 'Keine Datei übergeben.' }
-  }
-
-  const mimeType = file.type
-  const fileName = file.name ?? 'unbenannt'
-  const size = file.size
-
-  console.log('extractDataFromDocument: received file', {
-    fileName,
-    mimeType,
-    size,
-  })
-
-  const isPdf =
-    mimeType === 'application/pdf' || /\.pdf$/i.test(fileName)
-  const isPptx =
-    mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
-    /\.pptx$/i.test(fileName)
-
-  if (!isPdf && !isPptx) {
-    console.error('extractDataFromDocument: unsupported file type', {
-      fileName,
-      mimeType,
-    })
-    return { success: false, error: 'Nur PDF- oder PPTX-Dateien werden unterstützt.' }
-  }
-
-  let documentText: string
   try {
-    const buffer = Buffer.from(await file.arrayBuffer())
-    if (isPdf) {
-      documentText = await extractTextFromPdf(buffer)
-    } else {
-      documentText = await extractTextFromPptx(buffer)
+    const file = formData.get('file') as File | null
+    if (!file || !(file instanceof File)) {
+      return { success: false, error: 'Keine Datei übergeben.' }
+    }
+
+    const mimeType = file.type
+    const fileName = file.name ?? 'unbenannt'
+    const size = file.size
+
+    console.log('extractDataFromDocument: received file', { fileName, mimeType, size })
+
+    if (size > MAX_FILE_BYTES) {
+      console.warn('extractDataFromDocument: file too large', { fileName, size, max: MAX_FILE_BYTES })
+      return {
+        success: false,
+        error: `Datei zu groß für automatische Erkennung (Max 4,5 MB). Aktuell: ${(size / 1024 / 1024).toFixed(1)} MB.`,
+      }
+    }
+
+    const isPdf =
+      mimeType === 'application/pdf' || /\.pdf$/i.test(fileName)
+    const isPptx =
+      mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
+      /\.pptx$/i.test(fileName)
+
+    if (!isPdf && !isPptx) {
+      console.error('extractDataFromDocument: unsupported file type', { fileName, mimeType })
+      return { success: false, error: 'Nur PDF- oder PPTX-Dateien werden unterstützt.' }
+    }
+
+    let documentText: string
+    try {
+      const buffer = Buffer.from(await file.arrayBuffer())
+      if (isPdf) {
+        documentText = await extractTextFromPdf(buffer)
+      } else {
+        documentText = await extractTextFromPptx(buffer)
+      }
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      console.error('extractDataFromDocument: Text extraction error', {
+        fileName,
+        mimeType,
+        size,
+        message: err.message,
+        stack: err.stack,
+      })
+      return { success: false, error: 'Text konnte nicht aus dem Dokument gelesen werden.' }
+    }
+
+    if (!documentText || documentText.trim().length < 50) {
+      console.warn('extractDataFromDocument: extracted text too short', {
+        fileName,
+        mimeType,
+        length: documentText?.length ?? 0,
+      })
+      return { success: false, error: 'Das Dokument enthält zu wenig Text für eine Extraktion.' }
+    }
+
+    try {
+      console.log('extractDataFromDocument: sending text to LLM', { fileName, mimeType, length: documentText.length })
+      const data = await extractWithLLM(documentText)
+      return { success: true, data }
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      console.error('extractDataFromDocument: LLM extraction error', {
+        fileName,
+        mimeType,
+        message: err.message,
+        stack: err.stack,
+      })
+      const message = err.message || 'Extraktion fehlgeschlagen.'
+      return { success: false, error: message }
     }
   } catch (e) {
-    console.error('extractDataFromDocument: Text extraction error', {
-      fileName,
-      mimeType,
-      error: e,
-    })
-    return { success: false, error: 'Text konnte nicht aus dem Dokument gelesen werden.' }
-  }
-
-  if (!documentText || documentText.trim().length < 50) {
-    console.warn('extractDataFromDocument: extracted text too short', {
-      fileName,
-      mimeType,
-      length: documentText?.length ?? 0,
-    })
-    return { success: false, error: 'Das Dokument enthält zu wenig Text für eine Extraktion.' }
-  }
-
-  try {
-    console.log('extractDataFromDocument: sending text to LLM', {
-      fileName,
-      mimeType,
-      length: documentText.length,
-    })
-    const data = await extractWithLLM(documentText)
-    return { success: true, data }
-  } catch (e) {
-    const message = e instanceof Error ? e.message : 'Extraktion fehlgeschlagen.'
-    console.error('extractDataFromDocument: LLM extraction error', {
-      fileName,
-      mimeType,
-      error: e,
-    })
-    return { success: false, error: message }
+    const err = e instanceof Error ? e : new Error(String(e))
+    console.error('extractDataFromDocument: unexpected error', { message: err.message, stack: err.stack })
+    return {
+      success: false,
+      error: err.message || 'Ein unerwarteter Fehler ist aufgetreten. Bitte Dateigröße (max. 4,5 MB) und Format prüfen.',
+    }
   }
 }

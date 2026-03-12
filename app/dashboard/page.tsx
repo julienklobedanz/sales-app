@@ -5,6 +5,7 @@ import { DashboardOverview } from './dashboard-overview'
 import type { Profile } from './dashboard-shell'
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60
 
 type Props = {
   searchParams: Promise<{ favoriten?: string }>

@@ -15,9 +15,9 @@ import { ChevronRight } from 'lucide-react'
 export default async function CompanyDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }>
+  params: { id: string }
 }) {
-  const { id } = await params
+  const { id } = params
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
@@ -49,7 +49,7 @@ export default async function CompanyDetailPage({
   ])
 
   return (
-    <div className="space-y-6 px-6 py-6 md:px-12 lg:px-20">
+    <div className="space-y-6 px-6 py-6 md:px-10 lg:px-16 xl:px-24">
       <nav className="flex items-center gap-2 text-sm text-muted-foreground">
         <Link href="/dashboard/companies" className="hover:text-foreground">
           Client Intelligence
@@ -60,15 +60,17 @@ export default async function CompanyDetailPage({
         </span>
       </nav>
 
-      <CompanyDetailClient
-        company={company}
-        strategy={strategy}
-        stakeholders={stakeholders}
-        references={references}
-        roadmapProjects={roadmapProjects}
-        expiringDeals={expiringDeals}
-        recommendedRefs={recommendedRefs}
-      />
+      <div className="w-full max-w-6xl mx-auto">
+        <CompanyDetailClient
+          company={company}
+          strategy={strategy}
+          stakeholders={stakeholders}
+          references={references}
+          roadmapProjects={roadmapProjects}
+          expiringDeals={expiringDeals}
+          recommendedRefs={recommendedRefs}
+        />
+      </div>
     </div>
   )
 }
