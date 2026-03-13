@@ -24,6 +24,8 @@ import {
   ExternalLink,
   Calendar,
   Newspaper,
+  HelpCircle,
+  Save,
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -109,6 +111,11 @@ const STAKEHOLDER_ROLE_CONFIG: Record<
     label: 'User Buyer',
     Icon: Users,
     className: 'text-blue-500',
+  },
+  unknown: {
+    label: 'Unbekannt',
+    Icon: HelpCircle,
+    className: 'text-muted-foreground',
   },
 }
 
@@ -581,10 +588,16 @@ export function CompanyDetailClient({
                   className="resize-none"
                 />
               </div>
-              <Button onClick={handleSaveStrategy} disabled={strategySaving}>
-                {strategySaving ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
-                {strategySaving ? 'Speichern…' : 'Strategie speichern'}
-              </Button>
+              <div className="flex justify-end">
+                <Button onClick={handleSaveStrategy} disabled={strategySaving}>
+                  {strategySaving ? (
+                    <Loader2 className="size-4 animate-spin mr-2" />
+                  ) : (
+                    <Save className="size-4 mr-2" />
+                  )}
+                  {strategySaving ? 'Speichern…' : 'Speichern'}
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
@@ -1026,8 +1039,32 @@ export function CompanyDetailClient({
                     placeholder="z. B. CIO, Abteilungsleiter"
                   />
                 </div>
-                <div className="space-y-2">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
                   <Label>Rolle im Deal</Label>
+                  <TooltipProvider delayDuration={0}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="inline-flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
+                          aria-label="Erklärung zu den Rollen"
+                        >
+                          <HelpCircle className="size-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs text-xs leading-relaxed">
+                        <p className="font-semibold mb-1">Rollen im Deal</p>
+                        <p><span className="font-semibold">Champion</span>: Treibt unser Projekt intern voran, öffnet Türen.</p>
+                        <p><span className="font-semibold">Economic Buyer</span>: Entscheider über Budgets und Kaufentscheidung.</p>
+                        <p><span className="font-semibold">Technical Buyer</span>: Prüft Anforderungen, Architektur und Integration.</p>
+                        <p><span className="font-semibold">User Buyer</span>: Betroffene Nutzer / Fachbereiche im Alltag.</p>
+                        <p><span className="font-semibold">Blocker</span>: Bremst oder stellt das Vorhaben in Frage.</p>
+                        <p><span className="font-semibold">Unbekannt</span>: Rolle ist noch nicht klar eingeordnet.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                   <Select
                     value={newRole}
                     onValueChange={(v) => setNewRole(v as StakeholderRole)}

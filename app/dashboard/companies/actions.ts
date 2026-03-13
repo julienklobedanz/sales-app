@@ -20,6 +20,7 @@ export type StakeholderRole =
   | 'blocker'
   | 'technical_buyer'
   | 'user_buyer'
+  | 'unknown'
 
 export type StakeholderRow = {
   id: string
