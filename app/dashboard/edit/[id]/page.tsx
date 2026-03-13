@@ -109,18 +109,19 @@ export default async function EditReferencePage({
   }
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-6">
-      <div className="mx-auto max-w-2xl space-y-6">
-        <Link href="/dashboard">
-          <Button variant="ghost" size="sm" className="-ml-2 gap-2">
-            <ArrowLeftIcon className="size-4" />
-            Zurück zum Dashboard
-          </Button>
-        </Link>
-        <div className="flex flex-col gap-6">
-          <h1 className="text-2xl font-bold tracking-tight">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="relative w-full max-w-4xl rounded-xl bg-background shadow-xl">
+        <div className="flex items-center justify-between border-b px-4 py-3">
+          <h1 className="text-base font-semibold tracking-tight">
             Referenz bearbeiten
           </h1>
+          <Link href="/dashboard">
+            <Button variant="ghost" size="icon" aria-label="Schließen">
+              <ArrowLeftIcon className="size-4" />
+            </Button>
+          </Link>
+        </div>
+        <div className="max-h-[90vh] overflow-y-auto px-4 pb-4 pt-3">
           <ReferenceForm
             companies={companies ?? []}
             contacts={contacts ?? []}
