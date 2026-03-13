@@ -1404,7 +1404,7 @@ export function ReferenceForm({
   }
 
   return (
-    <div className="w-full max-w-4xl min-w-0 pb-24">
+    <div className="w-full max-w-4xl min-w-0 pb-6">
       <Card className="border-0 shadow-none">
         <CardContent className="px-0">
           {isEditMode ? (
@@ -1427,9 +1427,9 @@ export function ReferenceForm({
         </CardContent>
       </Card>
 
-      {/* Sticky Action Bar */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/80 backdrop-blur">
-        <div className="mx-auto flex max-w-4xl items-center justify-end gap-3 px-4 py-3">
+      {/* Sticky Action Bar innerhalb des Formular-Containers */}
+      <div className="sticky bottom-0 z-40 border-t bg-background/80 backdrop-blur mt-6">
+        <div className="flex items-center justify-end gap-3 px-4 py-3">
           <Button type="submit" form={formId} disabled={submitting}>
             {submitting ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
