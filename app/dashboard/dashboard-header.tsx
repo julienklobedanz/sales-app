@@ -14,11 +14,15 @@ export function DashboardHeader() {
 
   const pathSegments = pathname?.split('/').filter(Boolean) || []
   const isCompanyDetail =
-    pathSegments.length >= 4 &&
-    pathSegments[1] === 'dashboard' &&
-    pathSegments[2] === 'companies'
+    pathSegments.length === 3 &&
+    pathSegments[0] === 'dashboard' &&
+    pathSegments[1] === 'companies'
+  const isCompaniesRoot =
+    pathSegments.length === 2 &&
+    pathSegments[0] === 'dashboard' &&
+    pathSegments[1] === 'companies'
 
-  const companyId = isCompanyDetail ? pathSegments[3] : null
+  const companyId = isCompanyDetail ? pathSegments[2] : null
 
   const supabase = useMemo(() => (isCompanyDetail ? createClient() : null), [isCompanyDetail])
 
@@ -47,13 +51,12 @@ export function DashboardHeader() {
 
   const breadcrumbSegments = (() => {
     if (!pathname) return []
-    // Immer "dashboard" selbst ausblenden – Einstieg ist Refstack-Button
-    const segments = pathSegments.slice(2) // ab Ebene nach /dashboard
-    if (isCompanyDetail) {
-      // Für /dashboard/companies/[id] nur "companies" als Segment – Name kommt extra
-      return ['companies']
+    if (isCompanyDetail || isCompaniesRoot) {
+      // Für Client Intelligence Routen immer einheitlich beschriften
+      return ['client-intelligence']
     }
-    return segments
+    // Standard: Segmente hinter /dashboard
+    return pathSegments.slice(1)
   })()
 
   return (
@@ -70,14 +73,18 @@ export function DashboardHeader() {
           >
             Refstack
           </button>
-          {breadcrumbSegments.map((segment) => (
-            <div key={segment} className="flex items-center">
-              <SlashIcon className="mx-2 size-3 text-muted-foreground/50" />
-              <span className="capitalize text-foreground">
-                {segment === 'companies' ? 'Companies' : segment}
-              </span>
-            </div>
-          ))}
+          {breadcrumbSegments.map((segment) => {
+            const label =
+              segment === 'client-intelligence'
+                ? 'Client Intelligence'
+                : segment.charAt(0).toUpperCase() + segment.slice(1)
+            return (
+              <div key={segment} className="flex items-center">
+                <SlashIcon className="mx-2 size-3 text-muted-foreground/50" />
+                <span className="text-foreground">{label}</span>
+              </div>
+            )
+          })}
           {isCompanyDetail && companyName && (
             <div className="flex items-center">
               <SlashIcon className="mx-2 size-3 text-muted-foreground/50" />

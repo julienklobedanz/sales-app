@@ -26,6 +26,9 @@ import {
   Newspaper,
   HelpCircle,
   Save,
+  MapPin,
+  Globe,
+  Cpu,
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -193,6 +196,7 @@ export function CompanyDetailClient({
   const [selectedRecommendRefIds, setSelectedRecommendRefIds] = useState<Set<string>>(new Set())
   const [onePagerLoading, setOnePagerLoading] = useState(false)
   const [statusSaving, setStatusSaving] = useState(false)
+  const [strategyStatus, setStrategyStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
 
   const intelligenceScore = useMemo(() => {
     let filled = 0
@@ -210,6 +214,7 @@ export function CompanyDetailClient({
 
   const handleSaveStrategy = async () => {
     setStrategySaving(true)
+    setStrategyStatus('saving')
     try {
       const res = await upsertCompanyStrategy(company.id, {
         company_goals: goals || null,
@@ -227,11 +232,13 @@ export function CompanyDetailClient({
           next_steps: nextSteps || null,
           value_proposition: valueProposition || null,
         }))
-        toast.success('Strategie gespeichert.')
+        setStrategyStatus('saved')
       } else {
+        setStrategyStatus('error')
         toast.error(res.error ?? 'Speichern fehlgeschlagen.')
       }
     } catch {
+      setStrategyStatus('error')
       toast.error('Verbindungsfehler. Bitte erneut versuchen.')
     } finally {
       setStrategySaving(false)
@@ -426,6 +433,22 @@ export function CompanyDetailClient({
     setSelectedRecommendRefIds(new Set())
   }
 
+  // Visuelles Sicherheitsnetz: User warnen, wenn ein Speichervorgang noch läuft
+  useEffect(() => {
+    if (strategyStatus !== 'saving') return
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      // Einige Browser ignorieren den Text, das Setzen von returnValue reicht aus.
+      event.returnValue = ''
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [strategyStatus])
+
   const handleAddStakeholder = async () => {
     if (!newName.trim()) return
     setStakeholderSaving(true)
@@ -456,7 +479,7 @@ export function CompanyDetailClient({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header: Logo, Name, Status Badge, Intelligence Score */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-wrap items-start gap-4">
@@ -475,7 +498,7 @@ export function CompanyDetailClient({
               <Building2Icon className="size-8 text-muted-foreground" />
             </div>
           )}
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 space-y-1">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-semibold tracking-tight">{company.name}</h1>
               <Select
@@ -494,19 +517,79 @@ export function CompanyDetailClient({
                 </SelectContent>
               </Select>
             </div>
-            {company.industry && (
-              <p className="text-sm text-muted-foreground mt-0.5">{company.industry}</p>
-            )}
-            {company.headquarters && (
-              <p className="text-sm text-muted-foreground">{company.headquarters}</p>
-            )}
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-1">
+              {company.industry && (
+                <span className="inline-flex items-center gap-1 rounded-full border bg-muted/60 px-2 py-0.5">
+                  <Cpu className="size-3" />
+                  <span>{company.industry}</span>
+                </span>
+              )}
+              {company.headquarters && (
+                <span className="inline-flex items-center gap-1 rounded-full border bg-muted/60 px-2 py-0.5">
+                  <MapPin className="size-3" />
+                  <span>{company.headquarters}</span>
+                </span>
+              )}
+              {company.website_url && (
+                <a
+                  href={company.website_url.startsWith('http') ? company.website_url : `https://${company.website_url}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 rounded-full border bg-muted/60 px-2 py-0.5 hover:bg-muted text-foreground"
+                >
+                  <Globe className="size-3" />
+                  <span className="truncate max-w-[140px]">{company.website_url}</span>
+                </a>
+              )}
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-2 rounded-lg border bg-muted/50 px-3 py-2">
-          <Target className="size-4 text-muted-foreground" />
-          <span className="text-sm font-medium">Intelligence Score</span>
-          <span className="text-lg font-semibold tabular-nums">{intelligenceScore}%</span>
-        </div>
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="flex items-center gap-2 rounded-lg border bg-muted/50 px-3 py-2 hover:bg-muted transition-colors"
+            >
+              <Target className="size-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Intelligence Score</span>
+              <span className="text-lg font-semibold tabular-nums">{intelligenceScore}%</span>
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-64 text-xs space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-foreground">Score Breakdown</span>
+              <span className="text-[11px] text-muted-foreground">
+                {intelligenceScore}% vollständig
+              </span>
+            </div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-primary transition-all"
+                style={{ width: `${intelligenceScore}%` }}
+              />
+            </div>
+            <ul className="space-y-1.5">
+              {[
+                { label: 'Strategy', done: (goals || valueProposition || redFlags || competition || nextSteps).trim().length > 0 },
+                { label: 'Executive Radar', done: stakeholders.length > 0 },
+                { label: 'Relationship Map', done: stakeholders.length > 0 },
+                { label: 'Opportunity Roadmap', done: roadmapProjects.length > 0 },
+                { label: 'Proof Points', done: references.length > 0 },
+                { label: 'Market Signals', done: expiringDeals.length > 0 },
+                { label: 'Account Status', done: !!company.account_status },
+              ].map((item) => (
+                <li key={item.label} className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-muted-foreground">{item.label}</span>
+                  <span
+                    className={`h-2 w-8 rounded-full ${
+                      item.done ? 'bg-emerald-500' : 'bg-muted-foreground/30'
+                    }`}
+                  />
+                </li>
+              ))}
+            </ul>
+          </PopoverContent>
+        </Popover>
       </div>
 
       <Tabs defaultValue="strategy" className="w-full">
@@ -528,75 +611,136 @@ export function CompanyDetailClient({
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="strategy" className="mt-6 space-y-6">
+        <TabsContent value="strategy" className="mt-6 space-y-8">
           {/* Strategy: Ziele, Value Proposition, Herausforderungen */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Strategy (Die Basis)</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Unternehmensziele, Value Proposition und Herausforderungen.
-              </p>
+          <Card className="bg-muted/30 border-l-4 border-primary/40">
+            <CardHeader className="flex flex-row items-start justify-between space-y-0">
+              <div>
+                <CardTitle className="text-lg">Strategy (Die Basis)</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Unternehmensziele, Value Proposition und Herausforderungen.
+                </p>
+              </div>
+              <div className="text-xs text-muted-foreground flex items-center gap-1">
+                {strategyStatus === 'saving' && (
+                  <>
+                    <Loader2 className="size-3 animate-spin" />
+                    <span>Speichert…</span>
+                  </>
+                )}
+                {strategyStatus === 'saved' && !strategySaving && (
+                  <span className="text-emerald-600">Gespeichert</span>
+                )}
+                {strategyStatus === 'error' && (
+                  <span className="text-destructive">Fehler beim Speichern</span>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label>Unternehmensziele (Was wollen sie erreichen?)</Label>
-                <Textarea
-                  value={goals}
-                  onChange={(e) => setGoals(e.target.value)}
-                  placeholder="Ziele des Unternehmens …"
-                  rows={3}
-                  className="resize-none"
-                />
+                <div className="relative">
+                  <Textarea
+                    value={goals}
+                    onChange={(e) => setGoals(e.target.value)}
+                    onBlur={handleSaveStrategy}
+                    placeholder="z. B. Erhöhung der Cloud-Adoption um 20 % bis Q4; Reduktion der Time-to-Market für neue Produkte."
+                    rows={3}
+                    className="resize-none pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1.5 top-1.5 h-7 w-7 text-muted-foreground hover:text-foreground"
+                  >
+                    <Sparkles className="size-3.5" />
+                  </Button>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>Value Proposition (Warum gewinnen wir hier?)</Label>
-                <Textarea
-                  value={valueProposition}
-                  onChange={(e) => setValueProposition(e.target.value)}
-                  placeholder="Warum gewinnen wir bei diesem Kunden? …"
-                  rows={2}
-                  className="resize-none"
-                />
+                <div className="relative">
+                  <Textarea
+                    value={valueProposition}
+                    onChange={(e) => setValueProposition(e.target.value)}
+                    onBlur={handleSaveStrategy}
+                    placeholder="z. B. Wir verbinden unsere Branchen-Expertise mit einem skalierbaren Cloud-Stack und verkürzen so Projektlaufzeiten um 30 %."
+                    rows={2}
+                    className="resize-none pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1.5 top-1.5 h-7 w-7 text-muted-foreground hover:text-foreground"
+                  >
+                    <Sparkles className="size-3.5" />
+                  </Button>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>Herausforderungen / Red Flags</Label>
-                <Textarea
-                  value={redFlags}
-                  onChange={(e) => setRedFlags(e.target.value)}
-                  placeholder="Risiken, Pain Points …"
-                  rows={2}
-                  className="resize-none"
-                />
+                <div className="relative">
+                  <Textarea
+                    value={redFlags}
+                    onChange={(e) => setRedFlags(e.target.value)}
+                    onBlur={handleSaveStrategy}
+                    placeholder="z. B. Starker Kostendruck, laufende Vendor-Konsolidierung, interne Skepsis ggü. Cloud-Migration."
+                    rows={2}
+                    className="resize-none pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1.5 top-1.5 h-7 w-7 text-muted-foreground hover:text-foreground"
+                  >
+                    <Sparkles className="size-3.5" />
+                  </Button>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>Wettbewerb</Label>
-                <Textarea
-                  value={competition}
-                  onChange={(e) => setCompetition(e.target.value)}
-                  placeholder="Wer funkt uns dazwischen? …"
-                  rows={2}
-                  className="resize-none"
-                />
+                <div className="relative">
+                  <Textarea
+                    value={competition}
+                    onChange={(e) => setCompetition(e.target.value)}
+                    onBlur={handleSaveStrategy}
+                    placeholder="z. B. Aktuell starker Footprint von Accenture und Deloitte, lokale Nischen-Player im Bereich Data & AI."
+                    rows={2}
+                    className="resize-none pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1.5 top-1.5 h-7 w-7 text-muted-foreground hover:text-foreground"
+                  >
+                    <Sparkles className="size-3.5" />
+                  </Button>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>Nächste Schritte</Label>
-                <Textarea
-                  value={nextSteps}
-                  onChange={(e) => setNextSteps(e.target.value)}
-                  placeholder="Konkrete nächste Schritte …"
-                  rows={3}
-                  className="resize-none"
-                />
-              </div>
-              <div className="flex justify-end">
-                <Button onClick={handleSaveStrategy} disabled={strategySaving}>
-                  {strategySaving ? (
-                    <Loader2 className="size-4 animate-spin mr-2" />
-                  ) : (
-                    <Save className="size-4 mr-2" />
-                  )}
-                  {strategySaving ? 'Speichern…' : 'Speichern'}
-                </Button>
+                <div className="relative">
+                  <Textarea
+                    value={nextSteps}
+                    onChange={(e) => setNextSteps(e.target.value)}
+                    onBlur={handleSaveStrategy}
+                    placeholder="z. B. Executive Briefing im Q3 vorbereiten, Referenz-Call mit Kunde X organisieren, gemeinsames Cloud-Roadmap-Workshop anbieten."
+                    rows={3}
+                    className="resize-none pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1.5 top-1.5 h-7 w-7 text-muted-foreground hover:text-foreground"
+                  >
+                    <Sparkles className="size-3.5" />
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -617,9 +761,21 @@ export function CompanyDetailClient({
             </CardHeader>
             <CardContent>
               {roadmapProjects.length === 0 ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">
-                  Noch keine Projekte in der Roadmap. Klicke auf „Projekt hinzufügen“.
-                </p>
+                <div className="flex flex-col items-center justify-center py-10 text-center">
+                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full border-2 border-dashed border-muted-foreground/40">
+                    <Target className="size-8 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm font-medium text-foreground">
+                    Noch keine Projekte in der Roadmap.
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground max-w-md">
+                    Erfassen Sie strategische Initiativen, Pipeline-Projekte und Upsell-Chancen, um Ihren Account-Fokus klar zu visualisieren.
+                  </p>
+                  <Button className="mt-4" size="sm" onClick={() => openRoadmapModal()}>
+                    <Plus className="size-4 mr-2" />
+                    Projekt hinzufügen
+                  </Button>
+                </div>
               ) : (
                 <div className="relative space-y-0">
                   {/* Vertical timeline line */}
