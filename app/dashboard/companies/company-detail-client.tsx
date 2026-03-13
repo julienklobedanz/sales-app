@@ -953,7 +953,7 @@ export function CompanyDetailClient({
         <TabsContent value="executive" className="mt-6">
           <div className="flex items-center justify-between gap-4 mb-4">
             <p className="text-sm text-muted-foreground">
-              C-Level-Entscheider – Profiling mit Prioritäten und Tracking-Feed (Platzhalter).
+              Behalten Sie die wichtigsten Entscheider im Blick. Erhalten Sie tagesaktuelle News-Updates über sie und erstellen Sie per Klick ein fertiges Profiling für Ihre nächste Termin-Vorbereitung.
             </p>
             <Button onClick={() => setStakeholderModalOpen(true)} size="sm">
               <Plus className="size-4 mr-2" />

@@ -1,6 +1,5 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
-import Link from 'next/link'
 import { CompanyDetailClient } from '../company-detail-client'
 import {
   getCompanyStrategy,
@@ -10,7 +9,6 @@ import {
   getExpiringDealsByCompanyId,
   getRecommendedReferencesForAccount,
 } from '../actions'
-import { ChevronRight } from 'lucide-react'
 
 export default async function CompanyDetailPage({
   params,
@@ -49,17 +47,7 @@ export default async function CompanyDetailPage({
   ])
 
   return (
-    <div className="space-y-6 px-6 py-6 md:px-10 lg:px-16 xl:px-24">
-      <nav className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Link href="/dashboard/companies" className="hover:text-foreground">
-          Client Intelligence
-        </Link>
-        <ChevronRight className="size-4" />
-        <span className="text-foreground font-medium truncate max-w-[200px] sm:max-w-none">
-          {company.name}
-        </span>
-      </nav>
-
+    <div className="px-6 py-6 md:px-10 lg:px-16 xl:px-24">
       <div className="w-full max-w-6xl mx-auto">
         <CompanyDetailClient
           company={company}
