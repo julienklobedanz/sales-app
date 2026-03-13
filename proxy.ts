@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   })
@@ -29,13 +29,10 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Session aktualisieren (getUser/getClaims) – wichtig für gültige Tokens
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Auth-Protection: Nur mit gültiger Session (z. B. /dashboard), sonst Redirect zu /login.
-  // Öffentlich: /login, /register, /auth, /signup, /onboarding, /approval, /p (Kundenlinks)
   const isAuthRoute =
     request.nextUrl.pathname.startsWith('/login') ||
     request.nextUrl.pathname.startsWith('/register') ||
@@ -51,7 +48,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Einladungstoken in Cookie legen, damit es nach E-Mail-Bestätigung im Onboarding verfügbar ist
   const invite = request.nextUrl.searchParams.get('invite')
   if (
     invite &&
@@ -60,7 +56,7 @@ export async function middleware(request: NextRequest) {
   ) {
     supabaseResponse.cookies.set('invite_token', invite, {
       path: '/',
-      maxAge: 86400, // 24 h
+      maxAge: 86400,
       httpOnly: true,
       sameSite: 'lax',
     })
@@ -71,9 +67,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Alle Pfade außer statische Dateien; /login, /auth, /approval, /onboarding sind per isAuthRoute öffentlich.
-     */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

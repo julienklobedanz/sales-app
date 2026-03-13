@@ -536,8 +536,8 @@ export function ReferenceForm({
         displayCompanies.find((c) => c.id === companyId)?.name) ||
       newCompanyName)
 
-  const formContent = (
-    <>
+  function renderFormContent() {
+    return (
       <div className="space-y-6">
         <Card>
           <CardContent className="space-y-4">
@@ -1399,35 +1399,33 @@ export function ReferenceForm({
       </div>
           </CardContent>
         </Card>
-
-    </>
-  )
+      </div>
+    )
+  }
 
   return (
-    <>
-      <div className="w-full max-w-4xl min-w-0 pb-24">
-        <Card className="border-0 shadow-none">
-          <CardContent className="px-0">
-            {isEditMode ? (
-              <form
-                id={formId}
-                onSubmit={handleEditSubmit}
-                className="w-full min-w-0 space-y-6"
-              >
-                {formContent}
-              </form>
-            ) : (
-              <form
-                id={formId}
-                onSubmit={handleCreateSubmit}
-                className="w-full min-w-0 space-y-6"
-              >
-                {formContent}
-              </form>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+    <div className="w-full max-w-4xl min-w-0 pb-24">
+      <Card className="border-0 shadow-none">
+        <CardContent className="px-0">
+          {isEditMode ? (
+            <form
+              id={formId}
+              onSubmit={handleEditSubmit}
+              className="w-full min-w-0 space-y-6"
+            >
+              {renderFormContent()}
+            </form>
+          ) : (
+            <form
+              id={formId}
+              onSubmit={handleCreateSubmit}
+              className="w-full min-w-0 space-y-6"
+            >
+              {renderFormContent()}
+            </form>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Sticky Action Bar */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/80 backdrop-blur">
@@ -1452,7 +1450,7 @@ export function ReferenceForm({
           </Button>
         </div>
       </div>
-    </>
+    </div>
   )
 }
 

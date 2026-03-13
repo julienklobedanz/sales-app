@@ -355,6 +355,7 @@ export function DealsClientContent({ deals, expiring, allReferences, matchMap, i
               Listen importieren
             </Button>
           </div>
+          </div>
         </CardHeader>
         <CardContent className="flex-1">
           {expiring.length === 0 ? (
