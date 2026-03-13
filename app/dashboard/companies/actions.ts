@@ -74,7 +74,10 @@ export async function getCompanyStrategy(
   const supabase = await createServerSupabaseClient()
   const { data } = await supabase
     .from('company_strategies')
-    .select('id, company_id, company_goals, red_flags, competition, next_steps, value_proposition, updated_at')
+    // DB-Spalten: main_goals, competitive_situation; wir mappen per Alias auf unsere Feldnamen
+    .select(
+      'id, company_id, company_goals:main_goals, red_flags, competition:competitive_situation, next_steps, updated_at'
+    )
     .eq('company_id', companyId)
     .maybeSingle()
   return data as CompanyStrategyRow | null
@@ -87,18 +90,17 @@ export async function upsertCompanyStrategy(
     red_flags?: string | null
     competition?: string | null
     next_steps?: string | null
-    value_proposition?: string | null
   }
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createServerSupabaseClient()
   const { error } = await supabase.from('company_strategies').upsert(
     {
       company_id: companyId,
-      company_goals: payload.company_goals ?? null,
+      // DB-Spalten heißen main_goals und competitive_situation
+      main_goals: payload.company_goals ?? null,
       red_flags: payload.red_flags ?? null,
-      competition: payload.competition ?? null,
+      competitive_situation: payload.competition ?? null,
       next_steps: payload.next_steps ?? null,
-      value_proposition: payload.value_proposition ?? null,
       updated_at: new Date().toISOString(),
     },
     { onConflict: 'company_id' }
@@ -470,7 +472,8 @@ export async function getRecommendedReferencesForAccount(
     .single()
   const { data: strategy } = await supabase
     .from('company_strategies')
-    .select('company_goals')
+    // main_goals -> company_goals
+    .select('company_goals:main_goals')
     .eq('company_id', companyId)
     .maybeSingle()
   const companyIndustry = (company?.industry ?? '').trim().toLowerCase()
@@ -549,14 +552,15 @@ export async function generateOnePagerHtml(
     refs,
   ] = await Promise.all([
     supabase.from('companies').select('name, industry').eq('id', companyId).single(),
-    supabase.from('company_strategies').select('company_goals, red_flags, value_proposition, next_steps').eq('company_id', companyId).maybeSingle(),
+    // main_goals -> company_goals; value_proposition existiert evtl. nicht in allen Deployments, daher hier nicht selektieren
+    supabase.from('company_strategies').select('company_goals:main_goals, red_flags, next_steps').eq('company_id', companyId).maybeSingle(),
     supabase.from('stakeholders').select('name, title, role, priorities_topics').eq('company_id', companyId),
     getReferencesByCompanyId(companyId),
   ])
   if (!company) return { success: false, error: 'Unternehmen nicht gefunden.' }
   const goals = strategy?.company_goals ?? ''
   const challenges = strategy?.red_flags ?? ''
-  const valueProp = strategy?.value_proposition ?? ''
+  const valueProp = (strategy as { value_proposition?: string | null } | null)?.value_proposition ?? ''
   const nextSteps = strategy?.next_steps ?? ''
   type StakeholderData = { name: string; title?: string | null; role: string; priorities_topics?: string | null }
   const stakeholderList: StakeholderData[] = stakeholders ?? []

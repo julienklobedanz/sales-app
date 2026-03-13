@@ -1346,9 +1346,9 @@ export function DashboardOverview({
                       >
                         {sortKey === 'status' ? (
                           sortDir === 'asc' ? (
-                            <ArrowUp className="size-3.5" />
+                            <ArrowUp className="size-3.5 text-primary" />
                           ) : (
-                            <ArrowDown className="size-3.5" />
+                            <ArrowDown className="size-3.5 text-primary" />
                           )
                         ) : (
                           <ArrowUpDown className="size-3.5 text-muted-foreground" />
@@ -1423,9 +1423,9 @@ export function DashboardOverview({
                       >
                         {sortKey === 'company' ? (
                           sortDir === 'asc' ? (
-                            <ArrowUp className="size-3.5" />
+                            <ArrowUp className="size-3.5 text-primary" />
                           ) : (
-                            <ArrowDown className="size-3.5" />
+                            <ArrowDown className="size-3.5 text-primary" />
                           )
                         ) : (
                           <ArrowUpDown className="size-3.5 text-muted-foreground" />
@@ -1438,15 +1438,15 @@ export function DashboardOverview({
                   <TableHead>
                     <button
                       type="button"
-className="flex items-center gap-0.5 hover:opacity-80"
-                        onClick={() => handleSort('title')}
+                      className="flex items-center gap-0.5 hover:opacity-80"
+                      onClick={() => handleSort('title')}
                     >
                       {COLUMN_LABELS.title}
                       {sortKey === 'title' ? (
                         sortDir === 'asc' ? (
-                          <ArrowUp className="size-3.5" />
+                          <ArrowUp className="size-3.5 text-primary" />
                         ) : (
-                          <ArrowDown className="size-3.5" />
+                          <ArrowDown className="size-3.5 text-primary" />
                         )
                       ) : (
                         <ArrowUpDown className="size-3.5 text-muted-foreground" />
@@ -1520,9 +1520,9 @@ className="flex items-center gap-0.5 hover:opacity-80"
                       >
                         {sortKey === 'tags' ? (
                           sortDir === 'asc' ? (
-                            <ArrowUp className="size-3.5" />
+                            <ArrowUp className="size-3.5 text-primary" />
                           ) : (
-                            <ArrowDown className="size-3.5" />
+                            <ArrowDown className="size-3.5 text-primary" />
                           )
                         ) : (
                           <ArrowUpDown className="size-3.5 text-muted-foreground" />
@@ -1883,13 +1883,13 @@ className="flex items-center gap-0.5 hover:opacity-80"
                   >
                     <div className="flex flex-col items-center justify-center gap-3 py-2">
                       <p>Keine Referenzen gefunden.</p>
-                      {search.trim() &&
+                      {!search.trim() &&
                         profile.role === 'admin' && (
                           <Button
                             className="mt-1"
                             onClick={() => setNewRefModalOpen(true)}
                           >
-                            Erstelle deine erste Referenz
+                            Erstelle eine Referenz
                           </Button>
                         )}
                       {profile.role === 'sales' && (

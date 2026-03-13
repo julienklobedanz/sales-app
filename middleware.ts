@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   })
@@ -30,7 +30,9 @@ export async function proxy(request: NextRequest) {
   )
 
   // Session aktualisieren (getUser/getClaims) – wichtig für gültige Tokens
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   // Auth-Protection: Nur mit gültiger Session (z. B. /dashboard), sonst Redirect zu /login.
   // Öffentlich: /login, /register, /auth, /signup, /onboarding, /approval, /p (Kundenlinks)
@@ -51,7 +53,11 @@ export async function proxy(request: NextRequest) {
 
   // Einladungstoken in Cookie legen, damit es nach E-Mail-Bestätigung im Onboarding verfügbar ist
   const invite = request.nextUrl.searchParams.get('invite')
-  if (invite && (request.nextUrl.pathname === '/register' || request.nextUrl.pathname === '/login')) {
+  if (
+    invite &&
+    (request.nextUrl.pathname === '/register' ||
+      request.nextUrl.pathname === '/login')
+  ) {
     supabaseResponse.cookies.set('invite_token', invite, {
       path: '/',
       maxAge: 86400, // 24 h
@@ -71,3 +77,4 @@ export const config = {
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
+

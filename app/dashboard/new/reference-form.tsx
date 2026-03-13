@@ -34,7 +34,12 @@ import {
   CommandList,
 } from '@/components/ui/command'
 import { createReference, enrichAndSaveCompany, fetchCompanyEnrichment, searchCompanySuggestions } from './actions'
-import { updateReference, generateSummaryFromStory } from '../actions'
+import {
+  updateReference,
+  generateSummaryFromStory,
+  getIncumbentSuggestions,
+  getCompetitorSuggestions,
+} from '../actions'
 import { extractDataFromDocument } from './extract-reference-data'
 import { CreateContactDialog, type CreatedContact } from './create-contact-dialog'
 import type { ExternalContact } from './actions'
@@ -208,15 +213,32 @@ export function ReferenceForm({
     initialData?.customer_contact_id ? initialData.customer_contact_id : '__none__'
   )
   const [additionalCustomerContacts, setAdditionalCustomerContacts] = useState<ExternalContactDisplay[]>([])
-  const [tags, setTags] = useState<string[]>(() =>
-    initialData?.tags
-      ? initialData.tags
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean)
-      : []
-  )
+  const normalizeTag = (raw: string): string => {
+    const trimmed = raw.trim()
+    if (!trimmed) return ''
+    const lower = trimmed.toLowerCase()
+    return lower.charAt(0).toUpperCase() + lower.slice(1)
+  }
+  const [tags, setTags] = useState<string[]>(() => {
+    if (!initialData?.tags) return []
+    const seen = new Set<string>()
+    const result: string[] = []
+    initialData.tags
+      .split(/[\s,;]+/)
+      .map((s) => normalizeTag(s))
+      .filter(Boolean)
+      .forEach((t) => {
+        if (!seen.has(t.toLowerCase())) {
+          seen.add(t.toLowerCase())
+          result.push(t)
+        }
+      })
+    return result
+  })
   const [tagInputValue, setTagInputValue] = useState('')
+  const [competitorInputValue, setCompetitorInputValue] = useState('')
+  const [incumbentSuggestions, setIncumbentSuggestions] = useState<string[]>([])
+  const [competitorSuggestions, setCompetitorSuggestions] = useState<string[]>([])
   const [projectStatus, setProjectStatus] = useState(
     initialData?.project_status ?? '__none__'
   )
@@ -726,9 +748,12 @@ export function ReferenceForm({
             onKeyDown={(e) => {
               if (e.key === ',') {
                 e.preventDefault()
-                const value = tagInputValue.trim()
+                const value = normalizeTag(tagInputValue)
                 if (value) {
-                  setTags((prev) => [...prev, value])
+                  setTags((prev) => {
+                    const exists = prev.some((t) => t.toLowerCase() === value.toLowerCase())
+                    return exists ? prev : [...prev, value]
+                  })
                   setTagInputValue('')
                 }
               }
@@ -1028,25 +1053,208 @@ export function ReferenceForm({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="incumbent_provider">Aktueller Dienstleister (Incumbent)</Label>
-          <Input
-            id="incumbent_provider"
-            name="incumbent_provider"
-            placeholder="z. B. bisheriger Anbieter"
-            disabled={submitting}
-            value={incumbentProvider}
-            onChange={(e) => setIncumbentProvider(e.target.value)}
-          />
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Input
+                id="incumbent_provider"
+                name="incumbent_provider"
+                placeholder="z. B. bisheriger Anbieter"
+                disabled={submitting}
+                value={incumbentProvider}
+                onChange={async (e) => {
+                  const value = e.target.value
+                  setIncumbentProvider(value)
+                  if (!value.trim()) {
+                    setIncumbentSuggestions([])
+                    return
+                  }
+                  // einfache, un-debouncte Suggestions – bei Bedarf optimieren
+                  try {
+                    const list = await getIncumbentSuggestions(value)
+                    setIncumbentSuggestions(list)
+                  } catch {
+                    setIncumbentSuggestions([])
+                  }
+                }}
+              />
+              {incumbentSuggestions.length > 0 && incumbentProvider.trim() && (
+                <div className="absolute z-20 mt-1 w-full rounded-md border bg-popover text-sm shadow-md">
+                  <Command>
+                    <CommandList>
+                      {incumbentSuggestions.map((name) => (
+                        <CommandItem
+                          key={name}
+                          value={name}
+                          onSelect={(val) => {
+                            setIncumbentProvider(val)
+                            setIncumbentSuggestions([])
+                          }}
+                        >
+                          {name}
+                        </CommandItem>
+                      ))}
+                    </CommandList>
+                  </Command>
+                </div>
+              )}
+            </div>
+            {incumbentProvider.trim() && (
+              <div className="inline-flex items-center gap-1 rounded-full border bg-muted px-2 py-0.5 text-xs">
+                <span className="flex h-5 w-5 items-center justify-center overflow-hidden rounded-full bg-background">
+                  <img
+                    src={`https://img.logo.dev/${encodeURIComponent(
+                      incumbentProvider.trim()
+                    )}?token=pk_JXJ-h3VESaGIN5pOAvhvcQ`}
+                    alt=""
+                    className="h-5 w-5 object-contain"
+                    onError={(e) => {
+                      ;(e.currentTarget as HTMLImageElement).style.display = 'none'
+                    }}
+                  />
+                  {!incumbentProvider.includes('.') && (
+                    <span className="text-[10px] font-medium">
+                      {incumbentProvider
+                        .trim()
+                        .split(/\s+/)
+                        .slice(0, 2)
+                        .map((s) => s.charAt(0).toUpperCase())
+                        .join('')}
+                    </span>
+                  )}
+                </span>
+                <span className="max-w-[120px] truncate">
+                  {incumbentProvider}
+                </span>
+                <button
+                  type="button"
+                  className="ml-0.5 rounded-full px-1 hover:bg-muted-foreground/20"
+                  onClick={() => {
+                    setIncumbentProvider('')
+                    setIncumbentSuggestions([])
+                  }}
+                  aria-label="Incumbent entfernen"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+          </div>
         </div>
         <div className="space-y-2">
           <Label htmlFor="competitors">Weitere beteiligte Wettbewerber</Label>
-          <Input
-            id="competitors"
-            name="competitors"
-            placeholder="z. B. Mitbewerber im Ausschreibungsverfahren"
-            disabled={submitting}
-            value={competitors}
-            onChange={(e) => setCompetitors(e.target.value)}
-          />
+          <div className="space-y-1">
+            <input
+              type="hidden"
+              name="competitors"
+              value={competitors}
+            />
+            <div className="flex min-h-9 flex-wrap items-center gap-2 rounded-md border border-amber-500/40 bg-amber-50 px-3 py-2 text-sm dark:border-amber-500/60 dark:bg-amber-950/30">
+              {competitors
+                .split(/[;,]+/)
+                .map((s) => s.trim())
+                .filter(Boolean)
+                .map((name) => (
+                  <span
+                    key={name}
+                    className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-medium text-amber-900 dark:bg-amber-500/20 dark:text-amber-100"
+                  >
+                    {name}
+                    <button
+                      type="button"
+                      disabled={submitting}
+                      onClick={() => {
+                        setCompetitors(
+                          competitors
+                            .split(/[;,]+/)
+                            .map((s) => s.trim())
+                            .filter((n) => n && n !== name)
+                            .join(', ')
+                        )
+                      }}
+                      className="rounded-full px-1 hover:bg-amber-500/20"
+                      aria-label={`Wettbewerber „${name}" entfernen`}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              <div className="relative flex-1 min-w-[120px]">
+                <Input
+                  id="competitors"
+                  placeholder={
+                    competitors.trim()
+                      ? 'Weiteren Wettbewerber hinzufügen…'
+                      : 'z. B. Accenture, Deloitte'
+                  }
+                  disabled={submitting}
+                  value={competitorInputValue}
+                  onChange={async (e) => {
+                    const value = e.target.value
+                    setCompetitorInputValue(value)
+                    if (!value.trim()) {
+                      setCompetitorSuggestions([])
+                      return
+                    }
+                    try {
+                      const list = await getCompetitorSuggestions(value)
+                      setCompetitorSuggestions(list)
+                    } catch {
+                      setCompetitorSuggestions([])
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === ',' || e.key === 'Enter') {
+                      e.preventDefault()
+                      const raw = competitorInputValue.trim()
+                      if (!raw) return
+                      const parts = raw.split(/[;,]+/).map((s) => s.trim()).filter(Boolean)
+                      const existing = competitors
+                        .split(/[;,]+/)
+                        .map((s) => s.trim())
+                        .filter(Boolean)
+                      const merged = [...existing]
+                      parts.forEach((p) => {
+                        if (!merged.some((n) => n.toLowerCase() === p.toLowerCase())) {
+                          merged.push(p)
+                        }
+                      })
+                      setCompetitors(merged.join(', '))
+                      setCompetitorInputValue('')
+                      setCompetitorSuggestions([])
+                    }
+                  }}
+                  className="border-0 bg-transparent p-0 text-sm outline-none placeholder:text-amber-900/70 dark:placeholder:text-amber-200/80"
+                />
+                {competitorSuggestions.length > 0 && competitorInputValue.trim() && (
+                  <div className="absolute z-20 mt-1 w-full rounded-md border bg-popover text-sm shadow-md">
+                    <Command>
+                      <CommandList>
+                        {competitorSuggestions.map((name) => (
+                          <CommandItem
+                            key={name}
+                            value={name}
+                            onSelect={(val) => {
+                              const existing = competitors
+                                .split(/[;,]+/)
+                                .map((s) => s.trim())
+                                .filter(Boolean)
+                              if (!existing.some((n) => n.toLowerCase() === val.toLowerCase())) {
+                                setCompetitors([...existing, val].join(', '))
+                              }
+                              setCompetitorInputValue('')
+                              setCompetitorSuggestions([])
+                            }}
+                          >
+                            {name}
+                          </CommandItem>
+                        ))}
+                      </CommandList>
+                    </Command>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

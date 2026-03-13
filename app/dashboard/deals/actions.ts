@@ -302,6 +302,7 @@ export async function getMatchingReferencesForDeals(
   const { data: refs } = await supabase
     .from('references')
     .select('id, title, industry, companies(name, logo_url)')
+    .eq('organization_id', orgId)
     .order('title')
   if (!refs?.length) return result
 
@@ -341,6 +342,7 @@ export async function getReferencesForOrg(): Promise<{ id: string; title: string
   const { data: rows } = await supabase
     .from('references')
     .select('id, title, companies(name)')
+    .eq('organization_id', orgId)
     .order('title')
   if (!rows) return []
 
