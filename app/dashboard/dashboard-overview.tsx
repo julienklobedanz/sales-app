@@ -603,6 +603,13 @@ export function DashboardOverview({
   }
 
   // Eindeutige Werte für Filter-Dropdowns (aus aktuellen Referenzen)
+  const normalizeTagLabel = (raw: string): string => {
+    const trimmed = raw.trim()
+    if (!trimmed) return ''
+    const lower = trimmed.toLowerCase()
+    return lower.charAt(0).toUpperCase() + lower.slice(1)
+  }
+
   const filterOptions = useMemo(() => {
     const statuses = new Set<string>()
     const industries = new Set<string>()
@@ -619,7 +626,7 @@ export function DashboardOverview({
       if (r.tags) {
         r.tags
           .split(/[\s,]+/)
-          .map((t) => t.trim())
+          .map((t) => normalizeTagLabel(t))
           .filter(Boolean)
           .forEach((t) => tags.add(t))
       }
@@ -1276,7 +1283,7 @@ export function DashboardOverview({
                 </TableHead>
                 {visibleColumns.status && (
                   <TableHead>
-                    <div className="flex items-center justify-between gap-0.5">
+                    <div className="flex items-center gap-1">
                       <Popover>
                         <PopoverTrigger asChild>
                           <button
@@ -1359,7 +1366,7 @@ export function DashboardOverview({
                 )}
                 {visibleColumns.company && (
                   <TableHead className="w-[180px]">
-                    <div className="flex items-center justify-between gap-0.5">
+                    <div className="flex items-center gap-1">
                       <Popover>
                         <PopoverTrigger asChild>
                           <button
@@ -1456,7 +1463,7 @@ export function DashboardOverview({
                 )}
                 {visibleColumns.tags && (
                   <TableHead className="max-w-[120px]">
-                    <div className="flex items-center justify-between gap-0.5">
+                    <div className="flex items-center gap-1">
                       <Popover>
                         <PopoverTrigger asChild>
                           <button
@@ -1533,7 +1540,7 @@ export function DashboardOverview({
                 )}
                 {visibleColumns.industry && (
                   <TableHead>
-                    <div className="flex items-center justify-between gap-0.5">
+                    <div className="flex items-center gap-1">
                       <Popover>
                         <PopoverTrigger asChild>
                           <button
@@ -1610,7 +1617,7 @@ export function DashboardOverview({
                 )}
                 {visibleColumns.country && (
                   <TableHead>
-                    <div className="flex items-center justify-between gap-0.5">
+                    <div className="flex items-center gap-1">
                       <Popover>
                         <PopoverTrigger asChild>
                           <button
@@ -1687,7 +1694,7 @@ export function DashboardOverview({
                 )}
                 {visibleColumns.project_status && (
                   <TableHead>
-                    <div className="flex items-center justify-between gap-0.5">
+                    <div className="flex items-center gap-1">
                       <Popover>
                         <PopoverTrigger asChild>
                           <button
@@ -2410,7 +2417,7 @@ export function DashboardOverview({
                       {selectedRef.tags
                         ? selectedRef.tags
                             .split(/[\s,]+/)
-                            .map((tag) => tag.trim())
+                            .map((tag) => normalizeTagLabel(tag))
                             .filter(Boolean)
                             .map((tag) => (
                               <span

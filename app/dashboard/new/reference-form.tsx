@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, type ComponentProps, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Loader2, Building2Icon, Plus, Sparkles, Mail, Phone } from 'lucide-react'
@@ -147,6 +147,34 @@ export type ReferenceFormInitialData = {
   project_start?: string | null
   project_end?: string | null
   is_nda_deal?: boolean
+}
+
+type BaseLabelProps = ComponentProps<typeof Label>
+
+function RequiredLabel({ className, ...props }: BaseLabelProps) {
+  const base =
+    'text-xs font-medium uppercase tracking-wider text-muted-foreground'
+  return <Label className={className ? `${base} ${className}` : base} {...props} />
+}
+
+function OptionalLabel({
+  className,
+  children,
+  ...props
+}: BaseLabelProps & { children?: ReactNode }) {
+  const base =
+    'text-xs font-medium uppercase tracking-wider text-muted-foreground'
+  return (
+    <Label
+      className={className ? `${base} ${className}` : base}
+      {...props}
+    >
+      {children}
+      <span className="ml-1 text-[10px] font-normal normal-case text-muted-foreground">
+        (optional)
+      </span>
+    </Label>
+  )
 }
 
 export function ReferenceForm({
@@ -497,299 +525,401 @@ export function ReferenceForm({
     }
   }
 
+  const formId = 'refstack-main-form'
+
+  const mainCompanyLogoUrl =
+    isAnonymized ? null : enrichedLogoUrl ?? initialData?.company_logo_url ?? null
+
+  const currentCompanyNameForAvatar = isEditMode
+    ? editCompanyName
+    : ((companyId &&
+        displayCompanies.find((c) => c.id === companyId)?.name) ||
+      newCompanyName)
+
   const formContent = (
     <>
-      {!isEditMode && (
-        <div className="space-y-4">
-          <MagicImportDropzone
-            onFileAccept={handleMagicImport}
-            loading={magicImportLoading}
-            disabled={submitting}
-          />
-          <Separator className="mt-2" />
-        </div>
-      )}
-      {/* Unternehmen + Logo */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,1.6fr)_minmax(0,0.9fr)] items-start">
-        <div className="space-y-2">
-          <Label htmlFor={isEditMode ? 'company_name' : 'companyId'}>
-            Unternehmen <span className="text-destructive">*</span>
-          </Label>
-          {isEditMode ? (
-            <div className="relative">
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="space-y-4">
+            {!isEditMode && (
+              <div className="space-y-4">
+                <MagicImportDropzone
+                  onFileAccept={handleMagicImport}
+                  loading={magicImportLoading}
+                  disabled={submitting}
+                />
+                <Separator className="mt-2" />
+              </div>
+            )}
+            {/* Unternehmen + Logo */}
+            <div className="grid grid-cols-1 gap-4 items-start">
+              <div className="space-y-2">
+                <RequiredLabel htmlFor={isEditMode ? 'company_name' : 'companyId'}>
+                  Unternehmen
+                </RequiredLabel>
+                {isEditMode ? (
+                  <div className="relative">
+                    {!isAnonymized && (mainCompanyLogoUrl || editCompanyName.trim()) && (
+                      <span className="absolute left-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center overflow-hidden rounded-full bg-muted">
+                        {mainCompanyLogoUrl ? (
+                          <img
+                            src={mainCompanyLogoUrl}
+                            alt=""
+                            className="h-8 w-8 object-contain"
+                          />
+                        ) : (
+                          <span className="text-xs font-medium text-muted-foreground">
+                            {editCompanyName.trim().charAt(0).toUpperCase()}
+                          </span>
+                        )}
+                      </span>
+                    )}
+                    <Input
+                      id="company_name"
+                      name="company_name"
+                      placeholder="z. B. BMW oder bmw.de für Auto-Fill"
+                      required
+                      disabled={submitting}
+                      value={editCompanyName}
+                      onChange={(e) => setEditCompanyName(e.target.value)}
+                      className={
+                        !isAnonymized && (mainCompanyLogoUrl || editCompanyName.trim())
+                          ? 'pl-12'
+                          : undefined
+                      }
+                    />
+                    {enrichLoading && (
+                      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                        <Loader2 className="size-4 animate-spin" />
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    <div className="relative">
+                      {!isAnonymized &&
+                        (mainCompanyLogoUrl || currentCompanyNameForAvatar.trim()) && (
+                          <span className="absolute left-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center overflow-hidden rounded-full bg-muted">
+                            {mainCompanyLogoUrl ? (
+                              <img
+                                src={mainCompanyLogoUrl}
+                                alt=""
+                                className="h-8 w-8 object-contain"
+                              />
+                            ) : (
+                              <span className="text-xs font-medium text-muted-foreground">
+                                {currentCompanyNameForAvatar.trim().charAt(0).toUpperCase()}
+                              </span>
+                            )}
+                          </span>
+                        )}
+                      <CompanyCombobox
+                        companies={displayCompanies}
+                        value={currentCompanyNameForAvatar}
+                        onValueChange={(val) => {
+                          setNewCompanyName(val)
+                          setCompanyId('')
+                        }}
+                        onConfirmValue={(val) => {
+                          setNewCompanyName(val)
+                          setCompanyId('')
+                          setEnrichLoading(true)
+                          enrichAndSaveCompany(val)
+                            .then((result) => {
+                              if (result.success) {
+                                setCompanyId(result.company_id)
+                                setEnrichedCompany({
+                                  id: result.company_id,
+                                  name: result.company_name,
+                                  logo_url: result.logo_url ?? null,
+                                })
+                                setWebsite(result.website_url ?? '')
+                                setIndustry(result.industry ?? '')
+                                setCountry(result.country ?? '')
+                                setHeadquarters(result.headquarters ?? '')
+                                setEmployeeCount(
+                                  result.employee_count != null
+                                    ? String(result.employee_count)
+                                    : ''
+                                )
+                                setEnrichedLogoUrl(result.logo_url ?? null)
+                                setNewCompanyName(result.company_name)
+                                toast.success('Unternehmensdaten wurden geladen.')
+                              } else {
+                                toast.error(result.error)
+                              }
+                            })
+                            .finally(() => setEnrichLoading(false))
+                        }}
+                        onSelectCompany={(company) => {
+                          setCompanyId(company.id)
+                          setNewCompanyName(company.name)
+                          setEnrichedLogoUrl(company.logo_url ?? null)
+                          setEnrichLoading(true)
+                          enrichAndSaveCompany(company.name)
+                            .then((result) => {
+                              if (result.success) {
+                                setCompanyId(result.company_id)
+                                setEnrichedCompany({
+                                  id: result.company_id,
+                                  name: result.company_name,
+                                  logo_url: result.logo_url ?? null,
+                                })
+                                setWebsite(result.website_url ?? '')
+                                setIndustry(result.industry ?? '')
+                                setCountry(result.country ?? '')
+                                setHeadquarters(result.headquarters ?? '')
+                                setEmployeeCount(
+                                  result.employee_count != null
+                                    ? String(result.employee_count)
+                                    : ''
+                                )
+                                setEnrichedLogoUrl(result.logo_url ?? null)
+                                setNewCompanyName(result.company_name)
+                                toast.success('Unternehmensdaten wurden geladen.')
+                              }
+                            })
+                            .finally(() => setEnrichLoading(false))
+                        }}
+                        loading={enrichLoading}
+                        disabled={submitting}
+                      />
+                    </div>
+                    <input type="hidden" name="companyId" value={companyId} />
+                    <input type="hidden" name="newCompanyName" value={newCompanyName} />
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <RequiredLabel htmlFor="title">Titel</RequiredLabel>
               <Input
-                id="company_name"
-                name="company_name"
-                placeholder="z. B. BMW oder bmw.de für Auto-Fill"
+                id="title"
+                name="title"
+                placeholder="z. B. Cloud Transformation 2024"
                 required
                 disabled={submitting}
-                value={editCompanyName}
-                onChange={(e) => setEditCompanyName(e.target.value)}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
               />
-              {enrichLoading && (
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  <Loader2 className="size-4 animate-spin" />
-                </span>
-              )}
             </div>
-          ) : (
-            <>
-              <CompanyCombobox
-                companies={displayCompanies}
-                value={
-                  (companyId &&
-                    displayCompanies.find((c) => c.id === companyId)?.name) ||
-                  newCompanyName
-                }
-                onValueChange={(val) => {
-                  setNewCompanyName(val)
-                  setCompanyId('')
-                }}
-                onConfirmValue={(val) => {
-                  setNewCompanyName(val)
-                  setCompanyId('')
-                  setEnrichLoading(true)
-                  enrichAndSaveCompany(val)
-                    .then((result) => {
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="space-y-2">
+                <OptionalLabel>Industrie</OptionalLabel>
+                <input type="hidden" name="industry" value={industry} />
+                <Select
+                  value={industry || undefined}
+                  onValueChange={setIndustry}
+                  disabled={submitting}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Auswählen …" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {INDUSTRIES.map((ind) => (
+                      <SelectItem key={ind} value={ind}>
+                        {ind}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <OptionalLabel>HQ</OptionalLabel>
+                <input type="hidden" name="country" value={country} />
+                <Select
+                  value={country || undefined}
+                  onValueChange={setCountry}
+                  disabled={submitting}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Auswählen …" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {COUNTRIES.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <OptionalLabel htmlFor="employee_count">Mitarbeiter</OptionalLabel>
+                <Input
+                  id="employee_count"
+                  name="employee_count"
+                  type="number"
+                  inputMode="numeric"
+                  placeholder="z. B. 12000"
+                  disabled={submitting}
+                  value={employeeCount}
+                  onChange={(e) => setEmployeeCount(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="space-y-2 md:col-span-2">
+                <OptionalLabel htmlFor="website">Website</OptionalLabel>
+                <Input
+                  id="website"
+                  name="website"
+                  type="url"
+                  placeholder="z. B. https://example.com"
+                  disabled={submitting}
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="space-y-4">
+            <div className="space-y-1">
+              <OptionalLabel htmlFor="summary">Zusammenfassung</OptionalLabel>
+              <div className="relative">
+                <Textarea
+                  id="summary"
+                  name="summary"
+                  placeholder="Kurze Beschreibung der Referenz …"
+                  rows={4}
+                  disabled={submitting}
+                  value={summary}
+                  onChange={(e) => setSummary(e.target.value)}
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-2 top-2 h-7 w-7 text-muted-foreground hover:bg-muted"
+                  disabled={submitting || summaryLoading}
+                  onClick={async () => {
+                    setSummaryLoading(true)
+                    try {
+                      const result = await generateSummaryFromStory(
+                        customerChallenge,
+                        ourSolution
+                      )
                       if (result.success) {
-                        setCompanyId(result.company_id)
-                        setEnrichedCompany({
-                          id: result.company_id,
-                          name: result.company_name,
-                          logo_url: result.logo_url ?? null,
-                        })
-                        setWebsite(result.website_url ?? '')
-                        setIndustry(result.industry ?? '')
-                        setCountry(result.country ?? '')
-                        setHeadquarters(result.headquarters ?? '')
-                        setEmployeeCount(
-                          result.employee_count != null
-                            ? String(result.employee_count)
-                            : ''
-                        )
-                        setEnrichedLogoUrl(result.logo_url ?? null)
-                        setNewCompanyName(result.company_name)
-                        toast.success('Unternehmensdaten wurden geladen.')
+                        setSummary(result.summary)
+                        toast.success('KI-Zusammenfassung übernommen.')
                       } else {
                         toast.error(result.error)
                       }
-                    })
-                    .finally(() => setEnrichLoading(false))
-                }}
-                onSelectCompany={(company) => {
-                  setCompanyId(company.id)
-                  setNewCompanyName(company.name)
-                  setEnrichedLogoUrl(company.logo_url ?? null)
-                  setEnrichLoading(true)
-                  enrichAndSaveCompany(company.name)
-                    .then((result) => {
-                      if (result.success) {
-                        setCompanyId(result.company_id)
-                        setEnrichedCompany({ id: result.company_id, name: result.company_name, logo_url: result.logo_url ?? null })
-                        setWebsite(result.website_url ?? '')
-                        setIndustry(result.industry ?? '')
-                        setCountry(result.country ?? '')
-                        setHeadquarters(result.headquarters ?? '')
-                        setEmployeeCount(result.employee_count != null ? String(result.employee_count) : '')
-                        setEnrichedLogoUrl(result.logo_url ?? null)
-                        setNewCompanyName(result.company_name)
-                        toast.success('Unternehmensdaten wurden geladen.')
-                      }
-                    })
-                    .finally(() => setEnrichLoading(false))
-                }}
-                loading={enrichLoading}
-                disabled={submitting}
-              />
-              <input type="hidden" name="companyId" value={companyId} />
-              <input type="hidden" name="newCompanyName" value={newCompanyName} />
-            </>
-          )}
-        </div>
-
-        <div className="space-y-2 sm:flex sm:flex-col sm:items-end">
-          <Label htmlFor="logo">Logo</Label>
-          {isAnonymized ? (
-            <div className="flex aspect-square max-w-[60px] flex-col items-center justify-center rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 px-2 text-center text-[10px] text-muted-foreground">
-              <Building2Icon className="mb-1 size-5 text-muted-foreground" />
-              <span>Logo ausgeblendet</span>
-              <span className="mt-0.5 text-[10px] text-muted-foreground/80">
-                ({isEditMode ? initialData?.company_name ?? 'Kunde' : newCompanyName || 'Kunde'})
-              </span>
+                    } finally {
+                      setSummaryLoading(false)
+                    }
+                  }}
+                  aria-label="KI-Vorschlag für Zusammenfassung"
+                >
+                  {summaryLoading ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="size-3.5" />
+                  )}
+                </Button>
+              </div>
             </div>
-          ) : (
-            <LogoDropZone
-              selectedFile={logoFile}
-              onFileSelect={(file) => {
-                setLogoFile(file)
-                if (file) setEnrichedLogoUrl(null)
-              }}
-              disabled={submitting}
-              enrichedLogoUrl={enrichedLogoUrl}
-            />
-          )}
-        </div>
-      </div>
 
-      <div className="space-y-2">
-        <Label
-          htmlFor="title"
-          className="text-xs font-medium uppercase tracking-wider text-muted-foreground"
-        >
-          Titel
-        </Label>
-        <Input
-          id="title"
-          name="title"
-          placeholder="z. B. Cloud Transformation 2024"
-          required
-          disabled={submitting}
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
-      </div>
+            {/* Storytelling: Herausforderung & Lösung */}
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <OptionalLabel htmlFor="customer_challenge">
+                  Herausforderung des Kunden
+                </OptionalLabel>
+                <Textarea
+                  id="customer_challenge"
+                  name="customer_challenge"
+                  placeholder="Welche Herausforderung oder welches Ziel hatte der Kunde?"
+                  rows={4}
+                  disabled={submitting}
+                  value={customerChallenge}
+                  onChange={(e) => setCustomerChallenge(e.target.value)}
+                  className="text-sm leading-relaxed"
+                />
+              </div>
+              <div className="space-y-1">
+                <OptionalLabel htmlFor="our_solution">Unsere Lösung</OptionalLabel>
+                <Textarea
+                  id="our_solution"
+                  name="our_solution"
+                  placeholder="Wie haben wir die Herausforderung gelöst?"
+                  rows={4}
+                  disabled={submitting}
+                  value={ourSolution}
+                  onChange={(e) => setOurSolution(e.target.value)}
+                  className="text-sm leading-relaxed"
+                />
+              </div>
+            </div>
 
-      <div className="space-y-1">
-        <Label
-          htmlFor="summary"
-          className="text-xs font-medium uppercase tracking-wider text-muted-foreground"
-        >
-          Zusammenfassung
-        </Label>
-        <div className="relative">
-          <Textarea
-            id="summary"
-            name="summary"
-            placeholder="Kurze Beschreibung der Referenz …"
-            rows={4}
-            disabled={submitting}
-            value={summary}
-            onChange={(e) => setSummary(e.target.value)}
-            className="pr-10"
-          />
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="absolute right-2 top-2 h-7 w-7 text-muted-foreground hover:bg-muted"
-            disabled={submitting || summaryLoading}
-            onClick={async () => {
-              setSummaryLoading(true)
-              try {
-                const result = await generateSummaryFromStory(
-                  customerChallenge,
-                  ourSolution
-                )
-                if (result.success) {
-                  setSummary(result.summary)
-                  toast.success('KI-Zusammenfassung übernommen.')
-                } else {
-                  toast.error(result.error)
-                }
-              } finally {
-                setSummaryLoading(false)
-              }
-            }}
-            aria-label="KI-Vorschlag für Zusammenfassung"
-          >
-            {summaryLoading ? (
-              <Loader2 className="size-3.5 animate-spin" />
-            ) : (
-              <Sparkles className="size-3.5" />
-            )}
-          </Button>
-        </div>
-      </div>
+            <div className="space-y-2">
+              <OptionalLabel htmlFor="tags-input">Tags</OptionalLabel>
+              <input type="hidden" name="tags" value={tags.join(' ')} />
+              <div className="flex min-h-9 flex-wrap items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                {tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium"
+                  >
+                    {tag}
+                    <button
+                      type="button"
+                      disabled={submitting}
+                      onClick={() => setTags((prev) => prev.filter((t) => t !== tag))}
+                      className="rounded-full hover:bg-muted-foreground/20 -mr-0.5 p-0.5"
+                      aria-label={`Tag „${tag}" entfernen`}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+                <input
+                  id="tags-input"
+                  type="text"
+                  placeholder={
+                    tags.length === 0
+                      ? 'z.B. Cloud, Cybersecurity, SAP (mehrere Themen durch Komma trennen)'
+                      : 'Weiterer Tag…'
+                  }
+                  disabled={submitting}
+                  value={tagInputValue}
+                  onChange={(e) => setTagInputValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === ',') {
+                      e.preventDefault()
+                      const value = normalizeTag(tagInputValue)
+                      if (value) {
+                        setTags((prev) => {
+                          const exists = prev.some(
+                            (t) => t.toLowerCase() === value.toLowerCase()
+                          )
+                          return exists ? prev : [...prev, value]
+                        })
+                        setTagInputValue('')
+                      }
+                    }
+                  }}
+                  className="min-w-[120px] flex-1 border-0 bg-transparent p-0 text-sm outline-none placeholder:text-muted-foreground"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* Storytelling: Herausforderung & Lösung */}
-      <div className="space-y-3">
-        <div className="space-y-1">
-          <Label
-            htmlFor="customer_challenge"
-            className="text-xs font-medium uppercase tracking-wider text-muted-foreground"
-          >
-            Herausforderung des Kunden
-          </Label>
-          <Textarea
-            id="customer_challenge"
-            name="customer_challenge"
-            placeholder="Welche Herausforderung oder welches Ziel hatte der Kunde?"
-            rows={4}
-            disabled={submitting}
-            value={customerChallenge}
-            onChange={(e) => setCustomerChallenge(e.target.value)}
-            className="text-sm leading-relaxed"
-          />
-        </div>
-        <div className="space-y-1">
-          <Label
-            htmlFor="our_solution"
-            className="text-xs font-medium uppercase tracking-wider text-muted-foreground"
-          >
-            Unsere Lösung
-          </Label>
-          <Textarea
-            id="our_solution"
-            name="our_solution"
-            placeholder="Wie haben wir die Herausforderung gelöst?"
-            rows={4}
-            disabled={submitting}
-            value={ourSolution}
-            onChange={(e) => setOurSolution(e.target.value)}
-            className="text-sm leading-relaxed"
-          />
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="tags-input">Tags</Label>
-        <input type="hidden" name="tags" value={tags.join(' ')} />
-        <div className="flex min-h-9 flex-wrap items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
-          {tags.map((tag) => (
-            <span
-              key={tag}
-              className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium"
-            >
-              {tag}
-              <button
-                type="button"
-                disabled={submitting}
-                onClick={() => setTags((prev) => prev.filter((t) => t !== tag))}
-                className="rounded-full hover:bg-muted-foreground/20 -mr-0.5 p-0.5"
-                aria-label={`Tag „${tag}" entfernen`}
-              >
-                ×
-              </button>
-            </span>
-          ))}
-          <input
-            id="tags-input"
-            type="text"
-            placeholder={tags.length === 0 ? 'z.B. Cloud, Cybersecurity, SAP (mehrere Themen durch Komma trennen)' : 'Weiterer Tag…'}
-            disabled={submitting}
-            value={tagInputValue}
-            onChange={(e) => setTagInputValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === ',') {
-                e.preventDefault()
-                const value = normalizeTag(tagInputValue)
-                if (value) {
-                  setTags((prev) => {
-                    const exists = prev.some((t) => t.toLowerCase() === value.toLowerCase())
-                    return exists ? prev : [...prev, value]
-                  })
-                  setTagInputValue('')
-                }
-              }
-            }}
-            className="min-w-[120px] flex-1 border-0 bg-transparent p-0 text-sm outline-none placeholder:text-muted-foreground"
-          />
-        </div>
-      </div>
-
+        <Card>
+          <CardContent className="space-y-4">
       <div className="space-y-6">
         <div className="space-y-2">
-          <Label htmlFor="contactId">Ansprechpartner intern <span className="text-destructive">*</span></Label>
+          <RequiredLabel htmlFor="contactId">Ansprechpartner intern</RequiredLabel>
           <div className="flex gap-2">
             <div className="flex-1">
               <input
@@ -837,7 +967,7 @@ export function ReferenceForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="customer_contact_id">Kundenansprechpartner</Label>
+          <OptionalLabel htmlFor="customer_contact_id">Kundenansprechpartner</OptionalLabel>
           <div className="flex gap-2">
             <div className="flex-1">
               <input
@@ -900,80 +1030,8 @@ export function ReferenceForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label>Industrie</Label>
-          <input type="hidden" name="industry" value={industry} />
-          <Select
-            value={industry || undefined}
-            onValueChange={setIndustry}
-            disabled={submitting}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Auswählen …" />
-            </SelectTrigger>
-            <SelectContent>
-              {INDUSTRIES.map((ind) => (
-                <SelectItem key={ind} value={ind}>
-                  {ind}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label>HQ</Label>
-          <input type="hidden" name="country" value={country} />
-          <Select
-            value={country || undefined}
-            onValueChange={setCountry}
-            disabled={submitting}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Auswählen …" />
-            </SelectTrigger>
-            <SelectContent>
-              {COUNTRIES.map((c) => (
-                <SelectItem key={c} value={c}>
-                  {c}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="website">Website</Label>
-          <Input
-            id="website"
-            name="website"
-            type="url"
-            placeholder="z. B. https://example.com"
-            disabled={submitting}
-            value={website}
-            onChange={(e) => setWebsite(e.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="employee_count">Mitarbeiter</Label>
-          <Input
-            id="employee_count"
-            name="employee_count"
-            type="number"
-            inputMode="numeric"
-            placeholder="z. B. 12000"
-            disabled={submitting}
-            value={employeeCount}
-            onChange={(e) => setEmployeeCount(e.target.value)}
-          />
-        </div>
-      </div>
-
       <div className="space-y-2">
-          <Label htmlFor="project_status">Projektstatus <span className="text-destructive">*</span></Label>
+          <RequiredLabel htmlFor="project_status">Projektstatus</RequiredLabel>
         <input
           type="hidden"
           name="project_status"
@@ -1002,7 +1060,7 @@ export function ReferenceForm({
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="project_start">Projektstart <span className="text-destructive">*</span></Label>
+          <RequiredLabel htmlFor="project_start">Projektstart</RequiredLabel>
           <Input
             id="project_start"
             name="project_start"
@@ -1013,12 +1071,7 @@ export function ReferenceForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="project_end">
-            Projektende
-            {projectStatus === 'completed' && (
-              <span className="text-destructive ml-1">*</span>
-            )}
-          </Label>
+          <OptionalLabel htmlFor="project_end">Projektende</OptionalLabel>
           <Input
             id="project_end"
             name="project_end"
@@ -1040,7 +1093,7 @@ export function ReferenceForm({
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="volume_eur">Volumen (€)</Label>
+          <OptionalLabel htmlFor="volume_eur">Volumen (€)</OptionalLabel>
           <Input
             id="volume_eur"
             name="volume_eur"
@@ -1053,7 +1106,7 @@ export function ReferenceForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="contract_type">Vertragsart</Label>
+          <OptionalLabel htmlFor="contract_type">Vertragsart</OptionalLabel>
           <input type="hidden" name="contract_type" value={contractType} />
           <Select
             value={contractType || undefined}
@@ -1073,57 +1126,41 @@ export function ReferenceForm({
           </Select>
         </div>
       </div>
+          </CardContent>
+        </Card>
 
+        <Card className="bg-muted/30">
+          <CardContent className="space-y-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="incumbent_provider">Aktueller Dienstleister (Incumbent)</Label>
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1">
-              <Input
-                id="incumbent_provider"
-                name="incumbent_provider"
-                placeholder="z. B. bisheriger Anbieter"
-                disabled={submitting}
-                value={incumbentProvider}
-                onChange={async (e) => {
-                  const value = e.target.value
-                  setIncumbentProvider(value)
-                  if (!value.trim()) {
-                    setIncumbentSuggestions([])
-                    return
-                  }
-                  // einfache, un-debouncte Suggestions – bei Bedarf optimieren
-                  try {
-                    const list = await getIncumbentSuggestions(value)
-                    setIncumbentSuggestions(list)
-                  } catch {
-                    setIncumbentSuggestions([])
-                  }
-                }}
-              />
-              {incumbentSuggestions.length > 0 && incumbentProvider.trim() && (
-                <div className="absolute z-20 mt-1 w-full rounded-md border bg-popover text-sm shadow-md">
-                  <Command>
-                    <CommandList>
-                      {incumbentSuggestions.map((name) => (
-                        <CommandItem
-                          key={name}
-                          value={name}
-                          onSelect={(val) => {
-                            setIncumbentProvider(val)
-                            setIncumbentSuggestions([])
-                          }}
-                        >
-                          {name}
-                        </CommandItem>
-                      ))}
-                    </CommandList>
-                  </Command>
-                </div>
-              )}
-            </div>
+          <OptionalLabel htmlFor="incumbent_provider">
+            Aktueller Dienstleister (Incumbent)
+          </OptionalLabel>
+          <div className="relative">
+            <Input
+              id="incumbent_provider"
+              name="incumbent_provider"
+              placeholder="z. B. bisheriger Anbieter"
+              disabled={submitting}
+              value={incumbentProvider}
+              className={incumbentProvider.trim() ? 'pl-28' : undefined}
+              onChange={async (e) => {
+                const value = e.target.value
+                setIncumbentProvider(value)
+                if (!value.trim()) {
+                  setIncumbentSuggestions([])
+                  return
+                }
+                try {
+                  const list = await getIncumbentSuggestions(value)
+                  setIncumbentSuggestions(list)
+                } catch {
+                  setIncumbentSuggestions([])
+                }
+              }}
+            />
             {incumbentProvider.trim() && (
-              <div className="inline-flex items-center gap-1 rounded-full border bg-muted px-2 py-0.5 text-xs">
+              <div className="absolute left-2 top-1/2 flex -translate-y-1/2 items-center gap-1 rounded-full border bg-muted px-2 py-0.5 text-xs">
                 <span className="flex h-5 w-5 items-center justify-center overflow-hidden rounded-full bg-background">
                   <img
                     src={`https://img.logo.dev/${encodeURIComponent(
@@ -1135,16 +1172,6 @@ export function ReferenceForm({
                       ;(e.currentTarget as HTMLImageElement).style.display = 'none'
                     }}
                   />
-                  {!incumbentProvider.includes('.') && (
-                    <span className="text-[10px] font-medium">
-                      {incumbentProvider
-                        .trim()
-                        .split(/\s+/)
-                        .slice(0, 2)
-                        .map((s) => s.charAt(0).toUpperCase())
-                        .join('')}
-                    </span>
-                  )}
                 </span>
                 <span className="max-w-[120px] truncate">
                   {incumbentProvider}
@@ -1162,10 +1189,32 @@ export function ReferenceForm({
                 </button>
               </div>
             )}
+            {incumbentSuggestions.length > 0 && incumbentProvider.trim() && (
+              <div className="absolute z-20 mt-1 w-full rounded-md border bg-popover text-sm shadow-md">
+                <Command>
+                  <CommandList>
+                    {incumbentSuggestions.map((name) => (
+                      <CommandItem
+                        key={name}
+                        value={name}
+                        onSelect={(val) => {
+                          setIncumbentProvider(val)
+                          setIncumbentSuggestions([])
+                        }}
+                      >
+                        {name}
+                      </CommandItem>
+                    ))}
+                  </CommandList>
+                </Command>
+              </div>
+            )}
           </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="competitors">Weitere beteiligte Wettbewerber</Label>
+          <OptionalLabel htmlFor="competitors">
+            Weitere beteiligte Wettbewerber
+          </OptionalLabel>
           <div className="space-y-1">
             <input
               type="hidden"
@@ -1283,7 +1332,7 @@ export function ReferenceForm({
       </div>
 
       <div className="space-y-2">
-        <Label>PDF Anhang</Label>
+        <OptionalLabel>PDF Anhang</OptionalLabel>
         <FileDropZone
           selectedFile={selectedFile}
           onFileSelect={setSelectedFile}
@@ -1295,7 +1344,7 @@ export function ReferenceForm({
       {/* Status + NDA */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="status">Status / Freigabestufe</Label>
+          <RequiredLabel htmlFor="status">Status / Freigabestufe</RequiredLabel>
           <input type="hidden" name="status" value={status} />
           <Select
             value={status}
@@ -1328,26 +1377,28 @@ export function ReferenceForm({
           </p>
         </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <Switch
-              id="nda_deal"
-              checked={ndaDeal}
-              disabled={submitting}
-              onCheckedChange={(checked) => {
-                setNdaDeal(checked)
-                if (checked) {
-                  statusBeforeNdaRef.current = status
-                  setStatus('internal_only')
-                } else {
-                  setStatus(statusBeforeNdaRef.current ?? 'draft')
-                }
-              }}
-            />
-            <Label htmlFor="nda_deal" className="cursor-pointer font-normal">Vertraulicher NDA Deal?</Label>
-          </div>
+        <div className="space-y-1">
+          <OptionalLabel htmlFor="nda_deal">
+            Vertraulicher NDA Deal?
+          </OptionalLabel>
+          <Switch
+            id="nda_deal"
+            checked={ndaDeal}
+            disabled={submitting}
+            onCheckedChange={(checked) => {
+              setNdaDeal(checked)
+              if (checked) {
+                statusBeforeNdaRef.current = status
+                setStatus('internal_only')
+              } else {
+                setStatus(statusBeforeNdaRef.current ?? 'draft')
+              }
+            }}
+          />
         </div>
       </div>
+          </CardContent>
+        </Card>
 
     </>
   )
@@ -1359,6 +1410,7 @@ export function ReferenceForm({
           <CardContent className="px-0">
             {isEditMode ? (
               <form
+                id={formId}
                 onSubmit={handleEditSubmit}
                 className="w-full min-w-0 space-y-6"
               >
@@ -1366,6 +1418,7 @@ export function ReferenceForm({
               </form>
             ) : (
               <form
+                id={formId}
                 onSubmit={handleCreateSubmit}
                 className="w-full min-w-0 space-y-6"
               >
@@ -1379,7 +1432,7 @@ export function ReferenceForm({
       {/* Sticky Action Bar */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/80 backdrop-blur">
         <div className="mx-auto flex max-w-4xl items-center justify-end gap-3 px-4 py-3">
-          <Button type="submit" form={isEditMode ? undefined : undefined} disabled={submitting}>
+          <Button type="submit" form={formId} disabled={submitting}>
             {submitting ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (

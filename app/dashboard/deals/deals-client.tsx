@@ -226,7 +226,7 @@ export function DealsClientContent({ deals, expiring, allReferences, matchMap, i
   return (
     <div className="grid min-h-[70vh] gap-6 lg:grid-cols-2">
       <Card className="flex min-h-[520px] flex-1 flex-col">
-        <CardHeader className="flex min-h-[5.5rem] flex-row items-center justify-between space-y-0">
+        <CardHeader className="flex min-h-[5.5rem] flex-row items-start justify-between space-y-0">
           <div>
             <div className="flex items-center gap-2">
               <HandshakeIcon className="size-5 text-muted-foreground" />
@@ -301,18 +301,17 @@ export function DealsClientContent({ deals, expiring, allReferences, matchMap, i
 
       <Card className="flex min-h-[520px] flex-1 flex-col">
         <CardHeader className="flex min-h-[5.5rem] flex-col gap-3 space-y-0">
-          <div className="flex flex-row items-start justify-between gap-2">
+          <div className="flex flex-row items-start justify-between gap-3">
             <div>
               <div className="flex items-center gap-2">
                 <TimerIcon className="size-5 text-muted-foreground" />
                 <CardTitle>Expiring Deals (Marktchancen)</CardTitle>
               </div>
               <CardDescription>
-                Listen von Verträgen, die bei Wettbewerbern auslaufen (z. B. Gartner/ISG). xlsx-Import unten.
+                Listen von Verträgen, die bei Wettbewerbern auslaufen (z. B. Gartner/ISG). xlsx-Import oben rechts.
               </CardDescription>
             </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
             <input
               ref={xlsxInputRef}
               type="file"
