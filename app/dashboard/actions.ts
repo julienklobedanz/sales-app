@@ -1331,8 +1331,21 @@ Zusammenfassung:`
     })
 
     if (!response.ok) {
-      const err = await response.text()
-      return { success: false, error: `OpenAI: ${response.status} – ${err.slice(0, 200)}` }
+      const status = response.status
+      const raw = await response.text()
+      // Rate-Limit / Quota-Fehler freundlich behandeln
+      if (status === 429) {
+        console.error('generateSummaryFromStory: OpenAI 429', raw)
+        return {
+          success: false,
+          error:
+            'Das KI-Kontingent ist aktuell ausgeschöpft. Bitte später erneut versuchen oder die Zusammenfassung manuell formulieren.',
+        }
+      }
+      return {
+        success: false,
+        error: `OpenAI-Fehler (${status}). Bitte später erneut versuchen.`,
+      }
     }
 
     const json = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> }

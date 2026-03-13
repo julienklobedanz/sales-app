@@ -1398,7 +1398,8 @@ function MagicImportDropzone({
   const inputRef = useRef<HTMLInputElement>(null)
   const [isDragging, setIsDragging] = useState(false)
 
-  const acceptTypes = 'application/pdf,.pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx'
+  const acceptTypes =
+    'application/pdf,.pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,application/msword,.doc,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx'
 
   const MAX_SIZE_BYTES = 4.5 * 1024 * 1024 // 4.5MB
   const validateAndAccept = (file: File) => {
@@ -1409,9 +1410,11 @@ function MagicImportDropzone({
     const ok =
       file.type === 'application/pdf' ||
       file.type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
-      /\.(pdf|pptx)$/i.test(file.name)
+      file.type === 'application/msword' ||
+      file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+      /\.(pdf|pptx|doc|docx)$/i.test(file.name)
     if (ok) onFileAccept(file)
-    else toast.error('Nur PDF- oder PPTX-Dateien werden unterstützt.')
+    else toast.error('Nur Word-, PowerPoint- oder PDF-Dateien werden unterstützt.')
   }
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -1475,7 +1478,7 @@ function MagicImportDropzone({
               Hast du schon ein Referenzdokument?
             </p>
             <p className="text-muted-foreground max-w-md text-sm">
-              Lege jetzt deine .pptx- oder PDF-Datei hier ab, um das Formular automatisch zu befüllen.
+              Lege jetzt deine Word, PowerPoint, oder PDF-Datei hier ab, um das Formular automatisch zu befüllen.
             </p>
           </>
         )}

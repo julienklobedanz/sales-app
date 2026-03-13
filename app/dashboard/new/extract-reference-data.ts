@@ -36,6 +36,21 @@ async function extractTextFromPptx(buffer: Buffer): Promise<string> {
   return texts.join('\n\n')
 }
 
+/** Extrahiert Text aus DOCX mit mammoth. */
+async function extractTextFromDocx(buffer: Buffer): Promise<string> {
+  try {
+    // mammoth erwartet ein Objekt mit Buffer-Eigenschaft
+    const mammoth = await import('mammoth')
+    const result = await (mammoth as unknown as { extractRawText: (args: { buffer: Buffer }) => Promise<{ value: string }> }).extractRawText(
+      { buffer }
+    )
+    return typeof result?.value === 'string' ? result.value : ''
+  } catch (e) {
+    console.error('extractTextFromDocx: error', e)
+    throw new Error('DOCX_EXTRACT_FAILED')
+  }
+}
+
 async function extractWithLLM(documentText: string): Promise<ExtractedReferenceData> {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) {
@@ -132,10 +147,18 @@ export async function extractDataFromDocument(formData: FormData): Promise<Extra
     const isPptx =
       mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
       /\.pptx$/i.test(fileName)
+    const isDocx =
+      mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+      /\.docx$/i.test(fileName)
+    const isDoc =
+      mimeType === 'application/msword' || /\.doc$/i.test(fileName)
 
-    if (!isPdf && !isPptx) {
+    if (!isPdf && !isPptx && !isDocx && !isDoc) {
       console.error('extractDataFromDocument: unsupported file type', { fileName, mimeType })
-      return { success: false, error: 'Nur PDF- oder PPTX-Dateien werden unterstützt.' }
+      return {
+        success: false,
+        error: 'Nur Word-, PowerPoint- oder PDF-Dateien werden unterstützt.',
+      }
     }
 
     let documentText: string
@@ -143,8 +166,14 @@ export async function extractDataFromDocument(formData: FormData): Promise<Extra
       const buffer = Buffer.from(await file.arrayBuffer())
       if (isPdf) {
         documentText = await extractTextFromPdf(buffer)
-      } else {
+      } else if (isPptx) {
         documentText = await extractTextFromPptx(buffer)
+      } else if (isDocx) {
+        documentText = await extractTextFromDocx(buffer)
+      } else if (isDoc) {
+        throw new Error('DOC_FORMAT_UNSUPPORTED')
+      } else {
+        throw new Error('UNSUPPORTED_FORMAT')
       }
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e))
@@ -155,6 +184,20 @@ export async function extractDataFromDocument(formData: FormData): Promise<Extra
         message: err.message,
         stack: err.stack,
       })
+      if (err.message === 'DOCX_EXTRACT_FAILED') {
+        return {
+          success: false,
+          error:
+            'Text konnte nicht aus der Word-Datei gelesen werden. Bitte als PDF oder PowerPoint exportieren und erneut versuchen.',
+        }
+      }
+      if (err.message === 'DOC_FORMAT_UNSUPPORTED') {
+        return {
+          success: false,
+          error:
+            'Ältere Word-Dateien (.doc) werden nicht unterstützt. Bitte als DOCX, PDF oder PowerPoint speichern und erneut hochladen.',
+        }
+      }
       return {
         success: false,
         error:
