@@ -39,7 +39,7 @@ type RefRow = {
 
 async function fetchBatch(limit: number): Promise<RefRow[]> {
   const { data, error } = await supabase
-    .from<RefRow>('references')
+    .from('references')
     .select('id, title, summary, customer_challenge, our_solution, industry')
     .is('embedding', null)
     .limit(limit)
@@ -47,7 +47,7 @@ async function fetchBatch(limit: number): Promise<RefRow[]> {
   if (error) {
     throw error
   }
-  return data ?? []
+  return (data as RefRow[]) || []
 }
 
 async function embed(texts: string[]): Promise<number[][]> {
