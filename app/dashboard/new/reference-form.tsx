@@ -632,7 +632,12 @@ export function ReferenceForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="title">Titel <span className="text-destructive">*</span></Label>
+        <Label
+          htmlFor="title"
+          className="text-xs font-medium uppercase tracking-wider text-muted-foreground"
+        >
+          Titel
+        </Label>
         <Input
           id="title"
           name="title"
@@ -644,19 +649,37 @@ export function ReferenceForm({
         />
       </div>
 
-      <div className="space-y-2">
-        <div className="flex items-center justify-between gap-2">
-          <Label htmlFor="summary">Zusammenfassung</Label>
+      <div className="space-y-1">
+        <Label
+          htmlFor="summary"
+          className="text-xs font-medium uppercase tracking-wider text-muted-foreground"
+        >
+          Zusammenfassung
+        </Label>
+        <div className="relative">
+          <Textarea
+            id="summary"
+            name="summary"
+            placeholder="Kurze Beschreibung der Referenz …"
+            rows={4}
+            disabled={submitting}
+            value={summary}
+            onChange={(e) => setSummary(e.target.value)}
+            className="pr-10"
+          />
           <Button
             type="button"
-            variant="outline"
-            size="sm"
-            className="shrink-0 gap-1.5"
+            variant="ghost"
+            size="icon"
+            className="absolute right-2 top-2 h-7 w-7 text-muted-foreground hover:bg-muted"
             disabled={submitting || summaryLoading}
             onClick={async () => {
               setSummaryLoading(true)
               try {
-                const result = await generateSummaryFromStory(customerChallenge, ourSolution)
+                const result = await generateSummaryFromStory(
+                  customerChallenge,
+                  ourSolution
+                )
                 if (result.success) {
                   setSummary(result.summary)
                   toast.success('KI-Zusammenfassung übernommen.')
@@ -667,48 +690,49 @@ export function ReferenceForm({
                 setSummaryLoading(false)
               }
             }}
+            aria-label="KI-Vorschlag für Zusammenfassung"
           >
-            {summaryLoading ? <Loader2 className="size-3.5 animate-spin" /> : <Sparkles className="size-3.5" />}
-            KI-Vorschlag
+            {summaryLoading ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="size-3.5" />
+            )}
           </Button>
         </div>
-        <Textarea
-          id="summary"
-          name="summary"
-          placeholder="Kurze Beschreibung der Referenz …"
-          rows={4}
-          disabled={submitting}
-          value={summary}
-          onChange={(e) => setSummary(e.target.value)}
-        />
       </div>
 
       {/* Storytelling: Herausforderung & Lösung */}
       <div className="space-y-3">
-        <div className="space-y-2">
-          <Label htmlFor="customer_challenge" className="text-sm font-medium">
+        <div className="space-y-1">
+          <Label
+            htmlFor="customer_challenge"
+            className="text-xs font-medium uppercase tracking-wider text-muted-foreground"
+          >
             Herausforderung des Kunden
           </Label>
           <Textarea
             id="customer_challenge"
             name="customer_challenge"
             placeholder="Welche Herausforderung oder welches Ziel hatte der Kunde?"
-            rows={3}
+            rows={4}
             disabled={submitting}
             value={customerChallenge}
             onChange={(e) => setCustomerChallenge(e.target.value)}
             className="text-sm leading-relaxed"
           />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="our_solution" className="text-sm font-medium">
+        <div className="space-y-1">
+          <Label
+            htmlFor="our_solution"
+            className="text-xs font-medium uppercase tracking-wider text-muted-foreground"
+          >
             Unsere Lösung
           </Label>
           <Textarea
             id="our_solution"
             name="our_solution"
             placeholder="Wie haben wir die Herausforderung gelöst?"
-            rows={3}
+            rows={4}
             disabled={submitting}
             value={ourSolution}
             onChange={(e) => setOurSolution(e.target.value)}
@@ -1325,51 +1349,57 @@ export function ReferenceForm({
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-3 pt-2">
-        <Button type="submit" disabled={submitting}>
-          {submitting ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Plus className="mr-2 h-4 w-4" />
-          )}
-          {isEditMode ? 'Änderungen speichern' : 'Erstellen'}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={submitting}
-          onClick={() => (onClose ? onClose() : router.push('/dashboard'))}
-        >
-          Abbrechen
-        </Button>
-      </div>
     </>
   )
 
   return (
-    <Card className="w-full max-w-4xl min-w-0">
-      <CardHeader>
-        <CardTitle>
-          {isEditMode ? 'Referenz bearbeiten' : 'Neue Referenz'}
-        </CardTitle>
-        <CardDescription>
-          {isEditMode
-            ? 'Daten der Referenz anpassen.'
-            : 'Referenz anlegen und optional ein neues Unternehmen hinzufügen.'}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {isEditMode ? (
-          <form onSubmit={handleEditSubmit} className="w-full min-w-0 space-y-6">
-            {formContent}
-          </form>
-        ) : (
-          <form onSubmit={handleCreateSubmit} className="w-full min-w-0 space-y-6">
-            {formContent}
-          </form>
-        )}
-      </CardContent>
-    </Card>
+    <>
+      <div className="w-full max-w-4xl min-w-0 pb-24">
+        <Card className="border-0 shadow-none">
+          <CardContent className="px-0">
+            {isEditMode ? (
+              <form
+                onSubmit={handleEditSubmit}
+                className="w-full min-w-0 space-y-6"
+              >
+                {formContent}
+              </form>
+            ) : (
+              <form
+                onSubmit={handleCreateSubmit}
+                className="w-full min-w-0 space-y-6"
+              >
+                {formContent}
+              </form>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Sticky Action Bar */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/80 backdrop-blur">
+        <div className="mx-auto flex max-w-4xl items-center justify-end gap-3 px-4 py-3">
+          <Button type="submit" form={isEditMode ? undefined : undefined} disabled={submitting}>
+            {submitting ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="mr-2 h-4 w-4" />
+            )}
+            {isEditMode ? 'Änderungen speichern' : 'Erstellen'}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={submitting}
+            onClick={() =>
+              onClose ? onClose() : router.push('/dashboard')
+            }
+          >
+            Abbrechen
+          </Button>
+        </div>
+      </div>
+    </>
   )
 }
 
