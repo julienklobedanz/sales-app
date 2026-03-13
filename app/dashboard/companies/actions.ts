@@ -90,6 +90,9 @@ export async function upsertCompanyStrategy(
     red_flags?: string | null
     competition?: string | null
     next_steps?: string | null
+    // value_proposition wird aktuell nicht in allen Deployments als Spalte geführt;
+    // wir akzeptieren es im Payload für Vorwärtskompatibilität, mappen es aber nicht zwingend auf die DB.
+    value_proposition?: string | null
   }
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createServerSupabaseClient()
