@@ -519,18 +519,7 @@ export async function createReference(
     }
   }
 
-  let filePath: string | null = null
   const file = formData.get('file') as File | null
-  if (file && file.size > 0) {
-    const fileName = `${Date.now()}-${file.name}`
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('references')
-      .upload(fileName, file)
-    if (uploadError) {
-      return { success: false, error: 'Upload fehlgeschlagen: ' + uploadError.message }
-    }
-    filePath = uploadData.path
-  }
 
   const { data: reference, error: refError } = await supabase
     .from('references')
@@ -552,7 +541,7 @@ export async function createReference(
       customer_contact_id,
       contact_id: contactId,
       status,
-      file_path: filePath,
+      file_path: null,
       tags,
       project_status,
       project_start: project_start || null,
@@ -572,6 +561,85 @@ export async function createReference(
       return { success: false, error: refError.message }
     }
     return { success: false, error: 'Referenz konnte nicht gespeichert werden.' }
+  }
+
+  // Original-Dokument in den Storage hochladen (falls vorhanden)
+  if (file && file.size > 0) {
+    try {
+      const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')
+      const storagePath = `${organizationId}/${reference.id}/${Date.now()}-${safeName}`
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('references')
+        .upload(storagePath, file)
+      if (uploadError) {
+        console.error('[createReference] Upload fehlgeschlagen:', uploadError.message)
+      } else if (uploadData?.path) {
+        const { data: publicUrlData } = supabase.storage
+          .from('references')
+          .getPublicUrl(uploadData.path)
+        const originalUrl = publicUrlData?.publicUrl ?? null
+        const { error: updateFileError } = await supabase
+          .from('references')
+          .update({
+            file_path: uploadData.path,
+            original_document_url: originalUrl,
+          })
+          .eq('id', reference.id)
+        if (updateFileError) {
+          console.error('[createReference] Konnte file_path/original_document_url nicht speichern:', updateFileError.message)
+        }
+      }
+    } catch (e) {
+      console.error('[createReference] Unerwarteter Fehler beim Upload des Originaldokuments:', e)
+    }
+  }
+
+  // Embedding für semantische Suche erzeugen (Best Effort – Fehler blockieren die Referenz nicht)
+  try {
+    const apiKey = process.env.OPENAI_API_KEY
+    const combinedParts = [
+      title,
+      summary,
+      customer_challenge,
+      our_solution,
+      industry,
+    ]
+      .filter((p): p is string => !!p && p.trim().length > 0)
+      .map((p) => p.trim())
+
+    if (apiKey && combinedParts.length > 0) {
+      const input = combinedParts.join('\n\n')
+      const response = await fetch('https://api.openai.com/v1/embeddings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'text-embedding-3-small',
+          input,
+        }),
+      })
+
+      if (!response.ok) {
+        const raw = await response.text()
+        console.error('[createReference] Embedding-API Fehler:', response.status, raw)
+      } else {
+        const json = (await response.json()) as { data?: Array<{ embedding: number[] }> }
+        const vector = json.data?.[0]?.embedding
+        if (Array.isArray(vector) && vector.length > 0) {
+          const { error: embedError } = await supabase
+            .from('references')
+            .update({ embedding: vector })
+            .eq('id', reference.id)
+          if (embedError) {
+            console.error('[createReference] Konnte Embedding nicht speichern:', embedError.message)
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.error('[createReference] Unerwarteter Fehler beim Erzeugen des Embeddings:', e)
   }
 
   // Freigabe-Anfragen werden im 4-Status-Modell explizit ausgelöst,
