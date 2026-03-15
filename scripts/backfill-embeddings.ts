@@ -13,18 +13,18 @@
  * - OPENAI_API_KEY
  *
  * Ausführung:
- *   npx ts-node scripts/backfill-embeddings.ts
+ *   npx ts-node --require dotenv/config scripts/backfill-embeddings.ts dotenv_config_path=.env.local
  */
 
 import { createClient } from '@supabase/supabase-js'
-import OpenAI from 'openai'
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  console.error('Fehlende Umgebungsvariablen: SUPABASE_URL und SUPABASE_SERVICE_ROLE_KEY werden benötigt.')
+  console.error('Fehlende Umgebungsvariablen: SUPABASE_URL/NEXT_PUBLIC_SUPABASE_URL und SUPABASE_SERVICE_ROLE_KEY werden benötigt.')
+  console.error('Ausführung: npx ts-node --require dotenv/config scripts/backfill-embeddings.ts dotenv_config_path=.env.local')
   process.exit(1)
 }
 
@@ -34,7 +34,6 @@ if (!OPENAI_API_KEY) {
 }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-const openai = new OpenAI({ apiKey: OPENAI_API_KEY })
 
 type RefRow = {
   id: string
@@ -59,11 +58,25 @@ async function fetchBatch(limit: number): Promise<RefRow[]> {
 }
 
 async function embed(texts: string[]): Promise<number[][]> {
-  const response = await openai.embeddings.create({
-    model: 'text-embedding-3-small',
-    input: texts,
+  const response = await fetch('https://api.openai.com/v1/embeddings', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: 'text-embedding-3-small',
+      input: texts,
+    }),
   })
-  return response.data.map((d) => d.embedding)
+
+  if (!response.ok) {
+    const raw = await response.text()
+    throw new Error(`OpenAI Embeddings API Fehler ${response.status}: ${raw}`)
+  }
+
+  const json = (await response.json()) as { data: Array<{ embedding: number[] }> }
+  return json.data.map((d: { embedding: number[] }) => d.embedding)
 }
 
 const BATCH_SIZE = 100 // max pro Request (OpenAI/Spec)
