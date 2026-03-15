@@ -594,7 +594,7 @@ export async function createReference(
     }
   }
 
-  // Embedding für semantische Suche erzeugen (Best Effort – Fehler blockieren die Referenz nicht)
+  // KAN-15: Embedding für semantische Suche (Best Effort – Fehler blockieren die Referenz nicht; Backfill: KAN-22)
   try {
     const apiKey = process.env.OPENAI_API_KEY
     const combinedParts = [
