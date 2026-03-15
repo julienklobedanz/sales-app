@@ -1,16 +1,23 @@
 /**
- * Backfill-Script für Referenz-Embeddings.
+ * KAN-22: Backfill-Script für Referenz-Embeddings.
+ *
+ * Einmalig ausführen, um alle Referenzen mit embedding IS NULL zu vektorisieren
+ * (title + summary + customer_challenge + our_solution + industry → text-embedding-3-small).
+ * Idempotent: nur NULL-Einträge werden befüllt. Referenzen ohne Textinhalt bleiben NULL.
+ *
+ * Abhängigkeit: KAN-21 (pgvector-Spalte references.embedding muss existieren).
  *
  * Voraussetzungen:
- * - SUPABASE_URL
- * - SUPABASE_SERVICE_ROLE_KEY (oder ein Key mit Schreibrechten auf public.references)
+ * - SUPABASE_URL (oder NEXT_PUBLIC_SUPABASE_URL)
+ * - SUPABASE_SERVICE_ROLE_KEY
  * - OPENAI_API_KEY
  *
- * Ausführung (Beispiel):
+ * Ausführung:
  *   npx ts-node scripts/backfill-embeddings.ts
  */
 
 import { createClient } from '@supabase/supabase-js'
+import OpenAI from 'openai'
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -27,6 +34,7 @@ if (!OPENAI_API_KEY) {
 }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+const openai = new OpenAI({ apiKey: OPENAI_API_KEY })
 
 type RefRow = {
   id: string
@@ -51,30 +59,18 @@ async function fetchBatch(limit: number): Promise<RefRow[]> {
 }
 
 async function embed(texts: string[]): Promise<number[][]> {
-  const response = await fetch('https://api.openai.com/v1/embeddings', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: 'text-embedding-3-small',
-      input: texts,
-    }),
+  const response = await openai.embeddings.create({
+    model: 'text-embedding-3-small',
+    input: texts,
   })
-
-  if (!response.ok) {
-    const raw = await response.text()
-    throw new Error(`OpenAI Embeddings Error: ${response.status} ${raw}`)
-  }
-
-  const json = (await response.json()) as { data: Array<{ embedding: number[] }> }
-  return json.data.map((d) => d.embedding)
+  return response.data.map((d) => d.embedding)
 }
 
+const BATCH_SIZE = 100 // max pro Request (OpenAI/Spec)
+
 async function run() {
-  const BATCH_SIZE = 50
   let processed = 0
+  console.log('KAN-22 Backfill: Starte Verarbeitung (nur Einträge mit embedding IS NULL)…')
 
   // eslint-disable-next-line no-constant-condition
   while (true) {
