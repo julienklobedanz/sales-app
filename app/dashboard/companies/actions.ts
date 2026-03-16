@@ -464,6 +464,21 @@ export async function updateCompanyAccountStatus(
   return { success: true }
 }
 
+export async function toggleCompanyFavorite(
+  companyId: string,
+  isFavorite: boolean
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createServerSupabaseClient()
+  const { error } = await supabase
+    .from('companies')
+    .update({ is_favorite: isFavorite })
+    .eq('id', companyId)
+  if (error) return { success: false, error: error.message }
+  revalidatePath('/dashboard/companies')
+  revalidatePath(`/dashboard/companies/${companyId}`)
+  return { success: true }
+}
+
 export async function deleteCompanyWithData(
   companyId: string
 ): Promise<{ success: boolean; error?: string }> {

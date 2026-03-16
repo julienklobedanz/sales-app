@@ -22,9 +22,9 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
-import { buttonVariants } from '@/components/ui/button'
-import { Building2Icon, MapPinIcon, Globe2, Search, X, Loader2 } from 'lucide-react'
-import { deleteCompanyWithData } from './actions'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { Building2Icon, MapPinIcon, Globe2, Search, X, Loader2, Plus, Star, Briefcase, Users } from 'lucide-react'
+import { deleteCompanyWithData, toggleCompanyFavorite } from './actions'
 
 export type CompanyCard = {
   id: string
@@ -34,32 +34,63 @@ export type CompanyCard = {
   headquarters: string | null
   industry: string | null
   intelligence_score?: number | null
+  is_favorite?: boolean | null
+  open_deals_count?: number | null
+  contacts_count?: number | null
 }
 
 export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
   const [search, setSearch] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<CompanyCard | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [favoritesOnly, setFavoritesOnly] = useState(false)
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
-    if (!q) return companies
-    return companies.filter((c) => c.name.toLowerCase().includes(q))
-  }, [companies, search])
+    let list = companies
+    if (favoritesOnly) {
+      list = list.filter((c) => c.is_favorite)
+    }
+    if (!q) return list
+    return list.filter((c) => c.name.toLowerCase().includes(q))
+  }, [companies, search, favoritesOnly])
 
   return (
     <div className="space-y-6 rounded-3xl bg-slate-50/50 p-4 md:p-6">
       <div className="w-full">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-          <Input
-            type="search"
-            placeholder="Firma suchen …"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="h-11 w-full pl-10 pr-4 rounded-lg border bg-background shadow-sm"
-            aria-label="Firmen durchsuchen"
-          />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Firma suchen …"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-11 w-full rounded-lg border bg-background pl-10 pr-4 shadow-sm"
+              aria-label="Firmen durchsuchen"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant={favoritesOnly ? 'default' : 'outline'}
+              size="icon"
+              className={`h-9 w-9 shrink-0 rounded-full ${favoritesOnly ? 'bg-yellow-500 text-black hover:bg-yellow-500/90' : ''}`}
+              onClick={() => setFavoritesOnly((v) => !v)}
+              aria-label={favoritesOnly ? 'Alle Accounts anzeigen' : 'Nur Favoriten anzeigen'}
+            >
+              <Star
+                className={`h-4 w-4 ${favoritesOnly ? 'fill-yellow-400 text-yellow-700' : 'text-slate-400'}`}
+              />
+            </Button>
+            <Button
+              type="button"
+              className="inline-flex h-11 items-center gap-2 rounded-xl bg-black px-4 text-sm font-medium text-white shadow-sm hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Account hinzufügen</span>
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -112,9 +143,30 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                         </div>
                       )}
                       <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
                         <CardTitle className="truncate text-base font-semibold">
                           {company.name}
                         </CardTitle>
+                        <button
+                          type="button"
+                          className="inline-flex h-5 w-5 items-center justify-center rounded-full text-slate-400 hover:text-yellow-500"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            const next = !company.is_favorite
+                            void toggleCompanyFavorite(company.id, next)
+                          }}
+                          aria-label={company.is_favorite ? 'Als Favorit entfernen' : 'Als Favorit markieren'}
+                        >
+                          <Star
+                            className={`h-4 w-4 ${
+                              company.is_favorite
+                                ? 'fill-yellow-400 text-yellow-500'
+                                : 'text-slate-400'
+                            }`}
+                          />
+                        </button>
+                      </div>
                         {company.industry && (
                           <CardDescription className="mt-0.5 truncate text-xs text-muted-foreground">
                             {company.industry}
@@ -145,13 +197,36 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                     {company.website_url && (
                       <div className="flex items-center gap-1.5">
                         <Globe2 className="size-3.5 shrink-0" />
-                        <span className="truncate max-w-[160px] text-primary hover:underline">
-                          {company.website_url
-                            .replace(/^https?:\/\//i, '')
-                            .replace(/\/$/, '')}
-                        </span>
+                        <a
+                          href={
+                            company.website_url.startsWith('http')
+                              ? company.website_url
+                              : `https://${company.website_url}`
+                          }
+                          target="_blank"
+                          rel="noreferrer"
+                          className="truncate max-w-[160px] text-muted-foreground hover:underline"
+                        >
+                          Website
+                        </a>
                       </div>
                     )}
+                  </div>
+                </CardContent>
+                <CardContent className="pt-2 pb-3 text-[11px] text-muted-foreground">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1.5">
+                      <Briefcase className="size-3.5" />
+                      <span>
+                        {company.open_deals_count ?? 0} Deals
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Users className="size-3.5" />
+                      <span>
+                        {company.contacts_count ?? 0} Kontakte
+                      </span>
+                    </div>
                   </div>
                 </CardContent>
               </Link>

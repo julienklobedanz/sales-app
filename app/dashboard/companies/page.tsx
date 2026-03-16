@@ -20,7 +20,7 @@ export default async function CompaniesPage() {
 
   const { data: companies } = await supabase
     .from('companies')
-    .select('id, name, logo_url, website_url, headquarters, industry')
+    .select('id, name, logo_url, website_url, headquarters, industry, is_favorite, open_deals_count, contacts_count')
     .order('name')
 
   return (
