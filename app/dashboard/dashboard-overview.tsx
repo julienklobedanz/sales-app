@@ -2299,7 +2299,7 @@ export function DashboardOverview({
 
       {/* 4. Detail (zentrales Modal) – onOpenAutoFocus verhindert Fokus auf Eye-Icon und damit sofortigen Tooltip */}
       <Dialog open={sheetOpen} onOpenChange={setSheetOpen}>
-        <DialogContent className="flex max-h-[85vh] flex-col gap-0 overflow-hidden px-8 py-6 sm:max-w-3xl lg:max-w-[61rem] xl:max-w-[68rem] md:px-16 lg:px-20" onOpenAutoFocus={(e) => e.preventDefault()}>
+        <DialogContent className="flex max-h-[85vh] flex-col gap-0 overflow-hidden p-6 sm:max-w-3xl lg:max-w-[61rem] xl:max-w-[68rem]" onOpenAutoFocus={(e) => e.preventDefault()}>
           {selectedRef && (
             <TooltipProvider delayDuration={150}>
               {/* Fixierter Header */}
