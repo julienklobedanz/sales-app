@@ -32,6 +32,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { DEAL_STATUS_LABELS, type DealRow } from './types'
 import type { DealWithReferences } from './types'
 import type { RefOption } from './deal-detail-content'
@@ -439,15 +440,15 @@ export function DealsClientContent({ deals, expiring, allReferences, matchMap, i
           </div>
         </SheetContent>
       </Sheet>
-      {/* Modal zum Anlegen eines neuen Deals */}
-      <Sheet open={createOpen} onOpenChange={setCreateOpen}>
-        <SheetContent side="right" className="w-full max-w-md">
-          <SheetHeader className="mb-4">
-            <SheetTitle>Deal anlegen</SheetTitle>
-          </SheetHeader>
+      {/* Popover/Dialog zum Anlegen eines neuen Deals */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Deal anlegen</DialogTitle>
+          </DialogHeader>
           <DealForm companies={companies} orgProfiles={orgProfiles} />
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

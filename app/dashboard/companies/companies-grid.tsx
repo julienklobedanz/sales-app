@@ -11,7 +11,8 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Building2Icon, MapPinIcon, Search } from 'lucide-react'
+import { Building2Icon, MapPinIcon, Search, X } from 'lucide-react'
+import { deleteCompanyWithData } from './actions'
 
 export type CompanyCard = {
   id: string
@@ -56,12 +57,30 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((company) => (
-            <Link
+            <Card
               key={company.id}
-              href={`/dashboard/companies/${company.id}`}
-              className="transition-opacity duration-300 ease-out"
+              className="relative h-full overflow-hidden transition-shadow duration-200 hover:shadow-md hover:border-primary/20"
             >
-              <Card className="h-full overflow-hidden transition-shadow duration-200 hover:shadow-md hover:border-primary/20">
+              <button
+                type="button"
+                className="absolute right-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground hover:bg-red-50 hover:text-red-600"
+                onClick={async (e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  if (!window.confirm('Diesen Kunden und alle zugehörigen Daten wirklich löschen?')) return
+                  const result = await deleteCompanyWithData(company.id)
+                  if (!result.success && result.error) {
+                    console.error(result.error)
+                  }
+                }}
+                aria-label="Kunde löschen"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+              <Link
+                href={`/dashboard/companies/${company.id}`}
+                className="block h-full transition-opacity duration-300 ease-out"
+              >
                 <CardHeader className="pb-2">
                   <div className="flex items-start gap-3">
                     {company.logo_url ? (
@@ -102,8 +121,8 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                     </span>
                   )}
                 </CardContent>
-              </Card>
-            </Link>
+              </Link>
+            </Card>
           ))}
         </div>
       )}

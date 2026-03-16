@@ -464,6 +464,30 @@ export async function updateCompanyAccountStatus(
   return { success: true }
 }
 
+export async function deleteCompanyWithData(
+  companyId: string
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createServerSupabaseClient()
+
+  // Optional: weitere abhängige Daten explizit löschen, falls kein ON DELETE CASCADE konfiguriert ist.
+  // Referenzen
+  await supabase.from('references').delete().eq('company_id', companyId)
+  // Deals
+  await supabase.from('deals').delete().eq('company_id', companyId)
+  // Strategy
+  await supabase.from('company_strategies').delete().eq('company_id', companyId)
+  // Roadmap-Projekte
+  await supabase.from('company_roadmap_projects').delete().eq('company_id', companyId)
+  // Stakeholder
+  await supabase.from('stakeholders').delete().eq('company_id', companyId)
+
+  const { error } = await supabase.from('companies').delete().eq('id', companyId)
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath('/dashboard/companies')
+  return { success: true }
+}
+
 /** Smart Match für Account: Referenzen aus der Org, die zu diesem Kunden passen (Branche/Herausforderungen). */
 export async function getRecommendedReferencesForAccount(
   companyId: string
