@@ -2386,69 +2386,16 @@ export function DashboardOverview({
               {/* Ein scrollbarer Bereich: gleiche 4-Karten-Struktur wie Referenz erstellen */}
               <div className="flex-1 overflow-y-auto px-6 py-6 md:px-8 md:py-8">
                 <div className="space-y-6 pt-4">
-                  {/* Card 1: Basisdaten (Übersicht + Unternehmens-Details) */}
+                  {/* Card 1: Basisdaten (Übersicht) */}
                   <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
-                        Basisdaten
-                      </CardTitle>
-                    </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="space-y-2">
                         <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Übersicht</span>
-                        <div className="rounded-lg border bg-muted/40 p-4">
+                        <div className="rounded-md bg-muted/20 p-4">
                           <p className="text-muted-foreground text-sm leading-relaxed">
                             {selectedRef.summary ||
                               'Keine Zusammenfassung hinterlegt.'}
                           </p>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Unternehmens-Details</span>
-                        <div className="grid grid-cols-2 gap-x-6 gap-y-3 rounded-lg border bg-muted/20 p-4">
-                          <div className="space-y-0.5">
-                            <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-                              <Building2Icon className="size-3" /> Industrie
-                            </span>
-                            <p className={`pl-4 text-xs font-medium ${selectedRef.industry ? 'text-foreground' : 'text-muted-foreground'}`}>
-                              {selectedRef.industry || '—'}
-                            </p>
-                          </div>
-                          <div className="space-y-0.5">
-                            <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-                              <MapPinIcon className="size-3" /> HQ
-                            </span>
-                            <p className={`pl-4 text-xs font-medium ${selectedRef.country ? 'text-foreground' : 'text-muted-foreground'}`}>
-                              {selectedRef.country || '—'}
-                            </p>
-                          </div>
-                          <div className="space-y-0.5">
-                            <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-                              <GlobeIcon className="size-3" /> Website
-                            </span>
-                            <div className="pl-4">
-                              {selectedRef.website ? (
-                                <a
-                                  href={selectedRef.website}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="text-primary hover:underline inline-flex items-center gap-1 text-xs font-medium"
-                                >
-                                  Öffnen <ExternalLinkIcon className="size-3" />
-                                </a>
-                              ) : (
-                                <p className="text-xs font-medium text-muted-foreground">—</p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="space-y-0.5">
-                            <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-                              <UserIcon className="size-3" /> Mitarbeiter
-                            </span>
-                            <p className={`pl-4 text-xs font-medium ${selectedRef.employee_count != null ? 'text-foreground' : 'text-muted-foreground'}`}>
-                              {formatNumber(selectedRef.employee_count)}
-                            </p>
-                          </div>
                         </div>
                       </div>
                     </CardContent>
@@ -2456,16 +2403,11 @@ export function DashboardOverview({
 
                   {/* Card 2: Story (Herausforderung & Lösung + Tags) */}
                   <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
-                        Story
-                      </CardTitle>
-                    </CardHeader>
                     <CardContent className="space-y-4">
                       {(selectedRef.customer_challenge || selectedRef.our_solution) ? (
                         <div className="space-y-2">
                           <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Herausforderung & Lösung</span>
-                          <div className="rounded-lg border bg-muted/40 p-4 space-y-4">
+                          <div className="space-y-4">
                             {selectedRef.customer_challenge ? (
                               <div>
                                 <p className="text-muted-foreground text-[11px] font-medium mb-1">Herausforderung des Kunden</p>
@@ -2511,15 +2453,12 @@ export function DashboardOverview({
                     </CardContent>
                   </Card>
 
-                  {/* Card 3: Projektdetails (Volumen, Vertragsart, Zeitraum, Kontakte) */}
+                  {/* Card 3: Projektdetails (Volumen, Vertragsart, Zeitraum, Unternehmens-Details, Kontakte) */}
                   <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
-                        Projektdetails
-                      </CardTitle>
-                    </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="grid grid-cols-2 gap-x-6 gap-y-3 rounded-lg border bg-muted/20 p-4">
+                      <div className="space-y-2">
+                        <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Projektdetails</span>
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-3">
                       <div className="space-y-0.5">
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
                           <FileTextIcon className="size-3" /> Volumen (€)
@@ -2574,23 +2513,74 @@ export function DashboardOverview({
                           )
                         })()}
                       </div>
-                      <div className="space-y-0.5">
-                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-                          <HistoryIcon className="size-3" /> Letzte Änderung
-                        </span>
-                        <p className={`pl-4 text-xs font-medium ${selectedRef.updated_at ? 'text-foreground' : 'text-muted-foreground'}`}>
-                          {selectedRef.updated_at ? formatDate(selectedRef.updated_at) : '—'}
-                        </p>
+                          <div className="space-y-0.5">
+                            <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+                              <Building2Icon className="size-3" /> Aktueller Dienstleister
+                            </span>
+                            <p className={`pl-4 text-xs font-medium ${selectedRef.incumbent_provider ? 'text-foreground' : 'text-muted-foreground'}`}>
+                              {selectedRef.incumbent_provider || '—'}
+                            </p>
+                          </div>
+                          <div className="space-y-0.5">
+                            <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+                              <Users className="size-3" /> Beteiligte Wettbewerber
+                            </span>
+                            <p className={`pl-4 text-xs font-medium ${selectedRef.competitors ? 'text-foreground' : 'text-muted-foreground'}`}>
+                              {selectedRef.competitors || '—'}
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                      <div className="space-y-0.5">
-                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-                          <CalendarIcon className="size-3" /> Erstellt
-                        </span>
-                        <p className="pl-4 text-xs font-medium text-foreground">
-                          {formatDate(selectedRef.created_at)}
-                        </p>
+
+                      <div className="space-y-2">
+                        <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Unternehmens-Details</span>
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                          <div className="space-y-0.5">
+                            <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+                              <Building2Icon className="size-3" /> Industrie
+                            </span>
+                            <p className={`pl-4 text-xs font-medium ${selectedRef.industry ? 'text-foreground' : 'text-muted-foreground'}`}>
+                              {selectedRef.industry || '—'}
+                            </p>
+                          </div>
+                          <div className="space-y-0.5">
+                            <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+                              <MapPinIcon className="size-3" /> HQ
+                            </span>
+                            <p className={`pl-4 text-xs font-medium ${selectedRef.country ? 'text-foreground' : 'text-muted-foreground'}`}>
+                              {selectedRef.country || '—'}
+                            </p>
+                          </div>
+                          <div className="space-y-0.5">
+                            <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+                              <GlobeIcon className="size-3" /> Website
+                            </span>
+                            <div className="pl-4">
+                              {selectedRef.website ? (
+                                <a
+                                  href={selectedRef.website}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-primary hover:underline inline-flex items-center gap-1 text-xs font-medium"
+                                >
+                                  Öffnen <ExternalLinkIcon className="size-3" />
+                                </a>
+                              ) : (
+                                <p className="text-xs font-medium text-muted-foreground">—</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="space-y-0.5">
+                            <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+                              <UserIcon className="size-3" /> Mitarbeiter
+                            </span>
+                            <p className={`pl-4 text-xs font-medium ${selectedRef.employee_count != null ? 'text-foreground' : 'text-muted-foreground'}`}>
+                              {formatNumber(selectedRef.employee_count)}
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                    </div>
+
                       <div className="space-y-2">
                         <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Kontakte</span>
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -2675,35 +2665,9 @@ export function DashboardOverview({
                     </CardContent>
                   </Card>
 
-                  {/* Card 4: Strategie & Anhänge (Marktumfeld, Dateien, Historie) */}
+                  {/* Card 4: Strategie & Anhänge (Dateien, Historie) */}
                   <Card className="bg-muted/30">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
-                        Strategie & Anhänge
-                      </CardTitle>
-                    </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Marktumfeld</span>
-                        <div className="grid grid-cols-1 gap-4 rounded-lg border bg-muted/20 p-4 sm:grid-cols-2">
-                          <div className="space-y-1.5">
-                            <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-                              <Building2Icon className="size-3" /> Aktueller Dienstleister
-                            </span>
-                            <p className={`pl-4 text-xs font-medium ${selectedRef.incumbent_provider ? 'text-foreground' : 'text-muted-foreground'}`}>
-                              {selectedRef.incumbent_provider || '—'}
-                            </p>
-                          </div>
-                          <div className="space-y-1.5">
-                            <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-                              <Users className="size-3" /> Beteiligte Wettbewerber
-                            </span>
-                            <p className={`pl-4 text-xs font-medium ${selectedRef.competitors ? 'text-foreground' : 'text-muted-foreground'}`}>
-                              {selectedRef.competitors || '—'}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
                       <div className="space-y-2">
                         <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
                           Dateien
