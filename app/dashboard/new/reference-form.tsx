@@ -1224,7 +1224,6 @@ export function ReferenceForm({
               placeholder="z. B. bisheriger Anbieter"
               disabled={submitting}
               value={incumbentProvider}
-              className={incumbentProvider.trim() ? 'pl-28' : undefined}
               onChange={async (e) => {
                 const value = e.target.value
                 setIncumbentProvider(value)
@@ -1240,36 +1239,6 @@ export function ReferenceForm({
                 }
               }}
             />
-            {incumbentProvider.trim() && (
-              <div className="absolute left-2 top-1/2 flex -translate-y-1/2 items-center gap-1 rounded-full border bg-muted px-2 py-0.5 text-xs">
-                <span className="flex h-5 w-5 items-center justify-center overflow-hidden rounded-full bg-background">
-                  <img
-                    src={`https://img.logo.dev/${encodeURIComponent(
-                      incumbentProvider.trim()
-                    )}?token=pk_JXJ-h3VESaGIN5pOAvhvcQ`}
-                    alt=""
-                    className="h-5 w-5 object-contain"
-                    onError={(e) => {
-                      ;(e.currentTarget as HTMLImageElement).style.display = 'none'
-                    }}
-                  />
-                </span>
-                <span className="max-w-[120px] truncate">
-                  {incumbentProvider}
-                </span>
-                <button
-                  type="button"
-                  className="ml-0.5 rounded-full px-1 hover:bg-muted-foreground/20"
-                  onClick={() => {
-                    setIncumbentProvider('')
-                    setIncumbentSuggestions([])
-                  }}
-                  aria-label="Incumbent entfernen"
-                >
-                  ×
-                </button>
-              </div>
-            )}
             {incumbentSuggestions.length > 0 && incumbentProvider.trim() && (
               <div className="absolute z-20 mt-1 w-full rounded-md border bg-popover text-sm shadow-md">
                 <Command>
@@ -1302,7 +1271,7 @@ export function ReferenceForm({
               name="competitors"
               value={competitors}
             />
-            <div className="flex min-h-9 flex-wrap items-center gap-2 rounded-md border border-amber-500/40 bg-amber-50 px-3 py-2 text-sm dark:border-amber-500/60 dark:bg-amber-950/30">
+            <div className="flex min-h-9 flex-wrap items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm">
               {competitors
                 .split(/[;,]+/)
                 .map((s) => s.trim())
@@ -1310,7 +1279,7 @@ export function ReferenceForm({
                 .map((name) => (
                   <span
                     key={name}
-                    className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-medium text-amber-900 dark:bg-amber-500/20 dark:text-amber-100"
+                    className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-medium text-foreground"
                   >
                     {name}
                     <button

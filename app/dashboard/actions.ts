@@ -250,12 +250,25 @@ export async function getDashboardData(
       : null
     const start = r.project_start as string | null
     const end = r.project_end as string | null
+    const status = (r.project_status as 'active' | 'completed' | null) ?? null
     let duration_months: number | null = null
     if (start && end) {
       const s = new Date(start)
       const e = new Date(end)
       if (!Number.isNaN(s.getTime()) && !Number.isNaN(e.getTime())) {
-        duration_months = Math.max(0, (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth()))
+        duration_months = Math.max(
+          0,
+          (e.getUTCFullYear() - s.getUTCFullYear()) * 12 + (e.getUTCMonth() - s.getUTCMonth())
+        )
+      }
+    } else if (status === 'active' && start) {
+      const s = new Date(start)
+      const now = new Date()
+      if (!Number.isNaN(s.getTime()) && !Number.isNaN(now.getTime())) {
+        duration_months = Math.max(
+          0,
+          (now.getUTCFullYear() - s.getUTCFullYear()) * 12 + (now.getUTCMonth() - s.getUTCMonth())
+        )
       }
     }
     return {
@@ -750,17 +763,23 @@ export async function updateReference(id: string, formData: FormData) {
     }
   }
 
-  const file = formData.get('file') as File | null
+  const maybeFile = formData.get('file')
   let filePath: string | undefined
-  if (file && file.size > 0) {
-    const fileName = `${Date.now()}-${file.name}`
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('references')
-      .upload(fileName, file)
-    if (uploadError) {
-      throw new Error('Upload fehlgeschlagen: ' + uploadError.message)
+  if (maybeFile && maybeFile instanceof File && maybeFile.size > 0) {
+    try {
+      const safeName = maybeFile.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+      const fileName = `${Date.now()}-${id.slice(0, 8)}-${safeName}`
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('references')
+        .upload(fileName, maybeFile)
+      if (!uploadError && uploadData?.path) {
+        filePath = uploadData.path
+      } else if (uploadError) {
+        console.error('[updateReference] Upload fehlgeschlagen:', uploadError.message)
+      }
+    } catch (e) {
+      console.error('[updateReference] Unerwarteter Fehler beim Upload:', e)
     }
-    filePath = uploadData.path
   }
 
   const updatePayload: {

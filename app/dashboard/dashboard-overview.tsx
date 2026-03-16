@@ -591,15 +591,30 @@ export function DashboardOverview({
     Record<(typeof COLUMN_KEYS)[number], boolean>
   >(DEFAULT_VISIBLE)
 
-  const handleToggleFavorite = async (id: string, e?: React.MouseEvent) => {
+  const handleToggleFavorite = (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation()
-    try {
-      await toggleFavorite(id)
-      toast.success('Favoriten aktualisiert')
-      router.refresh()
-    } catch {
-      toast.error('Fehler beim Aktualisieren der Favoriten')
-    }
+    // Optimistisches Update im UI
+    setFavoriteIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+    void toggleFavorite(id).then(
+      () => {
+        toast.success('Favoriten aktualisiert')
+      },
+      () => {
+        // Revert bei Fehler
+        setFavoriteIds((prev) => {
+          const next = new Set(prev)
+          if (next.has(id)) next.delete(id)
+          else next.add(id)
+          return next
+        })
+        toast.error('Fehler beim Aktualisieren der Favoriten')
+      }
+    )
   }
 
   // Eindeutige Werte für Filter-Dropdowns (aus aktuellen Referenzen)
@@ -609,6 +624,19 @@ export function DashboardOverview({
     const lower = trimmed.toLowerCase()
     return lower.charAt(0).toUpperCase() + lower.slice(1)
   }
+
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(
+    () => new Set(initialReferences.filter((r) => r.is_favorited).map((r) => r.id))
+  )
+
+  const referencesWithLocalFavorites = useMemo(
+    () =>
+      initialReferences.map((r) => ({
+        ...r,
+        is_favorited: favoriteIds.has(r.id),
+      })),
+    [initialReferences, favoriteIds]
+  )
 
   const filterOptions = useMemo(() => {
     const statuses = new Set<string>()
@@ -662,7 +690,7 @@ export function DashboardOverview({
 
   // Client-seitiges Filtering (Sales: draft nie anzeigen; optional nur Favoriten) + Sortierung
   const filteredReferences = useMemo(() => {
-    let list = initialReferences
+    let list = referencesWithLocalFavorites
     if (profile.role === 'sales') {
       list = list.filter((r) => r.status !== 'draft')
     }
@@ -724,7 +752,7 @@ export function DashboardOverview({
     }
     return list
   }, [
-    initialReferences,
+    referencesWithLocalFavorites,
     profile.role,
     search,
     statusFilter,
@@ -1922,6 +1950,12 @@ export function DashboardOverview({
                     key={ref.id}
                     className="cursor-pointer hover:bg-muted/50 group"
                     onClick={() => openDetail(ref)}
+                    onContextMenu={(e: React.MouseEvent) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      // Öffnet das gleiche Aktions-Menü wie der Drei-Punkte-Button:
+                      openDetail(ref)
+                    }}
                   >
                     <TableCell
                       className="w-[44px] pr-0"
