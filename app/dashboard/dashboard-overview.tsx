@@ -2386,45 +2386,27 @@ export function DashboardOverview({
               {/* Ein scrollbarer Bereich: gleiche 4-Karten-Struktur wie Referenz erstellen */}
               <div className="flex-1 overflow-y-auto px-6 py-6 md:px-8 md:py-8">
                 <div className="space-y-6 pt-4">
-                  {/* Card 1: Basisdaten (Übersicht) */}
-                  <Card>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Übersicht</span>
-                        <div className="rounded-md bg-muted/20 p-4">
-                          <p className="text-muted-foreground text-sm leading-relaxed">
-                            {selectedRef.summary ||
-                              'Keine Zusammenfassung hinterlegt.'}
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Card 2: Story (Herausforderung & Lösung + Tags) */}
+                  {/* Card 1: Story (Herausforderung & Lösung + Tags) */}
                   <Card>
                     <CardContent className="space-y-4">
                       {(selectedRef.customer_challenge || selectedRef.our_solution) ? (
-                        <div className="space-y-2">
-                          <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Herausforderung & Lösung</span>
-                          <div className="space-y-4">
-                            {selectedRef.customer_challenge ? (
-                              <div>
-                                <p className="text-muted-foreground text-[11px] font-medium mb-1">Herausforderung des Kunden</p>
-                                <p className="text-foreground text-sm leading-relaxed">
-                                  {selectedRef.customer_challenge}
-                                </p>
-                              </div>
-                            ) : null}
-                            {selectedRef.our_solution ? (
-                              <div>
-                                <p className="text-muted-foreground text-[11px] font-medium mb-1">Unsere Lösung</p>
-                                <p className="text-foreground text-sm leading-relaxed">
-                                  {selectedRef.our_solution}
-                                </p>
-                              </div>
-                            ) : null}
-                          </div>
+                        <div className="space-y-4">
+                          {selectedRef.customer_challenge ? (
+                            <div className="space-y-2">
+                              <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Herausforderung des Kunden</span>
+                              <p className="text-foreground text-sm leading-relaxed">
+                                {selectedRef.customer_challenge}
+                              </p>
+                            </div>
+                          ) : null}
+                          {selectedRef.our_solution ? (
+                            <div className="space-y-2">
+                              <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Unsere Lösung</span>
+                              <p className="text-foreground text-sm leading-relaxed">
+                                {selectedRef.our_solution}
+                              </p>
+                            </div>
+                          ) : null}
                         </div>
                       ) : null}
                       <div className="space-y-2">
@@ -2453,7 +2435,7 @@ export function DashboardOverview({
                     </CardContent>
                   </Card>
 
-                  {/* Card 3: Projektdetails (Volumen, Vertragsart, Zeitraum, Unternehmens-Details, Kontakte) */}
+                  {/* Card 2: Projektdetails (Volumen, Vertragsart, Zeitraum, Unternehmensdetails, Kontakte) */}
                   <Card>
                     <CardContent className="space-y-4">
                       <div className="space-y-2">
@@ -2532,8 +2514,10 @@ export function DashboardOverview({
                         </div>
                       </div>
 
+                      <hr className="border-border/60" />
+
                       <div className="space-y-2">
-                        <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Unternehmens-Details</span>
+                        <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Unternehmensdetails</span>
                         <div className="grid grid-cols-2 gap-x-6 gap-y-3">
                           <div className="space-y-0.5">
                             <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
@@ -2580,6 +2564,8 @@ export function DashboardOverview({
                           </div>
                         </div>
                       </div>
+
+                      <hr className="border-border/60" />
 
                       <div className="space-y-2">
                         <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Kontakte</span>
@@ -2665,7 +2651,7 @@ export function DashboardOverview({
                     </CardContent>
                   </Card>
 
-                  {/* Card 4: Strategie & Anhänge (Dateien, Historie) */}
+                  {/* Card 3: Strategie & Anhänge (Dateien, Historie) */}
                   <Card className="bg-muted/30">
                     <CardContent className="space-y-4">
                       <div className="space-y-2">
