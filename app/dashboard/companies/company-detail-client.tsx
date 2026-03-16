@@ -571,7 +571,13 @@ export function CompanyDetailClient({
               </div>
               <ul className="space-y-1.5">
                 {[
-                  { label: 'Strategy', done: (goals || valueProposition || redFlags || competition || nextSteps).trim().length > 0 },
+                  {
+                    label: 'Strategy',
+                    done:
+                      (goals || valueProposition || redFlags || competition || nextSteps)
+                        .trim()
+                        .length > 0,
+                  },
                   { label: 'Executive Radar', done: stakeholders.length > 0 },
                   { label: 'Relationship Map', done: stakeholders.length > 0 },
                   { label: 'Opportunity Roadmap', done: roadmapProjects.length > 0 },
@@ -586,7 +592,6 @@ export function CompanyDetailClient({
                         item.done ? 'bg-emerald-500' : 'bg-muted-foreground/30'
                       }`}
                     />
-                  </span>
                   </li>
                 ))}
               </ul>
