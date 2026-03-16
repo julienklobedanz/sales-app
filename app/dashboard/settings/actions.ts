@@ -11,7 +11,9 @@ export async function updateProfile(formData: FormData) {
 
   if (!user) throw new Error('Nicht authentifiziert')
 
-  const fullName = formData.get('fullName')?.toString()?.trim()
+  const firstName = formData.get('firstName')?.toString()?.trim()
+  const lastName = formData.get('lastName')?.toString()?.trim()
+  const fullName = [firstName, lastName].filter(Boolean).join(' ') || undefined
   const role = formData.get('role')?.toString() as 'admin' | 'sales' | undefined
 
   const updates: Record<string, string> = {
