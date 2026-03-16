@@ -2305,11 +2305,16 @@ export function DashboardOverview({
               {/* Fixierter Header */}
               <DialogHeader className="z-10 shrink-0 border-b bg-background px-0 pb-4 pt-0">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-1 min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
+                  <div className="space-y-2 min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <DialogTitle className="text-lg font-semibold leading-tight tracking-tight truncate">
                         {selectedRef.title}
                       </DialogTitle>
+                      <span className="text-muted-foreground text-lg font-semibold leading-tight tracking-tight shrink-0">
+                        | {selectedRef.status === 'anonymized'
+                          ? 'Anonymisierter Kunde'
+                          : selectedRef.company_name}
+                      </span>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -2325,42 +2330,37 @@ export function DashboardOverview({
                         />
                       </Button>
                     </div>
-                    <DialogDescription className="text-muted-foreground line-clamp-2 text-sm font-medium">
-                      {selectedRef.status === 'anonymized'
-                        ? 'Anonymisierter Kunde'
-                        : selectedRef.company_name}
-                    </DialogDescription>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2 shrink-0">
-                    {selectedRef.is_nda_deal && (
-                      <Badge variant="secondary" className="text-xs cursor-default">
-                        NDA-geschützt
-                      </Badge>
-                    )}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Badge
-                          variant="outline"
-                          className={[
-                            'text-xs cursor-default',
-                            STATUS_BADGE_CLASSES[selectedRef.status] ??
-                              'border bg-muted text-foreground',
-                          ].join(' ')}
-                        >
-                          {STATUS_LABELS[selectedRef.status] ?? selectedRef.status}
+                    <div className="flex flex-wrap items-center gap-2">
+                      {selectedRef.is_nda_deal && (
+                        <Badge variant="secondary" className="text-xs cursor-default">
+                          NDA-geschützt
                         </Badge>
-                      </TooltipTrigger>
-                    <TooltipContent className="max-w-xs text-xs leading-snug">
-                      {selectedRef.status === 'draft' &&
-                        'Entwurf: In Arbeit, nur für den Ersteller sichtbar.'}
-                      {selectedRef.status === 'internal_only' &&
-                        'Nur Intern: Verifiziert, aber sensible Daten (Preise/Namen) dürfen das Haus nicht verlassen.'}
-                      {selectedRef.status === 'approved' &&
-                        'Extern freigegeben: Offiziell vom Kunden und Marketing freigegeben für Sales-Pitches.'}
-                      {selectedRef.status === 'anonymized' &&
-                        'Anonymisiert: Name und Logo entfernt (z. B. „Großbank“), bereit für öffentliche Case Studies.'}
-                    </TooltipContent>
-                  </Tooltip>
+                      )}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Badge
+                            variant="outline"
+                            className={[
+                              'text-xs cursor-default',
+                              STATUS_BADGE_CLASSES[selectedRef.status] ??
+                                'border bg-muted text-foreground',
+                            ].join(' ')}
+                          >
+                            {STATUS_LABELS[selectedRef.status] ?? selectedRef.status}
+                          </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs text-xs leading-snug">
+                          {selectedRef.status === 'draft' &&
+                            'Entwurf: In Arbeit, nur für den Ersteller sichtbar.'}
+                          {selectedRef.status === 'internal_only' &&
+                            'Nur Intern: Verifiziert, aber sensible Daten (Preise/Namen) dürfen das Haus nicht verlassen.'}
+                          {selectedRef.status === 'approved' &&
+                            'Extern freigegeben: Offiziell vom Kunden und Marketing freigegeben für Sales-Pitches.'}
+                          {selectedRef.status === 'anonymized' &&
+                            'Anonymisiert: Name und Logo entfernt (z. B. „Großbank“), bereit für öffentliche Case Studies.'}
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
                   </div>
                 </div>
                 {/* Nutzungs-Statistik unter Freigabestufe: Views + Verknüpfungen */}
