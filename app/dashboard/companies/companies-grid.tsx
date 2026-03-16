@@ -22,6 +22,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
+import { buttonVariants } from '@/components/ui/button'
 import { Building2Icon, MapPinIcon, Globe2, Search, X, Loader2 } from 'lucide-react'
 import { deleteCompanyWithData } from './actions'
 
@@ -183,7 +184,6 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
               Abbrechen
             </AlertDialogCancel>
             <AlertDialogAction
-              variant="destructive"
               disabled={deleting || !deleteTarget}
               onClick={async () => {
                 if (!deleteTarget) return
@@ -198,6 +198,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                   setDeleting(false)
                 }
               }}
+              className={buttonVariants({ variant: 'destructive' })}
             >
               {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Löschen
