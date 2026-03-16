@@ -501,21 +501,6 @@ export function CompanyDetailClient({
           <div className="min-w-0 flex-1 space-y-1">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-semibold tracking-tight">{company.name}</h1>
-              <Select
-                value={company.account_status ?? '__none__'}
-                onValueChange={(v) => handleAccountStatusChange(v === '__none__' ? null : v)}
-                disabled={statusSaving}
-              >
-                <SelectTrigger className="w-[160px] h-8 text-xs">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">— Status —</SelectItem>
-                  {ACCOUNT_STATUS_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-1">
               {company.industry && (
@@ -544,52 +529,70 @@ export function CompanyDetailClient({
             </div>
           </div>
         </div>
-        <Popover>
-          <PopoverTrigger asChild>
-            <button
-              type="button"
-              className="flex items-center gap-2 rounded-lg border bg-muted/50 px-3 py-2 hover:bg-muted transition-colors"
-            >
-              <Target className="size-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Intelligence Score</span>
-              <span className="text-lg font-semibold tabular-nums">{intelligenceScore}%</span>
-            </button>
-          </PopoverTrigger>
-          <PopoverContent align="end" className="w-64 text-xs space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-foreground">Score Breakdown</span>
-              <span className="text-[11px] text-muted-foreground">
-                {intelligenceScore}% vollständig
-              </span>
-            </div>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full rounded-full bg-primary transition-all"
-                style={{ width: `${intelligenceScore}%` }}
-              />
-            </div>
-            <ul className="space-y-1.5">
-              {[
-                { label: 'Strategy', done: (goals || valueProposition || redFlags || competition || nextSteps).trim().length > 0 },
-                { label: 'Executive Radar', done: stakeholders.length > 0 },
-                { label: 'Relationship Map', done: stakeholders.length > 0 },
-                { label: 'Opportunity Roadmap', done: roadmapProjects.length > 0 },
-                { label: 'Proof Points', done: references.length > 0 },
-                { label: 'Market Signals', done: expiringDeals.length > 0 },
-                { label: 'Account Status', done: !!company.account_status },
-              ].map((item) => (
-                <li key={item.label} className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] text-muted-foreground">{item.label}</span>
-                  <span
-                    className={`h-2 w-8 rounded-full ${
-                      item.done ? 'bg-emerald-500' : 'bg-muted-foreground/30'
-                    }`}
-                  />
-                </li>
+        <div className="flex flex-col items-end gap-2">
+          <Select
+            value={company.account_status ?? '__none__'}
+            onValueChange={(v) => handleAccountStatusChange(v === '__none__' ? null : v)}
+            disabled={statusSaving}
+          >
+            <SelectTrigger className="w-[180px] h-8 text-xs">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">— Status —</SelectItem>
+              {ACCOUNT_STATUS_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
               ))}
-            </ul>
-          </PopoverContent>
-        </Popover>
+            </SelectContent>
+          </Select>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className="flex items-center gap-2 rounded-lg border bg-muted/50 px-3 py-2 hover:bg-muted transition-colors"
+              >
+                <Target className="size-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Intelligence Score</span>
+                <span className="text-lg font-semibold tabular-nums">{intelligenceScore}%</span>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-64 text-xs space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-foreground">Score Breakdown</span>
+                <span className="text-[11px] text-muted-foreground">
+                  {intelligenceScore}% vollständig
+                </span>
+              </div>
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{ width: `${intelligenceScore}%` }}
+                />
+              </div>
+              <ul className="space-y-1.5">
+                {[
+                  { label: 'Strategy', done: (goals || valueProposition || redFlags || competition || nextSteps).trim().length > 0 },
+                  { label: 'Executive Radar', done: stakeholders.length > 0 },
+                  { label: 'Relationship Map', done: stakeholders.length > 0 },
+                  { label: 'Opportunity Roadmap', done: roadmapProjects.length > 0 },
+                  { label: 'Proof Points', done: references.length > 0 },
+                  { label: 'Market Signals', done: expiringDeals.length > 0 },
+                  { label: 'Account Status', done: !!company.account_status },
+                ].map((item) => (
+                  <li key={item.label} className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] text-muted-foreground">{item.label}</span>
+                    <span
+                      className={`h-2 w-8 rounded-full ${
+                        item.done ? 'bg-emerald-500' : 'bg-muted-foreground/30'
+                      }`}
+                    />
+                  </span>
+                  </li>
+                ))}
+              </ul>
+            </PopoverContent>
+          </Popover>
+        </div>
       </div>
 
       <Tabs defaultValue="strategy" className="w-full">

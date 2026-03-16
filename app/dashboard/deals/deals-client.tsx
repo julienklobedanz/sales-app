@@ -174,15 +174,18 @@ type Props = {
   allReferences: RefOption[]
   matchMap: MatchMap
   initialOpenDealId?: string | null
+  companies: { id: string; name: string }[]
+  orgProfiles: { id: string; full_name: string | null }[]
 }
 
-export function DealsClientContent({ deals, expiring, allReferences, matchMap, initialOpenDealId }: Props) {
+export function DealsClientContent({ deals, expiring, allReferences, matchMap, initialOpenDealId, companies, orgProfiles }: Props) {
   const router = useRouter()
   const [selectedDealId, setSelectedDealId] = useState<string | null>(initialOpenDealId ?? null)
   const [selectedDeal, setSelectedDeal] = useState<DealWithReferences | null>(null)
   const [loadingDeal, setLoadingDeal] = useState(false)
   const [importing, setImporting] = useState(false)
   const xlsxInputRef = useRef<HTMLInputElement>(null)
+  const [createOpen, setCreateOpen] = useState(false)
 
   useEffect(() => {
     if (initialOpenDealId) setSelectedDealId(initialOpenDealId)
@@ -236,12 +239,10 @@ export function DealsClientContent({ deals, expiring, allReferences, matchMap, i
               Hier melden Salesleute, für welche laufenden Deals sie Referenzen benötigen.
             </CardDescription>
           </div>
-          <Link href="/dashboard/deals/new">
-            <Button size="sm">
-              <PlusCircleIcon className="mr-2 size-4" />
-              Deal anlegen
-            </Button>
-          </Link>
+          <Button size="sm" onClick={() => setCreateOpen(true)}>
+            <PlusCircleIcon className="mr-2 size-4" />
+            Deal anlegen
+          </Button>
         </CardHeader>
         <CardContent className="flex-1">
           {deals.length === 0 ? (
@@ -328,22 +329,9 @@ export function DealsClientContent({ deals, expiring, allReferences, matchMap, i
               tabIndex={0}
               onClick={() => !importing && xlsxInputRef.current?.click()}
               onKeyDown={(e) => e.key === 'Enter' && !importing && xlsxInputRef.current?.click()}
-              onDragOver={(e) => { e.preventDefault(); e.stopPropagation() }}
-              onDrop={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                if (importing) return
-                const file = e.dataTransfer.files?.[0]
-                if (file && (file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.type.includes('spreadsheet'))) {
-                  handleXlsxImport(file)
-                } else {
-                  toast.error('Nur Excel-Dateien (.xlsx/.xls) werden unterstützt.')
-                }
-              }}
-              className="flex min-h-[44px] min-w-[140px] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 px-3 py-2 text-center text-xs text-muted-foreground transition-colors hover:border-muted-foreground/50 hover:bg-muted/30 disabled:pointer-events-none disabled:opacity-60"
+              className="flex h-9 items-center rounded-md border px-3 text-xs text-muted-foreground cursor-pointer hover:bg-muted/50"
             >
-              <FileSpreadsheetIcon className="size-5" />
-              <span>xlsx hier ablegen</span>
+              <span className="truncate">xlsx Import</span>
             </div>
             <Button
               size="sm"
@@ -353,6 +341,13 @@ export function DealsClientContent({ deals, expiring, allReferences, matchMap, i
             >
               {importing ? <Loader2 className="mr-2 size-4 animate-spin" /> : <UploadIcon className="mr-2 size-4" />}
               Listen importieren
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => setCreateOpen(true)}
+            >
+              <PlusCircleIcon className="mr-2 size-4" />
+              Deal anlegen
             </Button>
           </div>
           </div>
@@ -441,6 +436,15 @@ export function DealsClientContent({ deals, expiring, allReferences, matchMap, i
               <DealDetailContent deal={selectedDeal} allReferences={allReferences} />
             )}
           </div>
+        </SheetContent>
+      </Sheet>
+      {/* Modal zum Anlegen eines neuen Deals */}
+      <Sheet open={createOpen} onOpenChange={setCreateOpen}>
+        <SheetContent side="right" className="w-full max-w-md">
+          <SheetHeader className="mb-4">
+            <SheetTitle>Deal anlegen</SheetTitle>
+          </SheetHeader>
+          <DealForm companies={companies} orgProfiles={orgProfiles} />
         </SheetContent>
       </Sheet>
     </div>

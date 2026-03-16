@@ -74,14 +74,24 @@ export function DashboardHeader() {
             Refstack
           </button>
           {breadcrumbSegments.map((segment) => {
-            const label =
-              segment === 'client-intelligence'
-                ? 'Client Intelligence'
-                : segment.charAt(0).toUpperCase() + segment.slice(1)
+            const isClientIntelligence = segment === 'client-intelligence'
+            const label = isClientIntelligence
+              ? 'Client Intelligence'
+              : segment.charAt(0).toUpperCase() + segment.slice(1)
             return (
               <div key={segment} className="flex items-center">
                 <SlashIcon className="mx-2 size-3 text-muted-foreground/50" />
-                <span className="text-foreground">{label}</span>
+                {isClientIntelligence ? (
+                  <button
+                    type="button"
+                    className="text-foreground hover:underline"
+                    onClick={() => router.push('/dashboard/companies')}
+                  >
+                    {label}
+                  </button>
+                ) : (
+                  <span className="text-foreground">{label}</span>
+                )}
               </div>
             )
           })}

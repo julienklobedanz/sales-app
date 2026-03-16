@@ -24,11 +24,17 @@ export default async function DealsPage({ searchParams }: Props) {
   if (!profile) redirect('/onboarding')
 
   const params = await searchParams
-  const [deals, expiring, allReferences] = await Promise.all([
-    getDeals(),
-    getExpiringDeals(),
-    getReferencesForOrg(),
-  ])
+  const [deals, expiring, allReferences] = await Promise.all([getDeals(), getExpiringDeals(), getReferencesForOrg()])
+  const { data: companies } = await supabase
+    .from('companies')
+    .select('id, name')
+    .eq('organization_id', profile.organization_id)
+    .order('name')
+  const { data: orgProfiles } = await supabase
+    .from('profiles')
+    .select('id, full_name')
+    .eq('organization_id', profile.organization_id)
+    .order('full_name')
   const allDealIds = [...deals.map((d) => d.id), ...expiring.map((d) => d.id)]
   const matchMap = await getMatchingReferencesForDeals(allDealIds)
 
@@ -47,6 +53,8 @@ export default async function DealsPage({ searchParams }: Props) {
         allReferences={allReferences}
         matchMap={matchMap}
         initialOpenDealId={params.open ?? null}
+        companies={companies ?? []}
+        orgProfiles={orgProfiles ?? []}
       />
     </div>
   )

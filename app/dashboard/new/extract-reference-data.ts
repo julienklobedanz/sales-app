@@ -78,7 +78,7 @@ Schreibe alle Textfelder so knapp wie möglich. Verwende KEINE Zeilenumbrüche i
 
 Dokumenttext (Ausschnitt):
 ---
-${documentText.slice(0, 8000)}
+      ${documentText.slice(0, 20000)}
 ---`
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -88,10 +88,17 @@ ${documentText.slice(0, 8000)}
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
+      model: 'gpt-4.1-mini',
+      messages: [
+        {
+          role: 'system',
+          content:
+            'Du extrahierst aus deutschen Consulting-Case-Studies kompakte, strukturierte Referenzdaten für ein Sales-Tool. Antworte immer nur mit gültigem JSON.',
+        },
+        { role: 'user', content: prompt },
+      ],
       temperature: 0.2,
-      max_tokens: 400,
+      max_tokens: 600,
     }),
   })
 

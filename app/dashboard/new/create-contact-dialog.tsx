@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { createContact, createExternalContact, type ExternalContact } from './actions'
+import { createContact, createExternalContact, updateContact, updateExternalContact, type ExternalContact } from './actions'
 
 /** Einfache Formatprüfungen für Kontaktfelder */
 const NAME_REGEX = /^[\p{L}\p{M}\s\-']{2,}$/u
@@ -69,6 +69,8 @@ export function CreateContactDialog({
   variant = 'internal',
   companyId,
   disabled,
+  mode = 'create',
+  initialContact,
 }: {
   /** Bei variant="internal": (contact) => void. Bei variant="external": (contact, role?) => void. */
   onContactCreated: (contact: CreatedContact | ExternalContact, role?: string) => void
@@ -77,6 +79,15 @@ export function CreateContactDialog({
   companyId?: string
   /** Externer Dialog: deaktivieren, wenn kein Unternehmen ausgewählt. */
   disabled?: boolean
+  mode?: 'create' | 'edit'
+  initialContact?: {
+    id: string
+    first_name: string | null
+    last_name: string | null
+    email: string | null
+    phone?: string | null
+    role?: string | null
+  }
 }) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -94,7 +105,7 @@ export function CreateContactDialog({
       toast.error(firstMessage)
       return
     }
-    if (variant === 'external' && !companyId) {
+    if (variant === 'external' && mode === 'create' && !companyId) {
       toast.error('Bitte zuerst ein Unternehmen auswählen.')
       return
     }
@@ -102,23 +113,61 @@ export function CreateContactDialog({
     setFieldErrors({})
     try {
       if (variant === 'external') {
-        formData.set('companyId', companyId!)
-        const result = await createExternalContact(formData)
-        if (result.success && result.contact) {
-          toast.success('Kundenansprechpartner angelegt')
-          onContactCreated(result.contact, result.contact.role ?? undefined)
-          setOpen(false)
+        if (mode === 'edit' && initialContact) {
+          const result = await updateExternalContact(initialContact.id, formData)
+          if (result.success) {
+            toast.success('Kundenansprechpartner aktualisiert')
+            onContactCreated(
+              {
+                id: initialContact.id,
+                company_id: companyId ?? initialContact.company_id ?? '',
+                first_name: formData.get('firstName')?.toString().trim() ?? '',
+                last_name: formData.get('lastName')?.toString().trim() ?? '',
+                email: formData.get('email')?.toString().trim() ?? '',
+                role: formData.get('role')?.toString().trim() || null,
+                phone: formData.get('phone')?.toString().trim() || null,
+              } as ExternalContact,
+              formData.get('role')?.toString().trim() || undefined
+            )
+            setOpen(false)
+          } else {
+            toast.error(result.error ?? 'Fehler beim Speichern')
+          }
         } else {
-          toast.error(!result.success && 'error' in result ? result.error : 'Fehler beim Anlegen')
+          formData.set('companyId', companyId!)
+          const result = await createExternalContact(formData)
+          if (result.success && result.contact) {
+            toast.success('Kundenansprechpartner angelegt')
+            onContactCreated(result.contact, result.contact.role ?? undefined)
+            setOpen(false)
+          } else {
+            toast.error(!result.success && 'error' in result ? result.error : 'Fehler beim Anlegen')
+          }
         }
       } else {
-        const result = await createContact(formData)
-        if (result.success && result.contact) {
-          toast.success('Kontakt angelegt')
-          onContactCreated(result.contact as CreatedContact)
-          setOpen(false)
+        if (mode === 'edit' && initialContact) {
+          const result = await updateContact(initialContact.id, formData)
+          if (result.success) {
+            toast.success('Kontakt aktualisiert')
+            onContactCreated({
+              id: initialContact.id,
+              first_name: formData.get('firstName')?.toString().trim() ?? '',
+              last_name: formData.get('lastName')?.toString().trim() ?? '',
+              email: formData.get('email')?.toString().trim() ?? '',
+            } as CreatedContact)
+            setOpen(false)
+          } else {
+            toast.error(result.error ?? 'Fehler beim Speichern')
+          }
         } else {
-          toast.error(!result.success && 'error' in result ? result.error : 'Fehler beim Anlegen')
+          const result = await createContact(formData)
+          if (result.success && result.contact) {
+            toast.success('Kontakt angelegt')
+            onContactCreated(result.contact as CreatedContact)
+            setOpen(false)
+          } else {
+            toast.error(!result.success && 'error' in result ? result.error : 'Fehler beim Anlegen')
+          }
         }
       }
     } catch (e) {

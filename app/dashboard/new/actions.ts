@@ -777,3 +777,67 @@ export async function createExternalContact(
     },
   }
 }
+
+export async function updateContact(
+  id: string,
+  formData: FormData
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+
+  const firstName = formData.get('firstName')?.toString()?.trim() ?? ''
+  const lastName = formData.get('lastName')?.toString()?.trim() ?? ''
+  const email = formData.get('email')?.toString()?.trim() ?? ''
+  const phone = formData.get('phone')?.toString()?.trim() ?? ''
+
+  const { error } = await supabase
+    .from('contact_persons')
+    .update({
+      first_name: firstName || null,
+      last_name: lastName || null,
+      email: email || null,
+      phone: phone || null,
+    })
+    .eq('id', id)
+
+  if (error) return { success: false, error: error.message }
+  revalidatePath('/dashboard/new')
+  revalidatePath('/dashboard/edit/[id]', 'page')
+  return { success: true }
+}
+
+export async function updateExternalContact(
+  id: string,
+  formData: FormData
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+
+  const firstName = formData.get('firstName')?.toString()?.trim() ?? ''
+  const lastName = formData.get('lastName')?.toString()?.trim() ?? ''
+  const email = formData.get('email')?.toString()?.trim() ?? ''
+  const role = formData.get('role')?.toString()?.trim() ?? ''
+  const phone = formData.get('phone')?.toString()?.trim() ?? ''
+
+  const { error } = await supabase
+    .from('external_contacts')
+    .update({
+      first_name: firstName || null,
+      last_name: lastName || null,
+      email: email || null,
+      role: role || null,
+      phone: phone || null,
+    })
+    .eq('id', id)
+
+  if (error) return { success: false, error: error.message }
+  revalidatePath('/dashboard/new')
+  revalidatePath('/dashboard/edit/[id]', 'page')
+  return { success: true }
+}

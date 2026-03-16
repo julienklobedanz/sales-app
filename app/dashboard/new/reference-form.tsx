@@ -241,6 +241,8 @@ export function ReferenceForm({
     initialData?.customer_contact_id ? initialData.customer_contact_id : '__none__'
   )
   const [additionalCustomerContacts, setAdditionalCustomerContacts] = useState<ExternalContactDisplay[]>([])
+  const [editingInternalContact, setEditingInternalContact] = useState<ContactPerson | null>(null)
+  const [editingCustomerContact, setEditingCustomerContact] = useState<ExternalContactDisplay | null>(null)
   const normalizeTag = (raw: string): string => {
     const trimmed = raw.trim()
     if (!trimmed) return ''
@@ -377,6 +379,10 @@ export function ReferenceForm({
     }
     formData.set('tags', tags.join(','))
     formData.set('nda_deal', ndaDeal ? '1' : '0')
+    if (volumeEur) {
+      const normalizedVolume = volumeEur.replace(/\./g, '')
+      formData.set('volume_eur', normalizedVolume)
+    }
     formData.set('customer_contact_id', customer_contact_id === '__none__' ? '' : customer_contact_id)
     const selectedCustomer = displayCustomerContacts.find((c) => c.id === customer_contact_id)
     const customerDisplay =
@@ -939,10 +945,26 @@ export function ReferenceForm({
                   <SelectItem value="__none__">Keine</SelectItem>
                   {displayContacts.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
-                      {[c.first_name, c.last_name].filter(Boolean).join(' ') ||
-                        c.email ||
-                        c.id}
-                      {c.email ? ` (${c.email})` : ''}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex flex-col">
+                          <span className="truncate">
+                            {[c.first_name, c.last_name].filter(Boolean).join(' ') ||
+                              c.email ||
+                              c.id}
+                            {c.email ? ` (${c.email})` : ''}
+                          </span>
+                          <button
+                            type="button"
+                            className="text-[10px] text-primary hover:underline text-left"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setEditingInternalContact(c)
+                            }}
+                          >
+                            Edit
+                          </button>
+                        </div>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -987,10 +1009,26 @@ export function ReferenceForm({
                   <SelectItem value="__none__">Keine</SelectItem>
                   {displayCustomerContacts.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
-                      {[c.first_name, c.last_name].filter(Boolean).join(' ') ||
-                        c.email ||
-                        c.id}
-                      {c.email ? ` (${c.email})` : ''}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex flex-col">
+                          <span className="truncate">
+                            {[c.first_name, c.last_name].filter(Boolean).join(' ') ||
+                              c.email ||
+                              c.id}
+                            {c.email ? ` (${c.email})` : ''}
+                          </span>
+                          <button
+                            type="button"
+                            className="text-[10px] text-primary hover:underline text-left"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setEditingCustomerContact(c)
+                            }}
+                          >
+                            Edit
+                          </button>
+                        </div>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1057,6 +1095,41 @@ export function ReferenceForm({
           </SelectContent>
         </Select>
       </div>
+      {editingInternalContact && (
+        <CreateContactDialog
+          mode="edit"
+          variant="internal"
+          onContactCreated={(updated) => {
+            const u = updated as ContactPerson
+            setAdditionalContacts((prev) =>
+              prev.some((p) => p.id === u.id)
+                ? prev.map((p) => (p.id === u.id ? u : p))
+                : [...prev, u]
+            )
+            setEditingInternalContact(null)
+          }}
+          disabled={submitting}
+          initialContact={editingInternalContact}
+        />
+      )}
+      {editingCustomerContact && (
+        <CreateContactDialog
+          mode="edit"
+          variant="external"
+          companyId={currentCompanyId || undefined}
+          onContactCreated={(updated) => {
+            const u = updated as ExternalContactDisplay
+            setAdditionalCustomerContacts((prev) =>
+              prev.some((p) => p.id === u.id)
+                ? prev.map((p) => (p.id === u.id ? u : p))
+                : [...prev, u]
+            )
+            setEditingCustomerContact(null)
+          }}
+          disabled={submitting}
+          initialContact={editingCustomerContact}
+        />
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
@@ -1099,10 +1172,18 @@ export function ReferenceForm({
             name="volume_eur"
             type="text"
             inputMode="numeric"
-            placeholder="z. B. 5000000"
+            placeholder="z. B. 5.000.000"
             disabled={submitting}
             value={volumeEur}
-            onChange={(e) => setVolumeEur(e.target.value.replace(/\D/g, '') || '')}
+            onChange={(e) => {
+              const digits = e.target.value.replace(/\D/g, '')
+              if (!digits) {
+                setVolumeEur('')
+                return
+              }
+              const withSeparators = digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+              setVolumeEur(withSeparators)
+            }}
           />
         </div>
         <div className="space-y-2">
