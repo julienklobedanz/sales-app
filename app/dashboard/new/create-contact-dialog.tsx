@@ -82,6 +82,7 @@ export function CreateContactDialog({
   mode?: 'create' | 'edit'
   initialContact?: {
     id: string
+    company_id?: string | null
     first_name: string | null
     last_name: string | null
     email: string | null
