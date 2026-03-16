@@ -442,11 +442,15 @@ export function DealsClientContent({ deals, expiring, allReferences, matchMap, i
       </Sheet>
       {/* Popover/Dialog zum Anlegen eines neuen Deals */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Deal anlegen</DialogTitle>
-          </DialogHeader>
-          <DealForm companies={companies} orgProfiles={orgProfiles} />
+        <DialogContent className="max-h-[90vh] min-h-[60vh] overflow-y-auto w-[calc(100vw-2rem)] max-w-[90vw] lg:max-w-7xl gap-0 border-0 px-6 py-6 md:px-12 md:py-10 lg:px-16 lg:py-12">
+          <div className="flex flex-col items-center w-full max-w-full">
+            <DialogHeader className="w-full max-w-4xl mx-auto px-0 pb-4">
+              <DialogTitle>Deal anlegen</DialogTitle>
+            </DialogHeader>
+            <div className="w-full max-w-4xl">
+              <DealForm companies={companies} orgProfiles={orgProfiles} />
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
