@@ -372,6 +372,7 @@ export function DashboardOverview({
   const [sortKey, setSortKey] = useState<(typeof COLUMN_KEYS)[number] | null>(null)
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [favoritesOnly, setFavoritesOnly] = useState(initialFavoritesOnly)
+  const [rowMenuOpenId, setRowMenuOpenId] = useState<string | null>(null)
   const [rfpFiles, setRfpFiles] = useState<File[]>([])
   const [rfpMatchScores, setRfpMatchScores] = useState<Record<string, number> | null>(null)
   const [rfpMatching, setRfpMatching] = useState(false)
@@ -1953,8 +1954,7 @@ export function DashboardOverview({
                     onContextMenu={(e: React.MouseEvent) => {
                       e.preventDefault()
                       e.stopPropagation()
-                      // Öffnet das gleiche Aktions-Menü wie der Drei-Punkte-Button:
-                      openDetail(ref)
+                      setRowMenuOpenId(ref.id)
                     }}
                   >
                     <TableCell
@@ -2069,7 +2069,10 @@ export function DashboardOverview({
                       </Button>
                     </TableCell>
                     <TableCell onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-                      <DropdownMenu>
+                      <DropdownMenu
+                        open={rowMenuOpenId === ref.id}
+                        onOpenChange={(open) => setRowMenuOpenId(open ? ref.id : null)}
+                      >
                         <DropdownMenuTrigger asChild>
                           <Button
                             variant="ghost"
