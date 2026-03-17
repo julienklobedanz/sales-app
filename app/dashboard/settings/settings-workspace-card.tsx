@@ -11,6 +11,7 @@ import { updateOrganization } from './settings-workspace-actions'
 export function SettingsWorkspaceCard({
   organizationId,
   organizationName,
+  logoUrl,
 }: {
   organizationId: string | null
   organizationName: string
