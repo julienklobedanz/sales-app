@@ -12,7 +12,7 @@ export default async function CompaniesPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('*')
+    .select('organization_id')
     .eq('id', user.id)
     .single()
 
@@ -21,6 +21,7 @@ export default async function CompaniesPage() {
   const { data: companies } = await supabase
     .from('companies')
     .select('id, name, logo_url, website_url, headquarters, industry')
+    .eq('organization_id', profile.organization_id)
     .order('name')
 
   return (

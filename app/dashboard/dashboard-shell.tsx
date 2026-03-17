@@ -86,6 +86,12 @@ export function DashboardShell({
   const [ticketModalOpen, setTicketModalOpen] = useState(false)
   const [ticketModalType, setTicketModalType] = useState<'support' | 'feedback'>('support')
 
+  // Prefetch wichtige Routen für snappige Navigation
+  React.useEffect(() => {
+    router.prefetch('/dashboard/deals')
+    router.prefetch('/dashboard/companies')
+  }, [router])
+
   const userName =
     profile.full_name ?? user.user_metadata?.full_name ?? user.email ?? 'Benutzer'
   const userEmail = user.email ?? ''
