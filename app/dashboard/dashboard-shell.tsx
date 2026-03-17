@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
@@ -87,7 +87,7 @@ export function DashboardShell({
   const [ticketModalType, setTicketModalType] = useState<'support' | 'feedback'>('support')
 
   // Prefetch wichtige Routen für snappige Navigation
-  React.useEffect(() => {
+  useEffect(() => {
     router.prefetch('/dashboard/deals')
     router.prefetch('/dashboard/companies')
   }, [router])
