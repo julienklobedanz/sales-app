@@ -138,10 +138,9 @@ export function DashboardShell({
                         asChild
                         isActive={pathname === '/dashboard'}
                         tooltip="Referenzen"
-                        className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-muted/80 data-[active=true]:text-foreground data-[active=true]:font-semibold"
+                        className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-zinc-900 data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:hover:translate-x-0"
                       >
                         <Link href="/dashboard" className="flex items-center gap-2.5">
-                          <div className="absolute inset-y-1 left-0 w-[3px] rounded-full bg-primary opacity-0 transition-opacity duration-150 group-data-[active=true]:opacity-100" />
                           <FileTextIcon
                             className="relative z-10 size-4"
                             strokeWidth={pathname === '/dashboard' ? 2.5 : 2}
@@ -155,10 +154,9 @@ export function DashboardShell({
                         asChild
                         isActive={pathname?.startsWith('/dashboard/deals')}
                         tooltip="Deals"
-                        className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-muted/80 data-[active=true]:text-foreground data-[active=true]:font-semibold"
+                        className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-zinc-900 data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:hover:translate-x-0"
                       >
                         <Link href="/dashboard/deals" className="flex items-center gap-2.5">
-                          <div className="absolute inset-y-1 left-0 w-[3px] rounded-full bg-primary opacity-0 transition-opacity duration-150 group-data-[active=true]:opacity-100" />
                           <HandshakeIcon
                             className="relative z-10 size-4"
                             strokeWidth={pathname?.startsWith('/dashboard/deals') ? 2.5 : 2}
@@ -172,10 +170,9 @@ export function DashboardShell({
                         asChild
                         isActive={pathname?.startsWith('/dashboard/companies')}
                         tooltip="Client Intelligence – Firmenübersicht, Executive Profiling & Stakeholder-Mapping (in Vorbereitung)"
-                        className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-muted/80 data-[active=true]:text-foreground data-[active=true]:font-semibold"
+                        className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-zinc-900 data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:hover:translate-x-0"
                       >
                         <Link href="/dashboard/companies" className="flex items-center gap-2.5">
-                          <div className="absolute inset-y-1 left-0 w-[3px] rounded-full bg-primary opacity-0 transition-opacity duration-150 group-data-[active=true]:opacity-100" />
                           <BrainCircuit
                             className="relative z-10 size-4"
                             strokeWidth={pathname?.startsWith('/dashboard/companies') ? 2.5 : 2}
