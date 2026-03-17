@@ -27,7 +27,7 @@ export function SettingsWorkspaceCard({
     e.preventDefault()
     if (!organizationId) return
     setPending(true)
-    const result = await updateOrganization(organizationId, name.trim())
+    const result = await updateOrganization(organizationId, name.trim(), logoPreview)
     setPending(false)
     if (result.success) {
       toast.success('Workspace aktualisiert')

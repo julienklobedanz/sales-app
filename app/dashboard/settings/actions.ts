@@ -15,11 +15,15 @@ export async function updateProfile(formData: FormData) {
   const lastName = formData.get('lastName')?.toString()?.trim()
   const fullName = [firstName, lastName].filter(Boolean).join(' ') || undefined
   const role = formData.get('role')?.toString() as 'admin' | 'sales' | undefined
+  const avatarDataUrlRaw = formData.get('avatarDataUrl')?.toString() ?? undefined
+  const avatarDataUrl =
+    avatarDataUrlRaw !== undefined ? avatarDataUrlRaw.trim() || null : undefined
 
-  const updates: Record<string, string> = {}
+  const updates: Record<string, unknown> = {}
 
   if (fullName !== undefined && fullName !== '') updates.full_name = fullName
   if (role && (role === 'admin' || role === 'sales')) updates.role = role
+  if (avatarDataUrl !== undefined) updates.avatar_url = avatarDataUrl
 
   const { error } = await supabase
     .from('profiles')

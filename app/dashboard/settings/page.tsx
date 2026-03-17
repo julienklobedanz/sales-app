@@ -58,6 +58,7 @@ export default async function SettingsPage() {
             userEmail={user.email ?? ''}
             firstName={firstName}
             lastName={lastName}
+            avatarUrl={(profileRow as { avatar_url?: string | null })?.avatar_url ?? null}
           />
         </div>
       </section>

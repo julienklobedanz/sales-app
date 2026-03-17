@@ -13,15 +13,17 @@ export function SettingsProfileCard({
   userEmail,
   firstName,
   lastName,
+  avatarUrl,
 }: {
   userEmail: string
   firstName: string
   lastName: string
+  avatarUrl?: string | null
 }) {
   const router = useRouter()
   const [pending, setPending] = useState(false)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(avatarUrl ?? null)
   const [avatarLoading, setAvatarLoading] = useState(false)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -130,6 +132,7 @@ export function SettingsProfileCard({
           </button>
           <input
             id="profile-avatar-input"
+            name="profileAvatarFile"
             type="file"
             accept="image/*"
             className="sr-only"
@@ -182,6 +185,11 @@ export function SettingsProfileCard({
           </div>
         </div>
       </div>
+      <input
+        type="hidden"
+        name="avatarDataUrl"
+        value={avatarPreview ?? ''}
+      />
       <div className="flex justify-end">
         <Button type="submit" size="sm" disabled={pending}>
           <Save className="mr-2 h-4 w-4" />

@@ -9,7 +9,8 @@ export type UpdateOrganizationResult =
 
 export async function updateOrganization(
   organizationId: string,
-  name: string
+  name: string,
+  logoDataUrl?: string | null
 ): Promise<UpdateOrganizationResult> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -30,9 +31,18 @@ export async function updateOrganization(
   const trimmed = name.trim()
   if (!trimmed) return { success: false, error: 'Name darf nicht leer sein.' }
 
+  const updates: Record<string, unknown> = {
+    name: trimmed,
+    updated_at: new Date().toISOString(),
+  }
+
+  if (logoDataUrl !== undefined) {
+    updates.logo_url = logoDataUrl || null
+  }
+
   const { error } = await supabase
     .from('organizations')
-    .update({ name: trimmed, updated_at: new Date().toISOString() })
+    .update(updates)
     .eq('id', organizationId)
 
   if (error) return { success: false, error: error.message }
