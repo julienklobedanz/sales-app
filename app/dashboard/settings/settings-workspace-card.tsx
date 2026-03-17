@@ -58,7 +58,7 @@ export function SettingsWorkspaceCard({
     reader.readAsDataURL(file)
   }
 
-  function handleDrop(e: React.DragEvent<HTMLDivElement>) {
+  function handleDrop(e: React.DragEvent<HTMLElement>) {
     e.preventDefault()
     e.stopPropagation()
     setDragActive(false)
@@ -66,13 +66,13 @@ export function SettingsWorkspaceCard({
     if (file) handleLogoFile(file)
   }
 
-  function handleDragOver(e: React.DragEvent<HTMLDivElement>) {
+  function handleDragOver(e: React.DragEvent<HTMLElement>) {
     e.preventDefault()
     e.stopPropagation()
     if (!dragActive) setDragActive(true)
   }
 
-  function handleDragLeave(e: React.DragEvent<HTMLDivElement>) {
+  function handleDragLeave(e: React.DragEvent<HTMLElement>) {
     e.preventDefault()
     e.stopPropagation()
     setDragActive(false)
