@@ -66,7 +66,10 @@ export function SettingsBillingCard({ subscriptionStatus, subscriptionId }: Prop
       ) : hasActiveSub ? (
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground">
-            Aktueller Plan: <span className="font-medium text-foreground">Pro</span>
+            Status:{' '}
+            <span className="font-medium text-foreground">
+              Aktiv
+            </span>
           </p>
           <Button
             size="sm"
@@ -77,7 +80,7 @@ export function SettingsBillingCard({ subscriptionStatus, subscriptionId }: Prop
             {pendingPortal && (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             )}
-            Abo verwalten / Kündigen
+            Abo verwalten
           </Button>
         </div>
       ) : (

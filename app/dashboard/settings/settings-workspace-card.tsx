@@ -14,10 +14,11 @@ export function SettingsWorkspaceCard({
 }: {
   organizationId: string | null
   organizationName: string
+  logoUrl?: string | null
 }) {
   const [name, setName] = useState(organizationName)
   const [pending, setPending] = useState(false)
-  const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  const [logoPreview, setLogoPreview] = useState<string | null>(logoUrl ?? null)
   const [logoLoading, setLogoLoading] = useState(false)
   const [dragActive, setDragActive] = useState(false)
 

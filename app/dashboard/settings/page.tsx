@@ -27,13 +27,13 @@ export default async function SettingsPage() {
     .single()
 
   const organizationId = profileRow?.organization_id ?? null
-  const { data: orgRow } = organizationId
-    ? await supabase
-        .from('organizations')
-        .select('id, name, stripe_subscription_id, subscription_status')
-        .eq('id', organizationId)
-        .single()
-    : { data: null }
+  const { data: orgRow } =
+    organizationId &&
+    (await supabase
+      .from('organizations')
+      .select('id, name, logo_url, stripe_subscription_id, subscription_status')
+      .eq('id', organizationId)
+      .single())
 
   const teamMembers = await getTeamMembers()
 
@@ -78,6 +78,7 @@ export default async function SettingsPage() {
             <SettingsWorkspaceCard
               organizationId={orgRow?.id ?? null}
               organizationName={orgRow?.name ?? ''}
+              logoUrl={orgRow?.logo_url ?? null}
             />
           </div>
           <div className={CARD_CLASS}>
