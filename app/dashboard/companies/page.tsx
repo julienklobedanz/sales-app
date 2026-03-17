@@ -24,9 +24,9 @@ export default async function CompaniesPage() {
     .order('name')
 
   return (
-    <div className="space-y-6 px-6 py-6 md:px-12 lg:px-20">
+    <div className="flex flex-col space-y-6 px-6 pt-6 md:px-12 lg:px-20">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Client Intelligence</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Client Intelligence</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Strategisches Account-Management – Firmenübersicht, Opportunity Roadmap & Stakeholder-Mapping.
         </p>

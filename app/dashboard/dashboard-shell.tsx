@@ -108,17 +108,18 @@ export function DashboardShell({
   return (
     <SidebarProvider defaultOpen={true}>
       <Sidebar collapsible="icon">
-        <SidebarHeader>
+        <SidebarHeader className="px-3 py-4">
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton size="lg" asChild>
+              <SidebarMenuButton size="lg" asChild className="hover:bg-transparent">
                 <Link href="/dashboard">
-                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                    <GalleryVerticalEnd className="size-4" />
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                    <GalleryVerticalEnd className="size-5" strokeWidth={2.5} />
                   </div>
                   <div className="flex flex-col gap-0.5 leading-none">
-                    <span className="font-semibold">Refstack</span>
-                    <span className="text-xs">v1.0.0</span>
+                    <span className="text-sm font-semibold tracking-tight">
+                      Refstack
+                    </span>
                   </div>
                 </Link>
               </SidebarMenuButton>
@@ -137,11 +138,12 @@ export function DashboardShell({
                         asChild
                         isActive={pathname === '/dashboard'}
                         tooltip="Referenzen"
-                        className="data-[active=true]:bg-muted data-[active=true]:text-foreground"
+                        className="group relative overflow-hidden rounded-xl border border-transparent px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:border-primary/80 data-[active=true]:bg-muted data-[active=true]:text-foreground"
                       >
-                        <Link href="/dashboard">
-                          <FileTextIcon />
-                          <span>Referenzen</span>
+                        <Link href="/dashboard" className="flex items-center gap-2.5">
+                          <div className="absolute inset-y-1 left-0 w-[3px] rounded-full bg-primary opacity-0 transition-opacity duration-150 group-data-[active=true]:opacity-100" />
+                          <FileTextIcon className="relative z-10 size-4" strokeWidth={2.5} />
+                          <span className="relative z-10">Referenzen</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -150,11 +152,12 @@ export function DashboardShell({
                         asChild
                         isActive={pathname?.startsWith('/dashboard/deals')}
                         tooltip="Deals"
-                        className="data-[active=true]:bg-muted data-[active=true]:text-foreground"
+                        className="group relative overflow-hidden rounded-xl border border-transparent px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:border-primary/80 data-[active=true]:bg-muted data-[active=true]:text-foreground"
                       >
-                        <Link href="/dashboard/deals">
-                          <HandshakeIcon />
-                          <span>Deals</span>
+                        <Link href="/dashboard/deals" className="flex items-center gap-2.5">
+                          <div className="absolute inset-y-1 left-0 w-[3px] rounded-full bg-primary opacity-0 transition-opacity duration-150 group-data-[active=true]:opacity-100" />
+                          <HandshakeIcon className="relative z-10 size-4" strokeWidth={2.5} />
+                          <span className="relative z-10">Deals</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -163,11 +166,12 @@ export function DashboardShell({
                         asChild
                         isActive={pathname?.startsWith('/dashboard/companies')}
                         tooltip="Client Intelligence – Firmenübersicht, Executive Profiling & Stakeholder-Mapping (in Vorbereitung)"
-                        className="data-[active=true]:bg-muted data-[active=true]:text-foreground"
+                        className="group relative overflow-hidden rounded-xl border border-transparent px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:border-primary/80 data-[active=true]:bg-muted data-[active=true]:text-foreground"
                       >
-                        <Link href="/dashboard/companies">
-                          <BrainCircuit />
-                          <span>Client Intelligence</span>
+                        <Link href="/dashboard/companies" className="flex items-center gap-2.5">
+                          <div className="absolute inset-y-1 left-0 w-[3px] rounded-full bg-primary opacity-0 transition-opacity duration-150 group-data-[active=true]:opacity-100" />
+                          <BrainCircuit className="relative z-10 size-4" strokeWidth={2.5} />
+                          <span className="relative z-10">Client Intelligence</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -219,11 +223,16 @@ export function DashboardShell({
             </SidebarGroupContent>
           </SidebarGroup>
 
-          <SidebarGroup className="mt-auto space-y-0 px-2 py-0">
+          <SidebarGroup className="mt-auto space-y-0 border-t border-sidebar-border/60 px-2 pt-3">
             <SidebarGroupContent>
               <SidebarMenu className="gap-0.5">
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild size="sm" tooltip="Support">
+                  <SidebarMenuButton
+                    asChild
+                    size="sm"
+                    tooltip="Support"
+                    className="group rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60"
+                  >
                     <button
                       type="button"
                       onClick={() => {
@@ -238,7 +247,12 @@ export function DashboardShell({
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild size="sm" tooltip="Feedback">
+                  <SidebarMenuButton
+                    asChild
+                    size="sm"
+                    tooltip="Feedback"
+                    className="group rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60"
+                  >
                     <button
                       type="button"
                       onClick={() => {
@@ -258,6 +272,7 @@ export function DashboardShell({
                     size="sm"
                     tooltip="Einstellungen"
                     isActive={pathname?.startsWith('/dashboard/settings')}
+                    className="group rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-muted data-[active=true]:text-foreground"
                   >
                     <Link href="/dashboard/settings">
                       <SettingsIcon />
@@ -270,14 +285,14 @@ export function DashboardShell({
           </SidebarGroup>
         </SidebarContent>
 
-        <SidebarFooter>
+        <SidebarFooter className="px-2 pb-3 pt-1">
           <SidebarMenu>
             <SidebarMenuItem>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <SidebarMenuButton
                     size="lg"
-                    className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                    className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground rounded-xl px-2 py-2"
                   >
                     <Avatar className="h-8 w-8 rounded-lg">
                       <AvatarFallback className="rounded-lg">
@@ -286,13 +301,15 @@ export function DashboardShell({
                     </Avatar>
                     <div className="grid flex-1 text-left text-sm leading-tight">
                       <span className="truncate font-semibold">{userName}</span>
-                      <span className="truncate text-xs">{userEmail}</span>
+                      <span className="truncate text-[10px] text-muted-foreground">
+                        {userEmail}
+                      </span>
                     </div>
                     <ChevronsUpDown className="ml-auto size-4" />
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
-                  className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
+                  className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg shadow-xl"
                   side="bottom"
                   align="end"
                   sideOffset={4}
