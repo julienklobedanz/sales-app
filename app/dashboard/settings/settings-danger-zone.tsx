@@ -21,10 +21,7 @@ export function SettingsDangerZone() {
 
   return (
     <div className="rounded-3xl border-2 border-red-200 bg-red-50/50 p-6 dark:border-red-900/50 dark:bg-red-950/20">
-      <h3 className="text-base font-semibold text-red-800 dark:text-red-200">
-        Gefahrenbereich
-      </h3>
-      <p className="mt-1 text-sm text-red-700/90 dark:text-red-300/90">
+      <p className="text-sm font-semibold text-red-800 dark:text-red-200">
         Diese Aktionen sind permanent und können nicht rückgängig gemacht werden.
       </p>
       <div className="mt-4">

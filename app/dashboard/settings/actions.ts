@@ -16,9 +16,7 @@ export async function updateProfile(formData: FormData) {
   const fullName = [firstName, lastName].filter(Boolean).join(' ') || undefined
   const role = formData.get('role')?.toString() as 'admin' | 'sales' | undefined
 
-  const updates: Record<string, string> = {
-    updated_at: new Date().toISOString(),
-  }
+  const updates: Record<string, string> = {}
 
   if (fullName !== undefined && fullName !== '') updates.full_name = fullName
   if (role && (role === 'admin' || role === 'sales')) updates.role = role

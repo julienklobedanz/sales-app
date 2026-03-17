@@ -62,17 +62,17 @@ export default async function SettingsPage() {
         </div>
       </section>
 
-      {/* 2. Team-Verwaltung */}
+      {/* 2. Team Management */}
       <section className="space-y-3">
-        <span className={SECTION_LABEL_CLASS}>Team-Verwaltung</span>
+        <span className={SECTION_LABEL_CLASS}>Team Management</span>
         <div className={CARD_CLASS}>
           <SettingsTeamCard initialMembers={teamMembers} />
         </div>
       </section>
 
-      {/* 3. Abrechnung & Organisation */}
+      {/* 3. Organisation & Abrechnung */}
       <section className="space-y-3">
-        <span className={SECTION_LABEL_CLASS}>Abrechnung & Organisation</span>
+        <span className={SECTION_LABEL_CLASS}>Organisation & Abrechnung</span>
         <div className="grid gap-6 sm:grid-cols-2">
           <div className={CARD_CLASS}>
             <SettingsWorkspaceCard

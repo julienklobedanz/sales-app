@@ -171,10 +171,12 @@ export function SettingsProfileCard({
           </div>
         </div>
       </div>
-      <Button type="submit" size="sm" disabled={pending}>
-        <Save className="mr-2 h-4 w-4" />
-        Speichern
-      </Button>
+      <div className="flex justify-end">
+        <Button type="submit" size="sm" disabled={pending}>
+          <Save className="mr-2 h-4 w-4" />
+          Speichern
+        </Button>
+      </div>
     </form>
   )
 }

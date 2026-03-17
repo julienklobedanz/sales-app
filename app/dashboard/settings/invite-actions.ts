@@ -164,7 +164,7 @@ export async function getTeamMembers(): Promise<TeamMemberRow[]> {
   const [profilesResult, invitesResult] = await Promise.all([
     supabase
       .from('profiles')
-      .select('id, full_name')
+      .select('id, full_name, email')
       .eq('organization_id', organizationId),
     supabase
       .from('organization_invites')
@@ -175,7 +175,7 @@ export async function getTeamMembers(): Promise<TeamMemberRow[]> {
 
   const active: TeamMemberRow[] = (profilesResult.data ?? []).map((p) => ({
     id: p.id,
-    email: '',
+    email: (p as { email?: string | null }).email ?? '',
     name: (p as { full_name?: string | null }).full_name ?? null,
     status: 'active',
   }))

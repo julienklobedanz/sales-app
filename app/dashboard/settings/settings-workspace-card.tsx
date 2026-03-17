@@ -83,15 +83,6 @@ export function SettingsWorkspaceCard({
     // Hier könnte optional ein Server-Call zum Entfernen des Logos erfolgen.
   }
 
-  if (!organizationId) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-muted-foreground/30 bg-muted/10 p-6 text-center">
-        <Building2 className="h-10 w-10 text-muted-foreground/50" />
-        <p className="text-sm text-muted-foreground">Kein Workspace zugeordnet.</p>
-      </div>
-    )
-  }
-
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="flex items-center gap-3 text-muted-foreground">
@@ -101,13 +92,14 @@ export function SettingsWorkspaceCard({
         </span>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="workspace-name">Name</Label>
+        <Label htmlFor="workspace-name">Organisation</Label>
         <Input
           id="workspace-name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Mein Workspace"
-          className="bg-background"
+          placeholder={organizationId ? 'Mein Workspace' : 'Kein Workspace zugeordnet'}
+          disabled={!organizationId}
+          className={organizationId ? 'bg-background' : 'bg-muted/50 cursor-not-allowed'}
         />
       </div>
       <div className="space-y-2">
@@ -171,7 +163,7 @@ export function SettingsWorkspaceCard({
           </div>
         </div>
       </div>
-      <Button type="submit" size="sm" disabled={pending}>
+      <Button type="submit" size="sm" disabled={pending || !organizationId}>
         Speichern
       </Button>
     </form>

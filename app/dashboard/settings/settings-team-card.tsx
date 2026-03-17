@@ -100,6 +100,11 @@ export function SettingsTeamCard({
                     {m.status === 'active'
                       ? m.name || 'Unbekannt'
                       : m.email || 'Unbekannte E-Mail'}
+                    {m.email && (
+                      <span className="ml-1 text-xs text-muted-foreground">
+                        ({m.email})
+                      </span>
+                    )}
                   </span>
                   <span className="ml-2">
                     {m.status === 'active' ? (
