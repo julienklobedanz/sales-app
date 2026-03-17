@@ -105,7 +105,17 @@ export function SettingsWorkspaceCard({
       <div className="space-y-2">
         <Label className="text-muted-foreground">Logo</Label>
         <div className="flex items-center gap-4">
-          <div className="group relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border border-muted-foreground/20 bg-muted/30">
+          <button
+            type="button"
+            className="group relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-muted-foreground/25 bg-muted/30"
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onClick={() => {
+              const input = document.getElementById('workspace-logo-input') as HTMLInputElement | null
+              input?.click()
+            }}
+          >
             {logoLoading ? (
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             ) : logoPreview ? (
@@ -127,40 +137,28 @@ export function SettingsWorkspaceCard({
             ) : (
               <Building2 className="h-8 w-8 text-muted-foreground/60" />
             )}
-          </div>
-          <div
-            className={`flex min-h-[4.5rem] max-w-md flex-1 cursor-pointer items-center justify-center rounded-xl border border-dashed px-3 text-xs transition-colors ${
-              dragActive
-                ? 'border-primary bg-primary/5 text-primary'
-                : 'border-muted-foreground/30 bg-muted/10 text-muted-foreground'
-            }`}
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
+          </button>
+          <button
+            type="button"
+            className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent"
             onClick={() => {
               const input = document.getElementById('workspace-logo-input') as HTMLInputElement | null
               input?.click()
             }}
           >
-            <span className="flex items-center gap-2">
-              <Upload className="h-4 w-4" />
-              <span className="truncate">
-                {dragActive
-                  ? 'Datei hier loslassen …'
-                  : 'Logo per Drag & Drop oder Klick hochladen'}
-              </span>
-            </span>
-            <input
-              id="workspace-logo-input"
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0] ?? null
-                if (file) handleLogoFile(file)
-              }}
-            />
-          </div>
+            <Upload className="h-3.5 w-3.5" />
+            Logo hochladen
+          </button>
+          <input
+            id="workspace-logo-input"
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0] ?? null
+              if (file) handleLogoFile(file)
+            }}
+          />
         </div>
       </div>
       <Button type="submit" size="sm" disabled={pending || !organizationId}>

@@ -85,10 +85,15 @@ export function SettingsProfileCard({
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
         <div className="flex flex-col items-center gap-2">
-          <div
+          <button
+            type="button"
             className="group relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-muted-foreground/25 bg-muted/30"
             onDrop={handleAvatarDrop}
             onDragOver={handleAvatarDragOver}
+            onClick={() => {
+              const input = document.getElementById('profile-avatar-input') as HTMLInputElement | null
+              input?.click()
+            }}
           >
             {avatarLoading ? (
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -111,24 +116,30 @@ export function SettingsProfileCard({
             ) : (
               <User className="h-10 w-10 text-muted-foreground/50" />
             )}
-          </div>
-          <label className="cursor-pointer">
-            <span className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent">
-              <Upload className="h-3.5 w-3.5" />
-              Avatar hochladen
-            </span>
-            <input
-              type="file"
-              accept="image/*"
-              className="sr-only"
-              onChange={(e) => {
-                const file = e.target.files?.[0] ?? null
-                if (file && file.type.startsWith('image/')) {
-                  handleAvatarFile(file)
-                }
-              }}
-            />
-          </label>
+          </button>
+          <button
+            type="button"
+            className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent"
+            onClick={() => {
+              const input = document.getElementById('profile-avatar-input') as HTMLInputElement | null
+              input?.click()
+            }}
+          >
+            <Upload className="h-3.5 w-3.5" />
+            Avatar hochladen
+          </button>
+          <input
+            id="profile-avatar-input"
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            onChange={(e) => {
+              const file = e.target.files?.[0] ?? null
+              if (file && file.type.startsWith('image/')) {
+                handleAvatarFile(file)
+              }
+            }}
+          />
           <p className="text-center text-[10px] text-muted-foreground">
             Datei per Klick auswählen oder direkt hierher ziehen.
           </p>
