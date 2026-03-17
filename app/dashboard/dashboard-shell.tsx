@@ -138,11 +138,14 @@ export function DashboardShell({
                         asChild
                         isActive={pathname === '/dashboard'}
                         tooltip="Referenzen"
-                        className="group relative overflow-hidden rounded-xl border border-transparent px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:border-primary/80 data-[active=true]:bg-muted data-[active=true]:text-foreground"
+                        className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-muted/80 data-[active=true]:text-foreground data-[active=true]:font-semibold"
                       >
                         <Link href="/dashboard" className="flex items-center gap-2.5">
                           <div className="absolute inset-y-1 left-0 w-[3px] rounded-full bg-primary opacity-0 transition-opacity duration-150 group-data-[active=true]:opacity-100" />
-                          <FileTextIcon className="relative z-10 size-4" strokeWidth={2.5} />
+                          <FileTextIcon
+                            className="relative z-10 size-4"
+                            strokeWidth={pathname === '/dashboard' ? 2.5 : 2}
+                          />
                           <span className="relative z-10">Referenzen</span>
                         </Link>
                       </SidebarMenuButton>
@@ -152,11 +155,14 @@ export function DashboardShell({
                         asChild
                         isActive={pathname?.startsWith('/dashboard/deals')}
                         tooltip="Deals"
-                        className="group relative overflow-hidden rounded-xl border border-transparent px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:border-primary/80 data-[active=true]:bg-muted data-[active=true]:text-foreground"
+                        className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-muted/80 data-[active=true]:text-foreground data-[active=true]:font-semibold"
                       >
                         <Link href="/dashboard/deals" className="flex items-center gap-2.5">
                           <div className="absolute inset-y-1 left-0 w-[3px] rounded-full bg-primary opacity-0 transition-opacity duration-150 group-data-[active=true]:opacity-100" />
-                          <HandshakeIcon className="relative z-10 size-4" strokeWidth={2.5} />
+                          <HandshakeIcon
+                            className="relative z-10 size-4"
+                            strokeWidth={pathname?.startsWith('/dashboard/deals') ? 2.5 : 2}
+                          />
                           <span className="relative z-10">Deals</span>
                         </Link>
                       </SidebarMenuButton>
@@ -166,11 +172,14 @@ export function DashboardShell({
                         asChild
                         isActive={pathname?.startsWith('/dashboard/companies')}
                         tooltip="Client Intelligence – Firmenübersicht, Executive Profiling & Stakeholder-Mapping (in Vorbereitung)"
-                        className="group relative overflow-hidden rounded-xl border border-transparent px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:border-primary/80 data-[active=true]:bg-muted data-[active=true]:text-foreground"
+                        className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-muted/80 data-[active=true]:text-foreground data-[active=true]:font-semibold"
                       >
                         <Link href="/dashboard/companies" className="flex items-center gap-2.5">
                           <div className="absolute inset-y-1 left-0 w-[3px] rounded-full bg-primary opacity-0 transition-opacity duration-150 group-data-[active=true]:opacity-100" />
-                          <BrainCircuit className="relative z-10 size-4" strokeWidth={2.5} />
+                          <BrainCircuit
+                            className="relative z-10 size-4"
+                            strokeWidth={pathname?.startsWith('/dashboard/companies') ? 2.5 : 2}
+                          />
                           <span className="relative z-10">Client Intelligence</span>
                         </Link>
                       </SidebarMenuButton>
@@ -299,11 +308,8 @@ export function DashboardShell({
                         {userInitials}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="grid flex-1 text-left text-sm leading-tight">
+                    <div className="flex flex-1 items-center text-left text-sm leading-tight">
                       <span className="truncate font-semibold">{userName}</span>
-                      <span className="truncate text-[10px] text-muted-foreground">
-                        {userEmail}
-                      </span>
                     </div>
                     <ChevronsUpDown className="ml-auto size-4" />
                   </SidebarMenuButton>
@@ -325,7 +331,9 @@ export function DashboardShell({
                         <span className="truncate font-semibold">
                           {userName}
                         </span>
-                        <span className="truncate text-xs">{userEmail}</span>
+                        <span className="truncate text-xs text-muted-foreground">
+                          {userEmail}
+                        </span>
                         <span className="bg-primary/10 text-primary mt-1 w-fit rounded px-1 py-0.5 text-[10px] font-bold uppercase">
                           {profile.role}
                         </span>

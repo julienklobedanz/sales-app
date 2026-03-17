@@ -143,6 +143,7 @@ export type TeamMemberRow = {
   email: string
   name: string | null
   status: 'active' | 'pending'
+  isSelf?: boolean
 }
 
 export async function getTeamMembers(): Promise<TeamMemberRow[]> {
@@ -178,6 +179,7 @@ export async function getTeamMembers(): Promise<TeamMemberRow[]> {
     email: (p as { email?: string | null }).email ?? '',
     name: (p as { full_name?: string | null }).full_name ?? null,
     status: 'active',
+    isSelf: p.id === user.id,
   }))
 
   const pending: TeamMemberRow[] = (invitesResult.data ?? []).map((i) => ({

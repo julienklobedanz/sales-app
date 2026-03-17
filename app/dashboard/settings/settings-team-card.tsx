@@ -16,7 +16,11 @@ export function SettingsTeamCard({
   initialMembers: TeamMemberRow[]
 }) {
   const router = useRouter()
-  const [members, setMembers] = useState<TeamMemberRow[]>(initialMembers)
+  const [members, setMembers] = useState<TeamMemberRow[]>(() => {
+    const copy = [...initialMembers]
+    copy.sort((a, b) => (a.isSelf === b.isSelf ? 0 : a.isSelf ? -1 : 1))
+    return copy
+  })
   const [email, setEmail] = useState('')
   const [invitePending, setInvitePending] = useState(false)
   const [removingId, setRemovingId] = useState<string | null>(null)
@@ -43,7 +47,7 @@ export function SettingsTeamCard({
   }
 
   async function handleRemove(m: TeamMemberRow) {
-    if (removingId) return
+    if (removingId || m.isSelf) return
     setRemovingId(m.id)
     const result = await removeMember(
       m.status === 'pending' ? { inviteId: m.id } : { profileId: m.id }
@@ -118,17 +122,19 @@ export function SettingsTeamCard({
                     )}
                   </span>
                 </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30"
-                  onClick={() => handleRemove(m)}
-                  disabled={removingId === m.id}
-                  aria-label="Mitglied entfernen"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                {!m.isSelf && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30"
+                    onClick={() => handleRemove(m)}
+                    disabled={removingId === m.id}
+                    aria-label="Mitglied entfernen"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </li>
             ))}
           </ul>
