@@ -30,7 +30,7 @@ export default async function SettingsPage() {
   const { data: orgRow } = organizationId
     ? await supabase
         .from('organizations')
-        .select('id, name')
+        .select('id, name, stripe_subscription_id, subscription_status')
         .eq('id', organizationId)
         .single()
     : { data: null }
@@ -81,7 +81,10 @@ export default async function SettingsPage() {
             />
           </div>
           <div className={CARD_CLASS}>
-            <SettingsBillingCard />
+            <SettingsBillingCard
+              subscriptionStatus={orgRow?.subscription_status ?? null}
+              subscriptionId={orgRow?.stripe_subscription_id ?? null}
+            />
           </div>
         </div>
       </section>
