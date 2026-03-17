@@ -61,7 +61,7 @@ export function SettingsProfileCard({
     reader.readAsDataURL(file)
   }
 
-  function handleAvatarDrop(e: React.DragEvent<HTMLDivElement>) {
+  function handleAvatarDrop(e: React.DragEvent<HTMLElement>) {
     e.preventDefault()
     e.stopPropagation()
     const file = e.dataTransfer.files?.[0]
@@ -70,7 +70,7 @@ export function SettingsProfileCard({
     }
   }
 
-  function handleAvatarDragOver(e: React.DragEvent<HTMLDivElement>) {
+  function handleAvatarDragOver(e: React.DragEvent<HTMLElement>) {
     e.preventDefault()
     e.stopPropagation()
   }
