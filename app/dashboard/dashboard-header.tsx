@@ -60,11 +60,15 @@ export function DashboardHeader() {
     if (isCompanyDetail || isCompaniesRoot) {
       return ['client-intelligence'] // Label → "Accounts"
     }
+    if (pathname === '/dashboard') {
+      return ['success-stories']
+    }
     return pathSegments.slice(1)
   })()
 
   const breadcrumbLabel = (segment: string) => {
     if (segment === 'client-intelligence') return 'Accounts'
+    if (segment === 'success-stories') return 'Success Stories'
     if (segment === 'ai-lab') return 'AI Lab'
     return segment.charAt(0).toUpperCase() + segment.slice(1)
   }

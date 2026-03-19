@@ -1042,15 +1042,15 @@ export function DashboardOverview({
       {/* Toolbar & Tabelle */}
       <div className="space-y-4">
         {/* Toolbar: eine Zeile, kein horizontaler Scroll. Suche flex-1, Buttons adaptiv mit Transitions. */}
-        <div className="flex flex-nowrap items-center gap-2 sm:gap-3 min-w-0 overflow-x-hidden transition-all duration-300">
+          <div className="flex flex-nowrap items-center gap-2 sm:gap-3 min-w-0 overflow-x-hidden transition-all duration-300">
           {/* Suche: immer sichtbar, nimmt verfügbaren Platz */}
           <div className="relative min-w-0 flex-1 basis-0 sm:basis-auto transition-all duration-300">
-            <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
             <Input
               placeholder="Referenzen suchen..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-9 w-full min-w-0 pl-9"
+              className="h-11 w-full min-w-0 rounded-lg border bg-background pl-10 pr-4 shadow-sm"
             />
           </div>
 
@@ -1058,7 +1058,7 @@ export function DashboardOverview({
           <div className="flex items-center gap-2">
             <div
               className={[
-                'flex h-9 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-md border border-dashed px-3 text-xs transition-all duration-300 min-w-[2.25rem] lg:min-w-[140px]',
+                'flex h-11 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-md border border-dashed px-3 text-xs transition-all duration-300 min-w-[2.25rem] lg:min-w-[140px]',
                 isRfpDragging
                   ? 'border-primary bg-primary/5 text-primary animate-pulse'
                   : 'border-muted-foreground/40 bg-muted/40 text-muted-foreground hover:bg-muted',
@@ -1093,7 +1093,7 @@ export function DashboardOverview({
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-9 shrink-0 text-xs"
+                className="h-11 shrink-0 text-xs"
                 onClick={resetRfpFilter}
               >
                 Filter zurücksetzen
@@ -1106,7 +1106,7 @@ export function DashboardOverview({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-9 shrink-0 transition-all duration-300"
+                className="h-11 shrink-0 transition-all duration-300"
                 aria-label="Spalten ein-/ausblenden"
               >
                 <SlidersHorizontal className="h-4 w-4 lg:mr-2 shrink-0" />
@@ -1147,7 +1147,7 @@ export function DashboardOverview({
           <Button
             variant={favoritesOnly ? 'secondary' : 'outline'}
             size="sm"
-            className="h-9 shrink-0 transition-all duration-300"
+            className="h-11 shrink-0 transition-all duration-300"
             onClick={() => setFavoritesOnly((v) => !v)}
             aria-label={favoritesOnly ? 'Favoriten aus' : 'Nur Favoriten'}
           >
@@ -1161,7 +1161,7 @@ export function DashboardOverview({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-9 shrink-0 transition-all duration-300"
+                className="h-11 shrink-0 transition-all duration-300"
                 onClick={() => {
                   setBulkImportGroups([])
                   setBulkImportOpen(true)
@@ -1175,7 +1175,7 @@ export function DashboardOverview({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-9 shrink-0 gap-1.5 transition-all duration-300"
+                  className="h-11 shrink-0 gap-1.5 transition-all duration-300"
                   onClick={() => setPreviewRefs(selectedRefs)}
                   aria-label={`Vorschau (${selectedRefIds.size} Referenz${selectedRefIds.size !== 1 ? 'en' : ''})`}
                 >
@@ -1186,7 +1186,7 @@ export function DashboardOverview({
               <Button
                 variant="outline"
                 size="sm"
-                className={`h-9 shrink-0 transition-all duration-300 bg-background ${statusFilter === 'draft' ? 'border-primary ring-1 ring-primary' : ''}`}
+                className={`h-11 shrink-0 transition-all duration-300 bg-background ${statusFilter === 'draft' ? 'border-primary ring-1 ring-primary' : ''}`}
                 onClick={() => setStatusFilter(statusFilter === 'draft' ? 'all' : 'draft')}
                 aria-label={statusFilter === 'draft' ? 'Alle Referenzen anzeigen' : 'Nur Entwürfe'}
               >
@@ -1195,7 +1195,7 @@ export function DashboardOverview({
               </Button>
               <Button
                 size="sm"
-                className="h-9 shrink-0 transition-all duration-300"
+                className="h-11 shrink-0 transition-all duration-300"
                 onClick={() => setNewRefModalOpen(true)}
                 aria-label="Neue Referenz erstellen"
               >
@@ -1210,7 +1210,7 @@ export function DashboardOverview({
             <Button
               variant="outline"
               size="sm"
-              className="h-9 shrink-0 gap-1.5 transition-all duration-300"
+              className="h-11 shrink-0 gap-1.5 transition-all duration-300"
               onClick={() => setPreviewRefs(selectedRefs)}
               aria-label={`Vorschau (${selectedRefIds.size} Referenz${selectedRefIds.size !== 1 ? 'en' : ''})`}
             >

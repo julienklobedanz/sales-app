@@ -241,7 +241,7 @@ export function DealsClientContent({ deals, expiring, allReferences, matchMap, i
               Hier melden Salesleute, für welche laufenden Deals sie Referenzen benötigen.
             </CardDescription>
           </div>
-          <Button size="sm" onClick={() => setCreateOpen(true)}>
+          <Button size="sm" className="h-11 rounded-xl px-4" onClick={() => setCreateOpen(true)}>
             <PlusCircleIcon className="mr-2 size-4" />
             Deal anlegen
           </Button>
@@ -331,13 +331,14 @@ export function DealsClientContent({ deals, expiring, allReferences, matchMap, i
               tabIndex={0}
               onClick={() => !importing && xlsxInputRef.current?.click()}
               onKeyDown={(e) => e.key === 'Enter' && !importing && xlsxInputRef.current?.click()}
-              className="flex h-9 items-center rounded-md border px-3 text-xs text-muted-foreground cursor-pointer hover:bg-muted/50"
+              className="flex h-11 items-center rounded-md border px-3 text-xs text-muted-foreground cursor-pointer hover:bg-muted/50"
             >
               <span className="truncate">xlsx Import</span>
             </div>
             <Button
               size="sm"
               variant="outline"
+              className="h-11 rounded-xl px-4"
               disabled={importing}
               onClick={() => xlsxInputRef.current?.click()}
             >
@@ -346,6 +347,7 @@ export function DealsClientContent({ deals, expiring, allReferences, matchMap, i
             </Button>
             <Button
               size="sm"
+              className="h-11 rounded-xl px-4"
               onClick={() => setCreateOpen(true)}
             >
               <PlusCircleIcon className="mr-2 size-4" />

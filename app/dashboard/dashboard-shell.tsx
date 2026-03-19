@@ -276,7 +276,7 @@ export function DashboardShell({
                   <SidebarMenuButton
                     asChild
                     size="sm"
-                    tooltip="Support"
+                    tooltip="Support erhalten"
                     className="group rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60"
                   >
                     <button
@@ -288,7 +288,7 @@ export function DashboardShell({
                       className="w-full"
                     >
                       <LifeBuoy />
-                      <span>Hilfe & Support</span>
+                      <span>Support erhalten</span>
                     </button>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
