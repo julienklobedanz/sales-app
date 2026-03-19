@@ -7,7 +7,11 @@ export default function AiLabLoading() {
         <Skeleton className="h-8 w-32 rounded-md" />
         <Skeleton className="mt-2 h-4 w-[70%] rounded-md" />
       </div>
-      <Skeleton className="h-48 w-full rounded-2xl" />
+      <div className="grid grid-cols-1 gap-6">
+        {[1, 2, 3].map((i) => (
+          <Skeleton key={i} className="rounded-xl border p-6 h-[200px]" />
+        ))}
+      </div>
     </div>
   )
 }
