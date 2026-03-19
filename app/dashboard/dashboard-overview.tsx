@@ -109,6 +109,8 @@ import {
   Eye,
   Link as LinkIcon,
 } from 'lucide-react'
+import { pdf } from '@react-pdf/renderer'
+import StoryPdfTemplate from './success-stories/components/story-pdf-template'
 import { ReferenceReader } from './reference-reader'
 import {
   Dialog,
@@ -382,6 +384,7 @@ export function DashboardOverview({
   const [sheetOpen, setSheetOpen] = useState(false)
   const [detailAssets, setDetailAssets] = useState<ReferenceAssetRow[]>([])
   const [detailAssetsLoading, setDetailAssetsLoading] = useState(false)
+  const [pdfGenerating, setPdfGenerating] = useState(false)
   useEffect(() => {
     if (selectedRef?.id && sheetOpen) {
       setDetailAssetsLoading(true)
@@ -392,6 +395,88 @@ export function DashboardOverview({
       setDetailAssets([])
     }
   }, [selectedRef?.id, sheetOpen])
+
+  async function handleGenerateAndDownloadPdf() {
+    if (!selectedRef) return
+    setPdfGenerating(true)
+    try {
+      const sanitizeFilename = (v: string) =>
+        v
+          .trim()
+          .replace(/[^a-z0-9äöüß\s\-_&]/gi, '')
+          .replace(/\s+/g, ' ')
+          .slice(0, 90)
+
+      const companyName =
+        selectedRef.status === 'anonymized'
+          ? 'Anonymisierter Kunde'
+          : selectedRef.company_name ?? '—'
+
+      const tags = selectedRef.tags
+        ? selectedRef.tags
+            .split(/[\s,]+/)
+            .map((tag) => normalizeTagLabel(tag))
+            .filter(Boolean)
+        : []
+
+      const statusLabel = STATUS_LABELS[selectedRef.status] ?? selectedRef.status
+
+      const start = selectedRef.project_start ?? null
+      const end = selectedRef.project_end ?? null
+      const status = selectedRef.project_status ?? null
+      const label =
+        status === 'active' ? 'Aktiv' : end ? formatDate(end) : '—'
+      const nowIso = new Date().toISOString()
+      const duration =
+        selectedRef.duration_months != null
+          ? selectedRef.duration_months
+          : start && end
+            ? diffMonthsUtc(start, end)
+            : status === 'active' && start
+              ? diffMonthsUtc(start, nowIso)
+              : null
+      const endOrDuration =
+        duration != null ? `${label} (${duration} Monate)` : label
+
+      const model = {
+        title: selectedRef.title ?? '',
+        companyName,
+        statusLabel,
+        tags,
+        customerChallenge: selectedRef.customer_challenge ?? '',
+        ourSolution: selectedRef.our_solution ?? '',
+        project: {
+          volume: selectedRef.volume_eur ? formatNumber(selectedRef.volume_eur) : '—',
+          contractType: selectedRef.contract_type ?? '—',
+          startDate: selectedRef.project_start ? formatDate(selectedRef.project_start) : '—',
+          endOrDuration,
+          incumbentProvider: selectedRef.incumbent_provider ?? '—',
+          competitors: selectedRef.competitors ?? '—',
+        },
+        enterprise: {
+          industry: selectedRef.industry ?? '—',
+          hq: selectedRef.country ?? '—',
+          employeeCount:
+            selectedRef.employee_count != null ? formatNumber(selectedRef.employee_count) : '—',
+        },
+      }
+
+      const blob = await pdf(<StoryPdfTemplate model={model} />).toBlob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = sanitizeFilename(`${selectedRef.title ?? 'referenz'} - ${companyName}`) + '.pdf'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      setTimeout(() => URL.revokeObjectURL(url), 0)
+      toast.success('PDF generiert.')
+    } catch (e) {
+      toast.error('PDF-Generierung fehlgeschlagen.')
+    } finally {
+      setPdfGenerating(false)
+    }
+  }
   const [bulkImportOpen, setBulkImportOpen] = useState(false)
   type BulkImportGroupItem = { id: string; projectName: string; files: File[] }
   const [bulkImportGroups, setBulkImportGroups] = useState<BulkImportGroupItem[]>([])
@@ -575,6 +660,8 @@ export function DashboardOverview({
   const [shareLinkUrl, setShareLinkUrl] = useState<string | null>(null)
   const [shareLinkLoading, setShareLinkLoading] = useState(false)
   const [shareLinkGenerateLoading, setShareLinkGenerateLoading] = useState(false)
+  const sanitizeSharedUrl = (url: string) =>
+    url.replace(/\[([^\]]+)\]/g, '$1').replace(/\[|\]/g, '')
   useEffect(() => {
     if (!shareLinkPopoverRef) {
       setShareLinkUrl(null)
@@ -582,7 +669,7 @@ export function DashboardOverview({
     }
     setShareLinkLoading(true)
     getExistingShareForReference(shareLinkPopoverRef.id)
-      .then((existing) => setShareLinkUrl(existing?.url ?? null))
+      .then((existing) => setShareLinkUrl(existing?.url ? sanitizeSharedUrl(existing.url) : null))
       .finally(() => setShareLinkLoading(false))
   }, [shareLinkPopoverRef?.id])
   const selectAllCheckboxRef = useRef<HTMLInputElement | null>(null)
@@ -2794,28 +2881,15 @@ export function DashboardOverview({
                     variant="secondary"
                     size="sm"
                     className="shrink-0"
-                    asChild
-                    disabled={!selectedRef.file_path}
+                    disabled={pdfGenerating}
+                    onClick={handleGenerateAndDownloadPdf}
                   >
-                    <a
-                      href={
-                        selectedRef.file_path
-                          ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/references/${selectedRef.file_path}`
-                          : '#'
-                      }
-                      download
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => {
-                        if (!selectedRef.file_path) {
-                          e.preventDefault()
-                          toast.error('Kein PDF vorhanden.')
-                        }
-                      }}
-                    >
+                    {pdfGenerating ? (
+                      <Loader2 className="mr-2 size-4 animate-spin" />
+                    ) : (
                       <FileDownIcon className="mr-2 size-4" />
-                      Download
-                    </a>
+                    )}
+                    {pdfGenerating ? 'Generiere PDF...' : 'Download'}
                   </Button>
                   <Button
                     variant="ghost"
@@ -2892,8 +2966,8 @@ export function DashboardOverview({
           className="z-[60] max-h-[90vh] w-[calc(100vw-2rem)] max-w-4xl overflow-hidden rounded-xl border bg-background p-0 shadow-xl"
         >
           <div className="flex flex-col">
-            <div className="preview-modal-scroll overflow-y-auto p-8 md:p-16 lg:p-24">
-              <div className="mx-auto max-w-2xl space-y-6">
+            <div className="preview-modal-scroll overflow-y-auto p-8 md:p-8 lg:p-8">
+              <div className="mx-auto w-full max-w-4xl space-y-6">
                 <h3 className="text-lg font-semibold">Kundenlink erstellen</h3>
                 <div className="space-y-3">
                   {shareLinkLoading ? (
@@ -2901,31 +2975,39 @@ export function DashboardOverview({
                       <Loader2 className="size-4 animate-spin" /> Wird geladen…
                     </p>
                   ) : shareLinkUrl ? (
-                    <div
-                      role="button"
-                      tabIndex={0}
-                      onClick={async () => {
-                        try {
-                          await navigator.clipboard.writeText(shareLinkUrl!)
-                          toast.success('Link in Zwischenablage kopiert')
-                        } catch {
-                          toast.error('Kopieren fehlgeschlagen')
-                        }
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault()
-                          navigator.clipboard.writeText(shareLinkUrl!).then(
-                            () => toast.success('Link in Zwischenablage kopiert'),
-                            () => toast.error('Kopieren fehlgeschlagen')
-                          )
-                        }
-                      }}
-                      className="bg-muted/50 hover:bg-muted border-muted-foreground/20 flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2.5 text-left text-sm transition-colors"
-                      title="Klicken zum Kopieren"
-                    >
-                      <span className="min-w-0 flex-1 truncate font-mono text-foreground">{shareLinkUrl}</span>
-                      <span className="text-muted-foreground shrink-0 text-xs">Klicken zum Kopieren</span>
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <Input
+                          value={shareLinkUrl}
+                          readOnly
+                          className="flex-1 font-mono text-xs"
+                          aria-label="Generierter Kundenlink"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              await navigator.clipboard.writeText(shareLinkUrl)
+                              toast.success('Link in Zwischenablage kopiert')
+                            } catch {
+                              toast.error('Kopieren fehlgeschlagen')
+                            }
+                          }}
+                        >
+                          <CopyIcon className="size-4" />
+                          Kopieren
+                        </Button>
+                      </div>
+                      <a
+                        href={shareLinkUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                      >
+                        URL öffnen <ExternalLinkIcon className="size-3" />
+                      </a>
                     </div>
                   ) : (
                     <Button
@@ -2936,7 +3018,7 @@ export function DashboardOverview({
                         try {
                           const result = await createSharedPortfolio([shareLinkPopoverRef.id])
                           if (result.success) {
-                            setShareLinkUrl(result.url)
+                            setShareLinkUrl(sanitizeSharedUrl(result.url))
                             toast.success('Kundenlink erstellt')
                           } else {
                             toast.error(result.error ?? 'Erstellen fehlgeschlagen')
@@ -2965,7 +3047,7 @@ export function DashboardOverview({
                 )}
               </div>
             </div>
-            <div className="flex shrink-0 justify-center border-t bg-muted/30 px-8 py-4 md:px-16 lg:px-24">
+            <div className="flex shrink-0 justify-center border-t bg-muted/30 px-8 py-4">
               <Button
                 variant="outline"
                 onClick={() => {

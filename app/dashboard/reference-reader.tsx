@@ -9,26 +9,26 @@ export function ReferenceReader({ ref: refData }: { ref: ReferenceRow }) {
   const companyDisplay = isAnonymized ? 'Anonymisierter Kunde' : refData.company_name
 
   return (
-    <article className="mx-auto flex max-w-2xl flex-col items-center gap-8 rounded-2xl border bg-card/80 p-8 shadow-sm md:p-12">
-      {/* Logo – groß, zentriert */}
+    <article className="mx-auto w-full max-w-4xl flex flex-col gap-8 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+      {/* Logo – klein, dezent oben */}
       <div className="flex justify-center">
         {isAnonymized ? (
-          <div className="flex size-24 items-center justify-center rounded-xl border border-dashed border-muted-foreground/40 bg-muted/50 md:size-28">
-            <Building2Icon className="size-12 text-muted-foreground md:size-14" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-dashed border-muted-foreground/40 bg-muted/50">
+            <Building2Icon className="size-6 text-muted-foreground" />
           </div>
         ) : refData.company_logo_url ? (
-          <div className="relative size-24 overflow-hidden rounded-xl border bg-muted md:size-28">
+          <div className="relative h-12 w-12 overflow-hidden rounded-xl border bg-muted">
             <Image
               src={refData.company_logo_url}
               alt=""
               fill
-              className="object-contain"
-              sizes="112px"
+              className="object-contain p-1"
+              sizes="48px"
             />
           </div>
         ) : (
-          <div className="flex size-24 items-center justify-center rounded-xl border bg-muted/50 md:size-28">
-            <Building2Icon className="size-10 text-muted-foreground md:size-12" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl border bg-muted/50">
+            <Building2Icon className="size-6 text-muted-foreground" />
           </div>
         )}
       </div>
@@ -39,52 +39,38 @@ export function ReferenceReader({ ref: refData }: { ref: ReferenceRow }) {
       </p>
 
       {/* Titel – zentriert, prominent */}
-      <h2 className="text-center text-xl font-semibold leading-tight tracking-tight text-foreground md:text-2xl">
+      <h2 className="break-words text-center text-xl font-semibold leading-tight tracking-tight text-foreground md:text-2xl">
         {refData.title}
       </h2>
 
       {/* Zusammenfassung */}
       {refData.summary && (
-        <div className="w-full rounded-xl border bg-muted/30 p-5 text-center">
+        <div className="w-full rounded-xl border border-slate-200 bg-white p-5 text-center">
           <p className="text-sm leading-relaxed text-muted-foreground">
             {refData.summary}
           </p>
         </div>
       )}
 
-      {/* Story-Boxen – Kern des Projekts, prominent */}
-      <div className="w-full space-y-6 rounded-2xl border-2 border-amber-200/70 bg-amber-50/60 p-6 dark:border-amber-800/50 dark:bg-amber-950/40">
-        <h3 className="text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Storytelling – Kern des Projekts
-        </h3>
-        {refData.customer_challenge ? (
-          <div>
-            <p className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Herausforderung des Kunden
-            </p>
-            <p className="text-sm leading-relaxed text-foreground">
-              {refData.customer_challenge}
-            </p>
-          </div>
-        ) : (
-          <p className="text-center text-sm italic text-muted-foreground">
-            Keine Herausforderung hinterlegt.
+      {/* Story – neutral, enterprise-ready */}
+      <div className="w-full space-y-0 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="space-y-2">
+          <p className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
+            Herausforderung des Kunden
           </p>
-        )}
-        {refData.our_solution ? (
-          <div>
-            <p className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Unsere Lösung
-            </p>
-            <p className="text-sm leading-relaxed text-foreground">
-              {refData.our_solution}
-            </p>
-          </div>
-        ) : (
-          <p className="text-center text-sm italic text-muted-foreground">
-            Keine Lösung hinterlegt.
+          <p className="text-foreground text-sm leading-relaxed">
+            {refData.customer_challenge || '—'}
           </p>
-        )}
+        </div>
+        <div className="mt-6 border-t border-slate-200" />
+        <div className="mt-6 space-y-2">
+          <p className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
+            Unsere Lösung
+          </p>
+          <p className="text-foreground text-sm leading-relaxed">
+            {refData.our_solution || '—'}
+          </p>
+        </div>
       </div>
 
       {/* Optionale Tags – dezent */}
