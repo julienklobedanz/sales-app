@@ -39,7 +39,7 @@ export async function extractRequirementsFromPdf(
 export async function matchRequirementsToReferences(
   _requirements: ExtractedRequirement[],
   referenceIds: string[],
-  _referenceDetails?: { id: string; title: string; industry?: string; tags?: string }[]
+  _referenceDetails?: { id: string; title: string; industry?: string | null; tags?: string | null }[]
 ): Promise<{ matchedIds: string[]; matchSnippets: Record<string, string> }> {
   await new Promise((r) => setTimeout(r, 400))
 
