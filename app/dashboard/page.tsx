@@ -56,7 +56,7 @@ export default async function DashboardPage({ searchParams }: Props) {
       totalCount={totalCount}
       deletedCount={deletedCount}
       profile={profile as Profile}
-      title="Referenzen"
+      title="Success Stories"
       initialFavoritesOnly={initialFavoritesOnly}
       companies={companies ?? []}
       contacts={contacts ?? []}

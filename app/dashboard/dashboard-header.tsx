@@ -52,12 +52,16 @@ export function DashboardHeader() {
   const breadcrumbSegments = (() => {
     if (!pathname) return []
     if (isCompanyDetail || isCompaniesRoot) {
-      // Für Client Intelligence Routen immer einheitlich beschriften
-      return ['client-intelligence']
+      return ['client-intelligence'] // Label → "Accounts"
     }
-    // Standard: Segmente hinter /dashboard
     return pathSegments.slice(1)
   })()
+
+  const breadcrumbLabel = (segment: string) => {
+    if (segment === 'client-intelligence') return 'Accounts'
+    if (segment === 'ai-lab') return 'AI Lab'
+    return segment.charAt(0).toUpperCase() + segment.slice(1)
+  }
 
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
@@ -74,18 +78,17 @@ export function DashboardHeader() {
             Refstack
           </button>
           {breadcrumbSegments.map((segment) => {
-            const isClientIntelligence = segment === 'client-intelligence'
-            const label = isClientIntelligence
-              ? 'Client Intelligence'
-              : segment.charAt(0).toUpperCase() + segment.slice(1)
+            const isAccounts = segment === 'client-intelligence'
+            const label = breadcrumbLabel(segment)
+            const isClickable = isAccounts
             return (
               <div key={segment} className="flex items-center">
                 <SlashIcon className="mx-2 size-3 text-muted-foreground/50" />
-                {isClientIntelligence ? (
+                {isClickable ? (
                   <button
                     type="button"
                     className="text-foreground hover:underline"
-                    onClick={() => router.push('/dashboard/companies')}
+                    onClick={() => router.push(isAccounts ? '/dashboard/companies' : '/dashboard/ai-lab')}
                   >
                     {label}
                   </button>

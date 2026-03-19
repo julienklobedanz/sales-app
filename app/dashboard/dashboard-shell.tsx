@@ -15,8 +15,8 @@ import {
   BrainCircuit,
   Briefcase,
   HandshakeIcon,
-  FilePen,
 } from 'lucide-react'
+import AnilabxIcon from '@/components/icons/anilabx-icon'
 import {
   Sidebar,
   SidebarContent,
@@ -90,6 +90,7 @@ export function DashboardShell({
   useEffect(() => {
     router.prefetch('/dashboard/deals')
     router.prefetch('/dashboard/companies')
+    router.prefetch('/dashboard/ai-lab')
   }, [router])
 
   const userName =
@@ -139,22 +140,24 @@ export function DashboardShell({
               <SidebarMenu className="gap-0.5">
                 {isAdmin ? (
                   <>
+                    {/* 1. Intelligence (Der Kompass): Accounts */}
                     <SidebarMenuItem>
                       <SidebarMenuButton
                         asChild
-                        isActive={pathname === '/dashboard'}
-                        tooltip="Referenzen"
+                        isActive={pathname?.startsWith('/dashboard/companies')}
+                        tooltip="Accounts – Firmenübersicht, Executive Profiling & Stakeholder-Mapping"
                         className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-zinc-900 data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:hover:translate-x-0"
                       >
-                        <Link href="/dashboard" className="flex items-center gap-2.5">
-                          <FileTextIcon
+                        <Link href="/dashboard/companies" className="flex items-center gap-2.5">
+                          <BrainCircuit
                             className="relative z-10 size-4"
-                            strokeWidth={pathname === '/dashboard' ? 2.5 : 2}
+                            strokeWidth={pathname?.startsWith('/dashboard/companies') ? 2.5 : 2}
                           />
-                          <span className="relative z-10">Referenzen</span>
+                          <span className="relative z-10">Accounts</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
+                    {/* 2. Execution (Das Schlachtfeld): Deals */}
                     <SidebarMenuItem>
                       <SidebarMenuButton
                         asChild
@@ -171,19 +174,37 @@ export function DashboardShell({
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
+                    {/* 3. Proof (Das Arsenal): Success Stories */}
                     <SidebarMenuItem>
                       <SidebarMenuButton
                         asChild
-                        isActive={pathname?.startsWith('/dashboard/companies')}
-                        tooltip="Client Intelligence – Firmenübersicht, Executive Profiling & Stakeholder-Mapping (in Vorbereitung)"
+                        isActive={pathname === '/dashboard'}
+                        tooltip="Success Stories"
                         className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-zinc-900 data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:hover:translate-x-0"
                       >
-                        <Link href="/dashboard/companies" className="flex items-center gap-2.5">
-                          <BrainCircuit
+                        <Link href="/dashboard" className="flex items-center gap-2.5">
+                          <FileTextIcon
                             className="relative z-10 size-4"
-                            strokeWidth={pathname?.startsWith('/dashboard/companies') ? 2.5 : 2}
+                            strokeWidth={pathname === '/dashboard' ? 2.5 : 2}
                           />
-                          <span className="relative z-10">Client Intelligence</span>
+                          <span className="relative z-10">Success Stories</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    {/* 4. AI Lab – RFP-Analyzer & KI-Tools */}
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={pathname?.startsWith('/dashboard/ai-lab')}
+                        tooltip="AI Lab – RFP-Analyzer und weitere KI-Tools"
+                        className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-zinc-900 data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:hover:translate-x-0"
+                      >
+                        <Link href="/dashboard/ai-lab" className="flex items-center gap-2.5">
+                          <AnilabxIcon
+                            className="relative z-10 size-4 shrink-0"
+                            strokeWidth={pathname?.startsWith('/dashboard/ai-lab') ? 2.5 : 2}
+                          />
+                          <span className="relative z-10">AI Lab</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -193,13 +214,13 @@ export function DashboardShell({
                     <SidebarMenuItem>
                       <SidebarMenuButton
                         asChild
-                        isActive={pathname === '/dashboard'}
-                        tooltip="Referenzen"
+                        isActive={pathname?.startsWith('/dashboard/companies')}
+                        tooltip="Accounts"
                         className="data-[active=true]:bg-muted data-[active=true]:text-foreground"
                       >
-                        <Link href="/dashboard">
-                          <FileTextIcon />
-                          <span>Referenzen</span>
+                        <Link href="/dashboard/companies">
+                          <BrainCircuit />
+                          <span>Accounts</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -219,13 +240,26 @@ export function DashboardShell({
                     <SidebarMenuItem>
                       <SidebarMenuButton
                         asChild
-                        isActive={pathname?.startsWith('/dashboard/companies')}
-                        tooltip="Client Intelligence – Firmenübersicht, Executive Profiling & Stakeholder-Mapping (in Vorbereitung)"
+                        isActive={pathname === '/dashboard'}
+                        tooltip="Success Stories"
                         className="data-[active=true]:bg-muted data-[active=true]:text-foreground"
                       >
-                        <Link href="/dashboard/companies">
-                          <BrainCircuit />
-                          <span>Client Intelligence</span>
+                        <Link href="/dashboard">
+                          <FileTextIcon />
+                          <span>Success Stories</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={pathname?.startsWith('/dashboard/ai-lab')}
+                        tooltip="AI Lab"
+                        className="data-[active=true]:bg-muted data-[active=true]:text-foreground"
+                      >
+                        <Link href="/dashboard/ai-lab" className="flex items-center gap-2.5">
+                          <AnilabxIcon className="size-4 shrink-0" strokeWidth={2} />
+                          <span>AI Lab</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

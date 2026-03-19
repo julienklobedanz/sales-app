@@ -337,7 +337,7 @@ export function DashboardOverview({
   totalCount,
   deletedCount,
   profile,
-  title = 'Referenzen',
+  title = 'Success Stories',
   initialFavoritesOnly = false,
   initialStatusFilter = 'all',
   companies = [],
