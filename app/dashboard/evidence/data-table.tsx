@@ -37,12 +37,14 @@ export function EvidenceDataTable<TData, TValue>({
   columns,
   data,
   toolbar,
+  toolbarRight,
   getRowId,
   onSelectedRowIdsChange,
 }: {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
-  toolbar?: React.ReactNode
+  toolbar?: (table: ReturnType<typeof useReactTable<TData>>) => React.ReactNode
+  toolbarRight?: (table: ReturnType<typeof useReactTable<TData>>) => React.ReactNode
   getRowId?: (originalRow: TData, index: number, parent?: any) => string
   onSelectedRowIdsChange?: (rowIds: string[]) => void
 }) {
@@ -80,9 +82,14 @@ export function EvidenceDataTable<TData, TValue>({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <div className="flex-1">{toolbar}</div>
-        <DataTableViewOptions table={table} />
+      <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
+          {toolbar ? toolbar(table) : null}
+        </div>
+        <div className="flex items-center gap-2">
+          <DataTableViewOptions table={table} />
+          {toolbarRight ? toolbarRight(table) : null}
+        </div>
       </div>
 
       <div className="overflow-hidden rounded-md border">

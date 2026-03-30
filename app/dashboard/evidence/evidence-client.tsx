@@ -70,57 +70,7 @@ export function EvidenceClient({
   return (
     <div className="px-6 pt-6 md:px-12 lg:px-20 space-y-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2 w-full">
-          <div className="relative w-full max-w-xl">
-            <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Filter references…"
-              className="pl-9 h-10"
-            />
-          </div>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
-                <SlidersHorizontal className="size-4" />
-                Status
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="min-w-56">
-              <DropdownMenuLabel>Status</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {([
-                { key: "all", label: "Alle" },
-                { key: "approved", label: "Freigegeben" },
-                { key: "internal_only", label: "Intern" },
-                ...(isSales
-                  ? []
-                  : [
-                      { key: "draft", label: "Entwurf" },
-                      { key: "anonymized", label: "Anonymisiert" },
-                    ]),
-              ] as Array<{ key: StatusFilter; label: string }>).map((opt) => (
-                <DropdownMenuCheckboxItem
-                  key={opt.key}
-                  checked={status === opt.key}
-                  onCheckedChange={() => setStatus(opt.key)}
-                >
-                  {opt.label}
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {canCreate ? (
-            <Button asChild size="sm">
-              <Link href="/dashboard/evidence/new">Add Reference</Link>
-            </Button>
-          ) : null}
-        </div>
+        {/* Toolbar wird direkt in der DataTable gerendert (Tasks-Style) */}
       </div>
 
       {canCreate ? (
@@ -199,7 +149,58 @@ export function EvidenceClient({
             data={filtered}
             getRowId={(row) => row.id}
             onSelectedRowIdsChange={setSelectedIds}
-            toolbar={null}
+            toolbar={() => (
+              <>
+                <div className="relative w-full max-w-xl">
+                  <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Referenzen filtern…"
+                    className="pl-9 h-10"
+                  />
+                </div>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-10 gap-2">
+                      <SlidersHorizontal className="size-4" />
+                      Status
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="min-w-56">
+                    <DropdownMenuLabel>Status</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {([
+                      { key: "all", label: "Alle" },
+                      { key: "approved", label: "Freigegeben" },
+                      { key: "internal_only", label: "Intern" },
+                      ...(isSales
+                        ? []
+                        : [
+                            { key: "draft", label: "Entwurf" },
+                            { key: "anonymized", label: "Anonymisiert" },
+                          ]),
+                    ] as Array<{ key: StatusFilter; label: string }>).map((opt) => (
+                      <DropdownMenuCheckboxItem
+                        key={opt.key}
+                        checked={status === opt.key}
+                        onCheckedChange={() => setStatus(opt.key)}
+                      >
+                        {opt.label}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            )}
+            toolbarRight={() =>
+              canCreate ? (
+                <Button asChild className="h-10">
+                  <Link href="/dashboard/evidence/new">Referenz erstellen</Link>
+                </Button>
+              ) : null
+            }
           />
         </div>
       )}
