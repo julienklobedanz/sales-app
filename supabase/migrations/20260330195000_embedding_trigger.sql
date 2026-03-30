@@ -30,11 +30,12 @@ BEGIN
   THEN
     PERFORM net.http_post(
       url := functions_url || '/generate-embedding',
+      body := jsonb_build_object('reference_id', NEW.id),
+      params := '{}'::jsonb,
       headers := jsonb_build_object(
         'Authorization', 'Bearer ' || service_role_key,
         'Content-Type', 'application/json'
-      ),
-      body := jsonb_build_object('reference_id', NEW.id)::text
+      )
     );
   END IF;
 

@@ -12,7 +12,10 @@ RETURNS trigger
 LANGUAGE plpgsql
 AS $$
 DECLARE
-  functions_url text := 'https://oxxzczmibzyusonwzdvc.functions.supabase.co';
+  -- Offizielles Invoke-Format (Supabase Docs / pg_net-Beispiele):
+  -- https://<PROJECT_REF>.supabase.co/functions/v1/<function-name>
+  -- NICHT https://<PROJECT_REF>.functions.supabase.co/... (liefert i.d.R. keinen Function-Hit).
+  endpoint text := 'https://oxxzczmibzyusonwzdvc.supabase.co/functions/v1/generate-embedding';
 BEGIN
   IF (TG_OP = 'INSERT')
      OR (NEW.title IS DISTINCT FROM OLD.title)
@@ -21,10 +24,12 @@ BEGIN
      OR (NEW.summary IS DISTINCT FROM OLD.summary)
      OR (NEW.industry IS DISTINCT FROM OLD.industry)
   THEN
+    -- pg_net: body ist jsonb (nicht text); Reihenfolge url → body → params → headers
     PERFORM net.http_post(
-      url := functions_url || '/generate-embedding',
-      headers := jsonb_build_object('Content-Type', 'application/json'),
-      body := jsonb_build_object('reference_id', NEW.id)::text
+      url := endpoint,
+      body := jsonb_build_object('reference_id', NEW.id),
+      params := '{}'::jsonb,
+      headers := jsonb_build_object('Content-Type', 'application/json')
     );
   END IF;
 

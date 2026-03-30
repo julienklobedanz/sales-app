@@ -171,11 +171,11 @@ export function CommandPalette() {
       },
       {
         key: "rfp-upload",
-        label: "RFP hochladen",
+        label: "RFP im Deal hochladen",
         icon: <Upload className="size-4" />,
         onSelect: () => {
           setOpen(false)
-          router.push("/dashboard/match?tab=rfp")
+          router.push("/dashboard/deals")
         },
         visible: true,
       },

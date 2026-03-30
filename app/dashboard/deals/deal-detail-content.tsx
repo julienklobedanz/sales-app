@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -32,8 +32,36 @@ import {
 } from '@/components/ui/select'
 import { DEAL_STATUS_LABELS, type DealWithReferences } from './types'
 import { submitReferenceRequest, addReferenceToDeal, removeReferenceFromDeal } from './actions'
-import { FileTextIcon, SendIcon, PlusCircleIcon, Trash2Icon } from 'lucide-react'
+import {
+  FileTextIcon,
+  SendIcon,
+  PlusCircleIcon,
+  Trash2Icon,
+  Loader2,
+  FileUp,
+} from 'lucide-react'
 import { toast } from 'sonner'
+
+type RfpCoverageMatch = {
+  id: string
+  title: string
+  summary: string | null
+  industry: string | null
+  similarity: number
+}
+
+type RfpAnalyzeResult = {
+  analysisId: string
+  storagePath: string
+  requirements: { id: string; text: string; category?: string }[]
+  coverage: Array<{
+    requirementId: string
+    requirementText: string
+    category?: string
+    matches: RfpCoverageMatch[]
+    embedError?: string
+  }>
+}
 
 export type RefOption = { id: string; title: string; company_name: string }
 
@@ -60,6 +88,42 @@ export function DealDetailContent({
   const availableRefs = allReferences.filter((r) => !linkedIds.has(r.id))
   const [linkRefId, setLinkRefId] = useState('')
   const [linking, setLinking] = useState(false)
+  const rfpInputRef = useRef<HTMLInputElement>(null)
+  const [rfpAnalyzing, setRfpAnalyzing] = useState(false)
+  const [rfpResult, setRfpResult] = useState<RfpAnalyzeResult | null>(null)
+
+  async function handleRfpFile(file: File) {
+    setRfpAnalyzing(true)
+    setRfpResult(null)
+    const formData = new FormData()
+    formData.set('dealId', deal.id)
+    formData.set('file', file)
+    try {
+      const res = await fetch('/api/rfp/analyze', { method: 'POST', body: formData })
+      const json = (await res.json()) as
+        | { success: true; analysisId: string; storagePath: string; requirements: RfpAnalyzeResult['requirements']; coverage: RfpAnalyzeResult['coverage'] }
+        | { success: false; error?: string }
+
+      if (!res.ok || !('success' in json) || !json.success) {
+        const err = 'error' in json ? json.error : undefined
+        toast.error(err ?? 'RFP-Analyse fehlgeschlagen.')
+        return
+      }
+
+      setRfpResult({
+        analysisId: json.analysisId,
+        storagePath: json.storagePath,
+        requirements: json.requirements,
+        coverage: json.coverage,
+      })
+      toast.success('RFP analysiert. Coverage siehe unten.')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Netzwerkfehler.')
+    } finally {
+      setRfpAnalyzing(false)
+      if (rfpInputRef.current) rfpInputRef.current.value = ''
+    }
+  }
 
   async function handleSubmitRequest() {
     setSending(true)
@@ -123,6 +187,82 @@ export function DealDetailContent({
           {deal.account_manager_name && <p><strong>Account Manager:</strong> {deal.account_manager_name}</p>}
           {deal.sales_manager_name && <p><strong>Sales Manager:</strong> {deal.sales_manager_name}</p>}
           <p><strong>Sichtbarkeit:</strong> {deal.is_public ? 'Öffentlich (Team)' : 'Privat'}</p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="py-3">
+          <CardTitle className="text-sm">RFP & Coverage</CardTitle>
+          <CardDescription className="text-xs">
+            PDF oder DOCX hochladen: Anforderungen extrahieren und passende Referenzen aus eurer Evidence-Bibliothek zuordnen.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3 py-0">
+          <input
+            ref={rfpInputRef}
+            type="file"
+            accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) void handleRfpFile(file)
+            }}
+          />
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            className="w-full sm:w-auto"
+            disabled={rfpAnalyzing}
+            onClick={() => rfpInputRef.current?.click()}
+          >
+            {rfpAnalyzing ? (
+              <Loader2 className="mr-2 size-4 animate-spin" />
+            ) : (
+              <FileUp className="mr-2 size-4" />
+            )}
+            {rfpAnalyzing ? 'Analyse läuft …' : 'RFP hochladen (PDF/DOCX)'}
+          </Button>
+          <p className="text-muted-foreground text-xs">
+            Kann je nach Umfang einige Minuten dauern (Einbettungen + Abgleich pro Anforderung).
+          </p>
+
+          {rfpResult && (
+            <div className="mt-2 max-h-[min(52vh,480px)] space-y-3 overflow-y-auto rounded-md border bg-muted/30 p-3 text-sm">
+              <p className="text-muted-foreground text-xs">
+                Analyse-ID: <code className="text-foreground">{rfpResult.analysisId}</code>
+              </p>
+              {rfpResult.coverage.map((row) => (
+                <div key={row.requirementId} className="rounded border bg-background p-2">
+                  <p className="font-medium leading-snug">{row.requirementText}</p>
+                  {row.category && (
+                    <p className="text-muted-foreground mt-0.5 text-xs">Kategorie: {row.category}</p>
+                  )}
+                  {row.embedError ? (
+                    <p className="text-destructive mt-1 text-xs">{row.embedError}</p>
+                  ) : row.matches.length === 0 ? (
+                    <p className="text-muted-foreground mt-2 text-xs">Keine passenden Referenzen über Schwellenwert.</p>
+                  ) : (
+                    <ul className="mt-2 space-y-1.5 border-t pt-2">
+                      {row.matches.map((m) => (
+                        <li key={m.id} className="flex flex-wrap items-baseline justify-between gap-2 text-xs">
+                          <Link
+                            href={`/dashboard/evidence/${m.id}/edit`}
+                            className="min-w-0 flex-1 font-medium text-primary hover:underline"
+                          >
+                            {m.title}
+                          </Link>
+                          <span className="text-muted-foreground shrink-0">
+                            {(m.similarity * 100).toFixed(0)} % Ähnlichkeit
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
