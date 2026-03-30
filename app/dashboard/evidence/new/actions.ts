@@ -594,53 +594,7 @@ export async function createReference(
     }
   }
 
-  // KAN-23: Embedding für semantische Suche (Best Effort – Fehler blockieren die Referenz nicht; Backfill: KAN-22)
-  try {
-    const apiKey = process.env.OPENAI_API_KEY
-    const combinedParts = [
-      title,
-      summary,
-      customer_challenge,
-      our_solution,
-      industry,
-    ]
-      .filter((p): p is string => !!p && p.trim().length > 0)
-      .map((p) => p.trim())
-
-    if (apiKey && combinedParts.length > 0) {
-      const input = combinedParts.join('\n\n')
-      const response = await fetch('https://api.openai.com/v1/embeddings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'text-embedding-3-small',
-          input,
-        }),
-      })
-
-      if (!response.ok) {
-        const raw = await response.text()
-        console.error('[createReference] Embedding-API Fehler:', response.status, raw)
-      } else {
-        const json = (await response.json()) as { data?: Array<{ embedding: number[] }> }
-        const vector = json.data?.[0]?.embedding
-        if (Array.isArray(vector) && vector.length > 0) {
-          const { error: embedError } = await supabase
-            .from('references')
-            .update({ embedding: vector })
-            .eq('id', reference.id)
-          if (embedError) {
-            console.error('[createReference] Konnte Embedding nicht speichern:', embedError.message)
-          }
-        }
-      }
-    }
-  } catch (e) {
-    console.error('[createReference] Unerwarteter Fehler beim Erzeugen des Embeddings:', e)
-  }
+  // Embeddings werden non-blocking im Hintergrund erzeugt (EPIC 3: Trigger + Edge Function).
 
   // Freigabe-Anfragen werden im 4-Status-Modell explizit ausgelöst,
   // daher wird der Status hier nicht mehr automatisch auf einen Zwischenstatus gesetzt.
