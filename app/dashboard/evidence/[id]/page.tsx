@@ -62,6 +62,8 @@ export default async function EvidenceDetailPage({
       country,
       status,
       tags,
+      created_at,
+      updated_at,
       customer_challenge,
       our_solution,
       volume_eur,
@@ -103,6 +105,31 @@ export default async function EvidenceDetailPage({
   const tags = splitTags((row as any).tags ?? null)
   const company = Array.isArray((row as any).companies) ? (row as any).companies[0] : (row as any).companies
 
+  const createdAt = (row as any).created_at ? new Date((row as any).created_at as string) : null
+  const updatedAt = (row as any).updated_at ? new Date((row as any).updated_at as string) : null
+  const activities = [
+    ...(createdAt
+      ? [
+          {
+            at: createdAt,
+            title: 'Referenz erstellt',
+            detail: 'Die Referenz wurde im Evidence Hub angelegt.',
+          },
+        ]
+      : []),
+    ...(updatedAt && createdAt && updatedAt.getTime() !== createdAt.getTime()
+      ? [
+          {
+            at: updatedAt,
+            title: 'Referenz bearbeitet',
+            detail: 'Inhalte oder Metadaten wurden aktualisiert.',
+          },
+        ]
+      : []),
+  ]
+    .sort((a, b) => b.at.getTime() - a.at.getTime())
+    .slice(0, 10)
+
   return (
     <div className="px-6 pt-6 md:px-12 lg:px-20 pb-10">
       <div className="mb-6">
@@ -121,17 +148,22 @@ export default async function EvidenceDetailPage({
             <div className="space-y-2 min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <StatusBadge status={(row as any).status} />
-                <form action={toggleFavorite.bind(null, id)}>
-                  <Button type="submit" variant="outline" size="sm" className="gap-2">
-                    <Star className="size-4" fill={isFavorited ? 'currentColor' : 'none'} />
-                    Favorit
-                  </Button>
-                </form>
               </div>
               <h1 className="text-2xl font-bold tracking-tight break-words">
                 {(row as any).title}
               </h1>
               <p className="text-sm text-muted-foreground">{(row as any).industry ?? '—'}</p>
+              <div className="mt-2 flex flex-wrap gap-1">
+                {tags.length ? (
+                  tags.map((t) => (
+                    <Badge key={t} variant="secondary">
+                      {t}
+                    </Badge>
+                  ))
+                ) : (
+                  <span className="text-sm text-muted-foreground">—</span>
+                )}
+              </div>
             </div>
           </div>
 
@@ -148,43 +180,37 @@ export default async function EvidenceDetailPage({
                 {(row as any).our_solution ?? '—'}
               </p>
             </div>
-            <div>
-              <div className="text-sm font-semibold">Tags</div>
-              <div className="mt-2 flex flex-wrap gap-1">
-                {tags.length ? (
-                  tags.map((t) => (
-                    <Badge key={t} variant="secondary">
-                      {t}
-                    </Badge>
-                  ))
-                ) : (
-                  <span className="text-sm text-muted-foreground">—</span>
-                )}
-              </div>
-            </div>
           </div>
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Nutzung & Impact</CardTitle>
+              <CardTitle className="text-base">Letzte Aktivitäten</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-3 md:grid-cols-4">
-              <div className="rounded-md border p-3">
-                <div className="text-xs text-muted-foreground">Views</div>
-                <div className="text-lg font-bold">—</div>
-              </div>
-              <div className="rounded-md border p-3">
-                <div className="text-xs text-muted-foreground">Shares</div>
-                <div className="text-lg font-bold">—</div>
-              </div>
-              <div className="rounded-md border p-3">
-                <div className="text-xs text-muted-foreground">In Deals</div>
-                <div className="text-lg font-bold">—</div>
-              </div>
-              <div className="rounded-md border p-3">
-                <div className="text-xs text-muted-foreground">Won/Lost</div>
-                <div className="text-lg font-bold">—</div>
-              </div>
+            <CardContent className="space-y-3">
+              {activities.length ? (
+                <ol className="relative ml-2 border-l pl-6">
+                  {activities.map((a) => (
+                    <li key={`${a.title}-${a.at.toISOString()}`} className="pb-4 last:pb-0">
+                      <span className="absolute -left-1.5 mt-1.5 size-3 rounded-full bg-muted ring-4 ring-background" />
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="text-sm font-medium">{a.title}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {a.at.toLocaleString('de-DE', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </div>
+                      </div>
+                      <div className="mt-1 text-sm text-muted-foreground">{a.detail}</div>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p className="text-sm text-muted-foreground">Noch keine Aktivitäten.</p>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -228,9 +254,39 @@ export default async function EvidenceDetailPage({
 
           <Card>
             <CardHeader>
+              <CardTitle className="text-base">Nutzung & Impact</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-2 text-sm">
+              <div className="rounded-md border p-2">
+                <div className="text-xs text-muted-foreground">Views</div>
+                <div className="font-semibold">—</div>
+              </div>
+              <div className="rounded-md border p-2">
+                <div className="text-xs text-muted-foreground">Shares</div>
+                <div className="font-semibold">—</div>
+              </div>
+              <div className="rounded-md border p-2">
+                <div className="text-xs text-muted-foreground">In Deals</div>
+                <div className="font-semibold">—</div>
+              </div>
+              <div className="rounded-md border p-2">
+                <div className="text-xs text-muted-foreground">Won/Lost</div>
+                <div className="font-semibold">—</div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
               <CardTitle className="text-base">Aktionen</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-2">
+              <form action={toggleFavorite.bind(null, id)}>
+                <Button type="submit" variant="outline" className="gap-2 w-full">
+                  <Star className="size-4" fill={isFavorited ? 'currentColor' : 'none'} />
+                  {isFavorited ? 'Favorit' : 'Favorisieren'}
+                </Button>
+              </form>
               <Button variant="outline" disabled>
                 PDF exportieren
               </Button>
