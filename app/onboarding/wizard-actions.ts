@@ -14,6 +14,7 @@ export async function finalizeWorkspaceAndProfile(params: {
   inviteToken: string | null
   organizationName: string
   logoDataUrl: string | null
+  role: 'sales' | 'account_manager' | 'admin' | null
 }): Promise<FinalizeWorkspaceResult> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -57,11 +58,24 @@ export async function finalizeWorkspaceAndProfile(params: {
     }
   }
 
-  // Profil sicherstellen (Name/Rolle werden bereits im bisherigen Onboarding gesetzt; hier minimal)
-  const { error } = await supabase.from('profiles').upsert({
+  const isInvite = Boolean(inviteToken)
+  const role =
+    params.role === 'admin' || params.role === 'sales' || params.role === 'account_manager'
+      ? params.role
+      : null
+
+  if (!isInvite && !role) {
+    return { success: false, error: 'Bitte deine Rolle auswählen.' }
+  }
+
+  // Profil sicherstellen. Bei Invite-User: Rolle kommt aus Invite/Register-Flow → hier nicht überschreiben.
+  const upsertPayload: Record<string, unknown> = {
     id: user.id,
     organization_id: organizationId,
-  })
+  }
+  if (!isInvite) upsertPayload.role = role
+
+  const { error } = await supabase.from('profiles').upsert(upsertPayload)
   if (error) return { success: false, error: error.message }
 
   return { success: true }

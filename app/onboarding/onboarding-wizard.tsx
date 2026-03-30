@@ -25,6 +25,7 @@ export function OnboardingWizard({
   const [workspace, setWorkspace] = React.useState<WorkspaceStepValue>({
     organizationName: inviteOrganizationName ?? "",
     logoDataUrl: null,
+    role: "account_manager",
   })
 
   const [referencePreview, setReferencePreview] = React.useState<ExtractedReferencePreview | null>(null)
@@ -45,6 +46,7 @@ export function OnboardingWizard({
       inviteToken,
       organizationName: workspace.organizationName,
       logoDataUrl: workspace.logoDataUrl,
+      role: isInvite ? null : workspace.role,
     })
     setSavingWorkspace(false)
     if (!res.success) {

@@ -4,10 +4,18 @@ import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 export type WorkspaceStepValue = {
   organizationName: string
   logoDataUrl: string | null
+  role: "admin" | "account_manager" | "sales"
 }
 
 async function fileToDataUrl(file: File): Promise<string> {
@@ -34,6 +42,11 @@ export function WorkspaceStep({
   isInvite: boolean
   inviteOrganizationName: string | null
 }) {
+  const canProceed =
+    Boolean(value.organizationName.trim()) &&
+    (isInvite || Boolean(value.role)) &&
+    !disabled
+
   return (
     <div className="space-y-6">
       <div className="space-y-1">
@@ -59,6 +72,34 @@ export function WorkspaceStep({
           />
         </div>
 
+        {!isInvite ? (
+          <div className="space-y-2">
+            <Label>Deine Rolle</Label>
+            <Select
+              value={value.role}
+              onValueChange={(v) =>
+                onChange({
+                  ...value,
+                  role: v as WorkspaceStepValue["role"],
+                })
+              }
+              disabled={disabled}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Bitte auswählen…" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="account_manager">Account Manager</SelectItem>
+                <SelectItem value="sales">Sales Representative</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="text-xs text-muted-foreground">
+              Diese Auswahl gilt für deinen User-Account. Eingeladene Teammitglieder bekommen ihre Rolle aus der Einladung.
+            </div>
+          </div>
+        ) : null}
+
         <div className="space-y-2">
           <Label htmlFor="logo">Logo (optional)</Label>
           <Input
@@ -81,7 +122,7 @@ export function WorkspaceStep({
       </div>
 
       <div className="flex justify-end">
-        <Button type="button" onClick={onNext} disabled={disabled}>
+        <Button type="button" onClick={onNext} disabled={!canProceed}>
           Weiter →
         </Button>
       </div>
