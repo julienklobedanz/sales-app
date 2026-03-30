@@ -10,8 +10,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { DataTable } from "@/components/ui/data-table"
 import { evidenceColumns } from "./columns"
+import { EvidenceDataTable } from "./data-table"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -20,6 +20,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu"
 
 type ViewMode = "table" | "cards"
 type StatusFilter = "all" | "approved" | "internal_only" | "draft" | "anonymized"
@@ -57,6 +64,7 @@ export function EvidenceClient({
   const [query, setQuery] = React.useState("")
   const [status, setStatus] = React.useState<StatusFilter>("all")
   const [view, setView] = React.useState<ViewMode>("table")
+  const [selectedIds, setSelectedIds] = React.useState<string[]>([])
 
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -188,17 +196,41 @@ export function EvidenceClient({
           </CardContent>
         </Card>
       ) : view === "table" ? (
-        <DataTable
-          columns={evidenceColumns()}
-          data={filtered}
-          getRowId={(row) => row.id}
-          showViewOptions
-          paginationLabel={({ pageIndex, pageSize, total }) => {
-            const start = pageIndex * pageSize + 1
-            const end = Math.min((pageIndex + 1) * pageSize, total)
-            return `${start}–${end} von ${total} Referenzen`
-          }}
-        />
+        <div className="space-y-4">
+          {selectedIds.length ? (
+            <div className="fixed bottom-6 left-1/2 z-50 w-[min(720px,calc(100vw-24px))] -translate-x-1/2">
+              <ContextMenu>
+                <ContextMenuTrigger asChild>
+                  <div className="flex items-center justify-between rounded-lg border bg-background/95 px-4 py-3 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/75">
+                    <div className="text-sm text-muted-foreground">
+                      {selectedIds.length} ausgewählt
+                    </div>
+                    <Button variant="outline" size="sm" className="gap-2">
+                      Aktionen
+                    </Button>
+                  </div>
+                </ContextMenuTrigger>
+                <ContextMenuContent>
+                  <ContextMenuItem disabled>PDF exportieren</ContextMenuItem>
+                  <ContextMenuItem disabled>Portfolio erstellen</ContextMenuItem>
+                  <ContextMenuSeparator />
+                  <ContextMenuItem disabled={isSales}>Anonymisieren</ContextMenuItem>
+                  <ContextMenuItem variant="destructive" disabled={isSales}>
+                    Löschen
+                  </ContextMenuItem>
+                </ContextMenuContent>
+              </ContextMenu>
+            </div>
+          ) : null}
+
+          <EvidenceDataTable
+            columns={evidenceColumns()}
+            data={filtered}
+            getRowId={(row) => row.id}
+            onSelectedRowIdsChange={setSelectedIds}
+            toolbar={null}
+          />
+        </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filtered.map((r) => (
