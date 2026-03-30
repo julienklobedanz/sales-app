@@ -61,7 +61,6 @@ export async function finalizeWorkspaceAndProfile(params: {
   const { error } = await supabase.from('profiles').upsert({
     id: user.id,
     organization_id: organizationId,
-    updated_at: new Date().toISOString(),
   })
   if (error) return { success: false, error: error.message }
 

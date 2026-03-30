@@ -237,7 +237,7 @@ export async function removeMember(params: {
     }
     const { error } = await supabase
       .from('profiles')
-      .update({ organization_id: null, updated_at: new Date().toISOString() })
+      .update({ organization_id: null })
       .eq('id', params.profileId)
       .eq('organization_id', organizationId)
     if (error) return { success: false, error: error.message }
