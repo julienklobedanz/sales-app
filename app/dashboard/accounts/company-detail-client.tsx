@@ -20,8 +20,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { DataTable } from '@/components/ui/data-table'
 import { useRole } from '@/hooks/useRole'
-import { Building2Icon, Globe2, Loader2, MapPinIcon, Pencil, Plus, Sparkles, Trash2 } from 'lucide-react'
+import { Building2Icon, Globe2, Loader2, MapPinIcon, Pencil, Plus, Trash2 } from 'lucide-react'
 import type {
   AccountDealRow,
   CompanyRefRow,
@@ -35,7 +36,6 @@ import {
   createStakeholder,
   deleteContactPerson,
   deleteStakeholder,
-  suggestStrategyField,
   updateContactPerson,
   updateStakeholder,
   upsertCompanyStrategy,
@@ -85,6 +85,7 @@ export function CompanyDetailClient({
   const [competition, setCompetition] = useState(initialStrategy?.competition ?? '')
   const [nextSteps, setNextSteps] = useState(initialStrategy?.next_steps ?? '')
   const [strategySaving, setStrategySaving] = useState(false)
+  const [strategyEditing, setStrategyEditing] = useState(false)
 
   const lastSavedRef = useRef({
     goals: initialStrategy?.company_goals ?? '',
@@ -102,7 +103,13 @@ export function CompanyDetailClient({
   const [shName, setShName] = useState('')
   const [shTitle, setShTitle] = useState('')
   const [shRole, setShRole] = useState<StakeholderRole>('champion')
+  const [shInfluence, setShInfluence] = useState('')
+  const [shAttitude, setShAttitude] = useState('')
   const [shNotes, setShNotes] = useState('')
+  const [shLinkedIn, setShLinkedIn] = useState('')
+  const [shPriorities, setShPriorities] = useState('')
+  const [shLastContact, setShLastContact] = useState('')
+  const [shSentiment, setShSentiment] = useState('')
   const [stakeholderSaving, setStakeholderSaving] = useState(false)
 
   const [contactOpen, setContactOpen] = useState(false)
@@ -170,7 +177,13 @@ export function CompanyDetailClient({
     setShName(s?.name ?? '')
     setShTitle(s?.title ?? '')
     setShRole(s?.role ?? 'champion')
-    setShNotes((s as unknown as { priorities_topics?: string | null })?.priorities_topics ?? '')
+    setShInfluence((s as unknown as { influence_level?: string | null })?.influence_level ?? '')
+    setShAttitude((s as unknown as { attitude?: string | null })?.attitude ?? '')
+    setShNotes((s as unknown as { notes?: string | null })?.notes ?? '')
+    setShLinkedIn((s as unknown as { linkedin_url?: string | null })?.linkedin_url ?? '')
+    setShPriorities((s as unknown as { priorities_topics?: string | null })?.priorities_topics ?? '')
+    setShLastContact(((s as unknown as { last_contact_at?: string | null })?.last_contact_at ?? '')?.slice(0, 10))
+    setShSentiment((s as unknown as { sentiment?: string | null })?.sentiment ?? '')
     setStakeholderOpen(true)
   }
 
@@ -183,18 +196,29 @@ export function CompanyDetailClient({
         name: shName.trim(),
         title: shTitle.trim() || null,
         role: shRole,
-        priorities_topics: shNotes.trim() || null,
+        influence_level: shInfluence.trim() || null,
+        attitude: shAttitude.trim() || null,
+        notes: shNotes.trim() || null,
+        linkedin_url: shLinkedIn.trim() || null,
+        priorities_topics: shPriorities.trim() || null,
+        last_contact_at: shLastContact || null,
+        sentiment: shSentiment.trim() || null,
       }
-      const res = editingStakeholder
-        ? await updateStakeholder(editingStakeholder.id, payload)
-        : await createStakeholder(company.id, payload)
-      if (!res.success) return toast.error(res.error ?? 'Speichern fehlgeschlagen.')
-      toast.success(editingStakeholder ? 'Stakeholder aktualisiert.' : 'Stakeholder hinzugefügt.')
-      setStakeholderOpen(false)
       if (editingStakeholder) {
+        const res = await updateStakeholder(editingStakeholder.id, payload)
+        if (!res.success) return toast.error(res.error ?? 'Speichern fehlgeschlagen.')
+        toast.success('Stakeholder aktualisiert.')
+        setStakeholderOpen(false)
         setStakeholders((prev) =>
           prev.map((p) => (p.id === editingStakeholder.id ? ({ ...p, ...payload } as StakeholderRow) : p))
         )
+      } else {
+        const res = await createStakeholder(company.id, payload)
+        if (!res.success) return toast.error(res.error ?? 'Speichern fehlgeschlagen.')
+        toast.success('Stakeholder hinzugefügt.')
+        setStakeholderOpen(false)
+        const created = res.stakeholder
+        if (created) setStakeholders((prev) => [...prev, created])
       }
     } finally {
       setStakeholderSaving(false)
@@ -230,14 +254,21 @@ export function CompanyDetailClient({
         phone: cPhone.trim() || null,
         role: cRole.trim() || null,
       }
-      const res = editingContact
-        ? await updateContactPerson(editingContact.id, payload)
-        : await createContactPerson(company.id, payload)
-      if (!res.success) return toast.error(res.error ?? 'Speichern fehlgeschlagen.')
-      toast.success(editingContact ? 'Kontakt aktualisiert.' : 'Kontakt hinzugefügt.')
-      setContactOpen(false)
       if (editingContact) {
-        setContacts((prev) => prev.map((p) => (p.id === editingContact.id ? ({ ...p, ...payload } as ContactPersonRow) : p)))
+        const res = await updateContactPerson(editingContact.id, payload)
+        if (!res.success) return toast.error(res.error ?? 'Speichern fehlgeschlagen.')
+        toast.success('Kontakt aktualisiert.')
+        setContactOpen(false)
+        setContacts((prev) =>
+          prev.map((p) => (p.id === editingContact.id ? ({ ...p, ...payload } as ContactPersonRow) : p))
+        )
+      } else {
+        const res = await createContactPerson(company.id, payload)
+        if (!res.success) return toast.error(res.error ?? 'Speichern fehlgeschlagen.')
+        toast.success('Kontakt hinzugefügt.')
+        setContactOpen(false)
+        const created = res.contact
+        if (created) setContacts((prev) => [...prev, created])
       }
     } finally {
       setContactSaving(false)
@@ -259,20 +290,6 @@ export function CompanyDetailClient({
         {cfg.label}
       </Badge>
     )
-  }
-
-  const runSuggestion = async (field: (typeof strategyFields)[number]['key'], currentText: string) => {
-    try {
-      const res = await suggestStrategyField({ companyId: company.id, field, currentText })
-      if (!res.success || !res.suggestion) {
-        toast.error(res.error ?? 'KI-Vorschlag fehlgeschlagen.')
-        return null
-      }
-      return res.suggestion
-    } catch {
-      toast.error('KI-Vorschlag fehlgeschlagen.')
-      return null
-    }
   }
 
   return (
@@ -331,45 +348,78 @@ export function CompanyDetailClient({
             <CardHeader>
               <CardTitle>Strategy</CardTitle>
               <CardDescription>
-                {isSales ? 'Read-only – nur Account Manager/Admin können bearbeiten.' : 'Inline editieren. Autosave bei Blur.'}
+                {isSales
+                  ? 'Read-only – nur Account Manager/Admin können bearbeiten.'
+                  : 'Bearbeiten über den Button „Bearbeiten“.'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {strategyFields.map((f) => (
-                <div key={f.key} className="space-y-2">
-                  <div className="flex items-center justify-between gap-3">
-                    <Label>{f.label}</Label>
-                    {canEdit && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={async () => {
-                          const s = await runSuggestion(f.key, f.value)
-                          if (s) f.set(s)
-                        }}
-                        disabled={strategySaving}
-                      >
-                        <Sparkles className="mr-2 h-4 w-4" />
-                        KI-Vorschlag
+              {!strategyEditing ? (
+                <div className="space-y-6">
+                  {strategyFields.map((f) => (
+                    <div key={f.key} className="space-y-2">
+                      <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        {f.label}
+                      </div>
+                      <div className="whitespace-pre-wrap rounded-lg border bg-background px-3 py-2 text-sm">
+                        {f.value.trim().length ? f.value : '—'}
+                      </div>
+                    </div>
+                  ))}
+                  {canEdit ? (
+                    <div className="flex justify-end">
+                      <Button type="button" variant="outline" onClick={() => setStrategyEditing(true)}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Bearbeiten
                       </Button>
-                    )}
-                  </div>
-                  <Textarea
-                    value={f.value}
-                    onChange={(e) => f.set(e.target.value)}
-                    onBlur={() => void saveStrategy({ silent: true })}
-                    disabled={!canEdit || strategySaving}
-                    className="min-h-[110px]"
-                  />
+                    </div>
+                  ) : null}
                 </div>
-              ))}
-              <div className="flex items-center justify-end gap-2">
-                <Button type="button" onClick={() => void saveStrategy()} disabled={!canEdit || strategySaving}>
-                  {strategySaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Speichern
-                </Button>
-              </div>
+              ) : (
+                <div className="space-y-6">
+                  {strategyFields.map((f) => (
+                    <div key={f.key} className="space-y-2">
+                      <Label>{f.label}</Label>
+                      <Textarea
+                        value={f.value}
+                        onChange={(e) => f.set(e.target.value)}
+                        disabled={!canEdit || strategySaving}
+                        className="min-h-[110px]"
+                      />
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-end gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        // Reset auf letzten Save/Initial
+                        const last = lastSavedRef.current
+                        setGoals(last.goals)
+                        setValueProposition(last.valueProposition)
+                        setRedFlags(last.redFlags)
+                        setCompetition(last.competition)
+                        setNextSteps(last.nextSteps)
+                        setStrategyEditing(false)
+                      }}
+                      disabled={strategySaving}
+                    >
+                      Abbrechen
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={async () => {
+                        await saveStrategy()
+                        setStrategyEditing(false)
+                      }}
+                      disabled={!canEdit || strategySaving}
+                    >
+                      {strategySaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Speichern
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -393,39 +443,40 @@ export function CompanyDetailClient({
               {stakeholders.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Noch keine Stakeholder.</p>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Titel</TableHead>
-                      <TableHead>Rolle</TableHead>
-                      <TableHead className="text-right">Aktionen</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {stakeholders.map((s) => (
-                      <TableRow key={s.id}>
-                        <TableCell className="font-medium">{s.name}</TableCell>
-                        <TableCell className="text-muted-foreground">{s.title ?? '—'}</TableCell>
-                        <TableCell>{roleBadge(s.role)}</TableCell>
-                        <TableCell className="text-right">
+                <DataTable
+                  data={stakeholders}
+                  initialPageSize={10}
+                  getRowId={(r) => r.id}
+                  columns={[
+                    { accessorKey: 'name', header: 'Name', cell: ({ row }) => <div className="font-medium">{row.original.name}</div> },
+                    { accessorKey: 'title', header: 'Titel', cell: ({ row }) => <div className="text-muted-foreground">{row.original.title ?? '—'}</div> },
+                    { accessorKey: 'role', header: 'Rolle', cell: ({ row }) => roleBadge(row.original.role) },
+                    { accessorKey: 'influence_level', header: 'Einfluss', cell: ({ row }) => <div className="text-muted-foreground">{(row.original as any).influence_level ?? '—'}</div> },
+                    { accessorKey: 'attitude', header: 'Haltung', cell: ({ row }) => <div className="text-muted-foreground">{(row.original as any).attitude ?? '—'}</div> },
+                    { accessorKey: 'last_contact_at', header: 'Letzter Kontakt', cell: ({ row }) => <div className="text-muted-foreground">{((row.original as any).last_contact_at as string | null)?.slice(0, 10) ?? '—'}</div> },
+                    {
+                      id: 'actions',
+                      header: () => <div className="text-right">Aktionen</div>,
+                      cell: ({ row }) => (
+                        <div className="text-right">
                           {canEdit ? (
                             <div className="inline-flex items-center gap-1">
-                              <Button type="button" variant="ghost" size="icon" onClick={() => openStakeholderDialog(s)}>
+                              <Button type="button" variant="ghost" size="icon" onClick={() => openStakeholderDialog(row.original)}>
                                 <Pencil className="h-4 w-4" />
                               </Button>
-                              <Button type="button" variant="ghost" size="icon" onClick={() => void removeStakeholder(s.id)}>
+                              <Button type="button" variant="ghost" size="icon" onClick={() => void removeStakeholder(row.original.id)}>
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
                           ) : (
                             <span className="text-xs text-muted-foreground">—</span>
                           )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                        </div>
+                      ),
+                    },
+                  ]}
+                  showViewOptions
+                />
               )}
             </CardContent>
           </Card>
@@ -602,6 +653,30 @@ export function CompanyDetailClient({
               </Select>
             </div>
             <div className="grid gap-2">
+              <Label>Einfluss</Label>
+              <Input value={shInfluence} onChange={(e) => setShInfluence(e.target.value)} disabled={stakeholderSaving} placeholder="z. B. hoch / mittel / niedrig" />
+            </div>
+            <div className="grid gap-2">
+              <Label>Haltung</Label>
+              <Input value={shAttitude} onChange={(e) => setShAttitude(e.target.value)} disabled={stakeholderSaving} placeholder="z. B. Champion / neutral / kritisch" />
+            </div>
+            <div className="grid gap-2">
+              <Label>LinkedIn</Label>
+              <Input value={shLinkedIn} onChange={(e) => setShLinkedIn(e.target.value)} disabled={stakeholderSaving} placeholder="https://…" />
+            </div>
+            <div className="grid gap-2">
+              <Label>Prioritäten / Topics</Label>
+              <Textarea value={shPriorities} onChange={(e) => setShPriorities(e.target.value)} disabled={stakeholderSaving} />
+            </div>
+            <div className="grid gap-2">
+              <Label>Letzter Kontakt</Label>
+              <Input type="date" value={shLastContact} onChange={(e) => setShLastContact(e.target.value)} disabled={stakeholderSaving} />
+            </div>
+            <div className="grid gap-2">
+              <Label>Sentiment</Label>
+              <Input value={shSentiment} onChange={(e) => setShSentiment(e.target.value)} disabled={stakeholderSaving} placeholder="z. B. positiv / neutral / negativ" />
+            </div>
+            <div className="grid gap-2">
               <Label>Notizen</Label>
               <Textarea value={shNotes} onChange={(e) => setShNotes(e.target.value)} disabled={stakeholderSaving} />
             </div>
@@ -624,6 +699,10 @@ export function CompanyDetailClient({
             <DialogTitle>{editingContact ? 'Kontakt bearbeiten' : 'Kontakt hinzufügen'}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4">
+            <div className="grid gap-2">
+              <Label>Account</Label>
+              <Input value={company.name} disabled />
+            </div>
             <div className="grid gap-2">
               <Label>Vorname</Label>
               <Input value={cFirst} onChange={(e) => setCFirst(e.target.value)} disabled={contactSaving} />

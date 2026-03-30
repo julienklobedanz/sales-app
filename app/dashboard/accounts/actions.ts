@@ -28,6 +28,9 @@ export type StakeholderRow = {
   name: string
   title: string | null
   role: StakeholderRole
+  influence_level?: string | null
+  attitude?: string | null
+  notes?: string | null
   linkedin_url?: string | null
   priorities_topics?: string | null
   last_contact_at?: string | null
@@ -335,26 +338,36 @@ export async function createStakeholder(
     name: string
     title?: string | null
     role: StakeholderRole
+    influence_level?: string | null
+    attitude?: string | null
+    notes?: string | null
     linkedin_url?: string | null
     priorities_topics?: string | null
     last_contact_at?: string | null
     sentiment?: string | null
   }
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; stakeholder?: StakeholderRow; error?: string }> {
   const supabase = await createServerSupabaseClient()
-  const { error } = await supabase.from('stakeholders').insert({
-    company_id: companyId,
-    name: payload.name.trim(),
-    title: payload.title?.trim() || null,
-    role: payload.role,
-    linkedin_url: payload.linkedin_url?.trim() || null,
-    priorities_topics: payload.priorities_topics?.trim() || null,
-    last_contact_at: payload.last_contact_at || null,
-    sentiment: payload.sentiment?.trim() || null,
-  })
+  const { data, error } = await supabase
+    .from('stakeholders')
+    .insert({
+      company_id: companyId,
+      name: payload.name.trim(),
+      title: payload.title?.trim() || null,
+      role: payload.role,
+      influence_level: payload.influence_level?.trim() || null,
+      attitude: payload.attitude?.trim() || null,
+      notes: payload.notes?.trim() || null,
+      linkedin_url: payload.linkedin_url?.trim() || null,
+      priorities_topics: payload.priorities_topics?.trim() || null,
+      last_contact_at: payload.last_contact_at || null,
+      sentiment: payload.sentiment?.trim() || null,
+    })
+    .select('*')
+    .single()
   if (error) return { success: false, error: error.message }
   revalidatePath(`/dashboard/accounts/${companyId}`)
-  return { success: true }
+  return { success: true, stakeholder: data as StakeholderRow }
 }
 
 export async function updateStakeholder(
@@ -363,6 +376,9 @@ export async function updateStakeholder(
     name?: string
     title?: string | null
     role?: StakeholderRole
+    influence_level?: string | null
+    attitude?: string | null
+    notes?: string | null
     linkedin_url?: string | null
     priorities_topics?: string | null
     last_contact_at?: string | null
@@ -379,6 +395,9 @@ export async function updateStakeholder(
   if (payload.name !== undefined) update.name = payload.name.trim()
   if (payload.title !== undefined) update.title = payload.title?.trim() || null
   if (payload.role !== undefined) update.role = payload.role
+  if (payload.influence_level !== undefined) update.influence_level = payload.influence_level?.trim() || null
+  if (payload.attitude !== undefined) update.attitude = payload.attitude?.trim() || null
+  if (payload.notes !== undefined) update.notes = payload.notes?.trim() || null
   if (payload.linkedin_url !== undefined) update.linkedin_url = payload.linkedin_url?.trim() || null
   if (payload.priorities_topics !== undefined) update.priorities_topics = payload.priorities_topics?.trim() || null
   if (payload.last_contact_at !== undefined) update.last_contact_at = payload.last_contact_at || null
@@ -446,19 +465,40 @@ export async function createContactPerson(
     phone?: string | null
     role?: string | null
   }
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; contact?: ContactPersonRow; error?: string }> {
   const supabase = await createServerSupabaseClient()
-  const { error } = await supabase.from('contact_persons').insert({
+  // Einige Deployments verlangen organization_id auf contact_persons.
+  const [{ data: company }, { data: profile }] = await Promise.all([
+    supabase.from('companies').select('organization_id').eq('id', companyId).single(),
+    supabase
+      .from('profiles')
+      .select('organization_id')
+      .eq('id', (await supabase.auth.getUser()).data.user?.id)
+      .single(),
+  ])
+  const organization_id =
+    (company as { organization_id?: string | null } | null)?.organization_id ??
+    (profile as { organization_id?: string | null } | null)?.organization_id ??
+    null
+
+  const insertRow: Record<string, unknown> = {
     company_id: companyId,
     first_name: payload.first_name?.trim() || null,
     last_name: payload.last_name?.trim() || null,
     email: payload.email?.trim() || null,
     phone: payload.phone?.trim() || null,
     role: payload.role?.trim() || null,
-  })
+  }
+  if (organization_id) insertRow.organization_id = organization_id
+
+  const { data, error } = await supabase
+    .from('contact_persons')
+    .insert(insertRow)
+    .select('*')
+    .single()
   if (error) return { success: false, error: error.message }
   revalidatePath(`/dashboard/accounts/${companyId}`)
-  return { success: true }
+  return { success: true, contact: data as ContactPersonRow }
 }
 
 export async function updateContactPerson(
@@ -469,6 +509,7 @@ export async function updateContactPerson(
     email?: string | null
     phone?: string | null
     role?: string | null
+    company_id?: string | null
   }
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createServerSupabaseClient()
@@ -483,6 +524,7 @@ export async function updateContactPerson(
   if (payload.email !== undefined) update.email = payload.email?.trim() || null
   if (payload.phone !== undefined) update.phone = payload.phone?.trim() || null
   if (payload.role !== undefined) update.role = payload.role?.trim() || null
+  if (payload.company_id !== undefined) update.company_id = payload.company_id || null
   const { error } = await supabase.from('contact_persons').update(update).eq('id', id)
   if (error) return { success: false, error: error.message }
   if (row?.company_id) revalidatePath(`/dashboard/accounts/${row.company_id}`)
@@ -652,96 +694,6 @@ export async function createCompany(payload: {
 
   revalidatePath('/dashboard/accounts')
   return { success: true, id: data?.id }
-}
-
-export async function suggestStrategyField(args: {
-  companyId: string
-  field: 'company_goals' | 'value_proposition' | 'red_flags' | 'competition' | 'next_steps'
-  currentText?: string | null
-}): Promise<{ success: boolean; suggestion?: string; error?: string }> {
-  const apiKey = process.env.OPENAI_API_KEY
-  if (!apiKey) return { success: false, error: 'OPENAI_API_KEY ist nicht gesetzt.' }
-
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { success: false, error: 'Nicht eingeloggt.' }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-  if (profile?.role === 'sales') return { success: false, error: 'Keine Berechtigung.' }
-
-  const [{ data: company }, strategy] = await Promise.all([
-    supabase
-      .from('companies')
-      .select('name, industry, headquarters, website_url')
-      .eq('id', args.companyId)
-      .single(),
-    getCompanyStrategy(args.companyId),
-  ])
-
-  const fieldLabel: Record<typeof args.field, string> = {
-    company_goals: 'Unternehmensziele',
-    value_proposition: 'Value Proposition (Warum gewinnen wir hier?)',
-    red_flags: 'Herausforderungen / Red Flags',
-    competition: 'Wettbewerb',
-    next_steps: 'Nächste Schritte',
-  }
-
-  const prompt = `Du bist ein Sales-Account-Strategist. Erstelle einen prägnanten, praxisnahen Vorschlag (Deutsch) für das Feld "${fieldLabel[args.field]}". 
-
-Kontext:
-- Account: ${company?.name ?? '—'}
-- Branche: ${company?.industry ?? '—'}
-- Ort: ${company?.headquarters ?? '—'}
-- Website: ${company?.website_url ?? '—'}
-
-Bereits vorhandene Strategy-Notizen:
-- Ziele: ${(strategy?.company_goals ?? '').slice(0, 1200)}
-- Value Prop: ${((strategy as { value_proposition?: string | null } | null)?.value_proposition ?? '').slice(0, 1200)}
-- Red Flags: ${(strategy?.red_flags ?? '').slice(0, 1200)}
-- Wettbewerb: ${(strategy?.competition ?? '').slice(0, 1200)}
-- Next Steps: ${(strategy?.next_steps ?? '').slice(0, 1200)}
-
-Aktueller Text im Ziel-Feld:
-${(args.currentText ?? '').slice(0, 2000) || '—'}
-
-Anforderungen:
-- Maximal 6 Bulletpoints ODER 2 kurze Absätze (je nachdem was besser passt)
-- Keine Floskeln, keine Einleitung, keine Überschriften
-- Keine Markdown-Listenzeichen am Zeilenanfang außer "-" (Bindestrich)
-- Keine sensiblen Daten erfinden; wenn unsicher, formuliere als Hypothese.`
-
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: 'Du hilfst beim Erstellen von Account-Strategie-Notizen für ein B2B-Sales-Tool.' },
-        { role: 'user', content: prompt },
-      ],
-      temperature: 0.4,
-      max_tokens: 350,
-    }),
-  })
-
-  if (!response.ok) {
-    const err = await response.text()
-    return { success: false, error: `OpenAI API: ${response.status} ${err}` }
-  }
-
-  const json = await response.json()
-  const content = json?.choices?.[0]?.message?.content?.trim()
-  if (!content) return { success: false, error: 'Keine Antwort erhalten.' }
-  return { success: true, suggestion: content }
 }
 
 export async function deleteCompanyWithData(
