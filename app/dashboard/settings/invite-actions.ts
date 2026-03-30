@@ -64,7 +64,10 @@ export type InviteByEmailResult =
   | { success: true }
   | { success: false; error: string }
 
-export async function inviteByEmail(email: string): Promise<InviteByEmailResult> {
+export async function inviteByEmail(
+  email: string,
+  role: 'admin' | 'sales' | 'account_manager' = 'sales'
+): Promise<InviteByEmailResult> {
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
@@ -102,6 +105,7 @@ export async function inviteByEmail(email: string): Promise<InviteByEmailResult>
     email: normalizedEmail,
     token,
     invited_by: user.id,
+    role,
     expires_at: expiresAt.toISOString(),
   })
 

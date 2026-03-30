@@ -43,9 +43,12 @@ export function LoginForm({ inviteToken = null }: { inviteToken?: string | null 
         />
       </div>
       {state?.error && (
-        <p className="text-sm text-destructive" role="alert">
+        <div
+          role="alert"
+          className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+        >
           {state.error}
-        </p>
+        </div>
       )}
       <Button type="submit" className="w-full h-10" disabled={isPending}>
         {isPending ? 'Wird angemeldet …' : 'Anmelden'}

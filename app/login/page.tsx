@@ -1,10 +1,20 @@
 import Link from 'next/link'
 import { AuthShell } from '@/components/auth-shell'
 import { LoginForm } from './login-form'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 
 type Props = { searchParams: Promise<{ invite?: string }> }
 
 export default async function LoginPage({ searchParams }: Props) {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (user) {
+    redirect('/dashboard')
+  }
+
   const params = await searchParams
   const inviteToken = params.invite?.trim() || null
   const registerHref = inviteToken ? `/register?invite=${encodeURIComponent(inviteToken)}` : undefined

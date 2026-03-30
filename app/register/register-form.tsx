@@ -17,6 +17,19 @@ export function RegisterForm({ inviteToken = null }: { inviteToken?: string | nu
     <form action={formActionWithState} className="space-y-4">
       {inviteToken ? <input type="hidden" name="invite_token" value={inviteToken} /> : null}
       <div className="space-y-2">
+        <Label htmlFor="full_name">Name</Label>
+        <Input
+          id="full_name"
+          name="full_name"
+          type="text"
+          placeholder="Max Mustermann"
+          required
+          disabled={isPending}
+          autoComplete="name"
+          className="h-10"
+        />
+      </div>
+      <div className="space-y-2">
         <Label htmlFor="email">E-Mail</Label>
         <Input
           id="email"
@@ -44,9 +57,12 @@ export function RegisterForm({ inviteToken = null }: { inviteToken?: string | nu
         />
       </div>
       {state?.error && (
-        <p className="text-sm text-destructive" role="alert">
+        <div
+          role="alert"
+          className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+        >
           {state.error}
-        </p>
+        </div>
       )}
       {state?.success && (
         <p className="text-sm text-green-600 dark:text-green-400" role="status">
