@@ -4,6 +4,9 @@ import { useState, useRef, useEffect, type ComponentProps, type ReactNode } from
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Loader2, Building2Icon, Plus, Sparkles, Mail, Phone } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
+import { zodResolver } from '@hookform/resolvers/zod'
 import {
   Card,
   CardContent,
@@ -197,6 +200,7 @@ export function ReferenceForm({
 }) {
   const router = useRouter()
   const [editSubmitting, setEditSubmitting] = useState(false)
+  const [submitIntent, setSubmitIntent] = useState<'draft' | 'final'>('final')
   const [companyId, setCompanyId] = useState('')
   const [title, setTitle] = useState(initialData?.title ?? '')
   const [summary, setSummary] = useState(initialData?.summary ?? '')
@@ -394,39 +398,106 @@ export function ReferenceForm({
     return formData
   }
 
-  async function handleCreateSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (!title.trim()) {
-      toast.error('Titel ist ein Pflichtfeld.')
-      return
-    }
-    if (!isEditMode && !companyId && !newCompanyName.trim()) {
-      toast.error('Unternehmen ist ein Pflichtfeld.')
-      return
-    }
-    if (contactId === '__none__' || !contactId) {
-      toast.error('Ansprechpartner intern ist ein Pflichtfeld.')
-      return
-    }
-    if (projectStatus === '__none__' || !projectStatus) {
-      toast.error('Projektstatus ist ein Pflichtfeld.')
-      return
-    }
-    if (!projectStart.trim()) {
-      toast.error('Projektstart ist ein Pflichtfeld.')
-      return
-    }
-    if (projectStatus === 'completed' && !projectEnd.trim()) {
-      toast.error('Bei abgeschlossenem Projekt ist das Projektende erforderlich.')
-      return
-    }
-    setCreateSubmitting(true)
-    const form = event.currentTarget
-    const formData = buildFormData(form)
-    try {
-      const result = await createReference(formData)
-      if (result.success) {
-        toast.success('Referenz wurde angelegt.')
+  const requiredSchema = z
+    .object({
+      title: z.string().trim().min(1, 'Titel ist ein Pflichtfeld.'),
+      companyId: z.string().optional(),
+      newCompanyName: z.string().optional(),
+      customerChallenge: z.string().trim().min(1, 'Herausforderung ist ein Pflichtfeld.'),
+      ourSolution: z.string().trim().min(1, 'Lösung ist ein Pflichtfeld.'),
+    })
+    .superRefine((val, ctx) => {
+      const hasCompany = Boolean((val.companyId ?? '').trim()) || Boolean((val.newCompanyName ?? '').trim())
+      if (!hasCompany) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Unternehmen ist ein Pflichtfeld.',
+          path: ['companyId'],
+        })
+      }
+    })
+
+  type RequiredFields = z.infer<typeof requiredSchema>
+  const rhf = useForm<RequiredFields>({
+    resolver: zodResolver(requiredSchema),
+    defaultValues: {
+      title: initialData?.title ?? '',
+      companyId: initialData?.company_id ?? '',
+      newCompanyName: '',
+      customerChallenge: initialData?.customer_challenge ?? '',
+      ourSolution: initialData?.our_solution ?? '',
+    },
+  })
+
+  // RHF synchron halten (wir nutzen weiterhin controlled state Inputs im bestehenden Formular)
+  useEffect(() => {
+    rhf.setValue('title', title, { shouldValidate: false, shouldDirty: true })
+  }, [rhf, title])
+  useEffect(() => {
+    rhf.setValue('companyId', companyId, { shouldValidate: false, shouldDirty: true })
+  }, [rhf, companyId])
+  useEffect(() => {
+    rhf.setValue('newCompanyName', newCompanyName, { shouldValidate: false, shouldDirty: true })
+  }, [rhf, newCompanyName])
+  useEffect(() => {
+    rhf.setValue('customerChallenge', customerChallenge, { shouldValidate: false, shouldDirty: true })
+  }, [rhf, customerChallenge])
+  useEffect(() => {
+    rhf.setValue('ourSolution', ourSolution, { shouldValidate: false, shouldDirty: true })
+  }, [rhf, ourSolution])
+
+  const showFirstError = () => {
+    const e = rhf.formState.errors
+    const msg =
+      e.title?.message ||
+      e.companyId?.message ||
+      e.customerChallenge?.message ||
+      e.ourSolution?.message
+    if (msg) toast.error(msg)
+  }
+
+  const handleCreateSubmit = rhf.handleSubmit(
+    async (_values, event) => {
+      if (!event) return
+      event.preventDefault()
+      setCreateSubmitting(true)
+      const form = event.currentTarget
+      const formData = buildFormData(form)
+      try {
+        if (submitIntent === 'draft') formData.set('status', 'draft')
+        const result = await createReference(formData)
+        if (result.success) {
+          toast.success('Referenz wurde angelegt.')
+          if (onSuccess) {
+            onSuccess()
+            router.refresh()
+          } else {
+            router.push('/dashboard')
+            router.refresh()
+          }
+        } else {
+          toast.error(result.error)
+        }
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Fehler beim Anlegen')
+      } finally {
+        setCreateSubmitting(false)
+      }
+    },
+    () => showFirstError()
+  )
+
+  const handleEditSubmit = rhf.handleSubmit(
+    async (_values, event) => {
+      if (!event) return
+      event.preventDefault()
+      if (!initialData?.id) return
+      setEditSubmitting(true)
+      const formData = buildFormData(event.currentTarget)
+      try {
+        if (submitIntent === 'draft') formData.set('status', 'draft')
+        await updateReference(initialData.id, formData)
+        toast.success('Referenz erfolgreich aktualisiert')
         if (onSuccess) {
           onSuccess()
           router.refresh()
@@ -434,64 +505,32 @@ export function ReferenceForm({
           router.push('/dashboard')
           router.refresh()
         }
-      } else {
-        toast.error(result.error)
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Fehler beim Speichern')
+      } finally {
+        setEditSubmitting(false)
       }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Fehler beim Anlegen')
-    } finally {
-      setCreateSubmitting(false)
-    }
-  }
+    },
+    () => showFirstError()
+  )
 
-  async function handleEditSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (!initialData?.id) return
-    if (!title.trim()) {
-      toast.error('Titel ist ein Pflichtfeld.')
-      return
-    }
-    if (contactId === '__none__' || !contactId) {
-      toast.error('Ansprechpartner intern ist ein Pflichtfeld.')
-      return
-    }
-    if (projectStatus === '__none__' || !projectStatus) {
-      toast.error('Projektstatus ist ein Pflichtfeld.')
-      return
-    }
-    if (!projectStart.trim()) {
-      toast.error('Projektstart ist ein Pflichtfeld.')
-      return
-    }
-    if (projectStatus === 'completed' && !projectEnd.trim()) {
-      toast.error('Bei abgeschlossenem Projekt ist das Projektende erforderlich.')
-      return
-    }
-    setEditSubmitting(true)
-    const formData = buildFormData(event.currentTarget)
-    try {
-      await updateReference(initialData.id, formData)
-      toast.success('Referenz erfolgreich aktualisiert')
-      if (onSuccess) {
-        onSuccess()
-        router.refresh()
-      } else {
-        router.push('/dashboard')
-        router.refresh()
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Fehler beim Speichern')
-    } finally {
-      setEditSubmitting(false)
-    }
-  }
+  const magicImportRequestIdRef = useRef(0)
+  const lastMagicImportFileRef = useRef<File | null>(null)
 
   async function handleMagicImport(file: File) {
     const formData = new FormData()
     formData.set('file', file)
+    lastMagicImportFileRef.current = file
     setMagicImportLoading(true)
+    const requestId = ++magicImportRequestIdRef.current
     try {
-      const result = await extractDataFromDocument(formData)
+      const timeoutMs = 10_000
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('EXTRACT_TIMEOUT')), timeoutMs)
+      )
+      const result = await Promise.race([extractDataFromDocument(formData), timeout])
+      // Falls ein späteres Ergebnis eintrifft (z. B. Retry), ignorieren
+      if (requestId !== magicImportRequestIdRef.current) return
       if (result.success) {
         const d = result.data
         if (d.title != null) setTitle(d.title)
@@ -506,6 +545,12 @@ export function ReferenceForm({
         if (d.company_name != null) setNewCompanyName(d.company_name)
         if (d.customer_challenge != null) setCustomerChallenge(d.customer_challenge)
         if (d.our_solution != null) setOurSolution(d.our_solution)
+
+        // RHF values für Pflichtfelder sofort aktualisieren
+        if (d.title != null) rhf.setValue('title', d.title, { shouldValidate: false, shouldDirty: true })
+        if (d.company_name != null) rhf.setValue('newCompanyName', d.company_name, { shouldValidate: false, shouldDirty: true })
+        if (d.customer_challenge != null) rhf.setValue('customerChallenge', d.customer_challenge, { shouldValidate: false, shouldDirty: true })
+        if (d.our_solution != null) rhf.setValue('ourSolution', d.our_solution, { shouldValidate: false, shouldDirty: true })
         toast.success('Daten aus dem Dokument übernommen. Bitte prüfen und ggf. anpassen.')
       } else {
         toast.error(
@@ -515,6 +560,10 @@ export function ReferenceForm({
       }
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Extraktion fehlgeschlagen.'
+      if (message === 'EXTRACT_TIMEOUT') {
+        toast.error('KI-Extraktion dauert länger als 10 Sekunden. Bitte erneut versuchen.')
+        return
+      }
       // Vercel / Next.js gibt bei Proxy-/Timeout-Fehlern oft nur "Unexpected Server Response" zurück
       if (typeof message === 'string' && message.toLowerCase().includes('unexpected')) {
         toast.error(
@@ -1463,6 +1512,12 @@ export function ReferenceForm({
               onSubmit={handleEditSubmit}
               className="w-full min-w-0 space-y-6"
             >
+              {/* RHF: required fields are registered via hidden inputs */}
+              <input type="hidden" {...rhf.register('title')} value={title} readOnly />
+              <input type="hidden" {...rhf.register('companyId')} value={companyId} readOnly />
+              <input type="hidden" {...rhf.register('newCompanyName')} value={newCompanyName} readOnly />
+              <input type="hidden" {...rhf.register('customerChallenge')} value={customerChallenge} readOnly />
+              <input type="hidden" {...rhf.register('ourSolution')} value={ourSolution} readOnly />
               {renderFormContent()}
             </form>
           ) : (
@@ -1471,6 +1526,12 @@ export function ReferenceForm({
               onSubmit={handleCreateSubmit}
               className="w-full min-w-0 space-y-6"
             >
+              {/* RHF: required fields are registered via hidden inputs */}
+              <input type="hidden" {...rhf.register('title')} value={title} readOnly />
+              <input type="hidden" {...rhf.register('companyId')} value={companyId} readOnly />
+              <input type="hidden" {...rhf.register('newCompanyName')} value={newCompanyName} readOnly />
+              <input type="hidden" {...rhf.register('customerChallenge')} value={customerChallenge} readOnly />
+              <input type="hidden" {...rhf.register('ourSolution')} value={ourSolution} readOnly />
               {renderFormContent()}
             </form>
           )}
@@ -1480,14 +1541,6 @@ export function ReferenceForm({
       {/* Sticky Action Bar innerhalb des Formular-Containers */}
       <div className="sticky bottom-0 z-40 border-t bg-background/80 backdrop-blur mt-6">
         <div className="flex items-center justify-end gap-3 px-4 py-3">
-          <Button type="submit" form={formId} disabled={submitting}>
-            {submitting ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Plus className="mr-2 h-4 w-4" />
-            )}
-            {isEditMode ? 'Änderungen speichern' : 'Erstellen'}
-          </Button>
           <Button
             type="button"
             variant="outline"
@@ -1497,6 +1550,33 @@ export function ReferenceForm({
             }
           >
             Abbrechen
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={submitting}
+            onClick={() => {
+              setSubmitIntent('draft')
+              const el = document.getElementById(formId)
+              if (el && 'requestSubmit' in el) {
+                ;(el as HTMLFormElement).requestSubmit()
+              }
+            }}
+          >
+            Als Entwurf speichern
+          </Button>
+          <Button
+            type="submit"
+            form={formId}
+            disabled={submitting}
+            onClick={() => setSubmitIntent('final')}
+          >
+            {submitting ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="mr-2 h-4 w-4" />
+            )}
+            Speichern & Embedding starten
           </Button>
         </div>
       </div>

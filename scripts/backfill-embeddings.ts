@@ -6,6 +6,7 @@
  * Idempotent: nur NULL-Einträge werden befüllt. Referenzen ohne Textinhalt bleiben NULL.
  *
  * Abhängigkeit: KAN-21 (pgvector-Spalte references.embedding muss existieren).
+ * Optional: KAN-23 (references.embedding_updated_at, references.embedding_error).
  *
  * Voraussetzungen:
  * - SUPABASE_URL (oder NEXT_PUBLIC_SUPABASE_URL)
@@ -140,7 +141,11 @@ async function run() {
       try {
         const { error } = await supabase
           .from('references')
-          .update({ embedding: vector })
+          .update({
+            embedding: vector,
+            embedding_updated_at: new Date().toISOString(),
+            embedding_error: null,
+          })
           .eq('id', row.id)
         if (error) {
           console.error(`Update-Fehler für Referenz ${row.id}:`, error.message)

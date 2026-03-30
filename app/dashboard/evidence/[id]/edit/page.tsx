@@ -53,6 +53,7 @@ export default async function EditReferencePage({
       project_status,
       project_start,
       project_end,
+      created_by,
       companies ( name )
     `)
     .eq('id', id)
@@ -60,6 +61,14 @@ export default async function EditReferencePage({
 
   if (error || !row) {
     notFound()
+  }
+
+  // Ownership-Gating: AM darf nur eigene Referenzen bearbeiten, Admin alle.
+  if (role === 'account_manager') {
+    const createdBy = (row as unknown as { created_by?: string | null }).created_by ?? null
+    if (!createdBy || createdBy !== user.id) {
+      redirect(`/dashboard/evidence/${id}`)
+    }
   }
 
   // 2. Optionen für Dropdowns laden

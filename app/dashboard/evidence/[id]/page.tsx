@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { submitForApproval, toggleFavorite } from '@/app/dashboard/actions'
-import { Star } from 'lucide-react'
+import { Loader2, Star } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -64,6 +64,8 @@ export default async function EvidenceDetailPage({
       tags,
       created_at,
       updated_at,
+      embedding_updated_at,
+      embedding_error,
       customer_challenge,
       our_solution,
       volume_eur,
@@ -107,6 +109,9 @@ export default async function EvidenceDetailPage({
 
   const createdAt = (row as any).created_at ? new Date((row as any).created_at as string) : null
   const updatedAt = (row as any).updated_at ? new Date((row as any).updated_at as string) : null
+  const embeddingUpdatedAtRaw = (row as any).embedding_updated_at as string | null | undefined
+  const embeddingUpdatedAt = embeddingUpdatedAtRaw ? new Date(embeddingUpdatedAtRaw) : null
+  const embeddingError = ((row as any).embedding_error as string | null | undefined) ?? null
   const activities = [
     ...(createdAt
       ? [
@@ -249,6 +254,41 @@ export default async function EvidenceDetailPage({
                 <span className="text-muted-foreground">Wettbewerber</span>
                 <span className="font-medium">{(row as any).competitors ?? '—'}</span>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Embedding</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm">
+              {embeddingError ? (
+                <div className="space-y-2">
+                  <Badge variant="destructive">Fehlgeschlagen</Badge>
+                  <div className="text-xs text-muted-foreground break-words">
+                    {embeddingError}
+                  </div>
+                </div>
+              ) : embeddingUpdatedAt ? (
+                <div className="space-y-2">
+                  <Badge variant="secondary">Aktuell</Badge>
+                  <div className="text-xs text-muted-foreground">
+                    Stand:{' '}
+                    {embeddingUpdatedAt.toLocaleString('de-DE', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Wird erzeugt…</span>
+                </div>
+              )}
             </CardContent>
           </Card>
 
