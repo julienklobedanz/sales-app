@@ -448,11 +448,15 @@ export type ContactPersonRow = {
 
 export async function getContactsByCompanyId(companyId: string): Promise<ContactPersonRow[]> {
   const supabase = await createServerSupabaseClient()
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('contact_persons')
     .select('*')
     .eq('company_id', companyId)
     .order('created_at', { ascending: true })
+  if (error && (error.message ?? '').includes('company_id')) {
+    // DB noch ohne company_id-Spalte → keine Kontakte im Account-Detail anzeigen
+    return []
+  }
   return (data ?? []) as ContactPersonRow[]
 }
 
@@ -496,7 +500,16 @@ export async function createContactPerson(
     .insert(insertRow)
     .select('*')
     .single()
-  if (error) return { success: false, error: error.message }
+  if (error) {
+    if ((error.message ?? '').includes('company_id')) {
+      return {
+        success: false,
+        error:
+          "Kontakte können noch nicht einem Account zugeordnet werden, weil die Spalte 'contact_persons.company_id' in deiner DB fehlt. Bitte Migration ausführen und Schema-Cache refreshen.",
+      }
+    }
+    return { success: false, error: error.message }
+  }
   revalidatePath(`/dashboard/accounts/${companyId}`)
   return { success: true, contact: data as ContactPersonRow }
 }

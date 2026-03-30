@@ -20,7 +20,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { DataTable } from '@/components/ui/data-table'
 import { useRole } from '@/hooks/useRole'
 import { Building2Icon, Globe2, Loader2, MapPinIcon, Pencil, Plus, Trash2 } from 'lucide-react'
 import type {
@@ -346,12 +345,22 @@ export function CompanyDetailClient({
         <TabsContent value="strategy" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Strategy</CardTitle>
-              <CardDescription>
-                {isSales
-                  ? 'Read-only – nur Account Manager/Admin können bearbeiten.'
-                  : 'Bearbeiten über den Button „Bearbeiten“.'}
-              </CardDescription>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <CardTitle>Strategy</CardTitle>
+                  <CardDescription>
+                    {isSales
+                      ? 'Read-only – nur Account Manager/Admin können bearbeiten.'
+                      : 'Bearbeiten über den Button „Bearbeiten“.'}
+                  </CardDescription>
+                </div>
+                {!strategyEditing && canEdit ? (
+                  <Button type="button" variant="outline" onClick={() => setStrategyEditing(true)}>
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Bearbeiten
+                  </Button>
+                ) : null}
+              </div>
             </CardHeader>
             <CardContent className="space-y-6">
               {!strategyEditing ? (
@@ -366,14 +375,7 @@ export function CompanyDetailClient({
                       </div>
                     </div>
                   ))}
-                  {canEdit ? (
-                    <div className="flex justify-end">
-                      <Button type="button" variant="outline" onClick={() => setStrategyEditing(true)}>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Bearbeiten
-                      </Button>
-                    </div>
-                  ) : null}
+                  {/* Bearbeiten-Button sitzt im Header */}
                 </div>
               ) : (
                 <div className="space-y-6">
@@ -443,40 +445,51 @@ export function CompanyDetailClient({
               {stakeholders.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Noch keine Stakeholder.</p>
               ) : (
-                <DataTable
-                  data={stakeholders}
-                  initialPageSize={10}
-                  getRowId={(r) => r.id}
-                  columns={[
-                    { accessorKey: 'name', header: 'Name', cell: ({ row }) => <div className="font-medium">{row.original.name}</div> },
-                    { accessorKey: 'title', header: 'Titel', cell: ({ row }) => <div className="text-muted-foreground">{row.original.title ?? '—'}</div> },
-                    { accessorKey: 'role', header: 'Rolle', cell: ({ row }) => roleBadge(row.original.role) },
-                    { accessorKey: 'influence_level', header: 'Einfluss', cell: ({ row }) => <div className="text-muted-foreground">{(row.original as any).influence_level ?? '—'}</div> },
-                    { accessorKey: 'attitude', header: 'Haltung', cell: ({ row }) => <div className="text-muted-foreground">{(row.original as any).attitude ?? '—'}</div> },
-                    { accessorKey: 'last_contact_at', header: 'Letzter Kontakt', cell: ({ row }) => <div className="text-muted-foreground">{((row.original as any).last_contact_at as string | null)?.slice(0, 10) ?? '—'}</div> },
-                    {
-                      id: 'actions',
-                      header: () => <div className="text-right">Aktionen</div>,
-                      cell: ({ row }) => (
-                        <div className="text-right">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Titel</TableHead>
+                      <TableHead>Rolle</TableHead>
+                      <TableHead>Einfluss</TableHead>
+                      <TableHead>Haltung</TableHead>
+                      <TableHead>Letzter Kontakt</TableHead>
+                      <TableHead className="text-right">Aktionen</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {stakeholders.map((s) => (
+                      <TableRow key={s.id}>
+                        <TableCell className="font-medium">{s.name}</TableCell>
+                        <TableCell className="text-muted-foreground">{s.title ?? '—'}</TableCell>
+                        <TableCell>{roleBadge(s.role)}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {(s as unknown as { influence_level?: string | null }).influence_level ?? '—'}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {(s as unknown as { attitude?: string | null }).attitude ?? '—'}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {((s as unknown as { last_contact_at?: string | null }).last_contact_at ?? '')?.slice(0, 10) || '—'}
+                        </TableCell>
+                        <TableCell className="text-right">
                           {canEdit ? (
                             <div className="inline-flex items-center gap-1">
-                              <Button type="button" variant="ghost" size="icon" onClick={() => openStakeholderDialog(row.original)}>
+                              <Button type="button" variant="ghost" size="icon" onClick={() => openStakeholderDialog(s)}>
                                 <Pencil className="h-4 w-4" />
                               </Button>
-                              <Button type="button" variant="ghost" size="icon" onClick={() => void removeStakeholder(row.original.id)}>
+                              <Button type="button" variant="ghost" size="icon" onClick={() => void removeStakeholder(s.id)}>
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
                           ) : (
                             <span className="text-xs text-muted-foreground">—</span>
                           )}
-                        </div>
-                      ),
-                    },
-                  ]}
-                  showViewOptions
-                />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               )}
             </CardContent>
           </Card>
