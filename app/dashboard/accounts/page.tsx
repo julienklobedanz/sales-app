@@ -18,11 +18,35 @@ export default async function AccountsPage() {
 
   if (!profile) redirect('/onboarding')
 
-  const { data: companies } = await supabase
+  // is_favorite ist optional (Migration evtl. noch nicht ausgeführt) → fallback ohne Spalte
+  let companies:
+    | {
+        id: string
+        name: string
+        logo_url: string | null
+        website_url: string | null
+        headquarters: string | null
+        industry: string | null
+        is_favorite?: boolean | null
+      }[]
+    | null = null
+
+  const withFav = await supabase
     .from('companies')
     .select('id, name, logo_url, website_url, headquarters, industry, is_favorite')
     .eq('organization_id', profile.organization_id)
     .order('name')
+
+  if (withFav.error && (withFav.error.message ?? '').includes('is_favorite')) {
+    const withoutFav = await supabase
+      .from('companies')
+      .select('id, name, logo_url, website_url, headquarters, industry')
+      .eq('organization_id', profile.organization_id)
+      .order('name')
+    companies = (withoutFav.data ?? []).map((c) => ({ ...c, is_favorite: false }))
+  } else {
+    companies = withFav.data ?? []
+  }
 
   const companyIds = (companies ?? []).map((c) => c.id)
 

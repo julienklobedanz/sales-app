@@ -590,7 +590,16 @@ export async function toggleCompanyFavorite(
     .from('companies')
     .update({ is_favorite: isFavorite })
     .eq('id', companyId)
-  if (error) return { success: false, error: error.message }
+  if (error) {
+    if ((error.message ?? '').includes('is_favorite')) {
+      return {
+        success: false,
+        error:
+          "Favoriten sind in deiner DB noch nicht aktiviert (Spalte 'companies.is_favorite' fehlt). Bitte Migration ausführen und Schema-Cache refreshen.",
+      }
+    }
+    return { success: false, error: error.message }
+  }
   revalidatePath('/dashboard/accounts')
   revalidatePath(`/dashboard/accounts/${companyId}`)
   return { success: true }
@@ -602,6 +611,9 @@ export async function createCompany(payload: {
   industry?: string | null
   headquarters?: string | null
   logo_url?: string | null
+  employee_count?: number | null
+  description?: string | null
+  account_status?: string | null
 }): Promise<{ success: boolean; id?: string; error?: string }> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -629,7 +641,9 @@ export async function createCompany(payload: {
       industry: payload.industry?.trim() || null,
       headquarters: payload.headquarters?.trim() || null,
       logo_url: payload.logo_url?.trim() || null,
-      is_favorite: false,
+      employee_count: payload.employee_count ?? null,
+      description: payload.description?.trim() || null,
+      account_status: payload.account_status?.trim() || null,
     })
     .select('id')
     .single()

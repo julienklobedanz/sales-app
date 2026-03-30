@@ -26,6 +26,7 @@ import { Building2Icon, MapPinIcon, Globe2, Search, X, Loader2, Plus, Star, Brie
 import { deleteCompanyWithData, toggleCompanyFavorite } from './actions'
 import { useRole } from '@/hooks/useRole'
 import { CreateAccountDialog } from './create-account-dialog'
+import { toast } from 'sonner'
 
 export type CompanyCard = {
   id: string
@@ -182,7 +183,11 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                             e.preventDefault()
                             e.stopPropagation()
                             const next = !company.is_favorite
-                            void toggleCompanyFavorite(company.id, next)
+                            toggleCompanyFavorite(company.id, next).then((res) => {
+                              if (!res.success) {
+                                toast.error(res.error ?? 'Favorit konnte nicht gespeichert werden.')
+                              }
+                            })
                           }}
                           aria-label={company.is_favorite ? 'Als Favorit entfernen' : 'Als Favorit markieren'}
                         >
