@@ -10,6 +10,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import { createClient } from '@/lib/supabase/client'
 
 export function DashboardHeader() {
   const router = useRouter()

@@ -39,7 +39,7 @@ import {
   generateSummaryFromStory,
   getIncumbentSuggestions,
   getCompetitorSuggestions,
-} from '../actions'
+} from '../../actions'
 import { extractDataFromDocument } from './extract-reference-data'
 import { CreateContactDialog, type CreatedContact } from './create-contact-dialog'
 import type { ExternalContact } from './actions'

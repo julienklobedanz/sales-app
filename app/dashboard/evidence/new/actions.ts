@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { submitForApproval } from '../actions'
+import { submitForApproval } from '../../actions'
 
 // Mapping für Brandfetch → Formular (Industrie-Dropdown, deutsch)
 const INDUSTRIES_MAP: { keywords: string[]; value: string }[] = [
