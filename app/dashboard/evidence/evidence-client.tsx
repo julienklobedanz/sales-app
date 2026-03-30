@@ -17,18 +17,11 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuLabel,
+  DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu"
 
-type ViewMode = "table" | "cards"
 type StatusFilter = "all" | "approved" | "internal_only" | "draft" | "anonymized"
 
 function normalizeHaystack(r: ReferenceRow) {
@@ -63,7 +56,6 @@ export function EvidenceClient({
 
   const [query, setQuery] = React.useState("")
   const [status, setStatus] = React.useState<StatusFilter>("all")
-  const [view, setView] = React.useState<ViewMode>("table")
   const [selectedIds, setSelectedIds] = React.useState<string[]>([])
 
   const filtered = React.useMemo(() => {
@@ -123,29 +115,6 @@ export function EvidenceClient({
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="inline-flex rounded-md border p-1">
-            <button
-              type="button"
-              className={[
-                "h-9 px-3 rounded-md text-sm",
-                view === "table" ? "bg-muted" : "hover:bg-muted/60",
-              ].join(" ")}
-              onClick={() => setView("table")}
-            >
-              Table
-            </button>
-            <button
-              type="button"
-              className={[
-                "h-9 px-3 rounded-md text-sm",
-                view === "cards" ? "bg-muted" : "hover:bg-muted/60",
-              ].join(" ")}
-              onClick={() => setView("cards")}
-            >
-              Cards
-            </button>
-          </div>
-
           {canCreate ? (
             <Button asChild size="sm">
               <Link href="/dashboard/evidence/new">Add Reference</Link>
@@ -195,31 +164,33 @@ export function EvidenceClient({
             </div>
           </CardContent>
         </Card>
-      ) : view === "table" ? (
+      ) : (
         <div className="space-y-4">
           {selectedIds.length ? (
             <div className="fixed bottom-6 left-1/2 z-50 w-[min(720px,calc(100vw-24px))] -translate-x-1/2">
-              <ContextMenu>
-                <ContextMenuTrigger asChild>
-                  <div className="flex items-center justify-between rounded-lg border bg-background/95 px-4 py-3 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/75">
-                    <div className="text-sm text-muted-foreground">
-                      {selectedIds.length} ausgewählt
-                    </div>
+              <div className="flex items-center justify-between rounded-lg border bg-background/95 px-4 py-3 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/75">
+                <div className="text-sm text-muted-foreground">
+                  {selectedIds.length} ausgewählt
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="gap-2">
                       Aktionen
                     </Button>
-                  </div>
-                </ContextMenuTrigger>
-                <ContextMenuContent>
-                  <ContextMenuItem disabled>PDF exportieren</ContextMenuItem>
-                  <ContextMenuItem disabled>Portfolio erstellen</ContextMenuItem>
-                  <ContextMenuSeparator />
-                  <ContextMenuItem disabled={isSales}>Anonymisieren</ContextMenuItem>
-                  <ContextMenuItem variant="destructive" disabled={isSales}>
-                    Löschen
-                  </ContextMenuItem>
-                </ContextMenuContent>
-              </ContextMenu>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Bulk-Aktionen</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem disabled>PDF exportieren</DropdownMenuItem>
+                    <DropdownMenuItem disabled>Portfolio erstellen</DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem disabled={isSales}>Anonymisieren</DropdownMenuItem>
+                    <DropdownMenuItem disabled={isSales} className="text-destructive focus:text-destructive">
+                      Löschen
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           ) : null}
 
@@ -230,41 +201,6 @@ export function EvidenceClient({
             onSelectedRowIdsChange={setSelectedIds}
             toolbar={null}
           />
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((r) => (
-            <Card key={r.id} className="hover:bg-muted/30 transition-colors">
-              <CardHeader className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <StatusBadge status={r.status} />
-                  <span className="text-xs text-muted-foreground truncate">{r.company_name}</span>
-                </div>
-                <CardTitle className="text-base">
-                  <Link href={`/dashboard/evidence/${r.id}`} className="hover:underline">
-                    {r.title}
-                  </Link>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="text-sm text-muted-foreground">
-                  {r.industry ?? "—"}
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  {(r.tags ?? "")
-                    .split(",")
-                    .map((t) => t.trim())
-                    .filter(Boolean)
-                    .slice(0, 6)
-                    .map((t) => (
-                      <Badge key={t} variant="secondary">
-                        {t}
-                      </Badge>
-                    ))}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
         </div>
       )}
     </div>
