@@ -1,5 +1,5 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ArrowLeftIcon } from 'lucide-react'
@@ -14,6 +14,16 @@ export default async function EditReferencePage({
   const { id } = await params
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { data: me } = await supabase
+    .from('profiles')
+    .select('role, organization_id')
+    .eq('id', user.id)
+    .single()
+  if (!me) redirect('/onboarding')
+  const role = (me as { role?: 'admin' | 'sales' | 'account_manager' }).role ?? 'sales'
+  if (role === 'sales') redirect(`/dashboard/evidence/${id}`)
 
   // 1. Referenz laden (mit contact_id)
   const { data: row, error } = await supabase
@@ -61,11 +71,7 @@ export default async function EditReferencePage({
     .from('contact_persons')
     .select('*')
     .order('last_name')
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', user?.id ?? '')
-    .single()
+  const profile = me as { organization_id?: string | null }
   const { data: externalContacts } = await supabase
     .from('external_contacts')
     .select('id, company_id, first_name, last_name, email, role, phone')
@@ -109,26 +115,26 @@ export default async function EditReferencePage({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="relative w-full max-w-4xl rounded-xl bg-background shadow-xl">
-        <div className="flex items-center justify-between border-b px-4 py-3">
-          <h1 className="text-base font-semibold tracking-tight">
-            Referenz bearbeiten
-          </h1>
-          <Link href="/dashboard">
-            <Button variant="ghost" size="icon" aria-label="Schließen">
-              <ArrowLeftIcon className="size-4" />
-            </Button>
-          </Link>
+    <div className="min-h-screen bg-background p-4 md:p-6">
+      <div className="mx-auto max-w-3xl space-y-6">
+        <Link href={`/dashboard/evidence/${id}`}>
+          <Button variant="ghost" size="sm" className="gap-2 -ml-2">
+            <ArrowLeftIcon className="size-4" />
+            Zurück zur Referenz
+          </Button>
+        </Link>
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold tracking-tight">Referenz bearbeiten</h1>
+          <p className="text-sm text-muted-foreground">
+            Prüfe die Felder und speichere deine Änderungen.
+          </p>
         </div>
-        <div className="max-h-[90vh] overflow-y-auto px-4 pb-4 pt-3">
-          <ReferenceForm
-            companies={companies ?? []}
-            contacts={contacts ?? []}
-            externalContacts={externalContacts ?? []}
-            initialData={initialData}
-          />
-        </div>
+        <ReferenceForm
+          companies={companies ?? []}
+          contacts={contacts ?? []}
+          externalContacts={externalContacts ?? []}
+          initialData={initialData}
+        />
       </div>
     </div>
   )

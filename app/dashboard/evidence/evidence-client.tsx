@@ -72,6 +72,7 @@ export function EvidenceClient({
   const [query, setQuery] = React.useState("")
   const [status, setStatus] = React.useState<StatusFilter>("all")
   const [view, setView] = React.useState<ViewMode>("table")
+  const [selectedIds, setSelectedIds] = React.useState<string[]>([])
 
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -198,35 +199,32 @@ export function EvidenceClient({
         </Card>
       ) : view === "table" ? (
         <div className="relative">
-          <div className="sticky bottom-4 z-10">
-            {/* Floating Bulk Bar (UI-only, Aktionen folgen in E6/E10) */}
-            <div className="pointer-events-none flex justify-center">
-              <div className="pointer-events-auto hidden" />
-            </div>
-          </div>
           <DataTable
             columns={evidenceColumns()}
             data={filtered}
+            getRowId={(row) => row.id}
+            onSelectedRowIdsChange={setSelectedIds}
             paginationLabel={({ pageIndex, pageSize, total }) => {
               const start = pageIndex * pageSize + 1
               const end = Math.min((pageIndex + 1) * pageSize, total)
               return `${start}–${end} von ${total} Referenzen`
             }}
           />
-          {/* Bulk-Bar: hängt an Table selection in nächstem Iterationsschritt an */}
-          <div className="mt-4 flex items-center justify-between rounded-lg border bg-background/95 px-4 py-3">
-            <div className="text-sm text-muted-foreground">0 ausgewählt</div>
+          <div className="mt-4 flex flex-col gap-3 rounded-lg border bg-background/95 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-sm text-muted-foreground">
+              {selectedIds.length} ausgewählt
+            </div>
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" disabled>
+              <Button variant="outline" size="sm" disabled={!selectedIds.length}>
                 PDF exportieren
               </Button>
-              <Button variant="outline" size="sm" disabled>
+              <Button variant="outline" size="sm" disabled={!selectedIds.length}>
                 Portfolio erstellen
               </Button>
-              <Button variant="outline" size="sm" disabled>
+              <Button variant="outline" size="sm" disabled={!selectedIds.length || isSales}>
                 Anonymisieren
               </Button>
-              <Button variant="destructive" size="sm" disabled>
+              <Button variant="destructive" size="sm" disabled={!selectedIds.length || isSales}>
                 Löschen
               </Button>
             </div>

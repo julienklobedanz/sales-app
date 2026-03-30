@@ -4,6 +4,7 @@ import * as React from "react"
 import {
   flexRender,
   type ColumnDef,
+  type RowSelectionState,
   type SortingState,
   getCoreRowModel,
   getFilteredRowModel,
@@ -28,6 +29,8 @@ export function DataTable<TData, TValue>({
   initialPageSize = 10,
   pageSizeOptions = [10, 20, 50],
   paginationLabel,
+  onSelectedRowIdsChange,
+  getRowId,
 }: {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
@@ -40,14 +43,20 @@ export function DataTable<TData, TValue>({
     total: number
     showing: number
   }) => React.ReactNode
+  onSelectedRowIdsChange?: (rowIds: string[]) => void
+  getRowId?: (originalRow: TData, index: number, parent?: any) => string
 }) {
   const [sorting, setSorting] = React.useState<SortingState>([])
+  const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({})
 
   const table = useReactTable({
     data,
     columns,
-    state: { sorting },
+    getRowId,
+    state: { sorting, rowSelection },
     onSortingChange: setSorting,
+    onRowSelectionChange: setRowSelection,
+    enableRowSelection: true,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -56,6 +65,12 @@ export function DataTable<TData, TValue>({
       pagination: { pageSize: initialPageSize },
     },
   })
+
+  React.useEffect(() => {
+    if (!onSelectedRowIdsChange) return
+    const ids = table.getSelectedRowModel().rows.map((r) => r.id)
+    onSelectedRowIdsChange(ids)
+  }, [onSelectedRowIdsChange, table, rowSelection])
 
   const total = data.length
   const pageIndex = table.getState().pagination.pageIndex
