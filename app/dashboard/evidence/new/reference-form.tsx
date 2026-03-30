@@ -1,12 +1,17 @@
 'use client'
 
-import { useState, useRef, useEffect, type ComponentProps, type ReactNode } from 'react'
+import {
+  useState,
+  useRef,
+  useEffect,
+  type ComponentProps,
+  type FormEvent,
+  type ReactNode,
+} from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Loader2, Building2Icon, Plus, Sparkles, Mail, Phone } from 'lucide-react'
-import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { zodResolver } from '@hookform/resolvers/zod'
 import {
   Card,
   CardContent,
@@ -201,7 +206,8 @@ export function ReferenceForm({
 }) {
   const router = useRouter()
   const [editSubmitting, setEditSubmitting] = useState(false)
-  const [companyId, setCompanyId] = useState('')
+  /** Beim Bearbeiten: sonst bleibt '' und Zod blockiert „Unternehmen“ zu Unrecht. */
+  const [companyId, setCompanyId] = useState(initialData?.company_id ?? '')
   const [title, setTitle] = useState(initialData?.title ?? '')
   const [summary, setSummary] = useState(initialData?.summary ?? '')
   const [industry, setIndustry] = useState(initialData?.industry ?? '')
@@ -376,23 +382,57 @@ export function ReferenceForm({
     setCustomerContactId(contact.id)
   }
 
-  function buildFormData(form: HTMLFormElement): FormData {
-    const formData = new FormData(form)
-    formData.set('tags', tags.join(','))
-    formData.set('nda_deal', ndaDeal ? '1' : '0')
-    if (volumeEur) {
-      const normalizedVolume = volumeEur.replace(/\./g, '')
-      formData.set('volume_eur', normalizedVolume)
-    }
-    formData.set('customer_contact_id', customer_contact_id === '__none__' ? '' : customer_contact_id)
+  function formatZodError(error: z.ZodError): string {
+    return (
+      error.issues.map((i) => i.message).join(' · ') || 'Bitte Pflichtfelder ausfüllen.'
+    )
+  }
+
+  /** Kein new FormData(DOM): doppelte name-Attribute lieferten teils den falschen ersten Wert. */
+  function appendSharedReferenceFields(fd: FormData) {
+    fd.set('title', title.trim())
+    fd.set('summary', summary.trim())
+    fd.set('industry', industry)
+    fd.set('country', country)
+    fd.set('employee_count', employeeCount)
+    fd.set('website', website.trim())
+    fd.set('customer_challenge', customerChallenge)
+    fd.set('our_solution', ourSolution)
+    fd.set('contactId', contactId === '__none__' ? '' : contactId)
+    fd.set('customer_contact_id', customer_contact_id === '__none__' ? '' : customer_contact_id)
     const selectedCustomer = displayCustomerContacts.find((c) => c.id === customer_contact_id)
-    const customerDisplay =
-      selectedCustomer
-        ? [selectedCustomer.first_name, selectedCustomer.last_name].filter(Boolean).join(' ') +
-          (selectedCustomer.role ? `, ${selectedCustomer.role}` : '')
-        : ''
-    formData.set('customer_contact', customerDisplay)
-    return formData
+    const customerDisplay = selectedCustomer
+      ? [selectedCustomer.first_name, selectedCustomer.last_name].filter(Boolean).join(' ') +
+        (selectedCustomer.role ? `, ${selectedCustomer.role}` : '')
+      : ''
+    fd.set('customer_contact', customerDisplay)
+    fd.set('project_status', projectStatus === '__none__' ? '' : projectStatus)
+    fd.set('project_start', projectStart)
+    fd.set('project_end', projectStatus === 'active' ? '' : projectEnd)
+    if (volumeEur) {
+      fd.set('volume_eur', volumeEur.replace(/\./g, ''))
+    }
+    fd.set('contract_type', contractType)
+    fd.set('incumbent_provider', incumbentProvider)
+    fd.set('competitors', competitors)
+    fd.set('status', status)
+    fd.set('nda_deal', ndaDeal ? '1' : '0')
+    fd.set('tags', tags.join(','))
+  }
+
+  function buildFormDataCreate(): FormData {
+    const fd = new FormData()
+    appendSharedReferenceFields(fd)
+    fd.set('companyId', companyId)
+    fd.set('newCompanyName', newCompanyName.trim())
+    return fd
+  }
+
+  function buildFormDataEdit(): FormData {
+    const fd = new FormData()
+    appendSharedReferenceFields(fd)
+    fd.set('company_name', editCompanyName.trim())
+    return fd
   }
 
   const requiredSchema = z
@@ -404,7 +444,8 @@ export function ReferenceForm({
       ourSolution: z.string().trim().min(1, 'Lösung ist ein Pflichtfeld.'),
     })
     .superRefine((val, ctx) => {
-      const hasCompany = Boolean((val.companyId ?? '').trim()) || Boolean((val.newCompanyName ?? '').trim())
+      const hasCompany =
+        Boolean((val.companyId ?? '').trim()) || Boolean((val.newCompanyName ?? '').trim())
       if (!hasCompany) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -414,131 +455,118 @@ export function ReferenceForm({
       }
     })
 
-  type RequiredFields = z.infer<typeof requiredSchema>
-  const rhf = useForm<RequiredFields>({
-    resolver: zodResolver(requiredSchema),
-    defaultValues: {
-      title: initialData?.title ?? '',
-      companyId: initialData?.company_id ?? '',
-      newCompanyName: '',
-      customerChallenge: initialData?.customer_challenge ?? '',
-      ourSolution: initialData?.our_solution ?? '',
-    },
+  const editRequiredSchema = z.object({
+    title: z.string().trim().min(1, 'Titel ist ein Pflichtfeld.'),
+    editCompanyName: z.string().trim().min(1, 'Unternehmen ist ein Pflichtfeld.'),
+    customerChallenge: z.string().trim().min(1, 'Herausforderung ist ein Pflichtfeld.'),
+    ourSolution: z.string().trim().min(1, 'Lösung ist ein Pflichtfeld.'),
   })
 
-  // RHF synchron halten (wir nutzen weiterhin controlled state Inputs im bestehenden Formular)
-  useEffect(() => {
-    rhf.setValue('title', title, { shouldValidate: false, shouldDirty: true })
-  }, [rhf, title])
-  useEffect(() => {
-    rhf.setValue('companyId', companyId, { shouldValidate: false, shouldDirty: true })
-  }, [rhf, companyId])
-  useEffect(() => {
-    rhf.setValue('newCompanyName', newCompanyName, { shouldValidate: false, shouldDirty: true })
-  }, [rhf, newCompanyName])
-  useEffect(() => {
-    rhf.setValue('customerChallenge', customerChallenge, { shouldValidate: false, shouldDirty: true })
-  }, [rhf, customerChallenge])
-  useEffect(() => {
-    rhf.setValue('ourSolution', ourSolution, { shouldValidate: false, shouldDirty: true })
-  }, [rhf, ourSolution])
-
-  const showFirstError = () => {
-    const e = rhf.formState.errors
-    const msg =
-      e.title?.message ||
-      e.companyId?.message ||
-      e.customerChallenge?.message ||
-      e.ourSolution?.message
-    if (msg) toast.error(msg)
-  }
-
-  const handleCreateSubmit = rhf.handleSubmit(
-    async (_values, event) => {
-      if (!event) return
-      event.preventDefault()
-      setCreateSubmitting(true)
-      const form = event.currentTarget
-      const formData = buildFormData(form)
-      try {
-        const result = await createReference(formData)
-        if (result.success) {
-          toast.success('Referenz wurde angelegt.')
-          // Upload im Hintergrund (nicht awaiten)
-          const refId = (result as unknown as { referenceId?: string; id?: string }).referenceId ?? (result as any).id
-          if (refId && selectedFile) {
-            void (async () => {
-              const supabase = createClient()
-              const { data: me } = await supabase.auth.getUser()
-              if (!me?.user) return
-              const { data: profile } = await supabase
-                .from('profiles')
-                .select('organization_id')
-                .eq('id', me.user.id)
-                .single()
-              const orgId = (profile as { organization_id?: string | null } | null)?.organization_id ?? null
-              if (!orgId) return
-              const safeName = selectedFile.name.replace(/[^a-zA-Z0-9.\\-_]/g, '_')
-              const storagePath = `${orgId}/${refId}/${Date.now()}-${safeName}`
-              const { data: uploadData, error: uploadError } = await supabase.storage
-                .from('references')
-                .upload(storagePath, selectedFile)
-              if (uploadError || !uploadData?.path) return
-              const { data: publicUrlData } = supabase.storage
-                .from('references')
-                .getPublicUrl(uploadData.path)
-              const originalUrl = publicUrlData?.publicUrl ?? null
-              await attachOriginalDocumentToReference({
-                referenceId: refId,
-                file_path: uploadData.path,
-                original_document_url: originalUrl,
-              })
-            })()
-          }
-          if (onSuccess) {
-            onSuccess()
-            router.refresh()
-          } else {
-            router.push('/dashboard/evidence')
-            router.refresh()
-          }
-        } else {
-          toast.error(result.error)
+  async function handleCreateSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const parsed = requiredSchema.safeParse({
+      title,
+      companyId,
+      newCompanyName,
+      customerChallenge,
+      ourSolution,
+    })
+    if (!parsed.success) {
+      toast.error(formatZodError(parsed.error))
+      return
+    }
+    if (projectStatus === 'completed' && !projectEnd.trim()) {
+      toast.error('Bei abgeschlossenem Projekt ist das Projektende erforderlich.')
+      return
+    }
+    setCreateSubmitting(true)
+    try {
+      const result = await createReference(buildFormDataCreate())
+      if (result.success) {
+        toast.success('Referenz wurde angelegt.')
+        const refId =
+          (result as unknown as { referenceId?: string; id?: string }).referenceId ??
+          (result as { id?: string }).id
+        if (refId && selectedFile) {
+          void (async () => {
+            const supabase = createClient()
+            const { data: me } = await supabase.auth.getUser()
+            if (!me?.user) return
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('organization_id')
+              .eq('id', me.user.id)
+              .single()
+            const orgId = (profile as { organization_id?: string | null } | null)?.organization_id ?? null
+            if (!orgId) return
+            const safeName = selectedFile.name.replace(/[^a-zA-Z0-9.\\-_]/g, '_')
+            const storagePath = `${orgId}/${refId}/${Date.now()}-${safeName}`
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('references')
+              .upload(storagePath, selectedFile)
+            if (uploadError || !uploadData?.path) return
+            const { data: publicUrlData } = supabase.storage
+              .from('references')
+              .getPublicUrl(uploadData.path)
+            const originalUrl = publicUrlData?.publicUrl ?? null
+            await attachOriginalDocumentToReference({
+              referenceId: refId,
+              file_path: uploadData.path,
+              original_document_url: originalUrl,
+            })
+          })()
         }
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Fehler beim Anlegen')
-      } finally {
-        setCreateSubmitting(false)
-      }
-    },
-    () => showFirstError()
-  )
-
-  const handleEditSubmit = rhf.handleSubmit(
-    async (_values, event) => {
-      if (!event) return
-      event.preventDefault()
-      if (!initialData?.id) return
-      setEditSubmitting(true)
-      const formData = buildFormData(event.currentTarget)
-      try {
-        await updateReference(initialData.id, formData)
-        toast.success('Referenz erfolgreich aktualisiert')
         if (onSuccess) {
           onSuccess()
           router.refresh()
         } else {
-          router.push('/dashboard')
+          router.push('/dashboard/evidence')
           router.refresh()
         }
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Fehler beim Speichern')
-      } finally {
-        setEditSubmitting(false)
+      } else {
+        toast.error(result.error)
       }
-    },
-    () => showFirstError()
-  )
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Fehler beim Anlegen')
+    } finally {
+      setCreateSubmitting(false)
+    }
+  }
+
+  async function handleEditSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    if (!initialData?.id) return
+    const parsed = editRequiredSchema.safeParse({
+      title,
+      editCompanyName,
+      customerChallenge,
+      ourSolution,
+    })
+    if (!parsed.success) {
+      toast.error(formatZodError(parsed.error))
+      return
+    }
+    if (projectStatus === 'completed' && !projectEnd.trim()) {
+      toast.error('Bei abgeschlossenem Projekt ist das Projektende erforderlich.')
+      return
+    }
+    setEditSubmitting(true)
+    try {
+      await updateReference(initialData.id, buildFormDataEdit())
+      toast.success('Referenz erfolgreich aktualisiert')
+      if (onSuccess) {
+        onSuccess()
+        router.refresh()
+      } else {
+        router.push('/dashboard/evidence')
+        router.refresh()
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Fehler beim Speichern')
+    } finally {
+      setEditSubmitting(false)
+    }
+  }
 
   const magicImportRequestIdRef = useRef(0)
   const lastMagicImportFileRef = useRef<File | null>(null)
@@ -571,12 +599,6 @@ export function ReferenceForm({
         if (d.company_name != null) setNewCompanyName(d.company_name)
         if (d.customer_challenge != null) setCustomerChallenge(d.customer_challenge)
         if (d.our_solution != null) setOurSolution(d.our_solution)
-
-        // RHF values für Pflichtfelder sofort aktualisieren
-        if (d.title != null) rhf.setValue('title', d.title, { shouldValidate: false, shouldDirty: true })
-        if (d.company_name != null) rhf.setValue('newCompanyName', d.company_name, { shouldValidate: false, shouldDirty: true })
-        if (d.customer_challenge != null) rhf.setValue('customerChallenge', d.customer_challenge, { shouldValidate: false, shouldDirty: true })
-        if (d.our_solution != null) rhf.setValue('ourSolution', d.our_solution, { shouldValidate: false, shouldDirty: true })
         toast.success('Daten aus dem Dokument übernommen. Bitte prüfen und ggf. anpassen.')
       } else {
         toast.error(
@@ -1535,29 +1557,19 @@ export function ReferenceForm({
           {isEditMode ? (
             <form
               id={formId}
+              noValidate
               onSubmit={handleEditSubmit}
               className="w-full min-w-0 space-y-6"
             >
-              {/* RHF: required fields are registered via hidden inputs */}
-              <input type="hidden" {...rhf.register('title')} value={title} readOnly />
-              <input type="hidden" {...rhf.register('companyId')} value={companyId} readOnly />
-              <input type="hidden" {...rhf.register('newCompanyName')} value={newCompanyName} readOnly />
-              <input type="hidden" {...rhf.register('customerChallenge')} value={customerChallenge} readOnly />
-              <input type="hidden" {...rhf.register('ourSolution')} value={ourSolution} readOnly />
               {renderFormContent()}
             </form>
           ) : (
             <form
               id={formId}
+              noValidate
               onSubmit={handleCreateSubmit}
               className="w-full min-w-0 space-y-6"
             >
-              {/* RHF: required fields are registered via hidden inputs */}
-              <input type="hidden" {...rhf.register('title')} value={title} readOnly />
-              <input type="hidden" {...rhf.register('companyId')} value={companyId} readOnly />
-              <input type="hidden" {...rhf.register('newCompanyName')} value={newCompanyName} readOnly />
-              <input type="hidden" {...rhf.register('customerChallenge')} value={customerChallenge} readOnly />
-              <input type="hidden" {...rhf.register('ourSolution')} value={ourSolution} readOnly />
               {renderFormContent()}
             </form>
           )}

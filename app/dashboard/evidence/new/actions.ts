@@ -566,6 +566,7 @@ export async function createReference(
   // daher wird der Status hier nicht mehr automatisch auf einen Zwischenstatus gesetzt.
 
   revalidatePath('/dashboard')
+  revalidatePath('/dashboard/evidence')
   return { success: true, referenceId: reference.id }
 }
 
