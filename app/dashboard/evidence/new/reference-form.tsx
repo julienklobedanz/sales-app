@@ -36,7 +36,8 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
-import { createReference, enrichAndSaveCompany, fetchCompanyEnrichment, searchCompanySuggestions } from './actions'
+import { attachOriginalDocumentToReference, createReference, enrichAndSaveCompany, fetchCompanyEnrichment, searchCompanySuggestions } from './actions'
+import { createClient } from '@/lib/supabase/client'
 import {
   updateReference,
   generateSummaryFromStory,
@@ -200,7 +201,6 @@ export function ReferenceForm({
 }) {
   const router = useRouter()
   const [editSubmitting, setEditSubmitting] = useState(false)
-  const [submitIntent, setSubmitIntent] = useState<'draft' | 'final'>('final')
   const [companyId, setCompanyId] = useState('')
   const [title, setTitle] = useState(initialData?.title ?? '')
   const [summary, setSummary] = useState(initialData?.summary ?? '')
@@ -378,9 +378,6 @@ export function ReferenceForm({
 
   function buildFormData(form: HTMLFormElement): FormData {
     const formData = new FormData(form)
-    if (selectedFile) {
-      formData.set('file', selectedFile)
-    }
     formData.set('tags', tags.join(','))
     formData.set('nda_deal', ndaDeal ? '1' : '0')
     if (volumeEur) {
@@ -464,10 +461,40 @@ export function ReferenceForm({
       const form = event.currentTarget
       const formData = buildFormData(form)
       try {
-        if (submitIntent === 'draft') formData.set('status', 'draft')
         const result = await createReference(formData)
         if (result.success) {
           toast.success('Referenz wurde angelegt.')
+          // Upload im Hintergrund (nicht awaiten)
+          const refId = (result as unknown as { referenceId?: string; id?: string }).referenceId ?? (result as any).id
+          if (refId && selectedFile) {
+            void (async () => {
+              const supabase = createClient()
+              const { data: me } = await supabase.auth.getUser()
+              if (!me?.user) return
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('organization_id')
+                .eq('id', me.user.id)
+                .single()
+              const orgId = (profile as { organization_id?: string | null } | null)?.organization_id ?? null
+              if (!orgId) return
+              const safeName = selectedFile.name.replace(/[^a-zA-Z0-9.\\-_]/g, '_')
+              const storagePath = `${orgId}/${refId}/${Date.now()}-${safeName}`
+              const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('references')
+                .upload(storagePath, selectedFile)
+              if (uploadError || !uploadData?.path) return
+              const { data: publicUrlData } = supabase.storage
+                .from('references')
+                .getPublicUrl(uploadData.path)
+              const originalUrl = publicUrlData?.publicUrl ?? null
+              await attachOriginalDocumentToReference({
+                referenceId: refId,
+                file_path: uploadData.path,
+                original_document_url: originalUrl,
+              })
+            })()
+          }
           if (onSuccess) {
             onSuccess()
             router.refresh()
@@ -495,7 +522,6 @@ export function ReferenceForm({
       setEditSubmitting(true)
       const formData = buildFormData(event.currentTarget)
       try {
-        if (submitIntent === 'draft') formData.set('status', 'draft')
         await updateReference(initialData.id, formData)
         toast.success('Referenz erfolgreich aktualisiert')
         if (onSuccess) {
@@ -1552,30 +1578,11 @@ export function ReferenceForm({
             Abbrechen
           </Button>
           <Button
-            type="button"
-            variant="outline"
-            disabled={submitting}
-            onClick={() => {
-              setSubmitIntent('draft')
-              const el = document.getElementById(formId)
-              if (el && 'requestSubmit' in el) {
-                ;(el as HTMLFormElement).requestSubmit()
-              }
-            }}
-          >
-            Als Entwurf speichern
-          </Button>
-          <Button
             type="submit"
             form={formId}
             disabled={submitting}
-            onClick={() => setSubmitIntent('final')}
           >
-            {submitting ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Plus className="mr-2 h-4 w-4" />
-            )}
+            <Plus className="mr-2 h-4 w-4" />
             Speichern
           </Button>
         </div>

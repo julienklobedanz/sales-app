@@ -519,7 +519,8 @@ export async function createReference(
     }
   }
 
-  const file = formData.get('file') as File | null
+  // Datei-Upload läuft client-seitig (instant save). Serverseitig ignorieren.
+  const file = null as File | null
 
   const { data: reference, error: refError } = await supabase
     .from('references')
@@ -563,36 +564,8 @@ export async function createReference(
     return { success: false, error: 'Referenz konnte nicht gespeichert werden.' }
   }
 
-  // Original-Dokument in den Storage hochladen (falls vorhanden)
-  if (file && file.size > 0) {
-    try {
-      const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')
-      const storagePath = `${organizationId}/${reference.id}/${Date.now()}-${safeName}`
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('references')
-        .upload(storagePath, file)
-      if (uploadError) {
-        console.error('[createReference] Upload fehlgeschlagen:', uploadError.message)
-      } else if (uploadData?.path) {
-        const { data: publicUrlData } = supabase.storage
-          .from('references')
-          .getPublicUrl(uploadData.path)
-        const originalUrl = publicUrlData?.publicUrl ?? null
-        const { error: updateFileError } = await supabase
-          .from('references')
-          .update({
-            file_path: uploadData.path,
-            original_document_url: originalUrl,
-          })
-          .eq('id', reference.id)
-        if (updateFileError) {
-          console.error('[createReference] Konnte file_path/original_document_url nicht speichern:', updateFileError.message)
-        }
-      }
-    } catch (e) {
-      console.error('[createReference] Unerwarteter Fehler beim Upload des Originaldokuments:', e)
-    }
-  }
+  // Original-Dokument Upload läuft client-seitig im Hintergrund, damit Speichern instant ist.
+  // Wir lassen file_path/original_document_url hier bewusst unverändert.
 
   // Embeddings werden non-blocking im Hintergrund erzeugt (EPIC 3: Trigger + Edge Function).
 
@@ -601,6 +574,29 @@ export async function createReference(
 
   revalidatePath('/dashboard')
   return { success: true, referenceId: reference.id }
+}
+
+export async function attachOriginalDocumentToReference(params: {
+  referenceId: string
+  file_path: string
+  original_document_url: string | null
+}): Promise<{ success: true } | { success: false; error: string }> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+
+  const { error } = await supabase
+    .from('references')
+    .update({
+      file_path: params.file_path,
+      original_document_url: params.original_document_url,
+    })
+    .eq('id', params.referenceId)
+
+  if (error) return { success: false, error: error.message }
+  return { success: true }
 }
 
 export async function createContact(formData: FormData) {
