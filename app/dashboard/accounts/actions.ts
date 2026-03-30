@@ -440,8 +440,11 @@ export type ContactPersonRow = {
   first_name: string | null
   last_name: string | null
   email: string | null
-  phone: string | null
-  role: string | null
+  phone?: string | null
+  linkedin_url?: string | null
+  role?: string | null
+  position?: string | null
+  avatar_url?: string | null
   created_at: string
   updated_at: string | null
 }
@@ -467,7 +470,9 @@ export async function createContactPerson(
     last_name?: string | null
     email?: string | null
     phone?: string | null
+    linkedin_url?: string | null
     role?: string | null
+    position?: string | null
   }
 ): Promise<{ success: boolean; contact?: ContactPersonRow; error?: string }> {
   const supabase = await createServerSupabaseClient()
@@ -489,9 +494,11 @@ export async function createContactPerson(
     company_id: companyId,
     first_name: payload.first_name?.trim() || null,
     last_name: payload.last_name?.trim() || null,
-    email: payload.email?.trim() || null,
+    email: payload.email?.trim().toLowerCase() || null,
     phone: payload.phone?.trim() || null,
+    linkedin_url: payload.linkedin_url?.trim() || null,
     role: payload.role?.trim() || null,
+    position: payload.position?.trim() || null,
   }
   if (organization_id) insertRow.organization_id = organization_id
 
@@ -521,7 +528,9 @@ export async function updateContactPerson(
     last_name?: string | null
     email?: string | null
     phone?: string | null
+    linkedin_url?: string | null
     role?: string | null
+    position?: string | null
     company_id?: string | null
   }
 ): Promise<{ success: boolean; error?: string }> {
@@ -534,9 +543,11 @@ export async function updateContactPerson(
   const update: Record<string, unknown> = { updated_at: new Date().toISOString() }
   if (payload.first_name !== undefined) update.first_name = payload.first_name?.trim() || null
   if (payload.last_name !== undefined) update.last_name = payload.last_name?.trim() || null
-  if (payload.email !== undefined) update.email = payload.email?.trim() || null
+  if (payload.email !== undefined) update.email = payload.email?.trim().toLowerCase() || null
   if (payload.phone !== undefined) update.phone = payload.phone?.trim() || null
+  if (payload.linkedin_url !== undefined) update.linkedin_url = payload.linkedin_url?.trim() || null
   if (payload.role !== undefined) update.role = payload.role?.trim() || null
+  if (payload.position !== undefined) update.position = payload.position?.trim() || null
   if (payload.company_id !== undefined) update.company_id = payload.company_id || null
   const { error } = await supabase.from('contact_persons').update(update).eq('id', id)
   if (error) return { success: false, error: error.message }

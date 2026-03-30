@@ -119,6 +119,8 @@ export function CompanyDetailClient({
   const [cPhone, setCPhone] = useState('')
   const [cRole, setCRole] = useState('')
   const [contactSaving, setContactSaving] = useState(false)
+  const [cPosition, setCPosition] = useState('')
+  const [cLinkedIn, setCLinkedIn] = useState('')
 
   const saveStrategy = async (opts?: { silent?: boolean }) => {
     if (!canEdit) return
@@ -239,6 +241,8 @@ export function CompanyDetailClient({
     setCEmail(c?.email ?? '')
     setCPhone(c?.phone ?? '')
     setCRole(c?.role ?? '')
+    setCPosition((c as unknown as { position?: string | null })?.position ?? '')
+    setCLinkedIn((c as unknown as { linkedin_url?: string | null })?.linkedin_url ?? '')
     setContactOpen(true)
   }
 
@@ -246,23 +250,45 @@ export function CompanyDetailClient({
     if (!canEdit) return
     setContactSaving(true)
     try {
-      const payload = {
-        first_name: cFirst.trim() || null,
-        last_name: cLast.trim() || null,
-        email: cEmail.trim() || null,
-        phone: cPhone.trim() || null,
-        role: cRole.trim() || null,
-      }
       if (editingContact) {
-        const res = await updateContactPerson(editingContact.id, payload)
+        const res = await updateContactPerson(editingContact.id, {
+          first_name: cFirst.trim() || null,
+          last_name: cLast.trim() || null,
+          email: cEmail.trim() || null,
+          phone: cPhone.trim() || null,
+          linkedin_url: cLinkedIn.trim() || null,
+          role: cRole.trim() || null,
+          position: cPosition.trim() || null,
+        })
         if (!res.success) return toast.error(res.error ?? 'Speichern fehlgeschlagen.')
         toast.success('Kontakt aktualisiert.')
         setContactOpen(false)
         setContacts((prev) =>
-          prev.map((p) => (p.id === editingContact.id ? ({ ...p, ...payload } as ContactPersonRow) : p))
+          prev.map((p) =>
+            p.id === editingContact.id
+              ? ({
+                  ...p,
+                  first_name: cFirst.trim() || null,
+                  last_name: cLast.trim() || null,
+                  email: cEmail.trim() || null,
+                  phone: cPhone.trim() || null,
+                  linkedin_url: cLinkedIn.trim() || null,
+                  role: cRole.trim() || null,
+                  position: cPosition.trim() || null,
+                } as ContactPersonRow)
+              : p
+          )
         )
       } else {
-        const res = await createContactPerson(company.id, payload)
+        const res = await createContactPerson(company.id, {
+          first_name: cFirst.trim() || null,
+          last_name: cLast.trim() || null,
+          email: cEmail.trim() || null,
+          phone: cPhone.trim() || null,
+          linkedin_url: cLinkedIn.trim() || null,
+          role: cRole.trim() || null,
+          position: cPosition.trim() || null,
+        })
         if (!res.success) return toast.error(res.error ?? 'Speichern fehlgeschlagen.')
         toast.success('Kontakt hinzugefügt.')
         setContactOpen(false)
@@ -520,7 +546,9 @@ export function CompanyDetailClient({
                       <TableHead>Name</TableHead>
                       <TableHead>E-Mail</TableHead>
                       <TableHead>Telefon</TableHead>
+                      <TableHead>LinkedIn</TableHead>
                       <TableHead>Rolle</TableHead>
+                      <TableHead>Position</TableHead>
                       <TableHead className="text-right">Aktionen</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -531,8 +559,25 @@ export function CompanyDetailClient({
                         <TableRow key={c.id}>
                           <TableCell className="font-medium">{name}</TableCell>
                           <TableCell className="text-muted-foreground">{c.email ?? '—'}</TableCell>
-                          <TableCell className="text-muted-foreground">{c.phone ?? '—'}</TableCell>
-                          <TableCell className="text-muted-foreground">{c.role ?? '—'}</TableCell>
+                          <TableCell className="text-muted-foreground">{(c.phone ?? '') || '—'}</TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {(c as unknown as { linkedin_url?: string | null }).linkedin_url ? (
+                              <a
+                                className="hover:underline"
+                                href={(c as unknown as { linkedin_url?: string | null }).linkedin_url as string}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                Link
+                              </a>
+                            ) : (
+                              '—'
+                            )}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">{(c.role ?? '') || '—'}</TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {((c as unknown as { position?: string | null }).position ?? '') || '—'}
+                          </TableCell>
                           <TableCell className="text-right">
                             {canEdit ? (
                               <div className="inline-flex items-center gap-1">
@@ -729,12 +774,20 @@ export function CompanyDetailClient({
               <Input value={cEmail} onChange={(e) => setCEmail(e.target.value)} disabled={contactSaving} />
             </div>
             <div className="grid gap-2">
+              <Label>Position</Label>
+              <Input value={cPosition} onChange={(e) => setCPosition(e.target.value)} disabled={contactSaving} placeholder="z. B. Head of Procurement" />
+            </div>
+            <div className="grid gap-2">
               <Label>Telefon</Label>
-              <Input value={cPhone} onChange={(e) => setCPhone(e.target.value)} disabled={contactSaving} />
+              <Input value={cPhone} onChange={(e) => setCPhone(e.target.value)} disabled={contactSaving} placeholder="(optional)" />
+            </div>
+            <div className="grid gap-2">
+              <Label>LinkedIn</Label>
+              <Input value={cLinkedIn} onChange={(e) => setCLinkedIn(e.target.value)} disabled={contactSaving} placeholder="https://… (optional)" />
             </div>
             <div className="grid gap-2">
               <Label>Rolle</Label>
-              <Input value={cRole} onChange={(e) => setCRole(e.target.value)} disabled={contactSaving} />
+              <Input value={cRole} onChange={(e) => setCRole(e.target.value)} disabled={contactSaving} placeholder="z. B. Economic Buyer (optional)" />
             </div>
           </div>
           <DialogFooter>
