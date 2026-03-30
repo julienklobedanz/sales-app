@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { SearchIcon } from "lucide-react"
+import { SearchIcon, SlidersHorizontal } from "lucide-react"
 
 import type { ReferenceRow } from "@/app/dashboard/actions"
 import { Button } from "@/components/ui/button"
@@ -12,6 +12,14 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { DataTable } from "@/components/ui/data-table"
 import { evidenceColumns } from "./columns"
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 type ViewMode = "table" | "cards"
 type StatusFilter = "all" | "approved" | "internal_only" | "draft" | "anonymized"
@@ -26,30 +34,7 @@ function normalizeHaystack(r: ReferenceRow) {
     .toLowerCase()
 }
 
-function StatusChip({
-  label,
-  active,
-  onClick,
-}: {
-  label: string
-  active: boolean
-  onClick: () => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={[
-        "h-9 rounded-full border px-3 text-sm transition-colors",
-        active
-          ? "bg-zinc-900 text-white border-zinc-900"
-          : "bg-background hover:bg-muted/60",
-      ].join(" ")}
-    >
-      {label}
-    </button>
-  )
-}
+// Status Chips wurden zugunsten der shadcn-Tasks Toolbar (Facets) ersetzt.
 
 function StatusBadge({ status }: { status: ReferenceRow["status"] }) {
   if (status === "approved") return <Badge className="bg-emerald-600">Freigegeben</Badge>
@@ -72,7 +57,6 @@ export function EvidenceClient({
   const [query, setQuery] = React.useState("")
   const [status, setStatus] = React.useState<StatusFilter>("all")
   const [view, setView] = React.useState<ViewMode>("table")
-  const [selectedIds, setSelectedIds] = React.useState<string[]>([])
 
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -86,14 +70,48 @@ export function EvidenceClient({
   return (
     <div className="px-6 pt-6 md:px-12 lg:px-20 space-y-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="relative w-full max-w-xl">
-          <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Referenzen suchen…"
-            className="pl-9 h-11"
-          />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2 w-full">
+          <div className="relative w-full max-w-xl">
+            <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Filter references…"
+              className="pl-9 h-10"
+            />
+          </div>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <SlidersHorizontal className="size-4" />
+                Status
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="min-w-56">
+              <DropdownMenuLabel>Status</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {([
+                { key: "all", label: "Alle" },
+                { key: "approved", label: "Freigegeben" },
+                { key: "internal_only", label: "Intern" },
+                ...(isSales
+                  ? []
+                  : [
+                      { key: "draft", label: "Entwurf" },
+                      { key: "anonymized", label: "Anonymisiert" },
+                    ]),
+              ] as Array<{ key: StatusFilter; label: string }>).map((opt) => (
+                <DropdownMenuCheckboxItem
+                  key={opt.key}
+                  checked={status === opt.key}
+                  onCheckedChange={() => setStatus(opt.key)}
+                >
+                  {opt.label}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <div className="flex items-center gap-2">
@@ -106,7 +124,7 @@ export function EvidenceClient({
               ].join(" ")}
               onClick={() => setView("table")}
             >
-              Tabelle
+              Table
             </button>
             <button
               type="button"
@@ -116,44 +134,16 @@ export function EvidenceClient({
               ].join(" ")}
               onClick={() => setView("cards")}
             >
-              Karten
+              Cards
             </button>
           </div>
 
           {canCreate ? (
-            <Button asChild>
-              <Link href="/dashboard/evidence/new">+ Referenz</Link>
+            <Button asChild size="sm">
+              <Link href="/dashboard/evidence/new">Add Reference</Link>
             </Button>
           ) : null}
         </div>
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        <StatusChip label="Alle" active={status === "all"} onClick={() => setStatus("all")} />
-        <StatusChip
-          label="Freigegeben"
-          active={status === "approved"}
-          onClick={() => setStatus("approved")}
-        />
-        <StatusChip
-          label="Intern"
-          active={status === "internal_only"}
-          onClick={() => setStatus("internal_only")}
-        />
-        {!isSales ? (
-          <StatusChip
-            label="Entwurf"
-            active={status === "draft"}
-            onClick={() => setStatus("draft")}
-          />
-        ) : null}
-        {!isSales ? (
-          <StatusChip
-            label="Anonymisiert"
-            active={status === "anonymized"}
-            onClick={() => setStatus("anonymized")}
-          />
-        ) : null}
       </div>
 
       {canCreate ? (
@@ -198,38 +188,17 @@ export function EvidenceClient({
           </CardContent>
         </Card>
       ) : view === "table" ? (
-        <div className="relative">
-          <DataTable
-            columns={evidenceColumns()}
-            data={filtered}
-            getRowId={(row) => row.id}
-            onSelectedRowIdsChange={setSelectedIds}
-            paginationLabel={({ pageIndex, pageSize, total }) => {
-              const start = pageIndex * pageSize + 1
-              const end = Math.min((pageIndex + 1) * pageSize, total)
-              return `${start}–${end} von ${total} Referenzen`
-            }}
-          />
-          <div className="mt-4 flex flex-col gap-3 rounded-lg border bg-background/95 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-sm text-muted-foreground">
-              {selectedIds.length} ausgewählt
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" disabled={!selectedIds.length}>
-                PDF exportieren
-              </Button>
-              <Button variant="outline" size="sm" disabled={!selectedIds.length}>
-                Portfolio erstellen
-              </Button>
-              <Button variant="outline" size="sm" disabled={!selectedIds.length || isSales}>
-                Anonymisieren
-              </Button>
-              <Button variant="destructive" size="sm" disabled={!selectedIds.length || isSales}>
-                Löschen
-              </Button>
-            </div>
-          </div>
-        </div>
+        <DataTable
+          columns={evidenceColumns()}
+          data={filtered}
+          getRowId={(row) => row.id}
+          showViewOptions
+          paginationLabel={({ pageIndex, pageSize, total }) => {
+            const start = pageIndex * pageSize + 1
+            const end = Math.min((pageIndex + 1) * pageSize, total)
+            return `${start}–${end} von ${total} Referenzen`
+          }}
+        />
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filtered.map((r) => (
