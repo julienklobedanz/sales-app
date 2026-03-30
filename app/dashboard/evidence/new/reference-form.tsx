@@ -40,7 +40,7 @@ import {
   getIncumbentSuggestions,
   getCompetitorSuggestions,
 } from '../../actions'
-import { extractDataFromDocument } from './extract-reference-data'
+import { extractDataFromDocument } from '@/lib/document-extraction'
 import { CreateContactDialog, type CreatedContact } from './create-contact-dialog'
 import type { ExternalContact } from './actions'
 

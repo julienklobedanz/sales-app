@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { extractDataFromDocument } from '../../dashboard/evidence/new/extract-reference-data'
+import { extractDataFromDocument } from '@/lib/document-extraction'
 
 export async function POST(req: NextRequest) {
   try {

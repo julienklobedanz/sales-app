@@ -114,6 +114,27 @@ export default async function OnboardingPage({ searchParams }: Props) {
                   <input
                     type="radio"
                     name="role"
+                    value="account_manager"
+                    className="peer sr-only"
+                  />
+                  <div className="border-muted bg-popover hover:bg-accent peer-checked:border-primary peer-checked:bg-primary/5 rounded-lg border-2 p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <BriefcaseIcon className="text-muted-foreground size-5" />
+                        <div className="font-medium">Account Manager</div>
+                      </div>
+                      <CheckCircle2 className="text-primary size-5 opacity-0 peer-checked:opacity-100" />
+                    </div>
+                    <p className="text-muted-foreground mt-2 text-xs">
+                      Account-Ownership: Kundenstrategie, Stakeholder und Roadmap im Blick – inkl. Deals und Proof Points.
+                    </p>
+                  </div>
+                </label>
+
+                <label className="cursor-pointer">
+                  <input
+                    type="radio"
+                    name="role"
                     value="admin"
                     className="peer sr-only"
                   />

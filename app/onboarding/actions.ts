@@ -14,7 +14,9 @@ export async function completeOnboarding(formData: FormData) {
 
   const roleRaw = formData.get('role') as string
   const role =
-    roleRaw === 'sales' || roleRaw === 'admin' ? roleRaw : 'sales'
+    roleRaw === 'sales' || roleRaw === 'admin' || roleRaw === 'account_manager'
+      ? roleRaw
+      : 'sales'
   const fullName = formData.get('full_name') as string
   const organizationName =
     (formData.get('organization_name') as string)?.trim() || 'Mein Unternehmen'
