@@ -415,6 +415,123 @@ export async function getReferencesByCompanyId(
   return (data ?? []) as CompanyRefRow[]
 }
 
+export type ContactPersonRow = {
+  id: string
+  company_id: string
+  first_name: string | null
+  last_name: string | null
+  email: string | null
+  phone: string | null
+  role: string | null
+  created_at: string
+  updated_at: string | null
+}
+
+export async function getContactsByCompanyId(companyId: string): Promise<ContactPersonRow[]> {
+  const supabase = await createServerSupabaseClient()
+  const { data } = await supabase
+    .from('contact_persons')
+    .select('*')
+    .eq('company_id', companyId)
+    .order('created_at', { ascending: true })
+  return (data ?? []) as ContactPersonRow[]
+}
+
+export async function createContactPerson(
+  companyId: string,
+  payload: {
+    first_name?: string | null
+    last_name?: string | null
+    email?: string | null
+    phone?: string | null
+    role?: string | null
+  }
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createServerSupabaseClient()
+  const { error } = await supabase.from('contact_persons').insert({
+    company_id: companyId,
+    first_name: payload.first_name?.trim() || null,
+    last_name: payload.last_name?.trim() || null,
+    email: payload.email?.trim() || null,
+    phone: payload.phone?.trim() || null,
+    role: payload.role?.trim() || null,
+  })
+  if (error) return { success: false, error: error.message }
+  revalidatePath(`/dashboard/accounts/${companyId}`)
+  return { success: true }
+}
+
+export async function updateContactPerson(
+  id: string,
+  payload: {
+    first_name?: string | null
+    last_name?: string | null
+    email?: string | null
+    phone?: string | null
+    role?: string | null
+  }
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createServerSupabaseClient()
+  const { data: row } = await supabase
+    .from('contact_persons')
+    .select('company_id')
+    .eq('id', id)
+    .single()
+  const update: Record<string, unknown> = { updated_at: new Date().toISOString() }
+  if (payload.first_name !== undefined) update.first_name = payload.first_name?.trim() || null
+  if (payload.last_name !== undefined) update.last_name = payload.last_name?.trim() || null
+  if (payload.email !== undefined) update.email = payload.email?.trim() || null
+  if (payload.phone !== undefined) update.phone = payload.phone?.trim() || null
+  if (payload.role !== undefined) update.role = payload.role?.trim() || null
+  const { error } = await supabase.from('contact_persons').update(update).eq('id', id)
+  if (error) return { success: false, error: error.message }
+  if (row?.company_id) revalidatePath(`/dashboard/accounts/${row.company_id}`)
+  return { success: true }
+}
+
+export async function deleteContactPerson(id: string): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createServerSupabaseClient()
+  const { data: row } = await supabase
+    .from('contact_persons')
+    .select('company_id')
+    .eq('id', id)
+    .single()
+  const { error } = await supabase.from('contact_persons').delete().eq('id', id)
+  if (error) return { success: false, error: error.message }
+  if (row?.company_id) revalidatePath(`/dashboard/accounts/${row.company_id}`)
+  return { success: true }
+}
+
+export type AccountDealRow = {
+  id: string
+  title: string
+  volume: string | null
+  status: string
+  expiry_date: string | null
+  created_at: string
+  updated_at: string | null
+}
+
+export async function getActiveDealsByCompanyId(companyId: string): Promise<AccountDealRow[]> {
+  const supabase = await createServerSupabaseClient()
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', (await supabase.auth.getUser()).data.user?.id)
+    .single()
+  const orgId = profile?.organization_id
+  if (!orgId) return []
+
+  const { data } = await supabase
+    .from('deals')
+    .select('id, title, volume, status, expiry_date, created_at, updated_at')
+    .eq('organization_id', orgId)
+    .eq('company_id', companyId)
+    .not('status', 'in', '("won","lost")')
+    .order('updated_at', { ascending: false, nullsFirst: false })
+  return (data ?? []) as AccountDealRow[]
+}
+
 /** Expiring Deals für einen Account (Market Signals Tab). */
 export type DealSignalRow = {
   id: string
@@ -477,6 +594,140 @@ export async function toggleCompanyFavorite(
   revalidatePath('/dashboard/accounts')
   revalidatePath(`/dashboard/accounts/${companyId}`)
   return { success: true }
+}
+
+export async function createCompany(payload: {
+  name: string
+  website_url?: string | null
+  industry?: string | null
+  headquarters?: string | null
+  logo_url?: string | null
+}): Promise<{ success: boolean; id?: string; error?: string }> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht eingeloggt.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id, role')
+    .eq('id', user.id)
+    .single()
+  if (!profile?.organization_id) return { success: false, error: 'Onboarding unvollständig.' }
+  if (profile.role === 'sales') return { success: false, error: 'Keine Berechtigung.' }
+
+  const name = payload.name.trim()
+  if (!name) return { success: false, error: 'Name ist erforderlich.' }
+
+  const { data, error } = await supabase
+    .from('companies')
+    .insert({
+      organization_id: profile.organization_id,
+      name,
+      website_url: payload.website_url?.trim() || null,
+      industry: payload.industry?.trim() || null,
+      headquarters: payload.headquarters?.trim() || null,
+      logo_url: payload.logo_url?.trim() || null,
+      is_favorite: false,
+    })
+    .select('id')
+    .single()
+
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath('/dashboard/accounts')
+  return { success: true, id: data?.id }
+}
+
+export async function suggestStrategyField(args: {
+  companyId: string
+  field: 'company_goals' | 'value_proposition' | 'red_flags' | 'competition' | 'next_steps'
+  currentText?: string | null
+}): Promise<{ success: boolean; suggestion?: string; error?: string }> {
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey) return { success: false, error: 'OPENAI_API_KEY ist nicht gesetzt.' }
+
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht eingeloggt.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+  if (profile?.role === 'sales') return { success: false, error: 'Keine Berechtigung.' }
+
+  const [{ data: company }, strategy] = await Promise.all([
+    supabase
+      .from('companies')
+      .select('name, industry, headquarters, website_url')
+      .eq('id', args.companyId)
+      .single(),
+    getCompanyStrategy(args.companyId),
+  ])
+
+  const fieldLabel: Record<typeof args.field, string> = {
+    company_goals: 'Unternehmensziele',
+    value_proposition: 'Value Proposition (Warum gewinnen wir hier?)',
+    red_flags: 'Herausforderungen / Red Flags',
+    competition: 'Wettbewerb',
+    next_steps: 'Nächste Schritte',
+  }
+
+  const prompt = `Du bist ein Sales-Account-Strategist. Erstelle einen prägnanten, praxisnahen Vorschlag (Deutsch) für das Feld "${fieldLabel[args.field]}". 
+
+Kontext:
+- Account: ${company?.name ?? '—'}
+- Branche: ${company?.industry ?? '—'}
+- Ort: ${company?.headquarters ?? '—'}
+- Website: ${company?.website_url ?? '—'}
+
+Bereits vorhandene Strategy-Notizen:
+- Ziele: ${(strategy?.company_goals ?? '').slice(0, 1200)}
+- Value Prop: ${((strategy as { value_proposition?: string | null } | null)?.value_proposition ?? '').slice(0, 1200)}
+- Red Flags: ${(strategy?.red_flags ?? '').slice(0, 1200)}
+- Wettbewerb: ${(strategy?.competition ?? '').slice(0, 1200)}
+- Next Steps: ${(strategy?.next_steps ?? '').slice(0, 1200)}
+
+Aktueller Text im Ziel-Feld:
+${(args.currentText ?? '').slice(0, 2000) || '—'}
+
+Anforderungen:
+- Maximal 6 Bulletpoints ODER 2 kurze Absätze (je nachdem was besser passt)
+- Keine Floskeln, keine Einleitung, keine Überschriften
+- Keine Markdown-Listenzeichen am Zeilenanfang außer "-" (Bindestrich)
+- Keine sensiblen Daten erfinden; wenn unsicher, formuliere als Hypothese.`
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: 'Du hilfst beim Erstellen von Account-Strategie-Notizen für ein B2B-Sales-Tool.' },
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0.4,
+      max_tokens: 350,
+    }),
+  })
+
+  if (!response.ok) {
+    const err = await response.text()
+    return { success: false, error: `OpenAI API: ${response.status} ${err}` }
+  }
+
+  const json = await response.json()
+  const content = json?.choices?.[0]?.message?.content?.trim()
+  if (!content) return { success: false, error: 'Keine Antwort erhalten.' }
+  return { success: true, suggestion: content }
 }
 
 export async function deleteCompanyWithData(

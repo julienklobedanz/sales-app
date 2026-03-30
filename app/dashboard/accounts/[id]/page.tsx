@@ -4,10 +4,9 @@ import { CompanyDetailClient } from '../company-detail-client'
 import {
   getCompanyStrategy,
   getStakeholders,
+  getContactsByCompanyId,
   getReferencesByCompanyId,
-  getRoadmapProjects,
-  getExpiringDealsByCompanyId,
-  getRecommendedReferencesForAccount,
+  getActiveDealsByCompanyId,
 } from '../actions'
 
 export default async function CompanyDetailPage({
@@ -37,13 +36,12 @@ export default async function CompanyDetailPage({
 
   if (!company) notFound()
 
-  const [strategy, stakeholders, references, roadmapProjects, expiringDeals, recommendedRefs] = await Promise.all([
+  const [strategy, stakeholders, contacts, references, activeDeals] = await Promise.all([
     getCompanyStrategy(id),
     getStakeholders(id),
+    getContactsByCompanyId(id),
     getReferencesByCompanyId(id),
-    getRoadmapProjects(id),
-    getExpiringDealsByCompanyId(id),
-    getRecommendedReferencesForAccount(id),
+    getActiveDealsByCompanyId(id),
   ])
 
   return (
@@ -53,10 +51,9 @@ export default async function CompanyDetailPage({
           company={company}
           strategy={strategy}
           stakeholders={stakeholders}
+          contacts={contacts}
           references={references}
-          roadmapProjects={roadmapProjects}
-          expiringDeals={expiringDeals}
-          recommendedRefs={recommendedRefs}
+          activeDeals={activeDeals}
         />
       </div>
     </div>

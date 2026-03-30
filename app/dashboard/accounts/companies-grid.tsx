@@ -21,10 +21,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Building2Icon, MapPinIcon, Globe2, Search, X, Loader2, Plus, Star, Briefcase, Users } from 'lucide-react'
 import { deleteCompanyWithData, toggleCompanyFavorite } from './actions'
+import { useRole } from '@/hooks/useRole'
+import { CreateAccountDialog } from './create-account-dialog'
 
 export type CompanyCard = {
   id: string
@@ -33,10 +34,12 @@ export type CompanyCard = {
   website_url: string | null
   headquarters: string | null
   industry: string | null
-  intelligence_score?: number | null
   is_favorite?: boolean | null
   open_deals_count?: number | null
   contacts_count?: number | null
+  reference_count?: number | null
+  stakeholder_count?: number | null
+  strategy_filled?: boolean | null
 }
 
 export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
@@ -44,6 +47,8 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
   const [deleteTarget, setDeleteTarget] = useState<CompanyCard | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [favoritesOnly, setFavoritesOnly] = useState(false)
+  const [createOpen, setCreateOpen] = useState(false)
+  const { isAdmin, isAccountManager } = useRole()
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -52,8 +57,25 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
       list = list.filter((c) => c.is_favorite)
     }
     if (!q) return list
-    return list.filter((c) => c.name.toLowerCase().includes(q))
+    return list.filter((c) => {
+      const name = (c.name ?? '').toLowerCase()
+      const industry = (c.industry ?? '').toLowerCase()
+      return name.includes(q) || industry.includes(q)
+    })
   }, [companies, search, favoritesOnly])
+
+  const calculateAccountScore = (company: CompanyCard): number => {
+    let score = 0
+    const referenceCount = company.reference_count ?? 0
+    const dealCount = company.open_deals_count ?? 0
+    const strategyFilled = Boolean(company.strategy_filled)
+    const stakeholderCount = company.stakeholder_count ?? 0
+    score += Math.min(referenceCount * 10, 40)
+    score += Math.min(dealCount * 10, 30)
+    score += strategyFilled ? 20 : 0
+    score += stakeholderCount > 0 ? 10 : 0
+    return score
+  }
 
   return (
     <div className="space-y-6 rounded-3xl bg-slate-50/50 p-4 md:p-6">
@@ -83,13 +105,19 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                 className={`h-4 w-4 ${favoritesOnly ? 'fill-yellow-400 text-yellow-700' : 'text-slate-400'}`}
               />
             </Button>
-            <Button
-              type="button"
-              className="inline-flex h-11 items-center gap-2 rounded-xl bg-black px-4 text-sm font-medium text-white shadow-sm hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Account hinzufügen</span>
-            </Button>
+            {(isAdmin || isAccountManager) && (
+              <>
+                <Button
+                  type="button"
+                  className="inline-flex h-11 items-center gap-2 rounded-xl bg-black px-4 text-sm font-medium text-white shadow-sm hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90"
+                  onClick={() => setCreateOpen(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Account hinzufügen</span>
+                </Button>
+                <CreateAccountDialog open={createOpen} onOpenChange={setCreateOpen} />
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -174,14 +202,9 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                         )}
                       </div>
                     </div>
-                    {typeof company.intelligence_score === 'number' && (
-                      <Badge
-                        variant="outline"
-                        className="ml-2 shrink-0 rounded-full border-primary/30 bg-primary/5 px-2.5 py-0.5 text-[10px] font-semibold text-primary"
-                      >
-                        {company.intelligence_score}%
-                      </Badge>
-                    )}
+                    <div className="ml-2 shrink-0 rounded-full border border-primary/30 bg-primary/5 px-2.5 py-0.5 text-[10px] font-semibold text-primary font-mono">
+                      {calculateAccountScore(company)}%
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-1 text-xs text-muted-foreground">
@@ -224,7 +247,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                     <div className="flex items-center gap-1.5">
                       <Users className="size-3.5" />
                       <span>
-                        {company.contacts_count ?? 0} Kontakte
+                        {company.reference_count ?? 0} Referenzen
                       </span>
                     </div>
                   </div>
