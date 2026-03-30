@@ -202,7 +202,7 @@ export async function saveExecutiveBriefing(payload: {
     red_flags: payload.red_flags,
   })
   if (error) return { success: false, error: error.message }
-  revalidatePath(`/dashboard/companies/${payload.company_id}`)
+  revalidatePath(`/dashboard/accounts/${payload.company_id}`)
   revalidatePath('/dashboard/ai-lab')
   return { success: true }
 }
@@ -244,7 +244,7 @@ export async function saveRfpAnalysis(payload: {
     .single()
   if (error) return { success: false, error: error.message }
   revalidatePath('/dashboard/ai-lab')
-  if (payload.company_id) revalidatePath(`/dashboard/companies/${payload.company_id}`)
+  if (payload.company_id) revalidatePath(`/dashboard/accounts/${payload.company_id}`)
   return { success: true, id: row?.id }
 }
 

@@ -89,7 +89,7 @@ export function DashboardShell({
   // Prefetch wichtige Routen für snappige Navigation
   useEffect(() => {
     router.prefetch('/dashboard/deals')
-    router.prefetch('/dashboard/companies')
+    router.prefetch('/dashboard/accounts')
     router.prefetch('/dashboard/ai-lab')
   }, [router])
 
@@ -144,14 +144,14 @@ export function DashboardShell({
                     <SidebarMenuItem>
                       <SidebarMenuButton
                         asChild
-                        isActive={pathname?.startsWith('/dashboard/companies')}
+                        isActive={pathname?.startsWith('/dashboard/accounts')}
                         tooltip="Accounts – Firmenübersicht, Executive Profiling & Stakeholder-Mapping"
                         className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-zinc-900 data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:hover:translate-x-0"
                       >
-                        <Link href="/dashboard/companies" className="flex items-center gap-2.5">
+                        <Link href="/dashboard/accounts" className="flex items-center gap-2.5">
                           <BrainCircuit
                             className="relative z-10 size-4"
-                            strokeWidth={pathname?.startsWith('/dashboard/companies') ? 2.5 : 2}
+                            strokeWidth={pathname?.startsWith('/dashboard/accounts') ? 2.5 : 2}
                           />
                           <span className="relative z-10">Accounts</span>
                         </Link>
@@ -214,11 +214,11 @@ export function DashboardShell({
                     <SidebarMenuItem>
                       <SidebarMenuButton
                         asChild
-                        isActive={pathname?.startsWith('/dashboard/companies')}
+                        isActive={pathname?.startsWith('/dashboard/accounts')}
                         tooltip="Accounts"
                         className="data-[active=true]:bg-muted data-[active=true]:text-foreground"
                       >
-                        <Link href="/dashboard/companies">
+                        <Link href="/dashboard/accounts">
                           <BrainCircuit />
                           <span>Accounts</span>
                         </Link>

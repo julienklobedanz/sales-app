@@ -110,8 +110,8 @@ export async function upsertCompanyStrategy(
     { onConflict: 'company_id' }
   )
   if (error) return { success: false, error: error.message }
-  revalidatePath('/dashboard/companies')
-  revalidatePath(`/dashboard/companies/${companyId}`)
+  revalidatePath('/dashboard/accounts')
+  revalidatePath(`/dashboard/accounts/${companyId}`)
   return { success: true }
 }
 
@@ -156,7 +156,7 @@ export async function upsertRoadmapProject(
     const { error } = await supabase.from('company_roadmap_projects').insert(row)
     if (error) return { success: false, error: error.message }
   }
-  revalidatePath(`/dashboard/companies/${companyId}`)
+  revalidatePath(`/dashboard/accounts/${companyId}`)
   return { success: true }
 }
 
@@ -169,7 +169,7 @@ export async function deleteRoadmapProject(id: string): Promise<{ success: boole
     .single()
   const { error } = await supabase.from('company_roadmap_projects').delete().eq('id', id)
   if (error) return { success: false, error: error.message }
-  if (row?.company_id) revalidatePath(`/dashboard/companies/${row.company_id}`)
+  if (row?.company_id) revalidatePath(`/dashboard/accounts/${row.company_id}`)
   return { success: true }
 }
 
@@ -353,7 +353,7 @@ export async function createStakeholder(
     sentiment: payload.sentiment?.trim() || null,
   })
   if (error) return { success: false, error: error.message }
-  revalidatePath(`/dashboard/companies/${companyId}`)
+  revalidatePath(`/dashboard/accounts/${companyId}`)
   return { success: true }
 }
 
@@ -385,7 +385,7 @@ export async function updateStakeholder(
   if (payload.sentiment !== undefined) update.sentiment = payload.sentiment?.trim() || null
   const { error } = await supabase.from('stakeholders').update(update).eq('id', id)
   if (error) return { success: false, error: error.message }
-  if (row?.company_id) revalidatePath(`/dashboard/companies/${row.company_id}`)
+  if (row?.company_id) revalidatePath(`/dashboard/accounts/${row.company_id}`)
   return { success: true }
 }
 
@@ -398,7 +398,7 @@ export async function deleteStakeholder(id: string): Promise<{ success: boolean;
     .single()
   const { error } = await supabase.from('stakeholders').delete().eq('id', id)
   if (error) return { success: false, error: error.message }
-  if (row?.company_id) revalidatePath(`/dashboard/companies/${row.company_id}`)
+  if (row?.company_id) revalidatePath(`/dashboard/accounts/${row.company_id}`)
   return { success: true }
 }
 
@@ -459,8 +459,8 @@ export async function updateCompanyAccountStatus(
     .update({ account_status } as { account_status: string | null })
     .eq('id', companyId)
   if (error) return { success: false, error: error.message }
-  revalidatePath('/dashboard/companies')
-  revalidatePath(`/dashboard/companies/${companyId}`)
+  revalidatePath('/dashboard/accounts')
+  revalidatePath(`/dashboard/accounts/${companyId}`)
   return { success: true }
 }
 
@@ -474,8 +474,8 @@ export async function toggleCompanyFavorite(
     .update({ is_favorite: isFavorite })
     .eq('id', companyId)
   if (error) return { success: false, error: error.message }
-  revalidatePath('/dashboard/companies')
-  revalidatePath(`/dashboard/companies/${companyId}`)
+  revalidatePath('/dashboard/accounts')
+  revalidatePath(`/dashboard/accounts/${companyId}`)
   return { success: true }
 }
 
@@ -499,7 +499,7 @@ export async function deleteCompanyWithData(
   const { error } = await supabase.from('companies').delete().eq('id', companyId)
   if (error) return { success: false, error: error.message }
 
-  revalidatePath('/dashboard/companies')
+  revalidatePath('/dashboard/accounts')
   return { success: true }
 }
 

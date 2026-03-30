@@ -847,7 +847,7 @@ export async function updateReference(id: string, formData: FormData) {
   // daher ist kein automatischer Wechsel auf einen Legacy-Status mehr nötig.
 
   revalidatePath('/dashboard')
-  revalidatePath(`/dashboard/edit/${id}`)
+  revalidatePath(`/dashboard/evidence/${id}/edit`)
 }
 
 /** Teilupdate für Detail-Modal: nur Projektstatus, Incumbent, Wettbewerber */
@@ -875,7 +875,7 @@ export async function updateReferenceDetailFields(
   const { error } = await supabase.from('references').update(updatePayload).eq('id', id)
   if (error) throw new Error(error.message)
   revalidatePath('/dashboard')
-  revalidatePath(`/dashboard/edit/${id}`)
+  revalidatePath(`/dashboard/evidence/${id}/edit`)
 }
 
 /** Kundenlink erstellen: shared_portfolios Eintrag mit Slug (xxx-xxxx-xxx), gibt URL zurück */

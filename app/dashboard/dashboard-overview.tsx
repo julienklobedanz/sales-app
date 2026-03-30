@@ -52,8 +52,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type { ReferenceRow, ReferenceAssetRow, DeletedReferenceRow } from './actions'
-import { ReferenceForm } from './new/reference-form'
-import type { ReferenceFormInitialData } from './new/reference-form'
+import { ReferenceForm } from './evidence/new/reference-form'
+import type { ReferenceFormInitialData } from './evidence/new/reference-form'
 import {
   bulkCreateReferencesFromFiles,
   createSharedPortfolio,
@@ -131,7 +131,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
-import type { ExtractedReferenceData } from './new/types'
+import type { ExtractedReferenceData } from './evidence/new/types'
 
 // --- Konstanten & Hilfsfunktionen ---
 
@@ -2176,7 +2176,7 @@ export function DashboardOverview({
                             Details ansehen
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onSelect={() => router.push(`/dashboard/edit/${ref.id}`)}
+                            onSelect={() => router.push(`/dashboard/evidence/${ref.id}/edit`)}
                           >
                             <Pencil className="mr-2 h-4 w-4" />
                             Bearbeiten
@@ -2904,7 +2904,7 @@ export function DashboardOverview({
                       variant="ghost"
                       size="sm"
                       onClick={() =>
-                        router.push(`/dashboard/edit/${selectedRef.id}`)
+                        router.push(`/dashboard/evidence/${selectedRef.id}/edit`)
                       }
                     >
                       <Pencil className="mr-2 size-4" /> Bearbeiten

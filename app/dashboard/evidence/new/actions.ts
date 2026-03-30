@@ -231,7 +231,7 @@ export async function enrichAndSaveCompany(domain: string): Promise<EnrichCompan
   if (existing?.id) {
     const { error } = await supabase.from('companies').update(payload).eq('id', existing.id)
     if (error) return { success: false, error: error.message }
-    revalidatePath('/dashboard/new')
+    revalidatePath('/dashboard/evidence/new')
     return {
       success: true,
       company_id: existing.id,
@@ -248,7 +248,7 @@ export async function enrichAndSaveCompany(domain: string): Promise<EnrichCompan
   const { data: inserted, error } = await supabase.from('companies').insert(payload).select('id').single()
   if (error) return { success: false, error: error.message }
   if (!inserted?.id) return { success: false, error: 'Firma konnte nicht angelegt werden.' }
-  revalidatePath('/dashboard/new')
+  revalidatePath('/dashboard/evidence/new')
   return {
     success: true,
     company_id: inserted.id,
@@ -691,8 +691,8 @@ export async function createContact(formData: FormData) {
     return { success: false, error: error.message }
   }
 
-  revalidatePath('/dashboard/new')
-  revalidatePath('/dashboard/edit/[id]', 'page')
+  revalidatePath('/dashboard/evidence/new')
+  revalidatePath('/dashboard/evidence/[id]/edit', 'page')
 
   return { success: true, contact: data }
 }
@@ -761,8 +761,8 @@ export async function createExternalContact(
     return { success: false, error: error.message }
   }
 
-  revalidatePath('/dashboard/new')
-  revalidatePath('/dashboard/edit/[id]', 'page')
+  revalidatePath('/dashboard/evidence/new')
+  revalidatePath('/dashboard/evidence/[id]/edit', 'page')
 
   return {
     success: true,
@@ -804,8 +804,8 @@ export async function updateContact(
     .eq('id', id)
 
   if (error) return { success: false, error: error.message }
-  revalidatePath('/dashboard/new')
-  revalidatePath('/dashboard/edit/[id]', 'page')
+  revalidatePath('/dashboard/evidence/new')
+  revalidatePath('/dashboard/evidence/[id]/edit', 'page')
   return { success: true }
 }
 
@@ -837,7 +837,7 @@ export async function updateExternalContact(
     .eq('id', id)
 
   if (error) return { success: false, error: error.message }
-  revalidatePath('/dashboard/new')
-  revalidatePath('/dashboard/edit/[id]', 'page')
+  revalidatePath('/dashboard/evidence/new')
+  revalidatePath('/dashboard/evidence/[id]/edit', 'page')
   return { success: true }
 }

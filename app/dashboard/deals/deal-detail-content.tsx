@@ -139,7 +139,7 @@ export function DealDetailContent({
               {deal.references.map((ref) => (
                 <li key={ref.id} className="flex items-center gap-2">
                   <FileTextIcon className="size-4 shrink-0 text-muted-foreground" />
-                  <Link href={`/dashboard/edit/${ref.id}`} className="min-w-0 flex-1 hover:underline truncate text-sm">
+                  <Link href={`/dashboard/evidence/${ref.id}/edit`} className="min-w-0 flex-1 hover:underline truncate text-sm">
                     {ref.title}
                   </Link>
                   <span className="text-muted-foreground text-xs shrink-0">({ref.company_name})</span>

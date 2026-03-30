@@ -22,11 +22,11 @@ export function DashboardHeader() {
   const isCompanyDetail =
     pathSegments.length === 3 &&
     pathSegments[0] === 'dashboard' &&
-    pathSegments[1] === 'companies'
+    pathSegments[1] === 'accounts'
   const isCompaniesRoot =
     pathSegments.length === 2 &&
     pathSegments[0] === 'dashboard' &&
-    pathSegments[1] === 'companies'
+    pathSegments[1] === 'accounts'
 
   const companyId = isCompanyDetail ? pathSegments[2] : null
 
@@ -116,7 +116,7 @@ export function DashboardHeader() {
                   <button
                     type="button"
                     className="text-foreground hover:underline"
-                    onClick={() => router.push(isAccounts ? '/dashboard/companies' : '/dashboard/ai-lab')}
+                    onClick={() => router.push(isAccounts ? '/dashboard/accounts' : '/dashboard/ai-lab')}
                   >
                     {label}
                   </button>
@@ -173,7 +173,7 @@ export function DashboardHeader() {
                           type="button"
                           className="text-xs text-primary hover:underline"
                           onClick={() => {
-                            router.push(`/dashboard/companies/${a.company_id}`)
+                            router.push(`/dashboard/accounts/${a.company_id}`)
                             setPopoverOpen(false)
                           }}
                         >

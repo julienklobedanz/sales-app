@@ -121,7 +121,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                 <X className="h-3.5 w-3.5" />
               </button>
               <Link
-                href={`/dashboard/companies/${company.id}`}
+                href={`/dashboard/accounts/${company.id}`}
                 className="block h-full transition-opacity duration-300 ease-out"
               >
                 <CardHeader className="pb-2">
