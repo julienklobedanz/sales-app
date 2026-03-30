@@ -109,8 +109,6 @@ import {
   Eye,
   Link as LinkIcon,
 } from 'lucide-react'
-import { pdf } from '@react-pdf/renderer'
-import StoryPdfTemplate from './success-stories/components/story-pdf-template'
 import { ReferenceReader } from './reference-reader'
 import {
   Dialog,
@@ -131,8 +129,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
-import type { ExtractedReferenceData } from './evidence/new/types'
-
 // --- Konstanten & Hilfsfunktionen ---
 
 const STATUS_LABELS: Record<string, string> = {
@@ -375,16 +371,10 @@ export function DashboardOverview({
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [favoritesOnly, setFavoritesOnly] = useState(initialFavoritesOnly)
   const [rowMenuOpenId, setRowMenuOpenId] = useState<string | null>(null)
-  const [rfpFiles, setRfpFiles] = useState<File[]>([])
-  const [rfpMatchScores, setRfpMatchScores] = useState<Record<string, number> | null>(null)
-  const [rfpMatching, setRfpMatching] = useState(false)
-  const [isRfpDragging, setIsRfpDragging] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [selectedRef, setSelectedRef] = useState<ReferenceRow | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [detailAssets, setDetailAssets] = useState<ReferenceAssetRow[]>([])
   const [detailAssetsLoading, setDetailAssetsLoading] = useState(false)
-  const [pdfGenerating, setPdfGenerating] = useState(false)
   useEffect(() => {
     if (selectedRef?.id && sheetOpen) {
       setDetailAssetsLoading(true)
@@ -395,88 +385,6 @@ export function DashboardOverview({
       setDetailAssets([])
     }
   }, [selectedRef?.id, sheetOpen])
-
-  async function handleGenerateAndDownloadPdf() {
-    if (!selectedRef) return
-    setPdfGenerating(true)
-    try {
-      const sanitizeFilename = (v: string) =>
-        v
-          .trim()
-          .replace(/[^a-z0-9äöüß\s\-_&]/gi, '')
-          .replace(/\s+/g, ' ')
-          .slice(0, 90)
-
-      const companyName =
-        selectedRef.status === 'anonymized'
-          ? 'Anonymisierter Kunde'
-          : selectedRef.company_name ?? '—'
-
-      const tags = selectedRef.tags
-        ? selectedRef.tags
-            .split(/[\s,]+/)
-            .map((tag) => normalizeTagLabel(tag))
-            .filter(Boolean)
-        : []
-
-      const statusLabel = STATUS_LABELS[selectedRef.status] ?? selectedRef.status
-
-      const start = selectedRef.project_start ?? null
-      const end = selectedRef.project_end ?? null
-      const status = selectedRef.project_status ?? null
-      const label =
-        status === 'active' ? 'Aktiv' : end ? formatDate(end) : '—'
-      const nowIso = new Date().toISOString()
-      const duration =
-        selectedRef.duration_months != null
-          ? selectedRef.duration_months
-          : start && end
-            ? diffMonthsUtc(start, end)
-            : status === 'active' && start
-              ? diffMonthsUtc(start, nowIso)
-              : null
-      const endOrDuration =
-        duration != null ? `${label} (${duration} Monate)` : label
-
-      const model = {
-        title: selectedRef.title ?? '',
-        companyName,
-        statusLabel,
-        tags,
-        customerChallenge: selectedRef.customer_challenge ?? '',
-        ourSolution: selectedRef.our_solution ?? '',
-        project: {
-          volume: selectedRef.volume_eur ? formatNumber(selectedRef.volume_eur) : '—',
-          contractType: selectedRef.contract_type ?? '—',
-          startDate: selectedRef.project_start ? formatDate(selectedRef.project_start) : '—',
-          endOrDuration,
-          incumbentProvider: selectedRef.incumbent_provider ?? '—',
-          competitors: selectedRef.competitors ?? '—',
-        },
-        enterprise: {
-          industry: selectedRef.industry ?? '—',
-          hq: selectedRef.country ?? '—',
-          employeeCount:
-            selectedRef.employee_count != null ? formatNumber(selectedRef.employee_count) : '—',
-        },
-      }
-
-      const blob = await pdf(<StoryPdfTemplate model={model} />).toBlob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = sanitizeFilename(`${selectedRef.title ?? 'referenz'} - ${companyName}`) + '.pdf'
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      setTimeout(() => URL.revokeObjectURL(url), 0)
-      toast.success('PDF generiert.')
-    } catch (e) {
-      toast.error('PDF-Generierung fehlgeschlagen.')
-    } finally {
-      setPdfGenerating(false)
-    }
-  }
   const [bulkImportOpen, setBulkImportOpen] = useState(false)
   type BulkImportGroupItem = { id: string; projectName: string; files: File[] }
   const [bulkImportGroups, setBulkImportGroups] = useState<BulkImportGroupItem[]>([])
@@ -505,95 +413,6 @@ export function DashboardOverview({
       const next = [...prev, ...newGroups]
       return autoGroupByPrefix(next)
     })
-  }
-
-  function buildRfpKeywords(data: ExtractedReferenceData): string[] {
-    const parts: string[] = []
-    if (data.industry) parts.push(data.industry)
-    if (data.summary) parts.push(data.summary)
-    if (data.customer_challenge) parts.push(data.customer_challenge)
-    if (data.our_solution) parts.push(data.our_solution)
-    if (Array.isArray(data.tags)) parts.push(...data.tags)
-    const text = parts.join(' ').toLowerCase()
-    if (!text.trim()) return []
-    const tokens = text.split(/[^a-z0-9äöüß]+/i).filter((t) => t.length >= 3)
-    return Array.from(new Set(tokens))
-  }
-
-  async function runRfpMatch(file: File) {
-    try {
-      setRfpMatching(true)
-      const formData = new FormData()
-      formData.set('file', file)
-      const res = await fetch('/api/rfp-match', {
-        method: 'POST',
-        body: formData,
-      })
-      const payload = await res.json()
-      if (!res.ok || !payload?.success) {
-        const msg: string =
-          (payload && typeof payload.error === 'string' && payload.error) ||
-          'RFP-Analyse fehlgeschlagen. Du kannst trotzdem manuell nach Referenzen filtern.'
-        toast.error(msg)
-        setRfpMatchScores(null)
-        return
-      }
-      const data = payload.data as ExtractedReferenceData
-      const keywords = buildRfpKeywords(data)
-      const scores: Record<string, number> = {}
-      for (const ref of initialReferences) {
-        let score = 0
-        if (data.industry && ref.industry && ref.industry === data.industry) {
-          score += 3
-        }
-        const refTags = (ref.tags ?? '')
-          .toLowerCase()
-          .split(/[\s,;]+/)
-          .filter(Boolean)
-        if (Array.isArray(data.tags) && data.tags.length && refTags.length) {
-          for (const t of data.tags) {
-            const tag = t.toLowerCase()
-            if (refTags.includes(tag)) score += 2
-          }
-        }
-        const haystack = [
-          ref.title,
-          ref.summary ?? '',
-          ref.customer_challenge ?? '',
-          ref.our_solution ?? '',
-          ref.tags ?? '',
-        ]
-          .join(' ')
-          .toLowerCase()
-        for (const kw of keywords) {
-          if (haystack.includes(kw)) score += 1
-        }
-        if (score > 0) {
-          scores[ref.id] = score
-        }
-      }
-      setRfpMatchScores(Object.keys(scores).length ? scores : null)
-      if (!Object.keys(scores).length) {
-        toast.info(
-          'RFP analysiert, aber keine klar passenden Referenzen gefunden. Du kannst weiterhin manuell filtern.'
-        )
-      } else {
-        toast.success('RFP analysiert – Referenzen nach Relevanz gefiltert.')
-      }
-    } catch (e) {
-      console.error('runRfpMatch error', e)
-      toast.error(
-        'RFP-Analyse fehlgeschlagen. Bitte später erneut versuchen oder manuell nach Referenzen filtern.'
-      )
-      setRfpMatchScores(null)
-    } finally {
-      setRfpMatching(false)
-    }
-  }
-
-  function resetRfpFilter() {
-    setRfpFiles([])
-    setRfpMatchScores(null)
   }
 
   function autoGroupByPrefix(groups: BulkImportGroupItem[]): BulkImportGroupItem[] {
@@ -818,13 +637,6 @@ export function DashboardOverview({
     if (projectStatusFilter !== 'all') {
       list = list.filter((r) => (r.project_status ?? '') === projectStatusFilter)
     }
-    if (rfpMatchScores && Object.keys(rfpMatchScores).length > 0) {
-      const scored = list
-        .map((r) => ({ ref: r, score: rfpMatchScores[r.id] ?? 0 }))
-        .filter((x) => x.score > 0)
-        .sort((a, b) => b.score - a.score)
-      list = scored.map((x) => x.ref)
-    }
     if (sortKey) {
       list = [...list].sort((a, b) => {
         const va = getSortValue(a, sortKey)
@@ -852,7 +664,6 @@ export function DashboardOverview({
     favoritesOnly,
     sortKey,
     sortDir,
-    rfpMatchScores,
   ])
 
   const handleSort = (column: (typeof COLUMN_KEYS)[number]) => {
@@ -944,56 +755,6 @@ export function DashboardOverview({
     }
   }
 
-  const handleRfpFilesAdd = (fileList: FileList | null) => {
-    if (!fileList) return
-    const acceptedTypes = [
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    ]
-    const newFiles = Array.from(fileList).filter(
-      (file) =>
-        acceptedTypes.includes(file.type) ||
-        file.name.toLowerCase().endsWith('.pdf') ||
-        file.name.toLowerCase().endsWith('.doc') ||
-        file.name.toLowerCase().endsWith('.docx')
-    )
-
-    if (!newFiles.length) return
-
-    setRfpFiles((prev) => {
-      const existingNames = new Set(prev.map((f) => f.name))
-      const uniqueNewFiles = newFiles.filter((f) => !existingNames.has(f.name))
-      return [...prev, ...uniqueNewFiles]
-    })
-
-    // Starte sofort die RFP-Analyse mit der ersten neuen Datei
-    void runRfpMatch(newFiles[0]!)
-  }
-
-  const handleRfpFileRemove = (name: string) => {
-    setRfpFiles((prev) => prev.filter((file) => file.name !== name))
-  }
-
-  const handleRfpDrop = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    event.stopPropagation()
-    setIsRfpDragging(false)
-    handleRfpFilesAdd(event.dataTransfer.files)
-  }
-
-  const handleRfpDragOver = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    event.stopPropagation()
-    if (!isRfpDragging) setIsRfpDragging(true)
-  }
-
-  const handleRfpDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    event.stopPropagation()
-    setIsRfpDragging(false)
-  }
-
   return (
     <div className="flex flex-col space-y-6 px-6 pt-6 md:px-12 lg:px-20">
       {/* Header: Titel + Aktionen */}
@@ -1052,53 +813,6 @@ export function DashboardOverview({
               onChange={(e) => setSearch(e.target.value)}
               className="h-11 w-full min-w-0 rounded-lg border bg-background pl-10 pr-4 shadow-sm"
             />
-          </div>
-
-          {/* RFP-Abgleich */}
-          <div className="flex items-center gap-2">
-            <div
-              className={[
-                'flex h-11 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-md border border-dashed px-3 text-xs transition-all duration-300 min-w-[2.25rem] lg:min-w-[140px]',
-                isRfpDragging
-                  ? 'border-primary bg-primary/5 text-primary animate-pulse'
-                  : 'border-muted-foreground/40 bg-muted/40 text-muted-foreground hover:bg-muted',
-                rfpMatching ? 'cursor-wait opacity-80' : '',
-              ].join(' ')}
-              onClick={() => !rfpMatching && fileInputRef.current?.click()}
-              onDrop={handleRfpDrop}
-              onDragOver={handleRfpDragOver}
-              onDragLeave={handleRfpDragLeave}
-            >
-              <UploadIcon className="size-4 shrink-0 lg:mr-1" aria-hidden />
-              <span className="hidden truncate lg:inline">
-                {rfpMatching
-                  ? 'Analysiere RFP-Anforderungen…'
-                  : isRfpDragging
-                    ? '→ Dokument hier loslassen zum Analysieren'
-                    : rfpFiles.length === 0
-                      ? 'RFP-Abgleich'
-                      : `${rfpFiles.length} ausgewählt`}
-              </span>
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                className="hidden"
-                onChange={(event) => handleRfpFilesAdd(event.target.files)}
-              />
-            </div>
-            {rfpMatchScores && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-11 shrink-0 text-xs"
-                onClick={resetRfpFilter}
-              >
-                Filter zurücksetzen
-              </Button>
-            )}
           </div>
 
           <DropdownMenu>
@@ -1348,27 +1062,6 @@ export function DashboardOverview({
             </AlertDialog>
           )}
         </div>
-
-        {rfpFiles.length > 0 && (
-          <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-            {rfpFiles.map((file) => (
-              <div
-                key={file.name}
-                className="flex items-center gap-1 rounded-full bg-muted px-3 py-1"
-              >
-                <span className="max-w-[160px] truncate">{file.name}</span>
-                <button
-                  type="button"
-                  onClick={() => handleRfpFileRemove(file.name)}
-                  className="inline-flex size-4 items-center justify-center rounded-full text-muted-foreground/70 hover:bg-muted-foreground/10 hover:text-foreground"
-                  aria-label={`${file.name} entfernen`}
-                >
-                  <XIcon className="size-3" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
 
         <div className="min-w-0 overflow-x-auto rounded-md border bg-card">
           <Table className="min-w-[800px]">
@@ -2877,20 +2570,6 @@ export function DashboardOverview({
               <DialogFooter className="z-10 shrink-0 flex-col gap-2 border-t bg-muted/20 px-0 pt-4 pb-0 sm:flex-row sm:items-center sm:justify-between">
                 {/* Linke Seite: Download + Bearbeiten */}
                 <div className="flex w-full gap-2 sm:w-auto">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="shrink-0"
-                    disabled={pdfGenerating}
-                    onClick={handleGenerateAndDownloadPdf}
-                  >
-                    {pdfGenerating ? (
-                      <Loader2 className="mr-2 size-4 animate-spin" />
-                    ) : (
-                      <FileDownIcon className="mr-2 size-4" />
-                    )}
-                    {pdfGenerating ? 'Generiere PDF...' : 'Download'}
-                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"

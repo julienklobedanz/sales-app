@@ -50,7 +50,7 @@ import { toast } from 'sonner'
 
 export type Profile = {
   full_name: string | null
-  role: 'admin' | 'sales' | 'account_owner'
+  role: 'admin' | 'sales' | 'account_manager'
 }
 
 export function DashboardShell({
@@ -90,7 +90,6 @@ export function DashboardShell({
   useEffect(() => {
     router.prefetch('/dashboard/deals')
     router.prefetch('/dashboard/accounts')
-    router.prefetch('/dashboard/ai-lab')
   }, [router])
 
   const userName =
@@ -191,23 +190,6 @@ export function DashboardShell({
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
-                    {/* 4. AI Lab – RFP-Analyzer & KI-Tools */}
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={pathname?.startsWith('/dashboard/ai-lab')}
-                        tooltip="AI Lab – RFP-Analyzer und weitere KI-Tools"
-                        className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-zinc-900 data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:hover:translate-x-0"
-                      >
-                        <Link href="/dashboard/ai-lab" className="flex items-center gap-2.5">
-                          <AnilabxIcon
-                            className="relative z-10 size-4 shrink-0"
-                            strokeWidth={pathname?.startsWith('/dashboard/ai-lab') ? 2.5 : 2}
-                          />
-                          <span className="relative z-10">AI Lab</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
                   </>
                 ) : (
                   <>
@@ -247,19 +229,6 @@ export function DashboardShell({
                         <Link href="/dashboard">
                           <FileTextIcon />
                           <span>Success Stories</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={pathname?.startsWith('/dashboard/ai-lab')}
-                        tooltip="AI Lab"
-                        className="data-[active=true]:bg-muted data-[active=true]:text-foreground"
-                      >
-                        <Link href="/dashboard/ai-lab" className="flex items-center gap-2.5">
-                          <AnilabxIcon className="size-4 shrink-0" strokeWidth={2} />
-                          <span>AI Lab</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

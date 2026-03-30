@@ -1,17 +1,12 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { getDashboardData } from './actions'
-import { DashboardOverview } from './dashboard-overview'
-import type { Profile } from './dashboard-shell'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
-type Props = {
-  searchParams: Promise<{ favoriten?: string }>
-}
-
-export default async function DashboardPage({ searchParams }: Props) {
+export default async function DashboardPage() {
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
@@ -20,47 +15,26 @@ export default async function DashboardPage({ searchParams }: Props) {
     redirect('/login')
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile) {
-    redirect('/onboarding')
-  }
-
-  const params = await searchParams
-  const initialFavoritesOnly = params.favoriten === '1'
-  const { references, totalCount, deletedCount } = await getDashboardData(
-    initialFavoritesOnly
-  )
-
-  const { data: companies } = await supabase
-    .from('companies')
-    .select('id, name, logo_url')
-    .order('name')
-  const { data: contacts } = await supabase
-    .from('contact_persons')
-    .select('*')
-    .order('last_name')
-  const { data: externalContacts } = await supabase
-    .from('external_contacts')
-    .select('id, company_id, first_name, last_name, email, role, phone')
-    .eq('organization_id', profile.organization_id ?? '')
-    .order('last_name')
-
   return (
-    <DashboardOverview
-      references={references}
-      totalCount={totalCount}
-      deletedCount={deletedCount}
-      profile={profile as Profile}
-      title="Success Stories"
-      initialFavoritesOnly={initialFavoritesOnly}
-      companies={companies ?? []}
-      contacts={contacts ?? []}
-      externalContacts={externalContacts ?? []}
-    />
+    <div className="flex flex-col gap-6 px-6 pt-6 md:px-12 lg:px-20">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Das Dashboard wird in <strong>E11</strong> als rollenbasierte Startseite umgesetzt.
+        </p>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <Button asChild variant="default">
+          <Link href="/dashboard/evidence">Zum Evidence Hub</Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link href="/dashboard/accounts">Zu Accounts</Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link href="/dashboard/deals">Zu Deals</Link>
+        </Button>
+      </div>
+    </div>
   )
 }

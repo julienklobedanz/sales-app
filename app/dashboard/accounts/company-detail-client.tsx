@@ -82,7 +82,6 @@ import {
   updateCompanyAccountStatus,
   generateOnePagerHtml,
 } from './actions'
-import type { ExecutiveBriefingRow, RfpAnalysisRow } from '@/app/dashboard/ai-lab/actions'
 import { createSharedPortfolio, getExistingShareForReference, getReferencesByIds } from '../actions'
 import type { ReferenceRow } from '../actions'
 import { ReferenceReader } from '../reference-reader'
@@ -141,8 +140,6 @@ type Props = {
   roadmapProjects: RoadmapProjectRow[]
   expiringDeals: DealSignalRow[]
   recommendedRefs: RecommendedReference[]
-  executiveBriefings: ExecutiveBriefingRow[]
-  rfpAnalysis: RfpAnalysisRow[]
 }
 
 const ACCOUNT_STATUS_OPTIONS: { value: string; label: string }[] = [
@@ -159,8 +156,6 @@ export function CompanyDetailClient({
   roadmapProjects: initialRoadmapProjects,
   expiringDeals,
   recommendedRefs: initialRecommendedRefs,
-  executiveBriefings = [],
-  rfpAnalysis = [],
 }: Props) {
   const [company, setCompany] = useState(initialCompany)
   const [strategy, setStrategy] = useState(initialStrategy)
@@ -1186,37 +1181,6 @@ export function CompanyDetailClient({
             </p>
           )}
 
-          {executiveBriefings.length > 0 && (
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Sparkles className="size-5" />
-                  Executive Briefings (AI Lab)
-                </CardTitle>
-                <CardDescription>
-                  Im AI Lab erstellte Profiling-Dossiers zu Entscheidern – Summary, Prioritäten, Red Flags.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-3">
-                  {executiveBriefings.map((b) => (
-                    <li key={b.id} className="rounded-lg border p-3">
-                      <p className="font-medium text-sm">{b.name}</p>
-                      {b.linkedin_url && (
-                        <a href={b.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline inline-flex items-center gap-1">
-                          <ExternalLink className="size-3" /> LinkedIn
-                        </a>
-                      )}
-                      {b.summary && <p className="text-xs text-muted-foreground mt-1">{b.summary}</p>}
-                      {b.top_priorities && <p className="text-xs mt-1"><span className="font-medium">Prioritäten:</span> {b.top_priorities}</p>}
-                      {b.red_flags && <p className="text-xs mt-0.5 text-amber-700 dark:text-amber-400"><span className="font-medium">Red Flags:</span> {b.red_flags}</p>}
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          )}
-
           <Dialog open={stakeholderModalOpen} onOpenChange={setStakeholderModalOpen}>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
@@ -1487,43 +1451,6 @@ export function CompanyDetailClient({
                       <Link href={`/dashboard?ref=${ref.id}`} className="text-xs text-primary hover:underline">
                         Zur Referenz
                       </Link>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          )}
-          {rfpAnalysis.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Sparkles className="size-5" />
-                  RFP-Analyse (AI Lab)
-                </CardTitle>
-                <CardDescription>
-                  Aus hochgeladenen RFP-PDFs extrahierte Anforderungen und gematchte Success Stories.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-3">
-                  {rfpAnalysis.map((r) => (
-                    <li key={r.id} className="rounded-lg border p-3">
-                      <p className="text-sm font-medium">{r.source_file_name || 'RFP-Analyse'}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {new Date(r.created_at).toLocaleDateString('de-DE')} · {Array.isArray(r.matched_reference_ids) ? r.matched_reference_ids.length : 0} Matches
-                      </p>
-                      {Array.isArray(r.matched_reference_ids) && r.matched_reference_ids.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {r.matched_reference_ids.slice(0, 5).map((refId) => (
-                            <Link key={refId} href={`/dashboard?ref=${refId}`} className="text-xs text-primary hover:underline">
-                              Zur Referenz →
-                            </Link>
-                          ))}
-                          {r.matched_reference_ids.length > 5 && (
-                            <span className="text-xs text-muted-foreground">+{r.matched_reference_ids.length - 5} weitere</span>
-                          )}
-                        </div>
-                      )}
                     </li>
                   ))}
                 </ul>

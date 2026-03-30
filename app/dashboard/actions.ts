@@ -418,7 +418,6 @@ export async function toggleFavorite(referenceId: string) {
   }
 
   revalidatePath('/dashboard')
-  revalidatePath('/dashboard/favorites')
 }
 
 export type BulkImportReferencesResult =
@@ -1256,7 +1255,6 @@ export async function submitForApproval(id: string) {
   }
 
   revalidatePath('/dashboard')
-  revalidatePath('/dashboard/requests')
 }
 
 export async function getRequests(): Promise<RequestItem[]> {
@@ -1364,7 +1362,6 @@ export async function reviewRequest(
   if (appError) throw new Error(appError.message)
 
   revalidatePath('/dashboard')
-  revalidatePath('/dashboard/requests')
 }
 
 export async function updateUserRole(role: 'admin' | 'sales') {

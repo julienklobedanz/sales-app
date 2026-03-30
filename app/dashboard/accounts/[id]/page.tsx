@@ -9,7 +9,6 @@ import {
   getExpiringDealsByCompanyId,
   getRecommendedReferencesForAccount,
 } from '../actions'
-import { getExecutiveBriefingsForCompany, getRfpAnalysisForCompany } from '@/app/dashboard/ai-lab/actions'
 
 export default async function CompanyDetailPage({
   params,
@@ -38,15 +37,13 @@ export default async function CompanyDetailPage({
 
   if (!company) notFound()
 
-  const [strategy, stakeholders, references, roadmapProjects, expiringDeals, recommendedRefs, executiveBriefings, rfpAnalysis] = await Promise.all([
+  const [strategy, stakeholders, references, roadmapProjects, expiringDeals, recommendedRefs] = await Promise.all([
     getCompanyStrategy(id),
     getStakeholders(id),
     getReferencesByCompanyId(id),
     getRoadmapProjects(id),
     getExpiringDealsByCompanyId(id),
     getRecommendedReferencesForAccount(id),
-    getExecutiveBriefingsForCompany(id),
-    getRfpAnalysisForCompany(id),
   ])
 
   return (
@@ -60,8 +57,6 @@ export default async function CompanyDetailPage({
           roadmapProjects={roadmapProjects}
           expiringDeals={expiringDeals}
           recommendedRefs={recommendedRefs}
-          executiveBriefings={executiveBriefings}
-          rfpAnalysis={rfpAnalysis}
         />
       </div>
     </div>
