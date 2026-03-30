@@ -395,15 +395,8 @@ export async function createReference(
   if (!title) {
     return { success: false, error: 'Titel ist erforderlich.' }
   }
-  if (!contactId) {
-    return { success: false, error: 'Ansprechpartner intern ist erforderlich.' }
-  }
-  if (!project_status) {
-    return { success: false, error: 'Projektstatus ist erforderlich.' }
-  }
-  if (!project_start) {
-    return { success: false, error: 'Projektstart ist erforderlich.' }
-  }
+  // NOTE: Diese Felder sind in der DB optional. UI kann sie später nachpflegen,
+  // daher blockieren wir das Speichern hier nicht.
   if (project_status === 'completed' && !project_end) {
     return { success: false, error: 'Bei abgeschlossenem Projekt ist das Projektende erforderlich.' }
   }

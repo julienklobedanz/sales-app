@@ -499,7 +499,7 @@ export function ReferenceForm({
             onSuccess()
             router.refresh()
           } else {
-            router.push('/dashboard')
+            router.push('/dashboard/evidence')
             router.refresh()
           }
         } else {
