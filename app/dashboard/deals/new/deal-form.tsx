@@ -37,7 +37,7 @@ export function DealForm({
   const router = useRouter()
   const [pending, setPending] = useState(false)
   const [companyId, setCompanyId] = useState<string>('')
-  const [status, setStatus] = useState<DealStatus>('in_negotiation')
+  const [status, setStatus] = useState<DealStatus>('open')
   const [isPublic, setIsPublic] = useState(true)
   const [accountManagerId, setAccountManagerId] = useState<string>('')
   const [salesManagerId, setSalesManagerId] = useState<string>('')

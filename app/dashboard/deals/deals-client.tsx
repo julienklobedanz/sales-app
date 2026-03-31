@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -41,6 +41,9 @@ import { DealForm } from './new/deal-form'
 import { getDealWithReferences, importDealsFromXlsx, type MatchSuggestion } from './actions'
 import { HandshakeIcon, TimerIcon, PlusCircleIcon, Loader2, FileSpreadsheetIcon, UploadIcon } from 'lucide-react'
 import { toast } from 'sonner'
+import { DataTable } from '@/components/ui/data-table'
+import type { ColumnDef } from '@tanstack/react-table'
+import { Checkbox } from '@/components/ui/checkbox'
 
 type MatchMap = Record<string, { count: number; suggestions: MatchSuggestion[] }>
 
@@ -175,12 +178,60 @@ type Props = {
   expiring: DealRow[]
   allReferences: RefOption[]
   matchMap: MatchMap
+  currentUserId: string
   initialOpenDealId?: string | null
   companies: { id: string; name: string }[]
   orgProfiles: { id: string; full_name: string | null }[]
 }
 
-export function DealsClientContent({ deals, expiring, allReferences, matchMap, initialOpenDealId, companies, orgProfiles }: Props) {
+type TabKey = 'mine' | 'all' | 'expiring'
+
+function isExpiringIn30Days(dateStr: string | null): boolean {
+  if (!dateStr) return false
+  const end = new Date(dateStr)
+  if (Number.isNaN(end.getTime())) return false
+  const now = new Date()
+  now.setHours(0, 0, 0, 0)
+  end.setHours(0, 0, 0, 0)
+  const days = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+  return days <= 30
+}
+
+function DealStatusBadge({ status }: { status: DealRow['status'] }) {
+  const s = status
+  const label =
+    s === 'open'
+      ? 'OPEN'
+      : s === 'rfp'
+        ? 'RFP'
+        : s === 'negotiation'
+          ? 'NEGOTIATION'
+          : s === 'won'
+            ? 'WON'
+            : s === 'lost'
+              ? 'LOST'
+              : s === 'withdrawn'
+                ? 'ZURÜCKGEZOGEN'
+                : 'ARCHIVED'
+  const variant =
+    s === 'won'
+      ? 'secondary'
+      : s === 'lost' || s === 'withdrawn'
+        ? 'destructive'
+        : 'outline'
+  return <Badge variant={variant as any}>{label}</Badge>
+}
+
+export function DealsClientContent({
+  deals,
+  expiring,
+  allReferences,
+  matchMap,
+  currentUserId,
+  initialOpenDealId,
+  companies,
+  orgProfiles,
+}: Props) {
   const router = useRouter()
   const [selectedDealId, setSelectedDealId] = useState<string | null>(initialOpenDealId ?? null)
   const [selectedDeal, setSelectedDeal] = useState<DealWithReferences | null>(null)
@@ -188,6 +239,8 @@ export function DealsClientContent({ deals, expiring, allReferences, matchMap, i
   const [importing, setImporting] = useState(false)
   const xlsxInputRef = useRef<HTMLInputElement>(null)
   const [createOpen, setCreateOpen] = useState(false)
+  const [tab, setTab] = useState<TabKey>('mine')
+  const [query, setQuery] = useState('')
 
   useEffect(() => {
     if (initialOpenDealId) setSelectedDealId(initialOpenDealId)
@@ -228,200 +281,187 @@ export function DealsClientContent({ deals, expiring, allReferences, matchMap, i
     }
   }
 
-  return (
-    <div className="grid min-h-[70vh] gap-6 lg:grid-cols-2">
-      <Card className="flex min-h-[520px] flex-1 flex-col">
-        <CardHeader className="flex min-h-[5.5rem] flex-row items-start justify-between space-y-0">
-          <div>
+  const myDeals = useMemo(() => {
+    return deals.filter((d) => d.account_manager_id === currentUserId || d.sales_manager_id === currentUserId)
+  }, [deals, currentUserId])
+
+  const expiring30 = useMemo(() => {
+    return deals.filter((d) => isExpiringIn30Days(d.expiry_date))
+  }, [deals])
+
+  const baseList = tab === 'mine' ? myDeals : tab === 'expiring' ? expiring30 : deals
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return baseList
+    return baseList.filter((d) => {
+      const hay = `${d.title} ${d.company_name ?? ''} ${d.account_manager_name ?? ''}`.toLowerCase()
+      return hay.includes(q)
+    })
+  }, [baseList, query])
+
+  const columns = useMemo<ColumnDef<DealRow>[]>(() => {
+    return [
+      {
+        id: 'select',
+        header: ({ table }) => (
+          <Checkbox
+            checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')}
+            onCheckedChange={(v) => table.toggleAllPageRowsSelected(Boolean(v))}
+            aria-label="Alle auswählen"
+          />
+        ),
+        cell: ({ row }) => (
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(v) => row.toggleSelected(Boolean(v))}
+            aria-label="Zeile auswählen"
+          />
+        ),
+        enableSorting: false,
+        enableHiding: false,
+      },
+      {
+        accessorKey: 'status',
+        header: 'Status',
+        cell: ({ row }) => <DealStatusBadge status={row.original.status} />,
+      },
+      {
+        accessorKey: 'title',
+        header: 'Titel',
+        cell: ({ row }) => (
+          <button
+            type="button"
+            className="font-medium hover:underline text-left"
+            onClick={() => openDealSheet(row.original.id)}
+          >
+            {row.original.title}
+          </button>
+        ),
+      },
+      {
+        accessorKey: 'company_name',
+        header: 'Account',
+        cell: ({ row }) => <span className="text-muted-foreground">{row.original.company_name ?? '—'}</span>,
+      },
+      {
+        accessorKey: 'account_manager_name',
+        header: 'Account Manager',
+        cell: ({ row }) => <span className="text-muted-foreground">{row.original.account_manager_name ?? '—'}</span>,
+      },
+      {
+        accessorKey: 'expiry_date',
+        header: 'Ablauf',
+        cell: ({ row }) => {
+          const isHot = isExpiringIn30Days(row.original.expiry_date)
+          return (
+            <span className={isHot ? 'text-destructive font-medium' : 'text-muted-foreground'}>
+              {row.original.expiry_date ? formatDate(row.original.expiry_date) : '—'}
+            </span>
+          )
+        },
+      },
+      {
+        id: 'matches',
+        header: 'Matches',
+        cell: ({ row }) => {
+          const data = matchMap[row.original.id] ?? { count: 0, suggestions: [] }
+          return (
             <div className="flex items-center gap-2">
-              <HandshakeIcon className="size-5 text-muted-foreground" />
-              <CardTitle>Referenz-Bedarfe (Sales Requests)</CardTitle>
+              <span className={data.count > 0 ? 'text-foreground font-medium' : 'text-muted-foreground'}>
+                {data.count > 0 ? '✔' : '⚠'} {data.count}
+              </span>
+              {data.suggestions.length ? (
+                <span className="text-muted-foreground text-xs truncate max-w-[180px]">
+                  {data.suggestions.map((s) => s.title).slice(0, 2).join(' · ')}
+                </span>
+              ) : null}
             </div>
-            <CardDescription>
-              Hier melden Salesleute, für welche laufenden Deals sie Referenzen benötigen.
-            </CardDescription>
-          </div>
+          )
+        },
+      },
+    ]
+  }, [matchMap])
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant={tab === 'mine' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setTab('mine')}
+          >
+            Meine Deals
+          </Button>
+          <Button
+            variant={tab === 'all' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setTab('all')}
+          >
+            Alle Deals
+          </Button>
+          <Button
+            variant={tab === 'expiring' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setTab('expiring')}
+          >
+            Auslaufende Deals
+          </Button>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <input
+            ref={xlsxInputRef}
+            type="file"
+            accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) handleXlsxImport(file)
+              e.target.value = ''
+            }}
+          />
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-11 rounded-xl px-4"
+            disabled={importing}
+            onClick={() => xlsxInputRef.current?.click()}
+          >
+            {importing ? <Loader2 className="mr-2 size-4 animate-spin" /> : <UploadIcon className="mr-2 size-4" />}
+            Listen importieren
+          </Button>
           <Button size="sm" className="h-11 rounded-xl px-4" onClick={() => setCreateOpen(true)}>
             <PlusCircleIcon className="mr-2 size-4" />
             Deal anlegen
           </Button>
-        </CardHeader>
-        <CardContent className="flex-1">
-          {deals.length === 0 ? (
-            <div className="rounded-lg border border-dashed bg-muted/30 p-8 text-center text-muted-foreground">
-              <p className="text-sm">Noch keine Referenz-Bedarfe angelegt.</p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Titel</TableHead>
-                  <TableHead>Unternehmen</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Volumen (€)</TableHead>
-                  <TableHead>Verknüpfte Referenzen</TableHead>
-                  <TableHead>Smart Match</TableHead>
-                  <TableHead className="text-right">Ablauf</TableHead>
-                  <TableHead></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {deals.map((deal) => (
-                  <TableRow key={deal.id}>
-                    <TableCell className="font-medium">{deal.title}</TableCell>
-                    <TableCell>{deal.company_name ?? '—'}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{DEAL_STATUS_LABELS[deal.status]}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right text-muted-foreground text-sm">
-                      {formatVolume(deal.volume)}
-                    </TableCell>
-                    <TableCell>
-                      {deal.linked_refs?.length ? (
-                        <LinkedRefLogos refs={deal.linked_refs} />
-                      ) : (
-                        <span className="text-muted-foreground text-xs">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <SmartMatchCell dealId={deal.id} matchMap={matchMap} onOpenDeal={openDealSheet} />
-                    </TableCell>
-                    <TableCell className="text-right text-muted-foreground text-sm">
-                      {deal.expiry_date ? formatDate(deal.expiry_date) : '—'}
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="sm" onClick={() => openDealSheet(deal.id)}>
-                        Öffnen
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <Card className="flex min-h-[520px] flex-1 flex-col">
-        <CardHeader className="flex min-h-[5.5rem] flex-col gap-3 space-y-0">
-          <div className="flex flex-row items-start justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2">
-                <TimerIcon className="size-5 text-muted-foreground" />
-                <CardTitle>Expiring Deals (Marktchancen)</CardTitle>
-              </div>
-              <CardDescription>
-                Listen von Verträgen, die bei Wettbewerbern auslaufen (z. B. Gartner/ISG). xlsx-Import oben rechts.
-              </CardDescription>
-            </div>
-            <div className="flex flex-wrap items-center justify-end gap-2">
-            <input
-              ref={xlsxInputRef}
-              type="file"
-              accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0]
-                if (file) handleXlsxImport(file)
-                e.target.value = ''
-              }}
-            />
-            <div
-              role="button"
-              tabIndex={0}
-              onClick={() => !importing && xlsxInputRef.current?.click()}
-              onKeyDown={(e) => e.key === 'Enter' && !importing && xlsxInputRef.current?.click()}
-              className="flex h-11 items-center rounded-md border px-3 text-xs text-muted-foreground cursor-pointer hover:bg-muted/50"
-            >
-              <span className="truncate">xlsx Import</span>
-            </div>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-11 rounded-xl px-4"
-              disabled={importing}
-              onClick={() => xlsxInputRef.current?.click()}
-            >
-              {importing ? <Loader2 className="mr-2 size-4 animate-spin" /> : <UploadIcon className="mr-2 size-4" />}
-              Listen importieren
-            </Button>
-            <Button
-              size="sm"
-              className="h-11 rounded-xl px-4"
-              onClick={() => setCreateOpen(true)}
-            >
-              <PlusCircleIcon className="mr-2 size-4" />
-              Deal anlegen
-            </Button>
-          </div>
-          </div>
-        </CardHeader>
-        <CardContent className="flex-1">
-          {expiring.length === 0 ? (
-            <div className="rounded-lg border border-dashed bg-muted/30 p-8 text-center text-muted-foreground">
-              <p className="text-sm">Keine auslaufenden Deals.</p>
-              <p className="mt-1 text-xs">xlsx-Datei oben ablegen oder „Listen importieren“ nutzen.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {expiring.map((deal) => (
-                <div
-                  key={deal.id}
-                  className="flex flex-col gap-2 rounded-lg border p-3"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <button
-                        type="button"
-                        onClick={() => openDealSheet(deal.id)}
-                        className="font-medium hover:underline text-left"
-                      >
-                        {deal.title}
-                      </button>
-                      {deal.company_name && (
-                        <p className="text-muted-foreground text-sm">{deal.company_name}</p>
-                      )}
-                      {deal.incumbent_provider && (
-                        <p className="text-muted-foreground text-xs mt-0.5">
-                          <strong>Aktueller Anbieter:</strong> {deal.incumbent_provider}
-                        </p>
-                      )}
-                    </div>
-                    <ExpiryBadge dateStr={deal.expiry_date!} />
-                  </div>
-                  <div className="flex flex-wrap items-center gap-3 text-sm">
-                    <span className="text-muted-foreground">
-                      Volumen: {formatVolume(deal.volume)}
-                    </span>
-                    {deal.linked_refs?.length ? (
-                      <span className="flex items-center gap-1.5">
-                        Referenzen: <LinkedRefLogos refs={deal.linked_refs} />
-                      </span>
-                    ) : null}
-                    <SmartMatchCell dealId={deal.id} matchMap={matchMap} onOpenDeal={openDealSheet} />
-                  </div>
-                  <ProgressBar dateStr={deal.expiry_date!} />
-                  <div className="flex items-center justify-end gap-2 pt-1">
-                    <Button variant="outline" size="sm" onClick={() => openDealSheet(deal.id)}>
-                      Öffnen
-                    </Button>
-                  </div>
-                  {deal.account_manager_id && (
-                    <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
-                      <Avatar className="h-5 w-5">
-                        <AvatarFallback className="text-[10px]">
-                          {(deal.account_manager_name ?? deal.account_manager_id).slice(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span>AM: {deal.account_manager_name ?? '—'}</span>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <HandshakeIcon className="size-4" />
+          <span>
+            {tab === 'mine' ? 'Meine Deals' : tab === 'all' ? 'Alle Deals' : 'Auslaufende Deals'} ({filtered.length})
+          </span>
+        </div>
+        <div className="w-full sm:w-[320px]">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Suche (Titel, Account, AM) …"
+            className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+          />
+        </div>
+      </div>
+
+      <DataTable
+        columns={columns}
+        data={filtered}
+        initialPageSize={10}
+        showViewOptions
+      />
 
       <Sheet open={!!selectedDealId} onOpenChange={(open) => !open && closeDealSheet()}>
         <SheetContent className="flex flex-col gap-0 p-0 sm:max-w-sm md:w-[380px] md:max-w-[380px] overflow-y-auto">

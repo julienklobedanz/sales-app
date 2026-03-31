@@ -1,12 +1,11 @@
 export type DealStatus =
-  | 'in_negotiation'
-  | 'rfp_phase'
+  | 'open'
+  | 'rfp'
+  | 'negotiation'
   | 'won'
   | 'lost'
-  | 'on_hold'
-  | 'reference_sought'
-  | 'in_approval'
-  | 'reference_found'
+  | 'withdrawn'
+  | 'archived'
 
 export type DealRow = {
   id: string
@@ -34,12 +33,11 @@ export type DealWithReferences = DealRow & {
 }
 
 export const DEAL_STATUS_LABELS: Record<DealStatus, string> = {
-  in_negotiation: 'In Verhandlung',
-  rfp_phase: 'RFP Phase',
+  open: 'Offen',
+  rfp: 'RFP',
+  negotiation: 'Verhandlung',
   won: 'Gewonnen',
   lost: 'Verloren',
-  on_hold: 'Pausiert',
-  reference_sought: 'Dringend gesucht',
-  in_approval: 'In Abstimmung',
-  reference_found: 'Referenz gefunden',
+  withdrawn: 'Zurückgezogen',
+  archived: 'Archiviert',
 }

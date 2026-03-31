@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { DEAL_STATUS_LABELS, type DealWithReferences } from './types'
-import { submitReferenceRequest, addReferenceToDeal, removeReferenceFromDeal } from './actions'
+import { submitReferenceRequest, addReferenceToDeal, removeReferenceFromDeal, recordReferenceHelped } from './actions'
 import {
   FileTextIcon,
   SendIcon,
@@ -160,6 +160,12 @@ export function DealDetailContent({
     }
   }
 
+  async function handleReferenceHelped(referenceId: string, helped: boolean, comment?: string) {
+    const result = await recordReferenceHelped({ dealId: deal.id, referenceId, helped, comment })
+    if (!result.success) toast.error(result.error ?? 'Konnte Feedback nicht speichern.')
+    else toast.success('Feedback gespeichert.')
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -283,6 +289,9 @@ export function DealDetailContent({
                     {ref.title}
                   </Link>
                   <span className="text-muted-foreground text-xs shrink-0">({ref.company_name})</span>
+                  <ReferenceHelpedDialog
+                    onSubmit={(helped, comment) => handleReferenceHelped(ref.id, helped, comment)}
+                  />
                   <Button variant="ghost" size="sm" className="h-7" onClick={() => handleRemoveReference(ref.id)}>
                     <Trash2Icon className="size-4" />
                   </Button>
@@ -366,5 +375,80 @@ export function DealDetailContent({
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+function ReferenceHelpedDialog({
+  onSubmit,
+}: {
+  onSubmit: (helped: boolean, comment?: string) => void | Promise<void>
+}) {
+  const [open, setOpen] = useState(false)
+  const [helped, setHelped] = useState<'yes' | 'no' | ''>('')
+  const [comment, setComment] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  async function submit() {
+    if (!helped) return
+    setSaving(true)
+    try {
+      await onSubmit(helped === 'yes', comment.trim() || undefined)
+      setOpen(false)
+      setHelped('')
+      setComment('')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button type="button" variant="outline" size="sm" className="h-7 px-2 text-xs">
+          Feedback
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Hat diese Referenz geholfen?</DialogTitle>
+          <DialogDescription>
+            Kurzes Feedback hilft, Matching und Bestand zu verbessern.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-2">
+            <Label>Antwort</Label>
+            <Select value={helped || '__none__'} onValueChange={(v) => setHelped(v === '__none__' ? '' : (v as 'yes' | 'no'))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Bitte auswählen …" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">—</SelectItem>
+                <SelectItem value="yes">Ja</SelectItem>
+                <SelectItem value="no">Nein</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="ref-helped-comment">Kommentar (optional)</Label>
+            <Textarea
+              id="ref-helped-comment"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              rows={3}
+              placeholder="z. B. relevant wegen Branche/Scope; fehlte aber XY …"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>
+            Abbrechen
+          </Button>
+          <Button onClick={submit} disabled={saving || !helped}>
+            {saving ? 'Speichern …' : 'Speichern'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

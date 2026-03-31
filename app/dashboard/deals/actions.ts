@@ -6,6 +6,33 @@ import { Resend } from 'resend'
 import * as XLSX from 'xlsx'
 import type { DealRow, DealStatus, DealWithReferences } from './types'
 
+const LEGACY_STATUS_MAP: Record<string, DealStatus> = {
+  in_negotiation: 'negotiation',
+  rfp_phase: 'rfp',
+  on_hold: 'open',
+  reference_sought: 'open',
+  in_approval: 'open',
+  reference_found: 'open',
+}
+function normalizeDealStatus(raw: unknown): DealStatus {
+  const s = String(raw ?? '').trim()
+  if (!s) return 'open'
+  const mapped = LEGACY_STATUS_MAP[s]
+  if (mapped) return mapped
+  if (
+    s === 'open' ||
+    s === 'rfp' ||
+    s === 'negotiation' ||
+    s === 'won' ||
+    s === 'lost' ||
+    s === 'withdrawn' ||
+    s === 'archived'
+  ) {
+    return s
+  }
+  return 'open'
+}
+
 function getResend(): Resend | null {
   const key = process.env.RESEND_API_KEY
   if (!key) return null
@@ -111,7 +138,7 @@ export async function getDeals(): Promise<DealRow[]> {
       account_manager_name: r.account_manager_id ? names[r.account_manager_id] ?? null : null,
       sales_manager_id: r.sales_manager_id ?? null,
       sales_manager_name: r.sales_manager_id ? names[r.sales_manager_id] ?? null : null,
-      status: r.status as DealStatus,
+      status: normalizeDealStatus(r.status),
       expiry_date: r.expiry_date ?? null,
       created_at: r.created_at,
       updated_at: r.updated_at ?? null,
@@ -210,7 +237,7 @@ export async function getDealWithReferences(id: string): Promise<DealWithReferen
     account_manager_name: accountManagerName,
     sales_manager_id: deal.sales_manager_id ?? null,
     sales_manager_name: salesManagerName,
-    status: deal.status as DealStatus,
+    status: normalizeDealStatus(deal.status),
     expiry_date: deal.expiry_date ?? null,
     created_at: deal.created_at,
     updated_at: deal.updated_at ?? null,
@@ -237,7 +264,7 @@ export async function createDeal(formData: FormData): Promise<{ success: boolean
   const is_public = formData.get('is_public') !== 'false'
   const account_manager_id = formData.get('account_manager_id')?.toString() || null
   const sales_manager_id = formData.get('sales_manager_id')?.toString() || null
-  const status = (formData.get('status')?.toString() || 'in_negotiation') as DealStatus
+  const status = normalizeDealStatus(formData.get('status')?.toString() || 'open')
   const expiry_date = formData.get('expiry_date')?.toString()?.trim() || null
 
   const { data: deal, error } = await supabase
@@ -378,6 +405,41 @@ export async function removeReferenceFromDeal(dealId: string, referenceId: strin
   return {}
 }
 
+export async function recordReferenceHelped(args: {
+  dealId: string
+  referenceId: string
+  helped: boolean
+  comment?: string
+}): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .single()
+  const orgId = profile?.organization_id
+  if (!orgId) return { success: false, error: 'Keine Organisation zugeordnet.' }
+
+  const { error } = await supabase.from('evidence_events').insert({
+    organization_id: orgId,
+    deal_id: args.dealId,
+    reference_id: args.referenceId,
+    event_type: 'reference_helped',
+    payload: { helped: args.helped, comment: args.comment ?? null },
+    created_by: user.id,
+  })
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath('/dashboard/deals')
+  revalidatePath(`/dashboard/deals/${args.dealId}`)
+  return { success: true }
+}
+
 /** Marktlisten (xlsx) importieren: Zeilen als Expiring Deals anlegen. */
 export async function importDealsFromXlsx(formData: FormData): Promise<{ success: boolean; created?: number; error?: string }> {
   const supabase = await createServerSupabaseClient()
@@ -437,7 +499,7 @@ export async function importDealsFromXlsx(formData: FormData): Promise<{ success
       volume: volume || null,
       incumbent_provider: incumbent_provider || null,
       is_public: true,
-      status: 'in_negotiation',
+      status: 'open',
       expiry_date,
     })
     if (error) {
@@ -499,4 +561,44 @@ export async function submitReferenceRequest(
 
   revalidatePath(`/dashboard/deals/${dealId}`)
   return { success: true }
+}
+
+export async function createDealReferenceRequest(args: {
+  dealId: string
+  message: string
+}): Promise<{ success: boolean; error?: string; id?: string }> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .single()
+  const orgId = profile?.organization_id
+  if (!orgId) return { success: false, error: 'Keine Organisation zugeordnet.' }
+
+  const message = args.message.trim()
+  if (!message) return { success: false, error: 'Beschreibung ist erforderlich.' }
+
+  const { data, error } = await supabase
+    .from('deal_reference_requests')
+    .insert({
+      organization_id: orgId,
+      deal_id: args.dealId,
+      message,
+      status: 'open',
+      created_by: user.id,
+    })
+    .select('id')
+    .single()
+
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath('/dashboard/deals')
+  revalidatePath(`/dashboard/deals/${args.dealId}`)
+  return { success: true, id: data?.id as string }
 }

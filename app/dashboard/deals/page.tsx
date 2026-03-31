@@ -65,6 +65,7 @@ export default async function DealsPage({ searchParams }: Props) {
         expiring={expiring}
         allReferences={allReferences}
         matchMap={matchMap}
+        currentUserId={user.id}
         initialOpenDealId={params.open ?? null}
         companies={companies ?? []}
         orgProfiles={orgProfiles ?? []}
