@@ -1,7 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState, useRef } from 'react'
-import Link from 'next/link'
+import { useMemo, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Card,
@@ -22,23 +21,14 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { DEAL_STATUS_LABELS, type DealRow } from './types'
-import type { DealWithReferences } from './types'
-import type { RefOption } from './deal-detail-content'
-import { DealDetailContent } from './deal-detail-content'
+import type { DealRow } from './types'
 import { DealForm } from './new/deal-form'
-import { getDealWithReferences, importDealsFromXlsx, type MatchSuggestion } from './actions'
+import { importDealsFromXlsx, type MatchSuggestion } from './actions'
 import { HandshakeIcon, TimerIcon, PlusCircleIcon, Loader2, FileSpreadsheetIcon, UploadIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { DataTable } from '@/components/ui/data-table'
@@ -176,7 +166,6 @@ function ProgressBar({ dateStr }: { dateStr: string }) {
 type Props = {
   deals: DealRow[]
   expiring: DealRow[]
-  allReferences: RefOption[]
   matchMap: MatchMap
   currentUserId: string
   initialOpenDealId?: string | null
@@ -224,43 +213,17 @@ function DealStatusBadge({ status }: { status: DealRow['status'] }) {
 
 export function DealsClientContent({
   deals,
-  expiring,
-  allReferences,
   matchMap,
   currentUserId,
-  initialOpenDealId,
   companies,
   orgProfiles,
 }: Props) {
   const router = useRouter()
-  const [selectedDealId, setSelectedDealId] = useState<string | null>(initialOpenDealId ?? null)
-  const [selectedDeal, setSelectedDeal] = useState<DealWithReferences | null>(null)
-  const [loadingDeal, setLoadingDeal] = useState(false)
   const [importing, setImporting] = useState(false)
   const xlsxInputRef = useRef<HTMLInputElement>(null)
   const [createOpen, setCreateOpen] = useState(false)
   const [tab, setTab] = useState<TabKey>('mine')
   const [query, setQuery] = useState('')
-
-  useEffect(() => {
-    if (initialOpenDealId) setSelectedDealId(initialOpenDealId)
-  }, [initialOpenDealId])
-
-  useEffect(() => {
-    if (!selectedDealId) {
-      setSelectedDeal(null)
-      return
-    }
-    setLoadingDeal(true)
-    getDealWithReferences(selectedDealId)
-      .then((data) => {
-        setSelectedDeal(data ?? null)
-      })
-      .finally(() => setLoadingDeal(false))
-  }, [selectedDealId])
-
-  const openDealSheet = (id: string) => setSelectedDealId(id)
-  const closeDealSheet = () => setSelectedDealId(null)
 
   async function handleXlsxImport(file: File) {
     const formData = new FormData()
@@ -333,7 +296,7 @@ export function DealsClientContent({
           <button
             type="button"
             className="font-medium hover:underline text-left"
-            onClick={() => openDealSheet(row.original.id)}
+            onClick={() => router.push(`/dashboard/deals/${row.original.id}`)}
           >
             {row.original.title}
           </button>
@@ -383,105 +346,80 @@ export function DealsClientContent({
     ]
   }, [matchMap])
 
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant={tab === 'mine' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setTab('mine')}
-          >
-            Meine Deals
-          </Button>
-          <Button
-            variant={tab === 'all' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setTab('all')}
-          >
-            Alle Deals
-          </Button>
-          <Button
-            variant={tab === 'expiring' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setTab('expiring')}
-          >
-            Auslaufende Deals
-          </Button>
-        </div>
+  const toolbar = (
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          variant={tab === 'mine' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setTab('mine')}
+        >
+          Meine Deals
+        </Button>
+        <Button
+          variant={tab === 'all' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setTab('all')}
+        >
+          Alle Deals
+        </Button>
+        <Button
+          variant={tab === 'expiring' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setTab('expiring')}
+        >
+          Auslaufende Deals
+        </Button>
 
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <input
-            ref={xlsxInputRef}
-            type="file"
-            accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0]
-              if (file) handleXlsxImport(file)
-              e.target.value = ''
-            }}
-          />
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-11 rounded-xl px-4"
-            disabled={importing}
-            onClick={() => xlsxInputRef.current?.click()}
-          >
-            {importing ? <Loader2 className="mr-2 size-4 animate-spin" /> : <UploadIcon className="mr-2 size-4" />}
-            Listen importieren
-          </Button>
-          <Button size="sm" className="h-11 rounded-xl px-4" onClick={() => setCreateOpen(true)}>
-            <PlusCircleIcon className="mr-2 size-4" />
-            Deal anlegen
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <HandshakeIcon className="size-4" />
-          <span>
-            {tab === 'mine' ? 'Meine Deals' : tab === 'all' ? 'Alle Deals' : 'Auslaufende Deals'} ({filtered.length})
-          </span>
-        </div>
-        <div className="w-full sm:w-[320px]">
+        <div className="w-full sm:w-[280px]">
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Suche (Titel, Account, AM) …"
-            className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+            className="h-9 w-full rounded-md border bg-background px-3 text-sm"
           />
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <input
+          ref={xlsxInputRef}
+          type="file"
+          accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            if (file) handleXlsxImport(file)
+            e.target.value = ''
+          }}
+        />
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-9 px-3"
+          disabled={importing}
+          onClick={() => xlsxInputRef.current?.click()}
+        >
+          {importing ? <Loader2 className="mr-2 size-4 animate-spin" /> : <UploadIcon className="mr-2 size-4" />}
+          Listen importieren
+        </Button>
+        <Button size="sm" className="h-9 px-3" onClick={() => setCreateOpen(true)}>
+          <PlusCircleIcon className="mr-2 size-4" />
+          Deal anlegen
+        </Button>
+      </div>
+    </div>
+  )
+
+  return (
+    <div className="space-y-4">
       <DataTable
         columns={columns}
         data={filtered}
         initialPageSize={10}
+        toolbar={toolbar}
         showViewOptions
       />
-
-      <Sheet open={!!selectedDealId} onOpenChange={(open) => !open && closeDealSheet()}>
-        <SheetContent className="flex flex-col gap-0 p-0 sm:max-w-sm md:w-[380px] md:max-w-[380px] overflow-y-auto">
-          <SheetHeader className="shrink-0 border-b px-4 py-4">
-            <SheetTitle>
-              {selectedDeal ? selectedDeal.title : 'Deal'}
-            </SheetTitle>
-          </SheetHeader>
-          <div className="flex-1 overflow-y-auto px-4 py-4">
-            {loadingDeal && (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="size-8 animate-spin text-muted-foreground" />
-              </div>
-            )}
-            {!loadingDeal && selectedDeal && (
-              <DealDetailContent deal={selectedDeal} allReferences={allReferences} />
-            )}
-          </div>
-        </SheetContent>
-      </Sheet>
       {/* Popover/Dialog zum Anlegen eines neuen Deals */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="max-h-[90vh] min-h-[60vh] overflow-y-auto w-[calc(100vw-2rem)] max-w-[90vw] lg:max-w-7xl gap-0 border-0 px-6 py-6 md:px-12 md:py-10 lg:px-16 lg:py-12">

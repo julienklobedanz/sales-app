@@ -1,6 +1,6 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { getDeals, getExpiringDeals, getReferencesForOrg, getMatchingReferencesForDeals } from './actions'
+import { getDeals, getExpiringDeals, getMatchingReferencesForDeals } from './actions'
 import { DealsClientContent } from './deals-client'
 
 export const dynamic = 'force-dynamic'
@@ -25,10 +25,9 @@ export default async function DealsPage({ searchParams }: Props) {
 
   const params = await searchParams
 
-  const [deals, expiring, allReferences] = await Promise.all([
+  const [deals, expiring] = await Promise.all([
     getDeals(),
     getExpiringDeals(),
-    getReferencesForOrg(),
   ])
 
   const [companiesResult, orgProfilesResult, matchMap] = await Promise.all([
@@ -63,7 +62,6 @@ export default async function DealsPage({ searchParams }: Props) {
       <DealsClientContent
         deals={deals}
         expiring={expiring}
-        allReferences={allReferences}
         matchMap={matchMap}
         currentUserId={user.id}
         initialOpenDealId={params.open ?? null}
