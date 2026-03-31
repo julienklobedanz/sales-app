@@ -406,11 +406,137 @@ export async function getReferencesForOrg(): Promise<{ id: string; title: string
 
 export async function addReferenceToDeal(dealId: string, referenceId: string): Promise<{ error?: string }> {
   const supabase = await createServerSupabaseClient()
-  const { error } = await supabase.from('deal_references').insert({ deal_id: dealId, reference_id: referenceId })
+  const { error } = await supabase
+    .from('deal_references')
+    .insert({ deal_id: dealId, reference_id: referenceId })
   if (error) return { error: error.message }
   revalidatePath('/dashboard/deals')
   revalidatePath(`/dashboard/deals/${dealId}`)
   return {}
+}
+
+export async function addReferenceToDealWithScore(args: {
+  dealId: string
+  referenceId: string
+  similarityScore?: number | null
+}): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createServerSupabaseClient()
+  const { error } = await supabase.from('deal_references').insert({
+    deal_id: args.dealId,
+    reference_id: args.referenceId,
+    similarity_score:
+      typeof args.similarityScore === 'number' ? args.similarityScore : null,
+  })
+  if (error) return { success: false, error: error.message }
+  revalidatePath('/dashboard/deals')
+  revalidatePath(`/dashboard/deals/${args.dealId}`)
+  return { success: true }
+}
+
+export async function updateDeal(args: {
+  id: string
+  title: string
+  company_id: string | null
+  industry: string | null
+  volume: string | null
+  status: DealStatus
+  expiry_date: string | null
+  is_public: boolean
+  account_manager_id: string | null
+  sales_manager_id: string | null
+  requirements_text: string | null
+  incumbent_provider: string | null
+}): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .single()
+  const orgId = profile?.organization_id
+  if (!orgId) return { success: false, error: 'Keine Organisation zugeordnet.' }
+
+  const title = args.title.trim()
+  if (!title) return { success: false, error: 'Titel ist erforderlich.' }
+
+  const { error } = await supabase
+    .from('deals')
+    .update({
+      title,
+      company_id: args.company_id,
+      industry: args.industry,
+      volume: args.volume,
+      status: normalizeDealStatus(args.status),
+      expiry_date: args.expiry_date,
+      is_public: args.is_public,
+      account_manager_id: args.account_manager_id,
+      sales_manager_id: args.sales_manager_id,
+      requirements_text: args.requirements_text,
+      incumbent_provider: args.incumbent_provider,
+    })
+    .eq('id', args.id)
+    .eq('organization_id', orgId)
+
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath('/dashboard/deals')
+  revalidatePath(`/dashboard/deals/${args.id}`)
+  return { success: true }
+}
+
+export async function recordDealOutcome(args: {
+  dealId: string
+  outcome: 'won' | 'lost' | 'withdrawn'
+  comment?: string
+}): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .single()
+  const orgId = profile?.organization_id
+  if (!orgId) return { success: false, error: 'Keine Organisation zugeordnet.' }
+
+  const status = normalizeDealStatus(args.outcome)
+
+  const { error: updErr } = await supabase
+    .from('deals')
+    .update({ status })
+    .eq('id', args.dealId)
+    .eq('organization_id', orgId)
+  if (updErr) return { success: false, error: updErr.message }
+
+  const eventType =
+    args.outcome === 'won'
+      ? 'deal_won'
+      : args.outcome === 'lost'
+        ? 'deal_lost'
+        : 'deal_withdrawn'
+
+  const { error: evErr } = await supabase.from('evidence_events').insert({
+    organization_id: orgId,
+    deal_id: args.dealId,
+    reference_id: null,
+    event_type: eventType,
+    payload: { comment: args.comment?.trim() || null },
+    created_by: user.id,
+  })
+  if (evErr) return { success: false, error: evErr.message }
+
+  revalidatePath('/dashboard/deals')
+  revalidatePath(`/dashboard/deals/${args.dealId}`)
+  return { success: true }
 }
 
 export async function removeReferenceFromDeal(dealId: string, referenceId: string): Promise<{ error?: string }> {

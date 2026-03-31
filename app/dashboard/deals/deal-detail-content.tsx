@@ -97,17 +97,10 @@ export function DealDetailContent({
         <CardHeader>
           <CardTitle className="text-base">Anforderungen</CardTitle>
         </CardHeader>
-        <CardContent>
-          <Textarea
-            value={deal.requirements_text ?? ''}
-            readOnly
-            rows={10}
-            placeholder="Noch keine Anforderungen erfasst."
-            className="resize-y"
-          />
-          <p className="mt-2 text-xs text-muted-foreground">
-            Wird aktuell bei der Deal-Erstellung gepflegt. Edit-Dialog folgt.
-          </p>
+        <CardContent className="space-y-2">
+          <div className="text-sm text-muted-foreground whitespace-pre-wrap">
+            {deal.requirements_text?.trim() ? deal.requirements_text : '—'}
+          </div>
         </CardContent>
       </Card>
 

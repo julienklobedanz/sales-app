@@ -50,10 +50,30 @@ export default async function DealDetailPage({
   } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  const { data: me } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .single()
+  const orgId = (me as { organization_id?: string | null })?.organization_id ?? null
+  if (!orgId) redirect('/onboarding')
+
   const deal = await getDealWithReferences(id)
   if (!deal) notFound()
 
   const allReferences = await getReferencesForOrg()
+
+  const { data: companies } = await supabase
+    .from('companies')
+    .select('id, name')
+    .eq('organization_id', orgId)
+    .order('name')
+
+  const { data: orgProfiles } = await supabase
+    .from('profiles')
+    .select('id, full_name')
+    .eq('organization_id', orgId)
+    .order('full_name')
 
   const { data: events } = await supabase
     .from('evidence_events')
@@ -62,8 +82,14 @@ export default async function DealDetailPage({
     .order('created_at', { ascending: false })
     .limit(25)
 
-  const activities =
-    (events ?? []).map((e: any) => ({
+  const activities = [
+    {
+      id: 'deal-created',
+      at: new Date(deal.created_at),
+      title: 'Deal erstellt',
+      detail: 'Der Deal wurde angelegt.',
+    },
+    ...(events ?? []).map((e: any) => ({
       id: String(e.id),
       at: new Date(String(e.created_at)),
       title:
@@ -77,7 +103,8 @@ export default async function DealDetailPage({
                 ? 'Deal zurückgezogen'
                 : String(e.event_type),
       detail: e.payload?.comment ? String(e.payload.comment) : '',
-    })) ?? []
+    })),
+  ]
 
   return (
     <div className="px-6 pt-6 md:px-12 lg:px-20 pb-10">
@@ -99,11 +126,8 @@ export default async function DealDetailPage({
                 <span>{deal.title}</span>
                 <DealStatusBadge status={deal.status} />
               </h1>
-              <p className="text-sm text-muted-foreground">
-                {deal.company_name ?? '—'} {deal.industry ? `· ${deal.industry}` : ''}
-              </p>
-              {deal.volume ? (
-                <p className="text-sm text-muted-foreground">Volumen: {deal.volume}</p>
+              {deal.industry ? (
+                <p className="text-sm text-muted-foreground">{deal.industry}</p>
               ) : null}
             </div>
           </div>
@@ -114,7 +138,7 @@ export default async function DealDetailPage({
         <div className="lg:sticky lg:top-6 space-y-4 h-fit">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Deal-Metadaten</CardTitle>
+              <CardTitle className="text-base">Deal-Informationen</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <div className="flex justify-between gap-2">
@@ -140,7 +164,12 @@ export default async function DealDetailPage({
             </CardContent>
           </Card>
 
-          <RfpSidebarPanel dealId={deal.id} />
+          <RfpSidebarPanel
+            deal={deal}
+            companies={(companies ?? []) as Array<{ id: string; name: string }>}
+            orgProfiles={(orgProfiles ?? []) as Array<{ id: string; full_name: string | null }>}
+            allReferences={allReferences}
+          />
         </div>
       </div>
     </div>
