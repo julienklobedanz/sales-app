@@ -1,12 +1,11 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
@@ -31,112 +30,38 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { DEAL_STATUS_LABELS, type DealWithReferences } from './types'
-import { submitReferenceRequest, addReferenceToDeal, removeReferenceFromDeal, recordReferenceHelped } from './actions'
+import { addReferenceToDeal, removeReferenceFromDeal, recordReferenceHelped } from './actions'
 import {
-  FileTextIcon,
-  SendIcon,
   PlusCircleIcon,
   Trash2Icon,
-  Loader2,
-  FileUp,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
-type RfpCoverageMatch = {
-  id: string
-  title: string
-  summary: string | null
-  industry: string | null
-  similarity: number
-}
-
-type RfpAnalyzeResult = {
-  analysisId: string
-  storagePath: string
-  requirements: { id: string; text: string; category?: string }[]
-  coverage: Array<{
-    requirementId: string
-    requirementText: string
-    category?: string
-    matches: RfpCoverageMatch[]
-    embedError?: string
-  }>
-}
-
 export type RefOption = { id: string; title: string; company_name: string }
 
-function formatDate(iso: string) {
-  const d = new Date(iso)
-  const day = d.getUTCDate().toString().padStart(2, '0')
-  const month = (d.getUTCMonth() + 1).toString().padStart(2, '0')
-  const year = d.getUTCFullYear()
-  return `${day}.${month}.${year}`
+type DealActivity = { id: string; at: Date; title: string; detail: string }
+
+function splitTags(tags: string | null | undefined) {
+  return (tags ?? '')
+    .split(',')
+    .map((t) => t.trim())
+    .filter(Boolean)
 }
 
 export function DealDetailContent({
   deal,
   allReferences,
+  activities,
 }: {
   deal: DealWithReferences
   allReferences: RefOption[]
+  activities: DealActivity[]
 }) {
   const router = useRouter()
-  const [message, setMessage] = useState('')
-  const [modalOpen, setModalOpen] = useState(false)
-  const [sending, setSending] = useState(false)
   const linkedIds = new Set(deal.references.map((r) => r.id))
   const availableRefs = allReferences.filter((r) => !linkedIds.has(r.id))
   const [linkRefId, setLinkRefId] = useState('')
   const [linking, setLinking] = useState(false)
-  const rfpInputRef = useRef<HTMLInputElement>(null)
-  const [rfpAnalyzing, setRfpAnalyzing] = useState(false)
-  const [rfpResult, setRfpResult] = useState<RfpAnalyzeResult | null>(null)
-
-  async function handleRfpFile(file: File) {
-    setRfpAnalyzing(true)
-    setRfpResult(null)
-    const formData = new FormData()
-    formData.set('dealId', deal.id)
-    formData.set('file', file)
-    try {
-      const res = await fetch('/api/rfp/analyze', { method: 'POST', body: formData })
-      const json = (await res.json()) as
-        | { success: true; analysisId: string; storagePath: string; requirements: RfpAnalyzeResult['requirements']; coverage: RfpAnalyzeResult['coverage'] }
-        | { success: false; error?: string }
-
-      if (!res.ok || !('success' in json) || !json.success) {
-        const err = 'error' in json ? json.error : undefined
-        toast.error(err ?? 'RFP-Analyse fehlgeschlagen.')
-        return
-      }
-
-      setRfpResult({
-        analysisId: json.analysisId,
-        storagePath: json.storagePath,
-        requirements: json.requirements,
-        coverage: json.coverage,
-      })
-      toast.success('RFP analysiert. Coverage siehe unten.')
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Netzwerkfehler.')
-    } finally {
-      setRfpAnalyzing(false)
-      if (rfpInputRef.current) rfpInputRef.current.value = ''
-    }
-  }
-
-  async function handleSubmitRequest() {
-    setSending(true)
-    const result = await submitReferenceRequest(deal.id, message)
-    setSending(false)
-    if (result.success) {
-      toast.success('Nachricht an den Reference Manager gesendet.')
-      setModalOpen(false)
-      setMessage('')
-    } else {
-      toast.error(result.error)
-    }
-  }
 
   async function handleAddReference() {
     if (!linkRefId) return
@@ -168,136 +93,98 @@ export function DealDetailContent({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold leading-tight tracking-tight">{deal.title}</h2>
-        <div className="mt-1 flex flex-wrap items-center gap-2">
-          <Badge variant="outline">{DEAL_STATUS_LABELS[deal.status]}</Badge>
-          {deal.company_name && (
-            <span className="text-muted-foreground text-sm">{deal.company_name}</span>
-          )}
-          {deal.expiry_date && (
-            <span className="text-muted-foreground text-sm">Ablauf: {formatDate(deal.expiry_date)}</span>
-          )}
-        </div>
-      </div>
-
       <Card>
-        <CardHeader className="py-3">
-          <CardTitle className="text-sm">Deal-Infos</CardTitle>
-          <CardDescription className="text-xs">Unternehmen, Volumen, Verantwortliche.</CardDescription>
+        <CardHeader>
+          <CardTitle className="text-base">Anforderungen</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2 py-0 text-sm">
-          {deal.company_name && <p><strong>Unternehmen:</strong> {deal.company_name}</p>}
-          {deal.industry && <p><strong>Branche:</strong> {deal.industry}</p>}
-          {deal.volume && <p><strong>Volumen:</strong> {deal.volume}</p>}
-          {deal.account_manager_name && <p><strong>Account Manager:</strong> {deal.account_manager_name}</p>}
-          {deal.sales_manager_name && <p><strong>Sales Manager:</strong> {deal.sales_manager_name}</p>}
-          <p><strong>Sichtbarkeit:</strong> {deal.is_public ? 'Öffentlich (Team)' : 'Privat'}</p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="py-3">
-          <CardTitle className="text-sm">RFP & Coverage</CardTitle>
-          <CardDescription className="text-xs">
-            PDF oder DOCX hochladen: Anforderungen extrahieren und passende Referenzen aus eurer Evidence-Bibliothek zuordnen.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3 py-0">
-          <input
-            ref={rfpInputRef}
-            type="file"
-            accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0]
-              if (file) void handleRfpFile(file)
-            }}
+        <CardContent>
+          <Textarea
+            value={deal.requirements_text ?? ''}
+            readOnly
+            rows={10}
+            placeholder="Noch keine Anforderungen erfasst."
+            className="resize-y"
           />
-          <Button
-            type="button"
-            size="sm"
-            variant="secondary"
-            className="w-full sm:w-auto"
-            disabled={rfpAnalyzing}
-            onClick={() => rfpInputRef.current?.click()}
-          >
-            {rfpAnalyzing ? (
-              <Loader2 className="mr-2 size-4 animate-spin" />
-            ) : (
-              <FileUp className="mr-2 size-4" />
-            )}
-            {rfpAnalyzing ? 'Analyse läuft …' : 'RFP hochladen (PDF/DOCX)'}
-          </Button>
-          <p className="text-muted-foreground text-xs">
-            Kann je nach Umfang einige Minuten dauern (Einbettungen + Abgleich pro Anforderung).
+          <p className="mt-2 text-xs text-muted-foreground">
+            Wird aktuell bei der Deal-Erstellung gepflegt. Edit-Dialog folgt.
           </p>
-
-          {rfpResult && (
-            <div className="mt-2 max-h-[min(52vh,480px)] space-y-3 overflow-y-auto rounded-md border bg-muted/30 p-3 text-sm">
-              <p className="text-muted-foreground text-xs">
-                Analyse-ID: <code className="text-foreground">{rfpResult.analysisId}</code>
-              </p>
-              {rfpResult.coverage.map((row) => (
-                <div key={row.requirementId} className="rounded border bg-background p-2">
-                  <p className="font-medium leading-snug">{row.requirementText}</p>
-                  {row.category && (
-                    <p className="text-muted-foreground mt-0.5 text-xs">Kategorie: {row.category}</p>
-                  )}
-                  {row.embedError ? (
-                    <p className="text-destructive mt-1 text-xs">{row.embedError}</p>
-                  ) : row.matches.length === 0 ? (
-                    <p className="text-muted-foreground mt-2 text-xs">Keine passenden Referenzen über Schwellenwert.</p>
-                  ) : (
-                    <ul className="mt-2 space-y-1.5 border-t pt-2">
-                      {row.matches.map((m) => (
-                        <li key={m.id} className="flex flex-wrap items-baseline justify-between gap-2 text-xs">
-                          <Link
-                            href={`/dashboard/evidence/${m.id}/edit`}
-                            className="min-w-0 flex-1 font-medium text-primary hover:underline"
-                          >
-                            {m.title}
-                          </Link>
-                          <span className="text-muted-foreground shrink-0">
-                            {(m.similarity * 100).toFixed(0)} % Ähnlichkeit
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader className="py-3">
-          <CardTitle className="text-sm">Verknüpfte Referenzen</CardTitle>
-          <CardDescription className="text-xs">Mit diesem Deal verknüpfte Referenzen.</CardDescription>
+        <CardHeader>
+          <CardTitle className="text-base">Verknüpfte Referenzen</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4 py-0">
+        <CardContent className="space-y-4">
           {deal.references.length === 0 ? (
             <p className="text-muted-foreground text-sm">Noch keine Referenzen verknüpft.</p>
           ) : (
-            <ul className="space-y-2">
+            <div className="space-y-2">
               {deal.references.map((ref) => (
-                <li key={ref.id} className="flex items-center gap-2">
-                  <FileTextIcon className="size-4 shrink-0 text-muted-foreground" />
-                  <Link href={`/dashboard/evidence/${ref.id}/edit`} className="min-w-0 flex-1 hover:underline truncate text-sm">
-                    {ref.title}
-                  </Link>
-                  <span className="text-muted-foreground text-xs shrink-0">({ref.company_name})</span>
-                  <ReferenceHelpedDialog
-                    onSubmit={(helped, comment) => handleReferenceHelped(ref.id, helped, comment)}
-                  />
-                  <Button variant="ghost" size="sm" className="h-7" onClick={() => handleRemoveReference(ref.id)}>
-                    <Trash2Icon className="size-4" />
-                  </Button>
-                </li>
+                <div key={ref.id} className="rounded-lg border p-3">
+                  <div className="flex items-start gap-3">
+                    {ref.logo_url ? (
+                      <img
+                        src={ref.logo_url}
+                        alt=""
+                        className="h-10 w-10 rounded border bg-background object-contain"
+                      />
+                    ) : (
+                      <div className="h-10 w-10 rounded border bg-muted flex items-center justify-center text-xs text-muted-foreground">
+                        —
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <Link
+                            href={`/dashboard/evidence/${ref.id}/edit`}
+                            className="font-medium hover:underline block truncate"
+                          >
+                            {ref.title}
+                          </Link>
+                          <div className="text-xs text-muted-foreground truncate">
+                            {ref.company_name}
+                            {typeof ref.similarity_score === 'number'
+                              ? ` · ${(ref.similarity_score * 100).toFixed(0)}%`
+                              : ''}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <ReferenceHelpedDialog
+                            onSubmit={(helped, comment) => handleReferenceHelped(ref.id, helped, comment)}
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7"
+                            onClick={() => handleRemoveReference(ref.id)}
+                          >
+                            <Trash2Icon className="size-4" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {ref.summary ? (
+                        <p className="mt-2 text-sm text-muted-foreground line-clamp-2 whitespace-pre-wrap">
+                          {ref.summary}
+                        </p>
+                      ) : null}
+
+                      {splitTags(ref.tags).length ? (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {splitTags(ref.tags).slice(0, 6).map((t) => (
+                            <Badge key={t} variant="secondary">
+                              {t}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
           {availableRefs.length > 0 && (
             <div className="flex gap-2 pt-2">
@@ -322,56 +209,36 @@ export function DealDetailContent({
       </Card>
 
       <Card>
-        <CardHeader className="py-3">
-          <CardTitle className="text-sm">Referenzbedarf melden</CardTitle>
-          <CardDescription className="text-xs">
-            Keine passende Referenz? Nachricht an den Reference Manager senden.
-          </CardDescription>
+        <CardHeader>
+          <CardTitle className="text-base">Letzte Aktivitäten</CardTitle>
         </CardHeader>
-        <CardContent className="py-0">
-          <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <SendIcon className="mr-2 size-4" />
-                Referenzbedarf melden
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Referenzbedarf melden</DialogTitle>
-                <DialogDescription>
-                  Beschreiben Sie kurz, welche Art von Referenz Sie für diesen Deal benötigen.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="rounded-md border bg-muted/50 p-3 text-sm">
-                  <p><strong>Deal:</strong> {deal.title}</p>
-                  {deal.company_name && <p><strong>Unternehmen:</strong> {deal.company_name}</p>}
-                  {deal.industry && <p><strong>Branche:</strong> {deal.industry}</p>}
-                  {deal.volume && <p><strong>Volumen:</strong> {deal.volume}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="ref-request-message">Ihre Nachricht *</Label>
-                  <Textarea
-                    id="ref-request-message"
-                    placeholder="z. B. Referenz aus dem Finanzsektor mit Cloud-Migration …"
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    rows={4}
-                    required
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setModalOpen(false)} disabled={sending}>
-                  Abbrechen
-                </Button>
-                <Button onClick={handleSubmitRequest} disabled={sending || !message.trim()}>
-                  {sending ? 'Wird gesendet …' : 'Nachricht senden'}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+        <CardContent className="space-y-3">
+          {activities.length ? (
+            <ol className="relative ml-2 border-l pl-6">
+              {activities.map((a) => (
+                <li key={a.id} className="pb-4 last:pb-0">
+                  <span className="absolute -left-1.5 mt-1.5 size-3 rounded-full bg-muted ring-4 ring-background" />
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="text-sm font-medium">{a.title}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {a.at.toLocaleString('de-DE', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </div>
+                  </div>
+                  {a.detail ? (
+                    <div className="mt-1 text-sm text-muted-foreground whitespace-pre-wrap">{a.detail}</div>
+                  ) : null}
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="text-sm text-muted-foreground">Noch keine Aktivitäten.</p>
+          )}
         </CardContent>
       </Card>
     </div>

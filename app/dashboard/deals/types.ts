@@ -14,6 +14,7 @@ export type DealRow = {
   company_name: string | null
   industry: string | null
   volume: string | null
+  requirements_text?: string | null
   incumbent_provider: string | null
   is_public: boolean
   account_manager_id: string | null
@@ -29,7 +30,15 @@ export type DealRow = {
 }
 
 export type DealWithReferences = DealRow & {
-  references: { id: string; title: string; company_name: string }[]
+  references: Array<{
+    id: string
+    title: string
+    company_name: string
+    logo_url?: string | null
+    summary?: string | null
+    tags?: string | null
+    similarity_score?: number | null
+  }>
 }
 
 export const DEAL_STATUS_LABELS: Record<DealStatus, string> = {

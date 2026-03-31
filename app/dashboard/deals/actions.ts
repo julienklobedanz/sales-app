@@ -57,6 +57,7 @@ export async function getDeals(): Promise<DealRow[]> {
       company_id,
       industry,
       volume,
+      requirements_text,
       incumbent_provider,
       is_public,
       account_manager_id,
@@ -132,6 +133,7 @@ export async function getDeals(): Promise<DealRow[]> {
       company_name: company?.name ?? null,
       industry: r.industry ?? null,
       volume: r.volume ?? null,
+      requirements_text: (r as { requirements_text?: string | null }).requirements_text ?? null,
       incumbent_provider: (r as { incumbent_provider?: string | null }).incumbent_provider ?? null,
       is_public: r.is_public ?? true,
       account_manager_id: r.account_manager_id ?? null,
@@ -177,6 +179,7 @@ export async function getDealWithReferences(id: string): Promise<DealWithReferen
       company_id,
       industry,
       volume,
+      requirements_text,
       incumbent_provider,
       is_public,
       account_manager_id,
@@ -195,22 +198,37 @@ export async function getDealWithReferences(id: string): Promise<DealWithReferen
 
   const { data: drRows } = await supabase
     .from('deal_references')
-    .select('reference_id')
+    .select('reference_id, similarity_score')
     .eq('deal_id', id)
 
   const refIds = (drRows ?? []).map((r) => r.reference_id).filter(Boolean) as string[]
-  let references: { id: string; title: string; company_name: string }[] = []
+  const scoreByRefId: Record<string, number | null> = {}
+  ;(drRows ?? []).forEach((r) => {
+    if (!r.reference_id) return
+    scoreByRefId[r.reference_id] =
+      typeof (r as { similarity_score?: unknown }).similarity_score === 'number'
+        ? ((r as { similarity_score: number }).similarity_score as number)
+        : null
+  })
+
+  let references: DealWithReferences['references'] = []
   if (refIds.length > 0) {
     const { data: refs } = await supabase
       .from('references')
-      .select('id, title, companies(name)')
+      .select('id, title, summary, tags, companies(name, logo_url)')
       .in('id', refIds)
     for (const r of refs ?? []) {
-      const company = Array.isArray(r.companies) ? (r.companies as { name?: string }[])[0] : (r.companies as { name?: string } | null)
+      const company = Array.isArray(r.companies)
+        ? (r.companies as { name?: string; logo_url?: string | null }[])[0]
+        : (r.companies as { name?: string; logo_url?: string | null } | null)
       references.push({
         id: r.id,
         title: r.title ?? '',
         company_name: company?.name ?? '—',
+        logo_url: company?.logo_url ?? null,
+        summary: (r as { summary?: string | null }).summary ?? null,
+        tags: (r as { tags?: string | null }).tags ?? null,
+        similarity_score: scoreByRefId[r.id] ?? null,
       })
     }
   }
@@ -231,6 +249,7 @@ export async function getDealWithReferences(id: string): Promise<DealWithReferen
     company_name: (company as { name?: string })?.name ?? null,
     industry: deal.industry ?? null,
     volume: deal.volume ?? null,
+    requirements_text: (deal as { requirements_text?: string | null }).requirements_text ?? null,
     incumbent_provider: (deal as { incumbent_provider?: string | null }).incumbent_provider ?? null,
     is_public: deal.is_public ?? true,
     account_manager_id: deal.account_manager_id ?? null,
@@ -260,6 +279,7 @@ export async function createDeal(formData: FormData): Promise<{ success: boolean
   const companyId = formData.get('company_id')?.toString() || null
   const industry = formData.get('industry')?.toString()?.trim() || null
   const volume = formData.get('volume')?.toString()?.trim() || null
+  const requirements_text = formData.get('requirements_text')?.toString()?.trim() || null
   const incumbent_provider = formData.get('incumbent_provider')?.toString()?.trim() || null
   const is_public = formData.get('is_public') !== 'false'
   const account_manager_id = formData.get('account_manager_id')?.toString() || null
@@ -275,6 +295,7 @@ export async function createDeal(formData: FormData): Promise<{ success: boolean
       company_id: companyId || null,
       industry,
       volume,
+      requirements_text,
       incumbent_provider: incumbent_provider || null,
       is_public,
       account_manager_id: account_manager_id || null,

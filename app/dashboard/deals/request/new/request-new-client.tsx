@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { Button } from '@/components/ui/button'
@@ -14,13 +14,19 @@ import { Loader2 } from 'lucide-react'
 
 export function RequestNewClient({
   deals,
+  initialDealId,
 }: {
   deals: Array<{ id: string; title: string }>
+  initialDealId: string | null
 }) {
   const router = useRouter()
   const [dealId, setDealId] = useState('')
   const [message, setMessage] = useState('')
   const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (initialDealId) setDealId(initialDealId)
+  }, [initialDealId])
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()

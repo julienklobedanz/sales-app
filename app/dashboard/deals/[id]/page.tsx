@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 import { getDealWithReferences, getReferencesForOrg } from '../actions'
 import { DealDetailContent } from '../deal-detail-content'
+import { RfpSidebarPanel } from '../rfp-sidebar-panel'
 import type { DealStatus } from '../types'
 
 export const dynamic = 'force-dynamic'
@@ -54,6 +55,30 @@ export default async function DealDetailPage({
 
   const allReferences = await getReferencesForOrg()
 
+  const { data: events } = await supabase
+    .from('evidence_events')
+    .select('id, event_type, payload, created_at')
+    .eq('deal_id', id)
+    .order('created_at', { ascending: false })
+    .limit(25)
+
+  const activities =
+    (events ?? []).map((e: any) => ({
+      id: String(e.id),
+      at: new Date(String(e.created_at)),
+      title:
+        e.event_type === 'reference_helped'
+          ? (e.payload?.helped ? 'Referenz hat geholfen' : 'Referenz hat nicht geholfen')
+          : e.event_type === 'deal_won'
+            ? 'Deal gewonnen'
+            : e.event_type === 'deal_lost'
+              ? 'Deal verloren'
+              : e.event_type === 'deal_withdrawn'
+                ? 'Deal zurückgezogen'
+                : String(e.event_type),
+      detail: e.payload?.comment ? String(e.payload.comment) : '',
+    })) ?? []
+
   return (
     <div className="px-6 pt-6 md:px-12 lg:px-20 pb-10">
       <div className="mb-6">
@@ -70,10 +95,10 @@ export default async function DealDetailPage({
         <div className="space-y-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="space-y-2 min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-2xl font-bold tracking-tight break-words flex flex-wrap items-center gap-2">
+                <span>{deal.title}</span>
                 <DealStatusBadge status={deal.status} />
-              </div>
-              <h1 className="text-2xl font-bold tracking-tight break-words">{deal.title}</h1>
+              </h1>
               <p className="text-sm text-muted-foreground">
                 {deal.company_name ?? '—'} {deal.industry ? `· ${deal.industry}` : ''}
               </p>
@@ -83,7 +108,7 @@ export default async function DealDetailPage({
             </div>
           </div>
 
-          <DealDetailContent deal={deal} allReferences={allReferences} />
+          <DealDetailContent deal={deal} allReferences={allReferences} activities={activities} />
         </div>
 
         <div className="lg:sticky lg:top-6 space-y-4 h-fit">
@@ -105,21 +130,17 @@ export default async function DealDetailPage({
                 <span className="font-medium truncate max-w-[220px]">{deal.sales_manager_name ?? '—'}</span>
               </div>
               <div className="flex justify-between gap-2">
+                <span className="text-muted-foreground">Volumen</span>
+                <span className="font-medium truncate max-w-[220px]">{deal.volume ?? '—'}</span>
+              </div>
+              <div className="flex justify-between gap-2">
                 <span className="text-muted-foreground">Ablaufdatum</span>
                 <span className="font-medium">{deal.expiry_date ?? '—'}</span>
               </div>
-              <div className="flex justify-between gap-2">
-                <span className="text-muted-foreground">Erstellt</span>
-                <span className="font-medium">{new Date(deal.created_at).toLocaleDateString('de-DE')}</span>
-              </div>
-              <div className="flex justify-between gap-2">
-                <span className="text-muted-foreground">Geändert</span>
-                <span className="font-medium">
-                  {deal.updated_at ? new Date(deal.updated_at).toLocaleDateString('de-DE') : '—'}
-                </span>
-              </div>
             </CardContent>
           </Card>
+
+          <RfpSidebarPanel dealId={deal.id} />
         </div>
       </div>
     </div>

@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -116,6 +117,16 @@ export function DealForm({
           <div className="space-y-2">
             <Label htmlFor="expiry_date">Ablaufdatum</Label>
             <Input id="expiry_date" name="expiry_date" type="date" disabled={pending} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="requirements_text">Anforderungen</Label>
+            <Textarea
+              id="requirements_text"
+              name="requirements_text"
+              placeholder="Freitext: wichtigste Anforderungen, Scope, Must-haves …"
+              rows={6}
+              disabled={pending}
+            />
           </div>
           <div className="space-y-2">
             <Label>Sichtbarkeit</Label>
