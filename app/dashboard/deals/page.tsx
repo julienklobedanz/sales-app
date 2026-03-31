@@ -52,13 +52,6 @@ export default async function DealsPage({ searchParams }: Props) {
 
   return (
     <div className="flex flex-col space-y-6 px-6 pt-6 md:px-12 lg:px-20">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Deals</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Intelligence Radar: Referenz-Bedarfe mit Smart Match und Marktchancen aus Listen (z. B. Gartner/ISG) importieren.
-        </p>
-      </div>
-
       <DealsClientContent
         deals={deals}
         expiring={expiring}
