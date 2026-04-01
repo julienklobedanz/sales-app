@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
 import { getPublicPortfolio, incrementPortfolioViews } from '../actions'
 import { ReferenceReader } from '@/app/dashboard/reference-reader'
 import type { ReferenceRow } from '@/app/dashboard/actions'
@@ -57,7 +56,7 @@ export default async function PublicPortfolioPage({
       <main className="mx-auto max-w-4xl px-6 py-24 sm:px-12 lg:px-24">
         <div className="space-y-16">
           {result.references.map((ref) => (
-            <ReferenceReader key={ref.id} ref={toReferenceRow(ref)} />
+            <ReferenceReader key={ref.id} reference={toReferenceRow(ref)} />
           ))}
         </div>
       </main>

@@ -128,7 +128,7 @@ export async function inviteByEmail(
         subject: `Einladung zu ${org?.name ?? 'Refstack'}`,
         html: `
           <h1>Team-Einladung</h1>
-          <p><strong>${inviterName}</strong> lädt dich ein, dem Workspace <strong>${org?.name ?? 'Refstack'}</strong> beizutreten.</p>
+          <p><strong>${inviterName}</strong> lädt dich ein, dem Arbeitsbereich <strong>${org?.name ?? 'Refstack'}</strong> beizutreten.</p>
           <p><a href="${inviteLink}" style="background: #000; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Jetzt beitreten</a></p>
           <p style="color: #666; font-size: 12px;">Der Link ist 7 Tage gültig.</p>
         `,

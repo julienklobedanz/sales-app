@@ -1,14 +1,16 @@
 "use client"
 
 import {
-  CircleCheckIcon,
-  InfoIcon,
-  Loader2Icon,
-  OctagonXIcon,
-  TriangleAlertIcon,
-} from "lucide-react"
+  CancelCircleIcon,
+  CircleCheck,
+  CircleAlert,
+  InformationCircleIcon,
+  Loader,
+} from "@hugeicons/core-free-icons"
 import { useTheme } from "next-themes"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
+
+import { AppIcon } from "@/lib/icons"
 
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = "system" } = useTheme()
@@ -18,11 +20,11 @@ const Toaster = ({ ...props }: ToasterProps) => {
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
       icons={{
-        success: <CircleCheckIcon className="size-4" />,
-        info: <InfoIcon className="size-4" />,
-        warning: <TriangleAlertIcon className="size-4" />,
-        error: <OctagonXIcon className="size-4" />,
-        loading: <Loader2Icon className="size-4 animate-spin" />,
+        success: <AppIcon icon={CircleCheck} size={16} />,
+        info: <AppIcon icon={InformationCircleIcon} size={16} />,
+        warning: <AppIcon icon={CircleAlert} size={16} />,
+        error: <AppIcon icon={CancelCircleIcon} size={16} />,
+        loading: <AppIcon icon={Loader} size={16} className="animate-spin" />,
       }}
       style={
         {

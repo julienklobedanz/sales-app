@@ -12,8 +12,17 @@ import {
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { submitTicket } from '../actions'
+import { TicketStatusBadge } from '@/components/ticket-status-badge'
+import { TicketTypeSelect } from './ticket-type-select'
 
-export default async function RequestReferencePage() {
+export default async function RequestReferencePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>
+}) {
+  const params = await searchParams
+  const errorParam = params.error?.trim() ? decodeURIComponent(params.error) : null
+
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
@@ -52,6 +61,17 @@ export default async function RequestReferencePage() {
         </Button>
       </div>
 
+      {errorParam ? (
+        <Card className="border-destructive/40 bg-destructive/5">
+          <CardHeader>
+            <CardTitle>Die Anfrage konnte nicht gespeichert werden</CardTitle>
+            <CardDescription className="text-destructive">
+              {errorParam}
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      ) : null}
+
       <div className="grid gap-6 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
         <Card>
           <CardHeader>
@@ -62,20 +82,7 @@ export default async function RequestReferencePage() {
           </CardHeader>
           <CardContent>
             <form action={createTicket} className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium" htmlFor="type">
-                  Typ
-                </label>
-                <select
-                  id="type"
-                  name="type"
-                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  defaultValue="support"
-                >
-                  <option value="support">Referenz-Bedarf (Deal-Unterstützung)</option>
-                  <option value="feedback">Feedback / Verbesserungsvorschlag</option>
-                </select>
-              </div>
+              <TicketTypeSelect />
               <div className="space-y-2">
                 <label className="text-sm font-medium" htmlFor="subject">
                   Betreff
@@ -113,9 +120,12 @@ export default async function RequestReferencePage() {
           </CardHeader>
           <CardContent className="space-y-3">
             {!tickets || tickets.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Du hast noch keine Referenzanfragen gestellt.
-              </p>
+              <div className="rounded-lg border border-dashed p-4">
+                <div className="text-sm font-medium">Noch keine Anfragen</div>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Sobald du eine Anfrage absendest, erscheint sie hier.
+                </p>
+              </div>
             ) : (
               <ul className="space-y-2 text-sm">
                 {tickets.map((t) => (
@@ -125,15 +135,7 @@ export default async function RequestReferencePage() {
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-medium truncate">{t.subject}</span>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          t.status === 'open'
-                            ? 'bg-amber-100 text-amber-900'
-                            : 'bg-emerald-100 text-emerald-900'
-                        }`}
-                      >
-                        {t.status === 'open' ? 'Offen' : 'Geschlossen'}
-                      </span>
+                      <TicketStatusBadge status={t.status} />
                     </div>
                     <p className="line-clamp-2 text-xs text-muted-foreground">
                       {t.message}

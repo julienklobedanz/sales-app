@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { COPY } from "@/lib/copy"
 
 export type WorkspaceStepValue = {
   organizationName: string
@@ -50,11 +51,11 @@ export function WorkspaceStep({
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <div className="text-lg font-semibold tracking-tight">Schritt 1: Workspace</div>
+        <div className="text-lg font-semibold tracking-tight">Schritt 1: {COPY.misc.workspace}</div>
         <div className="text-sm text-muted-foreground">
           {isInvite
-            ? `Du trittst „${inviteOrganizationName ?? "einem Workspace"}“ bei. Du kannst den Workspace-Namen hier nicht ändern.`
-            : "Lege deinen Workspace an – damit ordnen wir Daten (Referenzen, Deals, Kontakte) korrekt zu."}
+            ? `Du trittst „${inviteOrganizationName ?? `einem ${COPY.misc.workspace}` }“ bei. Du kannst den ${COPY.misc.workspace}-Namen hier nicht ändern.`
+            : `Lege deinen ${COPY.misc.workspace} an – damit ordnen wir Daten (Referenzen, Deals, Kontakte) korrekt zu.`}
         </div>
       </div>
 
@@ -89,8 +90,8 @@ export function WorkspaceStep({
                 <SelectValue placeholder="Bitte auswählen…" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="account_manager">Account Manager</SelectItem>
-                <SelectItem value="sales">Sales Representative</SelectItem>
+                <SelectItem value="account_manager">{COPY.roles.accountManager}</SelectItem>
+                <SelectItem value="sales">Sales</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
               </SelectContent>
             </Select>

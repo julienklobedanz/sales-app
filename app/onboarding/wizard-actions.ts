@@ -39,13 +39,13 @@ export async function finalizeWorkspaceAndProfile(params: {
   // Kein Invite: org anlegen
   if (!organizationId) {
     const name = params.organizationName.trim()
-    if (!name) return { success: false, error: 'Bitte Workspace-Namen eingeben.' }
+    if (!name) return { success: false, error: 'Bitte Arbeitsbereich-Namen eingeben.' }
     const { data: newOrgId, error: orgError } = await supabase.rpc('create_organization', {
       org_name: name,
     })
     if (orgError || !newOrgId) {
       console.error(orgError)
-      return { success: false, error: 'Fehler beim Anlegen des Workspace.' }
+      return { success: false, error: 'Fehler beim Anlegen des Arbeitsbereichs.' }
     }
     organizationId = newOrgId as string
 
@@ -96,15 +96,19 @@ export async function extractReferencePreview(file: File): Promise<ExtractPrevie
     const fd = new FormData()
     fd.set('file', file)
     const extracted = await extractDataFromDocument(fd)
-    if (!(extracted as any)?.success) {
-      return { success: false, error: (extracted as any)?.error ?? 'Extraktion fehlgeschlagen.' }
+    const parsed = extracted as unknown as
+      | { success: true; data?: { title?: string | null; summary?: string | null; industry?: string | null } }
+      | { success: false; error?: string }
+
+    if (!parsed?.success) {
+      return { success: false, error: ('error' in parsed ? parsed.error : null) ?? 'Extraktion fehlgeschlagen.' }
     }
     return {
       success: true,
       preview: {
-        title: (extracted as any)?.data?.title ?? null,
-        summary: (extracted as any)?.data?.summary ?? null,
-        industry: (extracted as any)?.data?.industry ?? null,
+        title: parsed.data?.title ?? null,
+        summary: parsed.data?.summary ?? null,
+        industry: parsed.data?.industry ?? null,
       },
     }
   } catch (e) {

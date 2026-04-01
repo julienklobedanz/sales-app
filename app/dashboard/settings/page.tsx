@@ -8,7 +8,7 @@ import { SettingsBillingCard } from './settings-billing-card'
 import { SettingsDangerZone } from './settings-danger-zone'
 
 const CARD_CLASS =
-  'rounded-3xl border bg-white p-6 shadow-sm dark:bg-card dark:border-border'
+  'rounded-3xl border bg-card text-card-foreground p-6 shadow-sm'
 const SECTION_LABEL_CLASS =
   'text-sm font-medium uppercase tracking-wider text-muted-foreground mb-3 block'
 
@@ -46,7 +46,7 @@ export default async function SettingsPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Einstellungen</h1>
         <p className="mt-1 text-muted-foreground">
-          Verwalten Sie Ihr Profil, Team und Workspace.
+          Verwalten Sie Ihr Profil, Team und Arbeitsbereich.
         </p>
       </div>
 
@@ -65,7 +65,7 @@ export default async function SettingsPage() {
 
       {/* 2. Team Management */}
       <section className="space-y-3">
-        <span className={SECTION_LABEL_CLASS}>Team Management</span>
+        <span className={SECTION_LABEL_CLASS}>Teamverwaltung</span>
         <div className={CARD_CLASS}>
           <SettingsTeamCard initialMembers={teamMembers} />
         </div>

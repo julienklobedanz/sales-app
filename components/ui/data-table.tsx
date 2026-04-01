@@ -1,5 +1,7 @@
 "use client"
 
+/* eslint-disable react-hooks/incompatible-library */
+
 import * as React from "react"
 import {
   flexRender,
@@ -12,9 +14,12 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, SlidersHorizontal } from "lucide-react"
+import { SlidersHorizontal } from "@hugeicons/core-free-icons"
 
 import { Button } from "@/components/ui/button"
+import { COPY } from "@/lib/copy"
+import { AppIcon } from "@/lib/icons"
+import { DataTablePagination } from "@/components/ui/data-table-pagination"
 import {
   Table,
   TableBody,
@@ -42,6 +47,7 @@ export function DataTable<TData, TValue>({
   getRowId,
   toolbar,
   showViewOptions = false,
+  emptyText = COPY.table.empty,
 }: {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
@@ -55,9 +61,10 @@ export function DataTable<TData, TValue>({
     showing: number
   }) => React.ReactNode
   onSelectedRowIdsChange?: (rowIds: string[]) => void
-  getRowId?: (originalRow: TData, index: number, parent?: any) => string
+  getRowId?: (originalRow: TData, index: number, parent?: unknown) => string
   toolbar?: React.ReactNode
   showViewOptions?: boolean
+  emptyText?: React.ReactNode
 }) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({})
@@ -100,12 +107,12 @@ export function DataTable<TData, TValue>({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2">
-                  <SlidersHorizontal className="size-4" />
-                  View
+                  <AppIcon icon={SlidersHorizontal} size={16} />
+                  {COPY.table.view}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="min-w-56">
-                <DropdownMenuLabel>Spalten</DropdownMenuLabel>
+                <DropdownMenuLabel>{COPY.table.columns}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {table
                   .getAllColumns()
@@ -158,79 +165,14 @@ export function DataTable<TData, TValue>({
           ) : (
             <TableRow>
               <TableCell colSpan={columns.length} className="h-24 text-center">
-                Keine Ergebnisse.
+                {emptyText}
               </TableCell>
             </TableRow>
           )}
         </TableBody>
       </Table>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="text-sm text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length} von{" "}
-          {table.getFilteredRowModel().rows.length} Zeile(n) ausgewählt.
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>Rows per page</span>
-            <select
-              className="h-9 rounded-md border bg-background px-2 text-sm text-foreground"
-              value={pageSize}
-              onChange={(e) => table.setPageSize(Number(e.target.value))}
-            >
-              {pageSizeOptions.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="text-sm text-muted-foreground">
-            Page {pageIndex + 1} of {Math.max(1, pageCount)}
-          </div>
-
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => table.setPageIndex(0)}
-              disabled={!table.getCanPreviousPage()}
-              aria-label="Go to first page"
-            >
-              <ChevronFirst className="size-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-              aria-label="Go to previous page"
-            >
-              <ChevronLeft className="size-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-              aria-label="Go to next page"
-            >
-              <ChevronRight className="size-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => table.setPageIndex(pageCount - 1)}
-              disabled={!table.getCanNextPage()}
-              aria-label="Go to last page"
-            >
-              <ChevronLast className="size-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
+      <DataTablePagination table={table} pageSizeOptions={pageSizeOptions} />
 
       {paginationLabel ? (
         <div className="text-sm text-muted-foreground">

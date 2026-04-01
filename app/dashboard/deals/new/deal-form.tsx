@@ -22,8 +22,10 @@ import {
 } from '@/components/ui/select'
 import { createDeal } from '../actions'
 import { DEAL_STATUS_LABELS, type DealStatus } from '../types'
-import { Loader2 } from 'lucide-react'
+import { Loader } from '@hugeicons/core-free-icons'
 import { toast } from 'sonner'
+import { AppIcon } from '@/lib/icons'
+import { COPY } from '@/lib/copy'
 
 type Company = { id: string; name: string }
 type OrgProfile = { id: string; full_name: string | null }
@@ -142,7 +144,7 @@ export function DealForm({
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Account Manager</Label>
+              <Label>{COPY.roles.accountManager}</Label>
               <Select value={accountManagerId || '__none__'} onValueChange={(v) => setAccountManagerId(v === '__none__' ? '' : v)} disabled={pending}>
                 <SelectTrigger>
                   <SelectValue placeholder="Optional …" />
@@ -156,7 +158,7 @@ export function DealForm({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Sales Manager</Label>
+              <Label>{COPY.roles.salesManager}</Label>
               <Select value={salesManagerId || '__none__'} onValueChange={(v) => setSalesManagerId(v === '__none__' ? '' : v)} disabled={pending}>
                 <SelectTrigger>
                   <SelectValue placeholder="Optional …" />
@@ -172,7 +174,7 @@ export function DealForm({
           </div>
           <div className="flex gap-2 pt-4">
             <Button type="submit" disabled={pending}>
-              {pending && <Loader2 className="mr-2 size-4 animate-spin" />}
+              {pending && <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />}
               Deal anlegen
             </Button>
             <Button type="button" variant="outline" disabled={pending} onClick={() => router.push('/dashboard/deals')}>

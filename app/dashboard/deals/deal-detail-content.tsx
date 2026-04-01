@@ -1,5 +1,7 @@
 'use client'
 
+/* eslint-disable @next/next/no-img-element */
+
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -29,13 +31,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { DEAL_STATUS_LABELS, type DealWithReferences } from './types'
+import { type DealWithReferences } from './types'
 import { addReferenceToDeal, removeReferenceFromDeal, recordReferenceHelped } from './actions'
 import {
-  PlusCircleIcon,
-  Trash2Icon,
-} from 'lucide-react'
+  CirclePlus,
+  Trash2,
+} from '@hugeicons/core-free-icons'
 import { toast } from 'sonner'
+import { AppIcon } from '@/lib/icons'
 
 export type RefOption = { id: string; title: string; company_name: string }
 
@@ -153,7 +156,7 @@ export function DealDetailContent({
                             className="h-7"
                             onClick={() => handleRemoveReference(ref.id)}
                           >
-                            <Trash2Icon className="size-4" />
+                            <AppIcon icon={Trash2} size={16} />
                           </Button>
                         </div>
                       </div>
@@ -193,7 +196,7 @@ export function DealDetailContent({
                 </SelectContent>
               </Select>
               <Button size="sm" className="h-8" onClick={handleAddReference} disabled={!linkRefId || linking}>
-                <PlusCircleIcon className="mr-1 size-4" />
+                <AppIcon icon={CirclePlus} size={16} className="mr-1" />
                 Verknüpfen
               </Button>
             </div>

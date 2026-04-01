@@ -1,8 +1,8 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
-import { Loader2, Paperclip, Mail } from 'lucide-react'
+import { Loader, Mail, Paperclip } from '@hugeicons/core-free-icons'
 import {
   Dialog,
   DialogContent,
@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { submitTicket } from '@/app/dashboard/actions'
+import { AppIcon } from '@/lib/icons'
 
 const TITLE_BY_TYPE: Record<'support' | 'feedback', string> = {
   support: 'Ticket einreichen',
@@ -40,11 +41,10 @@ export function SupportTicketModal({
   type: 'support' | 'feedback'
   title?: string
 }) {
-  const initialEmail = useMemo(() => '', [])
   const [subject, setSubject] = useState('')
   const [message, setMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [email, setEmail] = useState(initialEmail)
+  const [email, setEmail] = useState('')
   const [category, setCategory] = useState<'sales' | 'technical' | 'billing' | 'account' | 'other'>(
     'other'
   )
@@ -88,7 +88,7 @@ export function SupportTicketModal({
         toast.success('Nachricht gesendet! Wir melden uns.')
         setSubject('')
         setMessage('')
-        setEmail(initialEmail)
+        setEmail('')
         setCategory('other')
         setPriority('medium')
         setAttachments([])
@@ -108,7 +108,7 @@ export function SupportTicketModal({
       if (!open) {
         setSubject('')
         setMessage('')
-        setEmail(initialEmail)
+        setEmail('')
         setCategory('other')
         setPriority('medium')
         setAttachments([])
@@ -162,7 +162,9 @@ export function SupportTicketModal({
           <div className="space-y-2">
             <Label htmlFor="ticket-email">E-Mail-Adresse *</Label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                <AppIcon icon={Mail} size={16} />
+              </span>
               <Input
                 id="ticket-email"
                 placeholder="you@example.com"
@@ -249,7 +251,7 @@ export function SupportTicketModal({
                   input?.click()
                 }}
               >
-                <Paperclip className="mr-2 size-4" />
+                <AppIcon icon={Paperclip} size={16} className="mr-2" />
                 Dateien anhängen
               </Button>
               <input
@@ -288,7 +290,7 @@ export function SupportTicketModal({
             <Button type="submit" disabled={submitting}>
               {submitting ? (
                 <>
-                  <Loader2 className="mr-2 size-4 animate-spin" />
+                  <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />
                   Wird gesendet…
                 </>
               ) : (

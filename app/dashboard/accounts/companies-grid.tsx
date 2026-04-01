@@ -22,7 +22,19 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Button, buttonVariants } from '@/components/ui/button'
-import { Building2Icon, MapPinIcon, Globe2, Search, X, Loader2, Plus, Star, Briefcase, Users } from 'lucide-react'
+import {
+  Building2,
+  Briefcase,
+  Cancel01Icon,
+  Globe,
+  Loader,
+  MapPinIcon,
+  Plus,
+  SearchIcon,
+  StarIcon,
+  Users,
+} from '@hugeicons/core-free-icons'
+import { AppIcon } from '@/lib/icons'
 import { deleteCompanyWithData, toggleCompanyFavorite } from './actions'
 import { useRole } from '@/hooks/useRole'
 import { CreateAccountDialog } from './create-account-dialog'
@@ -79,11 +91,13 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
   }
 
   return (
-    <div className="space-y-6 rounded-3xl bg-slate-50/50 p-4 md:p-6">
+    <div className="space-y-6 rounded-3xl bg-muted/20 p-4 md:p-6">
       <div className="w-full">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+              <AppIcon icon={SearchIcon} size={16} />
+            </span>
             <Input
               type="search"
               placeholder="Firma suchen …"
@@ -98,22 +112,24 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
               type="button"
               variant={favoritesOnly ? 'default' : 'outline'}
               size="icon"
-              className={`h-9 w-9 shrink-0 rounded-full ${favoritesOnly ? 'bg-yellow-500 text-black hover:bg-yellow-500/90' : ''}`}
+              className={`h-9 w-9 shrink-0 rounded-full ${favoritesOnly ? 'bg-accent text-accent-foreground hover:bg-accent/80' : ''}`}
               onClick={() => setFavoritesOnly((v) => !v)}
               aria-label={favoritesOnly ? 'Alle Accounts anzeigen' : 'Nur Favoriten anzeigen'}
             >
-              <Star
-                className={`h-4 w-4 ${favoritesOnly ? 'fill-yellow-400 text-yellow-700' : 'text-slate-400'}`}
+              <AppIcon
+                icon={StarIcon}
+                size={16}
+                className={favoritesOnly ? 'text-primary' : 'text-muted-foreground'}
               />
             </Button>
             {(isAdmin || isAccountManager) && (
               <>
                 <Button
                   type="button"
-                  className="inline-flex h-11 items-center gap-2 rounded-xl bg-black px-4 text-sm font-medium text-white shadow-sm hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90"
+                  className="inline-flex h-11 items-center gap-2 rounded-xl px-4 text-sm font-medium shadow-sm"
                   onClick={() => setCreateOpen(true)}
                 >
-                  <Plus className="h-4 w-4" />
+                  <AppIcon icon={Plus} size={16} />
                   <span>Account hinzufügen</span>
                 </Button>
                 <CreateAccountDialog open={createOpen} onOpenChange={setCreateOpen} />
@@ -138,7 +154,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
             >
               <button
                 type="button"
-                className="absolute right-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-full bg-background/80 text-muted-foreground opacity-0 shadow-sm ring-1 ring-border/60 transition-opacity duration-150 hover:bg-red-50 hover:text-red-600 group-hover:opacity-100"
+                className="absolute right-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-full bg-background/80 text-muted-foreground opacity-0 shadow-sm ring-1 ring-border/60 transition-opacity duration-150 hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
                 onClick={(e) => {
                   e.preventDefault()
                   e.stopPropagation()
@@ -147,7 +163,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                 }}
                 aria-label="Kunde löschen"
               >
-                <X className="h-3.5 w-3.5" />
+                <AppIcon icon={Cancel01Icon} size={14} />
               </button>
               <Link
                 href={`/dashboard/accounts/${company.id}`}
@@ -168,7 +184,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                         </div>
                       ) : (
                         <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border bg-muted">
-                          <Building2Icon className="size-6 text-muted-foreground" />
+                          <AppIcon icon={Building2} size={24} className="text-muted-foreground" />
                         </div>
                       )}
                       <div className="min-w-0 flex-1">
@@ -178,7 +194,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                         </CardTitle>
                         <button
                           type="button"
-                          className="inline-flex h-5 w-5 items-center justify-center rounded-full text-slate-400 hover:text-yellow-500"
+                          className="inline-flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground hover:text-primary"
                           onClick={(e) => {
                             e.preventDefault()
                             e.stopPropagation()
@@ -191,12 +207,10 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                           }}
                           aria-label={company.is_favorite ? 'Als Favorit entfernen' : 'Als Favorit markieren'}
                         >
-                          <Star
-                            className={`h-4 w-4 ${
-                              company.is_favorite
-                                ? 'fill-yellow-400 text-yellow-500'
-                                : 'text-slate-400'
-                            }`}
+                          <AppIcon
+                            icon={StarIcon}
+                            size={16}
+                            className={company.is_favorite ? 'text-primary' : 'text-muted-foreground'}
                           />
                         </button>
                       </div>
@@ -216,7 +230,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                   <div className="flex flex-wrap items-center gap-3">
                     {company.headquarters && (
                       <div className="flex items-center gap-1.5">
-                        <MapPinIcon className="size-3.5 shrink-0" />
+                        <AppIcon icon={MapPinIcon} size={14} className="shrink-0" />
                         <span className="truncate max-w-[140px]">
                           {company.headquarters}
                         </span>
@@ -224,7 +238,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                     )}
                     {company.website_url && (
                       <div className="flex items-center gap-1.5">
-                        <Globe2 className="size-3.5 shrink-0" />
+                        <AppIcon icon={Globe} size={14} className="shrink-0" />
                         <a
                           href={
                             company.website_url.startsWith('http')
@@ -244,13 +258,13 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                 <CardContent className="pt-2 pb-3 text-[11px] text-muted-foreground">
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-1.5">
-                      <Briefcase className="size-3.5" />
+                      <AppIcon icon={Briefcase} size={14} />
                       <span>
                         {company.open_deals_count ?? 0} Deals
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <Users className="size-3.5" />
+                      <AppIcon icon={Users} size={14} />
                       <span>
                         {company.reference_count ?? 0} Referenzen
                       </span>
@@ -303,7 +317,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
               }}
               className={buttonVariants({ variant: 'destructive' })}
             >
-              {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {deleting && <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />}
               Löschen
             </AlertDialogAction>
           </AlertDialogFooter>

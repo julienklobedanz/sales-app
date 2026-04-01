@@ -8,8 +8,9 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Building2, Globe } from 'lucide-react'
+import { Building2, Globe } from '@hugeicons/core-free-icons'
 import { ApprovalActions } from './approval-actions'
+import { AppIcon } from '@/lib/icons'
 
 export default async function ApprovalPage({
   params,
@@ -56,7 +57,7 @@ export default async function ApprovalPage({
 
   if (ref.status !== 'pending') {
     return (
-      <div className="flex h-screen items-center justify-center bg-slate-50 p-4">
+      <div className="flex h-screen items-center justify-center bg-muted/20 p-4">
         <Card className="max-w-md text-center">
           <CardHeader>
             <CardTitle>Bereits bearbeitet</CardTitle>
@@ -71,7 +72,7 @@ export default async function ApprovalPage({
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-12">
+    <div className="min-h-screen bg-muted/20 px-4 py-12">
       <div className="mx-auto max-w-2xl space-y-6">
         <div className="space-y-2 text-center">
           <h1 className="text-3xl font-bold">Freigabe anfordern</h1>
@@ -93,10 +94,16 @@ export default async function ApprovalPage({
           <CardContent className="space-y-6">
             <div className="grid grid-cols-2 gap-4 border-y py-4 text-sm">
               <div className="flex items-center gap-2">
-                <Building2 className="size-4 opacity-50" /> {ref.industry ?? '—'}
+                <span className="opacity-50">
+                  <AppIcon icon={Building2} size={16} />
+                </span>
+                {ref.industry ?? '—'}
               </div>
               <div className="flex items-center gap-2">
-                <Globe className="size-4 opacity-50" /> {ref.country ?? '—'}
+                <span className="opacity-50">
+                  <AppIcon icon={Globe} size={16} />
+                </span>
+                {ref.country ?? '—'}
               </div>
             </div>
 

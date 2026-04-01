@@ -4,13 +4,12 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import {
   BrainCircuit,
-  FileTextIcon,
-  HandshakeIcon,
+  FileText,
+  Handshake,
   Sparkles,
   Plus,
-  TrendingUp,
   Upload,
-} from "lucide-react"
+} from "@hugeicons/core-free-icons"
 
 import {
   CommandDialog,
@@ -22,8 +21,10 @@ import {
   CommandSeparator,
 } from "@/components/ui/command"
 import { createClient } from "@/lib/supabase/client"
+import { COPY } from "@/lib/copy"
 import { useCommandPalette } from "@/hooks/useCommandPalette"
 import { useRole } from "@/hooks/useRole"
+import { AppIcon } from "@/lib/icons"
 
 type SearchResult =
   | { kind: "reference"; id: string; title: string }
@@ -40,10 +41,14 @@ function loadRecents(): RecentItem[] {
   try {
     const raw = localStorage.getItem(RECENTS_KEY)
     if (!raw) return []
-    const parsed = JSON.parse(raw) as RecentItem[]
+    const parsed = JSON.parse(raw) as unknown
     if (!Array.isArray(parsed)) return []
-    return parsed
-      .filter((x) => x && typeof x === "object" && typeof (x as any).id === "string")
+    return (parsed as unknown[])
+      .filter((x): x is RecentItem => {
+        if (!x || typeof x !== "object") return false
+        const r = x as Partial<RecentItem>
+        return typeof r.id === "string" && typeof r.kind === "string" && typeof r.title === "string"
+      })
       .slice(0, MAX_RECENTS)
   } catch {
     return []
@@ -81,12 +86,15 @@ export function CommandPalette() {
   }, [])
 
   const push = (item: SearchResult) => {
-    const next: RecentItem[] = [
-      { ...item, at: Date.now() },
-      ...recents.filter((x) => !(x.kind === item.kind && x.id === item.id)),
-    ].slice(0, MAX_RECENTS)
-    setRecents(next)
-    saveRecents(next)
+    setRecents((prev) => {
+      const nextAt = (prev[0]?.at ?? 0) + 1
+      const next: RecentItem[] = [
+        { ...item, at: nextAt },
+        ...prev.filter((x) => !(x.kind === item.kind && x.id === item.id)),
+      ].slice(0, MAX_RECENTS)
+      saveRecents(next)
+      return next
+    })
     setOpen(false)
     router.push(hrefFor(item))
   }
@@ -151,8 +159,8 @@ export function CommandPalette() {
     }> = [
       {
         key: "match",
-        label: "Match starten",
-        icon: <Sparkles className="size-4" />,
+        label: COPY.commandPalette.actionStartMatch,
+        icon: <AppIcon icon={Sparkles} size={16} />,
         onSelect: () => {
           setOpen(false)
           router.push("/dashboard/match")
@@ -161,8 +169,8 @@ export function CommandPalette() {
       },
       {
         key: "new-deal",
-        label: "Neuen Deal erstellen",
-        icon: <HandshakeIcon className="size-4" />,
+        label: COPY.commandPalette.actionNewDeal,
+        icon: <AppIcon icon={Handshake} size={16} />,
         onSelect: () => {
           setOpen(false)
           router.push("/dashboard/deals/new")
@@ -171,8 +179,8 @@ export function CommandPalette() {
       },
       {
         key: "rfp-upload",
-        label: "RFP im Deal hochladen",
-        icon: <Upload className="size-4" />,
+        label: COPY.commandPalette.actionRfpUpload,
+        icon: <AppIcon icon={Upload} size={16} />,
         onSelect: () => {
           setOpen(false)
           router.push("/dashboard/deals")
@@ -181,8 +189,8 @@ export function CommandPalette() {
       },
       {
         key: "new-reference",
-        label: "Neue Referenz erstellen",
-        icon: <FileTextIcon className="size-4" />,
+        label: COPY.commandPalette.actionNewReference,
+        icon: <AppIcon icon={FileText} size={16} />,
         onSelect: () => {
           setOpen(false)
           router.push("/dashboard/evidence/new")
@@ -191,8 +199,8 @@ export function CommandPalette() {
       },
       {
         key: "new-account",
-        label: "Account erstellen",
-        icon: <Plus className="size-4" />,
+        label: COPY.commandPalette.actionNewAccount,
+        icon: <AppIcon icon={Plus} size={16} />,
         onSelect: () => {
           setOpen(false)
           router.push("/dashboard/accounts?create=1")
@@ -214,21 +222,21 @@ export function CommandPalette() {
     <CommandDialog
       open={open}
       onOpenChange={setOpen}
-      title="Command Palette"
-      description="Suche nach Referenzen, Accounts oder Deals"
+      title={COPY.commandPalette.title}
+      description={COPY.commandPalette.description}
       className="max-w-2xl"
     >
       <CommandInput
         value={query}
         onValueChange={setQuery}
-        placeholder="Suche nach Referenzen, Deals, Accounts…"
+        placeholder={COPY.commandPalette.placeholder}
       />
       <CommandList>
         <CommandEmpty>
-          {loading ? "Suche läuft…" : "Keine Ergebnisse gefunden."}
+          {loading ? COPY.commandPalette.searchLoading : COPY.commandPalette.searchEmpty}
         </CommandEmpty>
 
-        <CommandGroup heading="Schnellaktionen">
+        <CommandGroup heading={COPY.commandPalette.quickActions}>
           {quickActions.map((a) => (
             <CommandItem key={a.key} onSelect={a.onSelect}>
               {a.icon}
@@ -239,21 +247,21 @@ export function CommandPalette() {
 
         <CommandSeparator />
 
-        <CommandGroup heading="Zuletzt besucht">
+        <CommandGroup heading={COPY.commandPalette.recents}>
           {recents.length === 0 ? (
             <CommandItem disabled>
-              <BrainCircuit className="size-4" />
-              <span>Noch keine Einträge</span>
+              <AppIcon icon={BrainCircuit} size={16} />
+              <span>{COPY.commandPalette.noRecentsYet}</span>
             </CommandItem>
           ) : (
             recents.map((r) => (
               <CommandItem key={`${r.kind}:${r.id}`} onSelect={() => push(r)}>
                 {r.kind === "account" ? (
-                  <BrainCircuit className="size-4" />
+                  <AppIcon icon={BrainCircuit} size={16} />
                 ) : r.kind === "deal" ? (
-                  <HandshakeIcon className="size-4" />
+                  <AppIcon icon={Handshake} size={16} />
                 ) : (
-                  <FileTextIcon className="size-4" />
+                  <AppIcon icon={FileText} size={16} />
                 )}
                 <span>{r.title}</span>
               </CommandItem>
@@ -266,10 +274,10 @@ export function CommandPalette() {
             <CommandSeparator />
 
             {grouped.refs.length ? (
-              <CommandGroup heading="Referenzen">
+              <CommandGroup heading={COPY.nav.evidence}>
                 {grouped.refs.map((r) => (
                   <CommandItem key={`ref:${r.id}`} onSelect={() => push(r)}>
-                    <FileTextIcon className="size-4" />
+                    <AppIcon icon={FileText} size={16} />
                     <span>{r.title}</span>
                   </CommandItem>
                 ))}
@@ -277,10 +285,10 @@ export function CommandPalette() {
             ) : null}
 
             {grouped.accs.length ? (
-              <CommandGroup heading="Accounts">
+              <CommandGroup heading={COPY.nav.accounts}>
                 {grouped.accs.map((r) => (
                   <CommandItem key={`acc:${r.id}`} onSelect={() => push(r)}>
-                    <BrainCircuit className="size-4" />
+                    <AppIcon icon={BrainCircuit} size={16} />
                     <span>{r.title}</span>
                   </CommandItem>
                 ))}
@@ -288,10 +296,10 @@ export function CommandPalette() {
             ) : null}
 
             {grouped.deals.length ? (
-              <CommandGroup heading="Deals">
+              <CommandGroup heading={COPY.nav.deals}>
                 {grouped.deals.map((r) => (
                   <CommandItem key={`deal:${r.id}`} onSelect={() => push(r)}>
-                    <HandshakeIcon className="size-4" />
+                    <AppIcon icon={Handshake} size={16} />
                     <span>{r.title}</span>
                   </CommandItem>
                 ))}

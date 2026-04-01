@@ -1,5 +1,7 @@
 "use client"
 
+/* eslint-disable react-hooks/incompatible-library */
+
 import * as React from "react"
 import {
   flexRender,
@@ -23,7 +25,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { DataTablePagination } from "./data-table-pagination"
+import { DataTablePagination } from "@/components/ui/data-table-pagination"
+import { COPY } from "@/lib/copy"
 import { DataTableViewOptions } from "./data-table-view-options"
 import {
   ContextMenu,
@@ -38,6 +41,7 @@ export function EvidenceDataTable<TData, TValue>({
   data,
   toolbar,
   toolbarRight,
+  emptyText = COPY.table.empty,
   getRowId,
   onSelectedRowIdsChange,
 }: {
@@ -45,7 +49,8 @@ export function EvidenceDataTable<TData, TValue>({
   data: TData[]
   toolbar?: (table: ReturnType<typeof useReactTable<TData>>) => React.ReactNode
   toolbarRight?: (table: ReturnType<typeof useReactTable<TData>>) => React.ReactNode
-  getRowId?: (originalRow: TData, index: number, parent?: any) => string
+  emptyText?: string
+  getRowId?: (originalRow: TData, index: number, parent?: unknown) => string
   onSelectedRowIdsChange?: (rowIds: string[]) => void
 }) {
   const [sorting, setSorting] = React.useState<SortingState>([])
@@ -122,28 +127,28 @@ export function EvidenceDataTable<TData, TValue>({
                   </ContextMenuTrigger>
                   <ContextMenuContent>
                     <ContextMenuItem onSelect={() => row.toggleSelected(true)}>
-                      Selektieren
+                      {COPY.evidence.contextSelect}
                     </ContextMenuItem>
                     <ContextMenuSeparator />
                     <ContextMenuItem
                       onSelect={() => {
-                        const anyRow = row.original as any
+                        const anyRow = row.original as unknown as { id?: string }
                         if (anyRow?.id) {
                           window.location.href = `/dashboard/evidence/${anyRow.id}`
                         }
                       }}
                     >
-                      Öffnen
+                      {COPY.evidence.contextOpen}
                     </ContextMenuItem>
                     <ContextMenuItem
                       onSelect={() => {
-                        const anyRow = row.original as any
+                        const anyRow = row.original as unknown as { id?: string }
                         if (anyRow?.id) {
                           window.location.href = `/dashboard/evidence/${anyRow.id}/edit`
                         }
                       }}
                     >
-                      Bearbeiten
+                      {COPY.evidence.contextEdit}
                     </ContextMenuItem>
                   </ContextMenuContent>
                 </ContextMenu>
@@ -151,7 +156,7 @@ export function EvidenceDataTable<TData, TValue>({
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results.
+                  {emptyText}
                 </TableCell>
               </TableRow>
             )}

@@ -1,17 +1,18 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
-import { Bell, SearchIcon } from 'lucide-react'
+import { usePathname } from 'next/navigation'
+import { Bell, SearchIcon } from '@hugeicons/core-free-icons'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
 import { Kbd } from '@/components/ui/kbd'
 import { useCommandPalette } from '@/hooks/useCommandPalette'
 import { createClient } from '@/lib/supabase/client'
+import { AppIcon } from '@/lib/icons'
+import { COPY } from '@/lib/copy'
 
 export function DashboardHeader() {
-  const router = useRouter()
   const pathname = usePathname()
   const [companyName, setCompanyName] = useState<string | null>(null)
   const { setOpen } = useCommandPalette()
@@ -27,10 +28,7 @@ export function DashboardHeader() {
   const supabase = useMemo(() => (isCompanyDetail ? createClient() : null), [isCompanyDetail])
 
   useEffect(() => {
-    if (!isCompanyDetail || !companyId || !supabase) {
-      setCompanyName(null)
-      return
-    }
+    if (!isCompanyDetail || !companyId || !supabase) return
 
     let cancelled = false
     ;(async () => {
@@ -60,7 +58,7 @@ export function DashboardHeader() {
     }
     if (pathname.startsWith('/dashboard/evidence')) {
       return {
-        title: 'Evidence Hub',
+        title: COPY.pages.evidence,
         subtitle: 'Referenzen verwalten und finden',
       }
     }
@@ -78,20 +76,20 @@ export function DashboardHeader() {
     }
     if (pathname.startsWith('/dashboard/match')) {
       return {
-        title: 'Match',
+        title: COPY.pages.match,
         subtitle: 'Semantische Suche und RFP-Analyse',
       }
     }
     if (pathname.startsWith('/dashboard/market-signals')) {
       return {
-        title: 'Market Signals',
+        title: COPY.pages.marketSignals,
         subtitle: 'News, Trends und Signale (in Arbeit)',
       }
     }
     if (pathname.startsWith('/dashboard/settings')) {
       return {
         title: 'Einstellungen',
-        subtitle: 'Workspace, Team und Profil',
+        subtitle: `${COPY.misc.workspace}, Team und Profil`,
       }
     }
     return {
@@ -126,7 +124,7 @@ export function DashboardHeader() {
           className="hidden md:flex items-center gap-2"
           onClick={() => setOpen(true)}
         >
-          <SearchIcon className="size-4" />
+          <AppIcon icon={SearchIcon} size={16} />
           <span className="text-sm">Suche</span>
           <Kbd>⌘K</Kbd>
         </Button>
@@ -138,7 +136,7 @@ export function DashboardHeader() {
           className="md:hidden"
           onClick={() => setOpen(true)}
         >
-          <SearchIcon className="size-5" />
+          <AppIcon icon={SearchIcon} size={20} />
         </Button>
 
         <button
@@ -146,7 +144,7 @@ export function DashboardHeader() {
           className="relative inline-flex size-9 items-center justify-center rounded-md hover:bg-muted/60 transition-colors"
           aria-label="Benachrichtigungen"
         >
-          <Bell className="size-5" />
+          <AppIcon icon={Bell} size={20} />
           <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
             3
           </span>

@@ -1,13 +1,16 @@
 'use client'
 
+/* eslint-disable @next/next/no-img-element */
+
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { User, Save, Upload, X, Loader2 } from 'lucide-react'
+import { Cancel01Icon, Loader, Save, Upload, User } from '@hugeicons/core-free-icons'
 import { updateProfile } from './actions'
+import { AppIcon } from '@/lib/icons'
 
 export function SettingsProfileCard({
   userEmail,
@@ -22,7 +25,6 @@ export function SettingsProfileCard({
 }) {
   const router = useRouter()
   const [pending, setPending] = useState(false)
-  const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(avatarUrl ?? null)
   const [avatarLoading, setAvatarLoading] = useState(false)
 
@@ -45,11 +47,9 @@ export function SettingsProfileCard({
 
   function handleAvatarFile(file: File | null) {
     if (!file) {
-      setAvatarFile(null)
       setAvatarPreview(null)
       return
     }
-    setAvatarFile(file)
     setAvatarLoading(true)
     const reader = new FileReader()
     reader.onload = () => {
@@ -78,7 +78,6 @@ export function SettingsProfileCard({
   }
 
   function handleAvatarDelete() {
-    setAvatarFile(null)
     setAvatarPreview(null)
     // Hier könnte optional ein Server-Call zum Löschen des Avatars erfolgen.
   }
@@ -98,7 +97,7 @@ export function SettingsProfileCard({
             }}
           >
             {avatarLoading ? (
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <AppIcon icon={Loader} size={24} className="animate-spin text-muted-foreground" />
             ) : avatarPreview ? (
               <>
                 <img
@@ -109,14 +108,14 @@ export function SettingsProfileCard({
                 <button
                   type="button"
                   onClick={handleAvatarDelete}
-                  className="absolute -right-1 -top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-50 text-red-600 opacity-0 shadow-sm ring-1 ring-red-100 transition-opacity duration-150 group-hover:opacity-100"
+                  className="absolute -right-1 -top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-destructive/10 text-destructive opacity-0 shadow-sm ring-1 ring-destructive/20 transition-opacity duration-150 group-hover:opacity-100"
                   aria-label="Avatar entfernen"
                 >
-                  <X className="h-3 w-3" />
+                  <AppIcon icon={Cancel01Icon} size={12} />
                 </button>
               </>
             ) : (
-              <User className="h-10 w-10 text-muted-foreground/50" />
+              <AppIcon icon={User} size={40} className="text-muted-foreground/50" />
             )}
           </button>
           <button
@@ -127,7 +126,7 @@ export function SettingsProfileCard({
               input?.click()
             }}
           >
-            <Upload className="h-3.5 w-3.5" />
+            <AppIcon icon={Upload} size={14} />
             Avatar hochladen
           </button>
           <input
@@ -192,7 +191,7 @@ export function SettingsProfileCard({
       />
       <div className="flex justify-end">
         <Button type="submit" size="sm" disabled={pending}>
-          <Save className="mr-2 h-4 w-4" />
+          <AppIcon icon={Save} size={16} className="mr-2" />
           Speichern
         </Button>
       </div>

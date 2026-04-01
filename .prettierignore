@@ -1,0 +1,11 @@
+.next
+out
+build
+coverage
+node_modules
+.ts-scripts-out
+supabase/.temp
+
+# Lockfiles
+package-lock.json
+

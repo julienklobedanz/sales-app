@@ -1,18 +1,37 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
-import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { embedTextWithOpenAI } from '@/lib/embeddings-openai'
-import { rpcMatchReferences } from '@/lib/match-references-rpc'
-import { snippetFromSummary } from '@/lib/match-reference-snippet'
-import { generatePortfolioSlug } from '@/lib/slug'
-import { Resend } from 'resend'
-
-function getResend(): Resend | null {
-  const key = process.env.RESEND_API_KEY
-  if (!key) return null
-  return new Resend(key)
-}
+import { toggleFavoriteImpl } from '@/app/dashboard/references/favorites'
+import { submitForApprovalImpl } from '@/app/dashboard/references/approvals'
+import { getCompetitorSuggestionsImpl, getIncumbentSuggestionsImpl } from '@/app/dashboard/references/suggestions'
+import { getRequestsImpl, reviewRequestImpl } from '@/app/dashboard/references/approval-requests'
+import {
+  cleanupCompanyDomainNamesImpl,
+  mergeDuplicateCompaniesImpl,
+} from '@/app/dashboard/companies/maintenance'
+import { updateUserRoleImpl } from '@/app/dashboard/settings/user-role'
+import { matchReferencesImpl } from '@/app/dashboard/references/match'
+import { getDashboardDataImpl, getDeletedReferencesImpl } from '@/app/dashboard/references/dashboard'
+import {
+  deleteReferenceImpl,
+  emptyTrashImpl,
+  hardDeleteReferenceImpl,
+  restoreReferenceImpl,
+} from '@/app/dashboard/references/trash'
+import {
+  createSharedPortfolioImpl,
+  getExistingShareForReferenceImpl,
+  getReferencesByIdsImpl,
+} from '@/app/dashboard/references/sharing'
+import {
+  getReferenceAssetsImpl,
+  updateReferenceAssetCategoryImpl,
+} from '@/app/dashboard/references/assets'
+import type { SubmitTicketResult } from '@/app/dashboard/support/tickets'
+import { submitTicketImpl } from '@/app/dashboard/support/tickets'
+import { updateReferenceImpl } from '@/app/dashboard/references/update'
+import { updateReferenceDetailFieldsImpl } from '@/app/dashboard/references/detail-fields'
+import { bulkCreateReferencesFromFilesImpl } from '@/app/dashboard/references/bulk-import'
+import { generateSummaryFromStoryImpl } from '@/app/dashboard/references/summary'
 
 export type ReferenceRow = {
   id: string
@@ -65,24 +84,6 @@ export type GetDashboardDataResult = {
   deletedCount: number
 }
 
-/** Mapping alter/legacy Status-Werte auf das 4-Status-Modell (Daten-Wiederherstellung) */
-const STATUS_MAP: Record<string, ReferenceRow['status']> = {
-  draft: 'draft',
-  internal_only: 'internal_only',
-  approved: 'approved',
-  anonymized: 'anonymized',
-  pending: 'internal_only',
-  external: 'approved',
-  internal: 'internal_only',
-  anonymous: 'anonymized',
-  restricted: 'internal_only',
-}
-const VALID_STATUSES: ReferenceRow['status'][] = ['draft', 'internal_only', 'approved', 'anonymized']
-function normalizeStatus(raw: unknown): ReferenceRow['status'] {
-  const s = String(raw ?? '').toLowerCase().trim()
-  return STATUS_MAP[s] ?? (VALID_STATUSES.includes(s as ReferenceRow['status']) ? (s as ReferenceRow['status']) : 'draft')
-}
-
 export type DeletedReferenceRow = {
   id: string
   title: string
@@ -102,325 +103,15 @@ export type RequestItem = {
 export async function getDashboardData(
   onlyFavorites = false
 ): Promise<GetDashboardDataResult> {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  // Relation per FK-Constraint-Name (Supabase: Table Editor → references → Beziehungen).
-  const fullSelect = `
-      id,
-      title,
-      summary,
-      industry,
-      country,
-      website,
-      employee_count,
-      volume_eur,
-      contract_type,
-      incumbent_provider,
-      competitors,
-      customer_challenge,
-      our_solution,
-      status,
-      created_at,
-      updated_at,
-      company_id,
-      contact_id,
-      customer_contact_id,
-      customer_contact,
-      file_path,
-      tags,
-      project_status,
-      project_start,
-      project_end,
-      is_nda_deal,
-      companies ( name, logo_url ),
-      contact_persons!references_contact_id_fkey ( email, first_name, last_name )
-    `
-  let rows: Record<string, unknown>[] | null = null
-  let error: { message: string; details?: string } | null = null
-
-  const result = await supabase
-    .from('references')
-    .select(fullSelect)
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false })
-
-  error = result.error
-  rows = result.data
-
-  const fullSelectNoRelations = `
-    id, title, summary, industry, country, website, employee_count,
-    volume_eur, contract_type, incumbent_provider, competitors,
-    customer_challenge, our_solution, status, created_at, updated_at,
-    company_id, contact_id, customer_contact_id, customer_contact, file_path, tags,
-    project_status, project_start, project_end,
-    is_nda_deal,
-    companies ( name, logo_url )
-  `
-  const fullSelectMinimal = `
-    id, title, summary, industry, country, website, employee_count,
-    volume_eur, contract_type, incumbent_provider, competitors,
-    customer_challenge, our_solution, status, created_at, updated_at,
-    company_id, contact_id, file_path, tags,
-    project_status, project_start, project_end,
-    companies ( name, logo_url )
-  `
-
-  // Fallback 1: Ohne contact_persons (falls FK/Schema fehlt), weiter mit deleted_at-Filter
-  if (error) {
-    console.error('[getDashboardData] Supabase error:', error.message, error.details)
-    const fallback = await supabase
-      .from('references')
-      .select(fullSelectNoRelations)
-      .is('deleted_at', null)
-      .order('created_at', { ascending: false })
-    if (!fallback.error) {
-      rows = fallback.data
-      error = null
-    }
-  }
-
-  // Fallback 2: deleted_at-Spalte fehlt oder Filter schlägt fehl – ohne Filter laden, dann in JS filtern
-  if (error) {
-    const withDeletedColumn = await supabase
-      .from('references')
-      .select(fullSelectNoRelations + ', deleted_at')
-      .order('created_at', { ascending: false })
-    if (!withDeletedColumn.error && withDeletedColumn.data) {
-      const data = withDeletedColumn.data as unknown as Record<string, unknown>[]
-      rows = data.filter((r) => r.deleted_at == null || r.deleted_at === undefined)
-      error = null
-    }
-  }
-
-  // Fallback 3: Tabelle hat deleted_at gar nicht – alle Zeilen verwenden
-  if (error) {
-    const noDeletedFilter = await supabase
-      .from('references')
-      .select(fullSelectNoRelations)
-      .order('created_at', { ascending: false })
-    if (!noDeletedFilter.error) {
-      rows = noDeletedFilter.data
-      error = null
-    }
-  }
-
-  // Fallback 4: is_nda_deal oder andere Spalte fehlt – minimale Spaltenliste
-  if (error) {
-    const minimal = await supabase
-      .from('references')
-      .select(fullSelectMinimal)
-      .order('created_at', { ascending: false })
-    if (!minimal.error) {
-      rows = minimal.data
-      error = null
-    }
-  }
-
-  if (error) {
-    console.error('[getDashboardData] All fallbacks failed:', error.message)
-    return { references: [], totalCount: 0, deletedCount: 0 }
-  }
-
-  // Favoriten des aktuellen Users (Set für schnellen Lookup)
-  const favoriteIds = new Set<string>()
-  if (user) {
-    const { data: favs } = await supabase
-      .from('favorites')
-      .select('reference_id')
-      .eq('user_id', user.id)
-    if (favs) {
-      favs.forEach((f: { reference_id: string }) => favoriteIds.add(f.reference_id))
-    }
-  }
-
-  let references: ReferenceRow[] = (rows ?? []).map((r: Record<string, unknown>) => {
-    const raw = r.companies
-    const company =
-      Array.isArray(raw) && raw.length > 0
-        ? (raw[0] as { name?: string; logo_url?: string | null })
-        : (raw as { name?: string; logo_url?: string | null } | null)
-    const contactRaw = r.contact_persons
-    const contact = contactRaw
-      ? Array.isArray(contactRaw) && contactRaw.length > 0
-        ? (contactRaw[0] as { email?: string; first_name?: string; last_name?: string })
-        : (contactRaw as { email?: string; first_name?: string; last_name?: string })
-      : null
-    const contactDisplay = contact
-      ? [contact.first_name, contact.last_name].filter(Boolean).join(' ') || contact.email || null
-      : null
-    const start = r.project_start as string | null
-    const end = r.project_end as string | null
-    const status = (r.project_status as 'active' | 'completed' | null) ?? null
-    let duration_months: number | null = null
-    if (start && end) {
-      const s = new Date(start)
-      const e = new Date(end)
-      if (!Number.isNaN(s.getTime()) && !Number.isNaN(e.getTime())) {
-        duration_months = Math.max(
-          0,
-          (e.getUTCFullYear() - s.getUTCFullYear()) * 12 + (e.getUTCMonth() - s.getUTCMonth())
-        )
-      }
-    } else if (status === 'active' && start) {
-      const s = new Date(start)
-      const now = new Date()
-      if (!Number.isNaN(s.getTime()) && !Number.isNaN(now.getTime())) {
-        duration_months = Math.max(
-          0,
-          (now.getUTCFullYear() - s.getUTCFullYear()) * 12 + (now.getUTCMonth() - s.getUTCMonth())
-        )
-      }
-    }
-    return {
-      id: r.id as string,
-      title: r.title as string,
-      summary: (r.summary as string | null) ?? null,
-      industry: (r.industry as string | null) ?? null,
-      country: (r.country as string | null) ?? null,
-      website: (r.website as string | null) ?? null,
-      employee_count: (r.employee_count as number | null) ?? null,
-      volume_eur: (r.volume_eur as string | null) ?? null,
-      contract_type: (r.contract_type as string | null) ?? null,
-      incumbent_provider: (r.incumbent_provider as string | null) ?? null,
-      competitors: (r.competitors as string | null) ?? null,
-      customer_challenge: (r.customer_challenge as string | null) ?? null,
-      our_solution: (r.our_solution as string | null) ?? null,
-      status: normalizeStatus(r.status),
-      created_at: r.created_at as string,
-      updated_at: (r.updated_at as string | null) ?? null,
-      company_id: r.company_id as string,
-      company_name: company?.name ?? '—',
-      company_logo_url: company?.logo_url ?? null,
-      contact_id: (r.contact_id as string | null) ?? null,
-      contact_email: contact?.email ?? null,
-      contact_display: contactDisplay ?? null,
-      customer_contact_id: (r.customer_contact_id as string | null) ?? null,
-      customer_contact: (r.customer_contact as string | null) ?? null,
-      file_path: (r.file_path as string | null) ?? null,
-      is_favorited: favoriteIds.has(r.id as string),
-      tags: (r.tags as string | null) ?? null,
-      project_status: (r.project_status as 'active' | 'completed' | null) ?? null,
-      project_start: (r.project_start as string | null) ?? null,
-      project_end: (r.project_end as string | null) ?? null,
-      duration_months,
-      is_nda_deal: (r.is_nda_deal as boolean | undefined) ?? false,
-    }
-  })
-
-  if (onlyFavorites) {
-    references = references.filter((r) => r.is_favorited)
-  }
-
-  const viewsByRefId = new Map<string, number>()
-  const shareCountByRefId = new Map<string, number>()
-  const { data: portfolioRows } = await supabase
-    .from('shared_portfolios')
-    .select('reference_ids, view_count')
-  if (portfolioRows?.length) {
-    for (const row of portfolioRows) {
-      const ids = (row.reference_ids as string[] | null) ?? []
-      const v = (row.view_count as number) ?? 0
-      for (const id of ids) {
-        viewsByRefId.set(id, (viewsByRefId.get(id) ?? 0) + v)
-        shareCountByRefId.set(id, (shareCountByRefId.get(id) ?? 0) + 1)
-      }
-    }
-  }
-
-  const dealLinkCountByRefId = new Map<string, number>()
-  const { data: dealRefRows } = await supabase
-    .from('deal_references')
-    .select('reference_id')
-  if (dealRefRows?.length) {
-    for (const row of dealRefRows) {
-      const id = (row as { reference_id?: string }).reference_id
-      if (id) dealLinkCountByRefId.set(id, (dealLinkCountByRefId.get(id) ?? 0) + 1)
-    }
-  }
-
-  references = references.map((r) => ({
-    ...r,
-    total_share_views: viewsByRefId.get(r.id) ?? 0,
-    share_link_count: shareCountByRefId.get(r.id) ?? 0,
-    deal_link_count: dealLinkCountByRefId.get(r.id) ?? 0,
-  }))
-
-  let deletedCount = 0
-  const deletedResult = await supabase
-    .from('references')
-    .select('id', { count: 'exact', head: true })
-    .not('deleted_at', 'is', null)
-  if (!deletedResult.error) {
-    deletedCount = deletedResult.count ?? 0
-  }
-
-  return {
-    references,
-    totalCount: references.length,
-    deletedCount,
-  }
+  return getDashboardDataImpl(onlyFavorites) as unknown as GetDashboardDataResult
 }
 
 export async function getDeletedReferences(): Promise<DeletedReferenceRow[]> {
-  const supabase = await createServerSupabaseClient()
-
-  const { data, error } = await supabase
-    .from('references')
-    .select(
-      `
-        id,
-        title,
-        companies ( name )
-      `
-    )
-    .not('deleted_at', 'is', null)
-    .order('created_at', { ascending: false })
-
-  if (error || !data) return []
-  // Spalte deleted_at kann fehlen (Migration noch nicht gelaufen) – dann keine gelöschten Einträge
-
-  return data.map((r: any) => {
-    const raw = r.companies
-    const company =
-      Array.isArray(raw) && raw.length > 0
-        ? (raw[0] as { name?: string; logo_url?: string | null })
-        : (raw as { name?: string; logo_url?: string | null } | null)
-    return {
-      id: r.id as string,
-      title: (r.title as string) ?? '',
-      company_name: company?.name ?? '—',
-    }
-  })
+  return getDeletedReferencesImpl() as unknown as DeletedReferenceRow[]
 }
 
 export async function toggleFavorite(referenceId: string) {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) throw new Error('Nicht eingeloggt')
-
-  const { data: existing } = await supabase
-    .from('favorites')
-    .select('id')
-    .eq('user_id', user.id)
-    .eq('reference_id', referenceId)
-    .maybeSingle()
-
-  if (existing) {
-    await supabase.from('favorites').delete().eq('id', existing.id)
-  } else {
-    await supabase.from('favorites').insert({
-      user_id: user.id,
-      reference_id: referenceId,
-    })
-  }
-
-  revalidatePath('/dashboard')
+  return toggleFavoriteImpl(referenceId)
 }
 
 export type BulkImportReferencesResult =
@@ -429,419 +120,36 @@ export type BulkImportReferencesResult =
 
 export type BulkImportGroup = { projectName: string; fileCount: number }
 
-const BULK_IMPORT_MAX_FILES = 20
-const BULK_IMPORT_COMPANY_NAME = 'Import (Entwürfe)'
-
 export async function bulkCreateReferencesFromFiles(
   formData: FormData
 ): Promise<BulkImportReferencesResult> {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { success: false, error: 'Nicht angemeldet.' }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role, organization_id')
-    .eq('id', user.id)
-    .single()
-
-  if (profile?.role !== 'admin') {
-    return { success: false, error: 'Nur Admins können Referenzen im Bulk importieren.' }
-  }
-
-  const organizationId = profile?.organization_id ?? null
-  if (!organizationId) {
-    return { success: false, error: 'Dein Profil ist keiner Organisation zugeordnet.' }
-  }
-
-  const groupsJson = formData.get('groups') as string | null
-  const groups: BulkImportGroup[] = groupsJson ? (JSON.parse(groupsJson) as BulkImportGroup[]) : []
-  const files = formData.getAll('files') as File[]
-
-  const totalFiles = files?.length ?? 0
-  if (totalFiles === 0) return { success: false, error: 'Keine Dateien übergeben.' }
-  if (totalFiles > BULK_IMPORT_MAX_FILES) {
-    return { success: false, error: `Maximal ${BULK_IMPORT_MAX_FILES} Dateien erlaubt.` }
-  }
-
-  // Ohne Gruppen: eine Referenz pro Datei (Legacy), mit Gruppen: eine Referenz pro Gruppe + Assets
-  const useGroups = Array.isArray(groups) && groups.length > 0
-  const expectedCount = useGroups ? groups.reduce((s, g) => s + g.fileCount, 0) : totalFiles
-  if (useGroups && expectedCount !== totalFiles) {
-    return { success: false, error: 'Anzahl der Dateien stimmt nicht mit den Gruppen überein.' }
-  }
-
-  let companyId: string
-  const { data: existingCompany } = await supabase
-    .from('companies')
-    .select('id')
-    .eq('organization_id', organizationId)
-    .ilike('name', BULK_IMPORT_COMPANY_NAME)
-    .maybeSingle()
-
-  if (existingCompany?.id) {
-    companyId = existingCompany.id
-  } else {
-    const { data: newCompany, error: companyError } = await supabase
-      .from('companies')
-      .insert({
-        name: BULK_IMPORT_COMPANY_NAME,
-        organization_id: organizationId,
-      })
-      .select('id')
-      .single()
-    if (companyError || !newCompany?.id) {
-      return { success: false, error: companyError?.message ?? 'Unternehmen für Import konnte nicht angelegt werden.' }
-    }
-    companyId = newCompany.id
-  }
-
-  let created = 0
-  let fileIndex = 0
-
-  if (useGroups) {
-    for (const group of groups) {
-      const groupFiles = files.slice(fileIndex, fileIndex + group.fileCount)
-      fileIndex += group.fileCount
-      const title = (group.projectName?.trim() || groupFiles[0]?.name?.replace(/\.[^.]+$/, '').trim()) || 'Referenz'
-      const { data: refRow, error: insertRefError } = await supabase
-        .from('references')
-        .insert({
-          company_id: companyId,
-          title,
-          summary: null,
-          industry: null,
-          country: null,
-          status: 'draft',
-          contact_id: null,
-          file_path: null,
-          tags: null,
-          project_status: null,
-          project_start: null,
-          project_end: null,
-          website: null,
-          employee_count: null,
-          volume_eur: null,
-          contract_type: null,
-          customer_contact: null,
-        })
-        .select('id')
-        .single()
-      if (insertRefError || !refRow?.id) continue
-      const referenceId = refRow.id
-      for (const file of groupFiles) {
-        if (!(file instanceof File) || !file.name?.trim()) continue
-        let filePath: string | null = null
-        if (file.size > 0) {
-          const safeName = `${Date.now()}-${referenceId.slice(0, 8)}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('references')
-            .upload(safeName, file)
-          if (!uploadError && uploadData?.path) filePath = uploadData.path
-        }
-        if (filePath) {
-          const ext = file.name.includes('.') ? file.name.split('.').pop() ?? '' : ''
-          await supabase.from('reference_assets').insert({
-            reference_id: referenceId,
-            file_path: filePath,
-            file_name: file.name,
-            file_type: ext || null,
-            category: 'other',
-          })
-        }
-      }
-      created++
-    }
-  } else {
-    for (const file of files) {
-      if (!(file instanceof File) || !file.name?.trim()) continue
-      let filePath: string | null = null
-      if (file.size > 0) {
-        const fileName = `${Date.now()}-${created}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('references')
-          .upload(fileName, file)
-        if (!uploadError && uploadData?.path) filePath = uploadData.path
-      }
-      const title = file.name.replace(/\.[^.]+$/, '').trim() || file.name
-      const { data: refRow, error: insertRefError } = await supabase.from('references').insert({
-        company_id: companyId,
-        title,
-        summary: null,
-        industry: null,
-        country: null,
-        status: 'draft',
-        contact_id: null,
-        file_path: filePath,
-        tags: null,
-        project_status: null,
-        project_start: null,
-        project_end: null,
-        website: null,
-        employee_count: null,
-        volume_eur: null,
-        contract_type: null,
-        customer_contact: null,
-      }).select('id').single()
-      if (!insertRefError && refRow?.id && filePath) {
-        const ext = file.name.includes('.') ? file.name.split('.').pop() ?? '' : ''
-        await supabase.from('reference_assets').insert({
-          reference_id: refRow.id,
-          filePath,
-          file_name: file.name,
-          file_type: ext || null,
-          category: 'other',
-        })
-      }
-      if (!insertRefError) created++
-    }
-  }
-
-  revalidatePath('/dashboard')
-  return { success: true, created }
+  return bulkCreateReferencesFromFilesImpl(formData) as unknown as BulkImportReferencesResult
 }
 
 export async function deleteReference(id: string) {
-  const supabase = await createServerSupabaseClient()
-
-  const { error } = await supabase
-    .from('references')
-    .update({ deleted_at: new Date().toISOString() })
-    .eq('id', id)
-
-  if (error) {
-    throw new Error(error.message)
-  }
-
-  revalidatePath('/dashboard')
+  return deleteReferenceImpl(id)
 }
 
 export async function restoreReference(id: string) {
-  const supabase = await createServerSupabaseClient()
-
-  const { error } = await supabase
-    .from('references')
-    .update({ deleted_at: null })
-    .eq('id', id)
-
-  if (error) {
-    throw new Error(error.message)
-  }
-
-  revalidatePath('/dashboard')
+  return restoreReferenceImpl(id)
 }
 
 export async function hardDeleteReference(id: string) {
-  const supabase = await createServerSupabaseClient()
-
-  const { error } = await supabase
-    .from('references')
-    .delete()
-    .eq('id', id)
-
-  if (error) {
-    throw new Error(error.message)
-  }
-
-  revalidatePath('/dashboard')
+  return hardDeleteReferenceImpl(id)
 }
 
-export async function emptyTrash(): Promise<{
+export async function emptyTrash(): Promise<EmptyTrashResult> {
+  return emptyTrashImpl()
+}
+
+export type EmptyTrashResult = {
   success: boolean
   deleted: number
   error?: string
-}> {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) {
-    return { success: false, deleted: 0, error: 'Nicht angemeldet.' }
-  }
-
-  const { data, error } = await supabase
-    .from('references')
-    .delete()
-    .not('deleted_at', 'is', null)
-    .select('id')
-
-  if (error) {
-    return { success: false, deleted: 0, error: error.message }
-  }
-
-  const deleted = (data as { id: string }[] | null)?.length ?? 0
-  revalidatePath('/dashboard')
-  return { success: true, deleted }
 }
 
 export async function updateReference(id: string, formData: FormData) {
-  const supabase = await createServerSupabaseClient()
-
-  const companyName = formData.get('company_name')?.toString()?.trim()
-  const title = formData.get('title')?.toString()?.trim()
-  const summary = formData.get('summary')?.toString()?.trim() ?? null
-  const industry = formData.get('industry')?.toString()?.trim() ?? null
-  const country = formData.get('country')?.toString()?.trim() ?? null
-  const contactIdRaw = formData.get('contactId')?.toString()?.trim() ?? null
-  const contactId =
-    contactIdRaw && contactIdRaw !== '__none__' ? contactIdRaw : null
-  const statusRaw = formData.get('status')?.toString()
-  const submitMode = formData.get('submitMode')?.toString()
-  const allowed: ReferenceRow['status'][] = [
-    'draft',
-    'internal_only',
-    'approved',
-    'anonymized',
-  ]
-  const status =
-    submitMode === 'draft'
-      ? 'draft'
-      : allowed.includes(statusRaw as ReferenceRow['status'])
-        ? (statusRaw as ReferenceRow['status'])
-        : 'draft'
-  const tags = formData.get('tags')?.toString()?.trim() ?? null
-  const website = formData.get('website')?.toString()?.trim() ?? null
-  const employeeCountRaw = formData.get('employee_count')?.toString()?.trim() ?? null
-  const employee_count =
-    employeeCountRaw && !Number.isNaN(Number(employeeCountRaw))
-      ? Math.max(0, Math.trunc(Number(employeeCountRaw)))
-      : null
-  const volume_eur = formData.get('volume_eur')?.toString()?.trim() ?? null
-  const contract_type = formData.get('contract_type')?.toString()?.trim() ?? null
-  const incumbent_provider = formData.get('incumbent_provider')?.toString()?.trim() ?? null
-  const competitors = formData.get('competitors')?.toString()?.trim() ?? null
-  const customer_challenge = formData.get('customer_challenge')?.toString()?.trim() ?? null
-  const our_solution = formData.get('our_solution')?.toString()?.trim() ?? null
-  const customer_contact =
-    formData.get('customer_contact')?.toString()?.trim() ?? null
-  const customer_contact_id_raw = formData.get('customer_contact_id')?.toString()?.trim() ?? null
-  const customer_contact_id =
-    customer_contact_id_raw && customer_contact_id_raw !== '__none__' ? customer_contact_id_raw : null
-  const projectStatusRaw = formData.get('project_status')?.toString()
-  const project_status: 'active' | 'completed' | null =
-    projectStatusRaw === 'active' || projectStatusRaw === 'completed'
-      ? projectStatusRaw
-      : null
-  const project_start = formData.get('project_start')?.toString()?.trim() || null
-  const project_end = formData.get('project_end')?.toString()?.trim() || null
-  const ndaDealRaw = formData.get('nda_deal')?.toString()
-  const is_nda_deal = ndaDealRaw === '1' || ndaDealRaw === 'true'
-
-  if (!title) {
-    throw new Error('Titel ist erforderlich.')
-  }
-  // Kontakt/Projekt sind in der DB optional; nicht blockieren (analog createReference).
-  if (project_status === 'completed' && !project_end) {
-    throw new Error('Bei abgeschlossenem Projekt ist das Projektende erforderlich.')
-  }
-
-  const { data: ref, error: fetchError } = await supabase
-    .from('references')
-    .select('company_id')
-    .eq('id', id)
-    .single()
-
-  if (fetchError || !ref) {
-    throw new Error('Referenz nicht gefunden.')
-  }
-
-  if (companyName) {
-    const { error: companyError } = await supabase
-      .from('companies')
-      .update({ name: companyName, updated_at: new Date().toISOString() })
-      .eq('id', ref.company_id)
-    if (companyError) {
-      throw new Error(companyError.message)
-    }
-  }
-
-  const maybeFile = formData.get('file')
-  let filePath: string | undefined
-  if (maybeFile && maybeFile instanceof File && maybeFile.size > 0) {
-    try {
-      const safeName = maybeFile.name.replace(/[^a-zA-Z0-9._-]/g, '_')
-      const fileName = `${Date.now()}-${id.slice(0, 8)}-${safeName}`
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('references')
-        .upload(fileName, maybeFile)
-      if (!uploadError && uploadData?.path) {
-        filePath = uploadData.path
-      } else if (uploadError) {
-        console.error('[updateReference] Upload fehlgeschlagen:', uploadError.message)
-      }
-    } catch (e) {
-      console.error('[updateReference] Unerwarteter Fehler beim Upload:', e)
-    }
-  }
-
-  const updatePayload: {
-    title: string
-    summary: string | null
-    industry: string | null
-    country: string | null
-    contact_id: string | null
-    customer_contact_id: string | null
-    status: string
-    updated_at: string
-    file_path?: string
-    tags: string | null
-    website: string | null
-    employee_count: number | null
-    volume_eur: string | null
-    contract_type: string | null
-    incumbent_provider: string | null
-    competitors: string | null
-    customer_challenge: string | null
-    our_solution: string | null
-    customer_contact: string | null
-    project_status: 'active' | 'completed' | null
-    project_start: string | null
-    project_end: string | null
-    is_nda_deal: boolean
-  } = {
-    title,
-    summary,
-    industry,
-    country,
-    contact_id: contactId,
-    customer_contact_id,
-    status,
-    updated_at: new Date().toISOString(),
-    tags,
-    website,
-    employee_count,
-    volume_eur,
-    contract_type,
-    incumbent_provider,
-    competitors,
-    customer_challenge,
-    our_solution,
-    customer_contact,
-    project_status,
-    project_start,
-    project_end,
-    is_nda_deal,
-  }
-  if (filePath !== undefined) {
-    updatePayload.file_path = filePath
-  }
-
-  const { error } = await supabase
-    .from('references')
-    .update(updatePayload)
-    .eq('id', id)
-
-  if (error) {
-    throw new Error(error.message)
-  }
-
-  // Bei Freigabe-Workflows bleibt die Statuslogik im 4-Status-Modell,
-  // daher ist kein automatischer Wechsel auf einen Legacy-Status mehr nötig.
-
-  revalidatePath('/dashboard')
-  revalidatePath(`/dashboard/evidence/${id}/edit`)
+  return updateReferenceImpl(id, formData)
 }
 
 /** Teilupdate für Detail-Modal: nur Projektstatus, Incumbent, Wettbewerber */
@@ -853,156 +161,22 @@ export async function updateReferenceDetailFields(
     competitors?: string | null
   }
 ) {
-  const supabase = await createServerSupabaseClient()
-  const updatePayload: Record<string, unknown> = {
-    updated_at: new Date().toISOString(),
-  }
-  if (payload.project_status !== undefined) {
-    updatePayload.project_status = payload.project_status
-  }
-  if (payload.incumbent_provider !== undefined) {
-    updatePayload.incumbent_provider = payload.incumbent_provider || null
-  }
-  if (payload.competitors !== undefined) {
-    updatePayload.competitors = payload.competitors || null
-  }
-  const { error } = await supabase.from('references').update(updatePayload).eq('id', id)
-  if (error) throw new Error(error.message)
-  revalidatePath('/dashboard')
-  revalidatePath(`/dashboard/evidence/${id}/edit`)
+  return updateReferenceDetailFieldsImpl(id, payload)
 }
 
 /** Kundenlink erstellen: shared_portfolios Eintrag mit Slug (xxx-xxxx-xxx), gibt URL zurück */
 export async function createSharedPortfolio(referenceIds: string[]): Promise<{ success: true; url: string; slug: string } | { success: false; error: string }> {
-  const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { success: false, error: 'Nicht angemeldet.' }
-  if (!referenceIds?.length) return { success: false, error: 'Mindestens eine Referenz nötig.' }
-
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || ''
-  const pathPrefix = baseUrl ? `${baseUrl.replace(/\/$/, '')}/p` : '/p'
-
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const slug = generatePortfolioSlug()
-    const { error } = await supabase.from('shared_portfolios').insert({
-      slug,
-      reference_ids: referenceIds,
-      is_active: true,
-      view_count: 0,
-    })
-    if (!error) {
-      const url = pathPrefix ? `${pathPrefix}/${slug}` : `/p/${slug}`
-      return { success: true, url, slug }
-    }
-    const code = (error as { code?: string }).code
-    if (code === '23505') continue // unique violation, retry
-    if (code === '42P01' || /shared_portfolios/i.test(error.message)) {
-      console.error('[createSharedPortfolio] shared_portfolios Tabelle fehlt oder Schema-Cache veraltet:', error)
-      return {
-        success: false,
-        error:
-          'Kundenlink konnte nicht erstellt werden, da die Tabelle "shared_portfolios" in der Datenbank fehlt oder das Schema noch nicht aktualisiert wurde. Bitte Migration in Supabase ausführen.',
-      }
-    }
-    console.error('[createSharedPortfolio] shared_portfolios insert failed (Schema/Berechtigung?):', error.message, error)
-    return { success: false, error: error.message }
-  }
-  return { success: false, error: 'Slug-Kollision. Bitte erneut versuchen.' }
+  return createSharedPortfolioImpl(referenceIds)
 }
 
 /** Bestehenden Kundenlink für eine Referenz suchen (für Detail-Modal Popover) */
 export async function getExistingShareForReference(referenceId: string): Promise<{ slug: string; url: string } | null> {
-  const supabase = await createServerSupabaseClient()
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || ''
-  const pathPrefix = baseUrl ? `${baseUrl.replace(/\/$/, '')}/p` : '/p'
-  const { data: rows, error } = await supabase
-    .from('shared_portfolios')
-    .select('slug')
-    .eq('is_active', true)
-    .contains('reference_ids', [referenceId])
-    .limit(1)
-  if (error) {
-    const code = (error as { code?: string }).code
-    if (code === '42P01' || /shared_portfolios/i.test(error.message)) {
-      console.error('[getExistingShareForReference] shared_portfolios Tabelle fehlt oder Schema-Cache veraltet:', error)
-      // Kein harter Fehler im UI – einfach so tun, als gäbe es keinen bestehenden Link
-      return null
-    }
-    console.error('[getExistingShareForReference] Fehler beim Laden von shared_portfolios:', error)
-    return null
-  }
-  const row = rows?.[0]
-  if (!row?.slug) return null
-  return { slug: row.slug, url: pathPrefix ? `${pathPrefix}/${row.slug}` : `/p/${row.slug}` }
+  return getExistingShareForReferenceImpl(referenceId)
 }
 
 /** Referenzen nach IDs laden (z. B. für Share-Vorschau / ReferenceReader-Liste) */
 export async function getReferencesByIds(ids: string[]): Promise<ReferenceRow[]> {
-  if (!ids.length) return []
-  const supabase = await createServerSupabaseClient()
-  const { data: rows } = await supabase
-    .from('references')
-    .select(`
-      id, title, summary, industry, country, website, employee_count,
-      volume_eur, contract_type, incumbent_provider, competitors,
-      customer_challenge, our_solution, status, created_at, updated_at,
-      company_id, contact_id, file_path, tags, project_status, project_start, project_end,
-      is_nda_deal,
-      companies ( name, logo_url )
-    `)
-    .in('id', ids)
-    .is('deleted_at', null)
-  if (!rows?.length) return []
-  return rows.map((r: Record<string, unknown>) => {
-    const raw = r.companies
-    const company =
-      Array.isArray(raw) && raw.length > 0
-        ? (raw[0] as { name?: string; logo_url?: string | null })
-        : (raw as { name?: string; logo_url?: string | null } | null)
-    const start = r.project_start as string | null
-    const end = r.project_end as string | null
-    let duration_months: number | null = null
-    if (start && end) {
-      const s = new Date(start)
-      const e = new Date(end)
-      if (!Number.isNaN(s.getTime()) && !Number.isNaN(e.getTime())) {
-        duration_months = Math.max(0, (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth()))
-      }
-    }
-    return {
-      id: r.id as string,
-      title: r.title as string,
-      summary: (r.summary as string | null) ?? null,
-      industry: (r.industry as string | null) ?? null,
-      country: (r.country as string | null) ?? null,
-      website: (r.website as string | null) ?? null,
-      employee_count: (r.employee_count as number | null) ?? null,
-      volume_eur: (r.volume_eur as string | null) ?? null,
-      contract_type: (r.contract_type as string | null) ?? null,
-      incumbent_provider: (r.incumbent_provider as string | null) ?? null,
-      competitors: (r.competitors as string | null) ?? null,
-      customer_challenge: (r.customer_challenge as string | null) ?? null,
-      our_solution: (r.our_solution as string | null) ?? null,
-      status: normalizeStatus(r.status),
-      created_at: r.created_at as string,
-      updated_at: (r.updated_at as string | null) ?? null,
-      company_id: r.company_id as string,
-      company_name: company?.name ?? '—',
-      company_logo_url: company?.logo_url ?? null,
-      contact_id: (r.contact_id as string | null) ?? null,
-      contact_email: null,
-      contact_display: null,
-      customer_contact: null,
-      file_path: (r.file_path as string | null) ?? null,
-      is_favorited: false,
-      tags: (r.tags as string | null) ?? null,
-      project_status: (r.project_status as 'active' | 'completed' | null) ?? null,
-      project_start: (r.project_start as string | null) ?? null,
-      project_end: (r.project_end as string | null) ?? null,
-      duration_months,
-      is_nda_deal: (r.is_nda_deal as boolean | undefined) ?? false,
-    }
-  })
+  return getReferencesByIdsImpl(ids)
 }
 
 export type ReferenceAssetRow = {
@@ -1018,363 +192,49 @@ export type ReferenceAssetRow = {
 export async function getReferenceAssets(
   referenceId: string
 ): Promise<ReferenceAssetRow[]> {
-  const supabase = await createServerSupabaseClient()
-  const { data, error } = await supabase
-    .from('reference_assets')
-    .select('id, reference_id, file_path, file_name, file_type, category, created_at')
-    .eq('reference_id', referenceId)
-    .order('created_at', { ascending: true })
-  if (error) return []
-  return (data ?? []).map((r) => ({
-    id: r.id,
-    reference_id: r.reference_id,
-    file_path: r.file_path,
-    file_name: r.file_name ?? null,
-    file_type: r.file_type ?? null,
-    category: (r.category as 'sales' | 'contract' | 'other') || 'other',
-    created_at: r.created_at,
-  }))
+  return getReferenceAssetsImpl(referenceId)
 }
 
 export async function updateReferenceAssetCategory(
   assetId: string,
   category: 'sales' | 'contract' | 'other'
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createServerSupabaseClient()
-  const { error } = await supabase
-    .from('reference_assets')
-    .update({ category })
-    .eq('id', assetId)
-  if (error) return { success: false, error: error.message }
-  revalidatePath('/dashboard')
-  return { success: true }
+  return updateReferenceAssetCategoryImpl(assetId, category)
 }
-
-export type SubmitTicketResult = { success: true } | { success: false; error: string }
 
 export async function submitTicket(
   type: 'support' | 'feedback',
   subject: string,
   message: string
 ): Promise<SubmitTicketResult> {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { success: false, error: 'Nicht angemeldet.' }
-
-  const subj = subject?.toString()?.trim()
-  const msg = message?.toString()?.trim()
-  if (!subj) return { success: false, error: 'Bitte einen Betreff angeben.' }
-  if (!msg) return { success: false, error: 'Bitte eine Nachricht eingeben.' }
-
-  const { error } = await supabase.from('tickets').insert({
-    user_id: user.id,
-    type,
-    subject: subj,
-    message: msg,
-    status: 'open',
-  })
-  if (error) return { success: false, error: error.message }
-  return { success: true }
-}
-
-function normalizeCompanyName(raw: string | null | undefined): string | null {
-  if (!raw) return null
-  const trimmed = raw.trim()
-  if (!trimmed) return null
-  const lower = trimmed.toLowerCase()
-  return lower.charAt(0).toUpperCase() + lower.slice(1)
+  return submitTicketImpl(type, subject, message)
 }
 
 export async function getIncumbentSuggestions(query: string): Promise<string[]> {
-  const q = query.trim()
-  if (!q) return []
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return []
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', user.id)
-    .single()
-  const orgId = profile?.organization_id
-  if (!orgId) return []
-
-  const pattern = `%${q}%`
-  const { data, error } = await supabase
-    .from('references')
-    .select('incumbent_provider')
-    .eq('organization_id', orgId)
-    .ilike('incumbent_provider', pattern)
-    .not('incumbent_provider', 'is', null)
-    .limit(50)
-  if (error || !data) return []
-
-  const set = new Set<string>()
-  for (const row of data) {
-    const name = normalizeCompanyName(row.incumbent_provider as string | null)
-    if (name) set.add(name)
-  }
-  return Array.from(set).sort()
+  return getIncumbentSuggestionsImpl(query)
 }
 
 export async function getCompetitorSuggestions(query: string): Promise<string[]> {
-  const q = query.trim()
-  if (!q) return []
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return []
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', user.id)
-    .single()
-  const orgId = profile?.organization_id
-  if (!orgId) return []
-
-  const pattern = `%${q}%`
-  const { data, error } = await supabase
-    .from('references')
-    .select('competitors')
-    .eq('organization_id', orgId)
-    .not('competitors', 'is', null)
-    .ilike('competitors', pattern)
-    .limit(100)
-  if (error || !data) return []
-
-  const set = new Set<string>()
-  for (const row of data) {
-    const raw = row.competitors as string | null
-    if (!raw) continue
-    raw
-      .split(/[;,]+/)
-      .map((s) => normalizeCompanyName(s))
-      .filter((s): s is string => !!s)
-      .forEach((name) => set.add(name))
-  }
-  return Array.from(set).sort()
+  return getCompetitorSuggestionsImpl(query)
 }
 
 export async function submitForApproval(id: string) {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) throw new Error('Nicht authentifiziert')
-
-  const newToken = crypto.randomUUID()
-
-  const { data: row, error: fetchError } = await supabase
-    .from('references')
-    .select(`
-      title,
-      contact_id,
-      companies ( name ),
-      contact_persons!references_contact_id_fkey ( email, first_name )
-    `)
-    .eq('id', id)
-    .single()
-
-  if (fetchError || !row) throw new Error('Referenz nicht gefunden')
-
-  const company =
-    Array.isArray(row.companies) && row.companies.length > 0
-      ? (row.companies[0] as { name?: string })
-      : (row.companies as { name?: string } | null)
-  const company_name = company?.name ?? 'Referenz'
-
-  const { error: updateError } = await supabase
-    .from('references')
-    .update({
-      status: 'pending',
-      approval_token: newToken,
-    })
-    .eq('id', id)
-
-  if (updateError) throw new Error(updateError.message)
-
-  const { data: existing } = await supabase
-    .from('approvals')
-    .select('id')
-    .eq('reference_id', id)
-    .eq('status', 'pending')
-    .maybeSingle()
-
-  if (!existing) {
-    await supabase.from('approvals').insert({
-      reference_id: id,
-      requester_id: user.id,
-      status: 'pending',
-    })
-  }
-
-  const contactPerson = Array.isArray(row.contact_persons)
-    ? row.contact_persons[0]
-    : row.contact_persons
-  const contact = contactPerson as { email?: string; first_name?: string } | null
-  const contactEmail =
-    typeof contact?.email === 'string' && contact.email.includes('@')
-      ? contact.email
-      : null
-
-  const resend = getResend()
-  if (contactEmail && resend) {
-    try {
-      const baseUrl =
-        process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-      const firstName = contact?.first_name ?? ''
-      await resend.emails.send({
-        from: 'Refstack <onboarding@resend.dev>',
-        to: contactEmail,
-        subject: `Freigabe erforderlich: ${company_name}`,
-        html: `
-          <h1>Hallo${firstName ? ` ${firstName}` : ''}!</h1>
-          <p>Für das Unternehmen <strong>${company_name}</strong> wurde eine neue Referenz erstellt:</p>
-          <p><em>"${row.title}"</em></p>
-          <p>Bitte klicken Sie auf den folgenden Link, um die Details zu prüfen und die Freigabestufe festzulegen:</p>
-          <a href="${baseUrl}/approval/${newToken}" 
-             style="background: #000; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
-            Jetzt prüfen & freigeben
-          </a>
-        `,
-      })
-    } catch (e) {
-      console.error('E-Mail-Versand fehlgeschlagen:', e)
-    }
-  }
-
-  revalidatePath('/dashboard')
+  return submitForApprovalImpl(id)
 }
 
 export async function getRequests(): Promise<RequestItem[]> {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return []
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  let query = supabase
-    .from('approvals')
-    .select(
-      `
-      id,
-      status,
-      created_at,
-      reference:references (
-        id,
-        title,
-        companies ( name )
-      ),
-      requester:profiles ( full_name )
-    `
-    )
-    .order('created_at', { ascending: false })
-
-  if (profile?.role !== 'admin') {
-    query = query.eq('requester_id', user.id)
-  }
-
-  const { data, error } = await query
-
-  if (error) {
-    console.error('[getRequests] Error:', error)
-    return []
-  }
-
-  return (data ?? []).map((row: Record<string, unknown>) => {
-    const reference = row.reference as
-      | { id?: string; title?: string; companies?: { name?: string } | { name?: string }[] }
-      | null
-    const companies = reference?.companies
-    const companyName =
-      Array.isArray(companies) && companies.length > 0
-        ? (companies[0] as { name?: string }).name
-        : (companies as { name?: string } | null)?.name
-
-    const requester = row.requester as { full_name?: string } | null
-
-    return {
-      id: row.id as string,
-      reference_id: reference?.id as string,
-      reference_title: reference?.title ?? 'Unbekannt',
-      company_name: companyName ?? '—',
-      requester_name: requester?.full_name ?? 'Unbekannt',
-      status: row.status as RequestItem['status'],
-      created_at: row.created_at as string,
-    }
-  })
+  return getRequestsImpl()
 }
 
 export async function reviewRequest(
   approvalId: string,
   decision: 'approve_external' | 'approve_internal' | 'reject'
 ) {
-  const supabase = await createServerSupabaseClient()
-
-  const { data: approval, error: fetchErr } = await supabase
-    .from('approvals')
-    .select('reference_id')
-    .eq('id', approvalId)
-    .single()
-
-  if (fetchErr || !approval) throw new Error('Antrag nicht gefunden')
-
-  let newRefStatus = 'draft'
-  let approvalStatus: 'approved' | 'rejected' = 'rejected'
-
-  if (decision === 'approve_external') {
-    newRefStatus = 'external'
-    approvalStatus = 'approved'
-  } else if (decision === 'approve_internal') {
-    newRefStatus = 'internal'
-    approvalStatus = 'approved'
-  }
-
-  const { error: refError } = await supabase
-    .from('references')
-    .update({ status: newRefStatus })
-    .eq('id', approval.reference_id)
-
-  if (refError) throw new Error(refError.message)
-
-  const { error: appError } = await supabase
-    .from('approvals')
-    .update({ status: approvalStatus })
-    .eq('id', approvalId)
-
-  if (appError) throw new Error(appError.message)
-
-  revalidatePath('/dashboard')
+  return reviewRequestImpl(approvalId, decision)
 }
 
 export async function updateUserRole(role: 'admin' | 'sales') {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) throw new Error('Nicht authentifiziert')
-
-  const { error } = await supabase
-    .from('profiles')
-    .update({ role })
-    .eq('id', user.id)
-
-  if (error) throw new Error(error.message)
-
-  revalidatePath('/dashboard')
+  return updateUserRoleImpl(role)
 }
 
 /** KI-Zusammenfassung: Aus Herausforderung + Lösung eine prägnante, vertriebsorientierte Zusammenfassung per OpenAI (gpt-4o-mini). */
@@ -1386,70 +246,7 @@ export async function generateSummaryFromStory(
   customerChallenge: string | null,
   ourSolution: string | null
 ): Promise<GenerateSummaryResult> {
-  const challenge = customerChallenge?.trim() ?? ''
-  const solution = ourSolution?.trim() ?? ''
-  if (!challenge && !solution) {
-    return { success: false, error: 'Keine Inhalte für Herausforderung oder Lösung angegeben.' }
-  }
-
-  const apiKey = process.env.OPENAI_API_KEY
-  if (!apiKey) {
-    return { success: false, error: 'OpenAI API ist nicht konfiguriert (OPENAI_API_KEY).' }
-  }
-
-  const prompt = `Du bist ein Vertriebs-Assistent. Erstelle aus den folgenden Angaben eine prägnante, vertriebsorientierte Zusammenfassung in 3–4 Sätzen auf Deutsch. Betone den Mehrwert und das Ergebnis für den Kunden. Schreibe nur die Zusammenfassung, ohne Überschriften oder Bullet-Points.
-
-Herausforderung des Kunden:
-${challenge}
-
-Unsere Lösung:
-${solution}
-
-Zusammenfassung:`
-
-  try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.4,
-        max_tokens: 300,
-      }),
-    })
-
-    if (!response.ok) {
-      const status = response.status
-      const raw = await response.text()
-      // Rate-Limit / Quota-Fehler freundlich behandeln
-      if (status === 429) {
-        console.error('generateSummaryFromStory: OpenAI 429', raw)
-        return {
-          success: false,
-          error:
-            'Das KI-Kontingent ist aktuell ausgeschöpft. Bitte später erneut versuchen oder die Zusammenfassung manuell formulieren.',
-        }
-      }
-      return {
-        success: false,
-        error: `OpenAI-Fehler (${status}). Bitte später erneut versuchen.`,
-      }
-    }
-
-    const json = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> }
-    const summary = json?.choices?.[0]?.message?.content?.trim()
-    if (!summary) {
-      return { success: false, error: 'Keine Antwort von der KI erhalten.' }
-    }
-    return { success: true, summary }
-  } catch (e) {
-    const message = e instanceof Error ? e.message : 'Unbekannter Fehler'
-    return { success: false, error: message }
-  }
+  return generateSummaryFromStoryImpl(customerChallenge, ourSolution)
 }
 
 /** Ergebniszeile für semantische Referenz-Suche (Epic 4 / Match Engine). */
@@ -1478,11 +275,6 @@ export type MatchReferencesOptions = {
   rerank?: boolean
 }
 
-const MATCH_DEFAULT_THRESHOLD = 0.7
-const MATCH_DEFAULT_COUNT = 10
-const RERANK_MODEL = 'gpt-4o-mini'
-const RERANK_FETCH_MS = 8000
-
 /**
  * Semantische Referenz-Suche: Freitext → Embedding → `match_references` (nur eigene Organisation).
  * Optional `dealId`: Deal-Kontext (Titel, Branche, Volumen) wird dem Suchtext vorangestellt.
@@ -1492,295 +284,21 @@ export async function matchReferences(
   dealId?: string,
   options?: MatchReferencesOptions
 ): Promise<MatchReferencesResult> {
-  const raw = input?.trim() ?? ''
-  if (!raw) {
-    return { success: false, error: 'Bitte eine Suchanfrage eingeben.' }
-  }
-
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) {
-    return { success: false, error: 'Nicht angemeldet.' }
-  }
-
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('organization_id, role')
-    .eq('id', user.id)
-    .single()
-
-  if (profileError || !profile?.organization_id) {
-    return { success: false, error: 'Keine Organisation zugeordnet.' }
-  }
-
-  const orgId = profile.organization_id as string
-  const role = (profile as { role?: string }).role ?? 'sales'
-  const salesVisibleOnly = role === 'sales'
-
-  let queryText = raw
-
-  if (dealId) {
-    const { data: deal, error: dealErr } = await supabase
-      .from('deals')
-      .select('id, title, industry, volume')
-      .eq('id', dealId)
-      .eq('organization_id', orgId)
-      .maybeSingle()
-
-    if (dealErr || !deal) {
-      return { success: false, error: 'Deal nicht gefunden oder keine Berechtigung.' }
-    }
-
-    const parts = [
-      deal.title ? `Deal: ${deal.title}` : null,
-      deal.industry ? `Branche: ${deal.industry}` : null,
-      deal.volume ? `Volumen: ${deal.volume}` : null,
-      `Anfrage:\n${raw}`,
-    ].filter(Boolean)
-    queryText = parts.join('\n')
-  }
-
-  const apiKey = process.env.OPENAI_API_KEY
-  if (!apiKey) {
-    return { success: false, error: 'OpenAI API ist nicht konfiguriert (OPENAI_API_KEY).' }
-  }
-
-  const emb = await embedTextWithOpenAI(apiKey, queryText)
-  if ('error' in emb) {
-    return { success: false, error: emb.error }
-  }
-  const embedding = emb.embedding
-
-  const matchThreshold = options?.matchThreshold ?? MATCH_DEFAULT_THRESHOLD
-  const matchCount = options?.matchCount ?? MATCH_DEFAULT_COUNT
-
-  const { rows: list, error: rpcError } = await rpcMatchReferences(supabase, {
-    queryEmbedding: embedding,
-    matchThreshold,
-    matchCount,
-    organizationId: orgId,
-    salesVisibleOnly,
-  })
-
-  if (rpcError) {
-    return { success: false, error: rpcError }
-  }
-
-  let matches: MatchReferenceHit[] = list.map((r) => {
-    const summary = r.summary?.trim() ?? null
-    const snippet = snippetFromSummary(summary, r.title)
-    return {
-      id: r.id,
-      title: r.title ?? '',
-      summary,
-      industry: r.industry ?? null,
-      similarity: typeof r.similarity === 'number' ? r.similarity : 0,
-      snippet,
-    }
-  })
-
-  if (options?.rerank && matches.length > 1) {
-    matches = await rerankMatchHitsWithGpt(apiKey, queryText, matches)
-  }
-
-  return { success: true, matches }
-}
-
-/**
- * GPT-4o-mini: liefert sortierte UUID-Reihenfolge; fehlende/extra IDs werden robust gemappt.
- */
-async function rerankMatchHitsWithGpt(
-  apiKey: string,
-  queryText: string,
-  hits: MatchReferenceHit[]
-): Promise<MatchReferenceHit[]> {
-  const byId = new Map(hits.map((h) => [h.id, h]))
-  const candidates = hits.map((h) => ({
-    id: h.id,
-    title: h.title.slice(0, 220),
-    snippet: h.snippet.slice(0, 320),
-  }))
-
-  const prompt = `Du sortierst Referenz-Kandidaten für den Vertrieb nach inhaltlicher Relevanz zur folgenden Suchanfrage bzw. zum Kontext. Die wichtigste Referenz zuerst.
-
-Kontext / Anfrage:
-${queryText.slice(0, 4000)}
-
-Kandidaten (nur diese IDs verwenden):
-${JSON.stringify(candidates)}
-
-Antworte NUR mit einem JSON-Objekt exakt in dieser Form, ohne Markdown:
-{"ordered_ids":["<uuid>", "..."]}
-
-Alle IDs aus den Kandidaten müssen genau einmal vorkommen.`
-
-  let timeoutId: ReturnType<typeof setTimeout> | undefined
-  try {
-    const controller = new AbortController()
-    timeoutId = setTimeout(() => controller.abort(), RERANK_FETCH_MS)
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      signal: controller.signal,
-      body: JSON.stringify({
-        model: RERANK_MODEL,
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.2,
-        max_tokens: 800,
-      }),
-    })
-
-    if (!response.ok) {
-      return hits
-    }
-
-    const json = (await response.json()) as {
-      choices?: Array<{ message?: { content?: string } }>
-    }
-    const raw = json?.choices?.[0]?.message?.content?.trim() ?? ''
-    const parsed = parseOrderedIdsFromGptJson(raw)
-    if (!parsed?.length) {
-      return hits
-    }
-
-    const seen = new Set<string>()
-    const ordered: MatchReferenceHit[] = []
-    for (const id of parsed) {
-      const hit = byId.get(id)
-      if (hit && !seen.has(id)) {
-        seen.add(id)
-        ordered.push(hit)
-      }
-    }
-    for (const h of hits) {
-      if (!seen.has(h.id)) ordered.push(h)
-    }
-    return ordered
-  } catch {
-    return hits
-  } finally {
-    if (timeoutId !== undefined) clearTimeout(timeoutId)
-  }
-}
-
-/** Extrahiert ordered_ids aus Rohtext (inkl. ```json-Fence). */
-function parseOrderedIdsFromGptJson(raw: string): string[] | null {
-  let s = raw.trim()
-  const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/)
-  if (fence) s = fence[1].trim()
-  try {
-    const obj = JSON.parse(s) as { ordered_ids?: unknown }
-    const ids = obj?.ordered_ids
-    if (!Array.isArray(ids)) return null
-    return ids.map((x) => String(x).trim()).filter(Boolean)
-  } catch {
-    return null
-  }
-}
-
-/** Prüft, ob der String wie eine Domain aussieht (z. B. "biontechse.com"). */
-function looksLikeDomain(s: string): boolean {
-  const t = s.trim().toLowerCase()
-  if (!t || t.includes(' ')) return false
-  return /\.(com|de|net|org|io|eu|co|ai|cloud|global)$/i.test(t) || /\.[a-z]{2,}$/i.test(t)
-}
-
-/** Konvertiert Domain zu lesbarem Namen (z. B. "biontechse.com" → "Biontechse"). */
-function domainToDisplayName(domain: string): string {
-  const withoutProtocol = domain.trim().replace(/^https?:\/\//i, '').replace(/^www\./i, '').split('/')[0] ?? domain
-  const withoutTld = withoutProtocol.replace(/\.(com|de|net|org|io|eu|co|ai|cloud|global|[a-z]{2,})$/i, '').trim()
-  const name = withoutTld || withoutProtocol
-  return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase()
+  return matchReferencesImpl(input, dealId, options)
 }
 
 export type MergeDuplicateCompaniesResult =
   | { success: true; merged: number; deleted: number }
   | { success: false; error: string }
 
-/** Dubletten zusammenführen: Pro Name/Domain eine company behalten, Referenzen umbiegen, Rest löschen. Nur eigene Org. */
-export async function mergeDuplicateCompanies(): Promise<MergeDuplicateCompaniesResult> {
-  const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { success: false, error: 'Nicht angemeldet.' }
-
-  const { data: profile } = await supabase.from('profiles').select('organization_id, role').eq('id', user.id).single()
-  const orgId = profile?.organization_id
-  if (!orgId) return { success: false, error: 'Keine Organisation zugeordnet.' }
-  if (profile?.role !== 'admin') return { success: false, error: 'Nur für Admins.' }
-
-  const { data: companies, error: fetchErr } = await supabase
-    .from('companies')
-    .select('id, name, website_url')
-    .eq('organization_id', orgId)
-  if (fetchErr) return { success: false, error: fetchErr.message }
-
-  type CompanyRow = { id: string; name: string; website_url: string | null }
-  const key = (c: CompanyRow) => {
-    const nameNorm = (c.name ?? '').trim().toLowerCase()
-    const domain = (c.website_url ?? '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0] ?? ''
-    return domain || nameNorm || c.id
-  }
-  const groups = new Map<string, CompanyRow[]>()
-  for (const c of (companies ?? []) as CompanyRow[]) {
-    const k = key(c)
-    if (!groups.has(k)) groups.set(k, [])
-    groups.get(k)!.push({ id: c.id, name: c.name, website_url: c.website_url ?? null })
-  }
-
-  let merged = 0
-  let deleted = 0
-  for (const [, list] of groups) {
-    if (list.length <= 1) continue
-    const [keep, ...remove] = list
-    for (const other of remove) {
-      const { data: refs } = await supabase.from('references').select('id').eq('company_id', other.id)
-      const refCount = refs?.length ?? 0
-      const { error: upErr } = await supabase.from('references').update({ company_id: keep.id }).eq('company_id', other.id)
-      if (upErr) return { success: false, error: upErr.message }
-      merged += refCount
-      const { error: delErr } = await supabase.from('companies').delete().eq('id', other.id)
-      if (delErr) return { success: false, error: delErr.message }
-      deleted++
-    }
-  }
-  revalidatePath('/dashboard')
-  return { success: true, merged, deleted }
-}
-
 export type CleanupCompanyDomainNamesResult =
   | { success: true; updated: number }
   | { success: false; error: string }
 
-/** Einträge korrigieren, bei denen fälschlicherweise eine URL/Domain als Name gespeichert wurde. */
+export async function mergeDuplicateCompanies(): Promise<MergeDuplicateCompaniesResult> {
+  return mergeDuplicateCompaniesImpl()
+}
+
 export async function cleanupCompanyDomainNames(): Promise<CleanupCompanyDomainNamesResult> {
-  const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { success: false, error: 'Nicht angemeldet.' }
-
-  const { data: profile } = await supabase.from('profiles').select('organization_id, role').eq('id', user.id).single()
-  const orgId = profile?.organization_id
-  if (!orgId) return { success: false, error: 'Keine Organisation zugeordnet.' }
-  if (profile?.role !== 'admin') return { success: false, error: 'Nur für Admins.' }
-
-  const { data: companies, error: fetchErr } = await supabase
-    .from('companies')
-    .select('id, name')
-    .eq('organization_id', orgId)
-  if (fetchErr) return { success: false, error: fetchErr.message }
-
-  let updated = 0
-  for (const c of companies ?? []) {
-    if (!c.name || !looksLikeDomain(c.name)) continue
-    const newName = domainToDisplayName(c.name)
-    const { error } = await supabase.from('companies').update({ name: newName }).eq('id', c.id)
-    if (error) return { success: false, error: error.message }
-    updated++
-  }
-  revalidatePath('/dashboard')
-  return { success: true, updated }
+  return cleanupCompanyDomainNamesImpl()
 }

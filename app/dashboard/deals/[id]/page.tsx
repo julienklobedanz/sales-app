@@ -2,40 +2,15 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 import { getDealWithReferences, getReferencesForOrg } from '../actions'
 import { DealDetailContent } from '../deal-detail-content'
 import { RfpSidebarPanel } from '../rfp-sidebar-panel'
-import type { DealStatus } from '../types'
+import { DealStatusBadge } from '@/components/deal-status-badge'
+import { COPY } from '@/lib/copy'
 
 export const dynamic = 'force-dynamic'
-
-function DealStatusBadge({ status }: { status: DealStatus }) {
-  const s = status
-  const label =
-    s === 'open'
-      ? 'OPEN'
-      : s === 'rfp'
-        ? 'RFP'
-        : s === 'negotiation'
-          ? 'NEGOTIATION'
-          : s === 'won'
-            ? 'WON'
-            : s === 'lost'
-              ? 'LOST'
-              : s === 'withdrawn'
-                ? 'ZURÜCKGEZOGEN'
-                : 'ARCHIVED'
-  const variant =
-    s === 'won'
-      ? 'secondary'
-      : s === 'lost' || s === 'withdrawn'
-        ? 'destructive'
-        : 'outline'
-  return <Badge variant={variant as any}>{label}</Badge>
-}
 
 export default async function DealDetailPage({
   params,
@@ -82,6 +57,13 @@ export default async function DealDetailPage({
     .order('created_at', { ascending: false })
     .limit(25)
 
+  type EvidenceEventRow = {
+    id: string
+    event_type: string
+    payload: { helped?: boolean; comment?: unknown } | null
+    created_at: string
+  }
+
   const activities = [
     {
       id: 'deal-created',
@@ -89,7 +71,7 @@ export default async function DealDetailPage({
       title: 'Deal erstellt',
       detail: 'Der Deal wurde angelegt.',
     },
-    ...(events ?? []).map((e: any) => ({
+    ...((events ?? []) as EvidenceEventRow[]).map((e) => ({
       id: String(e.id),
       at: new Date(String(e.created_at)),
       title:
@@ -146,11 +128,11 @@ export default async function DealDetailPage({
                 <span className="font-medium truncate max-w-[220px]">{deal.company_name ?? '—'}</span>
               </div>
               <div className="flex justify-between gap-2">
-                <span className="text-muted-foreground">Account Manager</span>
+                <span className="text-muted-foreground">{COPY.roles.accountManager}</span>
                 <span className="font-medium truncate max-w-[220px]">{deal.account_manager_name ?? '—'}</span>
               </div>
               <div className="flex justify-between gap-2">
-                <span className="text-muted-foreground">Sales Manager</span>
+                <span className="text-muted-foreground">{COPY.roles.salesManager}</span>
                 <span className="font-medium truncate max-w-[220px]">{deal.sales_manager_name ?? '—'}</span>
               </div>
               <div className="flex justify-between gap-2">

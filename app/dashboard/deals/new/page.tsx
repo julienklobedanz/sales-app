@@ -2,8 +2,9 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { ArrowLeftIcon } from 'lucide-react'
+import { ArrowLeftIcon } from '@hugeicons/core-free-icons'
 import { DealForm } from './deal-form'
+import { AppIcon } from '@/lib/icons'
 
 export default async function NewDealPage() {
   const supabase = await createServerSupabaseClient()
@@ -31,7 +32,7 @@ export default async function NewDealPage() {
       <div className="mx-auto max-w-2xl space-y-6">
         <Link href="/dashboard/deals">
           <Button variant="ghost" size="sm" className="-ml-2 gap-2">
-            <ArrowLeftIcon className="size-4" />
+            <AppIcon icon={ArrowLeftIcon} size={16} />
             Zurück zu Deals
           </Button>
         </Link>

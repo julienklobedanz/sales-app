@@ -65,7 +65,7 @@ export function RegisterForm({ inviteToken = null }: { inviteToken?: string | nu
         </div>
       )}
       {state?.success && (
-        <p className="text-sm text-green-600 dark:text-green-400" role="status">
+        <p className="text-sm text-primary" role="status">
           Konto erstellt. Prüfe deine E-Mails und bestätige den Link – danach kannst du dich anmelden.
         </p>
       )}

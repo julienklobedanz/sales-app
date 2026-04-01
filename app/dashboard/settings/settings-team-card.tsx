@@ -6,9 +6,10 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Trash2, UserPlus } from 'lucide-react'
+import { Trash2, UserPlus } from '@hugeicons/core-free-icons'
 import type { TeamMemberRow } from './invite-actions'
 import { getTeamMembers, inviteByEmail, removeMember } from './invite-actions'
+import { AppIcon } from '@/lib/icons'
 
 export function SettingsTeamCard({
   initialMembers,
@@ -77,10 +78,10 @@ export function SettingsTeamCard({
           </div>
           <Button
             type="submit"
-            className="bg-black text-white hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90"
+            className="gap-2"
             disabled={invitePending}
           >
-            <UserPlus className="mr-2 h-4 w-4" />
+            <AppIcon icon={UserPlus} size={16} className="mr-2" />
             Einladen
           </Button>
         </form>
@@ -112,11 +113,11 @@ export function SettingsTeamCard({
                   </span>
                   <span className="ml-2">
                     {m.status === 'active' ? (
-                      <Badge className="bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">
+                      <Badge className="bg-accent text-accent-foreground">
                         Aktiv
                       </Badge>
                     ) : (
-                      <Badge className="bg-amber-500/15 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400">
+                      <Badge className="bg-muted text-foreground border-border">
                         Ausstehend
                       </Badge>
                     )}
@@ -127,12 +128,12 @@ export function SettingsTeamCard({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30"
+                    className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                     onClick={() => handleRemove(m)}
                     disabled={removingId === m.id}
                     aria-label="Mitglied entfernen"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <AppIcon icon={Trash2} size={16} />
                   </Button>
                 )}
               </li>

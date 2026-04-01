@@ -2,7 +2,6 @@
 
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { submitForApproval } from '../../actions'
 
 // Mapping für Brandfetch → Formular (Industrie-Dropdown, deutsch)
 const INDUSTRIES_MAP: { keywords: string[]; value: string }[] = [
@@ -445,7 +444,7 @@ export async function createReference(
     }
     resolvedCompanyId = company.id
   } else {
-    let nameToUse = newCompanyName?.trim()
+    const nameToUse = newCompanyName?.trim()
     if (!nameToUse) {
       return { success: false, error: 'Bitte Firmennamen eingeben oder ein Unternehmen wählen.' }
     }
@@ -511,9 +510,6 @@ export async function createReference(
       }
     }
   }
-
-  // Datei-Upload läuft client-seitig (instant save). Serverseitig ignorieren.
-  const file = null as File | null
 
   const { data: reference, error: refError } = await supabase
     .from('references')

@@ -25,7 +25,7 @@ export async function updateOrganization(
     .single()
 
   if (profile?.organization_id !== organizationId) {
-    return { success: false, error: 'Keine Berechtigung für diesen Workspace.' }
+    return { success: false, error: 'Keine Berechtigung für diesen Arbeitsbereich.' }
   }
 
   const trimmed = name.trim()

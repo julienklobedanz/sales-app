@@ -27,7 +27,6 @@ export function ApprovalActions({ id, token }: { id: string; token: string }) {
         onClick={() => handleDecision('external')}
         variant="default"
         disabled={loading}
-        className="bg-green-600 hover:bg-green-700"
       >
         Extern Freigegeben
       </Button>

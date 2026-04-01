@@ -3,7 +3,9 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ReferenceForm } from './reference-form'
 import { Button } from '@/components/ui/button'
-import { ArrowLeftIcon } from 'lucide-react'
+import { ArrowLeftIcon } from '@hugeicons/core-free-icons'
+import { AppIcon } from '@/lib/icons'
+import { COPY } from '@/lib/copy'
 
 export const maxDuration = 60
 
@@ -47,8 +49,8 @@ export default async function NewReferencePage() {
       <div className="mx-auto max-w-2xl space-y-6">
         <Link href="/dashboard/evidence">
           <Button variant="ghost" size="sm" className="gap-2 -ml-2">
-            <ArrowLeftIcon className="size-4" />
-            Zurück zum Evidence Hub
+            <AppIcon icon={ArrowLeftIcon} size={16} />
+            Zurück zu {COPY.nav.evidence}
           </Button>
         </Link>
         <ReferenceForm

@@ -1,31 +1,10 @@
 'use client'
 
 import { useMemo, useRef, useState } from 'react'
-import Image from 'next/image'
-import Link from 'next/link'
 import { toast } from 'sonner'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Textarea } from '@/components/ui/textarea'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useRole } from '@/hooks/useRole'
-import { Building2Icon, Globe2, Loader2, MapPinIcon, Pencil, Plus, Trash2 } from 'lucide-react'
 import type {
-  AccountDealRow,
-  CompanyRefRow,
-  CompanyStrategyRow,
   ContactPersonRow,
   StakeholderRole,
   StakeholderRow,
@@ -39,33 +18,14 @@ import {
   updateStakeholder,
   upsertCompanyStrategy,
 } from './actions'
-
-const STAKEHOLDER_ROLE_BADGES: Record<StakeholderRole, { label: string; className: string }> = {
-  economic_buyer: { label: 'Economic Buyer', className: 'bg-blue-50 text-blue-700 border-blue-200' },
-  champion: { label: 'Champion', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  blocker: { label: 'Blocker', className: 'bg-rose-50 text-rose-700 border-rose-200' },
-  technical_buyer: { label: 'Technical Buyer', className: 'bg-slate-50 text-slate-700 border-slate-200' },
-  user_buyer: { label: 'User Buyer', className: 'bg-purple-50 text-purple-700 border-purple-200' },
-  unknown: { label: 'Unbekannt', className: 'bg-muted text-foreground border-border' },
-}
-
-type Company = {
-  id: string
-  name: string
-  logo_url: string | null
-  website_url: string | null
-  headquarters: string | null
-  industry: string | null
-}
-
-type Props = {
-  company: Company
-  strategy: CompanyStrategyRow | null
-  stakeholders: StakeholderRow[]
-  contacts: ContactPersonRow[]
-  references: CompanyRefRow[]
-  activeDeals: AccountDealRow[]
-}
+import { CompanyContactDialog } from './company-contact-dialog'
+import type { CompanyDetailClientProps } from './company-detail-types'
+import { CompanyDetailHeader } from './company-detail-header'
+import { CompanyDetailLinksTab } from './company-detail-links-tab'
+import { CompanyDetailContactsTab } from './company-detail-contacts-tab'
+import { CompanyDetailStakeholdersTab } from './company-detail-stakeholders-tab'
+import { CompanyDetailStrategyTab } from './company-detail-strategy-tab'
+import { CompanyStakeholderDialog } from './company-stakeholder-dialog'
 
 export function CompanyDetailClient({
   company,
@@ -74,7 +34,7 @@ export function CompanyDetailClient({
   contacts: initialContacts,
   references,
   activeDeals,
-}: Props) {
+}: CompanyDetailClientProps) {
   const { isAdmin, isAccountManager, isSales } = useRole()
   const canEdit = isAdmin || isAccountManager
 
@@ -156,21 +116,32 @@ export function CompanyDetailClient({
 
   const strategyFields = useMemo(
     () => [
-      { key: 'company_goals' as const, label: 'Unternehmensziele', value: goals, set: setGoals },
-      { key: 'value_proposition' as const, label: 'Value Proposition', value: valueProposition, set: setValueProposition },
-      { key: 'red_flags' as const, label: 'Herausforderungen / Red Flags', value: redFlags, set: setRedFlags },
-      { key: 'competition' as const, label: 'Wettbewerb', value: competition, set: setCompetition },
-      { key: 'next_steps' as const, label: 'Nächste Schritte', value: nextSteps, set: setNextSteps },
+      { key: 'company_goals', label: 'Unternehmensziele', value: goals, set: setGoals },
+      {
+        key: 'value_proposition',
+        label: 'Value Proposition (Warum gewinnen wir hier?)',
+        value: valueProposition,
+        set: setValueProposition,
+      },
+      {
+        key: 'red_flags',
+        label: 'Herausforderungen / Red Flags',
+        value: redFlags,
+        set: setRedFlags,
+      },
+      { key: 'competition', label: 'Wettbewerb', value: competition, set: setCompetition },
+      { key: 'next_steps', label: 'Nächste Schritte', value: nextSteps, set: setNextSteps },
     ],
     [goals, valueProposition, redFlags, competition, nextSteps]
   )
 
-  const referenceStatusLabel = (s: string) => {
-    if (s === 'approved') return 'Freigegeben'
-    if (s === 'internal_only') return 'Intern'
-    if (s === 'draft') return 'Entwurf'
-    if (s === 'anonymized') return 'Anonymisiert'
-    return s
+  const resetStrategyToLastSaved = () => {
+    const last = lastSavedRef.current
+    setGoals(last.goals)
+    setValueProposition(last.valueProposition)
+    setRedFlags(last.redFlags)
+    setCompetition(last.competition)
+    setNextSteps(last.nextSteps)
   }
 
   const openStakeholderDialog = (s?: StakeholderRow) => {
@@ -308,500 +279,106 @@ export function CompanyDetailClient({
     toast.success('Kontakt gelöscht.')
   }
 
-  const roleBadge = (role: StakeholderRole) => {
-    const cfg = STAKEHOLDER_ROLE_BADGES[role] ?? STAKEHOLDER_ROLE_BADGES.unknown
-    return (
-      <Badge variant="outline" className={cfg.className}>
-        {cfg.label}
-      </Badge>
-    )
-  }
-
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-start gap-4">
-          {company.logo_url ? (
-            <div className="relative size-14 overflow-hidden rounded-2xl border bg-muted">
-              <Image src={company.logo_url} alt="" fill className="object-contain" sizes="56px" />
-            </div>
-          ) : (
-            <div className="flex size-14 items-center justify-center rounded-2xl border bg-muted">
-              <Building2Icon className="size-7 text-muted-foreground" />
-            </div>
-          )}
-          <div className="min-w-0">
-            <h1 className="truncate text-2xl font-bold tracking-tight">{company.name}</h1>
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-              {company.industry && <span>{company.industry}</span>}
-              {company.headquarters && (
-                <span className="inline-flex items-center gap-1">
-                  <MapPinIcon className="h-3.5 w-3.5" />
-                  {company.headquarters}
-                </span>
-              )}
-              {company.website_url && (
-                <a
-                  className="inline-flex items-center gap-1 hover:underline"
-                  href={company.website_url.startsWith('http') ? company.website_url : `https://${company.website_url}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <Globe2 className="h-3.5 w-3.5" />
-                  Website
-                </a>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <Button asChild variant="outline">
-          <Link href="/dashboard/accounts">Zurück</Link>
-        </Button>
-      </div>
+      <CompanyDetailHeader company={company} />
 
       <Tabs defaultValue="strategy" className="w-full">
         <TabsList className="w-full justify-start gap-1">
-          <TabsTrigger value="strategy">Strategy</TabsTrigger>
+          <TabsTrigger value="strategy">Strategie</TabsTrigger>
           <TabsTrigger value="stakeholders">Stakeholder</TabsTrigger>
           <TabsTrigger value="contacts">Kontakte</TabsTrigger>
           <TabsTrigger value="links">Referenzen &amp; Deals</TabsTrigger>
         </TabsList>
 
         <TabsContent value="strategy" className="mt-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <CardTitle>Strategy</CardTitle>
-                  <CardDescription>
-                    {isSales
-                      ? 'Read-only – nur Account Manager/Admin können bearbeiten.'
-                      : 'Bearbeiten über den Button „Bearbeiten“.'}
-                  </CardDescription>
-                </div>
-                {!strategyEditing && canEdit ? (
-                  <Button type="button" variant="outline" onClick={() => setStrategyEditing(true)}>
-                    <Pencil className="mr-2 h-4 w-4" />
-                    Bearbeiten
-                  </Button>
-                ) : null}
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {!strategyEditing ? (
-                <div className="space-y-6">
-                  {strategyFields.map((f) => (
-                    <div key={f.key} className="space-y-2">
-                      <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                        {f.label}
-                      </div>
-                      <div className="whitespace-pre-wrap rounded-lg border bg-background px-3 py-2 text-sm">
-                        {f.value.trim().length ? f.value : '—'}
-                      </div>
-                    </div>
-                  ))}
-                  {/* Bearbeiten-Button sitzt im Header */}
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {strategyFields.map((f) => (
-                    <div key={f.key} className="space-y-2">
-                      <Label>{f.label}</Label>
-                      <Textarea
-                        value={f.value}
-                        onChange={(e) => f.set(e.target.value)}
-                        disabled={!canEdit || strategySaving}
-                        className="min-h-[110px]"
-                      />
-                    </div>
-                  ))}
-                  <div className="flex items-center justify-end gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        // Reset auf letzten Save/Initial
-                        const last = lastSavedRef.current
-                        setGoals(last.goals)
-                        setValueProposition(last.valueProposition)
-                        setRedFlags(last.redFlags)
-                        setCompetition(last.competition)
-                        setNextSteps(last.nextSteps)
-                        setStrategyEditing(false)
-                      }}
-                      disabled={strategySaving}
-                    >
-                      Abbrechen
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={async () => {
-                        await saveStrategy()
-                        setStrategyEditing(false)
-                      }}
-                      disabled={!canEdit || strategySaving}
-                    >
-                      {strategySaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Speichern
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <CompanyDetailStrategyTab
+            isSales={isSales}
+            canEdit={canEdit}
+            strategyEditing={strategyEditing}
+            setStrategyEditing={setStrategyEditing}
+            strategySaving={strategySaving}
+            strategyFields={strategyFields}
+            saveStrategy={saveStrategy}
+            resetStrategyToLastSaved={resetStrategyToLastSaved}
+          />
         </TabsContent>
 
-        <TabsContent value="stakeholders" className="mt-6 space-y-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold">Stakeholder</h2>
-              <p className="text-sm text-muted-foreground">Economic Buyer, Champion, Blocker, etc.</p>
-            </div>
-            {canEdit && (
-              <Button type="button" onClick={() => openStakeholderDialog()}>
-                <Plus className="mr-2 h-4 w-4" />
-                Stakeholder hinzufügen
-              </Button>
-            )}
-          </div>
-
-          <Card>
-            <CardContent className="pt-6">
-              {stakeholders.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Noch keine Stakeholder.</p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Titel</TableHead>
-                      <TableHead>Rolle</TableHead>
-                      <TableHead>Einfluss</TableHead>
-                      <TableHead>Haltung</TableHead>
-                      <TableHead>Letzter Kontakt</TableHead>
-                      <TableHead className="text-right">Aktionen</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {stakeholders.map((s) => (
-                      <TableRow key={s.id}>
-                        <TableCell className="font-medium">{s.name}</TableCell>
-                        <TableCell className="text-muted-foreground">{s.title ?? '—'}</TableCell>
-                        <TableCell>{roleBadge(s.role)}</TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {(s as unknown as { influence_level?: string | null }).influence_level ?? '—'}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {(s as unknown as { attitude?: string | null }).attitude ?? '—'}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {((s as unknown as { last_contact_at?: string | null }).last_contact_at ?? '')?.slice(0, 10) || '—'}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {canEdit ? (
-                            <div className="inline-flex items-center gap-1">
-                              <Button type="button" variant="ghost" size="icon" onClick={() => openStakeholderDialog(s)}>
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button type="button" variant="ghost" size="icon" onClick={() => void removeStakeholder(s.id)}>
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
+        <TabsContent value="stakeholders" className="mt-6">
+          <CompanyDetailStakeholdersTab
+            stakeholders={stakeholders}
+            canEdit={canEdit}
+            onAdd={() => openStakeholderDialog()}
+            onEdit={openStakeholderDialog}
+            onRemove={removeStakeholder}
+          />
         </TabsContent>
 
-        <TabsContent value="contacts" className="mt-6 space-y-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold">Kontakte</h2>
-              <p className="text-sm text-muted-foreground">Ansprechpartner (intern/extern).</p>
-            </div>
-            {canEdit && (
-              <Button type="button" onClick={() => openContactDialog()}>
-                <Plus className="mr-2 h-4 w-4" />
-                Kontakt hinzufügen
-              </Button>
-            )}
-          </div>
-
-          <Card>
-            <CardContent className="pt-6">
-              {contacts.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Noch keine Kontakte.</p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>E-Mail</TableHead>
-                      <TableHead>Telefon</TableHead>
-                      <TableHead>LinkedIn</TableHead>
-                      <TableHead>Rolle</TableHead>
-                      <TableHead>Position</TableHead>
-                      <TableHead className="text-right">Aktionen</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {contacts.map((c) => {
-                      const name = [c.first_name, c.last_name].filter(Boolean).join(' ') || '—'
-                      return (
-                        <TableRow key={c.id}>
-                          <TableCell className="font-medium">{name}</TableCell>
-                          <TableCell className="text-muted-foreground">{c.email ?? '—'}</TableCell>
-                          <TableCell className="text-muted-foreground">{(c.phone ?? '') || '—'}</TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {(c as unknown as { linkedin_url?: string | null }).linkedin_url ? (
-                              <a
-                                className="hover:underline"
-                                href={(c as unknown as { linkedin_url?: string | null }).linkedin_url as string}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                Link
-                              </a>
-                            ) : (
-                              '—'
-                            )}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">{(c.role ?? '') || '—'}</TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {((c as unknown as { position?: string | null }).position ?? '') || '—'}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {canEdit ? (
-                              <div className="inline-flex items-center gap-1">
-                                <Button type="button" variant="ghost" size="icon" onClick={() => openContactDialog(c)}>
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button type="button" variant="ghost" size="icon" onClick={() => void removeContact(c.id)}>
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            ) : (
-                              <span className="text-xs text-muted-foreground">—</span>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
+        <TabsContent value="contacts" className="mt-6">
+          <CompanyDetailContactsTab
+            contacts={contacts}
+            canEdit={canEdit}
+            onAdd={() => openContactDialog()}
+            onEdit={openContactDialog}
+            onRemove={removeContact}
+          />
         </TabsContent>
 
-        <TabsContent value="links" className="mt-6 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Verknüpfte Referenzen</CardTitle>
-              <CardDescription>{references.length} Referenzen</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {references.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Keine Referenzen verknüpft.</p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Titel</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Nutzung</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {references.map((r) => (
-                      <TableRow key={r.id}>
-                        <TableCell className="font-medium">
-                          <Link className="hover:underline" href={`/dashboard/evidence/${r.id}`}>
-                            {r.title}
-                          </Link>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{referenceStatusLabel(r.status)}</Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">—</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Aktive Deals</CardTitle>
-              <CardDescription>{activeDeals.length} Deals</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {activeDeals.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Keine aktiven Deals.</p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Titel</TableHead>
-                      <TableHead>Volumen</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Ablauf</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {activeDeals.map((d) => (
-                      <TableRow key={d.id}>
-                        <TableCell className="font-medium">
-                          <Link className="hover:underline" href={`/dashboard/deals/${d.id}`}>
-                            {d.title}
-                          </Link>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">{d.volume ?? '—'}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{d.status}</Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">{d.expiry_date ?? '—'}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
+        <TabsContent value="links" className="mt-6">
+          <CompanyDetailLinksTab references={references} activeDeals={activeDeals} />
         </TabsContent>
       </Tabs>
 
-      <Dialog open={stakeholderOpen} onOpenChange={(v) => !stakeholderSaving && setStakeholderOpen(v)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingStakeholder ? 'Stakeholder bearbeiten' : 'Stakeholder hinzufügen'}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4">
-            <div className="grid gap-2">
-              <Label>Name</Label>
-              <Input value={shName} onChange={(e) => setShName(e.target.value)} disabled={stakeholderSaving} />
-            </div>
-            <div className="grid gap-2">
-              <Label>Titel</Label>
-              <Input value={shTitle} onChange={(e) => setShTitle(e.target.value)} disabled={stakeholderSaving} />
-            </div>
-            <div className="grid gap-2">
-              <Label>Rolle</Label>
-              <Select value={shRole} onValueChange={(v) => setShRole(v as StakeholderRole)} disabled={stakeholderSaving}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {(Object.keys(STAKEHOLDER_ROLE_BADGES) as StakeholderRole[]).map((k) => (
-                    <SelectItem key={k} value={k}>
-                      {STAKEHOLDER_ROLE_BADGES[k].label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label>Einfluss</Label>
-              <Input value={shInfluence} onChange={(e) => setShInfluence(e.target.value)} disabled={stakeholderSaving} placeholder="z. B. hoch / mittel / niedrig" />
-            </div>
-            <div className="grid gap-2">
-              <Label>Haltung</Label>
-              <Input value={shAttitude} onChange={(e) => setShAttitude(e.target.value)} disabled={stakeholderSaving} placeholder="z. B. Champion / neutral / kritisch" />
-            </div>
-            <div className="grid gap-2">
-              <Label>LinkedIn</Label>
-              <Input value={shLinkedIn} onChange={(e) => setShLinkedIn(e.target.value)} disabled={stakeholderSaving} placeholder="https://…" />
-            </div>
-            <div className="grid gap-2">
-              <Label>Prioritäten / Topics</Label>
-              <Textarea value={shPriorities} onChange={(e) => setShPriorities(e.target.value)} disabled={stakeholderSaving} />
-            </div>
-            <div className="grid gap-2">
-              <Label>Letzter Kontakt</Label>
-              <Input type="date" value={shLastContact} onChange={(e) => setShLastContact(e.target.value)} disabled={stakeholderSaving} />
-            </div>
-            <div className="grid gap-2">
-              <Label>Sentiment</Label>
-              <Input value={shSentiment} onChange={(e) => setShSentiment(e.target.value)} disabled={stakeholderSaving} placeholder="z. B. positiv / neutral / negativ" />
-            </div>
-            <div className="grid gap-2">
-              <Label>Notizen</Label>
-              <Textarea value={shNotes} onChange={(e) => setShNotes(e.target.value)} disabled={stakeholderSaving} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setStakeholderOpen(false)} disabled={stakeholderSaving}>
-              Abbrechen
-            </Button>
-            <Button type="button" onClick={() => void saveStakeholder()} disabled={stakeholderSaving}>
-              {stakeholderSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Speichern
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <CompanyStakeholderDialog
+        open={stakeholderOpen}
+        onOpenChange={setStakeholderOpen}
+        editing={!!editingStakeholder}
+        saving={stakeholderSaving}
+        shName={shName}
+        setShName={setShName}
+        shTitle={shTitle}
+        setShTitle={setShTitle}
+        shRole={shRole}
+        setShRole={setShRole}
+        shInfluence={shInfluence}
+        setShInfluence={setShInfluence}
+        shAttitude={shAttitude}
+        setShAttitude={setShAttitude}
+        shLinkedIn={shLinkedIn}
+        setShLinkedIn={setShLinkedIn}
+        shPriorities={shPriorities}
+        setShPriorities={setShPriorities}
+        shLastContact={shLastContact}
+        setShLastContact={setShLastContact}
+        shSentiment={shSentiment}
+        setShSentiment={setShSentiment}
+        shNotes={shNotes}
+        setShNotes={setShNotes}
+        onSave={saveStakeholder}
+      />
 
-      <Dialog open={contactOpen} onOpenChange={(v) => !contactSaving && setContactOpen(v)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingContact ? 'Kontakt bearbeiten' : 'Kontakt hinzufügen'}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4">
-            <div className="grid gap-2">
-              <Label>Account</Label>
-              <Input value={company.name} disabled />
-            </div>
-            <div className="grid gap-2">
-              <Label>Vorname</Label>
-              <Input value={cFirst} onChange={(e) => setCFirst(e.target.value)} disabled={contactSaving} />
-            </div>
-            <div className="grid gap-2">
-              <Label>Nachname</Label>
-              <Input value={cLast} onChange={(e) => setCLast(e.target.value)} disabled={contactSaving} />
-            </div>
-            <div className="grid gap-2">
-              <Label>E-Mail</Label>
-              <Input value={cEmail} onChange={(e) => setCEmail(e.target.value)} disabled={contactSaving} />
-            </div>
-            <div className="grid gap-2">
-              <Label>Position</Label>
-              <Input value={cPosition} onChange={(e) => setCPosition(e.target.value)} disabled={contactSaving} placeholder="z. B. Head of Procurement" />
-            </div>
-            <div className="grid gap-2">
-              <Label>Telefon</Label>
-              <Input value={cPhone} onChange={(e) => setCPhone(e.target.value)} disabled={contactSaving} placeholder="(optional)" />
-            </div>
-            <div className="grid gap-2">
-              <Label>LinkedIn</Label>
-              <Input value={cLinkedIn} onChange={(e) => setCLinkedIn(e.target.value)} disabled={contactSaving} placeholder="https://… (optional)" />
-            </div>
-            <div className="grid gap-2">
-              <Label>Rolle</Label>
-              <Input value={cRole} onChange={(e) => setCRole(e.target.value)} disabled={contactSaving} placeholder="z. B. Economic Buyer (optional)" />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setContactOpen(false)} disabled={contactSaving}>
-              Abbrechen
-            </Button>
-            <Button type="button" onClick={() => void saveContact()} disabled={contactSaving}>
-              {contactSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Speichern
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <CompanyContactDialog
+        open={contactOpen}
+        onOpenChange={setContactOpen}
+        editing={!!editingContact}
+        saving={contactSaving}
+        companyName={company.name}
+        cFirst={cFirst}
+        setCFirst={setCFirst}
+        cLast={cLast}
+        setCLast={setCLast}
+        cEmail={cEmail}
+        setCEmail={setCEmail}
+        cPosition={cPosition}
+        setCPosition={setCPosition}
+        cPhone={cPhone}
+        setCPhone={setCPhone}
+        cLinkedIn={cLinkedIn}
+        setCLinkedIn={setCLinkedIn}
+        cRole={cRole}
+        setCRole={setCRole}
+        onSave={saveContact}
+      />
     </div>
   )
 }
-

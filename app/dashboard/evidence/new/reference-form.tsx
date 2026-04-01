@@ -1,5 +1,7 @@
 'use client'
 
+/* eslint-disable @next/next/no-img-element */
+
 import {
   useState,
   useRef,
@@ -10,14 +12,11 @@ import {
 } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Loader2, Building2Icon, Plus, Sparkles, Mail, Phone } from 'lucide-react'
+import { CirclePlus, Email, Loader, Phone, Sparkles } from '@hugeicons/core-free-icons'
 import { z } from 'zod'
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -25,7 +24,6 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   Select,
   SelectContent,
@@ -35,13 +33,10 @@ import {
 } from '@/components/ui/select'
 import {
   Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
-import { attachOriginalDocumentToReference, createReference, enrichAndSaveCompany, fetchCompanyEnrichment, searchCompanySuggestions } from './actions'
+import { attachOriginalDocumentToReference, createReference, enrichAndSaveCompany, fetchCompanyEnrichment } from './actions'
 import { createClient } from '@/lib/supabase/client'
 import {
   updateReference,
@@ -52,6 +47,13 @@ import {
 import { extractDataFromDocument } from '@/lib/document-extraction'
 import { CreateContactDialog, type CreatedContact } from './create-contact-dialog'
 import type { ExternalContact } from './actions'
+import {
+  CompanyCombobox,
+  FileDropZone,
+  MagicImportDropzone,
+  type ReferenceFormCompany,
+} from './reference-form-fields'
+import { AppIcon } from '@/lib/icons'
 
 const INDUSTRIES = [
   'Finanzdienstleistungen & Versicherung',
@@ -109,7 +111,7 @@ const CONTRACT_TYPE_OPTIONS = [
   'Sonstige',
 ] as const
 
-type Company = { id: string; name: string; logo_url?: string | null }
+type Company = ReferenceFormCompany
 
 export type ContactPerson = {
   id: string
@@ -212,7 +214,8 @@ export function ReferenceForm({
   const [summary, setSummary] = useState(initialData?.summary ?? '')
   const [industry, setIndustry] = useState(initialData?.industry ?? '')
   const [country, setCountry] = useState(initialData?.country ?? '')
-  const [headquarters, setHeadquarters] = useState('')
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_headquarters, setHeadquarters] = useState('')
   const [website, setWebsite] = useState(initialData?.website ?? '')
   const [employeeCount, setEmployeeCount] = useState(
     initialData?.employee_count != null ? `${initialData.employee_count}` : ''
@@ -240,7 +243,8 @@ export function ReferenceForm({
   const statusBeforeNdaRef = useRef<ReferenceFormInitialData['status']>(
     initialData?.status ?? 'draft'
   )
-  const statusBeforeAnonymizedRef = useRef<ReferenceFormInitialData['status']>(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _statusBeforeAnonymizedRef = useRef<ReferenceFormInitialData['status']>(
     initialData?.status ?? 'draft'
   )
   const [contactId, setContactId] = useState(
@@ -287,13 +291,15 @@ export function ReferenceForm({
   )
   const [projectEnd, setProjectEnd] = useState(initialData?.project_end ?? '')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [logoFile, setLogoFile] = useState<File | null>(null)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_logoFile, _setLogoFile] = useState<File | null>(null)
   const [enrichedLogoUrl, setEnrichedLogoUrl] = useState<string | null>(initialData?.company_logo_url ?? null)
   const [createSubmitting, setCreateSubmitting] = useState(false)
   const [newCompanyName, setNewCompanyName] = useState('')
   const [enrichLoading, setEnrichLoading] = useState(false)
   const [enrichedCompany, setEnrichedCompany] = useState<Company | null>(null)
-  const enrichDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _enrichDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [editCompanyName, setEditCompanyName] = useState(initialData?.company_name ?? '')
   const editEnrichDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [magicImportLoading, setMagicImportLoading] = useState(false)
@@ -369,7 +375,7 @@ export function ReferenceForm({
     setContactId(contact.id)
   }
 
-  const handleCustomerContactCreated = (contact: ExternalContact | CreatedContact, _role?: string) => {
+  const handleCustomerContactCreated = (contact: ExternalContact | CreatedContact) => {
     const display: ExternalContactDisplay = {
       id: contact.id,
       first_name: contact.first_name,
@@ -693,7 +699,7 @@ export function ReferenceForm({
                     />
                     {enrichLoading && (
                       <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                        <Loader2 className="size-4 animate-spin" />
+                        <AppIcon icon={Loader} size={16} className="animate-spin" />
                       </span>
                     )}
                   </div>
@@ -924,9 +930,9 @@ export function ReferenceForm({
                   aria-label="KI-Vorschlag für Zusammenfassung"
                 >
                   {summaryLoading ? (
-                    <Loader2 className="size-3.5 animate-spin" />
+                    <AppIcon icon={Loader} size={14} className="animate-spin" />
                   ) : (
-                    <Sparkles className="size-3.5" />
+                    <AppIcon icon={Sparkles} size={14} />
                   )}
                 </Button>
               </div>
@@ -1074,7 +1080,7 @@ export function ReferenceForm({
             return c?.email ? (
               <div className="flex flex-wrap items-center gap-2 text-muted-foreground text-[10px]">
                 <a href={`mailto:${c.email}`} className="inline-flex items-center gap-1 hover:underline">
-                  <Mail className="size-3.5" />
+                  <AppIcon icon={Email} size={14} />
                   {c.email}
                 </a>
               </div>
@@ -1144,13 +1150,13 @@ export function ReferenceForm({
               <div className="flex flex-wrap items-center gap-3 text-muted-foreground text-[10px]">
                 {c.email && (
                   <a href={`mailto:${c.email}`} className="inline-flex items-center gap-1 hover:underline">
-                    <Mail className="size-3.5" />
+                    <AppIcon icon={Email} size={14} />
                     {c.email}
                   </a>
                 )}
                 {c.phone && (
                   <a href={`tel:${c.phone}`} className="inline-flex items-center gap-1 hover:underline">
-                    <Phone className="size-3.5" />
+                    <AppIcon icon={Phone} size={14} />
                     {c.phone}
                   </a>
                 )}
@@ -1391,7 +1397,7 @@ export function ReferenceForm({
                             .join(', ')
                         )
                       }}
-                      className="rounded-full px-1 hover:bg-amber-500/20"
+                      className="rounded-full px-1 hover:bg-accent"
                       aria-label={`Wettbewerber „${name}" entfernen`}
                     >
                       ×
@@ -1443,7 +1449,7 @@ export function ReferenceForm({
                       setCompetitorSuggestions([])
                     }
                   }}
-                  className="border-0 bg-transparent p-0 text-sm outline-none placeholder:text-amber-900/70 dark:placeholder:text-amber-200/80"
+                  className="border-0 bg-transparent p-0 text-sm outline-none placeholder:text-muted-foreground"
                 />
                 {competitorSuggestions.length > 0 && competitorInputValue.trim() && (
                   <div className="absolute z-20 mt-1 w-full rounded-md border bg-popover text-sm shadow-md">
@@ -1594,480 +1600,11 @@ export function ReferenceForm({
             form={formId}
             disabled={submitting}
           >
-            <Plus className="mr-2 h-4 w-4" />
+            <AppIcon icon={CirclePlus} size={16} className="mr-2" />
             Speichern
           </Button>
         </div>
       </div>
     </div>
-  )
-}
-
-function FileDropZone({
-  selectedFile,
-  onFileSelect,
-  disabled,
-  existingFilePath,
-}: {
-  selectedFile: File | null
-  onFileSelect: (file: File | null) => void
-  disabled: boolean
-  existingFilePath?: string | null
-}) {
-  const inputRef = useRef<HTMLInputElement>(null)
-  const [isDragging, setIsDragging] = useState(false)
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (!disabled) setIsDragging(true)
-  }
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(false)
-  }
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(false)
-    if (disabled) return
-    const file = e.dataTransfer.files?.[0]
-    if (file?.type === 'application/pdf') {
-      onFileSelect(file)
-    } else if (file) {
-      toast.error('Bitte nur PDF-Dateien hochladen.')
-    }
-  }
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    onFileSelect(file ?? null)
-  }
-  const handleClick = () => {
-    if (!disabled) inputRef.current?.click()
-  }
-
-  const displayName = selectedFile?.name ?? (existingFilePath ? existingFilePath.split('/').pop() : null)
-
-  return (
-    <div className="space-y-2">
-      <input
-        ref={inputRef}
-        type="file"
-        accept="application/pdf"
-        className="hidden"
-        onChange={handleChange}
-        aria-hidden
-      />
-      <div
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => e.key === 'Enter' && handleClick()}
-        onClick={handleClick}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        className={`flex min-h-[100px] cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-4 text-center transition-colors ${
-          isDragging
-            ? 'border-primary bg-primary/5'
-            : 'border-muted-foreground/25 hover:border-muted-foreground/50 hover:bg-muted/50'
-        } ${disabled ? 'pointer-events-none opacity-60' : ''}`}
-      >
-        {displayName ? (
-          <>
-            <span className="text-sm font-medium text-foreground">{displayName}</span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs"
-              onClick={(e: React.MouseEvent) => {
-                e.stopPropagation()
-                onFileSelect(null)
-                if (inputRef.current) inputRef.current.value = ''
-              }}
-            >
-              Entfernen
-            </Button>
-          </>
-        ) : (
-          <span className="text-muted-foreground text-sm">
-            PDF hier ablegen oder klicken zum Auswählen
-          </span>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function LogoDropZone({
-  selectedFile,
-  onFileSelect,
-  disabled,
-  enrichedLogoUrl = null,
-}: {
-  selectedFile: File | null
-  onFileSelect: (file: File | null) => void
-  disabled: boolean
-  enrichedLogoUrl?: string | null
-}) {
-  const inputRef = useRef<HTMLInputElement>(null)
-  const [isDragging, setIsDragging] = useState(false)
-  const [logoOnDarkBg, setLogoOnDarkBg] = useState(false)
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (!disabled) setIsDragging(true)
-  }
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(false)
-  }
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(false)
-    if (disabled) return
-    const file = e.dataTransfer.files?.[0]
-    if (file && file.type.startsWith('image/')) {
-      onFileSelect(file)
-    }
-  }
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file && file.type.startsWith('image/')) {
-      onFileSelect(file)
-    } else {
-      onFileSelect(null)
-    }
-  }
-
-  const handleLogoLoaded = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    try {
-      const img = e.currentTarget
-      const canvas = document.createElement('canvas')
-      const ctx = canvas.getContext('2d')
-      if (!ctx) return
-      const width = (canvas.width = 8)
-      const height = (canvas.height = 8)
-      ctx.drawImage(img, 0, 0, width, height)
-      const data = ctx.getImageData(0, 0, width, height).data
-      let sum = 0
-      const pixels = width * height
-      for (let i = 0; i < pixels; i++) {
-        const r = data[i * 4]
-        const g = data[i * 4 + 1]
-        const b = data[i * 4 + 2]
-        sum += (r + g + b) / 3
-      }
-      const avg = sum / pixels
-      setLogoOnDarkBg(avg > 210)
-    } catch {
-      // Canvas-Zugriff kann bei externen Bildern fehlschlagen (CORS) – dann einfach Standard-Hintergrund nutzen.
-    }
-  }
-
-  const showEnrichedLogo = !selectedFile && enrichedLogoUrl
-
-  return (
-    <div className="space-y-2">
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={handleChange}
-        aria-hidden
-      />
-      <div
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => e.key === 'Enter' && !disabled && inputRef.current?.click()}
-        onClick={() => !disabled && inputRef.current?.click()}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        className={[
-          'flex min-h-[72px] min-w-[72px] w-20 h-20 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border-2 text-center text-[11px] text-muted-foreground transition-colors',
-          showEnrichedLogo
-            ? 'border border-muted-foreground/25 bg-background'
-            : isDragging
-              ? 'border-primary bg-primary/5'
-              : 'border-dashed border-muted-foreground/25 hover:border-muted-foreground/50 hover:bg-muted/50',
-          disabled ? 'pointer-events-none opacity-60' : '',
-        ].join(' ')}
-      >
-        {selectedFile ? (
-          <span className="px-1">{selectedFile.name}</span>
-        ) : showEnrichedLogo ? (
-          <div
-            className={[
-              'flex h-full w-full items-center justify-center rounded-md',
-              logoOnDarkBg ? 'bg-neutral-900' : 'bg-transparent',
-            ].join(' ')}
-          >
-            <img
-              src={enrichedLogoUrl}
-              alt="Firmenlogo"
-              className="max-h-full max-w-full object-contain p-1"
-              onLoad={handleLogoLoaded}
-              crossOrigin="anonymous"
-            />
-          </div>
-        ) : (
-          <span>Logo hier ablegen oder klicken</span>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function MagicImportDropzone({
-  onFileAccept,
-  loading,
-  disabled,
-}: {
-  onFileAccept: (file: File) => void
-  loading: boolean
-  disabled: boolean
-}) {
-  const inputRef = useRef<HTMLInputElement>(null)
-  const [isDragging, setIsDragging] = useState(false)
-
-  const acceptTypes =
-    'application/pdf,.pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,application/msword,.doc,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx'
-
-  const MAX_SIZE_BYTES = 4.5 * 1024 * 1024 // 4.5MB
-  const validateAndAccept = (file: File) => {
-    if (file.size > MAX_SIZE_BYTES) {
-      toast.error('Datei zu groß für automatische Erkennung (Max 4.5MB).')
-      return
-    }
-    const ok =
-      file.type === 'application/pdf' ||
-      file.type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
-      file.type === 'application/msword' ||
-      file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-      /\.(pdf|pptx|doc|docx)$/i.test(file.name)
-    if (ok) onFileAccept(file)
-    else toast.error('Nur Word-, PowerPoint- oder PDF-Dateien werden unterstützt.')
-  }
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (!disabled && !loading) setIsDragging(true)
-  }
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(false)
-  }
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(false)
-    if (disabled || loading) return
-    const file = e.dataTransfer.files?.[0]
-    if (file) validateAndAccept(file)
-  }
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) validateAndAccept(file)
-    e.target.value = ''
-  }
-
-  return (
-    <div className="space-y-2">
-      <input
-        ref={inputRef}
-        type="file"
-        accept={acceptTypes}
-        className="hidden"
-        onChange={handleChange}
-        aria-hidden
-      />
-      <div
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => e.key === 'Enter' && !disabled && !loading && inputRef.current?.click()}
-        onClick={() => !disabled && !loading && inputRef.current?.click()}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        className={[
-          'flex min-h-[100px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-6 text-center transition-colors',
-          isDragging && !loading ? 'border-primary bg-primary/5' : 'border-muted-foreground/30 bg-muted/20 hover:border-muted-foreground/50 hover:bg-muted/30',
-          (disabled || loading) ? 'pointer-events-none opacity-70' : '',
-        ].join(' ')}
-      >
-        {loading ? (
-          <>
-            <Loader2 className="text-muted-foreground size-8 animate-spin" />
-            <span className="text-muted-foreground text-sm font-medium">
-              KI analysiert Dokument… Bitte warten (bis zu 30 Sek.)
-            </span>
-          </>
-        ) : (
-          <>
-            <p className="text-foreground text-sm font-medium">
-              Hast du schon ein Referenzdokument?
-            </p>
-            <p className="text-muted-foreground max-w-md text-sm">
-              Lege jetzt deine Word, PowerPoint, oder PDF-Datei hier ab, um das Formular automatisch zu befüllen.
-            </p>
-          </>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function CompanyCombobox({
-  companies,
-  value,
-  onValueChange,
-  onSelectCompany,
-  onConfirmValue,
-  loading,
-  disabled,
-}: {
-  companies: Company[]
-  value: string
-  onValueChange: (value: string) => void
-  onSelectCompany: (company: Company) => void
-  onConfirmValue?: (value: string) => void
-  loading: boolean
-  disabled: boolean
-}) {
-  const [open, setOpen] = useState(false)
-  const [remoteSuggestions, setRemoteSuggestions] = useState<Company[]>([])
-  const [searching, setSearching] = useState(false)
-  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const trimmed = value.trim().toLowerCase()
-  const localFiltered = companies.filter((c) =>
-    trimmed ? c.name.toLowerCase().includes(trimmed) : true
-  )
-  const mergedSuggestions: Company[] = [
-    ...localFiltered,
-    ...remoteSuggestions.filter(
-      (r) => !companies.some((c) => c.id === r.id)
-    ),
-  ]
-  const showList = open && value.trim().length > 0
-
-  useEffect(() => {
-    const q = value.trim()
-    if (!q) {
-      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
-      setRemoteSuggestions([])
-      setSearching(false)
-      return
-    }
-    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
-    searchTimeoutRef.current = setTimeout(() => {
-      setSearching(true)
-      searchCompanySuggestions(q)
-        .then((result) => {
-          if (result.success) {
-            const suggestions = (result.suggestions ?? []).map<Company>((s) => ({
-              id: s.id,
-              name: s.name,
-              logo_url: s.logo_url ?? null,
-            }))
-            setRemoteSuggestions(suggestions)
-          } else {
-            console.error('Unternehmenssuche fehlgeschlagen:', result.error)
-            setRemoteSuggestions([])
-          }
-        })
-        .finally(() => {
-          setSearching(false)
-        })
-    }, 300)
-  }, [value])
-
-  useEffect(() => {
-    return () => {
-      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
-    }
-  }, [])
-
-  return (
-    <Popover open={showList} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Input
-          type="text"
-          disabled={disabled}
-          value={value}
-          onChange={(e) => {
-            onValueChange(e.target.value)
-            const next = e.target.value.trim().length > 0
-            setOpen(next)
-          }}
-          onFocus={() => {
-            if (value.trim().length > 0) setOpen(true)
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              const current = e.currentTarget.value.trim()
-              if (!current) return
-              e.preventDefault()
-              setOpen(false)
-              onConfirmValue?.(current)
-            }
-          }}
-          placeholder="Unternehmen eingeben"
-          className="w-full cursor-text"
-        />
-      </PopoverTrigger>
-      <PopoverContent
-        className="w-full p-0"
-        align="start"
-        sideOffset={4}
-        onOpenAutoFocus={(e) => e.preventDefault()}
-      >
-        <div className="max-h-60 overflow-y-auto py-1 text-sm">
-          {mergedSuggestions.map((company) => (
-            <button
-              key={company.id}
-              type="button"
-              className="flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-left hover:bg-muted"
-              onClick={() => {
-                onSelectCompany(company)
-                setOpen(false)
-              }}
-            >
-              {company.logo_url ? (
-                <img
-                  src={company.logo_url}
-                  alt=""
-                  className="h-5 w-5 flex-shrink-0 rounded object-contain"
-                />
-              ) : (
-                <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded bg-muted text-[10px] text-muted-foreground">
-                  <Building2Icon className="h-3 w-3" />
-                </span>
-              )}
-              <span className="truncate">{company.name}</span>
-            </button>
-          ))}
-          {mergedSuggestions.length === 0 && !searching && !loading && (
-            <div className="px-3 py-2 text-xs text-muted-foreground">
-              Keine Treffer. Neuer Name wird verwendet.
-            </div>
-          )}
-          {(searching || loading) && (
-            <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              Suche nach Unternehmen …
-            </div>
-          )}
-        </div>
-      </PopoverContent>
-    </Popover>
   )
 }

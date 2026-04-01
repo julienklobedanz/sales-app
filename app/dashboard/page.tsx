@@ -2,6 +2,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { COPY } from '@/lib/copy'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -26,7 +27,7 @@ export default async function DashboardPage() {
 
       <div className="flex flex-wrap gap-2">
         <Button asChild variant="default">
-          <Link href="/dashboard/evidence">Zum Evidence Hub</Link>
+          <Link href="/dashboard/evidence">Zu {COPY.nav.evidence}</Link>
         </Button>
         <Button asChild variant="outline">
           <Link href="/dashboard/accounts">Zu Accounts</Link>

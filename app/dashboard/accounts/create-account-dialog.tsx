@@ -15,7 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Loader2 } from 'lucide-react'
+import { Loader } from '@hugeicons/core-free-icons'
+import { AppIcon } from '@/lib/icons'
 import { createCompany } from './actions'
 
 export function CreateAccountDialog({
@@ -194,7 +195,7 @@ export function CreateAccountDialog({
             Abbrechen
           </Button>
           <Button type="button" onClick={submit} disabled={!canSubmit}>
-            {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {pending && <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />}
             Erstellen
           </Button>
         </DialogFooter>

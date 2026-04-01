@@ -1,22 +1,23 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { useTheme } from 'next-themes'
 import {
-  FileTextIcon,
+  FileText,
   SettingsIcon,
-  GalleryVerticalEnd,
+  GalleryHorizontalEndIcon,
   LifeBuoy,
   Send,
   ChevronsUpDown,
   LogOut,
   BrainCircuit,
-  HandshakeIcon,
+  Handshake,
   TrendingUp,
   Moon,
   Sun,
-} from 'lucide-react'
+} from '@hugeicons/core-free-icons'
 import {
   Sidebar,
   SidebarContent,
@@ -47,6 +48,8 @@ import { createClient } from '@/lib/supabase/client'
 import { type User } from '@supabase/supabase-js'
 import { RoleProvider, type AppRole } from '@/hooks/useRole'
 import { CommandPalette } from '@/components/ui/command-palette'
+import { AppIcon } from '@/lib/icons'
+import { COPY } from '@/lib/copy'
 
 export type Profile = {
   full_name: string | null
@@ -64,6 +67,7 @@ export function DashboardShell({
 }) {
   const pathname = usePathname()
   const router = useRouter()
+  const { resolvedTheme, setTheme } = useTheme()
 
   const handleLogout = async () => {
     const supabase = createClient()
@@ -76,34 +80,15 @@ export function DashboardShell({
   const [ticketModalOpen, setTicketModalOpen] = useState(false)
   const [ticketModalType, setTicketModalType] = useState<'support' | 'feedback'>('support')
 
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    if (typeof window === 'undefined') return 'light'
-    const stored = window.localStorage.getItem('theme')
-    if (stored === 'dark' || stored === 'light') return stored
-    return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-  })
-
-  useEffect(() => {
-    const root = document.documentElement
-    root.classList.toggle('dark', theme === 'dark')
-    try {
-      window.localStorage.setItem('theme', theme)
-    } catch {
-      // ignore
-    }
-  }, [theme])
-
-  const isIconMode = useMemo(() => {
+  const [forceCollapsed, setForceCollapsed] = useState(() => {
     if (typeof window === 'undefined') return false
     return window.matchMedia?.('(max-width: 1023px)').matches ?? false
-  }, [])
-  const [forceCollapsed, setForceCollapsed] = useState(isIconMode)
+  })
 
   useEffect(() => {
     const mql = window.matchMedia('(max-width: 1023px)')
     const onChange = () => setForceCollapsed(mql.matches)
     mql.addEventListener('change', onChange)
-    setForceCollapsed(mql.matches)
     return () => mql.removeEventListener('change', onChange)
   }, [])
 
@@ -148,7 +133,7 @@ export function DashboardShell({
               <SidebarMenuButton size="lg" asChild className="hover:bg-transparent">
                 <Link href="/dashboard">
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                    <GalleryVerticalEnd className="size-5" strokeWidth={2.5} />
+                    <AppIcon icon={GalleryHorizontalEndIcon} size={20} strokeWidth={2.5} />
                   </div>
                   <div className="flex flex-col gap-0.5 leading-none">
                     <span className="text-sm font-semibold tracking-tight">
@@ -169,15 +154,18 @@ export function DashboardShell({
                   <SidebarMenuButton
                     asChild
                     isActive={pathname?.startsWith('/dashboard/accounts')}
-                    tooltip="Accounts"
-                    className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-zinc-900 data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:hover:translate-x-0"
+                    tooltip={COPY.nav.accounts}
+                    className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-semibold data-[active=true]:hover:translate-x-0"
                   >
                     <Link href="/dashboard/accounts" className="flex items-center gap-2.5">
-                      <BrainCircuit
-                        className="relative z-10 size-4"
-                        strokeWidth={pathname?.startsWith('/dashboard/accounts') ? 2.5 : 2}
-                      />
-                      <span className="relative z-10">Accounts</span>
+                      <span className="relative z-10">
+                        <AppIcon
+                          icon={BrainCircuit}
+                          size={16}
+                          strokeWidth={pathname?.startsWith('/dashboard/accounts') ? 2.5 : 2}
+                        />
+                      </span>
+                      <span className="relative z-10">{COPY.nav.accounts}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -186,15 +174,18 @@ export function DashboardShell({
                   <SidebarMenuButton
                     asChild
                     isActive={pathname?.startsWith('/dashboard/deals')}
-                    tooltip="Deals"
-                    className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-zinc-900 data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:hover:translate-x-0"
+                    tooltip={COPY.nav.deals}
+                    className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-semibold data-[active=true]:hover:translate-x-0"
                   >
                     <Link href="/dashboard/deals" className="flex items-center gap-2.5">
-                      <HandshakeIcon
-                        className="relative z-10 size-4"
-                        strokeWidth={pathname?.startsWith('/dashboard/deals') ? 2.5 : 2}
-                      />
-                      <span className="relative z-10">Deals</span>
+                      <span className="relative z-10">
+                        <AppIcon
+                          icon={Handshake}
+                          size={16}
+                          strokeWidth={pathname?.startsWith('/dashboard/deals') ? 2.5 : 2}
+                        />
+                      </span>
+                      <span className="relative z-10">{COPY.nav.deals}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -203,15 +194,18 @@ export function DashboardShell({
                   <SidebarMenuButton
                     asChild
                     isActive={pathname?.startsWith('/dashboard/evidence')}
-                    tooltip="Evidence Hub"
-                    className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-zinc-900 data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:hover:translate-x-0"
+                    tooltip={COPY.nav.evidence}
+                    className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-semibold data-[active=true]:hover:translate-x-0"
                   >
                     <Link href="/dashboard/evidence" className="flex items-center gap-2.5">
-                      <FileTextIcon
-                        className="relative z-10 size-4"
-                        strokeWidth={pathname?.startsWith('/dashboard/evidence') ? 2.5 : 2}
-                      />
-                      <span className="relative z-10">Evidence Hub</span>
+                      <span className="relative z-10">
+                        <AppIcon
+                          icon={FileText}
+                          size={16}
+                          strokeWidth={pathname?.startsWith('/dashboard/evidence') ? 2.5 : 2}
+                        />
+                      </span>
+                      <span className="relative z-10">{COPY.nav.evidence}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -220,15 +214,18 @@ export function DashboardShell({
                   <SidebarMenuButton
                     asChild
                     isActive={pathname?.startsWith('/dashboard/market-signals')}
-                    tooltip="Market Signals"
-                    className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-zinc-900 data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:hover:translate-x-0"
+                    tooltip={COPY.nav.marketSignals}
+                    className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-semibold data-[active=true]:hover:translate-x-0"
                   >
                     <Link href="/dashboard/market-signals" className="flex items-center gap-2.5">
-                      <TrendingUp
-                        className="relative z-10 size-4"
-                        strokeWidth={pathname?.startsWith('/dashboard/market-signals') ? 2.5 : 2}
-                      />
-                      <span className="relative z-10">Market Signals</span>
+                      <span className="relative z-10">
+                        <AppIcon
+                          icon={TrendingUp}
+                          size={16}
+                          strokeWidth={pathname?.startsWith('/dashboard/market-signals') ? 2.5 : 2}
+                        />
+                      </span>
+                      <span className="relative z-10">{COPY.nav.marketSignals}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -249,7 +246,7 @@ export function DashboardShell({
                       className="group rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-muted data-[active=true]:text-foreground"
                     >
                       <Link href="/dashboard/settings">
-                        <SettingsIcon />
+                        <AppIcon icon={SettingsIcon} size={16} />
                         <span>Einstellungen</span>
                       </Link>
                     </SidebarMenuButton>
@@ -271,7 +268,7 @@ export function DashboardShell({
                       }}
                       className="w-full"
                     >
-                      <LifeBuoy />
+                      <AppIcon icon={LifeBuoy} size={16} />
                       <span>Support</span>
                     </button>
                   </SidebarMenuButton>
@@ -291,7 +288,7 @@ export function DashboardShell({
                       }}
                       className="w-full"
                     >
-                      <Send />
+                      <AppIcon icon={Send} size={16} />
                       <span>Feedback senden</span>
                     </button>
                   </SidebarMenuButton>
@@ -318,7 +315,9 @@ export function DashboardShell({
                     <div className="flex flex-1 items-center text-left text-sm leading-tight">
                       <span className="truncate font-semibold">{userName}</span>
                     </div>
-                    <ChevronsUpDown className="ml-auto size-4" />
+                    <span className="ml-auto">
+                      <AppIcon icon={ChevronsUpDown} size={16} />
+                    </span>
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
@@ -350,19 +349,21 @@ export function DashboardShell({
                   <DropdownMenuSeparator />
                   <DropdownMenuGroup>
                     <DropdownMenuItem
-                      onSelect={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
+                      onSelect={() =>
+                        setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')
+                      }
                     >
-                      {theme === 'dark' ? (
-                        <Sun className="mr-2 size-4" />
+                      {resolvedTheme === 'dark' ? (
+                        <AppIcon icon={Sun} size={16} className="mr-2" />
                       ) : (
-                        <Moon className="mr-2 size-4" />
+                        <AppIcon icon={Moon} size={16} className="mr-2" />
                       )}
                       Theme umschalten
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onSelect={() => router.push('/dashboard/settings')}
                     >
-                      <SettingsIcon className="mr-2 size-4" />
+                    <AppIcon icon={SettingsIcon} size={16} className="mr-2" />
                       Account
                     </DropdownMenuItem>
                   </DropdownMenuGroup>
@@ -371,7 +372,7 @@ export function DashboardShell({
                     onSelect={handleLogout}
                     className="text-destructive focus:text-destructive"
                   >
-                    <LogOut className="mr-2 size-4" />
+                    <AppIcon icon={LogOut} size={16} className="mr-2" />
                     Abmelden
                   </DropdownMenuItem>
                 </DropdownMenuContent>

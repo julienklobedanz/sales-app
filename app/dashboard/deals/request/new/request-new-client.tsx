@@ -10,7 +10,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { createDealReferenceRequest } from '../../actions'
-import { Loader2 } from 'lucide-react'
+import { Loader } from '@hugeicons/core-free-icons'
+import { AppIcon } from '@/lib/icons'
 
 export function RequestNewClient({
   deals,
@@ -85,7 +86,7 @@ export function RequestNewClient({
 
           <div className="flex gap-2 pt-2">
             <Button type="submit" disabled={saving}>
-              {saving && <Loader2 className="mr-2 size-4 animate-spin" />}
+              {saving && <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />}
               Anfrage speichern
             </Button>
             <Button type="button" variant="outline" disabled={saving} onClick={() => router.push('/dashboard/deals')}>

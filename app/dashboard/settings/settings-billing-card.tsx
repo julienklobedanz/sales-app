@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
-import { CreditCard, Loader2 } from 'lucide-react'
+import { CreditCard, Loader } from '@hugeicons/core-free-icons'
+import { AppIcon } from '@/lib/icons'
 import { toast } from 'sonner'
 import { createCheckoutSession, createPortalSession } from './stripe-actions'
 
@@ -50,7 +51,7 @@ export function SettingsBillingCard({ subscriptionStatus, subscriptionId }: Prop
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3 text-muted-foreground">
-        <CreditCard className="h-5 w-5" />
+        <AppIcon icon={CreditCard} size={20} />
         <span className="text-sm font-medium uppercase tracking-wider">
           Abonnement
         </span>
@@ -78,7 +79,7 @@ export function SettingsBillingCard({ subscriptionStatus, subscriptionId }: Prop
             disabled={pendingPortal}
           >
             {pendingPortal && (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />
             )}
             Abo verwalten
           </Button>
@@ -90,12 +91,12 @@ export function SettingsBillingCard({ subscriptionStatus, subscriptionId }: Prop
           </p>
           <Button
             size="sm"
-            className="bg-black text-white hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90"
+            className="gap-2"
             onClick={handleCheckout}
             disabled={pendingCheckout}
           >
             {pendingCheckout && (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />
             )}
             Jetzt upgraden
           </Button>

@@ -37,7 +37,7 @@ export async function createCheckoutSession(): Promise<CheckoutResult> {
 
   const organizationId = profile?.organization_id
   if (!organizationId) {
-    return { success: false, error: 'Kein Workspace zugeordnet.' }
+    return { success: false, error: 'Kein Arbeitsbereich zugeordnet.' }
   }
 
   const { data: org } = await supabase
@@ -101,7 +101,7 @@ export async function createPortalSession(): Promise<PortalResult> {
 
   const organizationId = profile?.organization_id
   if (!organizationId) {
-    return { success: false, error: 'Kein Workspace zugeordnet.' }
+    return { success: false, error: 'Kein Arbeitsbereich zugeordnet.' }
   }
 
   const { data: org } = await supabase
@@ -111,7 +111,7 @@ export async function createPortalSession(): Promise<PortalResult> {
     .single()
 
   if (!org?.stripe_customer_id) {
-    return { success: false, error: 'Für diesen Workspace ist noch kein Stripe-Kunde hinterlegt.' }
+    return { success: false, error: 'Für diesen Arbeitsbereich ist noch kein Stripe-Kunde hinterlegt.' }
   }
 
   if (!STRIPE_SECRET_KEY) {

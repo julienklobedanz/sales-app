@@ -14,9 +14,10 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
-import { ShieldAlert } from 'lucide-react'
+import { ShieldAlert } from '@hugeicons/core-free-icons'
 import { deactivatePortfolio } from '../actions'
 import { toast } from 'sonner'
+import { AppIcon } from '@/lib/icons'
 
 export function PublicPortfolioKillswitch({ slug }: { slug: string }) {
   const router = useRouter()
@@ -49,7 +50,7 @@ export function PublicPortfolioKillswitch({ slug }: { slug: string }) {
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogTrigger asChild>
           <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive text-xs">
-            <ShieldAlert className="mr-1.5 size-3.5" />
+            <AppIcon icon={ShieldAlert} size={14} className="mr-1.5" />
             Diesen Zugriff sofort sperren
           </Button>
         </AlertDialogTrigger>

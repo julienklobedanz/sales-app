@@ -1,7 +1,7 @@
 "use client"
 
 import { type Table } from "@tanstack/react-table"
-import { Settings2 } from "lucide-react"
+import { Settings2 } from "@hugeicons/core-free-icons"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -12,18 +12,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { COPY } from "@/lib/copy"
+import { AppIcon } from "@/lib/icons"
 
 export function DataTableViewOptions<TData>({ table }: { table: Table<TData> }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm" className="h-10 gap-2">
-          <Settings2 className="size-4" />
-          Spalten
+          <AppIcon icon={Settings2} size={16} />
+          {COPY.table.columns}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[180px]">
-        <DropdownMenuLabel>Spalten</DropdownMenuLabel>
+        <DropdownMenuLabel>{COPY.table.columns}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {table
           .getAllColumns()

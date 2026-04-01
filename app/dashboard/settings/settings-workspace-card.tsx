@@ -1,12 +1,16 @@
 'use client'
 
+/* eslint-disable @next/next/no-img-element */
+
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Building2, Upload, X, Loader2 } from 'lucide-react'
+import { Building2, Cancel01Icon, Loader, Upload } from '@hugeicons/core-free-icons'
 import { updateOrganization } from './settings-workspace-actions'
+import { AppIcon } from '@/lib/icons'
+import { COPY } from '@/lib/copy'
 
 export function SettingsWorkspaceCard({
   organizationId,
@@ -30,7 +34,7 @@ export function SettingsWorkspaceCard({
     const result = await updateOrganization(organizationId, name.trim(), logoPreview)
     setPending(false)
     if (result.success) {
-      toast.success('Workspace aktualisiert')
+      toast.success('Arbeitsbereich aktualisiert')
     } else {
       toast.error(result.error)
     }
@@ -86,9 +90,9 @@ export function SettingsWorkspaceCard({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="flex items-center gap-3 text-muted-foreground">
-        <Building2 className="h-5 w-5" />
+        <AppIcon icon={Building2} size={20} />
         <span className="text-sm font-medium uppercase tracking-wider">
-          Workspace-Branding
+          {COPY.misc.workspace}-Branding
         </span>
       </div>
       <div className="space-y-2">
@@ -97,7 +101,7 @@ export function SettingsWorkspaceCard({
           id="workspace-name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder={organizationId ? 'Mein Workspace' : 'Kein Workspace zugeordnet'}
+          placeholder={organizationId ? `Mein ${COPY.misc.workspace}` : `Kein ${COPY.misc.workspace} zugeordnet`}
           disabled={!organizationId}
           className={organizationId ? 'bg-background' : 'bg-muted/50 cursor-not-allowed'}
         />
@@ -117,25 +121,25 @@ export function SettingsWorkspaceCard({
             }}
           >
             {logoLoading ? (
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <AppIcon icon={Loader} size={24} className="animate-spin text-muted-foreground" />
             ) : logoPreview ? (
               <>
                 <img
                   src={logoPreview}
-                  alt="Workspace-Logo"
+                  alt={`${COPY.misc.workspace}-Logo`}
                   className="h-full w-full object-cover"
                 />
                 <button
                   type="button"
                   onClick={handleLogoDelete}
-                  className="absolute -right-1 -top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-50 text-red-600 opacity-0 shadow-sm ring-1 ring-red-100 transition-opacity duration-150 group-hover:opacity-100"
+                  className="absolute -right-1 -top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-destructive/10 text-destructive opacity-0 shadow-sm ring-1 ring-destructive/20 transition-opacity duration-150 group-hover:opacity-100"
                   aria-label="Logo entfernen"
                 >
-                  <X className="h-3 w-3" />
+                  <AppIcon icon={Cancel01Icon} size={12} />
                 </button>
               </>
             ) : (
-              <Building2 className="h-8 w-8 text-muted-foreground/60" />
+              <AppIcon icon={Building2} size={32} className="text-muted-foreground/60" />
             )}
           </button>
           <button
@@ -146,7 +150,7 @@ export function SettingsWorkspaceCard({
               input?.click()
             }}
           >
-            <Upload className="h-3.5 w-3.5" />
+            <AppIcon icon={Upload} size={14} />
             Logo hochladen
           </button>
           <input

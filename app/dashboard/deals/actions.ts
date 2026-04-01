@@ -113,7 +113,7 @@ export async function getDeals(): Promise<DealRow[]> {
   ] as string[]
   const allUserIds = [...new Set([...accountManagerIds, ...salesManagerIds])]
 
-  let names: Record<string, string> = {}
+  const names: Record<string, string> = {}
   if (allUserIds.length > 0) {
     const { data: profiles } = await supabase
       .from('profiles')
@@ -211,7 +211,7 @@ export async function getDealWithReferences(id: string): Promise<DealWithReferen
         : null
   })
 
-  let references: DealWithReferences['references'] = []
+  const references: DealWithReferences['references'] = []
   if (refIds.length > 0) {
     const { data: refs } = await supabase
       .from('references')

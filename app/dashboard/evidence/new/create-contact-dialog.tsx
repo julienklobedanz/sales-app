@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { PlusCircle, Loader2 } from 'lucide-react'
+import { CirclePlus, Loader } from '@hugeicons/core-free-icons'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -16,6 +16,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { createContact, createExternalContact, updateContact, updateExternalContact, type ExternalContact } from './actions'
+import { AppIcon } from '@/lib/icons'
 
 /** Einfache Formatprüfungen für Kontaktfelder */
 const NAME_REGEX = /^[\p{L}\p{M}\s\-']{2,}$/u
@@ -171,7 +172,7 @@ export function CreateContactDialog({
           }
         }
       }
-    } catch (e) {
+    } catch {
       toast.error('Ein unerwarteter Fehler ist aufgetreten')
     } finally {
       setLoading(false)
@@ -195,7 +196,7 @@ export function CreateContactDialog({
           title={variant === 'external' && disabled ? 'Bitte zuerst ein Unternehmen auswählen' : 'Neuen Kontakt anlegen'}
           disabled={disabled}
         >
-          <PlusCircle className="h-4 w-4" />
+          <AppIcon icon={CirclePlus} size={16} />
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]" onClick={(e) => e.stopPropagation()}>
@@ -310,7 +311,7 @@ export function CreateContactDialog({
           </div>
           <DialogFooter>
             <Button type="submit" disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {loading && <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />}
               Speichern
             </Button>
           </DialogFooter>

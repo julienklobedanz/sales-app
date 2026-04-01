@@ -86,7 +86,6 @@ async function run() {
   let processed = 0
   console.log('KAN-22 Backfill: Starte Verarbeitung (nur Einträge mit embedding IS NULL)…')
 
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     const batch = await fetchBatch(BATCH_SIZE)
     if (!batch.length) {

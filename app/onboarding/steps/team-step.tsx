@@ -4,6 +4,8 @@ import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { COPY } from "@/lib/copy"
 
 export type InviteRole = "sales" | "account_manager" | "admin"
 
@@ -55,21 +57,24 @@ export function TeamStep({
             </div>
             <div className="space-y-2">
               <Label htmlFor={`invite_role_${idx}`}>Rolle</Label>
-              <select
-                id={`invite_role_${idx}`}
-                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+              <Select
                 value={row.role}
-                disabled={disabled || sending}
-                onChange={(e) => {
+                onValueChange={(v) => {
                   const next = invites.slice()
-                  next[idx] = { ...row, role: e.target.value as InviteRole }
+                  next[idx] = { ...row, role: v as InviteRole }
                   onChange(next)
                 }}
+                disabled={disabled || sending}
               >
-                <option value="account_manager">Account Manager</option>
-                <option value="sales">Sales Representative</option>
-                <option value="admin">Admin</option>
-              </select>
+                <SelectTrigger id={`invite_role_${idx}`} className="w-full">
+                  <SelectValue placeholder="Bitte auswählen…" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="account_manager">{COPY.roles.accountManager}</SelectItem>
+                  <SelectItem value="sales">Sales</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         ))}

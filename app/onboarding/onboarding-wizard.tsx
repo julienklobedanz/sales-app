@@ -19,7 +19,7 @@ export function OnboardingWizard({
   const router = useRouter()
   const isInvite = Boolean(inviteToken && inviteOrganizationName)
 
-  const steps = ["Workspace", "Erste Referenz", "Team"]
+  const steps = ["Arbeitsbereich", "Erste Referenz", "Team"]
   const [step, setStep] = React.useState(0)
 
   const [workspace, setWorkspace] = React.useState<WorkspaceStepValue>({

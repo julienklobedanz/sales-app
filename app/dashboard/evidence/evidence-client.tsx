@@ -3,15 +3,15 @@
 import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { SearchIcon, SlidersHorizontal } from "lucide-react"
+import { SearchIcon, SlidersHorizontal } from "@hugeicons/core-free-icons"
 
 import type { ReferenceRow } from "@/app/dashboard/actions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 import { evidenceColumns } from "./columns"
 import { EvidenceDataTable } from "./data-table"
+import { AppIcon } from "@/lib/icons"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -36,13 +36,6 @@ function normalizeHaystack(r: ReferenceRow) {
 
 // Status Chips wurden zugunsten der shadcn-Tasks Toolbar (Facets) ersetzt.
 
-function StatusBadge({ status }: { status: ReferenceRow["status"] }) {
-  if (status === "approved") return <Badge className="bg-emerald-600">Freigegeben</Badge>
-  if (status === "internal_only") return <Badge variant="secondary">Intern</Badge>
-  if (status === "anonymized") return <Badge variant="outline">Anonymisiert</Badge>
-  return <Badge variant="outline">Entwurf</Badge>
-}
-
 export function EvidenceClient({
   references,
   role,
@@ -53,6 +46,7 @@ export function EvidenceClient({
   const router = useRouter()
   const isSales = role === "sales"
   const canCreate = role === "admin" || role === "account_manager"
+  const hasAny = references.length > 0
 
   const [query, setQuery] = React.useState("")
   const [status, setStatus] = React.useState<StatusFilter>("all")
@@ -66,6 +60,10 @@ export function EvidenceClient({
       return normalizeHaystack(r).includes(q)
     })
   }, [references, query, status])
+
+  const emptyText = query.trim() || status !== "all"
+    ? "Keine Referenzen für deine Filter gefunden."
+    : "Keine Referenzen vorhanden."
 
   return (
     <div className="px-6 pt-6 md:px-12 lg:px-20 space-y-6">
@@ -91,14 +89,14 @@ export function EvidenceClient({
         </div>
       ) : null}
 
-      {filtered.length === 0 ? (
+      {!hasAny ? (
         <Card>
           <CardHeader>
             <CardTitle>Noch keine Referenzen</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Lade dein erstes Dokument hoch — die KI extrahiert Titel, Branche und Zusammenfassung automatisch.
+              Erstelle deine erste Referenz oder importiere mehrere Dokumente auf einmal.
             </p>
             <div className="flex flex-wrap gap-2">
               {canCreate ? (
@@ -147,12 +145,15 @@ export function EvidenceClient({
           <EvidenceDataTable
             columns={evidenceColumns()}
             data={filtered}
+            emptyText={emptyText}
             getRowId={(row) => row.id}
             onSelectedRowIdsChange={setSelectedIds}
             toolbar={() => (
               <>
                 <div className="relative w-full max-w-xl">
-                  <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    <AppIcon icon={SearchIcon} size={16} />
+                  </span>
                   <Input
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
@@ -164,7 +165,7 @@ export function EvidenceClient({
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="h-10 gap-2">
-                      <SlidersHorizontal className="size-4" />
+                      <AppIcon icon={SlidersHorizontal} size={16} />
                       Status
                     </Button>
                   </DropdownMenuTrigger>

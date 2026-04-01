@@ -2,42 +2,21 @@
 
 import { useMemo, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import type { DealRow } from './types'
 import { DealForm } from './new/deal-form'
 import { importDealsFromXlsx, type MatchSuggestion } from './actions'
-import { HandshakeIcon, TimerIcon, PlusCircleIcon, Loader2, FileSpreadsheetIcon, UploadIcon } from 'lucide-react'
+import { CirclePlus, Loader, UploadIcon } from '@hugeicons/core-free-icons'
 import { toast } from 'sonner'
 import { DataTable } from '@/components/ui/data-table'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Checkbox } from '@/components/ui/checkbox'
+import { AppIcon } from '@/lib/icons'
+import { DealStatusBadge } from '@/components/deal-status-badge'
+import { COPY } from '@/lib/copy'
 
 type MatchMap = Record<string, { count: number; suggestions: MatchSuggestion[] }>
-
-const REFERENCE_DAYS = 180
 
 function formatDate(iso: string) {
   const d = new Date(iso)
@@ -45,122 +24,6 @@ function formatDate(iso: string) {
   const month = (d.getUTCMonth() + 1).toString().padStart(2, '0')
   const year = d.getUTCFullYear()
   return `${day}.${month}.${year}`
-}
-
-/** Volumen mit Tausender-Punkten (z. B. 1.500.000 oder 5 Mio). */
-function formatVolume(vol: string | null): string {
-  if (!vol || !vol.trim()) return '—'
-  const normalized = vol.replace(/\s/g, '').replace(/\./g, '').replace(',', '.')
-  const num = parseFloat(normalized)
-  if (!Number.isNaN(num)) {
-    if (num >= 1_000_000) return new Intl.NumberFormat('de-DE').format(Math.round(num / 1_000_000)) + ' Mio €'
-    return new Intl.NumberFormat('de-DE').format(Math.round(num)) + ' €'
-  }
-  return vol
-}
-
-function LinkedRefLogos({ refs }: { refs: { id: string; logo_url?: string | null; title?: string }[] }) {
-  const show = refs.slice(0, 3)
-  const rest = refs.length - show.length
-  return (
-    <div className="flex items-center gap-0.5">
-      {show.map((r) =>
-        r.logo_url ? (
-          <img
-            key={r.id}
-            src={r.logo_url}
-            alt=""
-            className="h-6 w-6 rounded object-contain border border-border bg-background"
-            title={r.title}
-          />
-        ) : (
-          <div
-            key={r.id}
-            className="flex h-6 w-6 shrink-0 items-center justify-center rounded border border-border bg-muted text-[10px] text-muted-foreground"
-            title={r.title}
-          >
-            —
-          </div>
-        )
-      )}
-      {rest > 0 && <span className="text-muted-foreground text-xs">+{rest}</span>}
-    </div>
-  )
-}
-
-function SmartMatchCell({
-  dealId,
-  matchMap,
-  onOpenDeal,
-}: { dealId: string; matchMap: MatchMap; onOpenDeal: (id: string) => void }) {
-  const data = matchMap[dealId] ?? { count: 0, suggestions: [] }
-  if (data.count === 0 && data.suggestions.length === 0) {
-    return <span className="text-muted-foreground text-sm">—</span>
-  }
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="text-primary hover:underline text-sm font-medium"
-        >
-          {data.count} passende Referenz{data.count !== 1 ? 'en' : ''}
-        </button>
-      </PopoverTrigger>
-      <PopoverContent className="w-72 p-2" align="start">
-        <p className="text-muted-foreground text-xs mb-2">Top-Vorschläge (Branche)</p>
-        <ul className="space-y-1.5">
-          {data.suggestions.map((s) => (
-            <li key={s.id} className="flex items-center gap-2 rounded border p-2 text-sm">
-              {s.logo_url && (
-                <img src={s.logo_url} alt="" className="h-6 w-6 rounded object-contain shrink-0" />
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="font-medium truncate">{s.title}</p>
-                <p className="text-muted-foreground text-xs truncate">{s.company_name}</p>
-              </div>
-              <Button variant="ghost" size="sm" onClick={() => onOpenDeal(dealId)}>Öffnen</Button>
-            </li>
-          ))}
-        </ul>
-      </PopoverContent>
-    </Popover>
-  )
-}
-
-function daysUntil(dateStr: string): number {
-  const end = new Date(dateStr)
-  const now = new Date()
-  now.setHours(0, 0, 0, 0)
-  end.setHours(0, 0, 0, 0)
-  return Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-}
-
-function ExpiryBadge({ dateStr }: { dateStr: string }) {
-  const days = daysUntil(dateStr)
-  if (days <= 0) return <Badge variant="destructive">Abgelaufen</Badge>
-  if (days <= 30) return <Badge variant="destructive">Läuft in {days} Tagen ab</Badge>
-  if (days <= 90) return <Badge className="bg-yellow-500/90 text-white hover:bg-yellow-500/90">In {days} Tagen</Badge>
-  return <Badge variant="secondary">Noch {days} Tage</Badge>
-}
-
-function ProgressBar({ dateStr }: { dateStr: string }) {
-  const days = daysUntil(dateStr)
-  const total = REFERENCE_DAYS
-  const remaining = Math.min(Math.max(days, 0), total)
-  const percent = Math.round((remaining / total) * 100)
-  const isRed = days <= 30
-  const isYellow = days <= 90 && days > 30
-  return (
-    <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-      <div
-        className={`h-full transition-all ${
-          isRed ? 'bg-destructive' : isYellow ? 'bg-yellow-500' : 'bg-primary'
-        }`}
-        style={{ width: `${percent}%` }}
-      />
-    </div>
-  )
 }
 
 type Props = {
@@ -184,31 +47,6 @@ function isExpiringIn30Days(dateStr: string | null): boolean {
   end.setHours(0, 0, 0, 0)
   const days = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
   return days <= 30
-}
-
-function DealStatusBadge({ status }: { status: DealRow['status'] }) {
-  const s = status
-  const label =
-    s === 'open'
-      ? 'OPEN'
-      : s === 'rfp'
-        ? 'RFP'
-        : s === 'negotiation'
-          ? 'NEGOTIATION'
-          : s === 'won'
-            ? 'WON'
-            : s === 'lost'
-              ? 'LOST'
-              : s === 'withdrawn'
-                ? 'ZURÜCKGEZOGEN'
-                : 'ARCHIVED'
-  const variant =
-    s === 'won'
-      ? 'secondary'
-      : s === 'lost' || s === 'withdrawn'
-        ? 'destructive'
-        : 'outline'
-  return <Badge variant={variant as any}>{label}</Badge>
 }
 
 export function DealsClientContent({
@@ -309,7 +147,7 @@ export function DealsClientContent({
       },
       {
         accessorKey: 'account_manager_name',
-        header: 'Account Manager',
+        header: COPY.roles.accountManager,
         cell: ({ row }) => <span className="text-muted-foreground">{row.original.account_manager_name ?? '—'}</span>,
       },
       {
@@ -326,7 +164,7 @@ export function DealsClientContent({
       },
       {
         id: 'matches',
-        header: 'Matches',
+        header: COPY.misc.matches,
         cell: ({ row }) => {
           const data = matchMap[row.original.id] ?? { count: 0, suggestions: [] }
           return (
@@ -344,7 +182,7 @@ export function DealsClientContent({
         },
       },
     ]
-  }, [matchMap])
+  }, [matchMap, router])
 
   const toolbar = (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -400,11 +238,15 @@ export function DealsClientContent({
           disabled={importing}
           onClick={() => xlsxInputRef.current?.click()}
         >
-          {importing ? <Loader2 className="mr-2 size-4 animate-spin" /> : <UploadIcon className="mr-2 size-4" />}
+          {importing ? (
+            <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />
+          ) : (
+            <AppIcon icon={UploadIcon} size={16} className="mr-2" />
+          )}
           Listen importieren
         </Button>
         <Button size="sm" className="h-9 px-3" onClick={() => setCreateOpen(true)}>
-          <PlusCircleIcon className="mr-2 size-4" />
+          <AppIcon icon={CirclePlus} size={16} className="mr-2" />
           Deal anlegen
         </Button>
       </div>

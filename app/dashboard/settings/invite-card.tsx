@@ -11,8 +11,9 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { UserPlus, Copy, Link2 } from 'lucide-react'
+import { Copy, Link2, UserPlus } from '@hugeicons/core-free-icons'
 import { createInvite } from './invite-actions'
+import { AppIcon } from '@/lib/icons'
 
 /** Ersetzt Platzhalter-URL (z. B. [sales-app]) durch die aktuelle Origin, damit der User keinen ungültigen Link kopiert. */
 function resolveInviteLink(link: string | null): string {
@@ -61,7 +62,7 @@ export function InviteCard() {
     <Card>
       <CardHeader>
         <div className="flex items-center gap-2">
-          <UserPlus className="size-5 text-muted-foreground" />
+          <AppIcon icon={UserPlus} size={20} className="text-muted-foreground" />
           <CardTitle>Mitarbeiter einladen</CardTitle>
         </div>
         <CardDescription>
@@ -76,7 +77,7 @@ export function InviteCard() {
           disabled={pending}
           className="gap-2"
         >
-          <Link2 className="size-4" />
+          <AppIcon icon={Link2} size={16} />
           {pending ? 'Link wird erstellt …' : 'Einladungslink erstellen'}
         </Button>
 
@@ -98,7 +99,7 @@ export function InviteCard() {
                 className="font-mono text-xs"
               />
               <Button type="button" variant="secondary" size="icon" onClick={handleCopy} title="Kopieren">
-                <Copy className="size-4" />
+                <AppIcon icon={Copy} size={16} />
               </Button>
             </div>
           </div>

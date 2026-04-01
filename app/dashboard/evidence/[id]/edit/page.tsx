@@ -2,7 +2,8 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { ArrowLeftIcon } from 'lucide-react'
+import { ArrowLeftIcon } from '@hugeicons/core-free-icons'
+import { AppIcon } from '@/lib/icons'
 import { ReferenceForm } from '../../new/reference-form'
 import type { ReferenceFormInitialData } from '../../new/reference-form'
 
@@ -128,7 +129,7 @@ export default async function EditReferencePage({
       <div className="mx-auto max-w-3xl space-y-6">
         <Link href={`/dashboard/evidence/${id}`}>
           <Button variant="ghost" size="sm" className="gap-2 -ml-2">
-            <ArrowLeftIcon className="size-4" />
+            <AppIcon icon={ArrowLeftIcon} size={16} />
             Zurück zur Referenz
           </Button>
         </Link>

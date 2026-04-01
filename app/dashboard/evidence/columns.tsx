@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import type { ColumnDef } from "@tanstack/react-table"
-import { ArrowUpDown, FileTextIcon, MoreHorizontal } from "lucide-react"
+import { ArrowUpDown, FileText, MoreHorizontal } from "@hugeicons/core-free-icons"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -17,13 +17,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import type { ReferenceRow } from "@/app/dashboard/actions"
-
-function StatusBadge({ status }: { status: ReferenceRow["status"] }) {
-  if (status === "approved") return <Badge className="bg-emerald-600">Freigegeben</Badge>
-  if (status === "internal_only") return <Badge variant="secondary">Intern</Badge>
-  if (status === "anonymized") return <Badge variant="outline">Anonymisiert</Badge>
-  return <Badge variant="outline">Entwurf</Badge>
-}
+import { AppIcon } from "@/lib/icons"
+import { ReferenceStatusBadge } from "@/components/reference-status-badge"
 
 export function evidenceColumns(): ColumnDef<ReferenceRow>[] {
   return [
@@ -36,14 +31,14 @@ export function evidenceColumns(): ColumnDef<ReferenceRow>[] {
             (table.getIsSomePageRowsSelected() && "indeterminate")
           }
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
+          aria-label="Alle auswählen"
         />
       ),
       cell: ({ row }) => (
         <Checkbox
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Select row"
+          aria-label="Zeile auswählen"
         />
       ),
       enableSorting: false,
@@ -61,10 +56,12 @@ export function evidenceColumns(): ColumnDef<ReferenceRow>[] {
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
           Status
-          <ArrowUpDown className="ml-2 size-4" />
+          <span className="ml-2">
+            <AppIcon icon={ArrowUpDown} size={16} />
+          </span>
         </Button>
       ),
-      cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      cell: ({ row }) => <ReferenceStatusBadge status={row.original.status} />,
     },
     {
       accessorKey: "company_name",
@@ -77,7 +74,9 @@ export function evidenceColumns(): ColumnDef<ReferenceRow>[] {
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
           Account
-          <ArrowUpDown className="ml-2 size-4" />
+          <span className="ml-2">
+            <AppIcon icon={ArrowUpDown} size={16} />
+          </span>
         </Button>
       ),
       cell: ({ row }) => (
@@ -95,7 +94,9 @@ export function evidenceColumns(): ColumnDef<ReferenceRow>[] {
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
           Titel
-          <ArrowUpDown className="ml-2 size-4" />
+          <span className="ml-2">
+            <AppIcon icon={ArrowUpDown} size={16} />
+          </span>
         </Button>
       ),
       cell: ({ row }) => (
@@ -103,7 +104,11 @@ export function evidenceColumns(): ColumnDef<ReferenceRow>[] {
           href={`/dashboard/evidence/${row.original.id}`}
           className="flex items-center gap-2 max-w-[420px] min-w-0 hover:underline"
         >
-          <FileTextIcon className="size-4 text-muted-foreground shrink-0" />
+          <AppIcon
+            icon={FileText}
+            size={16}
+            className="text-muted-foreground shrink-0"
+          />
           <span className="truncate">{row.original.title}</span>
         </Link>
       ),
@@ -143,7 +148,7 @@ export function evidenceColumns(): ColumnDef<ReferenceRow>[] {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0">
                 <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
+                <AppIcon icon={MoreHorizontal} size={16} />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">

@@ -8,7 +8,7 @@ let openState = false
 const listeners = new Set<Listener>()
 
 function setOpenState(next: boolean | ((prev: boolean) => boolean)) {
-  const value = typeof next === "function" ? (next as any)(openState) : next
+  const value = typeof next === "function" ? (next as (prev: boolean) => boolean)(openState) : next
   openState = value
   for (const l of listeners) l()
 }

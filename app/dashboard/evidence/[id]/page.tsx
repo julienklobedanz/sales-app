@@ -5,22 +5,12 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { submitForApproval, toggleFavorite } from '@/app/dashboard/actions'
-import { Star } from 'lucide-react'
+import { FavouriteIcon } from '@hugeicons/core-free-icons'
+import { AppIcon } from '@/lib/icons'
+import { ReferenceStatusBadge } from '@/components/reference-status-badge'
+import { COPY } from '@/lib/copy'
 
 export const dynamic = 'force-dynamic'
-
-function StatusBadge({ status }: { status: string }) {
-  const s = String(status ?? '').toLowerCase()
-  if (s === 'approved' || s === 'external')
-    return <Badge className="bg-emerald-600">Extern freigegeben</Badge>
-  if (s === 'internal_only' || s === 'internal')
-    return <Badge variant="secondary">Intern</Badge>
-  if (s === 'anonymized' || s === 'anonymous')
-    return <Badge variant="outline">Anonymisiert</Badge>
-  if (s === 'pending')
-    return <Badge className="bg-amber-500 text-white">Freigabe ausstehend</Badge>
-  return <Badge variant="outline">Entwurf</Badge>
-}
 
 function splitTags(tags: string | null) {
   return (tags ?? '')
@@ -81,7 +71,33 @@ export default async function EvidenceDetailPage({
 
   if (error || !row) notFound()
 
-  const normalizedStatus = String((row as any).status ?? '').toLowerCase()
+  type CompanyRow = { id: string; name: string }
+  type ReferenceDetailRow = {
+    id: string
+    title: string
+    summary: string | null
+    industry: string | null
+    country: string | null
+    status: string
+    created_at: string | null
+    updated_at: string | null
+    tags: string | null
+    customer_challenge: string | null
+    our_solution: string | null
+    customer_contact: string | null
+    volume_eur: string | null
+    contract_type: string | null
+    project_start: string | null
+    project_end: string | null
+    incumbent_provider: string | null
+    competitors: string | null
+    website: string | null
+    companies: CompanyRow | CompanyRow[] | null
+  }
+
+  const ref = row as unknown as ReferenceDetailRow
+
+  const normalizedStatus = String(ref.status ?? '').toLowerCase()
   if (
     role === 'sales' &&
     !(
@@ -102,18 +118,18 @@ export default async function EvidenceDetailPage({
     .maybeSingle()
 
   const isFavorited = Boolean(favorite?.id)
-  const tags = splitTags((row as any).tags ?? null)
-  const company = Array.isArray((row as any).companies) ? (row as any).companies[0] : (row as any).companies
+  const tags = splitTags(ref.tags ?? null)
+  const company = Array.isArray(ref.companies) ? ref.companies[0] : ref.companies
 
-  const createdAt = (row as any).created_at ? new Date((row as any).created_at as string) : null
-  const updatedAt = (row as any).updated_at ? new Date((row as any).updated_at as string) : null
+  const createdAt = ref.created_at ? new Date(ref.created_at) : null
+  const updatedAt = ref.updated_at ? new Date(ref.updated_at) : null
   const activities = [
     ...(createdAt
       ? [
           {
             at: createdAt,
             title: 'Referenz erstellt',
-            detail: 'Die Referenz wurde im Evidence Hub angelegt.',
+            detail: `Die Referenz wurde in ${COPY.nav.evidence} angelegt.`,
           },
         ]
       : []),
@@ -135,10 +151,10 @@ export default async function EvidenceDetailPage({
       <div className="mb-6">
         <nav className="text-sm text-muted-foreground">
           <Link href="/dashboard/evidence" className="hover:underline">
-            Evidence Hub
+            {COPY.nav.evidence}
           </Link>
           <span className="px-2">/</span>
-          <span className="text-foreground">{(row as any).title}</span>
+          <span className="text-foreground">{ref.title}</span>
         </nav>
       </div>
 
@@ -147,12 +163,12 @@ export default async function EvidenceDetailPage({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="space-y-2 min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <StatusBadge status={(row as any).status} />
+                <ReferenceStatusBadge status={ref.status} />
               </div>
               <h1 className="text-2xl font-bold tracking-tight break-words">
-                {(row as any).title}
+                {ref.title}
               </h1>
-              <p className="text-sm text-muted-foreground">{(row as any).industry ?? '—'}</p>
+              <p className="text-sm text-muted-foreground">{ref.industry ?? '—'}</p>
               <div className="mt-2 flex flex-wrap gap-1">
                 {tags.length ? (
                   tags.map((t) => (
@@ -171,13 +187,13 @@ export default async function EvidenceDetailPage({
             <div>
               <div className="text-sm font-semibold">Herausforderung</div>
               <p className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap">
-                {(row as any).customer_challenge ?? '—'}
+                {ref.customer_challenge ?? '—'}
               </p>
             </div>
             <div>
               <div className="text-sm font-semibold">Unsere Lösung</div>
               <p className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap">
-                {(row as any).our_solution ?? '—'}
+                {ref.our_solution ?? '—'}
               </p>
             </div>
           </div>
@@ -227,27 +243,27 @@ export default async function EvidenceDetailPage({
               </div>
               <div className="flex justify-between gap-2">
                 <span className="text-muted-foreground">Volumen</span>
-                <span className="font-medium">{(row as any).volume_eur ?? '—'}</span>
+                <span className="font-medium">{ref.volume_eur ?? '—'}</span>
               </div>
               <div className="flex justify-between gap-2">
                 <span className="text-muted-foreground">Vertragsart</span>
-                <span className="font-medium">{(row as any).contract_type ?? '—'}</span>
+                <span className="font-medium">{ref.contract_type ?? '—'}</span>
               </div>
               <div className="flex justify-between gap-2">
                 <span className="text-muted-foreground">Projektstart</span>
-                <span className="font-medium">{(row as any).project_start ?? '—'}</span>
+                <span className="font-medium">{ref.project_start ?? '—'}</span>
               </div>
               <div className="flex justify-between gap-2">
                 <span className="text-muted-foreground">Projektende</span>
-                <span className="font-medium">{(row as any).project_end ?? '—'}</span>
+                <span className="font-medium">{ref.project_end ?? '—'}</span>
               </div>
               <div className="flex justify-between gap-2">
                 <span className="text-muted-foreground">Akt. Dienstleister</span>
-                <span className="font-medium">{(row as any).incumbent_provider ?? '—'}</span>
+                <span className="font-medium">{ref.incumbent_provider ?? '—'}</span>
               </div>
               <div className="flex justify-between gap-2">
                 <span className="text-muted-foreground">Wettbewerber</span>
-                <span className="font-medium">{(row as any).competitors ?? '—'}</span>
+                <span className="font-medium">{ref.competitors ?? '—'}</span>
               </div>
             </CardContent>
           </Card>
@@ -283,7 +299,11 @@ export default async function EvidenceDetailPage({
             <CardContent className="grid gap-2">
               <form action={toggleFavorite.bind(null, id)}>
                 <Button type="submit" variant="outline" className="gap-2 w-full">
-                  <Star className="size-4" fill={isFavorited ? 'currentColor' : 'none'} />
+                  <AppIcon
+                    icon={FavouriteIcon}
+                    size={16}
+                    className={isFavorited ? '' : 'opacity-70'}
+                  />
                   {isFavorited ? 'Favorit' : 'Favorisieren'}
                 </Button>
               </form>

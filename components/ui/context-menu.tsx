@@ -2,9 +2,10 @@
 
 import * as React from "react"
 import { ContextMenu as ContextMenuPrimitive } from "radix-ui"
-import { CheckIcon, ChevronRightIcon, CircleIcon } from "lucide-react"
+import { Checkmark, ChevronRight, Circle } from "@hugeicons/core-free-icons"
 
 import { cn } from "@/lib/utils"
+import { AppIcon } from "@/lib/icons"
 
 function ContextMenu({
   ...props
@@ -79,7 +80,7 @@ function ContextMenuCheckboxItem({
     >
       <span className="pointer-events-none absolute left-2 flex size-3.5 items-center justify-center">
         <ContextMenuPrimitive.ItemIndicator>
-          <CheckIcon className="size-4" />
+          <AppIcon icon={Checkmark} size={16} />
         </ContextMenuPrimitive.ItemIndicator>
       </span>
       {children}
@@ -114,7 +115,7 @@ function ContextMenuRadioItem({
     >
       <span className="pointer-events-none absolute left-2 flex size-3.5 items-center justify-center">
         <ContextMenuPrimitive.ItemIndicator>
-          <CircleIcon className="size-2 fill-current" />
+          <AppIcon icon={Circle} size={10} />
         </ContextMenuPrimitive.ItemIndicator>
       </span>
       {children}
@@ -190,7 +191,9 @@ function ContextMenuSubTrigger({
       {...props}
     >
       {children}
-      <ChevronRightIcon className="ml-auto size-4" />
+      <span className="ml-auto">
+        <AppIcon icon={ChevronRight} size={16} />
+      </span>
     </ContextMenuPrimitive.SubTrigger>
   )
 }
