@@ -16,8 +16,8 @@ Ziel dieser zweiten Refaktorisierungswelle ist **Perfektion im Sinne von Wartbar
 - **P1 (dashboard-overview):** Extrahiert: `overview/bulk-delete-references-dialog.tsx`, `overview/trash-dialog.tsx`, `overview/reference-detail-sheet.tsx` (Bulk-Löschen, Papierkorb inkl. „Papierkorb leeren“-Alert, Referenz-Detail-Sheet).
 - **P2 – erledigt (Kern):**
   - **(6)** `reference-form.tsx`: Feldkomponenten in `reference-form-fields.tsx` (Dropzones, Combobox).
-  - **(8)** COPY-Rollout 2: `lib/copy.ts` um Tabellen-, Evidence-, Dashboard- und Command-Palette-Strings erweitert; Verwendung u. a. in Evidence-DataTable, `dashboard-overview`, `components/ui/data-table`, `components/ui/command-palette`.
-  - **(9)** DataTable: gemeinsame `DataTablePagination`, Evidence an `components/ui/data-table` ausgerichtet.
+  - **(8)** COPY-Rollout 2: `lib/copy.ts` um Tabellen-, Evidence-, Dashboard- und Command-Palette-Strings erweitert; Verwendung u. a. in Evidence-DataTable, `dashboard-overview`, `components/ui/app-data-table`, `components/ui/command-palette`.
+  - **(9)** DataTable: gemeinsame `DataTablePagination`; später **`AppDataTable`** als eine Basis für Evidence + Deals (siehe `components/ui/app-data-table.tsx`).
   - **(10)** Danger Zone: klare UX + `COPY.settings.*` (kein toter Button ohne Hinweis).
 - **P2 – erledigt (Company-Detail):** **(7)** `company-detail-client.tsx` in Tab-, Header- und Dialog-Module unter `app/dashboard/accounts/` aufgeteilt (`company-detail-*`, `company-stakeholder-*`, `company-contact-dialog`).
 

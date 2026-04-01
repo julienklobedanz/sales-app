@@ -9,7 +9,7 @@ import { DealForm } from './new/deal-form'
 import { importDealsFromXlsx, type MatchSuggestion } from './actions'
 import { CirclePlus, Loader, UploadIcon } from '@hugeicons/core-free-icons'
 import { toast } from 'sonner'
-import { DataTable } from '@/components/ui/data-table'
+import { AppDataTable } from '@/components/ui/app-data-table'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Checkbox } from '@/components/ui/checkbox'
 import { AppIcon } from '@/lib/icons'
@@ -255,11 +255,13 @@ export function DealsClientContent({
 
   return (
     <div className="space-y-4">
-      <DataTable
+      <AppDataTable
+        tableVariant="deals"
         columns={columns}
         data={filtered}
         initialPageSize={10}
-        toolbar={toolbar}
+        getRowId={(row) => row.id}
+        toolbar={() => toolbar}
         showViewOptions
       />
       {/* Popover/Dialog zum Anlegen eines neuen Deals */}

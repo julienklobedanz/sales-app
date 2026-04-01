@@ -142,7 +142,7 @@ Siehe **`docs/refactoring-welle-2-plan.md`**. Kurz umgesetzt:
 - **Reference-Form:** `reference-form-fields.tsx` entlastet die Hauptdatei (Dropzones, Firmen-Combobox).
 - **Account / Company-Detail:** `company-detail-client.tsx` in Header, Tab-Inhalte und Dialoge aufgeteilt (`company-detail-*.tsx`, `company-stakeholder-*`, `company-contact-dialog`).
 - **COPY:** Zentrale Begriffe für Tabellen (inkl. Pagination), Evidence-Kontextmenü, Dashboard-Suche/Spalten, Command Palette (`COPY.commandPalette.*`); gemeinsame `DataTablePagination`.
-- **DataTable:** Evidence und generische UI-Table nutzen dieselben Primitives und Copy-Defaults.
+- **DataTable:** `AppDataTable` (`components/ui/app-data-table.tsx`) als gemeinsame Basis für Referenzen (`EvidenceDataTable` → `tableVariant="evidence"`) und Deals (`tableVariant="default"`); Pagination und Spalten-Optionen geteilt.
 - **Farben:** Verbleibende Raw-Paletten in `app/` schrittweise durch semantische Tokens ersetzt (z. B. Register, Freigabe-Buttons); Regeln in `docs/design-system.md` §7.
 
 **Benefits:** Weniger Duplikat-Strings, einheitliche Tabellen- und Such-UX, wartbarere große Formulare.

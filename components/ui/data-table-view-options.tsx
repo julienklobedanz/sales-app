@@ -44,4 +44,3 @@ export function DataTableViewOptions<TData>({ table }: { table: Table<TData> }) 
     </DropdownMenu>
   )
 }
-

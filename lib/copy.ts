@@ -42,6 +42,11 @@ export const COPY = {
     contextOpen: 'Öffnen',
     contextEdit: 'Bearbeiten',
   },
+  deals: {
+    contextSelect: 'Selektieren',
+    contextOpen: 'Deal öffnen',
+    contextOpenNewTab: 'In neuem Tab öffnen',
+  },
   dashboard: {
     searchReferencesPlaceholder: 'Referenzen suchen...',
     columnVisibility: 'Sichtbarkeit',

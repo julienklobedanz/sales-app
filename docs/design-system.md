@@ -13,6 +13,7 @@ Ziel: **Fully aligned UI** durch zentrale Tokens + konsistente UI-Primitives + k
 
 - **Komponenten‑Library**: `components/ui/*`
   - Beispiele: `button.tsx`, `badge.tsx`, `card.tsx`, `input.tsx`, `select.tsx`, `dialog.tsx`, …
+  - **Tabellen (TanStack):** `app-data-table.tsx` (`AppDataTable`) ist die gemeinsame Basis für Listen (Referenzen, Deals); `tableVariant` (`evidence` | `deals` | `default`) schaltet das jeweilige Kontextmenü (`COPY.evidence.*` / `COPY.deals.*`); `DataTable` in `data-table.ts` ist ein Alias.
   - Variants/States gehören **hier** hin (nicht als neue Hardcodes in Pages).
 
 ### 3) Icons
