@@ -1,22 +1,60 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { usePathname } from 'next/navigation'
-import { Bell, SearchIcon } from '@hugeicons/core-free-icons'
+import { usePathname, useRouter } from 'next/navigation'
+import { useTheme } from 'next-themes'
+import {
+  Bell,
+  ChevronsUpDown,
+  LogOut,
+  Moon,
+  SearchIcon,
+  SettingsIcon,
+  Sun,
+} from '@hugeicons/core-free-icons'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
 import { Kbd } from '@/components/ui/kbd'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { useCommandPalette } from '@/hooks/useCommandPalette'
+import { type AppRole } from '@/hooks/useRole'
 import { createClient } from '@/lib/supabase/client'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 
-export function DashboardHeader() {
+export function DashboardHeader({
+  userName,
+  userEmail,
+  userInitials,
+  userRole,
+}: {
+  userName: string
+  userEmail: string
+  userInitials: string
+  userRole: AppRole
+}) {
   const pathname = usePathname()
+  const router = useRouter()
+  const { resolvedTheme, setTheme } = useTheme()
   const [companyName, setCompanyName] = useState<string | null>(null)
   const { setOpen } = useCommandPalette()
+
+  const handleLogout = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push(ROUTES.login)
+  }
 
   const pathSegments = pathname?.split('/').filter(Boolean) || []
   const isCompanyDetail =
@@ -150,6 +188,73 @@ export function DashboardHeader() {
             3
           </span>
         </button>
+
+        <Separator orientation="vertical" className="h-6 shrink-0" />
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-9 gap-2 px-2 font-normal hover:bg-muted/60"
+              aria-label="Profilmenü"
+            >
+              <Avatar className="h-8 w-8 rounded-lg">
+                <AvatarFallback className="rounded-lg text-xs">{userInitials}</AvatarFallback>
+              </Avatar>
+              <span className="hidden max-w-[160px] truncate text-left text-sm font-medium sm:inline">
+                {userName}
+              </span>
+              <AppIcon icon={ChevronsUpDown} size={16} className="opacity-60" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            className="min-w-56 rounded-lg shadow-xl"
+            side="bottom"
+            align="end"
+            sideOffset={4}
+          >
+            <DropdownMenuLabel className="p-0 font-normal">
+              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                <Avatar className="h-8 w-8 rounded-lg">
+                  <AvatarFallback className="rounded-lg">{userInitials}</AvatarFallback>
+                </Avatar>
+                <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold">{userName}</span>
+                  <span className="truncate text-xs text-muted-foreground">{userEmail}</span>
+                  <span className="bg-primary/10 text-primary mt-1 w-fit rounded px-1 py-0.5 text-[10px] font-bold uppercase">
+                    {userRole}
+                  </span>
+                </div>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem
+                onSelect={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+              >
+                {resolvedTheme === 'dark' ? (
+                  <AppIcon icon={Sun} size={16} className="mr-2" />
+                ) : (
+                  <AppIcon icon={Moon} size={16} className="mr-2" />
+                )}
+                Theme umschalten
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => router.push(ROUTES.settings)}>
+                <AppIcon icon={SettingsIcon} size={16} className="mr-2" />
+                Account
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onSelect={handleLogout}
+              className="text-destructive focus:text-destructive"
+            >
+              <AppIcon icon={LogOut} size={16} className="mr-2" />
+              Abmelden
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   )

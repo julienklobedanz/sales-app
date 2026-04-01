@@ -3,20 +3,15 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useTheme } from 'next-themes'
 import {
   FileText,
   SettingsIcon,
   GalleryHorizontalEndIcon,
   LifeBuoy,
   Send,
-  ChevronsUpDown,
-  LogOut,
   BrainCircuit,
   Handshake,
   TrendingUp,
-  Moon,
-  Sun,
 } from '@hugeicons/core-free-icons'
 import {
   Sidebar,
@@ -30,21 +25,9 @@ import {
   SidebarProvider,
   SidebarInset,
   SidebarRail,
-  SidebarFooter,
 } from '@/components/ui/sidebar'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { DashboardHeader } from './dashboard-header'
 import { SupportTicketModal } from '@/components/dashboard/SupportTicketModal'
-import { createClient } from '@/lib/supabase/client'
 import { type User } from '@supabase/supabase-js'
 import { RoleProvider, type AppRole } from '@/hooks/useRole'
 import { CommandPalette } from '@/components/ui/command-palette'
@@ -75,13 +58,6 @@ export function DashboardShell({
 }) {
   const pathname = usePathname()
   const router = useRouter()
-  const { resolvedTheme, setTheme } = useTheme()
-
-  const handleLogout = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push(ROUTES.login)
-  }
 
   const isAdmin = profile.role === 'admin'
 
@@ -310,92 +286,15 @@ export function DashboardShell({
           </SidebarGroup>
         </SidebarContent>
 
-        <SidebarFooter className="px-2 pb-3 pt-1">
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <SidebarMenuButton
-                    size="lg"
-                    className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground rounded-xl px-2 py-2"
-                  >
-                    <Avatar className="h-8 w-8 rounded-lg">
-                      <AvatarFallback className="rounded-lg">
-                        {userInitials}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-1 items-center text-left text-sm leading-tight">
-                      <span className="truncate font-semibold">{userName}</span>
-                    </div>
-                    <span className="ml-auto">
-                      <AppIcon icon={ChevronsUpDown} size={16} />
-                    </span>
-                  </SidebarMenuButton>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg shadow-xl"
-                  side="bottom"
-                  align="end"
-                  sideOffset={4}
-                >
-                  <DropdownMenuLabel className="p-0 font-normal">
-                    <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                      <Avatar className="h-8 w-8 rounded-lg">
-                        <AvatarFallback className="rounded-lg">
-                          {userInitials}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="grid flex-1 text-left text-sm leading-tight">
-                        <span className="truncate font-semibold">
-                          {userName}
-                        </span>
-                        <span className="truncate text-xs text-muted-foreground">
-                          {userEmail}
-                        </span>
-                        <span className="bg-primary/10 text-primary mt-1 w-fit rounded px-1 py-0.5 text-[10px] font-bold uppercase">
-                          {profile.role}
-                        </span>
-                      </div>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuGroup>
-                    <DropdownMenuItem
-                      onSelect={() =>
-                        setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')
-                      }
-                    >
-                      {resolvedTheme === 'dark' ? (
-                        <AppIcon icon={Sun} size={16} className="mr-2" />
-                      ) : (
-                        <AppIcon icon={Moon} size={16} className="mr-2" />
-                      )}
-                      Theme umschalten
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => router.push(ROUTES.settings)}
-                    >
-                    <AppIcon icon={SettingsIcon} size={16} className="mr-2" />
-                      Account
-                    </DropdownMenuItem>
-                  </DropdownMenuGroup>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onSelect={handleLogout}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <AppIcon icon={LogOut} size={16} className="mr-2" />
-                    Abmelden
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarFooter>
         <SidebarRail />
       </Sidebar>
       <SidebarInset>
-        <DashboardHeader />
+        <DashboardHeader
+          userName={userName}
+          userEmail={userEmail}
+          userInitials={userInitials}
+          userRole={profile.role}
+        />
         <div
           className={cn(
             routeExcludesDashboardContentPadding(pathname)
