@@ -25,6 +25,7 @@ import { COPY } from "@/lib/copy"
 import { useCommandPalette } from "@/hooks/useCommandPalette"
 import { useRole } from "@/hooks/useRole"
 import { AppIcon } from "@/lib/icons"
+import { ROUTES } from "@/lib/routes"
 
 type SearchResult =
   | { kind: "reference"; id: string; title: string }
@@ -64,9 +65,9 @@ function saveRecents(items: RecentItem[]) {
 }
 
 function hrefFor(result: SearchResult) {
-  if (result.kind === "account") return `/dashboard/accounts/${result.id}`
-  if (result.kind === "deal") return `/dashboard/deals/${result.id}`
-  return `/dashboard/evidence/${result.id}`
+  if (result.kind === "account") return ROUTES.accountsDetail(result.id)
+  if (result.kind === "deal") return ROUTES.deals.detail(result.id)
+  return ROUTES.evidence.detail(result.id)
 }
 
 export function CommandPalette() {
@@ -163,7 +164,7 @@ export function CommandPalette() {
         icon: <AppIcon icon={Sparkles} size={16} />,
         onSelect: () => {
           setOpen(false)
-          router.push("/dashboard/match")
+          router.push(ROUTES.match)
         },
         visible: true,
       },
@@ -173,7 +174,7 @@ export function CommandPalette() {
         icon: <AppIcon icon={Handshake} size={16} />,
         onSelect: () => {
           setOpen(false)
-          router.push("/dashboard/deals/new")
+          router.push(ROUTES.deals.new)
         },
         visible: true,
       },
@@ -183,7 +184,7 @@ export function CommandPalette() {
         icon: <AppIcon icon={Upload} size={16} />,
         onSelect: () => {
           setOpen(false)
-          router.push("/dashboard/deals")
+          router.push(ROUTES.deals.root)
         },
         visible: true,
       },
@@ -193,7 +194,7 @@ export function CommandPalette() {
         icon: <AppIcon icon={FileText} size={16} />,
         onSelect: () => {
           setOpen(false)
-          router.push("/dashboard/evidence/new")
+          router.push(ROUTES.evidence.new)
         },
         visible: isAdmin || isAccountManager,
       },
@@ -203,7 +204,7 @@ export function CommandPalette() {
         icon: <AppIcon icon={Plus} size={16} />,
         onSelect: () => {
           setOpen(false)
-          router.push("/dashboard/accounts?create=1")
+          router.push(ROUTES.accountsCreate)
         },
         visible: isAdmin || isAccountManager,
       },

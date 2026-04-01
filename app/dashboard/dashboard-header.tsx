@@ -11,6 +11,7 @@ import { useCommandPalette } from '@/hooks/useCommandPalette'
 import { createClient } from '@/lib/supabase/client'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
+import { ROUTES } from '@/lib/routes'
 
 export function DashboardHeader() {
   const pathname = usePathname()
@@ -50,43 +51,43 @@ export function DashboardHeader() {
   const headerMeta = useMemo(() => {
     if (!pathname) return { title: 'Dashboard', subtitle: undefined as string | undefined }
 
-    if (pathname === '/dashboard') {
+    if (pathname === ROUTES.home) {
       return {
         title: 'Dashboard',
         subtitle: 'Übersicht und Schnellzugriffe',
       }
     }
-    if (pathname.startsWith('/dashboard/evidence')) {
+    if (pathname.startsWith(ROUTES.evidence.root)) {
       return {
         title: COPY.pages.evidence,
         subtitle: 'Referenzen verwalten und finden',
       }
     }
-    if (pathname.startsWith('/dashboard/accounts')) {
+    if (pathname.startsWith(ROUTES.accounts)) {
       return {
         title: 'Accounts',
         subtitle: 'Strategisches Account-Management',
       }
     }
-    if (pathname.startsWith('/dashboard/deals')) {
+    if (pathname.startsWith(ROUTES.deals.root)) {
       return {
         title: 'Deals',
         subtitle: 'Deals und Referenz-Anfragen',
       }
     }
-    if (pathname.startsWith('/dashboard/match')) {
+    if (pathname.startsWith(ROUTES.match)) {
       return {
         title: COPY.pages.match,
         subtitle: 'Semantische Suche und RFP-Analyse',
       }
     }
-    if (pathname.startsWith('/dashboard/market-signals')) {
+    if (pathname.startsWith(ROUTES.marketSignals)) {
       return {
         title: COPY.pages.marketSignals,
         subtitle: 'News, Trends und Signale (in Arbeit)',
       }
     }
-    if (pathname.startsWith('/dashboard/settings')) {
+    if (pathname.startsWith(ROUTES.settings)) {
       return {
         title: 'Einstellungen',
         subtitle: `${COPY.misc.workspace}, Team und Profil`,

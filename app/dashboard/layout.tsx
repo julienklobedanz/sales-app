@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
 import { DashboardShell } from './dashboard-shell'
 
@@ -13,7 +14,7 @@ export default async function DashboardLayout({
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) {
-    redirect('/login')
+    redirect(ROUTES.login)
   }
 
   const { data: profile } = await supabase
@@ -23,7 +24,7 @@ export default async function DashboardLayout({
     .single()
 
   if (!profile) {
-    redirect('/onboarding')
+    redirect(ROUTES.onboarding)
   }
 
   return (

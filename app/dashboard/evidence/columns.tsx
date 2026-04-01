@@ -19,6 +19,7 @@ import {
 import type { ReferenceRow } from "@/app/dashboard/actions"
 import { AppIcon } from "@/lib/icons"
 import { ReferenceStatusBadge } from "@/components/reference-status-badge"
+import { ROUTES } from "@/lib/routes"
 
 export function evidenceColumns(): ColumnDef<ReferenceRow>[] {
   return [
@@ -101,7 +102,7 @@ export function evidenceColumns(): ColumnDef<ReferenceRow>[] {
       ),
       cell: ({ row }) => (
         <Link
-          href={`/dashboard/evidence/${row.original.id}`}
+          href={ROUTES.evidence.detail(row.original.id)}
           className="flex items-center gap-2 max-w-[420px] min-w-0 hover:underline"
         >
           <AppIcon
@@ -160,10 +161,10 @@ export function evidenceColumns(): ColumnDef<ReferenceRow>[] {
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link href={`/dashboard/evidence/${ref.id}`}>Öffnen</Link>
+                <Link href={ROUTES.evidence.detail(ref.id)}>Öffnen</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href={`/dashboard/evidence/${ref.id}/edit`}>Bearbeiten</Link>
+                <Link href={ROUTES.evidence.edit(ref.id)}>Bearbeiten</Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

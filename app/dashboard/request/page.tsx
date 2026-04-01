@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { submitTicket } from '../actions'
 import { TicketStatusBadge } from '@/components/ticket-status-badge'
 import { TicketTypeSelect } from './ticket-type-select'
+import { ROUTES } from '@/lib/routes'
 
 export default async function RequestReferencePage({
   searchParams,
@@ -27,7 +28,7 @@ export default async function RequestReferencePage({
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) redirect(ROUTES.login)
 
   const { data: tickets } = await supabase
     .from('tickets')
@@ -42,9 +43,9 @@ export default async function RequestReferencePage({
     const result = await submitTicket(type, subject, message)
     if (!result.success) {
       // Fehler im Redirect-URL encoden
-      redirect(`/dashboard/request?error=${encodeURIComponent(result.error)}`)
+      redirect(`${ROUTES.request}?error=${encodeURIComponent(result.error)}`)
     }
-    redirect('/dashboard/request')
+    redirect(ROUTES.request)
   }
 
   return (
@@ -57,7 +58,7 @@ export default async function RequestReferencePage({
           </p>
         </div>
         <Button asChild variant="outline" size="sm">
-          <Link href="/dashboard">Zurück zur Übersicht</Link>
+          <Link href={ROUTES.home}>Zurück zur Übersicht</Link>
         </Button>
       </div>
 

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { ROUTES } from '@/lib/routes'
 
 export type ReferenceAssetRow = {
   id: string
@@ -39,7 +40,7 @@ export async function updateReferenceAssetCategoryImpl(
   const supabase = await createServerSupabaseClient()
   const { error } = await supabase.from('reference_assets').update({ category }).eq('id', assetId)
   if (error) return { success: false, error: error.message }
-  revalidatePath('/dashboard')
+  revalidatePath(ROUTES.home)
   return { success: true }
 }
 

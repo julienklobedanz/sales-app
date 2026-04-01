@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { ROUTES } from '@/lib/routes'
 
 export type SignInResult = { error?: string; success?: boolean }
 
@@ -26,7 +27,7 @@ export async function signInWithPassword(
 
   const inviteToken = formData.get('invite_token')?.toString()?.trim()
   if (inviteToken) {
-    redirect(`/onboarding?invite=${encodeURIComponent(inviteToken)}`)
+    redirect(`${ROUTES.onboarding}?invite=${encodeURIComponent(inviteToken)}`)
   }
-  redirect('/dashboard')
+  redirect(ROUTES.home)
 }

@@ -9,6 +9,7 @@ import { DealDetailContent } from '../deal-detail-content'
 import { RfpSidebarPanel } from '../rfp-sidebar-panel'
 import { DealStatusBadge } from '@/components/deal-status-badge'
 import { COPY } from '@/lib/copy'
+import { ROUTES } from '@/lib/routes'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,7 +24,7 @@ export default async function DealDetailPage({
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) redirect(ROUTES.login)
 
   const { data: me } = await supabase
     .from('profiles')
@@ -31,7 +32,7 @@ export default async function DealDetailPage({
     .eq('id', user.id)
     .single()
   const orgId = (me as { organization_id?: string | null })?.organization_id ?? null
-  if (!orgId) redirect('/onboarding')
+  if (!orgId) redirect(ROUTES.onboarding)
 
   const deal = await getDealWithReferences(id)
   if (!deal) notFound()
@@ -89,10 +90,10 @@ export default async function DealDetailPage({
   ]
 
   return (
-    <div className="px-6 pt-6 md:px-12 lg:px-20 pb-10">
+    <div>
       <div className="mb-6">
         <nav className="text-sm text-muted-foreground">
-          <Link href="/dashboard/deals" className="hover:underline">
+          <Link href={ROUTES.deals.root} className="hover:underline">
             Deals
           </Link>
           <span className="px-2">/</span>

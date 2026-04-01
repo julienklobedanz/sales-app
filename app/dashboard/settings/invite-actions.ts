@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { ROUTES } from '@/lib/routes'
 import { Resend } from 'resend'
 
 const INVITE_VALID_DAYS = 7
@@ -51,7 +52,8 @@ export async function createInvite(): Promise<CreateInviteResult> {
   }
 
   const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').trim().replace(/\/$/, '')
-  const link = `${baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`}/register?invite=${token}`
+  const origin = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`
+  const link = `${origin}${ROUTES.register}?invite=${token}`
 
   return {
     success: true,
@@ -113,10 +115,11 @@ export async function inviteByEmail(
     return { success: false, error: insertError.message }
   }
 
-  revalidatePath('/dashboard/settings')
+  revalidatePath(ROUTES.settings)
 
   const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').trim().replace(/\/$/, '')
-  const inviteLink = `${baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`}/register?invite=${token}`
+  const origin = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`
+  const inviteLink = `${origin}${ROUTES.register}?invite=${token}`
   const inviterName = profile?.full_name || user.email || 'Ein Teammitglied'
 
   const resend = getResend()
@@ -225,7 +228,7 @@ export async function removeMember(params: {
       .eq('id', params.inviteId)
       .eq('organization_id', organizationId)
     if (error) return { success: false, error: error.message }
-    revalidatePath('/dashboard/settings')
+    revalidatePath(ROUTES.settings)
     return { success: true }
   }
 
@@ -241,7 +244,7 @@ export async function removeMember(params: {
       .eq('id', params.profileId)
       .eq('organization_id', organizationId)
     if (error) return { success: false, error: error.message }
-    revalidatePath('/dashboard/settings')
+    revalidatePath(ROUTES.settings)
     return { success: true }
   }
 

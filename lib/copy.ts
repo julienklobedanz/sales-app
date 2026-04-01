@@ -41,11 +41,19 @@ export const COPY = {
     contextSelect: 'Selektieren',
     contextOpen: 'Öffnen',
     contextEdit: 'Bearbeiten',
+    filterReferencesPlaceholder: 'Referenzen filtern…',
   },
   deals: {
     contextSelect: 'Selektieren',
     contextOpen: 'Deal öffnen',
     contextOpenNewTab: 'In neuem Tab öffnen',
+    searchPlaceholder: 'Deals durchsuchen (Titel, Account, AM) …',
+  },
+  accounts: {
+    searchCompaniesPlaceholder: 'Firma suchen …',
+    addAccount: 'Account hinzufügen',
+    ariaFavoritesOnlyOn: 'Nur Favoriten anzeigen',
+    ariaFavoritesOnlyOff: 'Alle Accounts anzeigen',
   },
   dashboard: {
     searchReferencesPlaceholder: 'Referenzen suchen...',

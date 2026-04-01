@@ -75,6 +75,12 @@ Vollständige Regeln: **`docs/design-system.md`**. Kurz:
 - **Listen:** DataTable + **eine** Toolbar-Zeile; Loading über **`loading.tsx`** wo üblich.
 - **Konsistenz** vor Eigenbrötlerei: bestehende Layouts (`dashboard-shell`, Header, Tabellen) nachahmen.
 
+### 3.4 Dashboard-Layout & Routen
+
+- **Kein doppeltes Seiten-Padding:** Der Inhaltsbereich unter `DashboardShell` wird zentral über `lib/dashboard-ui.ts` / `dashboard-shell.tsx` gesetzt (Abstände nicht erneut in jeder Page als `px-6 …` wiederholen).
+- **Ausnahmen mit eigenem Rand:** z. B. Firmen-Detail (`/dashboard/accounts/[id]`), Wizard-Seiten wie **`/dashboard/deals/new`** und **`/dashboard/evidence/new`** (dort greift die „Bleed“-Variante ohne Shell-Padding).
+- **Navigation, Links, `redirect`, `revalidatePath`:** Pfade über **`lib/routes.ts`** (`ROUTES`, bei Bedarf `REVALIDATE` für dynamische Segmente) – keine verstreuten `"/dashboard/…"`-Strings in App-Code.
+
 ---
 
 ## 4. Qualität vor „fertig“

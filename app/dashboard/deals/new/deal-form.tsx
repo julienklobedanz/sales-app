@@ -26,6 +26,7 @@ import { Loader } from '@hugeicons/core-free-icons'
 import { toast } from 'sonner'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
+import { ROUTES } from '@/lib/routes'
 
 type Company = { id: string; name: string }
 type OrgProfile = { id: string; full_name: string | null }
@@ -59,7 +60,7 @@ export function DealForm({
     setPending(false)
     if (result.success && result.id) {
       toast.success('Deal angelegt.')
-      router.push(`/dashboard/deals?open=${result.id}`)
+      router.push(`${ROUTES.deals.root}?open=${result.id}`)
       router.refresh()
     } else {
       toast.error(result.error ?? 'Fehler beim Anlegen.')
@@ -177,7 +178,7 @@ export function DealForm({
               {pending && <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />}
               Deal anlegen
             </Button>
-            <Button type="button" variant="outline" disabled={pending} onClick={() => router.push('/dashboard/deals')}>
+            <Button type="button" variant="outline" disabled={pending} onClick={() => router.push(ROUTES.deals.root)}>
               Abbrechen
             </Button>
           </div>

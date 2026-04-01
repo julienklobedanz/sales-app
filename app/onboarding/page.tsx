@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { OnboardingWizard } from './onboarding-wizard'
@@ -10,7 +11,7 @@ export default async function OnboardingPage({ searchParams }: Props) {
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) redirect(ROUTES.login)
 
   const params = await searchParams
   let inviteToken = params.invite?.trim() || null

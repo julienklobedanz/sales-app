@@ -8,6 +8,7 @@ import { WorkspaceStep, type WorkspaceStepValue } from "./steps/workspace-step"
 import { ReferenceStep, type ExtractedReferencePreview } from "./steps/reference-step"
 import { TeamStep, type TeamInviteRow } from "./steps/team-step"
 import { extractReferencePreview, finalizeWorkspaceAndProfile, sendTeamInvites } from "./wizard-actions"
+import { ROUTES } from "@/lib/routes"
 
 export function OnboardingWizard({
   inviteToken,
@@ -84,7 +85,7 @@ export function OnboardingWizard({
     }
 
     setSending(false)
-    router.push("/dashboard")
+    router.push(ROUTES.home)
   }
 
   return (
@@ -120,7 +121,7 @@ export function OnboardingWizard({
             <TeamStep
               invites={invites}
               onChange={setInvites}
-              onSkip={() => router.push("/dashboard")}
+              onSkip={() => router.push(ROUTES.home)}
               onFinish={handleTeamFinish}
               sending={sending}
             />

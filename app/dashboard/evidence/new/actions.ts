@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { REVALIDATE, ROUTES } from '@/lib/routes'
 
 // Mapping für Brandfetch → Formular (Industrie-Dropdown, deutsch)
 const INDUSTRIES_MAP: { keywords: string[]; value: string }[] = [
@@ -230,7 +231,7 @@ export async function enrichAndSaveCompany(domain: string): Promise<EnrichCompan
   if (existing?.id) {
     const { error } = await supabase.from('companies').update(payload).eq('id', existing.id)
     if (error) return { success: false, error: error.message }
-    revalidatePath('/dashboard/evidence/new')
+    revalidatePath(ROUTES.evidence.new)
     return {
       success: true,
       company_id: existing.id,
@@ -247,7 +248,7 @@ export async function enrichAndSaveCompany(domain: string): Promise<EnrichCompan
   const { data: inserted, error } = await supabase.from('companies').insert(payload).select('id').single()
   if (error) return { success: false, error: error.message }
   if (!inserted?.id) return { success: false, error: 'Firma konnte nicht angelegt werden.' }
-  revalidatePath('/dashboard/evidence/new')
+  revalidatePath(ROUTES.evidence.new)
   return {
     success: true,
     company_id: inserted.id,
@@ -561,8 +562,8 @@ export async function createReference(
   // Freigabe-Anfragen werden im 4-Status-Modell explizit ausgelöst,
   // daher wird der Status hier nicht mehr automatisch auf einen Zwischenstatus gesetzt.
 
-  revalidatePath('/dashboard')
-  revalidatePath('/dashboard/evidence')
+  revalidatePath(ROUTES.home)
+  revalidatePath(ROUTES.evidence.root)
   return { success: true, referenceId: reference.id }
 }
 
@@ -631,8 +632,8 @@ export async function createContact(formData: FormData) {
     return { success: false, error: error.message }
   }
 
-  revalidatePath('/dashboard/evidence/new')
-  revalidatePath('/dashboard/evidence/[id]/edit', 'page')
+  revalidatePath(ROUTES.evidence.new)
+  revalidatePath(REVALIDATE.evidenceEditPage, 'page')
 
   return { success: true, contact: data }
 }
@@ -701,8 +702,8 @@ export async function createExternalContact(
     return { success: false, error: error.message }
   }
 
-  revalidatePath('/dashboard/evidence/new')
-  revalidatePath('/dashboard/evidence/[id]/edit', 'page')
+  revalidatePath(ROUTES.evidence.new)
+  revalidatePath(REVALIDATE.evidenceEditPage, 'page')
 
   return {
     success: true,
@@ -744,8 +745,8 @@ export async function updateContact(
     .eq('id', id)
 
   if (error) return { success: false, error: error.message }
-  revalidatePath('/dashboard/evidence/new')
-  revalidatePath('/dashboard/evidence/[id]/edit', 'page')
+  revalidatePath(ROUTES.evidence.new)
+  revalidatePath(REVALIDATE.evidenceEditPage, 'page')
   return { success: true }
 }
 
@@ -777,7 +778,7 @@ export async function updateExternalContact(
     .eq('id', id)
 
   if (error) return { success: false, error: error.message }
-  revalidatePath('/dashboard/evidence/new')
-  revalidatePath('/dashboard/evidence/[id]/edit', 'page')
+  revalidatePath(ROUTES.evidence.new)
+  revalidatePath(REVALIDATE.evidenceEditPage, 'page')
   return { success: true }
 }

@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { ROUTES } from '@/lib/routes'
 import { redirect, notFound } from 'next/navigation'
 import { CompanyDetailClient } from '../company-detail-client'
 import {
@@ -19,14 +20,14 @@ export default async function CompanyDetailPage({
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) redirect(ROUTES.login)
 
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', user.id)
     .single()
-  if (!profile) redirect('/onboarding')
+  if (!profile) redirect(ROUTES.onboarding)
 
   const { data: company } = await supabase
     .from('companies')

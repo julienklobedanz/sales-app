@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
 import { getTeamMembers } from './invite-actions'
 import { SettingsProfileCard } from './settings-profile-card'
@@ -18,7 +19,7 @@ export default async function SettingsPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user) redirect('/login')
+  if (!user) redirect(ROUTES.login)
 
   const { data: profileRow } = await supabase
     .from('profiles')
@@ -42,7 +43,7 @@ export default async function SettingsPage() {
   const lastName = rest.join(' ') ?? ''
 
   return (
-    <div className="flex flex-col space-y-6 px-6 pt-6 md:px-12 lg:px-20">
+    <div className="flex flex-col space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Einstellungen</h1>
         <p className="mt-1 text-muted-foreground">

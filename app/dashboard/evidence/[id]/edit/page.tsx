@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { ROUTES } from '@/lib/routes'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -15,16 +16,16 @@ export default async function EditReferencePage({
   const { id } = await params
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) redirect(ROUTES.login)
 
   const { data: me } = await supabase
     .from('profiles')
     .select('role, organization_id')
     .eq('id', user.id)
     .single()
-  if (!me) redirect('/onboarding')
+  if (!me) redirect(ROUTES.onboarding)
   const role = (me as { role?: 'admin' | 'sales' | 'account_manager' }).role ?? 'sales'
-  if (role === 'sales') redirect(`/dashboard/evidence/${id}`)
+  if (role === 'sales') redirect(ROUTES.evidence.detail(id))
 
   // 1. Referenz laden (mit contact_id)
   const { data: row, error } = await supabase
@@ -68,7 +69,7 @@ export default async function EditReferencePage({
   if (role === 'account_manager') {
     const createdBy = (row as unknown as { created_by?: string | null }).created_by ?? null
     if (!createdBy || createdBy !== user.id) {
-      redirect(`/dashboard/evidence/${id}`)
+      redirect(ROUTES.evidence.detail(id))
     }
   }
 
@@ -127,7 +128,7 @@ export default async function EditReferencePage({
   return (
     <div className="min-h-screen bg-background p-4 md:p-6">
       <div className="mx-auto max-w-3xl space-y-6">
-        <Link href={`/dashboard/evidence/${id}`}>
+        <Link href={ROUTES.evidence.detail(id)}>
           <Button variant="ghost" size="sm" className="gap-2 -ml-2">
             <AppIcon icon={ArrowLeftIcon} size={16} />
             Zurück zur Referenz

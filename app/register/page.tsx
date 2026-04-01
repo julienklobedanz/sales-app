@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { AuthShell } from '@/components/auth-shell'
 import { RegisterForm } from './register-form'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
 
 type Props = { searchParams: Promise<{ invite?: string }> }
@@ -12,16 +13,18 @@ export default async function RegisterPage({ searchParams }: Props) {
     data: { user },
   } = await supabase.auth.getUser()
   if (user) {
-    redirect('/dashboard')
+    redirect(ROUTES.home)
   }
 
   const params = await searchParams
   const inviteToken = params.invite?.trim() || null
-  const loginHref = inviteToken ? `/login?invite=${encodeURIComponent(inviteToken)}` : undefined
+  const loginHref = inviteToken
+    ? `${ROUTES.login}?invite=${encodeURIComponent(inviteToken)}`
+    : undefined
 
   return (
     <AuthShell
-      topRightLink={{ href: '/login', label: 'Anmelden' }}
+      topRightLink={{ href: ROUTES.login, label: 'Anmelden' }}
       topRightLinkSearch={inviteToken ? `?invite=${encodeURIComponent(inviteToken)}` : undefined}
     >
       <div className="space-y-6">
@@ -37,7 +40,7 @@ export default async function RegisterPage({ searchParams }: Props) {
         <p className="text-center text-sm text-muted-foreground md:text-left">
           Bereits ein Konto?{' '}
           <Link
-            href={loginHref ?? '/login'}
+            href={loginHref ?? ROUTES.login}
             className="font-medium text-primary underline-offset-4 hover:underline"
           >
             Anmelden

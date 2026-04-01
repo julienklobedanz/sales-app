@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { ROUTES } from '@/lib/routes'
 
 type BulkImportReferencesResult =
   | { success: true; created: number }
@@ -188,7 +189,7 @@ export async function bulkCreateReferencesFromFilesImpl(
     }
   }
 
-  revalidatePath('/dashboard')
+  revalidatePath(ROUTES.home)
   return { success: true, created }
 }
 

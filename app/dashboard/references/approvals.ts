@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { ROUTES } from '@/lib/routes'
 import { Resend } from 'resend'
 
 function getResend(): Resend | null {
@@ -99,6 +100,6 @@ export async function submitForApprovalImpl(id: string) {
     }
   }
 
-  revalidatePath('/dashboard')
+  revalidatePath(ROUTES.home)
 }
 

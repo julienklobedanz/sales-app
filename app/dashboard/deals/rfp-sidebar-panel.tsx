@@ -8,6 +8,7 @@ import { FileUp, Loader } from '@hugeicons/core-free-icons'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { AppIcon } from '@/lib/icons'
+import { ROUTES } from '@/lib/routes'
 
 import type { DealWithReferences } from './types'
 import { EditDealDialog } from './components/edit-deal-dialog'
@@ -140,7 +141,7 @@ export function RfpSidebarPanel({
         </Button>
 
         <Button asChild size="sm" className="w-full">
-          <Link href={`/dashboard/deals/request/new?dealId=${encodeURIComponent(deal.id)}`}>
+          <Link href={`${ROUTES.deals.requestNew}?dealId=${encodeURIComponent(deal.id)}`}>
             Referenzbedarf melden
           </Link>
         </Button>

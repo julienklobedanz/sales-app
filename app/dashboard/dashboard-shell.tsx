@@ -50,6 +50,14 @@ import { RoleProvider, type AppRole } from '@/hooks/useRole'
 import { CommandPalette } from '@/components/ui/command-palette'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
+import {
+  DASHBOARD_SCROLL_AREA_BLEED_CLASS,
+  DASHBOARD_SCROLL_AREA_CLASS,
+  detailRouteNeedsBottomPadding,
+  routeExcludesDashboardContentPadding,
+} from '@/lib/dashboard-ui'
+import { ROUTES } from '@/lib/routes'
+import { cn } from '@/lib/utils'
 
 export type Profile = {
   full_name: string | null
@@ -72,7 +80,7 @@ export function DashboardShell({
   const handleLogout = async () => {
     const supabase = createClient()
     await supabase.auth.signOut()
-    router.push('/login')
+    router.push(ROUTES.login)
   }
 
   const isAdmin = profile.role === 'admin'
@@ -94,10 +102,14 @@ export function DashboardShell({
 
   // Prefetch wichtige Routen für snappige Navigation
   useEffect(() => {
-    router.prefetch('/dashboard/deals')
-    router.prefetch('/dashboard/accounts')
-    router.prefetch('/dashboard/evidence')
-    router.prefetch('/dashboard/market-signals')
+    router.prefetch(ROUTES.home)
+    router.prefetch(ROUTES.deals.root)
+    router.prefetch(ROUTES.accounts)
+    router.prefetch(ROUTES.evidence.root)
+    router.prefetch(ROUTES.marketSignals)
+    router.prefetch(ROUTES.match)
+    router.prefetch(ROUTES.request)
+    router.prefetch(ROUTES.settings)
   }, [router])
 
   const userName =
@@ -131,7 +143,7 @@ export function DashboardShell({
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton size="lg" asChild className="hover:bg-transparent">
-                <Link href="/dashboard">
+                <Link href={ROUTES.home}>
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
                     <AppIcon icon={GalleryHorizontalEndIcon} size={20} strokeWidth={2.5} />
                   </div>
@@ -153,16 +165,16 @@ export function DashboardShell({
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
-                    isActive={pathname?.startsWith('/dashboard/accounts')}
+                    isActive={pathname?.startsWith(ROUTES.accounts)}
                     tooltip={COPY.nav.accounts}
                     className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-semibold data-[active=true]:hover:translate-x-0"
                   >
-                    <Link href="/dashboard/accounts" className="flex items-center gap-2.5">
+                    <Link href={ROUTES.accounts} className="flex items-center gap-2.5">
                       <span className="relative z-10">
                         <AppIcon
                           icon={BrainCircuit}
                           size={16}
-                          strokeWidth={pathname?.startsWith('/dashboard/accounts') ? 2.5 : 2}
+                          strokeWidth={pathname?.startsWith(ROUTES.accounts) ? 2.5 : 2}
                         />
                       </span>
                       <span className="relative z-10">{COPY.nav.accounts}</span>
@@ -173,16 +185,16 @@ export function DashboardShell({
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
-                    isActive={pathname?.startsWith('/dashboard/deals')}
+                    isActive={pathname?.startsWith(ROUTES.deals.root)}
                     tooltip={COPY.nav.deals}
                     className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-semibold data-[active=true]:hover:translate-x-0"
                   >
-                    <Link href="/dashboard/deals" className="flex items-center gap-2.5">
+                    <Link href={ROUTES.deals.root} className="flex items-center gap-2.5">
                       <span className="relative z-10">
                         <AppIcon
                           icon={Handshake}
                           size={16}
-                          strokeWidth={pathname?.startsWith('/dashboard/deals') ? 2.5 : 2}
+                          strokeWidth={pathname?.startsWith(ROUTES.deals.root) ? 2.5 : 2}
                         />
                       </span>
                       <span className="relative z-10">{COPY.nav.deals}</span>
@@ -193,16 +205,16 @@ export function DashboardShell({
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
-                    isActive={pathname?.startsWith('/dashboard/evidence')}
+                    isActive={pathname?.startsWith(ROUTES.evidence.root)}
                     tooltip={COPY.nav.evidence}
                     className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-semibold data-[active=true]:hover:translate-x-0"
                   >
-                    <Link href="/dashboard/evidence" className="flex items-center gap-2.5">
+                    <Link href={ROUTES.evidence.root} className="flex items-center gap-2.5">
                       <span className="relative z-10">
                         <AppIcon
                           icon={FileText}
                           size={16}
-                          strokeWidth={pathname?.startsWith('/dashboard/evidence') ? 2.5 : 2}
+                          strokeWidth={pathname?.startsWith(ROUTES.evidence.root) ? 2.5 : 2}
                         />
                       </span>
                       <span className="relative z-10">{COPY.nav.evidence}</span>
@@ -213,16 +225,16 @@ export function DashboardShell({
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
-                    isActive={pathname?.startsWith('/dashboard/market-signals')}
+                    isActive={pathname?.startsWith(ROUTES.marketSignals)}
                     tooltip={COPY.nav.marketSignals}
                     className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-semibold data-[active=true]:hover:translate-x-0"
                   >
-                    <Link href="/dashboard/market-signals" className="flex items-center gap-2.5">
+                    <Link href={ROUTES.marketSignals} className="flex items-center gap-2.5">
                       <span className="relative z-10">
                         <AppIcon
                           icon={TrendingUp}
                           size={16}
-                          strokeWidth={pathname?.startsWith('/dashboard/market-signals') ? 2.5 : 2}
+                          strokeWidth={pathname?.startsWith(ROUTES.marketSignals) ? 2.5 : 2}
                         />
                       </span>
                       <span className="relative z-10">{COPY.nav.marketSignals}</span>
@@ -242,10 +254,10 @@ export function DashboardShell({
                       asChild
                       size="sm"
                       tooltip="Einstellungen"
-                      isActive={pathname?.startsWith('/dashboard/settings')}
+                      isActive={pathname?.startsWith(ROUTES.settings)}
                       className="group rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-muted data-[active=true]:text-foreground"
                     >
-                      <Link href="/dashboard/settings">
+                      <Link href={ROUTES.settings}>
                         <AppIcon icon={SettingsIcon} size={16} />
                         <span>Einstellungen</span>
                       </Link>
@@ -361,7 +373,7 @@ export function DashboardShell({
                       Theme umschalten
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onSelect={() => router.push('/dashboard/settings')}
+                      onSelect={() => router.push(ROUTES.settings)}
                     >
                     <AppIcon icon={SettingsIcon} size={16} className="mr-2" />
                       Account
@@ -384,7 +396,16 @@ export function DashboardShell({
       </Sidebar>
       <SidebarInset>
         <DashboardHeader />
-        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">{children}</div>
+        <div
+          className={cn(
+            routeExcludesDashboardContentPadding(pathname)
+              ? DASHBOARD_SCROLL_AREA_BLEED_CLASS
+              : DASHBOARD_SCROLL_AREA_CLASS,
+            detailRouteNeedsBottomPadding(pathname) && 'pb-10'
+          )}
+        >
+          {children}
+        </div>
       </SidebarInset>
       <CommandPalette />
       <SupportTicketModal

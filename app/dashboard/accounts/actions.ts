@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { ROUTES } from '@/lib/routes'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
 export type CompanyStrategyRow = {
@@ -113,8 +114,8 @@ export async function upsertCompanyStrategy(
     { onConflict: 'company_id' }
   )
   if (error) return { success: false, error: error.message }
-  revalidatePath('/dashboard/accounts')
-  revalidatePath(`/dashboard/accounts/${companyId}`)
+  revalidatePath(ROUTES.accounts)
+  revalidatePath(ROUTES.accountsDetail(companyId))
   return { success: true }
 }
 
@@ -159,7 +160,7 @@ export async function upsertRoadmapProject(
     const { error } = await supabase.from('company_roadmap_projects').insert(row)
     if (error) return { success: false, error: error.message }
   }
-  revalidatePath(`/dashboard/accounts/${companyId}`)
+  revalidatePath(ROUTES.accountsDetail(companyId))
   return { success: true }
 }
 
@@ -172,7 +173,7 @@ export async function deleteRoadmapProject(id: string): Promise<{ success: boole
     .single()
   const { error } = await supabase.from('company_roadmap_projects').delete().eq('id', id)
   if (error) return { success: false, error: error.message }
-  if (row?.company_id) revalidatePath(`/dashboard/accounts/${row.company_id}`)
+  if (row?.company_id) revalidatePath(ROUTES.accountsDetail(row.company_id))
   return { success: true }
 }
 
@@ -366,7 +367,7 @@ export async function createStakeholder(
     .select('*')
     .single()
   if (error) return { success: false, error: error.message }
-  revalidatePath(`/dashboard/accounts/${companyId}`)
+  revalidatePath(ROUTES.accountsDetail(companyId))
   return { success: true, stakeholder: data as StakeholderRow }
 }
 
@@ -404,7 +405,7 @@ export async function updateStakeholder(
   if (payload.sentiment !== undefined) update.sentiment = payload.sentiment?.trim() || null
   const { error } = await supabase.from('stakeholders').update(update).eq('id', id)
   if (error) return { success: false, error: error.message }
-  if (row?.company_id) revalidatePath(`/dashboard/accounts/${row.company_id}`)
+  if (row?.company_id) revalidatePath(ROUTES.accountsDetail(row.company_id))
   return { success: true }
 }
 
@@ -417,7 +418,7 @@ export async function deleteStakeholder(id: string): Promise<{ success: boolean;
     .single()
   const { error } = await supabase.from('stakeholders').delete().eq('id', id)
   if (error) return { success: false, error: error.message }
-  if (row?.company_id) revalidatePath(`/dashboard/accounts/${row.company_id}`)
+  if (row?.company_id) revalidatePath(ROUTES.accountsDetail(row.company_id))
   return { success: true }
 }
 
@@ -517,7 +518,7 @@ export async function createContactPerson(
     }
     return { success: false, error: error.message }
   }
-  revalidatePath(`/dashboard/accounts/${companyId}`)
+  revalidatePath(ROUTES.accountsDetail(companyId))
   return { success: true, contact: data as ContactPersonRow }
 }
 
@@ -551,7 +552,7 @@ export async function updateContactPerson(
   if (payload.company_id !== undefined) update.company_id = payload.company_id || null
   const { error } = await supabase.from('contact_persons').update(update).eq('id', id)
   if (error) return { success: false, error: error.message }
-  if (row?.company_id) revalidatePath(`/dashboard/accounts/${row.company_id}`)
+  if (row?.company_id) revalidatePath(ROUTES.accountsDetail(row.company_id))
   return { success: true }
 }
 
@@ -564,7 +565,7 @@ export async function deleteContactPerson(id: string): Promise<{ success: boolea
     .single()
   const { error } = await supabase.from('contact_persons').delete().eq('id', id)
   if (error) return { success: false, error: error.message }
-  if (row?.company_id) revalidatePath(`/dashboard/accounts/${row.company_id}`)
+  if (row?.company_id) revalidatePath(ROUTES.accountsDetail(row.company_id))
   return { success: true }
 }
 
@@ -642,8 +643,8 @@ export async function updateCompanyAccountStatus(
     .update({ account_status } as { account_status: string | null })
     .eq('id', companyId)
   if (error) return { success: false, error: error.message }
-  revalidatePath('/dashboard/accounts')
-  revalidatePath(`/dashboard/accounts/${companyId}`)
+  revalidatePath(ROUTES.accounts)
+  revalidatePath(ROUTES.accountsDetail(companyId))
   return { success: true }
 }
 
@@ -666,8 +667,8 @@ export async function toggleCompanyFavorite(
     }
     return { success: false, error: error.message }
   }
-  revalidatePath('/dashboard/accounts')
-  revalidatePath(`/dashboard/accounts/${companyId}`)
+  revalidatePath(ROUTES.accounts)
+  revalidatePath(ROUTES.accountsDetail(companyId))
   return { success: true }
 }
 
@@ -716,7 +717,7 @@ export async function createCompany(payload: {
 
   if (error) return { success: false, error: error.message }
 
-  revalidatePath('/dashboard/accounts')
+  revalidatePath(ROUTES.accounts)
   return { success: true, id: data?.id }
 }
 
@@ -740,7 +741,7 @@ export async function deleteCompanyWithData(
   const { error } = await supabase.from('companies').delete().eq('id', companyId)
   if (error) return { success: false, error: error.message }
 
-  revalidatePath('/dashboard/accounts')
+  revalidatePath(ROUTES.accounts)
   return { success: true }
 }
 

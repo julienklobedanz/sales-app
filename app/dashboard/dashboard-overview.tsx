@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { ToolbarSearchField } from '@/components/ui/toolbar-search-field'
 import {
   Table,
   TableBody,
@@ -31,6 +32,9 @@ import {
 import type { ReferenceRow, ReferenceAssetRow, DeletedReferenceRow } from './actions'
 import { ReferenceStatusBadge } from '@/components/reference-status-badge'
 import { COPY } from '@/lib/copy'
+import { ROUTES } from '@/lib/routes'
+import { TABLE_TOOLBAR } from '@/lib/table-toolbar'
+import { cn } from '@/lib/utils'
 import { formatDateUtcDe } from '@/lib/format'
 import {
   deleteReference,
@@ -52,7 +56,6 @@ import {
   Filter,
   MoreHorizontal,
   Pencil,
-  SearchIcon,
   ShoppingCartIcon,
   SlidersHorizontal,
   StarIcon,
@@ -538,7 +541,7 @@ export function DashboardOverview({
   }
 
   return (
-    <div className="flex flex-col space-y-6 px-6 pt-6 md:px-12 lg:px-20">
+    <div className="flex flex-col space-y-6">
       {/* Header: Titel + Aktionen */}
       <div className="flex items-center justify-between gap-4">
         <h2 className="text-3xl font-bold tracking-tight">{title}</h2>
@@ -584,24 +587,20 @@ export function DashboardOverview({
         {/* Toolbar: eine Zeile, kein horizontaler Scroll. Suche flex-1, Buttons adaptiv mit Transitions. */}
           <div className="flex flex-nowrap items-center gap-2 sm:gap-3 min-w-0 overflow-x-hidden transition-all duration-300">
           {/* Suche: immer sichtbar, nimmt verfügbaren Platz */}
-          <div className="relative min-w-0 flex-1 basis-0 sm:basis-auto transition-all duration-300">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
-              <AppIcon icon={SearchIcon} size={16} />
-            </span>
-            <Input
-              placeholder={COPY.dashboard.searchReferencesPlaceholder}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="h-11 w-full min-w-0 rounded-lg border bg-background pl-10 pr-4 shadow-sm"
-            />
-          </div>
+          <ToolbarSearchField
+            variant="dashboard"
+            wrapperClassName="min-w-0 flex-1 basis-0 sm:basis-auto transition-all duration-300"
+            placeholder={COPY.dashboard.searchReferencesPlaceholder}
+            value={search}
+            onChange={setSearch}
+          />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
                 size="sm"
-                className="h-11 shrink-0 transition-all duration-300"
+                className={TABLE_TOOLBAR.dashboard.toolbarButton}
                 aria-label={COPY.dashboard.columnsToggleAria}
               >
                 <AppIcon icon={SlidersHorizontal} size={16} className="lg:mr-2 shrink-0" />
@@ -642,7 +641,7 @@ export function DashboardOverview({
           <Button
             variant={favoritesOnly ? 'secondary' : 'outline'}
             size="sm"
-            className="h-11 shrink-0 transition-all duration-300"
+            className={TABLE_TOOLBAR.dashboard.toolbarButton}
             onClick={() => setFavoritesOnly((v) => !v)}
             aria-label={favoritesOnly ? 'Favoriten aus' : 'Nur Favoriten'}
           >
@@ -660,7 +659,7 @@ export function DashboardOverview({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-11 shrink-0 transition-all duration-300"
+                className={TABLE_TOOLBAR.dashboard.toolbarButton}
                 onClick={() => {
                   setBulkImportGroups([])
                   setBulkImportOpen(true)
@@ -674,7 +673,7 @@ export function DashboardOverview({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-11 shrink-0 gap-1.5 transition-all duration-300"
+                  className={TABLE_TOOLBAR.dashboard.toolbarButtonGap}
                   onClick={() => setPreviewRefs(selectedRefs)}
                   aria-label={`Vorschau (${selectedRefIds.size} Referenz${selectedRefIds.size !== 1 ? 'en' : ''})`}
                 >
@@ -685,7 +684,11 @@ export function DashboardOverview({
               <Button
                 variant="outline"
                 size="sm"
-                className={`h-11 shrink-0 transition-all duration-300 bg-background ${statusFilter === 'draft' ? 'border-primary ring-1 ring-primary' : ''}`}
+                className={cn(
+                  TABLE_TOOLBAR.dashboard.toolbarButton,
+                  'bg-background',
+                  statusFilter === 'draft' ? 'border-primary ring-1 ring-primary' : '',
+                )}
                 onClick={() => setStatusFilter(statusFilter === 'draft' ? 'all' : 'draft')}
                 aria-label={statusFilter === 'draft' ? 'Alle Referenzen anzeigen' : 'Nur Entwürfe'}
               >
@@ -694,7 +697,7 @@ export function DashboardOverview({
               </Button>
               <Button
                 size="sm"
-                className="h-11 shrink-0 transition-all duration-300"
+                className={TABLE_TOOLBAR.dashboard.toolbarButton}
                 onClick={() => setNewRefModalOpen(true)}
                 aria-label="Neue Referenz erstellen"
               >
@@ -709,7 +712,7 @@ export function DashboardOverview({
             <Button
               variant="outline"
               size="sm"
-              className="h-11 shrink-0 gap-1.5 transition-all duration-300"
+              className={TABLE_TOOLBAR.dashboard.toolbarButtonGap}
               onClick={() => setPreviewRefs(selectedRefs)}
               aria-label={`Vorschau (${selectedRefIds.size} Referenz${selectedRefIds.size !== 1 ? 'en' : ''})`}
             >
@@ -1448,12 +1451,12 @@ export function DashboardOverview({
                         )}
                       {profile.role === 'sales' && (
                         <div className="flex flex-wrap items-center justify-center gap-2">
-                          <Link href="/dashboard/deals/new">
+                          <Link href={ROUTES.deals.new}>
                             <Button className="mt-1">
                               Lege deinen ersten Deal an
                             </Button>
                           </Link>
-                          <Link href="/dashboard/deals/new">
+                          <Link href={ROUTES.deals.new}>
                             <Button className="mt-1">
                               Auslaufenden Deal hinzufügen
                             </Button>
@@ -1601,7 +1604,7 @@ export function DashboardOverview({
                             Details ansehen
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onSelect={() => router.push(`/dashboard/evidence/${ref.id}/edit`)}
+                            onSelect={() => router.push(ROUTES.evidence.edit(ref.id))}
                           >
                             <AppIcon icon={Pencil} size={16} className="mr-2" />
                             Bearbeiten

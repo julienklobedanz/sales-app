@@ -3,6 +3,7 @@
 import { useMemo, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { ToolbarSearchField } from '@/components/ui/toolbar-search-field'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import type { DealRow } from './types'
 import { DealForm } from './new/deal-form'
@@ -15,6 +16,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { AppIcon } from '@/lib/icons'
 import { DealStatusBadge } from '@/components/deal-status-badge'
 import { COPY } from '@/lib/copy'
+import { ROUTES } from '@/lib/routes'
 
 type MatchMap = Record<string, { count: number; suggestions: MatchSuggestion[] }>
 
@@ -28,15 +30,10 @@ function formatDate(iso: string) {
 
 type Props = {
   deals: DealRow[]
-  expiring: DealRow[]
   matchMap: MatchMap
-  currentUserId: string
-  initialOpenDealId?: string | null
   companies: { id: string; name: string }[]
   orgProfiles: { id: string; full_name: string | null }[]
 }
-
-type TabKey = 'mine' | 'all' | 'expiring'
 
 function isExpiringIn30Days(dateStr: string | null): boolean {
   if (!dateStr) return false
@@ -52,7 +49,6 @@ function isExpiringIn30Days(dateStr: string | null): boolean {
 export function DealsClientContent({
   deals,
   matchMap,
-  currentUserId,
   companies,
   orgProfiles,
 }: Props) {
@@ -60,7 +56,6 @@ export function DealsClientContent({
   const [importing, setImporting] = useState(false)
   const xlsxInputRef = useRef<HTMLInputElement>(null)
   const [createOpen, setCreateOpen] = useState(false)
-  const [tab, setTab] = useState<TabKey>('mine')
   const [query, setQuery] = useState('')
 
   async function handleXlsxImport(file: File) {
@@ -82,24 +77,14 @@ export function DealsClientContent({
     }
   }
 
-  const myDeals = useMemo(() => {
-    return deals.filter((d) => d.account_manager_id === currentUserId || d.sales_manager_id === currentUserId)
-  }, [deals, currentUserId])
-
-  const expiring30 = useMemo(() => {
-    return deals.filter((d) => isExpiringIn30Days(d.expiry_date))
-  }, [deals])
-
-  const baseList = tab === 'mine' ? myDeals : tab === 'expiring' ? expiring30 : deals
-
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return baseList
-    return baseList.filter((d) => {
+    if (!q) return deals
+    return deals.filter((d) => {
       const hay = `${d.title} ${d.company_name ?? ''} ${d.account_manager_name ?? ''}`.toLowerCase()
       return hay.includes(q)
     })
-  }, [baseList, query])
+  }, [deals, query])
 
   const columns = useMemo<ColumnDef<DealRow>[]>(() => {
     return [
@@ -134,7 +119,7 @@ export function DealsClientContent({
           <button
             type="button"
             className="font-medium hover:underline text-left"
-            onClick={() => router.push(`/dashboard/deals/${row.original.id}`)}
+            onClick={() => router.push(ROUTES.deals.detail(row.original.id))}
           >
             {row.original.title}
           </button>
@@ -184,75 +169,6 @@ export function DealsClientContent({
     ]
   }, [matchMap, router])
 
-  const toolbar = (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex flex-wrap items-center gap-2">
-        <Button
-          variant={tab === 'mine' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setTab('mine')}
-        >
-          Meine Deals
-        </Button>
-        <Button
-          variant={tab === 'all' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setTab('all')}
-        >
-          Alle Deals
-        </Button>
-        <Button
-          variant={tab === 'expiring' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setTab('expiring')}
-        >
-          Auslaufende Deals
-        </Button>
-
-        <div className="w-full sm:w-[280px]">
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Suche (Titel, Account, AM) …"
-            className="h-9 w-full rounded-md border bg-background px-3 text-sm"
-          />
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        <input
-          ref={xlsxInputRef}
-          type="file"
-          accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0]
-            if (file) handleXlsxImport(file)
-            e.target.value = ''
-          }}
-        />
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-9 px-3"
-          disabled={importing}
-          onClick={() => xlsxInputRef.current?.click()}
-        >
-          {importing ? (
-            <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />
-          ) : (
-            <AppIcon icon={UploadIcon} size={16} className="mr-2" />
-          )}
-          Listen importieren
-        </Button>
-        <Button size="sm" className="h-9 px-3" onClick={() => setCreateOpen(true)}>
-          <AppIcon icon={CirclePlus} size={16} className="mr-2" />
-          Deal anlegen
-        </Button>
-      </div>
-    </div>
-  )
-
   return (
     <div className="space-y-4">
       <AppDataTable
@@ -261,10 +177,49 @@ export function DealsClientContent({
         data={filtered}
         initialPageSize={10}
         getRowId={(row) => row.id}
-        toolbar={() => toolbar}
+        toolbar={() => (
+          <ToolbarSearchField
+            variant="list"
+            value={query}
+            onChange={setQuery}
+            placeholder={COPY.deals.searchPlaceholder}
+          />
+        )}
+        toolbarRight={() => (
+          <>
+            <input
+              ref={xlsxInputRef}
+              type="file"
+              accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) handleXlsxImport(file)
+                e.target.value = ''
+              }}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="toolbar"
+              disabled={importing}
+              onClick={() => xlsxInputRef.current?.click()}
+            >
+              {importing ? (
+                <AppIcon icon={Loader} size={16} className="animate-spin" />
+              ) : (
+                <AppIcon icon={UploadIcon} size={16} />
+              )}
+              Listen importieren
+            </Button>
+            <Button type="button" size="toolbar" onClick={() => setCreateOpen(true)}>
+              <AppIcon icon={CirclePlus} size={16} />
+              Deal anlegen
+            </Button>
+          </>
+        )}
         showViewOptions
       />
-      {/* Popover/Dialog zum Anlegen eines neuen Deals */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="max-h-[90vh] min-h-[60vh] overflow-y-auto w-[calc(100vw-2rem)] max-w-[90vw] lg:max-w-7xl gap-0 border-0 px-6 py-6 md:px-12 md:py-10 lg:px-16 lg:py-12">
           <div className="flex flex-col items-center w-full max-w-full">

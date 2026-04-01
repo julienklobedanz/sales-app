@@ -3,6 +3,7 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { ROUTES } from '@/lib/routes'
 
 export default function DashboardError({
   error,
@@ -16,7 +17,7 @@ export default function DashboardError({
   }, [error])
 
   return (
-    <div className="flex flex-col space-y-6 px-6 pt-6 md:px-12 lg:px-20">
+    <div className="flex flex-col space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Etwas ist schiefgelaufen</h1>
         <p className="mt-1 text-muted-foreground">
@@ -27,7 +28,7 @@ export default function DashboardError({
       <div className="flex flex-wrap gap-2">
         <Button onClick={reset}>Erneut versuchen</Button>
         <Button variant="outline" asChild>
-          <Link href="/dashboard">Zum Dashboard</Link>
+          <Link href={ROUTES.home}>Zum Dashboard</Link>
         </Button>
       </div>
     </div>

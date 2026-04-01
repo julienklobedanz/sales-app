@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Building2, Globe, MapPinIcon } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import type { CompanyDetailCompany } from './company-detail-types'
+import { ROUTES } from '@/lib/routes'
 
 export function CompanyDetailHeader({ company }: { company: CompanyDetailCompany }) {
   return (
@@ -48,7 +49,7 @@ export function CompanyDetailHeader({ company }: { company: CompanyDetailCompany
       </div>
 
       <Button asChild variant="outline">
-        <Link href="/dashboard/accounts">Zurück</Link>
+        <Link href={ROUTES.accounts}>Zurück</Link>
       </Button>
     </div>
   )

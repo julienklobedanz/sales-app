@@ -9,6 +9,7 @@ import { FavouriteIcon } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { ReferenceStatusBadge } from '@/components/reference-status-badge'
 import { COPY } from '@/lib/copy'
+import { ROUTES } from '@/lib/routes'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,14 +31,14 @@ export default async function EvidenceDetailPage({
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) redirect(ROUTES.login)
 
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', user.id)
     .single()
-  if (!profile) redirect('/onboarding')
+  if (!profile) redirect(ROUTES.onboarding)
 
   const role = (profile as { role?: 'admin' | 'sales' | 'account_manager' }).role ?? 'sales'
 
@@ -147,10 +148,10 @@ export default async function EvidenceDetailPage({
     .slice(0, 10)
 
   return (
-    <div className="px-6 pt-6 md:px-12 lg:px-20 pb-10">
+    <div>
       <div className="mb-6">
         <nav className="text-sm text-muted-foreground">
-          <Link href="/dashboard/evidence" className="hover:underline">
+          <Link href={ROUTES.evidence.root} className="hover:underline">
             {COPY.nav.evidence}
           </Link>
           <span className="px-2">/</span>
@@ -319,7 +320,7 @@ export default async function EvidenceDetailPage({
                     Anonymisierte Version
                   </Button>
                   <Button asChild variant="outline">
-                    <Link href={`/dashboard/evidence/${id}/edit`}>Bearbeiten</Link>
+                    <Link href={ROUTES.evidence.edit(id)}>Bearbeiten</Link>
                   </Button>
                   <form action={submitForApproval.bind(null, id)}>
                     <Button type="submit" variant="outline">

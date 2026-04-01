@@ -3,6 +3,7 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { ROUTES } from '@/lib/routes'
 import { extractDataFromDocument } from '@/lib/document-extraction'
 import { inviteByEmail } from '@/app/dashboard/settings/invite-actions'
 
@@ -20,7 +21,7 @@ export async function finalizeWorkspaceAndProfile(params: {
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) redirect(ROUTES.login)
 
   const tokenFromCookie = (await cookies()).get('invite_token')?.value?.trim() || null
   const inviteToken = params.inviteToken?.trim() || tokenFromCookie

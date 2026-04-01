@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
 import { getDashboardData } from '@/app/dashboard/actions'
 import { EvidenceClient } from './evidence-client'
@@ -10,7 +11,7 @@ export default async function EvidenceHubPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) redirect(ROUTES.login)
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -18,7 +19,7 @@ export default async function EvidenceHubPage() {
     .eq('id', user.id)
     .single()
 
-  if (!profile) redirect('/onboarding')
+  if (!profile) redirect(ROUTES.onboarding)
 
   const dashboard = await getDashboardData(false)
 

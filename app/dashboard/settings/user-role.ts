@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { ROUTES } from '@/lib/routes'
 
 export async function updateUserRoleImpl(role: 'admin' | 'sales') {
   const supabase = await createServerSupabaseClient()
@@ -15,6 +16,6 @@ export async function updateUserRoleImpl(role: 'admin' | 'sales') {
 
   if (error) throw new Error(error.message)
 
-  revalidatePath('/dashboard')
+  revalidatePath(ROUTES.home)
 }
 

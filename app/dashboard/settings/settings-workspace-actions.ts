@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { ROUTES } from '@/lib/routes'
 
 export type UpdateOrganizationResult =
   | { success: true }
@@ -46,6 +47,6 @@ export async function updateOrganization(
     .eq('id', organizationId)
 
   if (error) return { success: false, error: error.message }
-  revalidatePath('/dashboard/settings')
+  revalidatePath(ROUTES.settings)
   return { success: true }
 }

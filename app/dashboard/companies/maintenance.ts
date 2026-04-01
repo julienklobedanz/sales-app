@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { ROUTES } from '@/lib/routes'
 
 /** Prüft, ob der String wie eine Domain aussieht (z. B. "biontechse.com"). */
 function looksLikeDomain(s: string): boolean {
@@ -92,7 +93,7 @@ export async function mergeDuplicateCompaniesImpl(): Promise<MergeDuplicateCompa
     }
   }
 
-  revalidatePath('/dashboard')
+  revalidatePath(ROUTES.home)
   return { success: true, merged, deleted }
 }
 
@@ -132,7 +133,7 @@ export async function cleanupCompanyDomainNamesImpl(): Promise<CleanupCompanyDom
     updated++
   }
 
-  revalidatePath('/dashboard')
+  revalidatePath(ROUTES.home)
   return { success: true, updated }
 }
 

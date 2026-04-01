@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { ROUTES } from '@/lib/routes'
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -34,25 +35,25 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const isAuthRoute =
-    request.nextUrl.pathname.startsWith('/login') ||
-    request.nextUrl.pathname.startsWith('/register') ||
-    request.nextUrl.pathname.startsWith('/auth') ||
+    request.nextUrl.pathname.startsWith(ROUTES.login) ||
+    request.nextUrl.pathname.startsWith(ROUTES.register) ||
+    request.nextUrl.pathname.startsWith(ROUTES.auth) ||
     request.nextUrl.pathname.startsWith('/signup') ||
-    request.nextUrl.pathname.startsWith('/onboarding') ||
-    request.nextUrl.pathname.startsWith('/approval') ||
+    request.nextUrl.pathname.startsWith(ROUTES.onboarding) ||
+    request.nextUrl.pathname.startsWith(ROUTES.approvalPrefix) ||
     request.nextUrl.pathname.startsWith('/p/')
 
   if (!user && !isAuthRoute) {
     const url = request.nextUrl.clone()
-    url.pathname = '/login'
+    url.pathname = ROUTES.login
     return NextResponse.redirect(url)
   }
 
   const invite = request.nextUrl.searchParams.get('invite')
   if (
     invite &&
-    (request.nextUrl.pathname === '/register' ||
-      request.nextUrl.pathname === '/login')
+    (request.nextUrl.pathname === ROUTES.register ||
+      request.nextUrl.pathname === ROUTES.login)
   ) {
     supabaseResponse.cookies.set('invite_token', invite, {
       path: '/',

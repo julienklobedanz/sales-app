@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { ROUTES } from '@/lib/routes'
 
 export async function updateReferenceDetailFieldsImpl(
   id: string,
@@ -26,7 +27,7 @@ export async function updateReferenceDetailFieldsImpl(
   }
   const { error } = await supabase.from('references').update(updatePayload).eq('id', id)
   if (error) throw new Error(error.message)
-  revalidatePath('/dashboard')
-  revalidatePath(`/dashboard/evidence/${id}/edit`)
+  revalidatePath(ROUTES.home)
+  revalidatePath(ROUTES.evidence.edit(id))
 }
 

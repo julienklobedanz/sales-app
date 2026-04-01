@@ -30,6 +30,7 @@ import {
 import { DataTablePagination } from "@/components/ui/data-table-pagination"
 import { DataTableViewOptions } from "@/components/ui/data-table-view-options"
 import { COPY } from "@/lib/copy"
+import { ROUTES } from "@/lib/routes"
 import {
   ContextMenu,
   ContextMenuContent,
@@ -124,7 +125,7 @@ export function AppDataTable<TData, TValue>({
               onSelect={() => {
                 const anyRow = row.original as unknown as { id?: string }
                 if (anyRow?.id) {
-                  window.location.href = `/dashboard/evidence/${anyRow.id}`
+                  window.location.href = ROUTES.evidence.detail(anyRow.id)
                 }
               }}
             >
@@ -134,7 +135,7 @@ export function AppDataTable<TData, TValue>({
               onSelect={() => {
                 const anyRow = row.original as unknown as { id?: string }
                 if (anyRow?.id) {
-                  window.location.href = `/dashboard/evidence/${anyRow.id}/edit`
+                  window.location.href = ROUTES.evidence.edit(anyRow.id)
                 }
               }}
             >
@@ -160,7 +161,7 @@ export function AppDataTable<TData, TValue>({
               onSelect={() => {
                 const anyRow = row.original as unknown as { id?: string }
                 if (anyRow?.id) {
-                  window.location.href = `/dashboard/deals/${anyRow.id}`
+                  window.location.href = ROUTES.deals.detail(anyRow.id)
                 }
               }}
             >
@@ -170,7 +171,7 @@ export function AppDataTable<TData, TValue>({
               onSelect={() => {
                 const anyRow = row.original as unknown as { id?: string }
                 if (anyRow?.id) {
-                  window.open(`/dashboard/deals/${anyRow.id}`, "_blank", "noopener,noreferrer")
+                  window.open(ROUTES.deals.detail(anyRow.id), "_blank", "noopener,noreferrer")
                 }
               }}
             >

@@ -3,15 +3,17 @@
 import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { SearchIcon, SlidersHorizontal } from "@hugeicons/core-free-icons"
+import { CirclePlus, SlidersHorizontal } from "@hugeicons/core-free-icons"
 
 import type { ReferenceRow } from "@/app/dashboard/actions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { evidenceColumns } from "./columns"
 import { EvidenceDataTable } from "./data-table"
 import { AppIcon } from "@/lib/icons"
+import { ToolbarSearchField } from "@/components/ui/toolbar-search-field"
+import { COPY } from "@/lib/copy"
+import { ROUTES } from "@/lib/routes"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -66,7 +68,7 @@ export function EvidenceClient({
     : "Keine Referenzen vorhanden."
 
   return (
-    <div className="px-6 pt-6 md:px-12 lg:px-20 space-y-6">
+    <div className="space-y-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         {/* Toolbar wird direkt in der DataTable gerendert (Tasks-Style) */}
       </div>
@@ -78,7 +80,7 @@ export function EvidenceClient({
           onDrop={(e) => {
             e.preventDefault()
             if (e.dataTransfer.files?.length) {
-              router.push("/dashboard/evidence/new?bulk=true")
+              router.push(ROUTES.evidence.newBulk)
             }
           }}
         >
@@ -101,12 +103,12 @@ export function EvidenceClient({
             <div className="flex flex-wrap gap-2">
               {canCreate ? (
                 <Button asChild>
-                  <Link href="/dashboard/evidence/new">Referenz erstellen</Link>
+                  <Link href={ROUTES.evidence.new}>Referenz erstellen</Link>
                 </Button>
               ) : null}
               {canCreate ? (
                 <Button asChild variant="outline">
-                  <Link href="/dashboard/evidence/new?bulk=true">Bulk-Import</Link>
+                  <Link href={ROUTES.evidence.newBulk}>Bulk-Import</Link>
                 </Button>
               ) : null}
             </div>
@@ -122,7 +124,7 @@ export function EvidenceClient({
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2">
+                    <Button variant="outline" size="toolbar">
                       Aktionen
                     </Button>
                   </DropdownMenuTrigger>
@@ -150,21 +152,16 @@ export function EvidenceClient({
             onSelectedRowIdsChange={setSelectedIds}
             toolbar={() => (
               <>
-                <div className="relative w-full max-w-xl">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    <AppIcon icon={SearchIcon} size={16} />
-                  </span>
-                  <Input
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Referenzen filtern…"
-                    className="pl-9 h-10"
-                  />
-                </div>
+                <ToolbarSearchField
+                  variant="list"
+                  value={query}
+                  onChange={setQuery}
+                  placeholder={COPY.evidence.filterReferencesPlaceholder}
+                />
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-10 gap-2">
+                    <Button variant="outline" size="toolbar">
                       <AppIcon icon={SlidersHorizontal} size={16} />
                       Status
                     </Button>
@@ -197,8 +194,11 @@ export function EvidenceClient({
             )}
             toolbarRight={() =>
               canCreate ? (
-                <Button asChild className="h-10">
-                  <Link href="/dashboard/evidence/new">Referenz erstellen</Link>
+                <Button asChild size="toolbar">
+                  <Link href={ROUTES.evidence.new} className="inline-flex items-center gap-2">
+                    <AppIcon icon={CirclePlus} size={16} />
+                    Referenz erstellen
+                  </Link>
                 </Button>
               ) : null
             }

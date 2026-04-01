@@ -54,6 +54,7 @@ import {
   type ReferenceFormCompany,
 } from './reference-form-fields'
 import { AppIcon } from '@/lib/icons'
+import { ROUTES } from '@/lib/routes'
 
 const INDUSTRIES = [
   'Finanzdienstleistungen & Versicherung',
@@ -526,7 +527,7 @@ export function ReferenceForm({
           onSuccess()
           router.refresh()
         } else {
-          router.push('/dashboard/evidence')
+          router.push(ROUTES.evidence.root)
           router.refresh()
         }
       } else {
@@ -564,7 +565,7 @@ export function ReferenceForm({
         onSuccess()
         router.refresh()
       } else {
-        router.push('/dashboard/evidence')
+        router.push(ROUTES.evidence.root)
         router.refresh()
       }
     } catch (err) {
@@ -1590,7 +1591,7 @@ export function ReferenceForm({
             variant="outline"
             disabled={submitting}
             onClick={() =>
-              onClose ? onClose() : router.push('/dashboard')
+              onClose ? onClose() : router.push(ROUTES.home)
             }
           >
             Abbrechen

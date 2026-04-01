@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { ROUTES } from '@/lib/routes'
 
 export async function updateProfile(formData: FormData) {
   const supabase = await createServerSupabaseClient()
@@ -34,7 +35,7 @@ export async function updateProfile(formData: FormData) {
     return { error: error.message }
   }
 
-  revalidatePath('/dashboard')
-  revalidatePath('/dashboard/settings')
+  revalidatePath(ROUTES.home)
+  revalidatePath(ROUTES.settings)
   return { success: true }
 }

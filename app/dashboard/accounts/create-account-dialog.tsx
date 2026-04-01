@@ -18,6 +18,7 @@ import {
 import { Loader } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { createCompany } from './actions'
+import { ROUTES } from '@/lib/routes'
 
 export function CreateAccountDialog({
   open,
@@ -71,7 +72,7 @@ export function CreateAccountDialog({
         setEmployeeCount('')
         setDescription('')
         setAccountStatus('__none__')
-        router.push(`/dashboard/accounts/${res.id}`)
+        router.push(ROUTES.accountsDetail(res.id))
       } else {
         toast.error(res.error ?? 'Erstellen fehlgeschlagen.')
       }

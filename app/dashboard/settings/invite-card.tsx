@@ -14,6 +14,7 @@ import {
 import { Copy, Link2, UserPlus } from '@hugeicons/core-free-icons'
 import { createInvite } from './invite-actions'
 import { AppIcon } from '@/lib/icons'
+import { ROUTES } from '@/lib/routes'
 
 /** Ersetzt Platzhalter-URL (z. B. [sales-app]) durch die aktuelle Origin, damit der User keinen ungültigen Link kopiert. */
 function resolveInviteLink(link: string | null): string {
@@ -21,11 +22,11 @@ function resolveInviteLink(link: string | null): string {
   if (typeof window === 'undefined') return link
   const hasPlaceholder = link.includes('[') || link.includes('sales-app')
   if (!hasPlaceholder) return link
-  const match = link.match(/\/register\?invite=([^&]+)/)
+  const match = link.match(new RegExp(`${ROUTES.register}\\?invite=([^&]+)`))
   if (match) {
-    return `${window.location.origin}/register?invite=${match[1]}`
+    return `${window.location.origin}${ROUTES.register}?invite=${match[1]}`
   }
-  const pathWithQuery = link.replace(/^https?:\/\/[^/]+/, '') || '/register'
+  const pathWithQuery = link.replace(/^https?:\/\/[^/]+/, '') || ROUTES.register
   return `${window.location.origin}${pathWithQuery}`
 }
 

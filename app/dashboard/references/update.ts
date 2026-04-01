@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { ROUTES } from '@/lib/routes'
 
 import type { ReferenceRow } from '@/app/dashboard/actions'
 
@@ -157,7 +158,7 @@ export async function updateReferenceImpl(id: string, formData: FormData) {
   // Bei Freigabe-Workflows bleibt die Statuslogik im 4-Status-Modell,
   // daher ist kein automatischer Wechsel auf einen Legacy-Status mehr nötig.
 
-  revalidatePath('/dashboard')
-  revalidatePath(`/dashboard/evidence/${id}/edit`)
+  revalidatePath(ROUTES.home)
+  revalidatePath(ROUTES.evidence.edit(id))
 }
 

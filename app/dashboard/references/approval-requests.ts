@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { ROUTES } from '@/lib/routes'
 export type RequestItem = {
   id: string
   reference_id: string
@@ -116,6 +117,6 @@ export async function reviewRequestImpl(
 
   if (appError) throw new Error(appError.message)
 
-  revalidatePath('/dashboard')
+  revalidatePath(ROUTES.home)
 }
 

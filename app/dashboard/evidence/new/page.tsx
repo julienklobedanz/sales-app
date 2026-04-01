@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { ArrowLeftIcon } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
+import { ROUTES } from '@/lib/routes'
 
 export const maxDuration = 60
 
@@ -13,7 +14,7 @@ export default async function NewReferencePage() {
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
-    redirect('/login')
+    redirect(ROUTES.login)
   }
 
   const { data: profile } = await supabase
@@ -21,9 +22,9 @@ export default async function NewReferencePage() {
     .select('role, organization_id')
     .eq('id', user.id)
     .single()
-  if (!profile) redirect('/onboarding')
+  if (!profile) redirect(ROUTES.onboarding)
   const role = (profile as { role?: 'admin' | 'sales' | 'account_manager' }).role ?? 'sales'
-  if (role === 'sales') redirect('/dashboard/evidence')
+  if (role === 'sales') redirect(ROUTES.evidence.root)
 
   // 1. Firmen laden (inkl. logo_url für Anzeige bei Auswahl)
   const { data: companies } = await supabase
@@ -47,7 +48,7 @@ export default async function NewReferencePage() {
   return (
     <div className="min-h-screen bg-background p-4 md:p-6">
       <div className="mx-auto max-w-2xl space-y-6">
-        <Link href="/dashboard/evidence">
+        <Link href={ROUTES.evidence.root}>
           <Button variant="ghost" size="sm" className="gap-2 -ml-2">
             <AppIcon icon={ArrowLeftIcon} size={16} />
             Zurück zu {COPY.nav.evidence}

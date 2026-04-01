@@ -1,19 +1,18 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
-import { getDeals, getExpiringDeals, getMatchingReferencesForDeals } from './actions'
+import { getDeals, getMatchingReferencesForDeals } from './actions'
 import { DealsClientContent } from './deals-client'
 
 export const dynamic = 'force-dynamic'
 
-type Props = { searchParams: Promise<{ open?: string }> }
-
-export default async function DealsPage({ searchParams }: Props) {
+export default async function DealsPage() {
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user) redirect('/login')
+  if (!user) redirect(ROUTES.login)
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -21,14 +20,9 @@ export default async function DealsPage({ searchParams }: Props) {
     .eq('id', user.id)
     .single()
 
-  if (!profile) redirect('/onboarding')
+  if (!profile) redirect(ROUTES.onboarding)
 
-  const params = await searchParams
-
-  const [deals, expiring] = await Promise.all([
-    getDeals(),
-    getExpiringDeals(),
-  ])
+  const deals = await getDeals()
 
   const [companiesResult, orgProfilesResult, matchMap] = await Promise.all([
     supabase
@@ -41,23 +35,17 @@ export default async function DealsPage({ searchParams }: Props) {
       .select('id, full_name')
       .eq('organization_id', profile.organization_id)
       .order('full_name'),
-    getMatchingReferencesForDeals([
-      ...deals.map((d) => d.id),
-      ...expiring.map((d) => d.id),
-    ]),
+    getMatchingReferencesForDeals(deals.map((d) => d.id)),
   ])
 
   const companies = companiesResult.data
   const orgProfiles = orgProfilesResult.data
 
   return (
-    <div className="flex flex-col space-y-6 px-6 pt-6 md:px-12 lg:px-20">
+    <div className="flex flex-col space-y-6">
       <DealsClientContent
         deals={deals}
-        expiring={expiring}
         matchMap={matchMap}
-        currentUserId={user.id}
-        initialOpenDealId={params.open ?? null}
         companies={companies ?? []}
         orgProfiles={orgProfiles ?? []}
       />

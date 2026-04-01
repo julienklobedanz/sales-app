@@ -10,7 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
+import { ToolbarSearchField } from '@/components/ui/toolbar-search-field'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,12 +30,13 @@ import {
   Loader,
   MapPinIcon,
   Plus,
-  SearchIcon,
   StarIcon,
   Users,
 } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { deleteCompanyWithData, toggleCompanyFavorite } from './actions'
+import { COPY } from '@/lib/copy'
+import { ROUTES } from '@/lib/routes'
 import { useRole } from '@/hooks/useRole'
 import { CreateAccountDialog } from './create-account-dialog'
 import { toast } from 'sonner'
@@ -94,19 +95,15 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
     <div className="space-y-6 rounded-3xl bg-muted/20 p-4 md:p-6">
       <div className="w-full">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative flex-1">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-              <AppIcon icon={SearchIcon} size={16} />
-            </span>
-            <Input
-              type="search"
-              placeholder="Firma suchen …"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="h-11 w-full rounded-lg border bg-background pl-10 pr-4 shadow-sm"
-              aria-label="Firmen durchsuchen"
-            />
-          </div>
+          <ToolbarSearchField
+            variant="dashboard"
+            wrapperClassName="flex-1"
+            type="search"
+            placeholder={COPY.accounts.searchCompaniesPlaceholder}
+            value={search}
+            onChange={setSearch}
+            aria-label="Firmen durchsuchen"
+          />
           <div className="flex items-center gap-2">
             <Button
               type="button"
@@ -114,7 +111,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
               size="icon"
               className={`h-9 w-9 shrink-0 rounded-full ${favoritesOnly ? 'bg-accent text-accent-foreground hover:bg-accent/80' : ''}`}
               onClick={() => setFavoritesOnly((v) => !v)}
-              aria-label={favoritesOnly ? 'Alle Accounts anzeigen' : 'Nur Favoriten anzeigen'}
+              aria-label={favoritesOnly ? COPY.accounts.ariaFavoritesOnlyOff : COPY.accounts.ariaFavoritesOnlyOn}
             >
               <AppIcon
                 icon={StarIcon}
@@ -124,13 +121,9 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
             </Button>
             {(isAdmin || isAccountManager) && (
               <>
-                <Button
-                  type="button"
-                  className="inline-flex h-11 items-center gap-2 rounded-xl px-4 text-sm font-medium shadow-sm"
-                  onClick={() => setCreateOpen(true)}
-                >
+                <Button type="button" size="toolbar" onClick={() => setCreateOpen(true)}>
                   <AppIcon icon={Plus} size={16} />
-                  <span>Account hinzufügen</span>
+                  {COPY.accounts.addAccount}
                 </Button>
                 <CreateAccountDialog open={createOpen} onOpenChange={setCreateOpen} />
               </>
@@ -166,7 +159,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                 <AppIcon icon={Cancel01Icon} size={14} />
               </button>
               <Link
-                href={`/dashboard/accounts/${company.id}`}
+                href={ROUTES.accountsDetail(company.id)}
                 className="block h-full transition-opacity duration-300 ease-out"
               >
                 <CardHeader className="pb-2">

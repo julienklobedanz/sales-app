@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { ROUTES } from '@/lib/routes'
 
 export async function toggleFavoriteImpl(referenceId: string) {
   const supabase = await createServerSupabaseClient()
@@ -27,6 +28,6 @@ export async function toggleFavoriteImpl(referenceId: string) {
     })
   }
 
-  revalidatePath('/dashboard')
+  revalidatePath(ROUTES.home)
 }
 

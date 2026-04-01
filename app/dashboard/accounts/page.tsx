@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
 import { CompaniesGrid } from './companies-grid'
 
@@ -8,7 +9,7 @@ export default async function AccountsPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user) redirect('/login')
+  if (!user) redirect(ROUTES.login)
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -16,7 +17,7 @@ export default async function AccountsPage() {
     .eq('id', user.id)
     .single()
 
-  if (!profile) redirect('/onboarding')
+  if (!profile) redirect(ROUTES.onboarding)
 
   // is_favorite ist optional (Migration evtl. noch nicht ausgeführt) → fallback ohne Spalte
   let companies:
@@ -134,7 +135,7 @@ export default async function AccountsPage() {
     })) ?? []
 
   return (
-    <div className="flex flex-col space-y-6 px-6 pt-6 md:px-12 lg:px-20">
+    <div className="flex flex-col space-y-6">
       <CompaniesGrid companies={enrichedCompanies} />
     </div>
   )

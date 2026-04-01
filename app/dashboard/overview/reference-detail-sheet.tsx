@@ -51,6 +51,7 @@ import {
 } from '@/components/ui/tooltip'
 import { diffMonthsUtc, formatDateUtcDe, formatNumberDe } from '@/lib/format'
 import { AppIcon } from '@/lib/icons'
+import { ROUTES } from '@/lib/routes'
 
 import type { ReferenceAssetRow, ReferenceRow } from '../actions'
 import { updateReferenceAssetCategory } from '../actions'
@@ -596,7 +597,7 @@ export function ReferenceDetailSheet({
                       variant="ghost"
                       size="sm"
                       onClick={() =>
-                        router.push(`/dashboard/evidence/${selectedRef.id}/edit`)
+                        router.push(ROUTES.evidence.edit(selectedRef.id))
                       }
                     >
                       <AppIcon icon={Pencil} size={16} className="mr-2" /> Bearbeiten

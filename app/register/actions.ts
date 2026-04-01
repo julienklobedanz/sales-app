@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { ROUTES } from '@/lib/routes'
 
 export type SignUpResult = { error?: string; success?: boolean }
 
@@ -65,12 +66,12 @@ export async function signUp(formData: FormData): Promise<SignUpResult> {
           role,
           full_name: fullName,
         })
-        redirect('/dashboard')
+        redirect(ROUTES.home)
       }
 
-      redirect(`/onboarding?invite=${encodeURIComponent(inviteToken)}`)
+      redirect(`${ROUTES.onboarding}?invite=${encodeURIComponent(inviteToken)}`)
     }
-    redirect('/onboarding')
+    redirect(ROUTES.onboarding)
   }
 
   return { success: true }

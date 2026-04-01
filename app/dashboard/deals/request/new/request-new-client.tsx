@@ -12,6 +12,7 @@ import { toast } from 'sonner'
 import { createDealReferenceRequest } from '../../actions'
 import { Loader } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
+import { ROUTES } from '@/lib/routes'
 
 export function RequestNewClient({
   deals,
@@ -42,7 +43,7 @@ export function RequestNewClient({
         return
       }
       toast.success('Referenzanfrage erstellt.')
-      router.push(`/dashboard/deals?open=${dealId}`)
+      router.push(`${ROUTES.deals.root}?open=${dealId}`)
       router.refresh()
     } finally {
       setSaving(false)
@@ -89,7 +90,7 @@ export function RequestNewClient({
               {saving && <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />}
               Anfrage speichern
             </Button>
-            <Button type="button" variant="outline" disabled={saving} onClick={() => router.push('/dashboard/deals')}>
+            <Button type="button" variant="outline" disabled={saving} onClick={() => router.push(ROUTES.deals.root)}>
               Abbrechen
             </Button>
           </div>

@@ -39,6 +39,7 @@ import {
 } from '@hugeicons/core-free-icons'
 import { toast } from 'sonner'
 import { AppIcon } from '@/lib/icons'
+import { ROUTES } from '@/lib/routes'
 
 export type RefOption = { id: string; title: string; company_name: string }
 
@@ -134,7 +135,7 @@ export function DealDetailContent({
                       <div className="flex flex-wrap items-start justify-between gap-2">
                         <div className="min-w-0">
                           <Link
-                            href={`/dashboard/evidence/${ref.id}/edit`}
+                            href={ROUTES.evidence.edit(ref.id)}
                             className="font-medium hover:underline block truncate"
                           >
                             {ref.title}

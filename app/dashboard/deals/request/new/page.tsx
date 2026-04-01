@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
 import { RequestNewClient } from './request-new-client'
 
@@ -13,14 +14,14 @@ export default async function DealReferenceRequestNewPage({
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) redirect(ROUTES.login)
 
   const { data: profile } = await supabase
     .from('profiles')
     .select('organization_id')
     .eq('id', user.id)
     .single()
-  if (!profile?.organization_id) redirect('/onboarding')
+  if (!profile?.organization_id) redirect(ROUTES.onboarding)
 
   const { data: deals } = await supabase
     .from('deals')
@@ -32,7 +33,7 @@ export default async function DealReferenceRequestNewPage({
   const initialDealId = typeof params.dealId === 'string' ? params.dealId : null
 
   return (
-    <div className="flex flex-col space-y-6 px-6 pt-6 md:px-12 lg:px-20">
+    <div className="flex flex-col space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Referenzanfrage</h1>
         <p className="mt-1 text-sm text-muted-foreground">

@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { ROUTES } from '@/lib/routes'
 
 type CheckoutResult =
   | { success: true; url: string }
@@ -14,7 +15,8 @@ type PortalResult =
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY
 const STRIPE_PRICE_ID_PRO = process.env.STRIPE_PRICE_ID_PRO
 const STRIPE_RETURN_URL =
-  process.env.STRIPE_BILLING_RETURN_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000/dashboard/settings'
+  process.env.STRIPE_BILLING_RETURN_URL ||
+  `${(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '')}${ROUTES.settings}`
 
 function stripeNotConfigured(): string | null {
   if (!STRIPE_SECRET_KEY) return 'Stripe Secret Key (STRIPE_SECRET_KEY) ist nicht gesetzt.'
@@ -27,7 +29,7 @@ export async function createCheckoutSession(): Promise<CheckoutResult> {
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) redirect(ROUTES.login)
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -91,7 +93,7 @@ export async function createPortalSession(): Promise<PortalResult> {
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) redirect(ROUTES.login)
 
   const { data: profile } = await supabase
     .from('profiles')

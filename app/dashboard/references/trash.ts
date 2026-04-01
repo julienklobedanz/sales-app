@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { ROUTES } from '@/lib/routes'
 
 export async function deleteReferenceImpl(id: string) {
   const supabase = await createServerSupabaseClient()
@@ -15,7 +16,7 @@ export async function deleteReferenceImpl(id: string) {
     throw new Error(error.message)
   }
 
-  revalidatePath('/dashboard')
+  revalidatePath(ROUTES.home)
 }
 
 export async function restoreReferenceImpl(id: string) {
@@ -27,7 +28,7 @@ export async function restoreReferenceImpl(id: string) {
     throw new Error(error.message)
   }
 
-  revalidatePath('/dashboard')
+  revalidatePath(ROUTES.home)
 }
 
 export async function hardDeleteReferenceImpl(id: string) {
@@ -39,7 +40,7 @@ export async function hardDeleteReferenceImpl(id: string) {
     throw new Error(error.message)
   }
 
-  revalidatePath('/dashboard')
+  revalidatePath(ROUTES.home)
 }
 
 export type EmptyTrashResult = {
@@ -68,7 +69,7 @@ export async function emptyTrashImpl(): Promise<EmptyTrashResult> {
   }
 
   const deleted = (data as { id: string }[] | null)?.length ?? 0
-  revalidatePath('/dashboard')
+  revalidatePath(ROUTES.home)
   return { success: true, deleted }
 }
 

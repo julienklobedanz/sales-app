@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import type { AccountDealRow, CompanyRefRow } from './actions'
 import { referenceStatusLabel } from './company-detail-constants'
+import { ROUTES } from '@/lib/routes'
 
 type Props = {
   references: CompanyRefRow[]
@@ -34,7 +35,7 @@ export function CompanyDetailLinksTab({ references, activeDeals }: Props) {
                 {references.map((r) => (
                   <TableRow key={r.id}>
                     <TableCell className="font-medium">
-                      <Link className="hover:underline" href={`/dashboard/evidence/${r.id}`}>
+                      <Link className="hover:underline" href={ROUTES.evidence.detail(r.id)}>
                         {r.title}
                       </Link>
                     </TableCell>
@@ -72,7 +73,7 @@ export function CompanyDetailLinksTab({ references, activeDeals }: Props) {
                 {activeDeals.map((d) => (
                   <TableRow key={d.id}>
                     <TableCell className="font-medium">
-                      <Link className="hover:underline" href={`/dashboard/deals/${d.id}`}>
+                      <Link className="hover:underline" href={ROUTES.deals.detail(d.id)}>
                         {d.title}
                       </Link>
                     </TableCell>

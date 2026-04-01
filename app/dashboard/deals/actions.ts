@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { ROUTES } from '@/lib/routes'
 import { Resend } from 'resend'
 import * as XLSX from 'xlsx'
 import type { DealRow, DealStatus, DealWithReferences } from './types'
@@ -307,8 +308,8 @@ export async function createDeal(formData: FormData): Promise<{ success: boolean
     .single()
 
   if (error) return { success: false, error: error.message }
-  revalidatePath('/dashboard/deals')
-  revalidatePath(`/dashboard/deals/${deal.id}`)
+  revalidatePath(ROUTES.deals.root)
+  revalidatePath(ROUTES.deals.detail(deal.id))
   return { success: true, id: deal.id }
 }
 
@@ -410,8 +411,8 @@ export async function addReferenceToDeal(dealId: string, referenceId: string): P
     .from('deal_references')
     .insert({ deal_id: dealId, reference_id: referenceId })
   if (error) return { error: error.message }
-  revalidatePath('/dashboard/deals')
-  revalidatePath(`/dashboard/deals/${dealId}`)
+  revalidatePath(ROUTES.deals.root)
+  revalidatePath(ROUTES.deals.detail(dealId))
   return {}
 }
 
@@ -428,8 +429,8 @@ export async function addReferenceToDealWithScore(args: {
       typeof args.similarityScore === 'number' ? args.similarityScore : null,
   })
   if (error) return { success: false, error: error.message }
-  revalidatePath('/dashboard/deals')
-  revalidatePath(`/dashboard/deals/${args.dealId}`)
+  revalidatePath(ROUTES.deals.root)
+  revalidatePath(ROUTES.deals.detail(args.dealId))
   return { success: true }
 }
 
@@ -484,8 +485,8 @@ export async function updateDeal(args: {
 
   if (error) return { success: false, error: error.message }
 
-  revalidatePath('/dashboard/deals')
-  revalidatePath(`/dashboard/deals/${args.id}`)
+  revalidatePath(ROUTES.deals.root)
+  revalidatePath(ROUTES.deals.detail(args.id))
   return { success: true }
 }
 
@@ -534,8 +535,8 @@ export async function recordDealOutcome(args: {
   })
   if (evErr) return { success: false, error: evErr.message }
 
-  revalidatePath('/dashboard/deals')
-  revalidatePath(`/dashboard/deals/${args.dealId}`)
+  revalidatePath(ROUTES.deals.root)
+  revalidatePath(ROUTES.deals.detail(args.dealId))
   return { success: true }
 }
 
@@ -547,8 +548,8 @@ export async function removeReferenceFromDeal(dealId: string, referenceId: strin
     .eq('deal_id', dealId)
     .eq('reference_id', referenceId)
   if (error) return { error: error.message }
-  revalidatePath('/dashboard/deals')
-  revalidatePath(`/dashboard/deals/${dealId}`)
+  revalidatePath(ROUTES.deals.root)
+  revalidatePath(ROUTES.deals.detail(dealId))
   return {}
 }
 
@@ -582,8 +583,8 @@ export async function recordReferenceHelped(args: {
   })
   if (error) return { success: false, error: error.message }
 
-  revalidatePath('/dashboard/deals')
-  revalidatePath(`/dashboard/deals/${args.dealId}`)
+  revalidatePath(ROUTES.deals.root)
+  revalidatePath(ROUTES.deals.detail(args.dealId))
   return { success: true }
 }
 
@@ -655,7 +656,7 @@ export async function importDealsFromXlsx(formData: FormData): Promise<{ success
     }
     created++
   }
-  revalidatePath('/dashboard/deals')
+  revalidatePath(ROUTES.deals.root)
   return { success: true, created }
 }
 
@@ -697,7 +698,7 @@ export async function submitReferenceRequest(
           ${deal.volume ? `<p><strong>Volumen:</strong> ${deal.volume}</p>` : ''}
           <p><strong>Nachricht:</strong></p>
           <pre style="white-space: pre-wrap; background: #f5f5f5; padding: 12px;">${message || '—'}</pre>
-          <p><a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/deals/${dealId}">Deal in Refstack öffnen</a></p>
+          <p><a href="${(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '')}${ROUTES.deals.detail(dealId)}">Deal in Refstack öffnen</a></p>
         `,
       })
     } catch (e) {
@@ -706,7 +707,7 @@ export async function submitReferenceRequest(
     }
   }
 
-  revalidatePath(`/dashboard/deals/${dealId}`)
+  revalidatePath(ROUTES.deals.detail(dealId))
   return { success: true }
 }
 
@@ -745,7 +746,7 @@ export async function createDealReferenceRequest(args: {
 
   if (error) return { success: false, error: error.message }
 
-  revalidatePath('/dashboard/deals')
-  revalidatePath(`/dashboard/deals/${args.dealId}`)
+  revalidatePath(ROUTES.deals.root)
+  revalidatePath(ROUTES.deals.detail(args.dealId))
   return { success: true, id: data?.id as string }
 }

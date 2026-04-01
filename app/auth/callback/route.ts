@@ -1,10 +1,11 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { ROUTES } from '@/lib/routes'
 
 export async function GET(request: NextRequest) {
   const requestUrl = request.nextUrl
   const code = requestUrl.searchParams.get('code')
-  const next = requestUrl.searchParams.get('next') ?? '/dashboard'
+  const next = requestUrl.searchParams.get('next') ?? ROUTES.home
 
   // 1. Origin holen & säubern
   let origin = process.env.NEXT_PUBLIC_APP_URL || requestUrl.origin
@@ -50,7 +51,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Fehlerfall: Zurück zum Login (auch hier sicher gebaut)
-  const errorUrl = new URL('/login', origin)
+  const errorUrl = new URL(ROUTES.login, origin)
   errorUrl.searchParams.set('error', 'auth')
   return NextResponse.redirect(errorUrl)
 }

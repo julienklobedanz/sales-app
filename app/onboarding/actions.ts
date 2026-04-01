@@ -2,6 +2,7 @@
 
 import { cookies } from 'next/headers'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
 
 export async function completeOnboarding(formData: FormData) {
@@ -10,7 +11,7 @@ export async function completeOnboarding(formData: FormData) {
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) redirect(ROUTES.login)
 
   const roleRaw = formData.get('role') as string
   const role =
@@ -74,5 +75,5 @@ export async function completeOnboarding(formData: FormData) {
     throw new Error('Fehler beim Speichern des Profils')
   }
 
-  redirect('/dashboard')
+  redirect(ROUTES.home)
 }

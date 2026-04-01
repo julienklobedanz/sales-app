@@ -4,10 +4,11 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { COPY } from '@/lib/copy'
+import { ROUTES } from '@/lib/routes'
 
 export default function MarketSignalsPage() {
   return (
-    <div className="px-6 pt-6 md:px-12 lg:px-20 space-y-6">
+    <div className="space-y-6">
       <h1 className="text-2xl font-bold tracking-tight">{COPY.pages.marketSignals}</h1>
       <Card className="rounded-3xl">
         <CardHeader>
@@ -19,10 +20,10 @@ export default function MarketSignalsPage() {
         <CardContent>
           <div className="flex flex-wrap gap-2">
             <Button asChild>
-              <Link href="/dashboard/deals">Zu den Deals</Link>
+              <Link href={ROUTES.deals.root}>Zu den Deals</Link>
             </Button>
             <Button asChild variant="outline">
-              <Link href="/dashboard/evidence">Zu den Referenzen</Link>
+              <Link href={ROUTES.evidence.root}>Zu den Referenzen</Link>
             </Button>
           </div>
         </CardContent>

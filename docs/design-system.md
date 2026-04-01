@@ -13,6 +13,8 @@ Ziel: **Fully aligned UI** durch zentrale Tokens + konsistente UI-Primitives + k
 
 - **Komponenten‑Library**: `components/ui/*`
   - Beispiele: `button.tsx`, `badge.tsx`, `card.tsx`, `input.tsx`, `select.tsx`, `dialog.tsx`, …
+  - **Button `size="toolbar"`:** einheitliche Höhe/Abstände für Aktionen **über** `AppDataTable` (Filter, Spalten, Primäraktion).
+  - **`ToolbarSearchField`** (`components/ui/toolbar-search-field.tsx`): Suchfeld mit Icon; `variant="list"` (h-10, `AppDataTable`) oder `variant="dashboard"` (h-11, Übersicht/Accounts). Konstanten: `lib/table-toolbar.ts` (`TABLE_TOOLBAR.list` / `.dashboard`).
   - **Tabellen (TanStack):** `app-data-table.tsx` (`AppDataTable`) ist die gemeinsame Basis für Listen (Referenzen, Deals); `tableVariant` (`evidence` | `deals` | `default`) schaltet das jeweilige Kontextmenü (`COPY.evidence.*` / `COPY.deals.*`); `DataTable` in `data-table.ts` ist ein Alias.
   - Variants/States gehören **hier** hin (nicht als neue Hardcodes in Pages).
 
