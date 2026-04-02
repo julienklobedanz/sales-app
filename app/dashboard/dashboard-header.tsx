@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import {
@@ -47,7 +47,6 @@ export function DashboardHeader({
   const pathname = usePathname()
   const router = useRouter()
   const { resolvedTheme, setTheme } = useTheme()
-  const [companyName, setCompanyName] = useState<string | null>(null)
   const { setOpen } = useCommandPalette()
 
   const handleLogout = async () => {
@@ -55,36 +54,6 @@ export function DashboardHeader({
     await supabase.auth.signOut()
     router.push(ROUTES.login)
   }
-
-  const pathSegments = pathname?.split('/').filter(Boolean) || []
-  const isCompanyDetail =
-    pathSegments.length === 3 &&
-    pathSegments[0] === 'dashboard' &&
-    pathSegments[1] === 'accounts'
-
-  const companyId = isCompanyDetail ? pathSegments[2] : null
-
-  const supabase = useMemo(() => (isCompanyDetail ? createClient() : null), [isCompanyDetail])
-
-  useEffect(() => {
-    if (!isCompanyDetail || !companyId || !supabase) return
-
-    let cancelled = false
-    ;(async () => {
-      const { data } = await supabase
-        .from('companies')
-        .select('name')
-        .eq('id', companyId)
-        .maybeSingle()
-      if (!cancelled) {
-        setCompanyName(data?.name ?? null)
-      }
-    })()
-
-    return () => {
-      cancelled = true
-    }
-  }, [isCompanyDetail, companyId, supabase])
 
   const headerMeta = useMemo(() => {
     if (!pathname) return { title: 'Dashboard', subtitle: undefined as string | undefined }
@@ -145,9 +114,7 @@ export function DashboardHeader({
         <Separator orientation="vertical" className="mr-2 h-4 shrink-0" />
 
         <div className="min-w-0">
-          <div className="text-2xl font-bold tracking-tight truncate">
-            {isCompanyDetail && companyName ? companyName : headerMeta.title}
-          </div>
+          <div className="text-2xl font-bold tracking-tight truncate">{headerMeta.title}</div>
           {headerMeta.subtitle ? (
             <div className="text-sm text-muted-foreground truncate">
               {headerMeta.subtitle}

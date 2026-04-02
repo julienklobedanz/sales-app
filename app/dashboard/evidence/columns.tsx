@@ -101,17 +101,14 @@ export function evidenceColumns(): ColumnDef<ReferenceRow>[] {
         </Button>
       ),
       cell: ({ row }) => (
-        <Link
-          href={ROUTES.evidence.detail(row.original.id)}
-          className="flex items-center gap-2 max-w-[420px] min-w-0 hover:underline"
-        >
+        <div className="flex min-w-0 max-w-[420px] items-center gap-2">
           <AppIcon
             icon={FileText}
             size={16}
-            className="text-muted-foreground shrink-0"
+            className="shrink-0 text-muted-foreground"
           />
           <span className="truncate">{row.original.title}</span>
-        </Link>
+        </div>
       ),
     },
     {

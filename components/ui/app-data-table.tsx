@@ -3,6 +3,7 @@
 /* eslint-disable react-hooks/incompatible-library */
 
 import * as React from "react"
+import { useRouter } from "next/navigation"
 import {
   flexRender,
   getCoreRowModel,
@@ -41,6 +42,16 @@ import {
 
 export type AppDataTableVariant = "default" | "evidence" | "deals"
 
+/** Klick auf interaktive Controls — keine Zeilen-Navigation (Checkbox, Links, Buttons, …). */
+function isRowNavSuppressedTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false
+  return Boolean(
+    target.closest(
+      "a[href], button, input, textarea, select, label, [role='checkbox'], [role='menuitem'], [data-slot='checkbox'], [data-row-nav-ignore]",
+    ),
+  )
+}
+
 export type AppDataTableProps<TData, TValue> = {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
@@ -70,6 +81,7 @@ export function AppDataTable<TData, TValue>({
   initialPageSize = 10,
   pageSizeOptions,
 }: AppDataTableProps<TData, TValue>) {
+  const router = useRouter()
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
@@ -110,11 +122,37 @@ export function AppDataTable<TData, TValue>({
       <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
     ))
 
+    const isNavVariant = tableVariant === "evidence" || tableVariant === "deals"
+    const rowNavClass = isNavVariant ? "cursor-pointer hover:bg-muted/50" : undefined
+
+    const handleRowClick = (e: React.MouseEvent<HTMLTableRowElement>) => {
+      if (!isNavVariant) return
+      if (isRowNavSuppressedTarget(e.target)) return
+      const rawId = (row.original as { id?: string }).id
+      if (!rawId) return
+      const href =
+        tableVariant === "evidence"
+          ? ROUTES.evidence.detail(rawId)
+          : ROUTES.deals.detail(rawId)
+      if (e.metaKey || e.ctrlKey) {
+        window.open(href, "_blank", "noopener,noreferrer")
+        return
+      }
+      if (e.button !== 0) return
+      router.push(href)
+    }
+
     if (tableVariant === "evidence") {
       return (
         <ContextMenu key={row.id}>
           <ContextMenuTrigger asChild>
-            <TableRow data-state={row.getIsSelected() ? "selected" : undefined}>{cells}</TableRow>
+            <TableRow
+              data-state={row.getIsSelected() ? "selected" : undefined}
+              className={rowNavClass}
+              onClick={handleRowClick}
+            >
+              {cells}
+            </TableRow>
           </ContextMenuTrigger>
           <ContextMenuContent>
             <ContextMenuItem onSelect={() => row.toggleSelected(true)}>
@@ -150,7 +188,13 @@ export function AppDataTable<TData, TValue>({
       return (
         <ContextMenu key={row.id}>
           <ContextMenuTrigger asChild>
-            <TableRow data-state={row.getIsSelected() ? "selected" : undefined}>{cells}</TableRow>
+            <TableRow
+              data-state={row.getIsSelected() ? "selected" : undefined}
+              className={rowNavClass}
+              onClick={handleRowClick}
+            >
+              {cells}
+            </TableRow>
           </ContextMenuTrigger>
           <ContextMenuContent>
             <ContextMenuItem onSelect={() => row.toggleSelected(true)}>

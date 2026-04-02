@@ -16,7 +16,6 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { AppIcon } from '@/lib/icons'
 import { DealStatusBadge } from '@/components/deal-status-badge'
 import { COPY } from '@/lib/copy'
-import { ROUTES } from '@/lib/routes'
 
 type MatchMap = Record<string, { count: number; suggestions: MatchSuggestion[] }>
 
@@ -115,15 +114,7 @@ export function DealsClientContent({
       {
         accessorKey: 'title',
         header: 'Titel',
-        cell: ({ row }) => (
-          <button
-            type="button"
-            className="font-medium hover:underline text-left"
-            onClick={() => router.push(ROUTES.deals.detail(row.original.id))}
-          >
-            {row.original.title}
-          </button>
-        ),
+        cell: ({ row }) => <span className="font-medium">{row.original.title}</span>,
       },
       {
         accessorKey: 'company_name',
@@ -167,7 +158,7 @@ export function DealsClientContent({
         },
       },
     ]
-  }, [matchMap, router])
+  }, [matchMap])
 
   return (
     <div className="space-y-4">
