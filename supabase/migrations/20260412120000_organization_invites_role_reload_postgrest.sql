@@ -31,4 +31,7 @@ BEGIN
 END;
 $$;
 
-SELECT pg_catalog.pg_notify('pgrst', 'reload schema');
+DO $$
+BEGIN
+  PERFORM pg_catalog.pg_notify('pgrst', 'reload schema');
+END $$;

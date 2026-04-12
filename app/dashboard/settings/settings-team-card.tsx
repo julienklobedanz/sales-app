@@ -54,15 +54,29 @@ export function SettingsTeamCard({
     setInvitePending(true)
     const result = await inviteByEmail(trimmed, inviteRole)
     setInvitePending(false)
-    if (result.success) {
-      toast.success('Einladung wurde versendet.')
-      setEmail('')
-      router.refresh()
-      const next = await getTeamMembers()
-      setMembers(next)
-    } else {
+    if (!result.success) {
       toast.error(result.error)
+      return
     }
+    if (result.emailSent) {
+      toast.success(COPY.settings.teamInviteEmailSent)
+    } else {
+      toast.warning(COPY.settings.teamInviteSavedEmailFailed, {
+        description: result.emailError ?? COPY.settings.teamInviteSavedEmailMissingKey,
+        duration: 14_000,
+        action: {
+          label: COPY.settings.teamInviteCopyLink,
+          onClick: () => {
+            void navigator.clipboard.writeText(result.fallbackInviteLink)
+            toast.success(COPY.settings.teamInviteLinkCopied)
+          },
+        },
+      })
+    }
+    setEmail('')
+    router.refresh()
+    const next = await getTeamMembers()
+    setMembers(next)
   }
 
   async function handleRemove(m: TeamMemberRow) {

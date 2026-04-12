@@ -30,6 +30,13 @@ export const COPY = {
       'Kontolöschung ist aktuell nicht als Self-Service verfügbar.',
     accountDeletionDisabledToast:
       'Kontolöschung ist derzeit nicht aktiviert. Bitte wende dich an den Support, wenn du den Workspace schließen möchtest.',
+    teamInviteEmailSent: 'Einladung wurde per E-Mail versendet.',
+    teamInviteSavedEmailMissingKey:
+      'Einladung ist gespeichert, aber E-Mail-Versand ist nicht konfiguriert (RESEND_API_KEY in der Server-Umgebung).',
+    teamInviteSavedEmailFailed:
+      'Einladung ist gespeichert, die E-Mail konnte nicht versendet werden.',
+    teamInviteCopyLink: 'Einladungslink kopieren',
+    teamInviteLinkCopied: 'Einladungslink in die Zwischenablage kopiert.',
   },
   table: {
     empty: 'Keine Ergebnisse.',

@@ -8,9 +8,23 @@ import { Resend } from 'resend'
 const INVITE_VALID_DAYS = 7
 
 function getResend(): Resend | null {
-  const key = process.env.RESEND_API_KEY
+  const key = process.env.RESEND_API_KEY?.trim()
   if (!key) return null
   return new Resend(key)
+}
+
+function inviteFromAddress(): string {
+  const from = process.env.RESEND_FROM?.trim()
+  if (from) return from
+  return 'Refstack <onboarding@resend.dev>'
+}
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
 }
 
 export type CreateInviteResult =
@@ -63,7 +77,14 @@ export async function createInvite(): Promise<CreateInviteResult> {
 }
 
 export type InviteByEmailResult =
-  | { success: true }
+  | { success: true; emailSent: true }
+  | {
+      success: true
+      emailSent: false
+      /** Einladungslink zum manuellen Teilen, wenn kein E-Mail-Versand möglich war */
+      fallbackInviteLink: string
+      emailError?: string
+    }
   | { success: false; error: string }
 
 export async function inviteByEmail(
@@ -102,17 +123,17 @@ export async function inviteByEmail(
   const expiresAt = new Date()
   expiresAt.setDate(expiresAt.getDate() + INVITE_VALID_DAYS)
 
-  const { error: insertError } = await supabase.from('organization_invites').insert({
-    organization_id: organizationId,
-    email: normalizedEmail,
-    token,
-    invited_by: user.id,
-    role,
-    expires_at: expiresAt.toISOString(),
+  // RPC statt .insert(): PostgREST-Schema-Cache kennt ggf. Spalte `role` nicht,
+  // obwohl sie in Postgres existiert – die Funktion schreibt direkt in die Tabelle.
+  const { error: rpcError } = await supabase.rpc('create_organization_invite', {
+    p_email: normalizedEmail,
+    p_token: token,
+    p_role: role,
+    p_expires_at: expiresAt.toISOString(),
   })
 
-  if (insertError) {
-    return { success: false, error: insertError.message }
+  if (rpcError) {
+    return { success: false, error: rpcError.message }
   }
 
   revalidatePath(ROUTES.settings)
@@ -121,28 +142,52 @@ export async function inviteByEmail(
   const origin = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`
   const inviteLink = `${origin}${ROUTES.register}?invite=${token}`
   const inviterName = profile?.full_name || user.email || 'Ein Teammitglied'
+  const orgName = org?.name ?? 'Refstack'
 
   const resend = getResend()
-  if (resend) {
-    try {
-      await resend.emails.send({
-        from: 'Refstack <onboarding@resend.dev>',
-        to: normalizedEmail,
-        subject: `Einladung zu ${org?.name ?? 'Refstack'}`,
-        html: `
-          <h1>Team-Einladung</h1>
-          <p><strong>${inviterName}</strong> lädt dich ein, dem Arbeitsbereich <strong>${org?.name ?? 'Refstack'}</strong> beizutreten.</p>
-          <p><a href="${inviteLink}" style="background: #000; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Jetzt beitreten</a></p>
-          <p style="color: #666; font-size: 12px;">Der Link ist 7 Tage gültig.</p>
-        `,
-      })
-    } catch (e) {
-      console.error('[inviteByEmail] Resend error:', e)
-      // Invite is already created; don't fail the request
+  if (!resend) {
+    return {
+      success: true,
+      emailSent: false,
+      fallbackInviteLink: inviteLink,
+      emailError:
+        'RESEND_API_KEY fehlt in der Server-Umgebung (z. B. .env.local / Vercel). Ohne Key wird keine E-Mail gesendet.',
     }
   }
 
-  return { success: true }
+  try {
+    const { error: sendError } = await resend.emails.send({
+      from: inviteFromAddress(),
+      to: normalizedEmail,
+      subject: `Einladung zu ${orgName}`,
+      html: `
+          <h1>Team-Einladung</h1>
+          <p><strong>${escapeHtml(inviterName)}</strong> lädt dich ein, dem Arbeitsbereich <strong>${escapeHtml(orgName)}</strong> beizutreten.</p>
+          <p><a href="${inviteLink}" style="background: #000; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Jetzt beitreten</a></p>
+          <p style="color: #666; font-size: 12px;">Der Link ist 7 Tage gültig.</p>
+        `,
+    })
+    if (sendError) {
+      console.error('[inviteByEmail] Resend API:', sendError)
+      return {
+        success: true,
+        emailSent: false,
+        fallbackInviteLink: inviteLink,
+        emailError: sendError.message,
+      }
+    }
+  } catch (e) {
+    console.error('[inviteByEmail] Resend error:', e)
+    const msg = e instanceof Error ? e.message : String(e)
+    return {
+      success: true,
+      emailSent: false,
+      fallbackInviteLink: inviteLink,
+      emailError: msg,
+    }
+  }
+
+  return { success: true, emailSent: true }
 }
 
 export type TeamMemberRow = {
@@ -173,16 +218,12 @@ export async function getTeamMembers(): Promise<TeamMemberRow[]> {
   const organizationId = profile?.organization_id
   if (!organizationId) return []
 
-  const [profilesResult, invitesResult] = await Promise.all([
+  const [profilesResult, invitesRpc] = await Promise.all([
     supabase
       .from('profiles')
       .select('id, full_name, email, role')
       .eq('organization_id', organizationId),
-    supabase
-      .from('organization_invites')
-      .select('id, email, role')
-      .eq('organization_id', organizationId)
-      .gt('expires_at', new Date().toISOString()),
+    supabase.rpc('list_organization_pending_invites'),
   ])
 
   const active: TeamMemberRow[] = (profilesResult.data ?? []).map((p) => {
@@ -205,18 +246,28 @@ export async function getTeamMembers(): Promise<TeamMemberRow[]> {
     }
   })
 
-  const pending: TeamMemberRow[] = (invitesResult.data ?? []).map((i) => {
-    const row = i as { id: string; email?: string | null; role?: string | null }
-    const r = row.role
+  if (invitesRpc.error) {
+    console.error('[getTeamMembers] list_organization_pending_invites:', invitesRpc.error)
+  }
+
+  const rawPending = invitesRpc.data as unknown
+  const pendingRows = Array.isArray(rawPending) ? rawPending : []
+
+  const pending: TeamMemberRow[] = pendingRows.flatMap((row) => {
+    const i = row as { id?: string; email?: string | null; role?: string | null }
+    if (!i?.id) return []
+    const r = i.role
     const inviteRole =
       r === 'admin' || r === 'sales' || r === 'account_manager' ? r : 'sales'
-    return {
-      id: row.id,
-      email: row.email ?? '',
-      name: null,
-      status: 'pending' as const,
-      inviteRole,
-    }
+    return [
+      {
+        id: i.id,
+        email: i.email ?? '',
+        name: null,
+        status: 'pending' as const,
+        inviteRole,
+      },
+    ]
   })
 
   return [...active, ...pending]
