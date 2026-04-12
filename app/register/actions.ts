@@ -1,10 +1,72 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { Resend } from 'resend'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
 import { ROUTES } from '@/lib/routes'
 
-export type SignUpResult = { error?: string; success?: boolean }
+export type SignUpResult = {
+  error?: string
+  success?: boolean
+  /** Schneller Versand über Resend, falls konfiguriert */
+  confirmationDelivery?: 'resend' | 'supabase_default'
+}
+
+async function sendSignupConfirmationViaResend(params: {
+  email: string
+  password: string
+  fullName: string
+  appOrigin: string
+}): Promise<boolean> {
+  const admin = createServiceRoleSupabaseClient()
+  const resendKey = process.env.RESEND_API_KEY?.trim()
+  if (!admin || !resendKey) return false
+
+  const callbackBase = params.appOrigin.startsWith('http')
+    ? params.appOrigin
+    : `https://${params.appOrigin}`
+
+  const { data, error } = await admin.auth.admin.generateLink({
+    type: 'signup',
+    email: params.email,
+    password: params.password,
+    options: {
+      redirectTo: `${callbackBase}/auth/callback`,
+      data: { full_name: params.fullName },
+    },
+  })
+
+  const actionLink = data?.properties?.action_link
+  if (error || !actionLink) {
+    console.error('[signUp] generateLink für Bestätigungsmail:', error)
+    return false
+  }
+
+  const safeName = params.fullName
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+
+  try {
+    const resend = new Resend(resendKey)
+    await resend.emails.send({
+      from: 'Refstack <onboarding@resend.dev>',
+      to: params.email,
+      subject: 'E-Mail bestätigen – Refstack',
+      html: `
+        <p>Hallo ${safeName},</p>
+        <p>bitte bestätige deine E-Mail-Adresse, um dein Konto zu aktivieren:</p>
+        <p><a href="${actionLink}" style="background: hsl(0 0% 9%); color: hsl(0 0% 98%); padding: 10px 20px; text-decoration: none; border-radius: 6px; display: inline-block;">E-Mail bestätigen</a></p>
+        <p style="color: hsl(0 0% 45%); font-size: 12px;">Falls du auch eine zweite E-Mail vom Anbieter erhältst, kannst du einen der Links nutzen.</p>
+      `,
+    })
+    return true
+  } catch (e) {
+    console.error('[signUp] Resend Bestätigungsmail:', e)
+    return false
+  }
+}
 
 export async function signUp(formData: FormData): Promise<SignUpResult> {
   const fullName = formData.get('full_name')?.toString()?.trim()
@@ -74,5 +136,16 @@ export async function signUp(formData: FormData): Promise<SignUpResult> {
     redirect(ROUTES.onboarding)
   }
 
-  return { success: true }
+  let confirmationDelivery: SignUpResult['confirmationDelivery'] = 'supabase_default'
+  if (data.user && !data.session) {
+    const sent = await sendSignupConfirmationViaResend({
+      email,
+      password,
+      fullName,
+      appOrigin: redirectTo,
+    })
+    if (sent) confirmationDelivery = 'resend'
+  }
+
+  return { success: true, confirmationDelivery }
 }

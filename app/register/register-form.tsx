@@ -66,7 +66,9 @@ export function RegisterForm({ inviteToken = null }: { inviteToken?: string | nu
       )}
       {state?.success && (
         <p className="text-sm text-primary" role="status">
-          Konto erstellt. Prüfe deine E-Mails und bestätige den Link – danach kannst du dich anmelden.
+          {state.confirmationDelivery === 'resend'
+            ? 'Konto erstellt. Du solltest in Kürze eine E-Mail mit dem Bestätigungslink erhalten (bitte auch den Spam-Ordner prüfen). Danach kannst du dich anmelden.'
+            : 'Konto erstellt. Prüfe deine E-Mails und bestätige den Link – danach kannst du dich anmelden. Der Versand kann einige Minuten dauern.'}
         </p>
       )}
       <Button type="submit" className="w-full h-10" disabled={isPending}>

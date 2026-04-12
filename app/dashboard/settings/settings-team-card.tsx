@@ -6,10 +6,27 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Trash2, UserPlus } from '@hugeicons/core-free-icons'
 import type { TeamMemberRow } from './invite-actions'
 import { getTeamMembers, inviteByEmail, removeMember } from './invite-actions'
 import { AppIcon } from '@/lib/icons'
+import { COPY } from '@/lib/copy'
+
+type InviteRole = 'admin' | 'sales' | 'account_manager'
+
+function roleLabel(role: InviteRole | null | undefined): string {
+  if (role === 'account_manager') return COPY.roles.accountManager
+  if (role === 'admin') return 'Admin'
+  if (role === 'sales') return 'Sales'
+  return 'Sales'
+}
 
 export function SettingsTeamCard({
   initialMembers,
@@ -23,6 +40,7 @@ export function SettingsTeamCard({
     return copy
   })
   const [email, setEmail] = useState('')
+  const [inviteRole, setInviteRole] = useState<InviteRole>('sales')
   const [invitePending, setInvitePending] = useState(false)
   const [removingId, setRemovingId] = useState<string | null>(null)
 
@@ -34,7 +52,7 @@ export function SettingsTeamCard({
       return
     }
     setInvitePending(true)
-    const result = await inviteByEmail(trimmed)
+    const result = await inviteByEmail(trimmed, inviteRole)
     setInvitePending(false)
     if (result.success) {
       toast.success('Einladung wurde versendet.')
@@ -66,22 +84,39 @@ export function SettingsTeamCard({
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-        <form onSubmit={handleInvite} className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
-          <div className="flex-1">
+        <form
+          onSubmit={handleInvite}
+          className="flex flex-1 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center"
+        >
+          <div className="min-w-0 flex-1 sm:min-w-[200px]">
             <Input
               type="email"
               placeholder="E-Mail-Adresse eingeben"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="bg-background"
+              autoComplete="email"
             />
           </div>
+          <Select
+            value={inviteRole}
+            onValueChange={(v) => setInviteRole(v as InviteRole)}
+          >
+            <SelectTrigger className="w-full bg-background sm:w-[200px]">
+              <SelectValue placeholder="Rolle" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="account_manager">{COPY.roles.accountManager}</SelectItem>
+              <SelectItem value="sales">Sales</SelectItem>
+              <SelectItem value="admin">Admin</SelectItem>
+            </SelectContent>
+          </Select>
           <Button
             type="submit"
             className="gap-2"
             disabled={invitePending}
           >
-            <AppIcon icon={UserPlus} size={16} className="mr-2" />
+            <AppIcon icon={UserPlus} size={16} />
             Einladen
           </Button>
         </form>
@@ -111,7 +146,7 @@ export function SettingsTeamCard({
                       </span>
                     )}
                   </span>
-                  <span className="ml-2">
+                  <span className="ml-2 inline-flex flex-wrap items-center gap-1">
                     {m.status === 'active' ? (
                       <Badge className="bg-accent text-accent-foreground">
                         Aktiv
@@ -121,6 +156,16 @@ export function SettingsTeamCard({
                         Ausstehend
                       </Badge>
                     )}
+                    {m.status === 'active' && m.role ? (
+                      <Badge variant="outline" className="text-muted-foreground">
+                        {roleLabel(m.role)}
+                      </Badge>
+                    ) : null}
+                    {m.status === 'pending' && m.inviteRole ? (
+                      <Badge variant="outline" className="text-muted-foreground">
+                        {roleLabel(m.inviteRole)}
+                      </Badge>
+                    ) : null}
                   </span>
                 </div>
                 {!m.isSelf && (

@@ -26,13 +26,20 @@ export async function finalizeWorkspaceAndProfile(params: {
   const tokenFromCookie = (await cookies()).get('invite_token')?.value?.trim() || null
   const inviteToken = params.inviteToken?.trim() || tokenFromCookie
 
-  // Invite: org aus Token
+  // Invite: Organisation und Rolle aus Token (Rolle wird bei E-Mail-Einladung gesetzt)
   let organizationId: string | null = null
+  let joinedViaInvite = false
+  let inviteRole: 'sales' | 'account_manager' | 'admin' = 'sales'
   if (inviteToken) {
     const { data } = await supabase.rpc('get_invite_by_token', { invite_token: inviteToken })
-    const parsed = data as { organization_id?: string } | null
+    const parsed = data as { organization_id?: string; role?: string | null } | null
     if (parsed?.organization_id) {
       organizationId = parsed.organization_id
+      joinedViaInvite = true
+      const r = parsed.role
+      if (r === 'admin' || r === 'sales' || r === 'account_manager') {
+        inviteRole = r
+      }
       ;(await cookies()).set('invite_token', '', { path: '/', maxAge: 0 })
     }
   }
@@ -59,22 +66,20 @@ export async function finalizeWorkspaceAndProfile(params: {
     }
   }
 
-  const isInvite = Boolean(inviteToken)
-  const role =
+  const chosenRole =
     params.role === 'admin' || params.role === 'sales' || params.role === 'account_manager'
       ? params.role
       : null
 
-  if (!isInvite && !role) {
+  if (!joinedViaInvite && !chosenRole) {
     return { success: false, error: 'Bitte deine Rolle auswählen.' }
   }
 
-  // Profil sicherstellen. Bei Invite-User: Rolle kommt aus Invite/Register-Flow → hier nicht überschreiben.
   const upsertPayload: Record<string, unknown> = {
     id: user.id,
     organization_id: organizationId,
+    role: joinedViaInvite ? inviteRole : chosenRole,
   }
-  if (!isInvite) upsertPayload.role = role
 
   const { error } = await supabase.from('profiles').upsert(upsertPayload)
   if (error) return { success: false, error: error.message }

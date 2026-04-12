@@ -151,6 +151,10 @@ export type TeamMemberRow = {
   name: string | null
   status: 'active' | 'pending'
   isSelf?: boolean
+  /** Nur aktive Mitglieder; bei Einladungen siehe inviteRole */
+  role?: 'admin' | 'sales' | 'account_manager' | null
+  /** Nur ausstehende Einladungen */
+  inviteRole?: 'admin' | 'sales' | 'account_manager' | null
 }
 
 export async function getTeamMembers(): Promise<TeamMemberRow[]> {
@@ -172,29 +176,48 @@ export async function getTeamMembers(): Promise<TeamMemberRow[]> {
   const [profilesResult, invitesResult] = await Promise.all([
     supabase
       .from('profiles')
-      .select('id, full_name, email')
+      .select('id, full_name, email, role')
       .eq('organization_id', organizationId),
     supabase
       .from('organization_invites')
-      .select('id, email')
+      .select('id, email, role')
       .eq('organization_id', organizationId)
       .gt('expires_at', new Date().toISOString()),
   ])
 
-  const active: TeamMemberRow[] = (profilesResult.data ?? []).map((p) => ({
-    id: p.id,
-    email: (p as { email?: string | null }).email ?? '',
-    name: (p as { full_name?: string | null }).full_name ?? null,
-    status: 'active',
-    isSelf: p.id === user.id,
-  }))
+  const active: TeamMemberRow[] = (profilesResult.data ?? []).map((p) => {
+    const row = p as {
+      id: string
+      full_name?: string | null
+      email?: string | null
+      role?: string | null
+    }
+    const r = row.role
+    const role =
+      r === 'admin' || r === 'sales' || r === 'account_manager' ? r : null
+    return {
+      id: row.id,
+      email: row.email ?? '',
+      name: row.full_name ?? null,
+      status: 'active' as const,
+      isSelf: row.id === user.id,
+      role,
+    }
+  })
 
-  const pending: TeamMemberRow[] = (invitesResult.data ?? []).map((i) => ({
-    id: (i as { id: string }).id,
-    email: (i as { email?: string | null }).email ?? '',
-    name: null,
-    status: 'pending',
-  }))
+  const pending: TeamMemberRow[] = (invitesResult.data ?? []).map((i) => {
+    const row = i as { id: string; email?: string | null; role?: string | null }
+    const r = row.role
+    const inviteRole =
+      r === 'admin' || r === 'sales' || r === 'account_manager' ? r : 'sales'
+    return {
+      id: row.id,
+      email: row.email ?? '',
+      name: null,
+      status: 'pending' as const,
+      inviteRole,
+    }
+  })
 
   return [...active, ...pending]
 }
