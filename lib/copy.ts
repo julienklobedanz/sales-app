@@ -20,6 +20,10 @@ export const COPY = {
     firstReference: 'Erste Referenz',
     team: 'Team',
   },
+  notifications: {
+    title: 'Benachrichtigungen',
+    markAllReadAria: 'Alle Benachrichtigungen als gelesen markieren',
+  },
   roles: {
     accountManager: 'Account Manager',
     salesManager: 'Sales Manager',
@@ -61,6 +65,11 @@ export const COPY = {
     addAccount: 'Account hinzufügen',
     ariaFavoritesOnlyOn: 'Nur Favoriten anzeigen',
     ariaFavoritesOnlyOff: 'Alle Accounts anzeigen',
+    createDialogNameHint: 'Tippen für Vorschläge aus deiner Organisation und Brandfetch.',
+    createDialogSuggestLocal: 'Bereits angelegt',
+    createDialogSuggestBrandfetch: 'Vorschlag',
+    createDialogSearching: 'Suche …',
+    createDialogOpenExisting: 'Dieser Account existiert bereits. Es wird zur Detailseite gewechselt.',
   },
   dashboard: {
     searchReferencesPlaceholder: 'Referenzen suchen...',

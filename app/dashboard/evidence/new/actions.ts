@@ -50,7 +50,13 @@ export type FetchEnrichmentResult =
   | { success: true; company_name: string; website_url: string | null; industry: string | null; headquarters: string | null; country: string | null; employee_count: number | null; logo_url: string | null; description: string | null }
   | { success: false; error: string }
 
-export type CompanySearchSuggestion = { id: string; name: string; logo_url?: string | null }
+export type CompanySearchSuggestion = {
+  id: string
+  name: string
+  logo_url?: string | null
+  /** Quelle für die Anzeige in Autocomplete-Listen */
+  source?: 'local' | 'brandfetch'
+}
 
 export type CompanySearchResult =
   | { success: true; suggestions: CompanySearchSuggestion[] }
@@ -111,7 +117,65 @@ function domainToDisplayName(domain: string): string {
   return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase()
 }
 
-/** Sucht Unternehmensvorschläge für die Combobox (lokal in der Organisation, optional erweitert um Brandfetch-Daten). */
+/**
+ * Brand-Search (Name) — optional mit BRANDFETCH_CLIENT_ID.
+ * Ohne Client-ID: einzelner Fallback über Domain-Raten + /v2/brands/domain (wie bisher).
+ */
+async function brandfetchSuggestionsForQuery(query: string): Promise<CompanySearchSuggestion[]> {
+  const q = query.trim()
+  if (q.length < 2) return []
+
+  const clientId = process.env.BRANDFETCH_CLIENT_ID?.trim()
+  if (clientId) {
+    try {
+      const res = await fetch(
+        `https://api.brandfetch.io/v2/search/${encodeURIComponent(q)}?c=${encodeURIComponent(clientId)}`,
+        { next: { revalidate: 0 } }
+      )
+      if (!res.ok) return []
+      const arr = (await res.json()) as Array<{
+        name?: string | null
+        domain: string
+        icon?: string | null
+      }>
+      if (!Array.isArray(arr)) return []
+      const out: CompanySearchSuggestion[] = []
+      const seen = new Set<string>()
+      for (const item of arr) {
+        if (!item?.domain) continue
+        const domain = normalizeDomain(item.domain)
+        if (!domain || seen.has(domain)) continue
+        seen.add(domain)
+        out.push({
+          id: `brandfetch:${domain}`,
+          name: (item.name?.trim() || domain) as string,
+          logo_url: item.icon ?? null,
+          source: 'brandfetch',
+        })
+        if (out.length >= 8) break
+      }
+      return out
+    } catch (e) {
+      console.error('brandfetchSuggestionsForQuery:', e)
+      return []
+    }
+  }
+
+  const domain = inputToDomain(q) ?? (normalizeDomain(q).includes('.') ? normalizeDomain(q) : null)
+  if (!domain || !domain.includes('.')) return []
+  const fetched = await fetchBrandfetchData(domain)
+  if (!fetched.success) return []
+  return [
+    {
+      id: `brandfetch:${domain}`,
+      name: fetched.company_name,
+      logo_url: fetched.logo_url,
+      source: 'brandfetch',
+    },
+  ]
+}
+
+/** Sucht Unternehmensvorschläge für die Combobox (lokal in der Organisation + Brandfetch). */
 export async function searchCompanySuggestions(input: string): Promise<CompanySearchResult> {
   const query = input.trim()
   if (!query) {
@@ -150,27 +214,20 @@ export async function searchCompanySuggestions(input: string): Promise<CompanySe
     return { success: false, error: error.message }
   }
 
-  let suggestions: CompanySearchSuggestion[] = (companies ?? []).map((c) => ({
+  const suggestions: CompanySearchSuggestion[] = (companies ?? []).map((c) => ({
     id: c.id,
     name: c.name,
     logo_url: (c as { logo_url?: string | null }).logo_url ?? null,
+    source: 'local',
   }))
 
-  // 2. Falls lokal nichts gefunden wurde, optional Brandfetch-Daten als Einzeltreffer vorschlagen
-  if (suggestions.length === 0) {
-    const domain = inputToDomain(query) ?? normalizeDomain(query)
-    if (domain && domain.includes('.')) {
-      const fetched = await fetchBrandfetchData(domain)
-      if (fetched.success) {
-        suggestions = [
-          {
-            id: `brandfetch:${domain}`,
-            name: fetched.company_name,
-            logo_url: fetched.logo_url,
-          },
-        ]
-      }
-    }
+  // 2. Brandfetch-Vorschläge (parallel zu lokalen Treffern)
+  const remote = await brandfetchSuggestionsForQuery(query)
+  const seenNames = new Set(suggestions.map((s) => s.name.toLowerCase()))
+  for (const r of remote) {
+    if (seenNames.has(r.name.toLowerCase())) continue
+    seenNames.add(r.name.toLowerCase())
+    suggestions.push(r)
   }
 
   return { success: true, suggestions }

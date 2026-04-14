@@ -1,12 +1,13 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import {
   Bell,
   ChevronsUpDown,
   LogOut,
+  MailOpen,
   Moon,
   SearchIcon,
   SettingsIcon,
@@ -49,11 +50,40 @@ export function DashboardHeader({
   const router = useRouter()
   const { resolvedTheme, setTheme } = useTheme()
   const { setOpen } = useCommandPalette()
-  const notifications = [
-    { id: 'n1', title: 'Neue Team-Einladung', text: 'Eine Einladung wartet auf Bestätigung.', time: 'vor 2 Min' },
-    { id: 'n2', title: 'Deal-Update', text: 'Status wurde auf In Verhandlung gesetzt.', time: 'vor 1 Std' },
-    { id: 'n3', title: 'Freigabe angefragt', text: 'Eine Referenz benötigt Ihre Freigabe.', time: 'heute' },
-  ]
+  const [notifications, setNotifications] = useState<
+    Array<{ id: string; title: string; text: string; time: string; read: boolean }>
+  >(() => [
+    {
+      id: 'n1',
+      title: 'Neue Team-Einladung',
+      text: 'Eine Einladung wartet auf Bestätigung.',
+      time: 'vor 2 Min',
+      read: false,
+    },
+    {
+      id: 'n2',
+      title: 'Deal-Update',
+      text: 'Status wurde auf In Verhandlung gesetzt.',
+      time: 'vor 1 Std',
+      read: false,
+    },
+    {
+      id: 'n3',
+      title: 'Freigabe angefragt',
+      text: 'Eine Referenz benötigt Ihre Freigabe.',
+      time: 'heute',
+      read: false,
+    },
+  ])
+
+  const unreadCount = useMemo(
+    () => notifications.filter((n) => !n.read).length,
+    [notifications]
+  )
+
+  function markAllNotificationsRead() {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+  }
 
   const handleLogout = async () => {
     const supabase = createClient()
@@ -159,18 +189,35 @@ export function DashboardHeader({
               aria-label="Benachrichtigungen"
             >
               <AppIcon icon={Bell} size={20} />
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-white">
-                {notifications.length}
-              </span>
+              {unreadCount > 0 ? (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-white">
+                  {unreadCount}
+                </span>
+              ) : null}
             </button>
           </PopoverTrigger>
           <PopoverContent align="end" className="w-80 p-0">
-            <div className="border-b px-4 py-3">
-              <h3 className="text-sm font-semibold">Benachrichtigungen</h3>
+            <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
+              <h3 className="text-sm font-semibold">{COPY.notifications.title}</h3>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
+                disabled={unreadCount === 0}
+                aria-label={COPY.notifications.markAllReadAria}
+                title={COPY.notifications.markAllReadAria}
+                onClick={markAllNotificationsRead}
+              >
+                <AppIcon icon={MailOpen} size={18} />
+              </Button>
             </div>
             <div className="max-h-80 overflow-auto">
               {notifications.map((notification) => (
-                <div key={notification.id} className="border-b px-4 py-3 last:border-b-0">
+                <div
+                  key={notification.id}
+                  className={`border-b px-4 py-3 last:border-b-0 ${notification.read ? 'opacity-60' : ''}`}
+                >
                   <p className="text-sm font-medium">{notification.title}</p>
                   <p className="text-xs text-muted-foreground">{notification.text}</p>
                   <p className="mt-1 text-[11px] text-muted-foreground">{notification.time}</p>

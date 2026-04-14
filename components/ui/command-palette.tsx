@@ -13,7 +13,6 @@ import {
 
 import {
   CommandDialog,
-  CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
@@ -36,6 +35,24 @@ type RecentItem = SearchResult & { at: number }
 
 const RECENTS_KEY = "refstack.recents.v1"
 const MAX_RECENTS = 5
+
+/** Zeichen, die LIKE/ilike in Postgres stören können */
+function sanitizeIlikeUserInput(q: string): string {
+  return q.trim().replace(/[%_\\]/g, "")
+}
+
+function buildIlikeOrFilter(columns: string[], raw: string): string | null {
+  const safe = sanitizeIlikeUserInput(raw)
+  if (!safe) return null
+  const pat = `%${safe}%`
+  return columns.map((col) => `${col}.ilike.${pat}`).join(",")
+}
+
+function matchesSearch(haystack: string, needle: string): boolean {
+  const n = needle.trim().toLowerCase()
+  if (!n) return true
+  return haystack.toLowerCase().includes(n)
+}
 
 function loadRecents(): RecentItem[] {
   if (typeof window === "undefined") return []
@@ -120,11 +137,28 @@ export function CommandPalette() {
     let cancelled = false
     const handle = window.setTimeout(async () => {
       setLoading(true)
-      const like = `%${q}%`
+      setResults([])
+
+      const refOr = buildIlikeOrFilter(["title", "summary"], q)
+      const dealOr = buildIlikeOrFilter(["title", "industry"], q)
+      const companyPat = sanitizeIlikeUserInput(q)
+      if (!companyPat) {
+        if (!cancelled) {
+          setResults([])
+          setLoading(false)
+        }
+        return
+      }
+      const likePat = `%${companyPat}%`
+
       const [refs, accounts, deals] = await Promise.all([
-        supabase.from("references").select("id,title").ilike("title", like).limit(6),
-        supabase.from("companies").select("id,name").ilike("name", like).limit(6),
-        supabase.from("deals").select("id,title").ilike("title", like).limit(6),
+        refOr
+          ? supabase.from("references").select("id,title").or(refOr).limit(8)
+          : supabase.from("references").select("id,title").ilike("title", likePat).limit(8),
+        supabase.from("companies").select("id,name").ilike("name", likePat).limit(8),
+        dealOr
+          ? supabase.from("deals").select("id,title").or(dealOr).limit(8)
+          : supabase.from("deals").select("id,title").ilike("title", likePat).limit(8),
       ])
 
       if (cancelled) return
@@ -142,7 +176,7 @@ export function CommandPalette() {
 
       setResults(next)
       setLoading(false)
-    }, 160)
+    }, 180)
 
     return () => {
       cancelled = true
@@ -154,6 +188,8 @@ export function CommandPalette() {
     const base: Array<{
       key: string
       label: string
+      /** Zusätzliche Suchbegriffe (Deutsch/Englisch), durch Leerzeichen getrennt */
+      searchKeywords: string
       icon: React.ReactNode
       onSelect: () => void
       visible: boolean
@@ -161,6 +197,7 @@ export function CommandPalette() {
       {
         key: "match",
         label: COPY.commandPalette.actionStartMatch,
+        searchKeywords: "match suche search semantisch rfp",
         icon: <AppIcon icon={Sparkles} size={16} />,
         onSelect: () => {
           setOpen(false)
@@ -171,6 +208,7 @@ export function CommandPalette() {
       {
         key: "new-deal",
         label: COPY.commandPalette.actionNewDeal,
+        searchKeywords: "deal neu anlegen pipeline",
         icon: <AppIcon icon={Handshake} size={16} />,
         onSelect: () => {
           setOpen(false)
@@ -181,6 +219,7 @@ export function CommandPalette() {
       {
         key: "rfp-upload",
         label: COPY.commandPalette.actionRfpUpload,
+        searchKeywords: "rfp upload hochladen datei",
         icon: <AppIcon icon={Upload} size={16} />,
         onSelect: () => {
           setOpen(false)
@@ -191,6 +230,7 @@ export function CommandPalette() {
       {
         key: "new-reference",
         label: COPY.commandPalette.actionNewReference,
+        searchKeywords: "referenz evidence neue referenz dokument",
         icon: <AppIcon icon={FileText} size={16} />,
         onSelect: () => {
           setOpen(false)
@@ -201,6 +241,7 @@ export function CommandPalette() {
       {
         key: "new-account",
         label: COPY.commandPalette.actionNewAccount,
+        searchKeywords: "account firma kunde company neu",
         icon: <AppIcon icon={Plus} size={16} />,
         onSelect: () => {
           setOpen(false)
@@ -212,12 +253,45 @@ export function CommandPalette() {
     return base.filter((x) => x.visible)
   }, [isAdmin, isAccountManager, router, setOpen])
 
+  const filteredQuickActions = React.useMemo(() => {
+    const q = query.trim()
+    if (!q) return quickActions
+    return quickActions.filter((a) => {
+      const hay = `${a.label} ${a.searchKeywords}`
+      return matchesSearch(hay, q)
+    })
+  }, [query, quickActions])
+
+  const filteredRecents = React.useMemo(() => {
+    const q = query.trim()
+    if (!q) return recents
+    return recents.filter((r) => matchesSearch(r.title, q))
+  }, [query, recents])
+
   const grouped = React.useMemo(() => {
     const refs = results.filter((r) => r.kind === "reference")
     const accs = results.filter((r) => r.kind === "account")
     const deals = results.filter((r) => r.kind === "deal")
     return { refs, accs, deals }
   }, [results])
+
+  const hasSearchQuery = query.trim().length > 0
+
+  const hasEntityHits =
+    hasSearchQuery &&
+    !loading &&
+    (grouped.refs.length > 0 || grouped.accs.length > 0 || grouped.deals.length > 0)
+
+  const showRecentsBlock = !hasSearchQuery || filteredRecents.length > 0
+
+  const showQuick = filteredQuickActions.length > 0
+
+  const hasAnyVisible =
+    showQuick ||
+    showRecentsBlock ||
+    hasEntityHits
+
+  const showEmptyState = hasSearchQuery && !loading && !hasAnyVisible
 
   return (
     <CommandDialog
@@ -226,58 +300,95 @@ export function CommandPalette() {
       title={COPY.commandPalette.title}
       description={COPY.commandPalette.description}
       className="max-w-2xl"
+      commandProps={{
+        shouldFilter: false,
+        loop: true,
+      }}
     >
       <CommandInput
         value={query}
         onValueChange={setQuery}
         placeholder={COPY.commandPalette.placeholder}
       />
-      <CommandList>
-        <CommandEmpty>
-          {loading ? COPY.commandPalette.searchLoading : COPY.commandPalette.searchEmpty}
-        </CommandEmpty>
+      <CommandList className="max-h-[min(420px,70vh)]">
+        {loading && hasSearchQuery ? (
+          <div className="px-4 py-3 text-sm text-muted-foreground">{COPY.commandPalette.searchLoading}</div>
+        ) : null}
 
-        <CommandGroup heading={COPY.commandPalette.quickActions}>
-          {quickActions.map((a) => (
-            <CommandItem key={a.key} onSelect={a.onSelect}>
-              {a.icon}
-              <span>{a.label}</span>
-            </CommandItem>
-          ))}
-        </CommandGroup>
+        {showEmptyState ? (
+          <div className="py-6 text-center text-sm text-muted-foreground">{COPY.commandPalette.searchEmpty}</div>
+        ) : null}
 
-        <CommandSeparator />
-
-        <CommandGroup heading={COPY.commandPalette.recents}>
-          {recents.length === 0 ? (
-            <CommandItem disabled>
-              <AppIcon icon={BrainCircuit} size={16} />
-              <span>{COPY.commandPalette.noRecentsYet}</span>
-            </CommandItem>
-          ) : (
-            recents.map((r) => (
-              <CommandItem key={`${r.kind}:${r.id}`} onSelect={() => push(r)}>
-                {r.kind === "account" ? (
-                  <AppIcon icon={BrainCircuit} size={16} />
-                ) : r.kind === "deal" ? (
-                  <AppIcon icon={Handshake} size={16} />
-                ) : (
-                  <AppIcon icon={FileText} size={16} />
-                )}
-                <span>{r.title}</span>
+        {showQuick ? (
+          <CommandGroup heading={COPY.commandPalette.quickActions}>
+            {filteredQuickActions.map((a) => (
+              <CommandItem key={a.key} value={`qa:${a.key}`} onSelect={a.onSelect}>
+                {a.icon}
+                <span>{a.label}</span>
               </CommandItem>
-            ))
-          )}
-        </CommandGroup>
+            ))}
+          </CommandGroup>
+        ) : null}
 
-        {(grouped.refs.length || grouped.accs.length || grouped.deals.length) ? (
+        {showQuick && showRecentsBlock ? <CommandSeparator /> : null}
+
+        {showRecentsBlock ? (
+          <CommandGroup heading={COPY.commandPalette.recents}>
+            {!hasSearchQuery && recents.length === 0 ? (
+              <CommandItem disabled value="recent-empty">
+                <AppIcon icon={BrainCircuit} size={16} />
+                <span>{COPY.commandPalette.noRecentsYet}</span>
+              </CommandItem>
+            ) : !hasSearchQuery ? (
+              recents.map((r) => (
+                <CommandItem
+                  key={`${r.kind}:${r.id}`}
+                  value={`recent:${r.kind}:${r.id}:${r.title}`}
+                  onSelect={() => push(r)}
+                >
+                  {r.kind === "account" ? (
+                    <AppIcon icon={BrainCircuit} size={16} />
+                  ) : r.kind === "deal" ? (
+                    <AppIcon icon={Handshake} size={16} />
+                  ) : (
+                    <AppIcon icon={FileText} size={16} />
+                  )}
+                  <span>{r.title}</span>
+                </CommandItem>
+              ))
+            ) : (
+              filteredRecents.map((r) => (
+                <CommandItem
+                  key={`${r.kind}:${r.id}`}
+                  value={`recent:${r.kind}:${r.id}:${r.title}`}
+                  onSelect={() => push(r)}
+                >
+                  {r.kind === "account" ? (
+                    <AppIcon icon={BrainCircuit} size={16} />
+                  ) : r.kind === "deal" ? (
+                    <AppIcon icon={Handshake} size={16} />
+                  ) : (
+                    <AppIcon icon={FileText} size={16} />
+                  )}
+                  <span>{r.title}</span>
+                </CommandItem>
+              ))
+            )}
+          </CommandGroup>
+        ) : null}
+
+        {(showQuick || showRecentsBlock) && hasEntityHits ? <CommandSeparator /> : null}
+
+        {hasEntityHits ? (
           <>
-            <CommandSeparator />
-
             {grouped.refs.length ? (
               <CommandGroup heading={COPY.nav.evidence}>
                 {grouped.refs.map((r) => (
-                  <CommandItem key={`ref:${r.id}`} onSelect={() => push(r)}>
+                  <CommandItem
+                    key={`ref:${r.id}`}
+                    value={`ref:${r.id}:${r.title}`}
+                    onSelect={() => push(r)}
+                  >
                     <AppIcon icon={FileText} size={16} />
                     <span>{r.title}</span>
                   </CommandItem>
@@ -288,7 +399,11 @@ export function CommandPalette() {
             {grouped.accs.length ? (
               <CommandGroup heading={COPY.nav.accounts}>
                 {grouped.accs.map((r) => (
-                  <CommandItem key={`acc:${r.id}`} onSelect={() => push(r)}>
+                  <CommandItem
+                    key={`acc:${r.id}`}
+                    value={`acc:${r.id}:${r.title}`}
+                    onSelect={() => push(r)}
+                  >
                     <AppIcon icon={BrainCircuit} size={16} />
                     <span>{r.title}</span>
                   </CommandItem>
@@ -299,7 +414,11 @@ export function CommandPalette() {
             {grouped.deals.length ? (
               <CommandGroup heading={COPY.nav.deals}>
                 {grouped.deals.map((r) => (
-                  <CommandItem key={`deal:${r.id}`} onSelect={() => push(r)}>
+                  <CommandItem
+                    key={`deal:${r.id}`}
+                    value={`deal:${r.id}:${r.title}`}
+                    onSelect={() => push(r)}
+                  >
                     <AppIcon icon={Handshake} size={16} />
                     <span>{r.title}</span>
                   </CommandItem>
@@ -312,4 +431,3 @@ export function CommandPalette() {
     </CommandDialog>
   )
 }
-
