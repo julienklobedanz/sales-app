@@ -51,13 +51,10 @@ export function DashboardShell({
   children,
   user,
   profile,
-  devRoleSwitcherEnabled = false,
 }: {
   children: React.ReactNode
   user: User
   profile: Profile
-  /** Nur Entwicklung: Rollen-Umschalter im Profilmenü (Cookie + Server-Merge). */
-  devRoleSwitcherEnabled?: boolean
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -297,7 +294,6 @@ export function DashboardShell({
           userEmail={userEmail}
           userInitials={userInitials}
           userRole={profile.role}
-          devRoleSwitcherEnabled={devRoleSwitcherEnabled}
         />
         <div
           className={cn(

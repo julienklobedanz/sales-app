@@ -35,19 +35,18 @@ import { COPY } from '@/lib/copy'
 import { cn } from '@/lib/utils'
 import { ROUTES } from '@/lib/routes'
 import { clearDevPreviewRole, setDevPreviewRole } from '@/app/dashboard/dev-preview-role-actions'
+import { isDevRolePreviewEnabled } from '@/lib/dev-role-preview'
 
 export function DashboardHeader({
   userName,
   userEmail,
   userInitials,
   userRole,
-  devRoleSwitcherEnabled = false,
 }: {
   userName: string
   userEmail: string
   userInitials: string
   userRole: AppRole
-  devRoleSwitcherEnabled?: boolean
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -88,6 +87,8 @@ export function DashboardHeader({
   function markAllNotificationsRead() {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
   }
+
+  const devRoleSwitcherEnabled = isDevRolePreviewEnabled()
 
   const adminGroupActive = userRole === 'admin' || userRole === 'account_manager'
   const salesActive = userRole === 'sales'
@@ -291,6 +292,10 @@ export function DashboardHeader({
                         disabled={roleSwitchPending}
                         aria-pressed={adminGroupActive}
                         aria-label={COPY.devRolePreview.badgeAdminAria}
+                        onPointerDown={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                        }}
                         onClick={(e) => {
                           e.preventDefault()
                           selectDevRole('admin')
@@ -309,6 +314,10 @@ export function DashboardHeader({
                         disabled={roleSwitchPending}
                         aria-pressed={salesActive}
                         aria-label={COPY.devRolePreview.badgeSalesAria}
+                        onPointerDown={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                        }}
                         onClick={(e) => {
                           e.preventDefault()
                           selectDevRole('sales')
