@@ -6,6 +6,7 @@ type Listener = () => void
 
 let openState = false
 const listeners = new Set<Listener>()
+let keyboardListenerAttached = false
 
 function setOpenState(next: boolean | ((prev: boolean) => boolean)) {
   const value = typeof next === "function" ? (next as (prev: boolean) => boolean)(openState) : next
@@ -30,6 +31,9 @@ export function useCommandPalette() {
   )
 
   React.useEffect(() => {
+    if (keyboardListenerAttached) return
+    keyboardListenerAttached = true
+
     const onKeyDown = (event: KeyboardEvent) => {
       const isK = event.key.toLowerCase() === "k"
       if (!isK) return
@@ -39,7 +43,10 @@ export function useCommandPalette() {
     }
 
     window.addEventListener("keydown", onKeyDown)
-    return () => window.removeEventListener("keydown", onKeyDown)
+    return () => {
+      window.removeEventListener("keydown", onKeyDown)
+      keyboardListenerAttached = false
+    }
   }, [])
 
   return { open, setOpen }

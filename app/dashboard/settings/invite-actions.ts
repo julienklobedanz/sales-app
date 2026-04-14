@@ -163,7 +163,17 @@ export async function inviteByEmail(
       html: `
           <h1>Team-Einladung</h1>
           <p><strong>${escapeHtml(inviterName)}</strong> lädt dich ein, dem Arbeitsbereich <strong>${escapeHtml(orgName)}</strong> beizutreten.</p>
-          <p><a href="${inviteLink}" style="background: #000; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Jetzt beitreten</a></p>
+          <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="border-radius: 6px; background: #111827;">
+                <a href="${inviteLink}" target="_blank" rel="noopener noreferrer"
+                  style="display: inline-block; padding: 10px 20px; color: #ffffff; text-decoration: none; font-weight: 600;">
+                  Jetzt beitreten
+                </a>
+              </td>
+            </tr>
+          </table>
+          <p style="color: #666; font-size: 12px;">Falls der Button nicht funktioniert, diesen Link im Browser öffnen:<br /><a href="${inviteLink}" target="_blank" rel="noopener noreferrer">${inviteLink}</a></p>
           <p style="color: #666; font-size: 12px;">Der Link ist 7 Tage gültig.</p>
         `,
     })

@@ -16,6 +16,7 @@ import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
 import { Kbd } from '@/components/ui/kbd'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,6 +49,11 @@ export function DashboardHeader({
   const router = useRouter()
   const { resolvedTheme, setTheme } = useTheme()
   const { setOpen } = useCommandPalette()
+  const notifications = [
+    { id: 'n1', title: 'Neue Team-Einladung', text: 'Eine Einladung wartet auf Bestätigung.', time: 'vor 2 Min' },
+    { id: 'n2', title: 'Deal-Update', text: 'Status wurde auf In Verhandlung gesetzt.', time: 'vor 1 Std' },
+    { id: 'n3', title: 'Freigabe angefragt', text: 'Eine Referenz benötigt Ihre Freigabe.', time: 'heute' },
+  ]
 
   const handleLogout = async () => {
     const supabase = createClient()
@@ -145,16 +151,34 @@ export function DashboardHeader({
           <AppIcon icon={SearchIcon} size={20} />
         </Button>
 
-        <button
-          type="button"
-          className="relative inline-flex size-9 items-center justify-center rounded-md hover:bg-muted/60 transition-colors"
-          aria-label="Benachrichtigungen"
-        >
-          <AppIcon icon={Bell} size={20} />
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
-            3
-          </span>
-        </button>
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="relative inline-flex size-9 items-center justify-center rounded-md hover:bg-muted/60 transition-colors"
+              aria-label="Benachrichtigungen"
+            >
+              <AppIcon icon={Bell} size={20} />
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-white">
+                {notifications.length}
+              </span>
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-80 p-0">
+            <div className="border-b px-4 py-3">
+              <h3 className="text-sm font-semibold">Benachrichtigungen</h3>
+            </div>
+            <div className="max-h-80 overflow-auto">
+              {notifications.map((notification) => (
+                <div key={notification.id} className="border-b px-4 py-3 last:border-b-0">
+                  <p className="text-sm font-medium">{notification.title}</p>
+                  <p className="text-xs text-muted-foreground">{notification.text}</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">{notification.time}</p>
+                </div>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
 
         <Separator orientation="vertical" className="h-6 shrink-0" />
 
