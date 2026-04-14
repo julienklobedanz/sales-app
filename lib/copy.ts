@@ -25,6 +25,11 @@ export const COPY = {
     markAllReadAria: 'Alle Benachrichtigungen als gelesen markieren',
     unreadBadgeAria: 'Ungelesen',
   },
+  /** Profilmenü: Rollen-Badges (Vorschau in der Entwicklung) */
+  devRolePreview: {
+    badgeAdminAria: 'Vorschau: Admin / Referenz-Manager',
+    badgeSalesAria: 'Vorschau: Sales',
+  },
   roles: {
     accountManager: 'Account Manager',
     salesManager: 'Sales Manager',

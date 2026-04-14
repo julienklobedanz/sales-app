@@ -1,11 +1,10 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useTransition } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import {
   Bell,
-  ChevronsUpDown,
   LogOut,
   MailOpen,
   Moon,
@@ -33,23 +32,28 @@ import { type AppRole } from '@/hooks/useRole'
 import { createClient } from '@/lib/supabase/client'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
+import { cn } from '@/lib/utils'
 import { ROUTES } from '@/lib/routes'
+import { clearDevPreviewRole, setDevPreviewRole } from '@/app/dashboard/dev-preview-role-actions'
 
 export function DashboardHeader({
   userName,
   userEmail,
   userInitials,
   userRole,
+  devRoleSwitcherEnabled = false,
 }: {
   userName: string
   userEmail: string
   userInitials: string
   userRole: AppRole
+  devRoleSwitcherEnabled?: boolean
 }) {
   const pathname = usePathname()
   const router = useRouter()
   const { resolvedTheme, setTheme } = useTheme()
   const { setOpen } = useCommandPalette()
+  const [roleSwitchPending, startRoleSwitch] = useTransition()
   const [notifications, setNotifications] = useState<
     Array<{ id: string; title: string; text: string; time: string; read: boolean }>
   >(() => [
@@ -85,10 +89,21 @@ export function DashboardHeader({
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
   }
 
+  const adminGroupActive = userRole === 'admin' || userRole === 'account_manager'
+  const salesActive = userRole === 'sales'
+
   const handleLogout = async () => {
+    await clearDevPreviewRole()
     const supabase = createClient()
     await supabase.auth.signOut()
     router.push(ROUTES.login)
+  }
+
+  function selectDevRole(role: Extract<AppRole, 'admin' | 'sales'>) {
+    startRoleSwitch(async () => {
+      const res = await setDevPreviewRole(role)
+      if (res.ok) router.refresh()
+    })
   }
 
   const headerMeta = useMemo(() => {
@@ -252,7 +267,7 @@ export function DashboardHeader({
               <span className="hidden max-w-[160px] truncate text-left text-sm font-medium sm:inline">
                 {userName}
               </span>
-              <AppIcon icon={ChevronsUpDown} size={16} className="opacity-60" />
+              <span className="size-4 shrink-0" aria-hidden />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -269,9 +284,50 @@ export function DashboardHeader({
                 <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">{userName}</span>
                   <span className="truncate text-xs text-muted-foreground">{userEmail}</span>
-                  <span className="bg-primary/10 text-primary mt-1 w-fit rounded px-1 py-0.5 text-[10px] font-bold uppercase">
-                    {userRole}
-                  </span>
+                  {devRoleSwitcherEnabled ? (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      <button
+                        type="button"
+                        disabled={roleSwitchPending}
+                        aria-pressed={adminGroupActive}
+                        aria-label={COPY.devRolePreview.badgeAdminAria}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          selectDevRole('admin')
+                        }}
+                        className={cn(
+                          'rounded px-1.5 py-0.5 text-[10px] font-bold uppercase transition-colors',
+                          adminGroupActive
+                            ? 'bg-primary/10 text-primary'
+                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                        )}
+                      >
+                        Admin
+                      </button>
+                      <button
+                        type="button"
+                        disabled={roleSwitchPending}
+                        aria-pressed={salesActive}
+                        aria-label={COPY.devRolePreview.badgeSalesAria}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          selectDevRole('sales')
+                        }}
+                        className={cn(
+                          'rounded px-1.5 py-0.5 text-[10px] font-bold uppercase transition-colors',
+                          salesActive
+                            ? 'bg-primary/10 text-primary'
+                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                        )}
+                      >
+                        Sales
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="bg-primary/10 text-primary mt-1 w-fit rounded px-1 py-0.5 text-[10px] font-bold uppercase">
+                      {userRole}
+                    </span>
+                  )}
                 </div>
               </div>
             </DropdownMenuLabel>
