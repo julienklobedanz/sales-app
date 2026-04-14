@@ -216,11 +216,20 @@ export function DashboardHeader({
               {notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`border-b px-4 py-3 last:border-b-0 ${notification.read ? 'opacity-60' : ''}`}
+                  className="flex items-start gap-2 border-b px-4 py-3 last:border-b-0"
                 >
-                  <p className="text-sm font-medium">{notification.title}</p>
-                  <p className="text-xs text-muted-foreground">{notification.text}</p>
-                  <p className="mt-1 text-[11px] text-muted-foreground">{notification.time}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium">{notification.title}</p>
+                    <p className="text-xs text-muted-foreground">{notification.text}</p>
+                    <p className="mt-1 text-[11px] text-muted-foreground">{notification.time}</p>
+                  </div>
+                  {!notification.read ? (
+                    <span
+                      className="mt-1.5 size-2 shrink-0 rounded-full bg-sidebar-primary"
+                      title={COPY.notifications.unreadBadgeAria}
+                      aria-label={COPY.notifications.unreadBadgeAria}
+                    />
+                  ) : null}
                 </div>
               ))}
             </div>

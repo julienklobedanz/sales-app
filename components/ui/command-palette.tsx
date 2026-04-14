@@ -27,7 +27,7 @@ import { AppIcon } from "@/lib/icons"
 import { ROUTES } from "@/lib/routes"
 
 type SearchResult =
-  | { kind: "reference"; id: string; title: string }
+  | { kind: "reference"; id: string; title: string; accountName: string | null }
   | { kind: "account"; id: string; title: string }
   | { kind: "deal"; id: string; title: string }
 
@@ -54,6 +54,22 @@ function matchesSearch(haystack: string, needle: string): boolean {
   return haystack.toLowerCase().includes(n)
 }
 
+function companyNameFromReferenceRow(row: { companies?: unknown }): string | null {
+  const c = row.companies
+  if (c == null) return null
+  const obj = Array.isArray(c) ? c[0] : c
+  if (!obj || typeof obj !== "object") return null
+  const name = (obj as { name?: string | null }).name
+  return typeof name === "string" && name.trim() ? name.trim() : null
+}
+
+/** Anzeige in der Palette: mit Account nach „ — “, sonst Platzhalter in Klammern. */
+function formatReferenceListLabel(title: string, accountName: string | null | undefined): string {
+  const acc = accountName?.trim()
+  if (acc) return `${title} — ${acc}`
+  return `${title} (${COPY.commandPalette.referenceNoAccountLabel})`
+}
+
 function loadRecents(): RecentItem[] {
   if (typeof window === "undefined") return []
   try {
@@ -65,7 +81,25 @@ function loadRecents(): RecentItem[] {
       .filter((x): x is RecentItem => {
         if (!x || typeof x !== "object") return false
         const r = x as Partial<RecentItem>
-        return typeof r.id === "string" && typeof r.kind === "string" && typeof r.title === "string"
+        if (typeof r.id !== "string" || typeof r.kind !== "string" || typeof r.title !== "string") {
+          return false
+        }
+        if (r.kind === "reference") {
+          const an = (r as { accountName?: unknown }).accountName
+          return an === undefined || an === null || typeof an === "string"
+        }
+        return true
+      })
+      .map((x) => {
+        const r = x as Partial<RecentItem> & { accountName?: string | null }
+        if (r.kind === "reference") {
+          return {
+            ...x,
+            accountName:
+              typeof r.accountName === "string" ? r.accountName : null,
+          } as RecentItem
+        }
+        return x as RecentItem
       })
       .slice(0, MAX_RECENTS)
   } catch {
@@ -153,8 +187,12 @@ export function CommandPalette() {
 
       const [refs, accounts, deals] = await Promise.all([
         refOr
-          ? supabase.from("references").select("id,title").or(refOr).limit(8)
-          : supabase.from("references").select("id,title").ilike("title", likePat).limit(8),
+          ? supabase.from("references").select("id,title,companies(name)").or(refOr).limit(8)
+          : supabase
+              .from("references")
+              .select("id,title,companies(name)")
+              .ilike("title", likePat)
+              .limit(8),
         supabase.from("companies").select("id,name").ilike("name", likePat).limit(8),
         dealOr
           ? supabase.from("deals").select("id,title").or(dealOr).limit(8)
@@ -164,8 +202,17 @@ export function CommandPalette() {
       if (cancelled) return
 
       const next: SearchResult[] = []
-      for (const r of (refs.data ?? []) as Array<{ id: string; title: string }>) {
-        next.push({ kind: "reference", id: r.id, title: r.title })
+      for (const r of (refs.data ?? []) as Array<{
+        id: string
+        title: string
+        companies?: unknown
+      }>) {
+        next.push({
+          kind: "reference",
+          id: r.id,
+          title: r.title,
+          accountName: companyNameFromReferenceRow(r),
+        })
       }
       for (const a of (accounts.data ?? []) as Array<{ id: string; name: string }>) {
         next.push({ kind: "account", id: a.id, title: a.name })
@@ -265,7 +312,13 @@ export function CommandPalette() {
   const filteredRecents = React.useMemo(() => {
     const q = query.trim()
     if (!q) return recents
-    return recents.filter((r) => matchesSearch(r.title, q))
+    return recents.filter((r) => {
+      if (r.kind === "reference") {
+        const label = formatReferenceListLabel(r.title, r.accountName ?? null)
+        return matchesSearch(label, q) || matchesSearch(r.title, q)
+      }
+      return matchesSearch(r.title, q)
+    })
   }, [query, recents])
 
   const grouped = React.useMemo(() => {
@@ -353,7 +406,11 @@ export function CommandPalette() {
                   ) : (
                     <AppIcon icon={FileText} size={16} />
                   )}
-                  <span>{r.title}</span>
+                  <span>
+                    {r.kind === "reference"
+                      ? formatReferenceListLabel(r.title, r.accountName ?? null)
+                      : r.title}
+                  </span>
                 </CommandItem>
               ))
             ) : (
@@ -370,7 +427,11 @@ export function CommandPalette() {
                   ) : (
                     <AppIcon icon={FileText} size={16} />
                   )}
-                  <span>{r.title}</span>
+                  <span>
+                    {r.kind === "reference"
+                      ? formatReferenceListLabel(r.title, r.accountName ?? null)
+                      : r.title}
+                  </span>
                 </CommandItem>
               ))
             )}
@@ -386,11 +447,13 @@ export function CommandPalette() {
                 {grouped.refs.map((r) => (
                   <CommandItem
                     key={`ref:${r.id}`}
-                    value={`ref:${r.id}:${r.title}`}
+                    value={`ref:${r.id}:${formatReferenceListLabel(r.title, r.accountName)}`}
                     onSelect={() => push(r)}
                   >
                     <AppIcon icon={FileText} size={16} />
-                    <span>{r.title}</span>
+                    <span className="truncate">
+                      {formatReferenceListLabel(r.title, r.accountName)}
+                    </span>
                   </CommandItem>
                 ))}
               </CommandGroup>

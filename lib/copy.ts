@@ -23,6 +23,7 @@ export const COPY = {
   notifications: {
     title: 'Benachrichtigungen',
     markAllReadAria: 'Alle Benachrichtigungen als gelesen markieren',
+    unreadBadgeAria: 'Ungelesen',
   },
   roles: {
     accountManager: 'Account Manager',
@@ -90,6 +91,8 @@ export const COPY = {
     actionRfpUpload: 'RFP im Deal hochladen',
     actionNewReference: 'Neue Referenz erstellen',
     actionNewAccount: 'Account erstellen',
+    /** Anzeige in der Suche, wenn keine Firma verknüpft ist */
+    referenceNoAccountLabel: 'Kein Accountname vergeben',
   },
 } as const
 
