@@ -127,8 +127,8 @@ export function ReferenceDetailSheet({
                           size={16}
                           className={
                             selectedRef.is_favorited
-                              ? 'text-primary'
-                              : 'text-muted-foreground hover:text-primary'
+                              ? 'text-amber-500 dark:text-amber-400'
+                              : 'text-muted-foreground hover:text-amber-500/80'
                           }
                         />
                       </Button>

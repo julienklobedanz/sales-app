@@ -43,7 +43,11 @@ export default async function DashboardLayout({
   const effectiveRole: AppRole = previewRole ?? serverRole
 
   return (
-    <DashboardShell user={user} profile={{ ...profile, role: effectiveRole }}>
+    <DashboardShell
+      user={user}
+      profile={{ ...profile, role: effectiveRole }}
+      roleTestModeEnabled={devSwitcher}
+    >
       {children}
     </DashboardShell>
   )

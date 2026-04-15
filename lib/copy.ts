@@ -25,10 +25,13 @@ export const COPY = {
     markAllReadAria: 'Alle Benachrichtigungen als gelesen markieren',
     unreadBadgeAria: 'Ungelesen',
   },
-  /** Profilmenü: Rollen-Badges (Vorschau in der Entwicklung) */
+  /** Profilmenü: Rollen-Vorschau (Test-Modus, vor Launch deaktivieren) */
   devRolePreview: {
     badgeAdminAria: 'Vorschau: Admin / Referenz-Manager',
     badgeSalesAria: 'Vorschau: Sales',
+    roleSwitchSectionTitle: 'Rolle wechseln (Test-Modus)',
+    roleMarketingAdmin: 'Marketing / Admin',
+    roleSalesRep: 'Sales Representative',
   },
   roles: {
     accountManager: 'Account Manager',

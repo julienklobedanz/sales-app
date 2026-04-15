@@ -51,10 +51,13 @@ export function DashboardShell({
   children,
   user,
   profile,
+  roleTestModeEnabled = false,
 }: {
   children: React.ReactNode
   user: User
   profile: Profile
+  /** Server: gleiche Quelle wie Cookie-Vorschau – Test-Modus „Rolle wechseln“ im Profilmenü. */
+  roleTestModeEnabled?: boolean
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -294,6 +297,7 @@ export function DashboardShell({
           userEmail={userEmail}
           userInitials={userInitials}
           userRole={profile.role}
+          roleTestModeEnabled={roleTestModeEnabled}
         />
         <div
           className={cn(

@@ -5,8 +5,10 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { submitForApproval, toggleFavorite } from '@/app/dashboard/actions'
-import { FavouriteIcon } from '@hugeicons/core-free-icons'
+import { StarIcon } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
+import { formatNumberDe } from '@/lib/format'
+import { deleteReferenceFromDetailPage } from './actions'
 import { ReferenceStatusBadge } from '@/components/reference-status-badge'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
@@ -244,7 +246,11 @@ export default async function EvidenceDetailPage({
               </div>
               <div className="flex justify-between gap-2">
                 <span className="text-muted-foreground">Volumen</span>
-                <span className="font-medium">{ref.volume_eur ?? '—'}</span>
+                <span className="font-medium tabular-nums">
+                  {ref.volume_eur != null && ref.volume_eur !== ''
+                    ? formatNumberDe(ref.volume_eur)
+                    : '—'}
+                </span>
               </div>
               <div className="flex justify-between gap-2">
                 <span className="text-muted-foreground">Vertragsart</span>
@@ -299,37 +305,49 @@ export default async function EvidenceDetailPage({
             </CardHeader>
             <CardContent className="grid gap-2">
               <form action={toggleFavorite.bind(null, id)}>
-                <Button type="submit" variant="outline" className="gap-2 w-full">
+                <Button
+                  type="submit"
+                  variant="outline"
+                  className="w-full gap-2"
+                >
                   <AppIcon
-                    icon={FavouriteIcon}
+                    icon={StarIcon}
                     size={16}
-                    className={isFavorited ? '' : 'opacity-70'}
+                    className={
+                      isFavorited
+                        ? 'text-amber-500 dark:text-amber-400'
+                        : 'text-muted-foreground opacity-80'
+                    }
                   />
                   {isFavorited ? 'Favorit' : 'Favorisieren'}
                 </Button>
               </form>
-              <Button variant="outline" disabled>
+              <Button variant="outline" className="w-full" disabled>
                 PDF exportieren
               </Button>
-              <Button variant="outline" disabled>
+              <Button variant="outline" className="w-full" disabled>
                 Link erstellen
               </Button>
               {role === 'sales' ? null : (
                 <>
-                  <Button variant="outline" disabled>
+                  <Button variant="outline" className="w-full" disabled>
                     Anonymisierte Version
                   </Button>
-                  <Button asChild variant="outline">
+                  <Button asChild variant="outline" className="w-full">
                     <Link href={ROUTES.evidence.edit(id)}>Bearbeiten</Link>
                   </Button>
-                  <form action={submitForApproval.bind(null, id)}>
-                    <Button type="submit" variant="outline">
+                  <form action={submitForApproval.bind(null, id)} className="w-full">
+                    <Button type="submit" variant="outline" className="w-full">
                       Freigabe anfordern
                     </Button>
                   </form>
-                  <Button variant="destructive" disabled>
-                    Löschen
-                  </Button>
+                  {role === 'admin' ? (
+                    <form action={deleteReferenceFromDetailPage.bind(null, id)} className="w-full">
+                      <Button type="submit" variant="destructive" className="w-full">
+                        Löschen
+                      </Button>
+                    </form>
+                  ) : null}
                 </>
               )}
             </CardContent>

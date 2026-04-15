@@ -18,6 +18,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
@@ -128,6 +129,9 @@ const COLUMN_LABELS: Record<(typeof COLUMN_KEYS)[number], string> = {
   created_at: 'Hinzugefügt am',
   updated_at: 'Letzte Änderung',
 }
+
+/** Toolbar: Favoriten / Status / Spalten – gleiche Mindestbreite */
+const toolbarSegmentClass = `${TABLE_TOOLBAR.dashboard.toolbarButton} min-w-[9.5rem] justify-center gap-2 px-3`
 
 // --- Hauptkomponente ---
 
@@ -584,74 +588,133 @@ export function DashboardOverview({
 
       {/* Toolbar & Tabelle */}
       <div className="space-y-4">
-        {/* Toolbar: eine Zeile, kein horizontaler Scroll. Suche flex-1, Buttons adaptiv mit Transitions. */}
-          <div className="flex flex-nowrap items-center gap-2 sm:gap-3 min-w-0 overflow-x-hidden transition-all duration-300">
-          {/* Suche: immer sichtbar, nimmt verfügbaren Platz */}
+        {/* Toolbar: Suche bis zu den Buttons; rechts Favoriten → Status → Spalten → … */}
+        <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:gap-3 overflow-x-hidden transition-all duration-300">
           <ToolbarSearchField
             variant="dashboard"
-            wrapperClassName="min-w-0 flex-1 basis-0 sm:basis-auto transition-all duration-300"
+            wrapperClassName="min-w-0 flex-1 basis-[min(100%,20rem)] transition-all duration-300"
             placeholder={COPY.dashboard.searchReferencesPlaceholder}
             value={search}
             onChange={setSearch}
           />
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className={TABLE_TOOLBAR.dashboard.toolbarButton}
-                aria-label={COPY.dashboard.columnsToggleAria}
-              >
-                <AppIcon icon={SlidersHorizontal} size={16} className="lg:mr-2 shrink-0" />
-                <span className="hidden lg:inline">{COPY.table.columns}</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[220px]">
-              <DropdownMenuLabel>{COPY.dashboard.columnVisibility}</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {COLUMN_KEYS.map((column) => (
-                <DropdownMenuItem
-                  key={column}
-                  onSelect={(e: Event) => {
-                    e.preventDefault()
-                    setVisibleColumns((prev) => ({
-                      ...prev,
-                      [column]: !prev[column],
-                    }))
-                  }}
-                >
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-input ${
-                        visibleColumns[column] ? 'bg-primary border-primary' : 'bg-muted'
-                      }`}
-                    >
-                      {visibleColumns[column] && (
-                        <span className="h-2 w-2 rounded-full bg-primary-foreground" />
-                      )}
-                    </div>
-                    <span>{COLUMN_LABELS[column]}</span>
-                  </div>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className={cn(
+                toolbarSegmentClass,
+                favoritesOnly &&
+                  'border-amber-400/60 bg-amber-50/70 text-foreground dark:bg-amber-950/40'
+              )}
+              onClick={() => setFavoritesOnly((v) => !v)}
+              aria-label={favoritesOnly ? 'Alle Referenzen anzeigen' : 'Nur Favoriten'}
+            >
+              <AppIcon
+                icon={StarIcon}
+                size={16}
+                className={cn(
+                  'shrink-0',
+                  favoritesOnly ? 'text-amber-500 dark:text-amber-400' : 'text-muted-foreground'
+                )}
+              />
+              <span className="hidden lg:inline">Favoriten</span>
+            </Button>
 
-          <Button
-            variant={favoritesOnly ? 'secondary' : 'outline'}
-            size="sm"
-            className={TABLE_TOOLBAR.dashboard.toolbarButton}
-            onClick={() => setFavoritesOnly((v) => !v)}
-            aria-label={favoritesOnly ? 'Favoriten aus' : 'Nur Favoriten'}
-          >
-            <AppIcon
-              icon={StarIcon}
-              size={16}
-              className={`shrink-0 lg:mr-2 ${favoritesOnly ? 'text-primary' : ''}`}
-            />
-            <span className="hidden lg:inline">Favoriten</span>
-          </Button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={cn(
+                    toolbarSegmentClass,
+                    statusFilter !== 'all' && 'border-primary ring-1 ring-primary/35'
+                  )}
+                  aria-label="Referenzstatus filtern"
+                >
+                  <AppIcon icon={Filter} size={16} className="shrink-0 text-muted-foreground" />
+                  <span className="hidden lg:inline">Status</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-56" onOpenAutoFocus={(e) => e.preventDefault()}>
+                <Input
+                  placeholder="Status suchen…"
+                  value={statusSearch}
+                  onChange={(e) => setStatusSearch(e.target.value)}
+                  className="h-8 text-xs"
+                />
+                <div className="mt-2 max-h-56 space-y-1 overflow-y-auto text-sm">
+                  {['all', ...filterOptions.statuses]
+                    .filter((value) => {
+                      if (!statusSearch.trim()) return true
+                      const label =
+                        value === 'all'
+                          ? 'Alle'
+                          : STATUS_LABELS[value as ReferenceRow['status']] ?? value
+                      return label.toLowerCase().includes(statusSearch.trim().toLowerCase())
+                    })
+                    .map((value) => {
+                      const isAll = value === 'all'
+                      const label =
+                        isAll ? 'Alle' : STATUS_LABELS[value as ReferenceRow['status']] ?? value
+                      const selected = statusFilter === value
+                      return (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => {
+                            setStatusFilter(value)
+                          }}
+                          className="flex w-full items-center justify-between gap-2 rounded-md px-1.5 py-1 text-left hover:bg-muted"
+                        >
+                          <span className="truncate">{label}</span>
+                          <div
+                            className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-input ${
+                              selected ? 'bg-primary border-primary' : 'bg-muted'
+                            }`}
+                          >
+                            {selected && <span className="h-2 w-2 rounded-full bg-primary-foreground" />}
+                          </div>
+                        </button>
+                      )
+                    })}
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={toolbarSegmentClass}
+                  aria-label={COPY.dashboard.columnsToggleAria}
+                >
+                  <AppIcon icon={SlidersHorizontal} size={16} className="shrink-0" />
+                  <span className="hidden lg:inline">{COPY.table.columns}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-[min(100vw-2rem,16rem)]">
+                <DropdownMenuLabel>{COPY.dashboard.columnVisibility}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {COLUMN_KEYS.map((column) => (
+                  <DropdownMenuCheckboxItem
+                    key={column}
+                    checked={visibleColumns[column]}
+                    onCheckedChange={(checked) =>
+                      setVisibleColumns((prev) => ({
+                        ...prev,
+                        [column]: Boolean(checked),
+                      }))
+                    }
+                    onSelect={(e: Event) => e.preventDefault()}
+                  >
+                    {COLUMN_LABELS[column]}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
 
           {/* Admin: Importieren -> Vorschau (X) -> Erstellen -> Warenkorb */}
           {profile.role === 'admin' && (
@@ -1425,8 +1488,9 @@ export function DashboardOverview({
                     </button>
                   </TableHead>
                 )}
-                <TableHead className="w-[40px]"></TableHead>
-                <TableHead className="w-[50px]"></TableHead>
+                <TableHead className="w-[88px] min-w-[88px] p-2 text-right">
+                  <span className="sr-only">Favorit &amp; Aktionen</span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -1434,7 +1498,7 @@ export function DashboardOverview({
                 <TableRow>
                   <TableCell
                     colSpan={
-                      COLUMN_KEYS.filter((k) => visibleColumns[k]).length + 3
+                      COLUMN_KEYS.filter((k) => visibleColumns[k]).length + 2
                     }
                     className="h-24 text-center text-muted-foreground"
                   >
@@ -1565,39 +1629,42 @@ export function DashboardOverview({
                         {ref.updated_at ? formatDateUtcDe(ref.updated_at) : '—'}
                       </TableCell>
                     )}
-                    <TableCell className="pr-0" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 hover:bg-transparent"
-                        onClick={(e: React.MouseEvent) => handleToggleFavorite(ref.id, e)}
-                      >
-                        <AppIcon
-                          icon={StarIcon}
-                          size={16}
-                          className={
-                            ref.is_favorited
-                              ? 'text-primary'
-                              : 'text-muted-foreground/50 hover:text-primary'
-                          }
-                        />
-                      </Button>
-                    </TableCell>
-                    <TableCell onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-                      <DropdownMenu
-                        open={rowMenuOpenId === ref.id}
-                        onOpenChange={(open) => setRowMenuOpenId(open ? ref.id : null)}
-                      >
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            className="h-8 w-8 p-0 opacity-0 transition-opacity group-hover:opacity-100 data-[state=open]:opacity-100"
-                          >
-                            <span className="sr-only">Menü öffnen</span>
-                            <AppIcon icon={MoreHorizontal} size={16} />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                    <TableCell
+                      className="w-[88px] min-w-[88px] p-1 text-right"
+                      onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center justify-end gap-0.5 pr-0">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 shrink-0 hover:bg-transparent"
+                          onClick={(e: React.MouseEvent) => handleToggleFavorite(ref.id, e)}
+                          aria-label={ref.is_favorited ? 'Favorit entfernen' : 'Als Favorit markieren'}
+                        >
+                          <AppIcon
+                            icon={StarIcon}
+                            size={16}
+                            className={
+                              ref.is_favorited
+                                ? 'text-amber-500 dark:text-amber-400'
+                                : 'text-muted-foreground/50 hover:text-amber-500/80'
+                            }
+                          />
+                        </Button>
+                        <DropdownMenu
+                          open={rowMenuOpenId === ref.id}
+                          onOpenChange={(open) => setRowMenuOpenId(open ? ref.id : null)}
+                        >
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              className="h-8 w-8 shrink-0 p-0 opacity-0 transition-opacity group-hover:opacity-100 data-[state=open]:opacity-100"
+                            >
+                              <span className="sr-only">Menü öffnen</span>
+                              <AppIcon icon={MoreHorizontal} size={16} />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Aktionen</DropdownMenuLabel>
                           <DropdownMenuItem onSelect={() => openDetail(ref)}>
                             <AppIcon icon={FileText} size={16} className="mr-2" />
@@ -1635,6 +1702,7 @@ export function DashboardOverview({
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))

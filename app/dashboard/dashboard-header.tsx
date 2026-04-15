@@ -1,15 +1,18 @@
 'use client'
 
 import { useMemo, useState, useTransition } from 'react'
+import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import {
   Bell,
+  Briefcase,
   LogOut,
   MailOpen,
   Moon,
   SearchIcon,
   SettingsIcon,
+  Shield,
   Sun,
 } from '@hugeicons/core-free-icons'
 import { SidebarTrigger } from '@/components/ui/sidebar'
@@ -37,16 +40,32 @@ import { ROUTES } from '@/lib/routes'
 import { clearDevPreviewRole, setDevPreviewRole } from '@/app/dashboard/dev-preview-role-actions'
 import { isDevRolePreviewEnabled } from '@/lib/dev-role-preview'
 
+function formatRoleBadgeLabel(role: AppRole): string {
+  switch (role) {
+    case 'admin':
+      return 'ADMIN'
+    case 'sales':
+      return 'SALES'
+    case 'account_manager':
+      return 'ACCOUNT MANAGER'
+    default:
+      return String(role).toUpperCase()
+  }
+}
+
 export function DashboardHeader({
   userName,
   userEmail,
   userInitials,
   userRole,
+  roleTestModeEnabled = false,
 }: {
   userName: string
   userEmail: string
   userInitials: string
   userRole: AppRole
+  /** Vom Server (Layout): zuverlässiger als nur Client-Env. */
+  roleTestModeEnabled?: boolean
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -54,7 +73,14 @@ export function DashboardHeader({
   const { setOpen } = useCommandPalette()
   const [roleSwitchPending, startRoleSwitch] = useTransition()
   const [notifications, setNotifications] = useState<
-    Array<{ id: string; title: string; text: string; time: string; read: boolean }>
+    Array<{
+      id: string
+      title: string
+      text: string
+      time: string
+      read: boolean
+      href: string
+    }>
   >(() => [
     {
       id: 'n1',
@@ -62,6 +88,7 @@ export function DashboardHeader({
       text: 'Eine Einladung wartet auf Bestätigung.',
       time: 'vor 2 Min',
       read: false,
+      href: ROUTES.settings,
     },
     {
       id: 'n2',
@@ -69,6 +96,7 @@ export function DashboardHeader({
       text: 'Status wurde auf In Verhandlung gesetzt.',
       time: 'vor 1 Std',
       read: false,
+      href: ROUTES.deals.root,
     },
     {
       id: 'n3',
@@ -76,6 +104,7 @@ export function DashboardHeader({
       text: 'Eine Referenz benötigt Ihre Freigabe.',
       time: 'heute',
       read: false,
+      href: ROUTES.evidence.root,
     },
   ])
 
@@ -88,7 +117,7 @@ export function DashboardHeader({
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
   }
 
-  const devRoleSwitcherEnabled = isDevRolePreviewEnabled()
+  const showRoleTestMode = roleTestModeEnabled || isDevRolePreviewEnabled()
 
   const adminGroupActive = userRole === 'admin' || userRole === 'account_manager'
   const salesActive = userRole === 'sales'
@@ -235,7 +264,16 @@ export function DashboardHeader({
                   className="flex items-start gap-2 border-b px-4 py-3 last:border-b-0"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium">{notification.title}</p>
+                    <Link
+                      href={notification.href}
+                      className={cn(
+                        'inline-block max-w-full truncate rounded-sm text-sm font-medium text-foreground underline-offset-2 transition-colors',
+                        'hover:text-primary hover:underline',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
+                      )}
+                    >
+                      {notification.title}
+                    </Link>
                     <p className="text-xs text-muted-foreground">{notification.text}</p>
                     <p className="mt-1 text-[11px] text-muted-foreground">{notification.time}</p>
                   </div>
@@ -285,62 +323,47 @@ export function DashboardHeader({
                 <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">{userName}</span>
                   <span className="truncate text-xs text-muted-foreground">{userEmail}</span>
-                  {devRoleSwitcherEnabled ? (
-                    <div className="mt-1 flex flex-wrap gap-1">
-                      <button
-                        type="button"
-                        disabled={roleSwitchPending}
-                        aria-pressed={adminGroupActive}
-                        aria-label={COPY.devRolePreview.badgeAdminAria}
-                        onPointerDown={(e) => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                        }}
-                        onClick={(e) => {
-                          e.preventDefault()
-                          selectDevRole('admin')
-                        }}
-                        className={cn(
-                          'rounded px-1.5 py-0.5 text-[10px] font-bold uppercase transition-colors',
-                          adminGroupActive
-                            ? 'bg-primary/10 text-primary'
-                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                        )}
-                      >
-                        Admin
-                      </button>
-                      <button
-                        type="button"
-                        disabled={roleSwitchPending}
-                        aria-pressed={salesActive}
-                        aria-label={COPY.devRolePreview.badgeSalesAria}
-                        onPointerDown={(e) => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                        }}
-                        onClick={(e) => {
-                          e.preventDefault()
-                          selectDevRole('sales')
-                        }}
-                        className={cn(
-                          'rounded px-1.5 py-0.5 text-[10px] font-bold uppercase transition-colors',
-                          salesActive
-                            ? 'bg-primary/10 text-primary'
-                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                        )}
-                      >
-                        Sales
-                      </button>
-                    </div>
-                  ) : (
-                    <span className="bg-primary/10 text-primary mt-1 w-fit rounded px-1 py-0.5 text-[10px] font-bold uppercase">
-                      {userRole}
-                    </span>
-                  )}
+                  <span
+                    className={cn(
+                      'mt-1 inline-flex w-fit rounded-md border border-border bg-muted px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-foreground'
+                    )}
+                  >
+                    {formatRoleBadgeLabel(userRole)}
+                  </span>
                 </div>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            {showRoleTestMode ? (
+              <>
+                <DropdownMenuLabel className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  {COPY.devRolePreview.roleSwitchSectionTitle}
+                </DropdownMenuLabel>
+                <DropdownMenuItem
+                  disabled={roleSwitchPending}
+                  onSelect={(e) => {
+                    e.preventDefault()
+                    selectDevRole('admin')
+                  }}
+                  className={cn('cursor-pointer', adminGroupActive && 'bg-accent font-medium')}
+                >
+                  <AppIcon icon={Shield} size={16} className="shrink-0" />
+                  {COPY.devRolePreview.roleMarketingAdmin}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={roleSwitchPending}
+                  onSelect={(e) => {
+                    e.preventDefault()
+                    selectDevRole('sales')
+                  }}
+                  className={cn('cursor-pointer', salesActive && 'bg-accent font-medium')}
+                >
+                  <AppIcon icon={Briefcase} size={16} className="shrink-0" />
+                  {COPY.devRolePreview.roleSalesRep}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            ) : null}
             <DropdownMenuGroup>
               <DropdownMenuItem
                 onSelect={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}

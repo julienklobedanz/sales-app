@@ -3,14 +3,18 @@ import type { AppRole } from '@/hooks/useRole'
 /** Cookie-Name: nur gültig wenn {@link isDevRolePreviewEnabled}. */
 export const DEV_ROLE_COOKIE = 'refstack_dev_role'
 
-/** Rollen-Vorschau: `next dev` (oder next.config-Default), Server-Env, oder NEXT_PUBLIC explizit. */
+/**
+ * Rollen-Vorschau (Test-Modus): lokal `next dev`, Vercel Preview, Server-Env, oder NEXT_PUBLIC explizit.
+ * Vor Launch: `NEXT_PUBLIC_DEV_ROLE_SWITCHER=false` setzen.
+ */
 export function isDevRolePreviewEnabled(): boolean {
   if (process.env.NEXT_PUBLIC_DEV_ROLE_SWITCHER === 'false') return false
   const pub = process.env.NEXT_PUBLIC_DEV_ROLE_SWITCHER
   if (pub === 'true' || pub === '1') return true
   return (
     process.env.NODE_ENV === 'development' ||
-    process.env.DEV_ROLE_PREVIEW === '1'
+    process.env.DEV_ROLE_PREVIEW === '1' ||
+    process.env.VERCEL_ENV === 'preview'
   )
 }
 
