@@ -3,6 +3,7 @@
 import React from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,7 +16,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -133,8 +133,8 @@ const DEFAULT_VISIBLE: Record<(typeof COLUMN_KEYS)[number], boolean> = {
   updated_at: true,
 }
 const COLUMN_LABELS: Record<(typeof COLUMN_KEYS)[number], string> = {
-  status: 'Status',
-  company: 'Unternehmen',
+  status: 'Referenzstatus',
+  company: 'Account',
   title: 'Titel',
   tags: 'Tags',
   industry: 'Industrie',
@@ -429,6 +429,14 @@ export function DashboardOverview({
     [initialReferences, favoriteIds]
   )
 
+  const companyLogoById = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const company of companies) {
+      if (company.logo_url) map.set(company.id, company.logo_url)
+    }
+    return map
+  }, [companies])
+
   const filterOptions = useMemo(() => {
     const statuses = new Set<string>()
     const industries = new Set<string>()
@@ -564,8 +572,7 @@ export function DashboardOverview({
   }
 
   const openDetail = (ref: ReferenceRow) => {
-    setSelectedRef(ref)
-    setSheetOpen(true)
+    router.push(ROUTES.evidence.detail(ref.id))
   }
 
   const toggleCart = (refId: string, e?: React.MouseEvent) => {
@@ -1745,7 +1752,22 @@ export function DashboardOverview({
                       </TableCell>
                     )}
                     {visibleColumns.company && (
-                      <TableCell className="font-medium">{ref.company_name}</TableCell>
+                      <TableCell className="font-medium">
+                        {companyLogoById.get(ref.company_id) ? (
+                          <div className="flex items-center">
+                            <Image
+                              src={companyLogoById.get(ref.company_id)!}
+                              alt={ref.company_name}
+                              width={22}
+                              height={22}
+                              className="h-[22px] w-[22px] rounded-sm object-contain"
+                            />
+                            <span className="sr-only">{ref.company_name}</span>
+                          </div>
+                        ) : (
+                          ref.company_name
+                        )}
+                      </TableCell>
                     )}
                     {visibleColumns.title && (
                       <TableCell className="max-w-[200px] truncate text-muted-foreground">
@@ -1778,14 +1800,10 @@ export function DashboardOverview({
                     {visibleColumns.industry && <TableCell>{ref.industry ?? '—'}</TableCell>}
                     {visibleColumns.country && <TableCell>{ref.country ?? '—'}</TableCell>}
                     {visibleColumns.project_status && (
-                      <TableCell>
-                        {ref.project_status ? (
-                          <Badge variant="outline">
-                            {PROJECT_STATUS_LABELS[ref.project_status] ?? ref.project_status}
-                          </Badge>
-                        ) : (
-                          '—'
-                        )}
+                      <TableCell className="text-sm text-muted-foreground">
+                        {ref.project_status
+                          ? PROJECT_STATUS_LABELS[ref.project_status] ?? ref.project_status
+                          : '—'}
                       </TableCell>
                     )}
                     {visibleColumns.project_start && (
