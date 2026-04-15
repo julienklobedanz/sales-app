@@ -690,26 +690,6 @@ export function DashboardOverview({
     <div className="flex flex-col space-y-6">
       {/* Toolbar & Tabelle */}
       <div className="space-y-4">
-        {profile.role === 'admin' && (
-          <div
-            className="rounded-lg border-2 border-dashed border-muted-foreground/25 p-4"
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-              e.preventDefault()
-              const files = Array.from(e.dataTransfer.files ?? [])
-              if (files.length === 0) return
-              addBulkImportFiles(files)
-              setBulkImportOpen(true)
-            }}
-          >
-            <div className="text-sm font-medium">Drag & Drop Import</div>
-            <div className="mt-1 text-sm text-muted-foreground">
-              Dokument hierher ziehen für schnellen Import (F2: nutzt denselben Flow wie
-              „Neue Referenz“)
-            </div>
-          </div>
-        )}
-
         {/* Toolbar: Suche bis zu den Buttons; rechts Favoriten → Status → Spalten → … */}
         <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:gap-3 overflow-x-hidden transition-all duration-300">
           <ToolbarSearchField
@@ -1754,7 +1734,12 @@ export function DashboardOverview({
                     {visibleColumns.company && (
                       <TableCell className="font-medium">
                         {companyLogoById.get(ref.company_id) ? (
-                          <div className="flex items-center">
+                          <Link
+                            href={ROUTES.accountsDetail(ref.company_id)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            aria-label={`${ref.company_name} öffnen`}
+                          >
                             <Image
                               src={companyLogoById.get(ref.company_id)!}
                               alt={ref.company_name}
@@ -1763,7 +1748,7 @@ export function DashboardOverview({
                               className="h-[22px] w-[22px] rounded-sm object-contain"
                             />
                             <span className="sr-only">{ref.company_name}</span>
-                          </div>
+                          </Link>
                         ) : (
                           ref.company_name
                         )}
