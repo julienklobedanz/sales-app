@@ -30,6 +30,21 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import type { ReferenceRow, ReferenceAssetRow, DeletedReferenceRow } from './actions'
 import { ReferenceStatusBadge } from '@/components/reference-status-badge'
 import { COPY } from '@/lib/copy'
@@ -131,34 +146,46 @@ const COLUMN_LABELS: Record<(typeof COLUMN_KEYS)[number], string> = {
 }
 
 /** Toolbar: Favoriten / Status / Spalten – gleiche Mindestbreite */
-const toolbarSegmentClass = `${TABLE_TOOLBAR.dashboard.toolbarButton} min-w-[9.5rem] justify-center gap-2 px-3`
+const toolbarSegmentClass = `${TABLE_TOOLBAR.dashboard.toolbarButton} justify-center gap-1.5 px-2.5`
 
 // --- Hauptkomponente ---
 
 type CompanyOption = { id: string; name: string; logo_url?: string | null }
 type ContactOption = { id: string; first_name: string | null; last_name: string | null; email: string | null }
+type DealOption = { id: string; title: string }
+
+type RfpAnalyzeResponse =
+  | {
+      success: true
+      analysisId: string
+      coverage: Array<{
+        requirementId: string
+        matches: Array<{ id: string; similarity: number }>
+      }>
+    }
+  | { success: false; error?: string }
 
 export function DashboardOverview({
   references: initialReferences,
   deletedCount,
   profile,
-  title = COPY.pages.evidence,
   initialFavoritesOnly = false,
   initialStatusFilter = 'all',
   companies = [],
   contacts = [],
   externalContacts = [],
+  deals = [],
 }: {
   references: ReferenceRow[]
   totalCount: number
   deletedCount: number
   profile: Profile
-  title?: string
   initialFavoritesOnly?: boolean
   initialStatusFilter?: string
   companies?: CompanyOption[]
   contacts?: ContactOption[]
   externalContacts?: { id: string; company_id: string; first_name: string | null; last_name: string | null; email: string | null; role: string | null; phone?: string | null }[]
+  deals?: DealOption[]
 }) {
   const router = useRouter()
   const [search, setSearch] = useState('')
@@ -203,6 +230,72 @@ export function DashboardOverview({
   const [confirmEmptyOpen, setConfirmEmptyOpen] = useState(false)
   const [emptyingTrash, setEmptyingTrash] = useState(false)
   const [newRefModalOpen, setNewRefModalOpen] = useState(false)
+  const rfpInputRef = useRef<HTMLInputElement | null>(null)
+  const [rfpModalOpen, setRfpModalOpen] = useState(false)
+  const [rfpAnalyzing, setRfpAnalyzing] = useState(false)
+  const [rfpFile, setRfpFile] = useState<File | null>(null)
+  const [rfpDealId, setRfpDealId] = useState<string>(deals[0]?.id ?? '')
+  const [rfpMatchedIds, setRfpMatchedIds] = useState<Set<string> | null>(null)
+  const [rfpRequirementCount, setRfpRequirementCount] = useState<number | null>(null)
+
+  function openRfpFlowWithFile(file: File) {
+    const ext = file.name.split('.').pop()?.toLowerCase()
+    if (ext !== 'pdf' && ext !== 'docx') {
+      toast.error('Bitte eine PDF- oder DOCX-Datei hochladen.')
+      return
+    }
+    if (deals.length === 0) {
+      toast.error('Für den RFP-Abgleich wird mindestens ein Deal benötigt.')
+      return
+    }
+    setRfpFile(file)
+    setRfpDealId((prev) => prev || deals[0]!.id)
+    setRfpModalOpen(true)
+  }
+
+  async function runRfpAnalysis() {
+    if (!rfpFile) {
+      toast.error('Bitte zuerst eine RFP-Datei auswählen.')
+      return
+    }
+    if (!rfpDealId) {
+      toast.error('Bitte einen Deal auswählen.')
+      return
+    }
+
+    setRfpAnalyzing(true)
+    try {
+      const formData = new FormData()
+      formData.set('dealId', rfpDealId)
+      formData.set('file', rfpFile)
+      const res = await fetch('/api/rfp/analyze', { method: 'POST', body: formData })
+      const json = (await res.json()) as RfpAnalyzeResponse
+
+      if (!res.ok || !json.success) {
+        const err = 'error' in json ? json.error : undefined
+        toast.error(err ?? 'RFP-Analyse fehlgeschlagen.')
+        return
+      }
+
+      const matched = new Set<string>()
+      for (const item of json.coverage) {
+        for (const match of item.matches) matched.add(match.id)
+      }
+      setRfpMatchedIds(matched)
+      setRfpRequirementCount(json.coverage.length)
+      setRfpModalOpen(false)
+      toast.success(
+        matched.size > 0
+          ? `${matched.size} passende Referenz${matched.size === 1 ? '' : 'en'} gefunden.`
+          : 'Keine passenden Referenzen gefunden.'
+      )
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'RFP-Analyse fehlgeschlagen.')
+    } finally {
+      setRfpAnalyzing(false)
+      if (rfpInputRef.current) rfpInputRef.current.value = ''
+    }
+  }
 
   function addBulkImportFiles(newFiles: File[]) {
     setBulkImportGroups((prev) => {
@@ -426,6 +519,9 @@ export function DashboardOverview({
     if (projectStatusFilter !== 'all') {
       list = list.filter((r) => (r.project_status ?? '') === projectStatusFilter)
     }
+    if (rfpMatchedIds) {
+      list = list.filter((r) => rfpMatchedIds.has(r.id))
+    }
     if (sortKey) {
       list = [...list].sort((a, b) => {
         const va = getSortValue(a, sortKey)
@@ -450,6 +546,7 @@ export function DashboardOverview({
     industryFilter,
     countryFilter,
     projectStatusFilter,
+    rfpMatchedIds,
     favoritesOnly,
     sortKey,
     sortDir,
@@ -546,57 +643,89 @@ export function DashboardOverview({
 
   return (
     <div className="flex flex-col space-y-6">
-      {/* Header: Titel + Aktionen */}
-      <div className="flex items-center justify-between gap-4">
-        <h2 className="text-3xl font-bold tracking-tight">{title}</h2>
-        <div className="flex items-center gap-2">
-          {/* Papierkorb-Icon */}
-          <button
-            type="button"
-            aria-label={
-              deletedCount > 0
-                ? `Papierkorb (${deletedCount} Einträge)`
-                : 'Papierkorb'
-            }
-            onClick={async () => {
-              if (deletedCount === 0) return
-              setTrashOpen(true)
-              setTrashLoading(true)
-              try {
-                const items = await getDeletedReferences()
-                setTrashItems(items)
-              } finally {
-                setTrashLoading(false)
-              }
-            }}
-            className="relative inline-flex h-9 w-9 items-center justify-center rounded-md border border-transparent bg-background text-muted-foreground hover:bg-muted disabled:cursor-default disabled:opacity-60"
-            disabled={deletedCount === 0}
-          >
-            <AppIcon
-              icon={Trash2}
-              size={16}
-              className={deletedCount > 0 ? 'text-destructive' : 'text-muted-foreground/50'}
-            />
-            {deletedCount > 0 && (
-              <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-medium text-destructive-foreground">
-                {deletedCount}
-              </span>
-            )}
-          </button>
-        </div>
-      </div>
-
       {/* Toolbar & Tabelle */}
       <div className="space-y-4">
+        {profile.role === 'admin' && (
+          <div
+            className="rounded-lg border-2 border-dashed border-muted-foreground/25 p-4"
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault()
+              const files = Array.from(e.dataTransfer.files ?? [])
+              if (files.length === 0) return
+              addBulkImportFiles(files)
+              setBulkImportOpen(true)
+            }}
+          >
+            <div className="text-sm font-medium">Drag & Drop Import</div>
+            <div className="mt-1 text-sm text-muted-foreground">
+              Dokument hierher ziehen für schnellen Import (F2: nutzt denselben Flow wie
+              „Neue Referenz“)
+            </div>
+          </div>
+        )}
+
         {/* Toolbar: Suche bis zu den Buttons; rechts Favoriten → Status → Spalten → … */}
         <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:gap-3 overflow-x-hidden transition-all duration-300">
           <ToolbarSearchField
             variant="dashboard"
-            wrapperClassName="min-w-0 flex-1 basis-[min(100%,20rem)] transition-all duration-300"
+            wrapperClassName="min-w-0 flex-1 basis-[min(100%,24rem)] transition-all duration-300"
             placeholder={COPY.dashboard.searchReferencesPlaceholder}
             value={search}
             onChange={setSearch}
           />
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className={cn(
+              TABLE_TOOLBAR.dashboard.toolbarButton,
+              'shrink-0 rounded-lg border-dashed px-3 text-muted-foreground'
+            )}
+            aria-label="RFP hochladen und Referenzen abgleichen"
+            onClick={() => rfpInputRef.current?.click()}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault()
+              const file = e.dataTransfer.files?.[0]
+              if (file) openRfpFlowWithFile(file)
+            }}
+          >
+            <AppIcon icon={UploadIcon} size={16} className="shrink-0" />
+            <span>RFP-Abgleich</span>
+          </Button>
+          <input
+            ref={rfpInputRef}
+            type="file"
+            accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) openRfpFlowWithFile(file)
+            }}
+          />
+
+          {rfpMatchedIds && (
+            <div className="flex items-center gap-2 rounded-lg border border-primary/40 bg-primary/5 px-2.5 py-2 text-xs">
+              <span className="font-medium text-foreground">
+                RFP aktiv: {rfpMatchedIds.size} Treffer
+                {rfpRequirementCount !== null ? ` / ${rfpRequirementCount} Anforderungen` : ''}
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-xs"
+                onClick={() => {
+                  setRfpMatchedIds(null)
+                  setRfpRequirementCount(null)
+                }}
+              >
+                Zurücksetzen
+              </Button>
+            </div>
+          )}
 
           <div className="flex shrink-0 flex-wrap items-center gap-2">
             <Button
@@ -789,7 +918,7 @@ export function DashboardOverview({
               <Button
                 variant="default"
                 size="icon"
-                className="h-9 w-9 shrink-0 bg-foreground text-background hover:bg-foreground/90 relative transition-all duration-300"
+                className="relative h-11 w-11 shrink-0 rounded-lg bg-foreground text-background transition-all duration-300 hover:bg-foreground/90"
                 aria-label={selectedRefIds.size > 0 ? `Warenkorb (${selectedRefIds.size} Referenzen)` : 'Warenkorb'}
               >
                 <AppIcon icon={ShoppingCartIcon} size={16} />
@@ -1503,7 +1632,11 @@ export function DashboardOverview({
                     className="h-24 text-center text-muted-foreground"
                   >
                     <div className="flex flex-col items-center justify-center gap-3 py-2">
-                      <p>Keine Referenzen gefunden.</p>
+                      <p>
+                        {rfpMatchedIds
+                          ? 'Keine Referenzen passen zu dieser Ausschreibung.'
+                          : 'Keine Referenzen gefunden.'}
+                      </p>
                       {!search.trim() &&
                         profile.role === 'admin' && (
                           <Button
@@ -1756,6 +1889,56 @@ export function DashboardOverview({
         previewRefs={previewRefs}
         onClose={() => setPreviewRefs(null)}
       />
+
+      <Dialog open={rfpModalOpen} onOpenChange={setRfpModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>RFP-Abgleich starten</DialogTitle>
+            <DialogDescription>
+              Datei hochladen und sofort passende Referenzen aus deiner Liste anzeigen.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Datei</p>
+              <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+                {rfpFile ? rfpFile.name : 'Keine Datei ausgewählt'}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Deal</p>
+              <Select value={rfpDealId || '__none__'} onValueChange={(v) => setRfpDealId(v === '__none__' ? '' : v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Deal auswählen …" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">— Auswählen —</SelectItem>
+                  {deals.map((deal) => (
+                    <SelectItem key={deal.id} value={deal.id}>
+                      {deal.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setRfpModalOpen(false)
+                setRfpFile(null)
+              }}
+              disabled={rfpAnalyzing}
+            >
+              Abbrechen
+            </Button>
+            <Button onClick={runRfpAnalysis} disabled={rfpAnalyzing || !rfpFile || !rfpDealId}>
+              {rfpAnalyzing ? 'Analyse läuft …' : 'Abgleich starten'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {profile.role === 'admin' && (
         <NewReferenceDialog

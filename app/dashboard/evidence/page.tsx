@@ -45,7 +45,7 @@ export default async function EvidenceHubPage() {
 
   const orgId = (profile as { organization_id?: string | null }).organization_id ?? ''
 
-  const [companiesResult, contactsResult, externalContactsResult] = await Promise.all([
+  const [companiesResult, contactsResult, externalContactsResult, dealsResult] = await Promise.all([
     supabase.from('companies').select('id, name, logo_url').order('name'),
     supabase.from('contact_persons').select('*').order('last_name'),
     supabase
@@ -53,6 +53,11 @@ export default async function EvidenceHubPage() {
       .select('id, company_id, first_name, last_name, email, role')
       .eq('organization_id', orgId)
       .order('last_name'),
+    supabase
+      .from('deals')
+      .select('id, title')
+      .eq('organization_id', orgId)
+      .order('created_at', { ascending: false }),
   ])
 
   return (
@@ -64,6 +69,7 @@ export default async function EvidenceHubPage() {
       companies={companiesResult.data ?? []}
       contacts={contactsResult.data ?? []}
       externalContacts={externalContactsResult.data ?? []}
+      deals={dealsResult.data ?? []}
     />
   )
 }
