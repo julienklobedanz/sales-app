@@ -64,6 +64,7 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  Cancel01Icon,
   CirclePlus,
   CopyIcon,
   Eye,
@@ -72,6 +73,7 @@ import {
   Filter,
   MoreHorizontal,
   Pencil,
+  Send,
   ShoppingCartIcon,
   SlidersHorizontal,
   StarIcon,
@@ -580,6 +582,42 @@ export function DashboardOverview({
     () => initialReferences.filter((r) => selectedRefIds.has(r.id)),
     [initialReferences, selectedRefIds]
   )
+  const selectedCount = selectedRefs.length
+  const selectedRefLabel = `${selectedCount} Referenz${selectedCount === 1 ? '' : 'en'}`
+  const approvalEligibleRefs = useMemo(
+    () =>
+      selectedRefs.filter(
+        (r) =>
+          r.status === 'anonymized' ||
+          r.status === 'internal_only' ||
+          r.status === 'draft'
+      ),
+    [selectedRefs]
+  )
+  const approvalEligibleCount = approvalEligibleRefs.length
+
+  const handleBulkRequestApproval = async () => {
+    if (approvalEligibleCount === 0) {
+      toast.error('Freigabe ist nur für Entwurf-, interne oder anonymisierte Referenzen möglich.')
+      return
+    }
+    const results = await Promise.allSettled(
+      approvalEligibleRefs.map((ref) => submitForApproval(ref.id))
+    )
+    const successCount = results.filter((r) => r.status === 'fulfilled').length
+    const failedCount = results.length - successCount
+    if (successCount > 0) {
+      toast.success(
+        `${successCount} Referenz${successCount === 1 ? '' : 'en'} zur Freigabe angefragt.`
+      )
+    }
+    if (failedCount > 0) {
+      toast.error(
+        `${failedCount} Freigabe-Anfrage${failedCount === 1 ? '' : 'n'} konnten nicht gesendet werden.`
+      )
+    }
+    router.refresh()
+  }
 
   useEffect(() => {
     const el = selectAllCheckboxRef.current
@@ -937,28 +975,40 @@ export function DashboardOverview({
               ) : (
                 <>
                   <DropdownMenuLabel>
-                    {selectedRefIds.size} Referenz{selectedRefIds.size !== 1 ? 'en' : ''} im Warenkorb
+                    {selectedRefLabel} ausgewählt
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   {profile.role === 'sales' && (
-                    <DropdownMenuItem
-                      onClick={async () => {
-                        const base = process.env.NEXT_PUBLIC_SUPABASE_URL
-                        const withFile = selectedRefs.filter((r) => r.file_path)
-                        if (withFile.length === 0) {
-                          toast.error('Keine der ausgewählten Referenzen hat ein Dokument zum Herunterladen.')
-                          return
-                        }
-                        withFile.forEach((r) => {
-                          const url = `${base}/storage/v1/object/public/references/${r.file_path}`
-                          window.open(url, '_blank', 'noopener,noreferrer')
-                        })
-                        toast.success(`${withFile.length} Referenz${withFile.length !== 1 ? 'en' : ''} werden heruntergeladen.`)
-                      }}
-                    >
-                      <AppIcon icon={FileDownIcon} size={16} className="mr-2" />
-                      Ausgewählte herunterladen
-                    </DropdownMenuItem>
+                    <>
+                      <DropdownMenuItem
+                        onClick={async () => {
+                          const base = process.env.NEXT_PUBLIC_SUPABASE_URL
+                          const withFile = selectedRefs.filter((r) => r.file_path)
+                          if (withFile.length === 0) {
+                            toast.error('Keine der ausgewählten Referenzen hat ein Dokument zum Herunterladen.')
+                            return
+                          }
+                          withFile.forEach((r) => {
+                            const url = `${base}/storage/v1/object/public/references/${r.file_path}`
+                            window.open(url, '_blank', 'noopener,noreferrer')
+                          })
+                          toast.success(`${withFile.length} Referenz${withFile.length !== 1 ? 'en' : ''} werden heruntergeladen.`)
+                        }}
+                      >
+                        <AppIcon icon={FileDownIcon} size={16} className="mr-2" />
+                        {selectedRefLabel} als PDF herunterladen
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        disabled={approvalEligibleCount === 0}
+                        onSelect={async (e: Event) => {
+                          e.preventDefault()
+                          await handleBulkRequestApproval()
+                        }}
+                      >
+                        <AppIcon icon={Send} size={16} className="mr-2" />
+                        {selectedRefLabel} um Freigabe anfragen
+                      </DropdownMenuItem>
+                    </>
                   )}
                   {profile.role === 'admin' && (
                     <DropdownMenuItem
@@ -974,13 +1024,14 @@ export function DashboardOverview({
                   )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => setSelectedRefIds(new Set())}>
+                    <AppIcon icon={Cancel01Icon} size={16} className="mr-2 text-muted-foreground" />
                     Auswahl aufheben
                   </DropdownMenuItem>
                 </>
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-
+ 
           {profile.role === 'admin' && (
             <BulkDeleteReferencesDialog
               open={bulkDeleteConfirmOpen}
