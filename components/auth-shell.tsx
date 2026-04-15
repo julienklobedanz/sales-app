@@ -19,17 +19,18 @@ export function AuthShell({ children, topRightLink, topRightLinkSearch }: AuthSh
             R
           </div>
           <div className="leading-tight">
-            <div className="text-lg font-semibold">Refstack</div>
-            <div className="text-sm text-muted-foreground">Dein Beweis. Dein Deal.</div>
+            <div className="text-lg font-bold">RefStack</div>
+            <div className="text-sm text-muted-foreground">
+              Know your references. Win more deals.
+            </div>
           </div>
         </div>
 
-        <div className="max-w-md">
-          <div className="text-3xl font-semibold tracking-tight">
-            Orientierung ab dem ersten Klick.
-          </div>
+        <div className="max-w-lg">
+          <div className="text-3xl font-semibold tracking-tight">Move deals faster.</div>
           <p className="mt-3 text-sm text-muted-foreground">
-            Registrierung, Arbeitsbereich-Setup und erste Referenz in wenigen Minuten – inklusive Team-Einladung.
+            One workspace for your references, account strategy, curated news on your targets and
+            live executive tracking. Sharp information. From first call to close.
           </p>
         </div>
       </div>
@@ -44,7 +45,7 @@ export function AuthShell({ children, topRightLink, topRightLinkSearch }: AuthSh
             {topRightLink.label}
           </Link>
         </div>
-        <div className="w-full max-w-[360px]">{children}</div>
+        <div className="w-full max-w-[440px]">{children}</div>
       </div>
     </div>
   )

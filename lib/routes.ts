@@ -6,6 +6,9 @@ export const ROUTES = {
   home: '/dashboard',
   login: '/login',
   register: '/register',
+  forgotPassword: '/forgot-password',
+  /** Neues Passwort nach Link aus der Reset-E-Mail (Session nach /auth/callback) */
+  authUpdatePassword: '/auth/update-password',
   onboarding: '/onboarding',
   authCallback: '/auth/callback',
   /** Prefix für OAuth/Magic-Link (Middleware: öffentliche Routen) */

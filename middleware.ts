@@ -37,6 +37,7 @@ export async function middleware(request: NextRequest) {
   const isAuthRoute =
     request.nextUrl.pathname.startsWith(ROUTES.login) ||
     request.nextUrl.pathname.startsWith(ROUTES.register) ||
+    request.nextUrl.pathname.startsWith(ROUTES.forgotPassword) ||
     request.nextUrl.pathname.startsWith(ROUTES.auth) ||
     request.nextUrl.pathname.startsWith('/signup') ||
     request.nextUrl.pathname.startsWith(ROUTES.onboarding) ||

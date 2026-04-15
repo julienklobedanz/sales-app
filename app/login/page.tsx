@@ -29,23 +29,23 @@ export default async function LoginPage({ searchParams }: Props) {
     >
       <div className="space-y-6">
         <div className="space-y-2 text-center md:text-left">
-          <h1 className="text-2xl font-semibold tracking-tight">Anmelden</h1>
-          <p className="text-sm text-muted-foreground">
-            {inviteToken
-              ? 'Melde dich an, um der Einladung beizutreten.'
-              : 'Gib deine Zugangsdaten ein, um dich anzumelden.'}
-          </p>
+          <h1 className="text-2xl font-semibold tracking-tight">Bei Ihrem Konto anmelden</h1>
+          {inviteToken ? (
+            <p className="text-sm text-muted-foreground">
+              Melde dich an, um der Einladung beizutreten.
+            </p>
+          ) : null}
         </div>
         <LoginForm inviteToken={inviteToken} />
-        <p className="text-center text-sm text-muted-foreground md:text-left">
-          Noch kein Konto?{' '}
+        <div className="rounded-lg bg-muted/50 px-4 py-3 text-center text-sm text-muted-foreground md:text-left">
+          Neu bei RefStack?{' '}
           <Link
             href={registerHref ?? ROUTES.register}
             className="font-medium text-primary underline-offset-4 hover:underline"
           >
-            Jetzt registrieren
+            Konto erstellen
           </Link>
-        </p>
+        </div>
       </div>
     </AuthShell>
   )
