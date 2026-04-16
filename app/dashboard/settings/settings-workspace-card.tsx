@@ -16,14 +16,20 @@ export function SettingsWorkspaceCard({
   organizationId,
   organizationName,
   logoUrl,
+  primaryColor = '#0f172a',
+  secondaryColor = '#334155',
 }: {
   organizationId: string | null
   organizationName: string
   logoUrl?: string | null
+  primaryColor?: string | null
+  secondaryColor?: string | null
 }) {
   const [name, setName] = useState(organizationName)
   const [pending, setPending] = useState(false)
   const [logoPreview, setLogoPreview] = useState<string | null>(logoUrl ?? null)
+  const [primary, setPrimary] = useState(primaryColor ?? '#0f172a')
+  const [secondary, setSecondary] = useState(secondaryColor ?? '#334155')
   const [logoLoading, setLogoLoading] = useState(false)
   const [dragActive, setDragActive] = useState(false)
 
@@ -31,7 +37,13 @@ export function SettingsWorkspaceCard({
     e.preventDefault()
     if (!organizationId) return
     setPending(true)
-    const result = await updateOrganization(organizationId, name.trim(), logoPreview)
+    const result = await updateOrganization(
+      organizationId,
+      name.trim(),
+      logoPreview,
+      primary.trim() || '#0f172a',
+      secondary.trim() || '#334155'
+    )
     setPending(false)
     if (result.success) {
       toast.success('Arbeitsbereich aktualisiert')
@@ -162,6 +174,28 @@ export function SettingsWorkspaceCard({
               const file = e.target.files?.[0] ?? null
               if (file) handleLogoFile(file)
             }}
+          />
+        </div>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="primary-color">Primärfarbe</Label>
+          <Input
+            id="primary-color"
+            value={primary}
+            onChange={(e) => setPrimary(e.target.value)}
+            placeholder="#0f172a"
+            disabled={!organizationId}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="secondary-color">Sekundärfarbe</Label>
+          <Input
+            id="secondary-color"
+            value={secondary}
+            onChange={(e) => setSecondary(e.target.value)}
+            placeholder="#334155"
+            disabled={!organizationId}
           />
         </div>
       </div>

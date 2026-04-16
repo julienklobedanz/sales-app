@@ -17,6 +17,16 @@ export default async function DashboardPage() {
     redirect(ROUTES.login)
   }
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  if (!profile?.organization_id) {
+    redirect(ROUTES.onboarding)
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div>

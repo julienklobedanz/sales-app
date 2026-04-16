@@ -12,6 +12,9 @@ import { deleteReferenceFromDetailPage } from './actions'
 import { ReferenceStatusBadge } from '@/components/reference-status-badge'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
+import { PdfExportDialog } from './pdf-export-dialog'
+import { AnonymizeReferenceButton } from './anonymize-reference-button'
+import { ShareLinkButton } from './share-link-button'
 
 export const dynamic = 'force-dynamic'
 
@@ -322,17 +325,11 @@ export default async function EvidenceDetailPage({
                   {isFavorited ? 'Favorit' : 'Favorisieren'}
                 </Button>
               </form>
-              <Button variant="outline" className="w-full" disabled>
-                PDF exportieren
-              </Button>
-              <Button variant="outline" className="w-full" disabled>
-                Link erstellen
-              </Button>
+              <PdfExportDialog referenceId={id} />
+              <ShareLinkButton referenceId={id} />
               {role === 'sales' ? null : (
                 <>
-                  <Button variant="outline" className="w-full" disabled>
-                    Anonymisierte Version
-                  </Button>
+                  <AnonymizeReferenceButton referenceId={id} />
                   <Button asChild variant="outline" className="w-full">
                     <Link href={ROUTES.evidence.edit(id)}>Bearbeiten</Link>
                   </Button>

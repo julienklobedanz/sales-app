@@ -13,6 +13,15 @@ export default async function LoginPage({ searchParams }: Props) {
     data: { user },
   } = await supabase.auth.getUser()
   if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('organization_id')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (!profile?.organization_id) {
+      redirect(ROUTES.onboarding)
+    }
     redirect(ROUTES.home)
   }
 

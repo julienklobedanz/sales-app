@@ -32,7 +32,7 @@ export default async function SettingsPage() {
     organizationId &&
     (await supabase
       .from('organizations')
-      .select('id, name, logo_url, stripe_subscription_id, subscription_status')
+      .select('id, name, logo_url, primary_color, secondary_color, stripe_subscription_id, subscription_status')
       .eq('id', organizationId)
       .single())
 
@@ -81,6 +81,8 @@ export default async function SettingsPage() {
               organizationId={orgRow?.id ?? null}
               organizationName={orgRow?.name ?? ''}
               logoUrl={orgRow?.logo_url ?? null}
+              primaryColor={(orgRow as { primary_color?: string | null } | null)?.primary_color ?? '#0f172a'}
+              secondaryColor={(orgRow as { secondary_color?: string | null } | null)?.secondary_color ?? '#334155'}
             />
           </div>
           <div className={CARD_CLASS}>

@@ -46,6 +46,22 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('organization_id')
+          .eq('id', user.id)
+          .maybeSingle()
+
+        if (!profile?.organization_id) {
+          const onboardingUrl = new URL(ROUTES.onboarding, origin)
+          response.headers.set('Location', onboardingUrl.toString())
+        }
+      }
       return response
     }
   }

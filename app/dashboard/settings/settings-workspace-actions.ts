@@ -11,7 +11,9 @@ export type UpdateOrganizationResult =
 export async function updateOrganization(
   organizationId: string,
   name: string,
-  logoDataUrl?: string | null
+  logoDataUrl?: string | null,
+  primaryColor?: string | null,
+  secondaryColor?: string | null
 ): Promise<UpdateOrganizationResult> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -39,6 +41,12 @@ export async function updateOrganization(
 
   if (logoDataUrl !== undefined) {
     updates.logo_url = logoDataUrl || null
+  }
+  if (primaryColor !== undefined) {
+    updates.primary_color = primaryColor || '#0f172a'
+  }
+  if (secondaryColor !== undefined) {
+    updates.secondary_color = secondaryColor || '#334155'
   }
 
   const { error } = await supabase
