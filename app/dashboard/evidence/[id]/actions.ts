@@ -236,7 +236,7 @@ export async function createAnonymizedReferenceVersion(id: string): Promise<Anon
     summary: anonymized.summary,
     industry: row.industry as string | null,
     country: row.country as string | null,
-    status: 'approved',
+    status: 'anonymized',
     tags: anonymized.tags,
     website: null,
     employee_count: row.employee_count as number | null,
@@ -255,6 +255,7 @@ export async function createAnonymizedReferenceVersion(id: string): Promise<Anon
     project_end: row.project_end as string | null,
     duration_months: row.duration_months as number | null,
     is_nda_deal: true,
+    anonymized_from_id: id,
   }
 
   const { data: inserted, error: insertError } = await supabase

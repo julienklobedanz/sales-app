@@ -57,6 +57,7 @@ export default async function EvidenceDetailPage({
       industry,
       country,
       status,
+      anonymized_from_id,
       tags,
       created_at,
       updated_at,
@@ -85,6 +86,7 @@ export default async function EvidenceDetailPage({
     industry: string | null
     country: string | null
     status: string
+    anonymized_from_id: string | null
     created_at: string | null
     updated_at: string | null
     tags: string | null
@@ -109,6 +111,7 @@ export default async function EvidenceDetailPage({
     !(
       normalizedStatus === 'approved' ||
       normalizedStatus === 'internal_only' ||
+      normalizedStatus === 'anonymized' ||
       normalizedStatus === 'external' ||
       normalizedStatus === 'internal'
     )
@@ -135,6 +138,12 @@ export default async function EvidenceDetailPage({
   const shareCount = (shareRows ?? []).length
   const tags = splitTags(ref.tags ?? null)
   const company = Array.isArray(ref.companies) ? ref.companies[0] : ref.companies
+
+  const { data: anonymizedChild } = await supabase
+    .from('references')
+    .select('id')
+    .eq('anonymized_from_id', id)
+    .maybeSingle()
 
   const createdAt = ref.created_at ? new Date(ref.created_at) : null
   const updatedAt = ref.updated_at ? new Date(ref.updated_at) : null
@@ -316,6 +325,19 @@ export default async function EvidenceDetailPage({
               <CardTitle className="text-base">Aktionen</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-2">
+              {ref.anonymized_from_id ? (
+                <Button asChild variant="outline" className="w-full">
+                  <Link href={ROUTES.evidence.detail(ref.anonymized_from_id)}>
+                    Vollversion anzeigen
+                  </Link>
+                </Button>
+              ) : anonymizedChild?.id ? (
+                <Button asChild variant="outline" className="w-full">
+                  <Link href={ROUTES.evidence.detail(anonymizedChild.id)}>
+                    Anonymisierte Version anzeigen
+                  </Link>
+                </Button>
+              ) : null}
               <form action={toggleFavorite.bind(null, id)}>
                 <Button
                   type="submit"
@@ -338,7 +360,9 @@ export default async function EvidenceDetailPage({
               <ShareLinkButton referenceId={id} />
               {role === 'sales' ? null : (
                 <>
-                  <AnonymizeReferenceButton referenceId={id} />
+                  {ref.anonymized_from_id || anonymizedChild?.id ? null : (
+                    <AnonymizeReferenceButton referenceId={id} />
+                  )}
                   <Button asChild variant="outline" className="w-full">
                     <Link href={ROUTES.evidence.edit(id)}>Bearbeiten</Link>
                   </Button>
