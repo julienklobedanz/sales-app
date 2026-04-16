@@ -33,9 +33,6 @@ export async function createSharedPortfolioImpl(
   if (!user) return { success: false, error: 'Nicht angemeldet.' }
   if (!referenceIds?.length) return { success: false, error: 'Mindestens eine Referenz nötig.' }
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || ''
-  const pathPrefix = baseUrl ? `${baseUrl.replace(/\/$/, '')}/p` : '/p'
-
   for (let attempt = 0; attempt < 5; attempt++) {
     const slug = generatePortfolioSlug()
     const { error } = await supabase.from('shared_portfolios').insert({
@@ -45,7 +42,7 @@ export async function createSharedPortfolioImpl(
       view_count: 0,
     })
     if (!error) {
-      const url = pathPrefix ? `${pathPrefix}/${slug}` : `/p/${slug}`
+      const url = `/p/${slug}`
       return { success: true, url, slug }
     }
     const code = (error as { code?: string }).code
@@ -75,8 +72,6 @@ export async function getExistingShareForReferenceImpl(
   referenceId: string
 ): Promise<{ slug: string; url: string } | null> {
   const supabase = await createServerSupabaseClient()
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || ''
-  const pathPrefix = baseUrl ? `${baseUrl.replace(/\/$/, '')}/p` : '/p'
   const { data: rows, error } = await supabase
     .from('shared_portfolios')
     .select('slug')
@@ -98,7 +93,7 @@ export async function getExistingShareForReferenceImpl(
   }
   const row = rows?.[0]
   if (!row?.slug) return null
-  return { slug: row.slug, url: pathPrefix ? `${pathPrefix}/${row.slug}` : `/p/${row.slug}` }
+  return { slug: row.slug, url: `/p/${row.slug}` }
 }
 
 export async function getReferencesByIdsImpl(ids: string[]): Promise<ReferenceRow[]> {

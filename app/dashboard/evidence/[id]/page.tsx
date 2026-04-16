@@ -124,6 +124,15 @@ export default async function EvidenceDetailPage({
     .maybeSingle()
 
   const isFavorited = Boolean(favorite?.id)
+  const { data: shareRows } = await supabase
+    .from('shared_portfolios')
+    .select('view_count')
+    .contains('reference_ids', [id])
+  const totalViews = (shareRows ?? []).reduce(
+    (sum, row) => sum + ((row as { view_count?: number }).view_count ?? 0),
+    0
+  )
+  const shareCount = (shareRows ?? []).length
   const tags = splitTags(ref.tags ?? null)
   const company = Array.isArray(ref.companies) ? ref.companies[0] : ref.companies
 
@@ -285,11 +294,11 @@ export default async function EvidenceDetailPage({
             <CardContent className="grid grid-cols-2 gap-2 text-sm">
               <div className="rounded-md border p-2">
                 <div className="text-xs text-muted-foreground">Views</div>
-                <div className="font-semibold">—</div>
+                <div className="font-semibold">{totalViews}</div>
               </div>
               <div className="rounded-md border p-2">
                 <div className="text-xs text-muted-foreground">Shares</div>
-                <div className="font-semibold">—</div>
+                <div className="font-semibold">{shareCount}</div>
               </div>
               <div className="rounded-md border p-2">
                 <div className="text-xs text-muted-foreground">In Deals</div>

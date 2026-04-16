@@ -17,6 +17,13 @@ function sanitizeSharedUrl(url: string) {
   return url.replace(/\[([^\]]+)\]/g, '$1').replace(/\[|\]/g, '')
 }
 
+function toAbsoluteUrl(url: string) {
+  const clean = sanitizeSharedUrl(url)
+  if (clean.startsWith('http://') || clean.startsWith('https://')) return clean
+  if (typeof window === 'undefined') return clean
+  return new URL(clean, window.location.origin).toString()
+}
+
 export function ShareLinkButton({ referenceId }: { referenceId: string }) {
   const [loading, setLoading] = useState(false)
   const [creating, setCreating] = useState(false)
@@ -27,7 +34,7 @@ export function ShareLinkButton({ referenceId }: { referenceId: string }) {
     if (!open) return
     setLoading(true)
     getExistingShareForReference(referenceId)
-      .then((existing) => setUrl(existing?.url ? sanitizeSharedUrl(existing.url) : null))
+      .then((existing) => setUrl(existing?.url ? toAbsoluteUrl(existing.url) : null))
       .finally(() => setLoading(false))
   }, [open, referenceId])
 
@@ -83,7 +90,7 @@ export function ShareLinkButton({ referenceId }: { referenceId: string }) {
                   toast.error(result.error ?? 'Link konnte nicht erstellt werden.')
                   return
                 }
-                const sharedUrl = sanitizeSharedUrl(result.url)
+                const sharedUrl = toAbsoluteUrl(result.url)
                 setUrl(sharedUrl)
                 await copyToClipboard(sharedUrl)
               } finally {

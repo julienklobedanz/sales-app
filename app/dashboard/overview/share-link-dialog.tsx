@@ -17,6 +17,13 @@ function sanitizeSharedUrl(url: string) {
   return url.replace(/\[([^\]]+)\]/g, '$1').replace(/\[|\]/g, '')
 }
 
+function toAbsoluteUrl(url: string) {
+  const clean = sanitizeSharedUrl(url)
+  if (clean.startsWith('http://') || clean.startsWith('https://')) return clean
+  if (typeof window === 'undefined') return clean
+  return new URL(clean, window.location.origin).toString()
+}
+
 export function ShareLinkDialog({
   reference,
   onClose,
@@ -39,7 +46,7 @@ export function ShareLinkDialog({
     setShareLinkLoading(true)
     getExistingShareForReference(refId)
       .then((existing) =>
-        setShareLinkUrl(existing?.url ? sanitizeSharedUrl(existing.url) : null),
+        setShareLinkUrl(existing?.url ? toAbsoluteUrl(existing.url) : null),
       )
       .finally(() => setShareLinkLoading(false))
   }, [refId])
@@ -108,7 +115,7 @@ export function ShareLinkDialog({
                       try {
                         const result = await createSharedPortfolio([reference.id])
                         if (result.success) {
-                          setShareLinkUrl(sanitizeSharedUrl(result.url))
+                          setShareLinkUrl(toAbsoluteUrl(result.url))
                           toast.success('Kundenlink erstellt')
                         } else {
                           toast.error(result.error ?? 'Erstellen fehlgeschlagen')
