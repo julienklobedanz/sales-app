@@ -18,21 +18,28 @@ const TEMPLATE_OPTIONS: Array<{
   key: PdfTemplate
   title: string
   description: string
+  mini: {
+    pages: number
+    anonymized?: boolean
+  }
 }> = [
   {
     key: 'one_pager',
     title: 'One-Pager',
     description: 'Kompakte 1-Seiten-Uebersicht fuer schnelle Sales-Calls.',
+    mini: { pages: 1 },
   },
   {
     key: 'detail',
     title: 'Detail',
     description: 'Mehrseitig mit Herausforderung, Loesung und Projektdetails.',
+    mini: { pages: 2 },
   },
   {
     key: 'anonymized',
     title: 'Anonymisiert',
     description: 'NDA-sichere Ausgabe ohne konkrete Kundendaten.',
+    mini: { pages: 1, anonymized: true },
   },
 ]
 
@@ -103,13 +110,28 @@ export function PdfExportDialog({ referenceId }: { referenceId: string }) {
                     : 'border-border hover:bg-muted/40'
                 }`}
               >
-                <div className="text-sm font-semibold">{opt.title}</div>
-                <div className="mt-1 text-xs text-muted-foreground">{opt.description}</div>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-semibold">{opt.title}</div>
+                    <div className="mt-1 text-xs text-muted-foreground">{opt.description}</div>
+                  </div>
+                  <div className="inline-flex items-end gap-1 rounded-md border bg-background px-2 py-1">
+                    {Array.from({ length: opt.mini.pages }).map((_, i) => (
+                      <div
+                        key={`${opt.key}-${i}`}
+                        className="h-10 w-7 rounded-sm border bg-muted/60"
+                      />
+                    ))}
+                    {opt.mini.anonymized ? (
+                      <span className="text-[10px] text-muted-foreground">NDA</span>
+                    ) : null}
+                  </div>
+                </div>
               </button>
             ))}
           </div>
           <div className="rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
-            Vorschau: <span className="font-medium text-foreground">{currentTemplate?.title}</span> Template
+            Vorschau-Miniatur: <span className="font-medium text-foreground">{currentTemplate?.title}</span>
           </div>
           <DialogFooter>
             <Button variant="outline" disabled={loading} onClick={() => setOpen(false)}>

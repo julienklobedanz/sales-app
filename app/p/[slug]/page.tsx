@@ -1,31 +1,11 @@
 import type { Metadata } from 'next'
 import { getPublicPortfolio, getPublicPortfolioBranding, incrementPortfolioViews } from '../actions'
-import { ReferenceReader } from '@/app/dashboard/reference-reader'
-import type { ReferenceRow } from '@/app/dashboard/actions'
-import type { PublicReference } from '../actions'
 import { PublicPortfolioKillswitch } from './killswitch'
 
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   robots: 'noindex, nofollow',
-}
-
-function toReferenceRow(r: PublicReference): ReferenceRow {
-  return {
-    ...r,
-    status: (r.status as ReferenceRow['status']) || 'approved',
-    project_status: (r.project_status as ReferenceRow['project_status']) ?? null,
-    created_at: '',
-    updated_at: null,
-    company_id: '',
-    contact_id: null,
-    contact_email: null,
-    contact_display: null,
-    customer_contact: null,
-    file_path: null,
-    is_favorited: false,
-  }
 }
 
 export default async function PublicPortfolioPage({
@@ -83,9 +63,54 @@ export default async function PublicPortfolioPage({
         </header>
       ) : null}
       <main className="mx-auto max-w-4xl px-6 py-24 sm:px-12 lg:px-24">
-        <div className="space-y-16">
+        <div className="grid gap-4 md:grid-cols-2">
           {result.references.map((ref) => (
-            <ReferenceReader key={ref.id} reference={toReferenceRow(ref)} />
+            <article key={ref.id} className="rounded-xl border bg-card p-4 shadow-sm">
+              <div className="mb-3 flex items-center gap-2">
+                {ref.company_logo_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={ref.company_logo_url}
+                    alt={`${ref.company_name} Logo`}
+                    className="h-8 w-8 rounded-sm object-contain"
+                  />
+                ) : null}
+                <div className="min-w-0">
+                  <p className="truncate text-xs text-muted-foreground">{ref.company_name}</p>
+                  <h2 className="truncate text-sm font-semibold">{ref.title}</h2>
+                </div>
+              </div>
+
+              <p className="line-clamp-3 text-sm text-muted-foreground">
+                {ref.summary || ref.customer_challenge || 'Keine Beschreibung verfügbar.'}
+              </p>
+
+              <details className="mt-3 rounded-md border bg-muted/30 p-3">
+                <summary className="cursor-pointer text-sm font-medium">Details anzeigen</summary>
+                <div className="mt-3 space-y-2 text-sm">
+                  <div className="flex justify-between gap-3">
+                    <span className="text-muted-foreground">Branche</span>
+                    <span>{ref.industry || '—'}</span>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <span className="text-muted-foreground">Volumen</span>
+                    <span>{ref.volume_eur || '—'}</span>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <span className="text-muted-foreground">Projektstatus</span>
+                    <span>{ref.project_status || '—'}</span>
+                  </div>
+                  <div className="pt-2 text-xs text-muted-foreground">
+                    <p className="font-medium">Herausforderung</p>
+                    <p>{ref.customer_challenge || '—'}</p>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    <p className="font-medium">Lösung</p>
+                    <p>{ref.our_solution || '—'}</p>
+                  </div>
+                </div>
+              </details>
+            </article>
           ))}
         </div>
       </main>

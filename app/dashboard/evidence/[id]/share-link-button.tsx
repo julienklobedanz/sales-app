@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { CopyIcon, ExternalLink, LinkIcon, Loader } from '@hugeicons/core-free-icons'
+import { CopyIcon, ExternalLink, LinkIcon, Loader, RefreshCw } from '@hugeicons/core-free-icons'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -64,7 +64,7 @@ export function ShareLinkButton({ referenceId }: { referenceId: string }) {
         ) : url ? (
           <div className="space-y-2">
             <Input value={url} readOnly className="font-mono text-xs" />
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button type="button" size="sm" variant="outline" onClick={() => copyToClipboard(url)}>
                 <AppIcon icon={CopyIcon} size={16} className="mr-2" />
                 Kopieren
@@ -74,6 +74,34 @@ export function ShareLinkButton({ referenceId }: { referenceId: string }) {
                   <AppIcon icon={ExternalLink} size={16} className="mr-2" />
                   Öffnen
                 </a>
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={creating}
+                onClick={async () => {
+                  setCreating(true)
+                  try {
+                    const result = await createSharedPortfolio([referenceId])
+                    if (!result.success) {
+                      toast.error(result.error ?? 'Neuer Link konnte nicht erstellt werden.')
+                      return
+                    }
+                    const sharedUrl = toAbsoluteUrl(result.url)
+                    setUrl(sharedUrl)
+                    await copyToClipboard(sharedUrl)
+                  } finally {
+                    setCreating(false)
+                  }
+                }}
+              >
+                {creating ? (
+                  <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />
+                ) : (
+                  <AppIcon icon={RefreshCw} size={16} className="mr-2" />
+                )}
+                Neuer Link
               </Button>
             </div>
           </div>
