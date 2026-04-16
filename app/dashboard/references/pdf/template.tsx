@@ -50,13 +50,13 @@ function renderHeader(org: PdfOrgBranding) {
   )
 }
 
-function renderFacts(reference: PdfReference) {
+function renderFacts(reference: PdfReference, org: PdfOrgBranding) {
   return (
-    <View style={[styles.section, styles.card]}>
-      <Text style={styles.sectionTitle}>Projektdetails</Text>
+    <View style={[styles.section, styles.card, { border: `1px solid ${org.secondary_color}` }]}>
+      <Text style={[styles.sectionTitle, { color: org.secondary_color }]}>Projektdetails</Text>
       {keyFacts(reference).map((item) => (
         <View key={item.label} style={styles.metaRow}>
-          <Text style={styles.muted}>{item.label}</Text>
+          <Text style={[styles.muted, { color: org.secondary_color }]}>{item.label}</Text>
           <Text>{item.value}</Text>
         </View>
       ))}
@@ -64,22 +64,22 @@ function renderFacts(reference: PdfReference) {
   )
 }
 
-function renderStory(reference: PdfReference) {
+function renderStory(reference: PdfReference, org: PdfOrgBranding) {
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Herausforderung</Text>
+      <Text style={[styles.sectionTitle, { color: org.secondary_color }]}>Herausforderung</Text>
       <Text>{reference.customer_challenge || '—'}</Text>
-      <View style={styles.divider} />
-      <Text style={styles.sectionTitle}>Lösung</Text>
+      <View style={[styles.divider, { borderBottom: `1px solid ${org.secondary_color}` }]} />
+      <Text style={[styles.sectionTitle, { color: org.secondary_color }]}>Lösung</Text>
       <Text>{reference.our_solution || '—'}</Text>
-      <View style={styles.divider} />
-      <Text style={styles.sectionTitle}>Kurzfassung</Text>
+      <View style={[styles.divider, { borderBottom: `1px solid ${org.secondary_color}` }]} />
+      <Text style={[styles.sectionTitle, { color: org.secondary_color }]}>Kurzfassung</Text>
       <Text>{reference.summary || '—'}</Text>
     </View>
   )
 }
 
-function renderTags(reference: PdfReference) {
+function renderTags(reference: PdfReference, org: PdfOrgBranding) {
   const tags = (reference.tags ?? '')
     .split(',')
     .map((tag) => tag.trim())
@@ -87,10 +87,13 @@ function renderTags(reference: PdfReference) {
   if (tags.length === 0) return null
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Tags</Text>
+      <Text style={[styles.sectionTitle, { color: org.secondary_color }]}>Tags</Text>
       <View style={styles.tagWrap}>
         {tags.map((tag) => (
-          <Text key={tag} style={styles.tag}>
+          <Text
+            key={tag}
+            style={[styles.tag, { border: `1px solid ${org.secondary_color}`, color: org.secondary_color }]}
+          >
             {tag}
           </Text>
         ))}
@@ -104,11 +107,11 @@ function OnePager({ reference, org }: { reference: PdfReference; org: PdfOrgBran
     <Page size="A4" style={styles.page}>
       {renderHeader(org)}
       <Text style={styles.heading}>{reference.title}</Text>
-      <Text style={styles.subHeading}>{reference.company_name}</Text>
-      {renderFacts(reference)}
-      {renderStory(reference)}
-      {renderTags(reference)}
-      <Text style={styles.footer}>Erstellt mit RefStack</Text>
+      <Text style={[styles.subHeading, { color: org.secondary_color }]}>{reference.company_name}</Text>
+      {renderFacts(reference, org)}
+      {renderStory(reference, org)}
+      {renderTags(reference, org)}
+      <Text style={[styles.footer, { color: org.secondary_color }]}>Erstellt mit RefStack</Text>
     </Page>
   )
 }
@@ -119,15 +122,15 @@ function DetailPages({ reference, org }: { reference: PdfReference; org: PdfOrgB
       <Page size="A4" style={styles.page}>
         {renderHeader(org)}
         <Text style={styles.heading}>{reference.title}</Text>
-        <Text style={styles.subHeading}>{reference.company_name}</Text>
-        {renderFacts(reference)}
-        <Text style={styles.footer}>RefStack Detail Export - Seite 1</Text>
+        <Text style={[styles.subHeading, { color: org.secondary_color }]}>{reference.company_name}</Text>
+        {renderFacts(reference, org)}
+        <Text style={[styles.footer, { color: org.secondary_color }]}>RefStack Detail Export - Seite 1</Text>
       </Page>
       <Page size="A4" style={styles.page}>
         <Text style={styles.heading}>Herausforderung und Lösung</Text>
-        {renderStory(reference)}
-        {renderTags(reference)}
-        <Text style={styles.footer}>RefStack Detail Export - Seite 2</Text>
+        {renderStory(reference, org)}
+        {renderTags(reference, org)}
+        <Text style={[styles.footer, { color: org.secondary_color }]}>RefStack Detail Export - Seite 2</Text>
       </Page>
     </>
   )

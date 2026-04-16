@@ -87,7 +87,7 @@ export async function GET(req: NextRequest) {
 
   const { data: org } = await supabase
     .from('organizations')
-    .select('name, logo_url')
+    .select('name, logo_url, primary_color, secondary_color')
     .eq('id', profile.organization_id)
     .single()
 
@@ -120,8 +120,8 @@ export async function GET(req: NextRequest) {
   const branding: PdfOrgBranding = {
     name: org?.name ?? 'RefStack',
     logo_url: org?.logo_url ?? null,
-    primary_color: '#0f172a',
-    secondary_color: '#334155',
+    primary_color: org?.primary_color ?? '#0f172a',
+    secondary_color: org?.secondary_color ?? '#334155',
   }
 
   const pdf = await renderToBuffer(
