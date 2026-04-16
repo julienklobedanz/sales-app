@@ -2,16 +2,25 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
 import { getTeamMembers } from './invite-actions'
-import { SettingsProfileCard } from './settings-profile-card'
-import { SettingsTeamCard } from './settings-team-card'
-import { SettingsWorkspaceCard } from './settings-workspace-card'
-import { SettingsBillingCard } from './settings-billing-card'
 import { SettingsDangerZone } from './settings-danger-zone'
+import { SettingsTabs } from './settings-tabs'
 
-const CARD_CLASS =
-  'rounded-3xl border bg-card text-card-foreground p-6 shadow-sm'
 const SECTION_LABEL_CLASS =
   'text-sm font-medium uppercase tracking-wider text-muted-foreground mb-3 block'
+
+function parseExportSettings(raw: unknown): { pdf_layout?: 'one_pager' | 'detail' | 'anonymized'; pdf_logo_enabled?: boolean } {
+  if (!raw || typeof raw !== 'object') return {}
+  const obj = raw as Record<string, unknown>
+  const layout = obj.pdf_layout
+  const logo = obj.pdf_logo_enabled
+  return {
+    pdf_layout:
+      layout === 'detail' || layout === 'anonymized' || layout === 'one_pager'
+        ? layout
+        : undefined,
+    pdf_logo_enabled: typeof logo === 'boolean' ? logo : undefined,
+  }
+}
 
 export default async function SettingsPage() {
   const supabase = await createServerSupabaseClient()
@@ -32,7 +41,7 @@ export default async function SettingsPage() {
     organizationId &&
     (await supabase
       .from('organizations')
-      .select('id, name, logo_url, primary_color, secondary_color, stripe_subscription_id, subscription_status')
+      .select('id, name, logo_url, primary_color, secondary_color, export_settings, stripe_subscription_id, subscription_status')
       .eq('id', organizationId)
       .single())
 
@@ -51,48 +60,31 @@ export default async function SettingsPage() {
         </p>
       </div>
 
-      {/* 1. Profil */}
-      <section className="space-y-3">
-        <span className={SECTION_LABEL_CLASS}>Profil</span>
-        <div className={CARD_CLASS}>
-          <SettingsProfileCard
-            userEmail={user.email ?? ''}
-            firstName={firstName}
-            lastName={lastName}
-            avatarUrl={(profileRow as { avatar_url?: string | null })?.avatar_url ?? null}
-          />
-        </div>
-      </section>
-
-      {/* 2. Team Management */}
-      <section className="space-y-3">
-        <span className={SECTION_LABEL_CLASS}>Teamverwaltung</span>
-        <div className={CARD_CLASS}>
-          <SettingsTeamCard initialMembers={teamMembers} />
-        </div>
-      </section>
-
-      {/* 3. Organisation & Abrechnung */}
-      <section className="space-y-3">
-        <span className={SECTION_LABEL_CLASS}>Organisation & Abrechnung</span>
-        <div className="grid gap-6 sm:grid-cols-2">
-          <div className={CARD_CLASS}>
-            <SettingsWorkspaceCard
-              organizationId={orgRow?.id ?? null}
-              organizationName={orgRow?.name ?? ''}
-              logoUrl={orgRow?.logo_url ?? null}
-              primaryColor={(orgRow as { primary_color?: string | null } | null)?.primary_color ?? '#0f172a'}
-              secondaryColor={(orgRow as { secondary_color?: string | null } | null)?.secondary_color ?? '#334155'}
-            />
-          </div>
-          <div className={CARD_CLASS}>
-            <SettingsBillingCard
-              subscriptionStatus={orgRow?.subscription_status ?? null}
-              subscriptionId={orgRow?.stripe_subscription_id ?? null}
-            />
-          </div>
-        </div>
-      </section>
+      <SettingsTabs
+        profile={{
+          userEmail: user.email ?? '',
+          firstName,
+          lastName,
+          avatarUrl: (profileRow as { avatar_url?: string | null })?.avatar_url ?? null,
+        }}
+        org={{
+          id: orgRow?.id ?? null,
+          name: orgRow?.name ?? '',
+          logoUrl: orgRow?.logo_url ?? null,
+          primaryColor:
+            (orgRow as { primary_color?: string | null } | null)?.primary_color ??
+            '#0f172a',
+          secondaryColor:
+            (orgRow as { secondary_color?: string | null } | null)
+              ?.secondary_color ?? '#334155',
+          exportSettings: parseExportSettings(
+            (orgRow as { export_settings?: unknown } | null)?.export_settings
+          ),
+          subscriptionStatus: orgRow?.subscription_status ?? null,
+          subscriptionId: orgRow?.stripe_subscription_id ?? null,
+        }}
+        teamMembers={teamMembers}
+      />
 
       {/* 4. Danger Zone */}
       <section className="space-y-3">

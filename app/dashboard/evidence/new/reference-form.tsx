@@ -56,6 +56,27 @@ import {
 import { AppIcon } from '@/lib/icons'
 import { ROUTES } from '@/lib/routes'
 
+function normalizeWrappedParagraphs(input: string): string {
+  const raw = input.replace(/\r\n/g, '\n').trim()
+  if (!raw) return ''
+
+  // Split into paragraphs by blank lines, then join single line breaks within a paragraph.
+  const paragraphs = raw
+    .split(/\n{2,}/g)
+    .map((p) =>
+      p
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean)
+        .join(' ')
+        .replace(/\s{2,}/g, ' ')
+        .trim()
+    )
+    .filter(Boolean)
+
+  return paragraphs.join('\n\n')
+}
+
 const INDUSTRIES = [
   'Finanzdienstleistungen & Versicherung',
   'Handel & Konsumgüter',
@@ -209,6 +230,7 @@ export function ReferenceForm({
 }) {
   const router = useRouter()
   const [editSubmitting, setEditSubmitting] = useState(false)
+  const didAutoFormatRef = useRef(false)
   /** Beim Bearbeiten: sonst bleibt '' und Zod blockiert „Unternehmen“ zu Unrecht. */
   const [companyId, setCompanyId] = useState(initialData?.company_id ?? '')
   const [title, setTitle] = useState(initialData?.title ?? '')
@@ -258,6 +280,16 @@ export function ReferenceForm({
   const [additionalCustomerContacts, setAdditionalCustomerContacts] = useState<ExternalContactDisplay[]>([])
   const [editingInternalContact, setEditingInternalContact] = useState<ContactPerson | null>(null)
   const [editingCustomerContact, setEditingCustomerContact] = useState<ExternalContactDisplay | null>(null)
+
+  // Auto-formatting only when editing an existing reference (one-time on mount).
+  useEffect(() => {
+    if (!initialData?.id) return
+    if (didAutoFormatRef.current) return
+    didAutoFormatRef.current = true
+
+    setCustomerChallenge((prev) => normalizeWrappedParagraphs(prev))
+    setOurSolution((prev) => normalizeWrappedParagraphs(prev))
+  }, [initialData?.id])
   const normalizeTag = (raw: string): string => {
     const trimmed = raw.trim()
     if (!trimmed) return ''

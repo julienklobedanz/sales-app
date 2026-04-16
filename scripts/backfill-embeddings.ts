@@ -2,7 +2,7 @@
  * KAN-22: Backfill-Script für Referenz-Embeddings.
  *
  * Einmalig ausführen, um alle Referenzen mit embedding IS NULL zu vektorisieren
- * (title + summary + customer_challenge + our_solution + industry → text-embedding-3-small).
+ * (title + industry + customer_challenge + our_solution + summary → text-embedding-3-small).
  * Idempotent: nur NULL-Einträge werden befüllt. Referenzen ohne Textinhalt bleiben NULL.
  *
  * Abhängigkeit: KAN-21 (pgvector-Spalte references.embedding muss existieren).
@@ -50,6 +50,7 @@ async function fetchBatch(limit: number): Promise<RefRow[]> {
     .from('references')
     .select('id, title, summary, customer_challenge, our_solution, industry')
     .is('embedding', null)
+    .is('embedding_error', null)
     .limit(limit)
 
   if (error) {
@@ -98,10 +99,10 @@ async function run() {
     const inputs = batch.map((r) => {
       const parts = [
         r.title,
-        r.summary,
+        r.industry,
         r.customer_challenge,
         r.our_solution,
-        r.industry,
+        r.summary,
       ]
         .filter((p): p is string => !!p && p.trim().length > 0)
         .map((p) => p.trim())
@@ -112,14 +113,36 @@ async function run() {
       return parts.join('\n\n')
     })
 
-    // Einige Referenzen könnten leere Texte haben → wir überspringen diese, statt sie zu embedden
+    // Einige Referenzen könnten leere Texte haben → diese werden markiert, damit sie nicht erneut gezogen werden
     const nonEmptyIndices = inputs
       .map((t, idx) => ({ t, idx }))
       .filter(({ t }) => t.trim().length > 0)
+    const emptyIndices = inputs
+      .map((t, idx) => ({ t, idx }))
+      .filter(({ t }) => t.trim().length === 0)
+      .map(({ idx }) => idx)
 
     if (!nonEmptyIndices.length) {
-      console.log('Batch enthält nur Referenzen ohne Textinhalt – übersprungen.')
-      processed += batch.length
+      console.log('Batch enthält nur Referenzen ohne Textinhalt – werden markiert.')
+      for (const idx of emptyIndices) {
+        const row = batch[idx]
+        try {
+          const { error } = await supabase
+            .from('references')
+            .update({
+              embedding_error: 'NO_TEXT_TO_EMBED',
+              embedding_updated_at: null,
+            })
+            .eq('id', row.id)
+          if (error) {
+            console.error(`Update-Fehler (NO_TEXT_TO_EMBED) für Referenz ${row.id}:`, error.message)
+          } else {
+            processed += 1
+          }
+        } catch (e) {
+          console.error(`Unerwarteter Fehler beim Markieren von ${row.id}:`, e)
+        }
+      }
       continue
     }
 
@@ -138,6 +161,13 @@ async function run() {
       const row = batch[idx]
       const vector = embeddings[i]
       try {
+        if (!Array.isArray(vector) || vector.length !== 1536) {
+          await supabase
+            .from('references')
+            .update({ embedding_error: 'INVALID_EMBEDDING_DIM' })
+            .eq('id', row.id)
+          continue
+        }
         const { error } = await supabase
           .from('references')
           .update({
@@ -153,6 +183,30 @@ async function run() {
         }
       } catch (e) {
         console.error(`Unerwarteter Fehler beim Update von ${row.id}:`, e)
+      }
+    }
+
+    // Leere Texte ebenfalls markieren (damit sie nicht erneut bei embedding IS NULL gezogen werden)
+    for (const idx of emptyIndices) {
+      const row = batch[idx]
+      try {
+        const { error } = await supabase
+          .from('references')
+          .update({
+            embedding_error: 'NO_TEXT_TO_EMBED',
+            embedding_updated_at: null,
+          })
+          .eq('id', row.id)
+        if (error) {
+          console.error(
+            `Update-Fehler (NO_TEXT_TO_EMBED) für Referenz ${row.id}:`,
+            error.message
+          )
+        } else {
+          processed += 1
+        }
+      } catch (e) {
+        console.error(`Unerwarteter Fehler beim Markieren von ${row.id}:`, e)
       }
     }
 

@@ -5,6 +5,9 @@ import OpenAI from 'https://esm.sh/openai@4'
 type Payload = { reference_id?: string }
 
 serve(async (req) => {
+  const payload = (await req.json().catch(() => ({}))) as Payload
+  const reference_id = payload.reference_id?.toString()
+
   try {
     if (req.method !== 'POST') {
       return new Response(JSON.stringify({ success: false, error: 'Method not allowed' }), {
@@ -13,7 +16,6 @@ serve(async (req) => {
       })
     }
 
-    const { reference_id } = (await req.json().catch(() => ({}))) as Payload
     if (!reference_id) {
       return new Response(JSON.stringify({ success: false, error: 'reference_id fehlt' }), {
         status: 400,
@@ -25,6 +27,24 @@ serve(async (req) => {
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     const openaiKey = Deno.env.get('OPENAI_API_KEY')
     if (!supabaseUrl || !serviceRoleKey || !openaiKey) {
+      // Best-effort: Fehlerstatus in DB hinterlegen (hilft beim Debuggen).
+      try {
+        if (supabaseUrl && serviceRoleKey && reference_id) {
+          const supabaseForError = createClient(supabaseUrl, serviceRoleKey, {
+            auth: { persistSession: false },
+          })
+          await supabaseForError
+            .from('references')
+            .update({
+              embedding_error: !openaiKey ? 'MISSING_OPENAI_API_KEY' : 'MISSING_SUPABASE_SECRETS',
+              embedding_updated_at: null,
+            })
+            .eq('id', reference_id)
+        }
+      } catch {
+        // ignore - wir möchten nicht, dass ein Error-Update den eigentlichen Fehler maskiert
+      }
+
       return new Response(
         JSON.stringify({
           success: false,

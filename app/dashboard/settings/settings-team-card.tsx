@@ -7,15 +7,41 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Trash2, UserPlus } from '@hugeicons/core-free-icons'
+import { Send, Trash2, UserPlus } from '@hugeicons/core-free-icons'
 import type { TeamMemberRow } from './invite-actions'
-import { getTeamMembers, inviteByEmail, removeMember } from './invite-actions'
+import {
+  getTeamMembers,
+  inviteByEmail,
+  removeMember,
+  resendInviteEmail,
+  updateMemberRole,
+  updatePendingInviteRole,
+} from './invite-actions'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
 
@@ -43,6 +69,8 @@ export function SettingsTeamCard({
   const [inviteRole, setInviteRole] = useState<InviteRole>('sales')
   const [invitePending, setInvitePending] = useState(false)
   const [removingId, setRemovingId] = useState<string | null>(null)
+  const [rolePendingId, setRolePendingId] = useState<string | null>(null)
+  const [resendPendingId, setResendPendingId] = useState<string | null>(null)
 
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault()
@@ -95,6 +123,62 @@ export function SettingsTeamCard({
     }
   }
 
+  async function handleRoleChange(m: TeamMemberRow, nextRole: InviteRole) {
+    if (m.status !== 'active') return
+    setRolePendingId(m.id)
+    const result = await updateMemberRole({ profileId: m.id, role: nextRole })
+    setRolePendingId(null)
+    if (!result.success) {
+      toast.error(result.error)
+      return
+    }
+    toast.success('Rolle aktualisiert.')
+    router.refresh()
+    const next = await getTeamMembers()
+    setMembers(next)
+  }
+
+  async function handlePendingRoleChange(m: TeamMemberRow, nextRole: InviteRole) {
+    if (m.status !== 'pending') return
+    setRolePendingId(m.id)
+    const result = await updatePendingInviteRole({ inviteId: m.id, role: nextRole })
+    setRolePendingId(null)
+    if (!result.success) {
+      toast.error(result.error)
+      return
+    }
+    toast.success('Rolle aktualisiert.')
+    router.refresh()
+    const next = await getTeamMembers()
+    setMembers(next)
+  }
+
+  async function handleResend(m: TeamMemberRow) {
+    if (m.status !== 'pending') return
+    setResendPendingId(m.id)
+    const result = await resendInviteEmail({ inviteId: m.id })
+    setResendPendingId(null)
+    if (!result.success) {
+      toast.error(result.error)
+      return
+    }
+    if (result.emailSent) {
+      toast.success('Einladung erneut gesendet.')
+      return
+    }
+    toast.warning(COPY.settings.teamInviteSavedEmailFailed, {
+      description: result.emailError ?? COPY.settings.teamInviteSavedEmailMissingKey,
+      duration: 14_000,
+      action: {
+        label: COPY.settings.teamInviteCopyLink,
+        onClick: () => {
+          void navigator.clipboard.writeText(result.fallbackInviteLink)
+          toast.success(COPY.settings.teamInviteLinkCopied)
+        },
+      },
+    })
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
@@ -137,67 +221,134 @@ export function SettingsTeamCard({
       </div>
 
       <div>
-        <h3 className="mb-2 text-sm font-medium text-foreground">Team-Liste</h3>
+        <h3 className="mb-2 text-sm font-medium text-foreground">Team</h3>
         {members.length === 0 ? (
           <p className="rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 py-6 text-center text-sm text-muted-foreground">
             Noch keine Mitglieder. Lade jemanden per E-Mail ein.
           </p>
         ) : (
-          <ul className="divide-y divide-border rounded-lg border">
-            {members.map((m) => (
-              <li
-                key={m.id}
-                className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 sm:flex-nowrap"
-              >
-                <div className="min-w-0 flex-1">
-                  <span className="font-medium text-foreground">
-                    {m.status === 'active'
-                      ? m.name || 'Unbekannt'
-                      : m.email || 'Unbekannte E-Mail'}
-                    {m.email && (
-                      <span className="ml-1 text-xs text-muted-foreground">
-                        ({m.email})
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>E-Mail</TableHead>
+                  <TableHead>Rolle</TableHead>
+                  <TableHead className="text-right">Aktionen</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {members.map((m) => (
+                  <TableRow key={m.id}>
+                    <TableCell className="font-medium">
+                      {m.status === 'active' ? m.name || 'Unbekannt' : 'Ausstehend'}
+                      <span className="ml-2">
+                        {m.status === 'active' ? (
+                          <Badge className="bg-accent text-accent-foreground">
+                            Aktiv
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-muted text-foreground border-border">
+                            Ausstehend
+                          </Badge>
+                        )}
                       </span>
-                    )}
-                  </span>
-                  <span className="ml-2 inline-flex flex-wrap items-center gap-1">
-                    {m.status === 'active' ? (
-                      <Badge className="bg-accent text-accent-foreground">
-                        Aktiv
-                      </Badge>
-                    ) : (
-                      <Badge className="bg-muted text-foreground border-border">
-                        Ausstehend
-                      </Badge>
-                    )}
-                    {m.status === 'active' && m.role ? (
-                      <Badge variant="outline" className="text-muted-foreground">
-                        {roleLabel(m.role)}
-                      </Badge>
-                    ) : null}
-                    {m.status === 'pending' && m.inviteRole ? (
-                      <Badge variant="outline" className="text-muted-foreground">
-                        {roleLabel(m.inviteRole)}
-                      </Badge>
-                    ) : null}
-                  </span>
-                </div>
-                {!m.isSelf && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                    onClick={() => handleRemove(m)}
-                    disabled={removingId === m.id}
-                    aria-label="Mitglied entfernen"
-                  >
-                    <AppIcon icon={Trash2} size={16} />
-                  </Button>
-                )}
-              </li>
-            ))}
-          </ul>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {m.email || '—'}
+                    </TableCell>
+                    <TableCell>
+                      <Select
+                        value={
+                          (m.status === 'active'
+                            ? (m.role ?? 'sales')
+                            : (m.inviteRole ?? 'sales')) as InviteRole
+                        }
+                        onValueChange={(v) => {
+                          const nextRole = v as InviteRole
+                          if (m.status === 'active') {
+                            void handleRoleChange(m, nextRole)
+                          } else {
+                            void handlePendingRoleChange(m, nextRole)
+                          }
+                        }}
+                        disabled={rolePendingId === m.id || (m.status === 'active' && m.isSelf)}
+                      >
+                        <SelectTrigger className="h-8 w-[190px] bg-background">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="account_manager">
+                            {COPY.roles.accountManager}
+                          </SelectItem>
+                          <SelectItem value="sales">Sales</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="inline-flex items-center gap-2">
+                        {m.status === 'pending' ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="h-8 gap-2"
+                            disabled={resendPendingId === m.id}
+                            onClick={() => void handleResend(m)}
+                          >
+                            <AppIcon icon={Send} size={16} />
+                            Erneut senden
+                          </Button>
+                        ) : null}
+
+                        {!m.isSelf ? (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                                disabled={removingId === m.id}
+                                aria-label="Mitglied entfernen"
+                              >
+                                <AppIcon icon={Trash2} size={16} />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Mitglied entfernen?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  {m.status === 'pending'
+                                    ? 'Die Einladung wird widerrufen.'
+                                    : 'Das Mitglied wird aus dem Arbeitsbereich entfernt.'}
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel disabled={removingId === m.id}>
+                                  Abbrechen
+                                </AlertDialogCancel>
+                                <AlertDialogAction
+                                  disabled={removingId === m.id}
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    void handleRemove(m)
+                                  }}
+                                >
+                                  Entfernen
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        ) : null}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </div>
     </div>

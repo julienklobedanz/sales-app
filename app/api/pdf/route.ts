@@ -21,6 +21,20 @@ function parseTemplate(raw: string | null): PdfTemplate {
   return 'one_pager'
 }
 
+function parseExportSettings(raw: unknown): { pdf_layout?: PdfTemplate; pdf_logo_enabled?: boolean } {
+  if (!raw || typeof raw !== 'object') return {}
+  const obj = raw as Record<string, unknown>
+  const layout = obj.pdf_layout
+  const logo = obj.pdf_logo_enabled
+  return {
+    pdf_layout:
+      layout === 'detail' || layout === 'anonymized' || layout === 'one_pager'
+        ? (layout as PdfTemplate)
+        : undefined,
+    pdf_logo_enabled: typeof logo === 'boolean' ? logo : undefined,
+  }
+}
+
 export async function GET(req: NextRequest) {
   const supabase = await createServerSupabaseClient()
   const {
@@ -31,7 +45,7 @@ export async function GET(req: NextRequest) {
   }
 
   const id = req.nextUrl.searchParams.get('referenceId')?.trim()
-  const template = parseTemplate(req.nextUrl.searchParams.get('template'))
+  const templateParam = req.nextUrl.searchParams.get('template')
   if (!id) {
     return NextResponse.json({ error: 'referenceId fehlt.' }, { status: 400 })
   }
@@ -87,9 +101,15 @@ export async function GET(req: NextRequest) {
 
   const { data: org } = await supabase
     .from('organizations')
-    .select('name, logo_url, primary_color, secondary_color')
+    .select('name, logo_url, primary_color, secondary_color, export_settings')
     .eq('id', profile.organization_id)
     .single()
+
+  const exportSettings = parseExportSettings(org?.export_settings)
+  const template =
+    templateParam === null || templateParam === ''
+      ? exportSettings.pdf_layout ?? 'one_pager'
+      : parseTemplate(templateParam)
 
   const company = Array.isArray(row.companies) ? row.companies[0] : row.companies
   const reference: PdfReference = {
@@ -119,7 +139,7 @@ export async function GET(req: NextRequest) {
 
   const branding: PdfOrgBranding = {
     name: org?.name ?? 'RefStack',
-    logo_url: org?.logo_url ?? null,
+    logo_url: exportSettings.pdf_logo_enabled === false ? null : org?.logo_url ?? null,
     primary_color: org?.primary_color ?? '#0f172a',
     secondary_color: org?.secondary_color ?? '#334155',
   }

@@ -200,6 +200,148 @@ export async function inviteByEmail(
   return { success: true, emailSent: true }
 }
 
+export type UpdatePendingInviteRoleResult =
+  | { success: true }
+  | { success: false; error: string }
+
+export async function updatePendingInviteRole(params: {
+  inviteId: string
+  role: 'admin' | 'sales' | 'account_manager'
+}): Promise<UpdatePendingInviteRoleResult> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+
+  const { error } = await supabase.rpc('update_organization_invite_role', {
+    p_invite_id: params.inviteId,
+    p_role: params.role,
+  })
+  if (error) return { success: false, error: error.message }
+  revalidatePath(ROUTES.settings)
+  return { success: true }
+}
+
+export type ResendInviteResult =
+  | { success: true; emailSent: true }
+  | {
+      success: true
+      emailSent: false
+      fallbackInviteLink: string
+      emailError?: string
+    }
+  | { success: false; error: string }
+
+export async function resendInviteEmail(params: {
+  inviteId: string
+}): Promise<ResendInviteResult> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id, full_name')
+    .eq('id', user.id)
+    .single()
+
+  const organizationId = profile?.organization_id
+  if (!organizationId) {
+    return { success: false, error: 'Dein Profil ist keiner Organisation zugeordnet.' }
+  }
+
+  const { data: org } = await supabase
+    .from('organizations')
+    .select('name')
+    .eq('id', organizationId)
+    .single()
+
+  const { data: inviteDataRaw, error: inviteErr } = await supabase.rpc(
+    'get_organization_invite_for_resend',
+    { p_invite_id: params.inviteId }
+  )
+
+  if (inviteErr) return { success: false, error: inviteErr.message }
+
+  const parsed = inviteDataRaw as unknown
+  const invite =
+    parsed && typeof parsed === 'object'
+      ? (parsed as { email?: string | null; token?: string | null })
+      : null
+
+  const email = invite?.email?.trim().toLowerCase() || ''
+  const token = invite?.token?.trim() || ''
+  if (!email || !token) {
+    return { success: false, error: 'Einladung nicht gefunden oder abgelaufen.' }
+  }
+
+  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000')
+    .trim()
+    .replace(/\/$/, '')
+  const origin = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`
+  const inviteLink = `${origin}${ROUTES.register}?invite=${token}`
+  const inviterName = profile?.full_name || user.email || 'Ein Teammitglied'
+  const orgName = org?.name ?? 'Refstack'
+
+  const resend = getResend()
+  if (!resend) {
+    return {
+      success: true,
+      emailSent: false,
+      fallbackInviteLink: inviteLink,
+      emailError:
+        'RESEND_API_KEY fehlt in der Server-Umgebung (z. B. .env.local / Vercel). Ohne Key wird keine E-Mail gesendet.',
+    }
+  }
+
+  try {
+    const { error: sendError } = await resend.emails.send({
+      from: inviteFromAddress(),
+      to: email,
+      subject: `Einladung zu ${orgName}`,
+      html: `
+          <h1>Team-Einladung</h1>
+          <p><strong>${escapeHtml(inviterName)}</strong> lädt dich ein, dem Arbeitsbereich <strong>${escapeHtml(orgName)}</strong> beizutreten.</p>
+          <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="border-radius: 6px; background: #111827;">
+                <a href="${inviteLink}" target="_blank" rel="noopener noreferrer"
+                  style="display: inline-block; padding: 10px 20px; color: #ffffff; text-decoration: none; font-weight: 600;">
+                  Jetzt beitreten
+                </a>
+              </td>
+            </tr>
+          </table>
+          <p style="color: #666; font-size: 12px;">Falls der Button nicht funktioniert, diesen Link im Browser öffnen:<br /><a href="${inviteLink}" target="_blank" rel="noopener noreferrer">${inviteLink}</a></p>
+          <p style="color: #666; font-size: 12px;">Der Link ist 7 Tage gültig.</p>
+        `,
+    })
+    if (sendError) {
+      console.error('[resendInviteEmail] Resend API:', sendError)
+      return {
+        success: true,
+        emailSent: false,
+        fallbackInviteLink: inviteLink,
+        emailError: sendError.message,
+      }
+    }
+  } catch (e) {
+    console.error('[resendInviteEmail] Resend error:', e)
+    const msg = e instanceof Error ? e.message : String(e)
+    return {
+      success: true,
+      emailSent: false,
+      fallbackInviteLink: inviteLink,
+      emailError: msg,
+    }
+  }
+
+  return { success: true, emailSent: true }
+}
+
 export type TeamMemberRow = {
   id: string
   email: string
@@ -333,4 +475,45 @@ export async function removeMember(params: {
   }
 
   return { success: false, error: 'inviteId oder profileId angeben.' }
+}
+
+export type UpdateMemberRoleResult = { success: true } | { success: false; error: string }
+
+export async function updateMemberRole(params: {
+  profileId: string
+  role: 'admin' | 'sales' | 'account_manager'
+}): Promise<UpdateMemberRoleResult> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+
+  const { data: myProfile } = await supabase
+    .from('profiles')
+    .select('organization_id, role')
+    .eq('id', user.id)
+    .single()
+
+  const organizationId = myProfile?.organization_id
+  if (!organizationId) return { success: false, error: 'Keine Organisation zugeordnet.' }
+
+  if (myProfile?.role !== 'admin') {
+    return { success: false, error: 'Nur Admins können Rollen ändern.' }
+  }
+
+  const role = params.role
+  if (!['admin', 'sales', 'account_manager'].includes(role)) {
+    return { success: false, error: 'Ungültige Rolle.' }
+  }
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ role })
+    .eq('id', params.profileId)
+    .eq('organization_id', organizationId)
+
+  if (error) return { success: false, error: error.message }
+  revalidatePath(ROUTES.settings)
+  return { success: true }
 }
