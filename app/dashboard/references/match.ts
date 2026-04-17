@@ -127,6 +127,7 @@ export async function matchReferencesImpl(
       has_deal_context: Boolean(dealId),
       rerank: Boolean(options?.rerank),
       match_threshold: matchThreshold,
+      matched_reference_ids: matches.map((m) => m.id),
     },
     dealId: dealId ?? null,
     referenceId: null,

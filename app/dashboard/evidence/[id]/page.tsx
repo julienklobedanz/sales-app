@@ -17,6 +17,7 @@ import { AnonymizeReferenceButton } from './anonymize-reference-button'
 import { ShareLinkButton } from './share-link-button'
 import { RequestApprovalDialog } from './request-approval-dialog'
 import { ReferenceViewedTracker } from './reference-viewed-tracker'
+import { getReferenceUsageStats } from '@/app/dashboard/references/reference-usage-stats'
 
 export const dynamic = 'force-dynamic'
 
@@ -135,15 +136,9 @@ export default async function EvidenceDetailPage({
     .maybeSingle()
 
   const isFavorited = Boolean(favorite?.id)
-  const { data: shareRows } = await supabase
-    .from('shared_portfolios')
-    .select('view_count')
-    .contains('reference_ids', [id])
-  const totalViews = (shareRows ?? []).reduce(
-    (sum, row) => sum + ((row as { view_count?: number }).view_count ?? 0),
-    0
-  )
-  const shareCount = (shareRows ?? []).length
+  const usageStats = await getReferenceUsageStats(id)
+  const ev = usageStats?.events ?? {}
+  const n = (key: string) => ev[key] ?? 0
   const tags = splitTags(ref.tags ?? null)
   const company = Array.isArray(ref.companies) ? ref.companies[0] : ref.companies
 
@@ -308,23 +303,50 @@ export default async function EvidenceDetailPage({
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Nutzung & Impact</CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Aus dem Audit-Log (evidence_events). Gilt für alle Rollen mit Zugriff auf diese
+                Referenz.
+              </p>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-2 text-sm">
               <div className="rounded-md border p-2">
-                <div className="text-xs text-muted-foreground">Views</div>
-                <div className="font-semibold">{totalViews}</div>
+                <div className="text-xs text-muted-foreground">Detail-Ansichten (App)</div>
+                <div className="font-semibold tabular-nums">{n('reference_viewed')}</div>
               </div>
               <div className="rounded-md border p-2">
-                <div className="text-xs text-muted-foreground">Shares</div>
-                <div className="font-semibold">{shareCount}</div>
+                <div className="text-xs text-muted-foreground">Öffentliche Link-Aufrufe</div>
+                <div className="font-semibold tabular-nums">{n('share_link_viewed')}</div>
               </div>
               <div className="rounded-md border p-2">
-                <div className="text-xs text-muted-foreground">In Deals</div>
-                <div className="font-semibold">—</div>
+                <div className="text-xs text-muted-foreground">PDF-Exports</div>
+                <div className="font-semibold tabular-nums">{n('reference_exported')}</div>
               </div>
               <div className="rounded-md border p-2">
-                <div className="text-xs text-muted-foreground">Won/Lost</div>
-                <div className="font-semibold">—</div>
+                <div className="text-xs text-muted-foreground">Kundenlinks erstellt</div>
+                <div className="font-semibold tabular-nums">{n('reference_shared')}</div>
+              </div>
+              <div className="rounded-md border p-2">
+                <div className="text-xs text-muted-foreground">In Suchergebnissen</div>
+                <div className="font-semibold tabular-nums">{n('reference_matched')}</div>
+              </div>
+              <div className="rounded-md border p-2">
+                <div className="text-xs text-muted-foreground">„Hat geholfen“ (Deal)</div>
+                <div className="font-semibold tabular-nums">{n('reference_helped')}</div>
+              </div>
+              <div className="rounded-md border p-2">
+                <div className="text-xs text-muted-foreground">Deals verknüpft</div>
+                <div className="font-semibold tabular-nums">{usageStats?.dealsLinked ?? 0}</div>
+              </div>
+              <div className="rounded-md border p-2">
+                <div className="text-xs text-muted-foreground">Deal-Ergebnisse</div>
+                <div className="font-semibold tabular-nums">
+                  {usageStats
+                    ? `${usageStats.dealsWon} / ${usageStats.dealsLost} / ${usageStats.dealsWithdrawn}`
+                    : '—'}
+                </div>
+                <div className="text-[10px] text-muted-foreground leading-tight mt-0.5">
+                  Gewonnen / Verloren / Abgebrochen
+                </div>
               </div>
             </CardContent>
           </Card>
