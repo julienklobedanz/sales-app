@@ -1,12 +1,15 @@
 'use server'
 
+import { logEventForCurrentOrg } from '@/lib/events/log-event'
+
 export type GenerateSummaryResult =
   | { success: true; summary: string }
   | { success: false; error: string }
 
 export async function generateSummaryFromStoryImpl(
   customerChallenge: string | null,
-  ourSolution: string | null
+  ourSolution: string | null,
+  referenceId?: string | null
 ): Promise<GenerateSummaryResult> {
   const challenge = customerChallenge?.trim() ?? ''
   const solution = ourSolution?.trim() ?? ''
@@ -65,6 +68,13 @@ Zusammenfassung:`
     const summary = json?.choices?.[0]?.message?.content?.trim()
     if (!summary) {
       return { success: false, error: 'Keine Antwort von der KI erhalten.' }
+    }
+    if (referenceId) {
+      void logEventForCurrentOrg({
+        eventType: 'ki_entwurf_generated',
+        referenceId,
+        payload: {},
+      })
     }
     return { success: true, summary }
   } catch (e) {

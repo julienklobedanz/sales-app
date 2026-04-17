@@ -948,7 +948,8 @@ export function ReferenceForm({
                     try {
                       const result = await generateSummaryFromStory(
                         customerChallenge,
-                        ourSolution
+                        ourSolution,
+                        initialData?.id
                       )
                       if (result.success) {
                         setSummary(result.summary)

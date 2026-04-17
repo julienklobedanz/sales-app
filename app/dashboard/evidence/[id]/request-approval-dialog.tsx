@@ -20,11 +20,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import {
-  getContactOptionsForReference,
-  submitForApproval,
-  type SubmitForApprovalOptions,
-} from '@/app/dashboard/actions'
+import { getContactOptionsForReference, submitForApproval } from '@/app/dashboard/actions'
+import type { SubmitForApprovalOptions } from '@/app/dashboard/references/approval-submit-types'
 
 export function RequestApprovalDialog({
   referenceId,

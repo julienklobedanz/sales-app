@@ -2,6 +2,7 @@
 
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { generatePortfolioSlug } from '@/lib/slug'
+import { logEvent } from '@/lib/events/log-event'
 
 import type { ReferenceRow } from '@/app/dashboard/actions'
 
@@ -33,6 +34,13 @@ export async function createSharedPortfolioImpl(
   if (!user) return { success: false, error: 'Nicht angemeldet.' }
   if (!referenceIds?.length) return { success: false, error: 'Mindestens eine Referenz nötig.' }
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .single()
+  const orgId = profile?.organization_id as string | undefined
+
   for (let attempt = 0; attempt < 5; attempt++) {
     const slug = generatePortfolioSlug()
     const { error } = await supabase.from('shared_portfolios').insert({
@@ -43,6 +51,15 @@ export async function createSharedPortfolioImpl(
     })
     if (!error) {
       const url = `/p/${slug}`
+      if (orgId) {
+        void logEvent({
+          organizationId: orgId,
+          eventType: 'reference_shared',
+          payload: { slug, reference_ids: referenceIds },
+          referenceId: referenceIds[0] ?? null,
+          createdBy: user.id,
+        })
+      }
       return { success: true, url, slug }
     }
     const code = (error as { code?: string }).code

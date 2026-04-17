@@ -1,11 +1,8 @@
 'use server'
 
 import { toggleFavoriteImpl } from '@/app/dashboard/references/favorites'
-import {
-  submitForApprovalImpl,
-  resendClientApprovalEmailImpl,
-  type SubmitForApprovalOptions,
-} from '@/app/dashboard/references/approvals'
+import { submitForApprovalImpl, resendClientApprovalEmailImpl } from '@/app/dashboard/references/approvals'
+import type { SubmitForApprovalOptions } from '@/app/dashboard/references/approval-submit-types'
 import { getPendingClientApprovalsImpl } from '@/app/dashboard/references/pending-approvals'
 import { getInboxNotificationsImpl } from '@/app/dashboard/notifications/inbox'
 import {
@@ -232,8 +229,6 @@ export async function getCompetitorSuggestions(query: string): Promise<string[]>
   return getCompetitorSuggestionsImpl(query)
 }
 
-export type { SubmitForApprovalOptions }
-
 export async function submitForApproval(
   id: string,
   options?: SubmitForApprovalOptions
@@ -290,9 +285,10 @@ export type GenerateSummaryResult =
 
 export async function generateSummaryFromStory(
   customerChallenge: string | null,
-  ourSolution: string | null
+  ourSolution: string | null,
+  referenceId?: string | null
 ): Promise<GenerateSummaryResult> {
-  return generateSummaryFromStoryImpl(customerChallenge, ourSolution)
+  return generateSummaryFromStoryImpl(customerChallenge, ourSolution, referenceId)
 }
 
 /** Ergebniszeile für semantische Referenz-Suche (Epic 4 / Match Engine). */

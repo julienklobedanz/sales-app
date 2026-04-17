@@ -5,16 +5,12 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { Resend } from 'resend'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { SubmitForApprovalOptions } from '@/app/dashboard/references/approval-submit-types'
 
 function getResend(): Resend | null {
   const key = process.env.RESEND_API_KEY
   if (!key) return null
   return new Resend(key)
-}
-
-export type SubmitForApprovalOptions = {
-  contactId?: string
-  message?: string
 }
 
 type ReferenceApprovalRow = {

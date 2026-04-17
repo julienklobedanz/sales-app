@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { logEvent } from '@/lib/events/log-event'
 import {
   ReferencePdfDocument,
 } from '@/app/dashboard/references/pdf/template'
@@ -155,6 +156,14 @@ export async function GET(req: NextRequest) {
   const customerName = sanitizeFileName(reference.company_name || 'Account')
   const titleName = sanitizeFileName(reference.title || 'Referenz')
   const fileName = `${customerName}_${titleName}_RefStack.pdf`
+
+  void logEvent({
+    organizationId: profile.organization_id as string,
+    eventType: 'reference_exported',
+    referenceId: id,
+    payload: { template },
+    createdBy: user.id,
+  })
 
   const bytes = new Uint8Array(pdf)
   return new NextResponse(bytes, {

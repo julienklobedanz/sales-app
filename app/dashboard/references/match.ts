@@ -4,6 +4,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { embedTextWithOpenAI } from '@/lib/embeddings-openai'
 import { rpcMatchReferences } from '@/lib/match-references-rpc'
 import { snippetFromSummary } from '@/lib/match-reference-snippet'
+import { logEvent } from '@/lib/events/log-event'
 
 import type {
   MatchReferenceHit,
@@ -117,6 +118,19 @@ export async function matchReferencesImpl(
   if (options?.rerank && matches.length > 1) {
     matches = await rerankMatchHitsWithGpt(apiKey, queryText, matches)
   }
+
+  void logEvent({
+    organizationId: orgId,
+    eventType: 'reference_matched',
+    payload: {
+      match_count: matches.length,
+      has_deal_context: Boolean(dealId),
+      rerank: Boolean(options?.rerank),
+      match_threshold: matchThreshold,
+    },
+    dealId: dealId ?? null,
+    referenceId: null,
+  })
 
   return { success: true, matches }
 }

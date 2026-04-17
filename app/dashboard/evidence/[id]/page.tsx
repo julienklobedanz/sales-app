@@ -16,6 +16,7 @@ import { PdfExportDialog } from './pdf-export-dialog'
 import { AnonymizeReferenceButton } from './anonymize-reference-button'
 import { ShareLinkButton } from './share-link-button'
 import { RequestApprovalDialog } from './request-approval-dialog'
+import { ReferenceViewedTracker } from './reference-viewed-tracker'
 
 export const dynamic = 'force-dynamic'
 
@@ -179,6 +180,7 @@ export default async function EvidenceDetailPage({
 
   return (
     <div>
+      <ReferenceViewedTracker referenceId={id} />
       <div className="mb-6">
         <nav className="text-sm text-muted-foreground">
           <Link href={ROUTES.evidence.root} className="hover:underline">
