@@ -139,7 +139,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
             : 'Keine Firma unter diesem Namen gefunden.'}
         </p>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filtered.map((company) => (
             <Card
               key={company.id}

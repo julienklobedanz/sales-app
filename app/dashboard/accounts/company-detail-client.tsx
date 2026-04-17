@@ -44,7 +44,6 @@ export function CompanyDetailClient({
   const [competition, setCompetition] = useState(initialStrategy?.competition ?? '')
   const [nextSteps, setNextSteps] = useState(initialStrategy?.next_steps ?? '')
   const [strategySaving, setStrategySaving] = useState(false)
-  const [strategyEditing, setStrategyEditing] = useState(false)
 
   const lastSavedRef = useRef({
     goals: initialStrategy?.company_goals ?? '',
@@ -104,7 +103,7 @@ export function CompanyDetailClient({
         value_proposition: snapshot.valueProposition || null,
       })
       if (!res.success) {
-        if (!opts?.silent) toast.error(res.error ?? 'Speichern fehlgeschlagen.')
+        toast.error(res.error ?? 'Speichern fehlgeschlagen.')
         return
       }
       lastSavedRef.current = snapshot
@@ -134,15 +133,6 @@ export function CompanyDetailClient({
     ],
     [goals, valueProposition, redFlags, competition, nextSteps]
   )
-
-  const resetStrategyToLastSaved = () => {
-    const last = lastSavedRef.current
-    setGoals(last.goals)
-    setValueProposition(last.valueProposition)
-    setRedFlags(last.redFlags)
-    setCompetition(last.competition)
-    setNextSteps(last.nextSteps)
-  }
 
   const openStakeholderDialog = (s?: StakeholderRow) => {
     setEditingStakeholder(s ?? null)
@@ -295,12 +285,9 @@ export function CompanyDetailClient({
           <CompanyDetailStrategyTab
             isSales={isSales}
             canEdit={canEdit}
-            strategyEditing={strategyEditing}
-            setStrategyEditing={setStrategyEditing}
             strategySaving={strategySaving}
             strategyFields={strategyFields}
             saveStrategy={saveStrategy}
-            resetStrategyToLastSaved={resetStrategyToLastSaved}
           />
         </TabsContent>
 

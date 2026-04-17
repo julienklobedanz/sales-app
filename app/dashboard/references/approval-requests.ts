@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
+import { logEventForCurrentOrg } from '@/lib/events/log-event'
 export type RequestItem = {
   id: string
   reference_id: string
@@ -117,6 +118,17 @@ export async function reviewRequestImpl(
 
   if (appError) throw new Error(appError.message)
 
+  await logEventForCurrentOrg({
+    eventType: 'internal_approval_decided',
+    referenceId: approval.reference_id,
+    payload: {
+      decision,
+      approval_id: approvalId,
+    },
+  })
+
   revalidatePath(ROUTES.home)
+  revalidatePath(ROUTES.evidence.detail(approval.reference_id))
+  revalidatePath(ROUTES.evidence.root)
 }
 

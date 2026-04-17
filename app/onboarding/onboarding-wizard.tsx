@@ -5,9 +5,15 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Stepper } from "./steps/stepper"
 import { WorkspaceStep, type WorkspaceStepValue } from "./steps/workspace-step"
-import { ReferenceStep, type ExtractedReferencePreview } from "./steps/reference-step"
+import { ReferenceStep } from "./steps/reference-step"
+import type { ExtractedReferenceData } from "@/app/dashboard/evidence/new/types"
 import { TeamStep, type TeamInviteRow } from "./steps/team-step"
-import { extractReferencePreview, finalizeWorkspaceAndProfile, sendTeamInvites } from "./wizard-actions"
+import {
+  extractReferencePreview,
+  finalizeWorkspaceAndProfile,
+  saveOnboardingReference,
+  sendTeamInvites,
+} from "./wizard-actions"
 import { ROUTES } from "@/lib/routes"
 
 export function OnboardingWizard({
@@ -29,8 +35,10 @@ export function OnboardingWizard({
     role: "account_manager",
   })
 
-  const [referencePreview, setReferencePreview] = React.useState<ExtractedReferencePreview | null>(null)
+  const [referencePreview, setReferencePreview] = React.useState<ExtractedReferenceData | null>(null)
+  const [referenceFile, setReferenceFile] = React.useState<File | null>(null)
   const [extracting, setExtracting] = React.useState(false)
+  const [savingReference, setSavingReference] = React.useState(false)
 
   const [invites, setInvites] = React.useState<TeamInviteRow[]>([
     { email: "", role: "account_manager" },
@@ -58,6 +66,8 @@ export function OnboardingWizard({
   }
 
   const handleExtract = async (file: File) => {
+    setReferenceFile(file)
+    setReferencePreview(null)
     setExtracting(true)
     const res = await extractReferencePreview(file)
     setExtracting(false)
@@ -66,6 +76,18 @@ export function OnboardingWizard({
       return
     }
     setReferencePreview(res.preview)
+  }
+
+  const handleReferenceContinue = async () => {
+    if (!referenceFile || !referencePreview) return
+    setSavingReference(true)
+    const res = await saveOnboardingReference(referenceFile, referencePreview)
+    setSavingReference(false)
+    if (!res.success) {
+      alert(res.error)
+      return
+    }
+    next()
   }
 
   const handleTeamFinish = async () => {
@@ -111,9 +133,10 @@ export function OnboardingWizard({
             <ReferenceStep
               preview={referencePreview}
               extracting={extracting}
+              saving={savingReference}
               onExtract={handleExtract}
               onSkip={next}
-              onNext={next}
+              onContinue={handleReferenceContinue}
             />
           ) : null}
 

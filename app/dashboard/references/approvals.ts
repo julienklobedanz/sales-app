@@ -6,6 +6,7 @@ import { ROUTES } from '@/lib/routes'
 import { Resend } from 'resend'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { SubmitForApprovalOptions } from '@/app/dashboard/references/approval-submit-types'
+import { logEventForCurrentOrg } from '@/lib/events/log-event'
 
 function getResend(): Resend | null {
   const key = process.env.RESEND_API_KEY
@@ -205,6 +206,12 @@ export async function submitForApprovalImpl(
       console.error('E-Mail-Versand fehlgeschlagen:', e)
     }
   }
+
+  await logEventForCurrentOrg({
+    eventType: 'customer_approval_requested',
+    referenceId: id,
+    payload: {},
+  })
 
   revalidatePath(ROUTES.home)
   revalidatePath(ROUTES.evidence.detail(id))
