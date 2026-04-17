@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useTransition } from 'react'
+import { useEffect, useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
@@ -39,6 +39,11 @@ import { cn } from '@/lib/utils'
 import { ROUTES } from '@/lib/routes'
 import { clearDevPreviewRole, setDevPreviewRole } from '@/app/dashboard/dev-preview-role-actions'
 import { isDevRolePreviewEnabled } from '@/lib/dev-role-preview'
+import {
+  markAllNotificationReads,
+  markNotificationRead,
+  type DashboardNotificationItem,
+} from '@/app/dashboard/actions'
 
 function formatRoleBadgeLabel(role: AppRole): string {
   switch (role) {
@@ -59,6 +64,7 @@ export function DashboardHeader({
   userInitials,
   userRole,
   roleTestModeEnabled = false,
+  initialNotifications = [],
 }: {
   userName: string
   userEmail: string
@@ -66,55 +72,49 @@ export function DashboardHeader({
   userRole: AppRole
   /** Vom Server (Layout): zuverlässiger als nur Client-Env. */
   roleTestModeEnabled?: boolean
+  initialNotifications?: DashboardNotificationItem[]
 }) {
   const pathname = usePathname()
   const router = useRouter()
   const { resolvedTheme, setTheme } = useTheme()
   const { setOpen } = useCommandPalette()
   const [roleSwitchPending, startRoleSwitch] = useTransition()
-  const [notifications, setNotifications] = useState<
-    Array<{
-      id: string
-      title: string
-      text: string
-      time: string
-      read: boolean
-      href: string
-    }>
-  >(() => [
-    {
-      id: 'n1',
-      title: 'Neue Team-Einladung',
-      text: 'Eine Einladung wartet auf Bestätigung.',
-      time: 'vor 2 Min',
-      read: false,
-      href: ROUTES.settings,
-    },
-    {
-      id: 'n2',
-      title: 'Deal-Update',
-      text: 'Status wurde auf In Verhandlung gesetzt.',
-      time: 'vor 1 Std',
-      read: false,
-      href: ROUTES.deals.root,
-    },
-    {
-      id: 'n3',
-      title: 'Freigabe angefragt',
-      text: 'Eine Referenz benötigt Ihre Freigabe.',
-      time: 'heute',
-      read: false,
-      href: ROUTES.evidence.root,
-    },
-  ])
+  const [notifications, setNotifications] =
+    useState<DashboardNotificationItem[]>(initialNotifications)
+
+  useEffect(() => {
+    setNotifications(initialNotifications)
+  }, [initialNotifications])
 
   const unreadCount = useMemo(
     () => notifications.filter((n) => !n.read).length,
     [notifications]
   )
 
+  const [markNotificationsPending, startMarkNotifications] = useTransition()
+
   function markAllNotificationsRead() {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+    const ids = notifications.filter((n) => !n.read).map((n) => n.id)
+    if (!ids.length) return
+    startMarkNotifications(() => {
+      void markAllNotificationReads(ids).then((res) => {
+        if (res.success) {
+          setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+        }
+      })
+    })
+  }
+
+  function handleOpenNotification(id: string) {
+    startMarkNotifications(() => {
+      void markNotificationRead(id).then((res) => {
+        if (res.success) {
+          setNotifications((prev) =>
+            prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+          )
+        }
+      })
+    })
   }
 
   const showRoleTestMode = roleTestModeEnabled || isDevRolePreviewEnabled()
@@ -249,7 +249,7 @@ export function DashboardHeader({
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
-                disabled={unreadCount === 0}
+                disabled={unreadCount === 0 || markNotificationsPending}
                 aria-label={COPY.notifications.markAllReadAria}
                 title={COPY.notifications.markAllReadAria}
                 onClick={markAllNotificationsRead}
@@ -258,34 +258,41 @@ export function DashboardHeader({
               </Button>
             </div>
             <div className="max-h-80 overflow-auto">
-              {notifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className="flex items-start gap-2 border-b px-4 py-3 last:border-b-0"
-                >
-                  <div className="min-w-0 flex-1">
-                    <Link
-                      href={notification.href}
-                      className={cn(
-                        'inline-block max-w-full truncate rounded-sm text-sm font-medium text-foreground underline-offset-2 transition-colors',
-                        'hover:text-primary hover:underline',
-                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
-                      )}
-                    >
-                      {notification.title}
-                    </Link>
-                    <p className="text-xs text-muted-foreground">{notification.text}</p>
-                    <p className="mt-1 text-[11px] text-muted-foreground">{notification.time}</p>
+              {notifications.length === 0 ? (
+                <p className="px-4 py-6 text-center text-sm text-muted-foreground">
+                  Keine Benachrichtigungen.
+                </p>
+              ) : (
+                notifications.map((notification) => (
+                  <div
+                    key={notification.id}
+                    className="flex items-start gap-2 border-b px-4 py-3 last:border-b-0"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <Link
+                        href={notification.href}
+                        onClick={() => handleOpenNotification(notification.id)}
+                        className={cn(
+                          'inline-block max-w-full truncate rounded-sm text-sm font-medium text-foreground underline-offset-2 transition-colors',
+                          'hover:text-primary hover:underline',
+                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
+                        )}
+                      >
+                        {notification.title}
+                      </Link>
+                      <p className="text-xs text-muted-foreground">{notification.text}</p>
+                      <p className="mt-1 text-[11px] text-muted-foreground">{notification.time}</p>
+                    </div>
+                    {!notification.read ? (
+                      <span
+                        className="mt-1.5 size-2 shrink-0 rounded-full bg-sidebar-primary"
+                        title={COPY.notifications.unreadBadgeAria}
+                        aria-label={COPY.notifications.unreadBadgeAria}
+                      />
+                    ) : null}
                   </div>
-                  {!notification.read ? (
-                    <span
-                      className="mt-1.5 size-2 shrink-0 rounded-full bg-sidebar-primary"
-                      title={COPY.notifications.unreadBadgeAria}
-                      aria-label={COPY.notifications.unreadBadgeAria}
-                    />
-                  ) : null}
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </PopoverContent>
         </Popover>

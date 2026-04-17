@@ -4,7 +4,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { submitForApproval, toggleFavorite } from '@/app/dashboard/actions'
+import { toggleFavorite } from '@/app/dashboard/actions'
 import { StarIcon } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { formatNumberDe } from '@/lib/format'
@@ -15,6 +15,7 @@ import { ROUTES } from '@/lib/routes'
 import { PdfExportDialog } from './pdf-export-dialog'
 import { AnonymizeReferenceButton } from './anonymize-reference-button'
 import { ShareLinkButton } from './share-link-button'
+import { RequestApprovalDialog } from './request-approval-dialog'
 
 export const dynamic = 'force-dynamic'
 
@@ -57,6 +58,9 @@ export default async function EvidenceDetailPage({
       industry,
       country,
       status,
+      contact_id,
+      customer_contact_id,
+      customer_approval_status,
       anonymized_from_id,
       tags,
       created_at,
@@ -86,6 +90,9 @@ export default async function EvidenceDetailPage({
     industry: string | null
     country: string | null
     status: string
+    contact_id: string | null
+    customer_contact_id: string | null
+    customer_approval_status: string | null
     anonymized_from_id: string | null
     created_at: string | null
     updated_at: string | null
@@ -366,11 +373,10 @@ export default async function EvidenceDetailPage({
                   <Button asChild variant="outline" className="w-full">
                     <Link href={ROUTES.evidence.edit(id)}>Bearbeiten</Link>
                   </Button>
-                  <form action={submitForApproval.bind(null, id)} className="w-full">
-                    <Button type="submit" variant="outline" className="w-full">
-                      Freigabe anfordern
-                    </Button>
-                  </form>
+                  <RequestApprovalDialog
+                    referenceId={id}
+                    defaultContactId={ref.customer_contact_id ?? ref.contact_id}
+                  />
                   {role === 'admin' ? (
                     <form action={deleteReferenceFromDetailPage.bind(null, id)} className="w-full">
                       <Button type="submit" variant="destructive" className="w-full">

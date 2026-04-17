@@ -41,6 +41,7 @@ import {
 } from '@/lib/dashboard-ui'
 import { ROUTES } from '@/lib/routes'
 import { cn } from '@/lib/utils'
+import type { DashboardNotificationItem } from './actions'
 
 export type Profile = {
   full_name: string | null
@@ -52,12 +53,14 @@ export function DashboardShell({
   user,
   profile,
   roleTestModeEnabled = false,
+  initialNotifications = [],
 }: {
   children: React.ReactNode
   user: User
   profile: Profile
   /** Server: gleiche Quelle wie Cookie-Vorschau – Test-Modus „Rolle wechseln“ im Profilmenü. */
   roleTestModeEnabled?: boolean
+  initialNotifications?: DashboardNotificationItem[]
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -298,6 +301,7 @@ export function DashboardShell({
           userInitials={userInitials}
           userRole={profile.role}
           roleTestModeEnabled={roleTestModeEnabled}
+          initialNotifications={initialNotifications}
         />
         <div
           className={cn(

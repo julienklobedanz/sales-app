@@ -1,7 +1,19 @@
 'use server'
 
 import { toggleFavoriteImpl } from '@/app/dashboard/references/favorites'
-import { submitForApprovalImpl } from '@/app/dashboard/references/approvals'
+import {
+  submitForApprovalImpl,
+  resendClientApprovalEmailImpl,
+  type SubmitForApprovalOptions,
+} from '@/app/dashboard/references/approvals'
+import { getPendingClientApprovalsImpl } from '@/app/dashboard/references/pending-approvals'
+import { getInboxNotificationsImpl } from '@/app/dashboard/notifications/inbox'
+import {
+  markNotificationReadImpl,
+  markAllNotificationsReadImpl,
+} from '@/app/dashboard/notifications/read-actions'
+import type { AppRole } from '@/hooks/useRole'
+import { getContactOptionsForReferenceImpl } from '@/app/dashboard/references/approval-contacts'
 import { getCompetitorSuggestionsImpl, getIncumbentSuggestionsImpl } from '@/app/dashboard/references/suggestions'
 import { getRequestsImpl, reviewRequestImpl } from '@/app/dashboard/references/approval-requests'
 import {
@@ -76,6 +88,8 @@ export type ReferenceRow = {
   share_link_count?: number
   /** Anzahl der Deals, mit denen diese Referenz verknüpft ist */
   deal_link_count?: number
+  /** Kunden-Freigabe (Epic 10): pending / approved / rejected */
+  customer_approval_status?: string | null
 }
 
 export type GetDashboardDataResult = {
@@ -218,8 +232,40 @@ export async function getCompetitorSuggestions(query: string): Promise<string[]>
   return getCompetitorSuggestionsImpl(query)
 }
 
-export async function submitForApproval(id: string) {
-  return submitForApprovalImpl(id)
+export type { SubmitForApprovalOptions }
+
+export async function submitForApproval(
+  id: string,
+  options?: SubmitForApprovalOptions
+) {
+  return submitForApprovalImpl(id, options)
+}
+
+export async function getContactOptionsForReference(referenceId: string) {
+  return getContactOptionsForReferenceImpl(referenceId)
+}
+
+export type { DashboardNotificationItem } from '@/app/dashboard/notifications/inbox'
+export type { PendingClientApprovalRow } from '@/app/dashboard/references/pending-approvals'
+
+export async function getInboxNotificationsForLayout(userId: string, role: AppRole) {
+  return getInboxNotificationsImpl(userId, role)
+}
+
+export async function markNotificationRead(eventId: string) {
+  return markNotificationReadImpl(eventId)
+}
+
+export async function markAllNotificationReads(eventIds: string[]) {
+  return markAllNotificationsReadImpl(eventIds)
+}
+
+export async function resendClientApprovalEmail(referenceId: string) {
+  return resendClientApprovalEmailImpl(referenceId)
+}
+
+export async function getPendingClientApprovals() {
+  return getPendingClientApprovalsImpl()
 }
 
 export async function getRequests(): Promise<RequestItem[]> {

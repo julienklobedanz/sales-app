@@ -141,7 +141,11 @@ export function ReferenceDetailSheet({
                       )}
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <ReferenceStatusBadge status={selectedRef.status} className="text-xs cursor-default" />
+                          <ReferenceStatusBadge
+                            status={selectedRef.status}
+                            customerApprovalStatus={selectedRef.customer_approval_status}
+                            className="text-xs cursor-default"
+                          />
                         </TooltipTrigger>
                         <TooltipContent className="max-w-xs text-xs leading-snug">
                           {selectedRef.status === 'draft' &&

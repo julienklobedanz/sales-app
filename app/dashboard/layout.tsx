@@ -9,6 +9,7 @@ import {
 import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
 import { DashboardShell } from './dashboard-shell'
+import { getInboxNotificationsForLayout } from './actions'
 
 export default async function DashboardLayout({
   children,
@@ -42,11 +43,14 @@ export default async function DashboardLayout({
   const serverRole = profile.role as AppRole
   const effectiveRole: AppRole = previewRole ?? serverRole
 
+  const initialNotifications = await getInboxNotificationsForLayout(user.id, effectiveRole)
+
   return (
     <DashboardShell
       user={user}
       profile={{ ...profile, role: effectiveRole }}
       roleTestModeEnabled={devSwitcher}
+      initialNotifications={initialNotifications}
     >
       {children}
     </DashboardShell>

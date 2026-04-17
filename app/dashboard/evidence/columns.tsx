@@ -62,7 +62,12 @@ export function evidenceColumns(): ColumnDef<ReferenceRow>[] {
           </span>
         </Button>
       ),
-      cell: ({ row }) => <ReferenceStatusBadge status={row.original.status} />,
+      cell: ({ row }) => (
+        <ReferenceStatusBadge
+          status={row.original.status}
+          customerApprovalStatus={row.original.customer_approval_status}
+        />
+      ),
     },
     {
       accessorKey: "company_name",

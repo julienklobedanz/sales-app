@@ -105,7 +105,7 @@ export async function getReferencesByIdsImpl(ids: string[]): Promise<ReferenceRo
       `
       id, title, summary, industry, country, website, employee_count,
       volume_eur, contract_type, incumbent_provider, competitors,
-      customer_challenge, our_solution, status, created_at, updated_at,
+      customer_challenge, our_solution, status, customer_approval_status, created_at, updated_at,
       company_id, contact_id, file_path, tags, project_status, project_start, project_end,
       is_nda_deal,
       companies ( name, logo_url )
@@ -148,6 +148,7 @@ export async function getReferencesByIdsImpl(ids: string[]): Promise<ReferenceRo
       customer_challenge: (r.customer_challenge as string | null) ?? null,
       our_solution: (r.our_solution as string | null) ?? null,
       status: normalizeStatus(r.status),
+      customer_approval_status: (r.customer_approval_status as string | null) ?? null,
       created_at: r.created_at as string,
       updated_at: (r.updated_at as string | null) ?? null,
       company_id: r.company_id as string,

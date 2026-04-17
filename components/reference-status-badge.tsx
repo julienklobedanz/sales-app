@@ -2,6 +2,8 @@ import { Badge } from '@/components/ui/badge'
 
 type Props = {
   status: string | null | undefined
+  /** Kunden-Freigabe-Link ausstehend (Epic 10) – hat Vorrang vor der Freigabestufe */
+  customerApprovalStatus?: string | null
   className?: string
 }
 
@@ -14,7 +16,18 @@ function normalizeStatus(raw: string | null | undefined) {
   return 'draft'
 }
 
-export function ReferenceStatusBadge({ status, className }: Props) {
+export function ReferenceStatusBadge({
+  status,
+  customerApprovalStatus,
+  className,
+}: Props) {
+  if (String(customerApprovalStatus ?? '').toLowerCase() === 'pending') {
+    return (
+      <Badge className={className} variant="secondary">
+        Freigabe ausstehend
+      </Badge>
+    )
+  }
   const s = normalizeStatus(status)
   if (s === 'approved')
     return (
