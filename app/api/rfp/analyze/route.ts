@@ -84,6 +84,20 @@ export async function POST(req: NextRequest) {
     )
   }
 
+  let accountContextPrefix = ''
+  const companyContextIdRaw = formData.get('companyContextId')
+  if (typeof companyContextIdRaw === 'string' && companyContextIdRaw.trim()) {
+    const { data: co } = await supabase
+      .from('companies')
+      .select('name')
+      .eq('id', companyContextIdRaw.trim())
+      .eq('organization_id', orgId)
+      .maybeSingle()
+    if (co?.name) {
+      accountContextPrefix = `Relevanter Account-Kontext (optional): ${co.name}\n\n`
+    }
+  }
+
   const { data: inserted, error: insertError } = await supabase
     .from('deal_rfp_analyses')
     .insert({
@@ -143,7 +157,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: plain.error }, { status: 400 })
   }
 
-  const extracted = await extractRequirementsFromRfpText(apiKey, plain.text)
+  const textForExtraction = accountContextPrefix + plain.text
+
+  const extracted = await extractRequirementsFromRfpText(apiKey, textForExtraction)
   if ('error' in extracted) {
     await fail(extracted.error)
     return NextResponse.json({ success: false, error: extracted.error }, { status: 422 })

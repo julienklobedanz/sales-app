@@ -8,6 +8,8 @@ export type MatchReferencesRpcRow = {
   summary: string | null
   industry: string | null
   similarity: number
+  company_name: string | null
+  volume_eur: string | null
 }
 
 export async function rpcMatchReferences(

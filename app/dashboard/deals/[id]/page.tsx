@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 import { getDealWithReferences, getReferencesForOrg } from '../actions'
 import { DealDetailContent } from '../deal-detail-content'
+import { DealMatchSection } from '../components/deal-match-section'
+import { DealRfpSection } from '../components/deal-rfp-section'
 import { RfpSidebarPanel } from '../rfp-sidebar-panel'
 import { DealStatusBadge } from '@/components/deal-status-badge'
 import { COPY } from '@/lib/copy'
@@ -115,6 +117,11 @@ export default async function DealDetailPage({
             </div>
           </div>
 
+          <DealRfpSection
+            deal={deal}
+            companies={(companies ?? []) as Array<{ id: string; name: string }>}
+          />
+          <DealMatchSection deal={deal} />
           <DealDetailContent deal={deal} allReferences={allReferences} activities={activities} />
         </div>
 

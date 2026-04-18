@@ -43,8 +43,26 @@ const TEMPLATE_OPTIONS: Array<{
   },
 ]
 
-export function PdfExportDialog({ referenceId }: { referenceId: string }) {
-  const [open, setOpen] = useState(false)
+export function PdfExportDialog({
+  referenceId,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  showTriggerButton = true,
+}: {
+  referenceId: string
+  /** Optional: Dialog von außen öffnen (z. B. Match-Karten) */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  /** Bei externer Steuerung (`open` gesetzt) standardmäßig kein Button */
+  showTriggerButton?: boolean
+}) {
+  const [internalOpen, setInternalOpen] = useState(false)
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen
+  function setOpen(v: boolean) {
+    if (controlledOpen !== undefined) controlledOnOpenChange?.(v)
+    else setInternalOpen(v)
+  }
+  const showButton = showTriggerButton && controlledOpen === undefined
   const [loading, setLoading] = useState(false)
   const [template, setTemplate] = useState<PdfTemplate>('one_pager')
 
@@ -87,9 +105,11 @@ export function PdfExportDialog({ referenceId }: { referenceId: string }) {
 
   return (
     <>
-      <Button variant="outline" className="w-full" onClick={() => setOpen(true)}>
-        PDF exportieren
-      </Button>
+      {showButton ? (
+        <Button variant="outline" className="w-full" onClick={() => setOpen(true)}>
+          PDF exportieren
+        </Button>
+      ) : null}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>

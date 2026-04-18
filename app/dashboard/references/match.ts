@@ -105,6 +105,7 @@ export async function matchReferencesImpl(
   let matches: MatchReferenceHit[] = list.map((r) => {
     const summary = r.summary?.trim() ?? null
     const snippet = snippetFromSummary(summary, r.title)
+    const volRaw = r.volume_eur?.trim() ?? null
     return {
       id: r.id,
       title: r.title ?? '',
@@ -112,6 +113,8 @@ export async function matchReferencesImpl(
       industry: r.industry ?? null,
       similarity: typeof r.similarity === 'number' ? r.similarity : 0,
       snippet,
+      companyName: r.company_name?.trim() ? r.company_name : null,
+      volumeEur: volRaw && volRaw.length > 0 ? volRaw : null,
     }
   })
 

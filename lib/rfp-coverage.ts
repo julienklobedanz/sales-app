@@ -17,6 +17,7 @@ export type RfpCoverageMatch = {
   summary: string | null
   industry: string | null
   similarity: number
+  companyName: string | null
 }
 
 export type RfpCoverageRow = {
@@ -117,6 +118,7 @@ export async function buildRfpCoverageReport(
       summary: r.summary,
       industry: r.industry,
       similarity: typeof r.similarity === 'number' ? r.similarity : 0,
+      companyName: r.company_name?.trim() ? r.company_name : null,
     }))
 
     return {

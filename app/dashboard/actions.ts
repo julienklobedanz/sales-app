@@ -301,6 +301,10 @@ export type MatchReferenceHit = {
   similarity: number
   /** Kurztext für Karten (aus Summary gekürzt). */
   snippet: string
+  /** Account (Firma) der Referenz. */
+  companyName: string | null
+  /** Projekt-/Volumenangabe (Rohwert wie in Evidence). */
+  volumeEur: string | null
 }
 
 export type MatchReferencesResult =
