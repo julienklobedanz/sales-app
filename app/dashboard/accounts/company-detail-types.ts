@@ -13,6 +13,9 @@ export type CompanyDetailCompany = {
   website_url: string | null
   headquarters: string | null
   industry: string | null
+  description: string | null
+  employee_count: number | null
+  account_status: string | null
 }
 
 export type CompanyDetailClientProps = {

@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { CirclePlus, SlidersHorizontal } from "@hugeicons/core-free-icons"
 
 import type { ReferenceRow } from "@/app/dashboard/actions"
@@ -45,7 +44,6 @@ export function EvidenceClient({
   references: ReferenceRow[]
   role: "admin" | "sales" | "account_manager"
 }) {
-  const router = useRouter()
   const isSales = role === "sales"
   const canCreate = role === "admin" || role === "account_manager"
   const hasAny = references.length > 0
@@ -69,28 +67,6 @@ export function EvidenceClient({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        {/* Toolbar wird direkt in der DataTable gerendert (Tasks-Style) */}
-      </div>
-
-      {canCreate ? (
-        <div
-          className="rounded-lg border-2 border-dashed border-muted-foreground/25 p-6"
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => {
-            e.preventDefault()
-            if (e.dataTransfer.files?.length) {
-              router.push(ROUTES.evidence.newBulk)
-            }
-          }}
-        >
-          <div className="text-sm font-medium">📄 Drag & Drop Import</div>
-          <div className="mt-1 text-sm text-muted-foreground">
-            Dokument hierher ziehen für schnellen Import (E2: nutzt denselben Flow wie „Neue Referenz“).
-          </div>
-        </div>
-      ) : null}
-
       {!hasAny ? (
         <Card>
           <CardHeader>

@@ -31,7 +31,9 @@ export default async function CompanyDetailPage({
 
   const { data: company } = await supabase
     .from('companies')
-    .select('id, name, logo_url, website_url, headquarters, industry, account_status')
+    .select(
+      'id, name, logo_url, website_url, headquarters, industry, description, employee_count, account_status'
+    )
     .eq('id', id)
     .single()
 

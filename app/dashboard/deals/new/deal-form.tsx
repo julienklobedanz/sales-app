@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -27,6 +27,8 @@ import { toast } from 'sonner'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
+import { useRole } from '@/hooks/useRole'
+import { DealQuickAccountDialog } from './deal-quick-account-dialog'
 
 type Company = { id: string; name: string }
 type OrgProfile = { id: string; full_name: string | null }
@@ -39,8 +41,19 @@ export function DealForm({
   orgProfiles: OrgProfile[]
 }) {
   const router = useRouter()
+  const { isAdmin, isAccountManager } = useRole()
+  const canCreateAccount = isAdmin || isAccountManager
   const [pending, setPending] = useState(false)
   const [companyId, setCompanyId] = useState<string>('')
+  const [extraCompanies, setExtraCompanies] = useState<Company[]>([])
+  const [quickAccountOpen, setQuickAccountOpen] = useState(false)
+
+  const companyOptions = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const c of companies) map.set(c.id, c.name)
+    for (const c of extraCompanies) map.set(c.id, c.name)
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }))
+  }, [companies, extraCompanies])
   const [status, setStatus] = useState<DealStatus>('open')
   const [isPublic, setIsPublic] = useState(true)
   const [accountManagerId, setAccountManagerId] = useState<string>('')
@@ -69,6 +82,18 @@ export function DealForm({
 
   return (
     <Card>
+      <DealQuickAccountDialog
+        open={quickAccountOpen}
+        onOpenChange={setQuickAccountOpen}
+        onCreated={(id, name) => {
+          setExtraCompanies((prev) => {
+            if (prev.some((c) => c.id === id)) return prev
+            return [...prev, { id, name }]
+          })
+          setCompanyId(id)
+          router.refresh()
+        }}
+      />
       <CardHeader>
         <CardTitle>Neuer Deal</CardTitle>
         <CardDescription>Titel, Unternehmen, Status und Ablaufdatum.</CardDescription>
@@ -80,14 +105,27 @@ export function DealForm({
             <Input id="title" name="title" required placeholder="z. B. Cloud-Migration BMW" disabled={pending} />
           </div>
           <div className="space-y-2">
-            <Label>Unternehmen</Label>
+            <div className="flex flex-wrap items-end justify-between gap-2">
+              <Label>Unternehmen</Label>
+              {canCreateAccount ? (
+                <Button
+                  type="button"
+                  variant="link"
+                  className="h-auto p-0 text-sm"
+                  disabled={pending}
+                  onClick={() => setQuickAccountOpen(true)}
+                >
+                  {COPY.accounts.quickCreateAccountTitle}
+                </Button>
+              ) : null}
+            </div>
             <Select value={companyId || '__none__'} onValueChange={(v) => setCompanyId(v === '__none__' ? '' : v)} disabled={pending}>
               <SelectTrigger>
                 <SelectValue placeholder="Optional auswählen …" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none__">— Keins —</SelectItem>
-                {companies.map((c) => (
+                {companyOptions.map((c) => (
                   <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                 ))}
               </SelectContent>

@@ -633,6 +633,7 @@ export async function getExpiringDealsByCompanyId(
   return (data ?? []) as DealSignalRow[]
 }
 
+/** Setzt nur `account_status`. Stammdaten inkl. Status: {@link updateCompany}. */
 export async function updateCompanyAccountStatus(
   companyId: string,
   account_status: 'at_risk' | 'warmup' | 'expansion' | null
@@ -719,6 +720,76 @@ export async function createCompany(payload: {
 
   revalidatePath(ROUTES.accounts)
   return { success: true, id: data?.id }
+}
+
+const COMPANY_ACCOUNT_STATUSES = ['at_risk', 'warmup', 'expansion'] as const
+export type CompanyAccountStatusValue = (typeof COMPANY_ACCOUNT_STATUSES)[number]
+
+export async function updateCompany(payload: {
+  id: string
+  name: string
+  website_url?: string | null
+  industry?: string | null
+  headquarters?: string | null
+  logo_url?: string | null
+  employee_count?: number | null
+  description?: string | null
+  account_status?: string | null
+}): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht eingeloggt.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id, role')
+    .eq('id', user.id)
+    .single()
+  if (!profile?.organization_id) return { success: false, error: 'Onboarding unvollständig.' }
+  if (profile.role === 'sales') return { success: false, error: 'Keine Berechtigung.' }
+
+  const name = payload.name.trim()
+  if (!name) return { success: false, error: 'Name ist erforderlich.' }
+
+  const statusRaw = payload.account_status?.trim() || null
+  const account_status =
+    statusRaw && COMPANY_ACCOUNT_STATUSES.includes(statusRaw as CompanyAccountStatusValue)
+      ? statusRaw
+      : null
+
+  const { data: row, error: fetchError } = await supabase
+    .from('companies')
+    .select('id, organization_id')
+    .eq('id', payload.id)
+    .single()
+
+  if (fetchError || !row) return { success: false, error: 'Account nicht gefunden.' }
+  if (row.organization_id !== profile.organization_id) {
+    return { success: false, error: 'Keine Berechtigung.' }
+  }
+
+  const { error } = await supabase
+    .from('companies')
+    .update({
+      name,
+      website_url: payload.website_url?.trim() || null,
+      industry: payload.industry?.trim() || null,
+      headquarters: payload.headquarters?.trim() || null,
+      logo_url: payload.logo_url?.trim() || null,
+      employee_count: payload.employee_count ?? null,
+      description: payload.description?.trim() || null,
+      account_status,
+    })
+    .eq('id', payload.id)
+    .eq('organization_id', profile.organization_id)
+
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath(ROUTES.accounts)
+  revalidatePath(ROUTES.accountsDetail(payload.id))
+  return { success: true }
 }
 
 export async function deleteCompanyWithData(

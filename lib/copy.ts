@@ -79,6 +79,13 @@ export const COPY = {
     createDialogSuggestBrandfetch: 'Vorschlag',
     createDialogSearching: 'Suche …',
     createDialogOpenExisting: 'Dieser Account existiert bereits. Es wird zur Detailseite gewechselt.',
+    editDialogTitle: 'Account bearbeiten',
+    editSuccess: 'Account gespeichert.',
+    editButton: 'Bearbeiten',
+    quickCreateAccountTitle: 'Neuen Account anlegen',
+    quickCreateAccountSubmit: 'Account anlegen und auswählen',
+    quickCreateAccountHint:
+      'Legt einen Account in deiner Organisation an und wählt ihn für diesen Deal aus.',
   },
   dashboard: {
     searchReferencesPlaceholder: 'Referenzen suchen...',

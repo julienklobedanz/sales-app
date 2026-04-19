@@ -5,8 +5,17 @@ import { Building2, Globe, MapPinIcon } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import type { CompanyDetailCompany } from './company-detail-types'
 import { ROUTES } from '@/lib/routes'
+import { COPY } from '@/lib/copy'
 
-export function CompanyDetailHeader({ company }: { company: CompanyDetailCompany }) {
+export function CompanyDetailHeader({
+  company,
+  canEdit,
+  onEditClick,
+}: {
+  company: CompanyDetailCompany
+  canEdit?: boolean
+  onEditClick?: () => void
+}) {
   return (
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
       <div className="flex items-start gap-4">
@@ -48,9 +57,16 @@ export function CompanyDetailHeader({ company }: { company: CompanyDetailCompany
         </div>
       </div>
 
-      <Button asChild variant="outline">
-        <Link href={ROUTES.accounts}>Zurück</Link>
-      </Button>
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
+        {canEdit && onEditClick ? (
+          <Button type="button" variant="secondary" onClick={onEditClick}>
+            {COPY.accounts.editButton}
+          </Button>
+        ) : null}
+        <Button asChild variant="outline">
+          <Link href={ROUTES.accounts}>Zurück</Link>
+        </Button>
+      </div>
     </div>
   )
 }

@@ -26,6 +26,7 @@ import { CompanyDetailContactsTab } from './company-detail-contacts-tab'
 import { CompanyDetailStakeholdersTab } from './company-detail-stakeholders-tab'
 import { CompanyDetailStrategyTab } from './company-detail-strategy-tab'
 import { CompanyStakeholderDialog } from './company-stakeholder-dialog'
+import { EditAccountDialog } from './edit-account-dialog'
 
 export function CompanyDetailClient({
   company,
@@ -70,6 +71,7 @@ export function CompanyDetailClient({
   const [shSentiment, setShSentiment] = useState('')
   const [stakeholderSaving, setStakeholderSaving] = useState(false)
 
+  const [editAccountOpen, setEditAccountOpen] = useState(false)
   const [contactOpen, setContactOpen] = useState(false)
   const [editingContact, setEditingContact] = useState<ContactPersonRow | null>(null)
   const [cFirst, setCFirst] = useState('')
@@ -271,7 +273,13 @@ export function CompanyDetailClient({
 
   return (
     <div className="space-y-6">
-      <CompanyDetailHeader company={company} />
+      <CompanyDetailHeader
+        company={company}
+        canEdit={canEdit}
+        onEditClick={() => setEditAccountOpen(true)}
+      />
+
+      <EditAccountDialog open={editAccountOpen} onOpenChange={setEditAccountOpen} company={company} />
 
       <Tabs defaultValue="strategy" className="w-full">
         <TabsList className="w-full justify-start gap-1">
