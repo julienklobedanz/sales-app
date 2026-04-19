@@ -10,12 +10,12 @@ export function MatchScoreCircle({ similarity01 }: { similarity01: number }) {
   const [display, setDisplay] = useState(0)
 
   useEffect(() => {
-    setDisplay(0)
-    const start = performance.now()
     const duration = 500
     let raf = 0
+    let start: number | null = null
 
     function frame(now: number) {
+      if (start === null) start = now
       const t = Math.min(1, (now - start) / duration)
       const eased = 1 - (1 - t) ** 2
       setDisplay(Math.round(eased * targetPct))

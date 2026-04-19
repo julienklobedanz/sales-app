@@ -91,7 +91,7 @@ export function MatchResultCard({
   return (
     <div className="rounded-xl border bg-card p-4 shadow-sm">
       <div className="flex gap-4">
-        <MatchScoreCircle similarity01={hit.similarity} />
+        <MatchScoreCircle key={`${hit.id}-${hit.similarity}`} similarity01={hit.similarity} />
         <div className="min-w-0 flex-1 space-y-2">
           <div>
             <Link
