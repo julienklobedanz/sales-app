@@ -1,20 +1,29 @@
 'use client'
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import type { AppRole } from '@/hooks/useRole'
+import { COPY } from '@/lib/copy'
 import { SettingsProfileCard } from './settings-profile-card'
 import { SettingsTeamCard } from './settings-team-card'
 import { SettingsWorkspaceCard } from './settings-workspace-card'
 import { SettingsBillingCard } from './settings-billing-card'
 import { SettingsExportTemplatesCard } from './settings-export-templates-card'
+import { SettingsDevRoleCard } from './settings-dev-role-card'
 import type { ExportSettings } from './settings-export-templates-actions'
 
 const CARD_CLASS = 'rounded-3xl border bg-card text-card-foreground p-6 shadow-sm'
 
 export function SettingsTabs({
+  devRolePreview,
   profile,
   org,
   teamMembers,
 }: {
+  /** Nur gesetzt, wenn Rollen-Vorschau auf dem Server aktiv ist (s. `lib/dev-role-preview.ts`). */
+  devRolePreview?: {
+    serverRole: AppRole
+    previewRole: AppRole | null
+  }
   profile: {
     userEmail: string
     firstName: string
@@ -37,6 +46,9 @@ export function SettingsTabs({
     <Tabs defaultValue="workspace" className="gap-6">
       <TabsList variant="line" className="w-full justify-start">
         <TabsTrigger value="workspace">Workspace</TabsTrigger>
+        {devRolePreview ? (
+          <TabsTrigger value="dev">{COPY.settings.devRoleTab}</TabsTrigger>
+        ) : null}
         <TabsTrigger value="team">Team</TabsTrigger>
         <TabsTrigger value="integrations" disabled>
           Integrationen (P2)
@@ -50,6 +62,17 @@ export function SettingsTabs({
           Billing (P2)
         </TabsTrigger>
       </TabsList>
+
+      {devRolePreview ? (
+        <TabsContent value="dev">
+          <div className={CARD_CLASS}>
+            <SettingsDevRoleCard
+              serverRole={devRolePreview.serverRole}
+              previewRole={devRolePreview.previewRole}
+            />
+          </div>
+        </TabsContent>
+      ) : null}
 
       <TabsContent value="workspace">
         <div className="grid gap-6 sm:grid-cols-2">

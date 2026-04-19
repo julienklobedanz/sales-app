@@ -1,6 +1,13 @@
+import { cookies } from 'next/headers'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
+import type { AppRole } from '@/hooks/useRole'
+import {
+  DEV_ROLE_COOKIE,
+  isDevRolePreviewEnabled,
+  parseAppRoleCookie,
+} from '@/lib/dev-role-preview'
 import { getTeamMembers } from './invite-actions'
 import { SettingsDangerZone } from './settings-danger-zone'
 import { SettingsTabs } from './settings-tabs'
@@ -47,6 +54,13 @@ export default async function SettingsPage() {
 
   const teamMembers = await getTeamMembers()
 
+  const devRolePreviewEnabled = isDevRolePreviewEnabled()
+  const cookieStore = await cookies()
+  const previewRole = devRolePreviewEnabled
+    ? parseAppRoleCookie(cookieStore.get(DEV_ROLE_COOKIE)?.value)
+    : null
+  const serverRole = (profileRow?.role ?? 'sales') as AppRole
+
   const fullName = profileRow?.full_name ?? ''
   const [firstName = '', ...rest] = fullName.trim().split(/\s+/)
   const lastName = rest.join(' ') ?? ''
@@ -61,6 +75,11 @@ export default async function SettingsPage() {
       </div>
 
       <SettingsTabs
+        devRolePreview={
+          devRolePreviewEnabled
+            ? { serverRole, previewRole }
+            : undefined
+        }
         profile={{
           userEmail: user.email ?? '',
           firstName,

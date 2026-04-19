@@ -14,6 +14,7 @@ import {
   SettingsIcon,
   Shield,
   Sun,
+  UserIcon,
 } from '@hugeicons/core-free-icons'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Separator } from '@/components/ui/separator'
@@ -119,9 +120,6 @@ export function DashboardHeader({
 
   const showRoleTestMode = roleTestModeEnabled || isDevRolePreviewEnabled()
 
-  const adminGroupActive = userRole === 'admin' || userRole === 'account_manager'
-  const salesActive = userRole === 'sales'
-
   const handleLogout = async () => {
     await clearDevPreviewRole()
     const supabase = createClient()
@@ -129,7 +127,7 @@ export function DashboardHeader({
     router.push(ROUTES.login)
   }
 
-  function selectDevRole(role: Extract<AppRole, 'admin' | 'sales'>) {
+  function selectDevRole(role: AppRole) {
     startRoleSwitch(async () => {
       const res = await setDevPreviewRole(role)
       if (res.ok) router.refresh()
@@ -352,7 +350,7 @@ export function DashboardHeader({
                     e.preventDefault()
                     selectDevRole('admin')
                   }}
-                  className={cn('cursor-pointer', adminGroupActive && 'bg-accent font-medium')}
+                  className={cn('cursor-pointer', userRole === 'admin' && 'bg-accent font-medium')}
                 >
                   <AppIcon icon={Shield} size={16} className="shrink-0" />
                   {COPY.devRolePreview.roleMarketingAdmin}
@@ -361,9 +359,23 @@ export function DashboardHeader({
                   disabled={roleSwitchPending}
                   onSelect={(e) => {
                     e.preventDefault()
+                    selectDevRole('account_manager')
+                  }}
+                  className={cn(
+                    'cursor-pointer',
+                    userRole === 'account_manager' && 'bg-accent font-medium'
+                  )}
+                >
+                  <AppIcon icon={UserIcon} size={16} className="shrink-0" />
+                  {COPY.devRolePreview.roleAccountManager}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={roleSwitchPending}
+                  onSelect={(e) => {
+                    e.preventDefault()
                     selectDevRole('sales')
                   }}
-                  className={cn('cursor-pointer', salesActive && 'bg-accent font-medium')}
+                  className={cn('cursor-pointer', userRole === 'sales' && 'bg-accent font-medium')}
                 >
                   <AppIcon icon={Briefcase} size={16} className="shrink-0" />
                   {COPY.devRolePreview.roleSalesRep}

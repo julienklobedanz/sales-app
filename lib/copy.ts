@@ -31,6 +31,7 @@ export const COPY = {
     badgeSalesAria: 'Vorschau: Sales',
     roleSwitchSectionTitle: 'Rolle wechseln (Test-Modus)',
     roleMarketingAdmin: 'Marketing / Admin',
+    roleAccountManager: 'Account Manager',
     roleSalesRep: 'Sales Representative',
   },
   roles: {
@@ -50,6 +51,13 @@ export const COPY = {
       'Einladung ist gespeichert, die E-Mail konnte nicht versendet werden.',
     teamInviteCopyLink: 'Einladungslink kopieren',
     teamInviteLinkCopied: 'Einladungslink in die Zwischenablage kopiert.',
+    devRoleTab: 'Entwicklung',
+    devRoleCardTitle: 'Rollen-Vorschau (nur Entwicklung)',
+    devRoleCardDescription:
+      'Wechselt nur die sichtbare Rolle in der App (Cookie). Server-Aktionen nutzen weiterhin deine echte Profil-Rolle in der Datenbank, sofern dort nicht explizit die Vorschau berücksichtigt wird.',
+    devRoleStoredLabel: 'Rolle in der Datenbank',
+    devRoleEffectiveLabel: 'Aktive Vorschau',
+    devRoleClear: 'Vorschau aufheben',
   },
   table: {
     empty: 'Keine Ergebnisse.',
