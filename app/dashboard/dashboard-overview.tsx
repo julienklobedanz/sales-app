@@ -66,7 +66,6 @@ import { cn } from '@/lib/utils'
 import { formatDateUtcDe } from '@/lib/format'
 import {
   deleteReference,
-  getDeletedReferences,
   getReferenceAssets,
   resendClientApprovalEmail,
   submitForApproval,
@@ -244,7 +243,8 @@ export function DashboardOverview({
 
   const [trashOpen, setTrashOpen] = useState(false)
   const [trashItems, setTrashItems] = useState<DeletedReferenceRow[]>([])
-  const [trashLoading, setTrashLoading] = useState(false)
+  /** Papierkorb-Laden: aktuell kein Öffnen-Pfad; Dialog bleibt ohne Spinner bis Anbindung. */
+  const trashLoading = false
   const [confirmEmptyOpen, setConfirmEmptyOpen] = useState(false)
   const [emptyingTrash, setEmptyingTrash] = useState(false)
   const [newRefModalOpen, setNewRefModalOpen] = useState(false)

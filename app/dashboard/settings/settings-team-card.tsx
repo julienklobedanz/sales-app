@@ -47,13 +47,6 @@ import { COPY } from '@/lib/copy'
 
 type InviteRole = 'admin' | 'sales' | 'account_manager'
 
-function roleLabel(role: InviteRole | null | undefined): string {
-  if (role === 'account_manager') return COPY.roles.accountManager
-  if (role === 'admin') return 'Admin'
-  if (role === 'sales') return 'Sales'
-  return 'Sales'
-}
-
 export function SettingsTeamCard({
   initialMembers,
 }: {

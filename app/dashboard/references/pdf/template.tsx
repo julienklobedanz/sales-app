@@ -45,7 +45,10 @@ function renderHeader(org: PdfOrgBranding) {
         <Text style={[styles.sectionTitle, { color: org.primary_color }]}>RefStack Export</Text>
         <Text>{org.name}</Text>
       </View>
-      {org.logo_url ? <Image src={org.logo_url} style={styles.logo} /> : null}
+      {org.logo_url
+        ? // eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf/renderer Image (kein HTML img)
+          (<Image src={org.logo_url} style={styles.logo} />)
+        : null}
     </View>
   )
 }
