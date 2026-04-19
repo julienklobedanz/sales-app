@@ -114,7 +114,7 @@ export function DashboardShell({
   })()
 
   return (
-    <RoleProvider role={profile.role}>
+    <RoleProvider key={profile.role} role={profile.role}>
       <SidebarProvider
         defaultOpen={!forceCollapsed}
         open={forceCollapsed ? false : undefined}

@@ -43,6 +43,7 @@ export function SettingsDevRoleCard({
         toast.error(res.error ?? 'Rolle konnte nicht gesetzt werden.')
         return
       }
+      toast.success(COPY.devRolePreview.switchSuccess)
       router.refresh()
     })
   }
@@ -50,6 +51,7 @@ export function SettingsDevRoleCard({
   function clear() {
     start(async () => {
       await clearDevPreviewRole()
+      toast.success(COPY.devRolePreview.switchSuccess)
       router.refresh()
     })
   }

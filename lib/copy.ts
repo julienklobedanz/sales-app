@@ -33,6 +33,7 @@ export const COPY = {
     roleMarketingAdmin: 'Marketing / Admin',
     roleAccountManager: 'Account Manager',
     roleSalesRep: 'Sales Representative',
+    switchSuccess: 'Vorschau-Rolle aktualisiert.',
   },
   roles: {
     accountManager: 'Account Manager',

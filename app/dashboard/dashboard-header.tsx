@@ -38,6 +38,7 @@ import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
 import { cn } from '@/lib/utils'
 import { ROUTES } from '@/lib/routes'
+import { toast } from 'sonner'
 import { clearDevPreviewRole, setDevPreviewRole } from '@/app/dashboard/dev-preview-role-actions'
 import { isDevRolePreviewEnabled } from '@/lib/dev-role-preview'
 import {
@@ -130,7 +131,12 @@ export function DashboardHeader({
   function selectDevRole(role: AppRole) {
     startRoleSwitch(async () => {
       const res = await setDevPreviewRole(role)
-      if (res.ok) router.refresh()
+      if (!res.ok) {
+        toast.error(res.error ?? 'Rolle konnte nicht gesetzt werden.')
+        return
+      }
+      toast.success(COPY.devRolePreview.switchSuccess)
+      router.refresh()
     })
   }
 
@@ -346,10 +352,7 @@ export function DashboardHeader({
                 </DropdownMenuLabel>
                 <DropdownMenuItem
                   disabled={roleSwitchPending}
-                  onSelect={(e) => {
-                    e.preventDefault()
-                    selectDevRole('admin')
-                  }}
+                  onSelect={() => selectDevRole('admin')}
                   className={cn('cursor-pointer', userRole === 'admin' && 'bg-accent font-medium')}
                 >
                   <AppIcon icon={Shield} size={16} className="shrink-0" />
@@ -357,10 +360,7 @@ export function DashboardHeader({
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   disabled={roleSwitchPending}
-                  onSelect={(e) => {
-                    e.preventDefault()
-                    selectDevRole('account_manager')
-                  }}
+                  onSelect={() => selectDevRole('account_manager')}
                   className={cn(
                     'cursor-pointer',
                     userRole === 'account_manager' && 'bg-accent font-medium'
@@ -371,10 +371,7 @@ export function DashboardHeader({
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   disabled={roleSwitchPending}
-                  onSelect={(e) => {
-                    e.preventDefault()
-                    selectDevRole('sales')
-                  }}
+                  onSelect={() => selectDevRole('sales')}
                   className={cn('cursor-pointer', userRole === 'sales' && 'bg-accent font-medium')}
                 >
                   <AppIcon icon={Briefcase} size={16} className="shrink-0" />
