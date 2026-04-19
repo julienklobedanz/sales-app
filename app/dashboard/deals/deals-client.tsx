@@ -2,13 +2,14 @@
 
 import { useMemo, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { ToolbarSearchField } from '@/components/ui/toolbar-search-field'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import type { DealRow, DealStatus } from './types'
 import { DealForm } from './new/deal-form'
 import { importDealsFromXlsx, type MatchSuggestion } from './actions'
-import { ArrowUpDown, CirclePlus, Loader, UploadIcon } from '@hugeicons/core-free-icons'
+import { ArrowUpDown, Building2, CirclePlus, Loader, UploadIcon } from '@hugeicons/core-free-icons'
 import { toast } from 'sonner'
 import { AppDataTable } from '@/components/ui/app-data-table'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -67,6 +68,17 @@ function isExpiringIn30Days(dateStr: string | null): boolean {
   end.setHours(0, 0, 0, 0)
   const days = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
   return days <= 30
+}
+
+function formatEuroAmount(raw: string | null | undefined): string {
+  const s = String(raw ?? '').trim()
+  if (!s) return '—'
+  // Nur wenn es wie eine Zahl aussieht: hübsch formatieren (de-DE)
+  const digits = s.replace(/[^\d]/g, '')
+  if (!digits) return s
+  const n = Number(digits)
+  if (!Number.isFinite(n)) return s
+  return `${new Intl.NumberFormat('de-DE').format(n)} €`
 }
 
 export function DealsClientContent({
@@ -170,7 +182,11 @@ export function DealsClientContent({
             </span>
           </Button>
         ),
-        cell: ({ row }) => <span className="font-medium">{row.original.title}</span>,
+        cell: ({ row }) => (
+          <span className="block max-w-[360px] truncate font-medium">
+            {row.original.title}
+          </span>
+        ),
       },
       {
         accessorKey: 'company_name',
@@ -188,7 +204,26 @@ export function DealsClientContent({
             </span>
           </Button>
         ),
-        cell: ({ row }) => <span className="text-muted-foreground">{row.original.company_name ?? '—'}</span>,
+        cell: ({ row }) => (
+          <div className="flex min-w-0 max-w-[260px] items-center gap-2.5">
+            {row.original.company_logo_url ? (
+              <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md border bg-muted">
+                <Image
+                  src={row.original.company_logo_url}
+                  alt=""
+                  fill
+                  className="object-contain"
+                  sizes="36px"
+                />
+              </div>
+            ) : (
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border bg-muted">
+                <AppIcon icon={Building2} size={18} className="text-muted-foreground" />
+              </div>
+            )}
+            <span className="truncate text-muted-foreground">{row.original.company_name ?? '—'}</span>
+          </div>
+        ),
       },
       {
         accessorKey: 'volume',
@@ -207,7 +242,9 @@ export function DealsClientContent({
           </Button>
         ),
         cell: ({ row }) => (
-          <span className="text-muted-foreground tabular-nums">{row.original.volume?.trim() || '—'}</span>
+          <span className="text-muted-foreground tabular-nums">
+            {formatEuroAmount(row.original.volume)}
+          </span>
         ),
       },
       {
@@ -355,6 +392,10 @@ export function DealsClientContent({
         initialPageSize={10}
         getRowId={(row) => row.id}
         onSelectedRowIdsChange={setSelectedDealIds}
+        initialColumnVisibility={{
+          account_manager_name: false,
+          sales_manager_name: false,
+        }}
         toolbar={() => (
           <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
             <ToolbarSearchField
@@ -362,7 +403,8 @@ export function DealsClientContent({
               value={query}
               onChange={setQuery}
               placeholder={COPY.deals.searchPlaceholder}
-              wrapperClassName="flex-1 min-w-0 max-w-none"
+              wrapperClassName="flex-1 min-w-0 !max-w-none"
+              className="w-full"
             />
             <Select
               value={statusFilter}

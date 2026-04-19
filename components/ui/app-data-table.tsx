@@ -66,6 +66,8 @@ export type AppDataTableProps<TData, TValue> = {
   onSelectedRowIdsChange?: (rowIds: string[]) => void
   initialPageSize?: number
   pageSizeOptions?: number[]
+  /** Initiale Sichtbarkeit einzelner Spalten (z. B. Standard: ausgeblendet). */
+  initialColumnVisibility?: VisibilityState
 }
 
 export function AppDataTable<TData, TValue>({
@@ -80,6 +82,7 @@ export function AppDataTable<TData, TValue>({
   onSelectedRowIdsChange,
   initialPageSize = 10,
   pageSizeOptions,
+  initialColumnVisibility,
 }: AppDataTableProps<TData, TValue>) {
   const router = useRouter()
   const [sorting, setSorting] = React.useState<SortingState>([])
@@ -108,6 +111,7 @@ export function AppDataTable<TData, TValue>({
     },
     initialState: {
       pagination: { pageSize: initialPageSize },
+      columnVisibility: initialColumnVisibility ?? {},
     },
   })
 

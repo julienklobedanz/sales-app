@@ -67,7 +67,7 @@ export async function getDeals(): Promise<DealRow[]> {
       expiry_date,
       created_at,
       updated_at,
-      companies ( name )
+      companies ( name, logo_url )
     `)
     .eq('organization_id', orgId)
     .order('expiry_date', { ascending: true, nullsFirst: false })
@@ -140,12 +140,15 @@ export async function getDeals(): Promise<DealRow[]> {
   }
 
   return (rows ?? []).map((r) => {
-    const company = Array.isArray(r.companies) ? (r.companies[0] as { name?: string }) : (r.companies as { name?: string } | null)
+    const company = Array.isArray(r.companies)
+      ? (r.companies[0] as { name?: string; logo_url?: string | null })
+      : (r.companies as { name?: string; logo_url?: string | null } | null)
     return {
       id: r.id,
       title: r.title,
       company_id: r.company_id ?? null,
       company_name: company?.name ?? null,
+      company_logo_url: company?.logo_url ?? null,
       industry: r.industry ?? null,
       volume: r.volume ?? null,
       requirements_text: (r as { requirements_text?: string | null }).requirements_text ?? null,

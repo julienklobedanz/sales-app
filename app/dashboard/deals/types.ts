@@ -12,6 +12,7 @@ export type DealRow = {
   title: string
   company_id: string | null
   company_name: string | null
+  company_logo_url?: string | null
   industry: string | null
   volume: string | null
   requirements_text?: string | null
