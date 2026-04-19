@@ -84,6 +84,12 @@ export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
                     </div>
                     <div className="mt-2 text-xs text-muted-foreground">
                       {d.linkedCount} verknüpfte Referenz{d.linkedCount === 1 ? '' : 'en'}
+                      {typeof d.bestMatchScore === 'number' && !Number.isNaN(d.bestMatchScore) ? (
+                        <>
+                          {' '}
+                          · Bester Score {(d.bestMatchScore * 100).toFixed(0)} %
+                        </>
+                      ) : null}
                     </div>
                   </Link>
                 </li>

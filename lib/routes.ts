@@ -37,6 +37,9 @@ export const ROUTES = {
   },
   marketSignals: '/dashboard/market-signals',
   match: '/dashboard/match',
+  /** Semantische Suche mit Deal-Kontext (`matchReferences`). */
+  matchWithDeal: (dealId: string) =>
+    `/dashboard/match?deal=${encodeURIComponent(dealId)}`,
   settings: '/dashboard/settings',
   request: '/dashboard/request',
 } as const

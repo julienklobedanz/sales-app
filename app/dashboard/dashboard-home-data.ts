@@ -15,6 +15,7 @@ export type SalesRepDealCard = {
   company_name: string | null
   expiry_date: string | null
   linkedCount: number
+  bestMatchScore: number | null
 }
 
 export type RecommendedRefRow = {
@@ -137,6 +138,7 @@ export async function loadSalesRepDashboardData(
       company_name: d.company_name,
       expiry_date: d.expiry_date,
       linkedCount: d.linked_refs?.length ?? 0,
+      bestMatchScore: d.best_match_score ?? null,
     }))
     .slice(0, 8)
 

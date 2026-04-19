@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ToolbarSearchField } from '@/components/ui/toolbar-search-field'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import type { DealRow } from './types'
+import type { DealRow, DealStatus } from './types'
 import { DealForm } from './new/deal-form'
 import { importDealsFromXlsx, type MatchSuggestion } from './actions'
 import { CirclePlus, Loader, UploadIcon } from '@hugeicons/core-free-icons'
@@ -16,8 +16,24 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { AppIcon } from '@/lib/icons'
 import { DealStatusBadge } from '@/components/deal-status-badge'
 import { COPY } from '@/lib/copy'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 type MatchMap = Record<string, { count: number; suggestions: MatchSuggestion[] }>
+
+type StatusFilterValue = 'all' | DealStatus
+const STATUS_FILTER_OPTIONS: { value: StatusFilterValue; label: string }[] = [
+  { value: 'all', label: COPY.deals.filterStatusAll },
+  { value: 'negotiation', label: COPY.deals.filterStatusNegotiation },
+  { value: 'rfp', label: COPY.deals.filterStatusRfp },
+  { value: 'won', label: COPY.deals.filterStatusWon },
+  { value: 'lost', label: COPY.deals.filterStatusLost },
+]
 
 function formatDate(iso: string) {
   const d = new Date(iso)
@@ -56,6 +72,7 @@ export function DealsClientContent({
   const xlsxInputRef = useRef<HTMLInputElement>(null)
   const [createOpen, setCreateOpen] = useState(false)
   const [query, setQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState<StatusFilterValue>('all')
 
   async function handleXlsxImport(file: File) {
     const formData = new FormData()
@@ -77,13 +94,17 @@ export function DealsClientContent({
   }
 
   const filtered = useMemo(() => {
+    let list = deals
+    if (statusFilter !== 'all') {
+      list = list.filter((d) => d.status === statusFilter)
+    }
     const q = query.trim().toLowerCase()
-    if (!q) return deals
-    return deals.filter((d) => {
+    if (!q) return list
+    return list.filter((d) => {
       const hay = `${d.title} ${d.company_name ?? ''} ${d.account_manager_name ?? ''}`.toLowerCase()
       return hay.includes(q)
     })
-  }, [deals, query])
+  }, [deals, query, statusFilter])
 
   const columns = useMemo<ColumnDef<DealRow>[]>(() => {
     return [
@@ -122,6 +143,34 @@ export function DealsClientContent({
         cell: ({ row }) => <span className="text-muted-foreground">{row.original.company_name ?? '—'}</span>,
       },
       {
+        accessorKey: 'volume',
+        header: 'Volumen',
+        cell: ({ row }) => (
+          <span className="text-muted-foreground tabular-nums">{row.original.volume?.trim() || '—'}</span>
+        ),
+      },
+      {
+        id: 'reference_count',
+        header: COPY.deals.referenceCountColumn,
+        cell: ({ row }) => (
+          <span className="tabular-nums text-muted-foreground">
+            {row.original.linked_refs?.length ?? 0}
+          </span>
+        ),
+      },
+      {
+        id: 'best_score',
+        header: COPY.deals.matchScoreColumn,
+        cell: ({ row }) => {
+          const s = row.original.best_match_score
+          return (
+            <span className="tabular-nums text-muted-foreground">
+              {typeof s === 'number' && !Number.isNaN(s) ? `${(s * 100).toFixed(0)} %` : '—'}
+            </span>
+          )
+        },
+      },
+      {
         accessorKey: 'account_manager_name',
         header: COPY.roles.accountManager,
         cell: ({ row }) => <span className="text-muted-foreground">{row.original.account_manager_name ?? '—'}</span>,
@@ -140,7 +189,7 @@ export function DealsClientContent({
       },
       {
         id: 'matches',
-        header: COPY.misc.matches,
+        header: COPY.deals.industryMatchColumn,
         cell: ({ row }) => {
           const data = matchMap[row.original.id] ?? { count: 0, suggestions: [] }
           return (
@@ -169,12 +218,29 @@ export function DealsClientContent({
         initialPageSize={10}
         getRowId={(row) => row.id}
         toolbar={() => (
-          <ToolbarSearchField
-            variant="list"
-            value={query}
-            onChange={setQuery}
-            placeholder={COPY.deals.searchPlaceholder}
-          />
+          <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+            <ToolbarSearchField
+              variant="list"
+              value={query}
+              onChange={setQuery}
+              placeholder={COPY.deals.searchPlaceholder}
+            />
+            <Select
+              value={statusFilter}
+              onValueChange={(v) => setStatusFilter(v as StatusFilterValue)}
+            >
+              <SelectTrigger className="w-full sm:w-[200px]" data-row-nav-ignore>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_FILTER_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         )}
         toolbarRight={() => (
           <>
@@ -205,7 +271,7 @@ export function DealsClientContent({
             </Button>
             <Button type="button" size="toolbar" onClick={() => setCreateOpen(true)}>
               <AppIcon icon={CirclePlus} size={16} />
-              Deal anlegen
+              {COPY.deals.newDealButton}
             </Button>
           </>
         )}

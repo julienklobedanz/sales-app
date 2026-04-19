@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Trophy } from "@hugeicons/core-free-icons"
 
@@ -21,17 +22,35 @@ import { Textarea } from "@/components/ui/textarea"
 
 import { recordDealOutcome } from "../actions"
 
+type ReferenceHelpfulChoice = "__none__" | "yes" | "no" | "na"
+
 export function OutcomeDialog({ dealId }: { dealId: string }) {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [outcome, setOutcome] = useState<"won" | "lost" | "withdrawn" | "">("")
   const [comment, setComment] = useState("")
+  const [referenceHelpful, setReferenceHelpful] = useState<ReferenceHelpfulChoice>("__none__")
   const [saving, setSaving] = useState(false)
+
+  /** `undefined` = keine Angabe (Feld weglassen im Event-Payload). */
+  function mapReferenceHelpful(): boolean | null | undefined {
+    if (referenceHelpful === "yes") return true
+    if (referenceHelpful === "no") return false
+    if (referenceHelpful === "na") return null
+    return undefined
+  }
 
   async function submit() {
     if (!outcome) return
     setSaving(true)
     try {
-      const res = await recordDealOutcome({ dealId, outcome, comment })
+      const rh = mapReferenceHelpful()
+      const res = await recordDealOutcome({
+        dealId,
+        outcome,
+        comment,
+        ...(rh !== undefined ? { referenceHelpful: rh } : {}),
+      })
       if (!res.success) {
         toast.error(res.error ?? "Konnte Ausgang nicht speichern.")
         return
@@ -40,6 +59,8 @@ export function OutcomeDialog({ dealId }: { dealId: string }) {
       setOpen(false)
       setOutcome("")
       setComment("")
+      setReferenceHelpful("__none__")
+      router.refresh()
     } finally {
       setSaving(false)
     }
@@ -53,14 +74,14 @@ export function OutcomeDialog({ dealId }: { dealId: string }) {
           Ausgang festhalten
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Ausgang des Deals</DialogTitle>
           <DialogDescription>Kurz festhalten, wie der Deal ausgegangen ist.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-2">
-            <Label>Ausgang</Label>
+            <Label>Outcome</Label>
             <Select
               value={outcome || "__none__"}
               onValueChange={(v) => setOutcome(v === "__none__" ? "" : (v as "won" | "lost" | "withdrawn"))}
@@ -77,13 +98,31 @@ export function OutcomeDialog({ dealId }: { dealId: string }) {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="outcome-comment">Kommentar (optional)</Label>
+            <Label htmlFor="outcome-comment">Grund (Freitext, optional)</Label>
             <Textarea
               id="outcome-comment"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               rows={3}
+              placeholder="z. B. Kriterien, Wettbewerber, Lessons Learned …"
             />
+          </div>
+          <div className="space-y-2">
+            <Label>War die Referenz hilfreich?</Label>
+            <Select
+              value={referenceHelpful}
+              onValueChange={(v) => setReferenceHelpful(v as ReferenceHelpfulChoice)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Optional …" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">Keine Angabe</SelectItem>
+                <SelectItem value="yes">Ja</SelectItem>
+                <SelectItem value="no">Nein</SelectItem>
+                <SelectItem value="na">Nicht zutreffend</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
         <DialogFooter>

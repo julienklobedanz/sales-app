@@ -27,6 +27,8 @@ export type DealRow = {
   updated_at: string | null
   /** Verknüpfte Referenzen inkl. Logo für Listen-Anzeige */
   linked_refs?: { id: string; title: string; company_name: string; logo_url?: string | null }[]
+  /** Höchster `similarity_score` unter verknüpften Referenzen (0–1), sonst null */
+  best_match_score: number | null
 }
 
 export type DealWithReferences = DealRow & {

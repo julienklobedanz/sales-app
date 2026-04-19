@@ -29,9 +29,16 @@ import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 import { useRole } from '@/hooks/useRole'
 import { DealQuickAccountDialog } from './deal-quick-account-dialog'
+import {
+  CompanyCombobox,
+  type ReferenceFormCompany,
+} from '@/app/dashboard/evidence/new/reference-form-fields'
 
 type Company = { id: string; name: string }
 type OrgProfile = { id: string; full_name: string | null }
+
+/** Nur Pipeline-Phasen bei Neuanlage (Terminal über „Ausgang festhalten“). */
+const CREATE_DEAL_PHASES: DealStatus[] = ['negotiation', 'rfp']
 
 export function DealForm({
   companies,
@@ -45,8 +52,14 @@ export function DealForm({
   const canCreateAccount = isAdmin || isAccountManager
   const [pending, setPending] = useState(false)
   const [companyId, setCompanyId] = useState<string>('')
+  const [accountInput, setAccountInput] = useState('')
   const [extraCompanies, setExtraCompanies] = useState<Company[]>([])
   const [quickAccountOpen, setQuickAccountOpen] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState<{
+    title?: string
+    account?: string
+    volume?: string
+  }>({})
 
   const companyOptions = useMemo(() => {
     const map = new Map<string, string>()
@@ -54,15 +67,32 @@ export function DealForm({
     for (const c of extraCompanies) map.set(c.id, c.name)
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }))
   }, [companies, extraCompanies])
-  const [status, setStatus] = useState<DealStatus>('open')
+
+  const comboboxCompanies = useMemo<ReferenceFormCompany[]>(
+    () => companyOptions.map((c) => ({ id: c.id, name: c.name, logo_url: null })),
+    [companyOptions]
+  )
+
+  const [status, setStatus] = useState<DealStatus>('negotiation')
   const [isPublic, setIsPublic] = useState(true)
   const [accountManagerId, setAccountManagerId] = useState<string>('')
   const [salesManagerId, setSalesManagerId] = useState<string>('')
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    setPending(true)
     const form = e.currentTarget
+    const fd = new FormData(form)
+    const title = (fd.get('title')?.toString() ?? '').trim()
+    const volumeRaw = (fd.get('volume')?.toString() ?? '').trim()
+
+    const nextErrors: typeof fieldErrors = {}
+    if (!title) nextErrors.title = 'Titel ist erforderlich.'
+    if (!companyId) nextErrors.account = 'Bitte ein Account aus der Liste wählen.'
+    if (!volumeRaw) nextErrors.volume = 'Volumen ist erforderlich.'
+    setFieldErrors(nextErrors)
+    if (Object.keys(nextErrors).length > 0) return
+
+    setPending(true)
     const formData = new FormData(form)
     formData.set('company_id', companyId)
     formData.set('status', status)
@@ -73,7 +103,7 @@ export function DealForm({
     setPending(false)
     if (result.success && result.id) {
       toast.success('Deal angelegt.')
-      router.push(`${ROUTES.deals.root}?open=${result.id}`)
+      router.push(ROUTES.deals.detail(result.id))
       router.refresh()
     } else {
       toast.error(result.error ?? 'Fehler beim Anlegen.')
@@ -91,22 +121,33 @@ export function DealForm({
             return [...prev, { id, name }]
           })
           setCompanyId(id)
+          setAccountInput(name)
           router.refresh()
         }}
       />
       <CardHeader>
         <CardTitle>Neuer Deal</CardTitle>
-        <CardDescription>Titel, Unternehmen, Status und Ablaufdatum.</CardDescription>
+        <CardDescription>
+          Titel, Account (Suche), Volumen und Phase sind Pflicht. Optional: Beschreibung und Closing-Datum.
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={onSubmit} className="space-y-4">
+        <form onSubmit={onSubmit} className="space-y-4" noValidate>
           <div className="space-y-2">
             <Label htmlFor="title">Titel *</Label>
-            <Input id="title" name="title" required placeholder="z. B. Cloud-Migration BMW" disabled={pending} />
+            <Input
+              id="title"
+              name="title"
+              placeholder="z. B. Cloud-Migration BMW"
+              disabled={pending}
+              aria-invalid={Boolean(fieldErrors.title)}
+              onChange={() => fieldErrors.title && setFieldErrors((e) => ({ ...e, title: undefined }))}
+            />
+            {fieldErrors.title ? <p className="text-sm text-destructive">{fieldErrors.title}</p> : null}
           </div>
           <div className="space-y-2">
             <div className="flex flex-wrap items-end justify-between gap-2">
-              <Label>Unternehmen</Label>
+              <Label>Account *</Label>
               {canCreateAccount ? (
                 <Button
                   type="button"
@@ -119,18 +160,24 @@ export function DealForm({
                 </Button>
               ) : null}
             </div>
-            <Select value={companyId || '__none__'} onValueChange={(v) => setCompanyId(v === '__none__' ? '' : v)} disabled={pending}>
-              <SelectTrigger>
-                <SelectValue placeholder="Optional auswählen …" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__">— Keins —</SelectItem>
-                {companyOptions.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <CompanyCombobox
+              companies={comboboxCompanies}
+              value={accountInput}
+              onValueChange={(v) => {
+                setAccountInput(v)
+                setCompanyId('')
+                if (fieldErrors.account) setFieldErrors((e) => ({ ...e, account: undefined }))
+              }}
+              onSelectCompany={(c) => {
+                setCompanyId(c.id)
+                setAccountInput(c.name)
+                if (fieldErrors.account) setFieldErrors((e) => ({ ...e, account: undefined }))
+              }}
+              loading={false}
+              disabled={pending}
+            />
             <input type="hidden" name="company_id" value={companyId} />
+            {fieldErrors.account ? <p className="text-sm text-destructive">{fieldErrors.account}</p> : null}
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -138,33 +185,43 @@ export function DealForm({
               <Input id="industry" name="industry" placeholder="z. B. Automotive" disabled={pending} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="volume">Volumen</Label>
-              <Input id="volume" name="volume" placeholder="z. B. €5 Mio" disabled={pending} />
+              <Label htmlFor="volume">Volumen *</Label>
+              <Input
+                id="volume"
+                name="volume"
+                placeholder="z. B. €5 Mio"
+                disabled={pending}
+                aria-invalid={Boolean(fieldErrors.volume)}
+                onChange={() => fieldErrors.volume && setFieldErrors((e) => ({ ...e, volume: undefined }))}
+              />
+              {fieldErrors.volume ? <p className="text-sm text-destructive">{fieldErrors.volume}</p> : null}
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Status</Label>
+            <Label>Phase *</Label>
             <Select value={status} onValueChange={(v) => setStatus(v as DealStatus)} disabled={pending}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {(Object.keys(DEAL_STATUS_LABELS) as DealStatus[]).map((s) => (
-                  <SelectItem key={s} value={s}>{DEAL_STATUS_LABELS[s]}</SelectItem>
+                {CREATE_DEAL_PHASES.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {DEAL_STATUS_LABELS[s]}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="expiry_date">Ablaufdatum</Label>
+            <Label htmlFor="expiry_date">Closing-Datum (optional)</Label>
             <Input id="expiry_date" name="expiry_date" type="date" disabled={pending} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="requirements_text">Anforderungen</Label>
+            <Label htmlFor="requirements_text">Beschreibung (optional)</Label>
             <Textarea
               id="requirements_text"
               name="requirements_text"
-              placeholder="Freitext: wichtigste Anforderungen, Scope, Must-haves …"
+              placeholder="Kontext, Scope, Must-haves …"
               rows={6}
               disabled={pending}
             />

@@ -33,7 +33,8 @@ export function MatchResultCard({
   onLinked,
 }: {
   hit: MatchReferenceHit
-  dealId: string
+  /** Ohne Deal: keine Verknüpfung „In Deal übernehmen“. */
+  dealId?: string | null
   /** Deal-Infos für Epic-5-KI-Prompt (optional). */
   dealContext?: string | null
   alreadyLinked: boolean
@@ -62,6 +63,7 @@ export function MatchResultCard({
   }
 
   async function handleDealLink() {
+    if (!dealId) return
     setLinkLoading(true)
     try {
       const res = await addReferenceToDealWithScore({
@@ -135,18 +137,20 @@ export function MatchResultCard({
             <Button type="button" variant="secondary" size="sm" className="h-8 text-xs" asChild>
               <Link href={ROUTES.evidence.detail(hit.id)}>→ Details</Link>
             </Button>
-            <Button
-              type="button"
-              size="sm"
-              className="h-8 text-xs"
-              disabled={alreadyLinked || linkLoading}
-              onClick={() => void handleDealLink()}
-            >
-              {linkLoading ? (
-                <AppIcon icon={Loader} size={14} className="mr-1 animate-spin" />
-              ) : null}
-              {alreadyLinked ? 'Bereits im Deal' : 'In Deal übernehmen'}
-            </Button>
+            {dealId ? (
+              <Button
+                type="button"
+                size="sm"
+                className="h-8 text-xs"
+                disabled={alreadyLinked || linkLoading}
+                onClick={() => void handleDealLink()}
+              >
+                {linkLoading ? (
+                  <AppIcon icon={Loader} size={14} className="mr-1 animate-spin" />
+                ) : null}
+                {alreadyLinked ? 'Bereits im Deal' : 'In Deal übernehmen'}
+              </Button>
+            ) : null}
           </div>
         </div>
       </div>

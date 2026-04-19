@@ -76,13 +76,27 @@ export async function getDeals(): Promise<DealRow[]> {
 
   const dealIds = (rows ?? []).map((r) => r.id)
   const linkedRefsMap: Record<string, { id: string; title: string; company_name: string; logo_url?: string | null }[]> = {}
-  dealIds.forEach((id) => { linkedRefsMap[id] = [] })
+  dealIds.forEach((id) => {
+    linkedRefsMap[id] = []
+  })
+
+  const bestScoreMap: Record<string, number | null> = {}
+  for (const id of dealIds) bestScoreMap[id] = null
 
   if (dealIds.length > 0) {
     const { data: drRows } = await supabase
       .from('deal_references')
-      .select('deal_id, reference_id')
+      .select('deal_id, reference_id, similarity_score')
       .in('deal_id', dealIds)
+
+    for (const dr of drRows ?? []) {
+      const sc = (dr as { similarity_score?: number | null }).similarity_score
+      if (typeof sc === 'number' && !Number.isNaN(sc)) {
+        const prev = bestScoreMap[dr.deal_id]
+        if (prev == null || sc > prev) bestScoreMap[dr.deal_id] = sc
+      }
+    }
+
     const refIds = [...new Set((drRows ?? []).map((r) => r.reference_id).filter(Boolean))] as string[]
     if (refIds.length > 0) {
       const { data: refs } = await supabase
@@ -146,6 +160,7 @@ export async function getDeals(): Promise<DealRow[]> {
       created_at: r.created_at,
       updated_at: r.updated_at ?? null,
       linked_refs: linkedRefsMap[r.id] ?? [],
+      best_match_score: bestScoreMap[r.id] ?? null,
     }
   })
 }
@@ -243,6 +258,20 @@ export async function getDealWithReferences(id: string): Promise<DealWithReferen
 
   const company = Array.isArray(deal.companies) ? deal.companies[0] : deal.companies
 
+  const best_match_score = references.reduce<number | null>((max, ref) => {
+    const s = ref.similarity_score
+    if (typeof s !== 'number' || Number.isNaN(s)) return max
+    if (max == null || s > max) return s
+    return max
+  }, null)
+
+  const linked_refs = references.map((r) => ({
+    id: r.id,
+    title: r.title,
+    company_name: r.company_name,
+    logo_url: r.logo_url ?? null,
+  }))
+
   return {
     id: deal.id,
     title: deal.title,
@@ -261,9 +290,13 @@ export async function getDealWithReferences(id: string): Promise<DealWithReferen
     expiry_date: deal.expiry_date ?? null,
     created_at: deal.created_at,
     updated_at: deal.updated_at ?? null,
+    linked_refs,
+    best_match_score,
     references,
   }
 }
+
+const CREATE_DEAL_ALLOWED_STATUS = new Set<DealStatus>(['negotiation', 'rfp'])
 
 export async function createDeal(formData: FormData): Promise<{ success: boolean; error?: string; id?: string }> {
   const supabase = await createServerSupabaseClient()
@@ -277,15 +310,28 @@ export async function createDeal(formData: FormData): Promise<{ success: boolean
   const title = formData.get('title')?.toString()?.trim()
   if (!title) return { success: false, error: 'Titel ist erforderlich.' }
 
-  const companyId = formData.get('company_id')?.toString() || null
+  const companyId = formData.get('company_id')?.toString()?.trim() || null
+  if (!companyId) return { success: false, error: 'Account ist erforderlich.' }
+
+  const { count: companyCount, error: companyCheckErr } = await supabase
+    .from('companies')
+    .select('id', { count: 'exact', head: true })
+    .eq('id', companyId)
+    .eq('organization_id', orgId)
+  if (companyCheckErr || !companyCount) return { success: false, error: 'Ungültiger Account.' }
+
   const industry = formData.get('industry')?.toString()?.trim() || null
   const volume = formData.get('volume')?.toString()?.trim() || null
+  if (!volume) return { success: false, error: 'Volumen ist erforderlich.' }
   const requirements_text = formData.get('requirements_text')?.toString()?.trim() || null
   const incumbent_provider = formData.get('incumbent_provider')?.toString()?.trim() || null
   const is_public = formData.get('is_public') !== 'false'
   const account_manager_id = formData.get('account_manager_id')?.toString() || null
   const sales_manager_id = formData.get('sales_manager_id')?.toString() || null
-  const status = normalizeDealStatus(formData.get('status')?.toString() || 'open')
+  const status = normalizeDealStatus(formData.get('status')?.toString() || 'negotiation')
+  if (!CREATE_DEAL_ALLOWED_STATUS.has(status)) {
+    return { success: false, error: 'Ungültige Phase für die Neuanlage.' }
+  }
   const expiry_date = formData.get('expiry_date')?.toString()?.trim() || null
 
   const { data: deal, error } = await supabase
@@ -293,7 +339,7 @@ export async function createDeal(formData: FormData): Promise<{ success: boolean
     .insert({
       organization_id: orgId,
       title,
-      company_id: companyId || null,
+      company_id: companyId,
       industry,
       volume,
       requirements_text,
@@ -494,6 +540,8 @@ export async function recordDealOutcome(args: {
   dealId: string
   outcome: 'won' | 'lost' | 'withdrawn'
   comment?: string
+  /** `true`/`false`/`null` = gesetzt; weglassen = keine Angabe im Payload. */
+  referenceHelpful?: boolean | null
 }): Promise<{ success: boolean; error?: string }> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -525,12 +573,19 @@ export async function recordDealOutcome(args: {
         ? 'deal_lost'
         : 'deal_withdrawn'
 
+  const eventPayload: { comment: string | null; reference_helpful?: boolean | null } = {
+    comment: args.comment?.trim() || null,
+  }
+  if (args.referenceHelpful !== undefined) {
+    eventPayload.reference_helpful = args.referenceHelpful
+  }
+
   const { error: evErr } = await supabase.from('evidence_events').insert({
     organization_id: orgId,
     deal_id: args.dealId,
     reference_id: null,
     event_type: eventType,
-    payload: { comment: args.comment?.trim() || null },
+    payload: eventPayload,
     created_by: user.id,
   })
   if (evErr) return { success: false, error: evErr.message }

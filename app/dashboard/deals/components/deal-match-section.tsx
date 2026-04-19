@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Search01Icon } from '@hugeicons/core-free-icons'
@@ -15,6 +16,7 @@ import type { MatchReferenceHit } from '@/app/dashboard/actions'
 
 import type { DealWithReferences } from '../types'
 import { MatchResultCard } from './match-result-card'
+import { ROUTES } from '@/lib/routes'
 
 /** Kontextzeilen für KI-Entwurf (Epic 5 / KAN-128). */
 export function buildDealContextForKiEntwurf(deal: DealWithReferences): string {
@@ -68,6 +70,16 @@ export function DealMatchSection({ deal }: { deal: DealWithReferences }) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {deal.references.length === 0 ? (
+          <div className="flex flex-col gap-3 rounded-lg border border-dashed bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">
+              Zentrale Suche mit vorausgefülltem Deal-Kontext und Verknüpfung ins Deal-Detail.
+            </p>
+            <Button type="button" asChild className="shrink-0">
+              <Link href={ROUTES.matchWithDeal(deal.id)}>Matches finden</Link>
+            </Button>
+          </div>
+        ) : null}
         <div className="space-y-2">
           <Label htmlFor="deal-match-query">Suchtext</Label>
           <Textarea

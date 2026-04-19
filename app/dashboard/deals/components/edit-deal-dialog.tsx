@@ -20,9 +20,11 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 
-import type { DealStatus, DealWithReferences } from "../types"
+import { DEAL_STATUS_LABELS, type DealStatus, type DealWithReferences } from "../types"
 import { updateDeal } from "../actions"
 import { COPY } from "@/lib/copy"
+
+const EDITABLE_DEAL_STATUSES: DealStatus[] = ["open", "rfp", "negotiation", "withdrawn", "archived"]
 
 type Company = { id: string; name: string }
 type OrgProfile = { id: string; full_name: string | null }
@@ -129,20 +131,35 @@ export function EditDealDialog({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Status</Label>
-              <Select value={status} onValueChange={(v) => setStatus(v as DealStatus)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="open">Offen</SelectItem>
-                  <SelectItem value="rfp">RFP</SelectItem>
-                  <SelectItem value="negotiation">Verhandlung</SelectItem>
-                  <SelectItem value="won">Gewonnen</SelectItem>
-                  <SelectItem value="lost">Verloren</SelectItem>
-                  <SelectItem value="withdrawn">Zurückgezogen</SelectItem>
-                  <SelectItem value="archived">Archiviert</SelectItem>
-                </SelectContent>
-              </Select>
+              {status === "won" || status === "lost" ? (
+                <>
+                  <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm font-medium">
+                    {DEAL_STATUS_LABELS[status]}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Abschluss Gewonnen/Verloren läuft über „Ausgang festhalten“ in der Seitenleiste (inkl. Feedback &
+                    Ereignis).
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Select value={status} onValueChange={(v) => setStatus(v as DealStatus)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {EDITABLE_DEAL_STATUSES.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {DEAL_STATUS_LABELS[s]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Gewonnen/Verloren: Seitenleiste → Ausgang festhalten.
+                  </p>
+                </>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="deal-expiry">Ablaufdatum</Label>
