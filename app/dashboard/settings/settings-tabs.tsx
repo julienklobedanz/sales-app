@@ -14,13 +14,13 @@ import type { ExportSettings } from './settings-export-templates-actions'
 const CARD_CLASS = 'rounded-3xl border bg-card text-card-foreground p-6 shadow-sm'
 
 export function SettingsTabs({
-  devRolePreview,
+  roleSwitcher,
   profile,
   org,
   teamMembers,
 }: {
   /** Nur gesetzt, wenn {@link isDevRolePreviewEnabled} auf dem Server true ist. */
-  devRolePreview?: {
+  roleSwitcher?: {
     serverRole: AppRole
     previewRole: AppRole | null
   }
@@ -46,8 +46,8 @@ export function SettingsTabs({
     <Tabs defaultValue="workspace" className="gap-6">
       <TabsList variant="line" className="w-full justify-start">
         <TabsTrigger value="workspace">Workspace</TabsTrigger>
-        {devRolePreview ? (
-          <TabsTrigger value="dev">{COPY.settings.devRoleTab}</TabsTrigger>
+        {roleSwitcher ? (
+          <TabsTrigger value="dev">{COPY.settings.roleSwitcherTab}</TabsTrigger>
         ) : null}
         <TabsTrigger value="team">Team</TabsTrigger>
         <TabsTrigger value="integrations" disabled>
@@ -63,12 +63,12 @@ export function SettingsTabs({
         </TabsTrigger>
       </TabsList>
 
-      {devRolePreview ? (
+      {roleSwitcher ? (
         <TabsContent value="dev">
           <div className={CARD_CLASS}>
             <SettingsDevRoleCard
-              serverRole={devRolePreview.serverRole}
-              previewRole={devRolePreview.previewRole}
+              serverRole={roleSwitcher.serverRole}
+              previewRole={roleSwitcher.previewRole}
             />
           </div>
         </TabsContent>

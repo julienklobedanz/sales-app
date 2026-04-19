@@ -12,7 +12,7 @@ function revalidateDashboardRole() {
 
 export async function setDevPreviewRole(role: AppRole) {
   if (!isDevRolePreviewEnabled()) {
-    return { ok: false as const, error: 'Rollen-Vorschau ist nicht aktiv.' }
+    return { ok: false as const, error: 'Rollenwechsel ist in dieser Umgebung deaktiviert.' }
   }
   const jar = await cookies()
   jar.set(DEV_ROLE_COOKIE, role, {

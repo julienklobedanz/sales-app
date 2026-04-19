@@ -15,11 +15,11 @@ import { cn } from '@/lib/utils'
 function roleLabel(role: AppRole): string {
   switch (role) {
     case 'admin':
-      return COPY.devRolePreview.roleMarketingAdmin
+      return COPY.roleSwitcher.roleMarketingAdmin
     case 'account_manager':
-      return COPY.devRolePreview.roleAccountManager
+      return COPY.roleSwitcher.roleAccountManager
     case 'sales':
-      return COPY.devRolePreview.roleSalesRep
+      return COPY.roleSwitcher.roleSalesRep
     default:
       return role
   }
@@ -43,7 +43,7 @@ export function SettingsDevRoleCard({
         toast.error(res.error ?? 'Rolle konnte nicht gesetzt werden.')
         return
       }
-      toast.success(COPY.devRolePreview.switchSuccess)
+      toast.success(COPY.roleSwitcher.switchSuccess)
       router.refresh()
     })
   }
@@ -51,7 +51,7 @@ export function SettingsDevRoleCard({
   function clear() {
     start(async () => {
       await clearDevPreviewRole()
-      toast.success(COPY.devRolePreview.switchSuccess)
+      toast.success(COPY.roleSwitcher.switchSuccess)
       router.refresh()
     })
   }
@@ -61,23 +61,23 @@ export function SettingsDevRoleCard({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold tracking-tight">{COPY.settings.devRoleCardTitle}</h2>
-        <p className="mt-2 text-sm text-muted-foreground">{COPY.settings.devRoleCardDescription}</p>
+        <h2 className="text-lg font-semibold tracking-tight">{COPY.settings.roleSwitcherCardTitle}</h2>
+        <p className="mt-2 text-sm text-muted-foreground">{COPY.settings.roleSwitcherCardDescription}</p>
       </div>
 
       <dl className="grid gap-3 text-sm sm:grid-cols-2">
         <div className="rounded-lg border bg-muted/30 px-3 py-2">
-          <dt className="text-muted-foreground">{COPY.settings.devRoleStoredLabel}</dt>
+          <dt className="text-muted-foreground">{COPY.settings.roleSwitcherStoredLabel}</dt>
           <dd className="mt-1 font-medium">{roleLabel(serverRole)}</dd>
         </div>
         <div className="rounded-lg border bg-muted/30 px-3 py-2">
-          <dt className="text-muted-foreground">{COPY.settings.devRoleEffectiveLabel}</dt>
+          <dt className="text-muted-foreground">{COPY.settings.roleSwitcherActiveLabel}</dt>
           <dd className="mt-1 font-medium">{roleLabel(effective)}</dd>
         </div>
       </dl>
 
       <div className="space-y-2">
-        <p className="text-sm font-medium">Vorschau setzen</p>
+        <p className="text-sm font-medium">{COPY.settings.roleSwitcherPickLabel}</p>
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           {roles.map((role) => {
             const active = effective === role
@@ -108,7 +108,7 @@ export function SettingsDevRoleCard({
 
       <div className="flex flex-wrap gap-2 border-t pt-4">
         <Button type="button" variant="secondary" disabled={pending || !previewRole} onClick={clear}>
-          {COPY.settings.devRoleClear}
+          {COPY.settings.roleSwitcherReset}
         </Button>
       </div>
     </div>

@@ -52,14 +52,14 @@ export function DashboardShell({
   children,
   user,
   profile,
-  roleTestModeEnabled = false,
+  roleSwitcherEnabled = false,
   initialNotifications = [],
 }: {
   children: React.ReactNode
   user: User
   profile: Profile
-  /** Server: gleiche Quelle wie Cookie-Vorschau – Test-Modus „Rolle wechseln“ im Profilmenü. */
-  roleTestModeEnabled?: boolean
+  /** Server: Rollenwechsel im Profilmenü / Einstellungen erlaubt (s. `isDevRolePreviewEnabled`). */
+  roleSwitcherEnabled?: boolean
   initialNotifications?: DashboardNotificationItem[]
 }) {
   const pathname = usePathname()
@@ -300,7 +300,7 @@ export function DashboardShell({
           userEmail={userEmail}
           userInitials={userInitials}
           userRole={profile.role}
-          roleTestModeEnabled={roleTestModeEnabled}
+          roleSwitcherEnabled={roleSwitcherEnabled}
           initialNotifications={initialNotifications}
         />
         <div

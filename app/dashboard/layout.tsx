@@ -49,7 +49,7 @@ export default async function DashboardLayout({
     <DashboardShell
       user={user}
       profile={{ ...profile, role: effectiveRole }}
-      roleTestModeEnabled={devSwitcher}
+      roleSwitcherEnabled={devSwitcher}
       initialNotifications={initialNotifications}
     >
       {children}

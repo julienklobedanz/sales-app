@@ -40,7 +40,6 @@ import { cn } from '@/lib/utils'
 import { ROUTES } from '@/lib/routes'
 import { toast } from 'sonner'
 import { clearDevPreviewRole, setDevPreviewRole } from '@/app/dashboard/dev-preview-role-actions'
-import { isDevRolePreviewEnabled } from '@/lib/dev-role-preview'
 import {
   markAllNotificationReads,
   markNotificationRead,
@@ -65,15 +64,15 @@ export function DashboardHeader({
   userEmail,
   userInitials,
   userRole,
-  roleTestModeEnabled = false,
+  roleSwitcherEnabled = false,
   initialNotifications = [],
 }: {
   userName: string
   userEmail: string
   userInitials: string
   userRole: AppRole
-  /** Vom Server (Layout): zuverlässiger als nur Client-Env. */
-  roleTestModeEnabled?: boolean
+  /** Vom Server (Layout): ob Rollenwechsel angeboten wird. */
+  roleSwitcherEnabled?: boolean
   initialNotifications?: DashboardNotificationItem[]
 }) {
   const pathname = usePathname()
@@ -119,7 +118,8 @@ export function DashboardHeader({
     })
   }
 
-  const showRoleTestMode = roleTestModeEnabled || isDevRolePreviewEnabled()
+  /** Nur vom Server (`roleSwitcherEnabled`); nicht mit Client-`process.env` nachbauen. */
+  const showRoleSwitcher = roleSwitcherEnabled
 
   const handleLogout = async () => {
     await clearDevPreviewRole()
@@ -135,7 +135,7 @@ export function DashboardHeader({
         toast.error(res.error ?? 'Rolle konnte nicht gesetzt werden.')
         return
       }
-      toast.success(COPY.devRolePreview.switchSuccess)
+      toast.success(COPY.roleSwitcher.switchSuccess)
       router.refresh()
     })
   }
@@ -345,10 +345,10 @@ export function DashboardHeader({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {showRoleTestMode ? (
+            {showRoleSwitcher ? (
               <>
                 <DropdownMenuLabel className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  {COPY.devRolePreview.roleSwitchSectionTitle}
+                  {COPY.roleSwitcher.profileMenuSectionTitle}
                 </DropdownMenuLabel>
                 <DropdownMenuItem
                   disabled={roleSwitchPending}
@@ -356,7 +356,7 @@ export function DashboardHeader({
                   className={cn('cursor-pointer', userRole === 'admin' && 'bg-accent font-medium')}
                 >
                   <AppIcon icon={Shield} size={16} className="shrink-0" />
-                  {COPY.devRolePreview.roleMarketingAdmin}
+                  {COPY.roleSwitcher.roleMarketingAdmin}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   disabled={roleSwitchPending}
@@ -367,7 +367,7 @@ export function DashboardHeader({
                   )}
                 >
                   <AppIcon icon={UserIcon} size={16} className="shrink-0" />
-                  {COPY.devRolePreview.roleAccountManager}
+                  {COPY.roleSwitcher.roleAccountManager}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   disabled={roleSwitchPending}
@@ -375,7 +375,7 @@ export function DashboardHeader({
                   className={cn('cursor-pointer', userRole === 'sales' && 'bg-accent font-medium')}
                 >
                   <AppIcon icon={Briefcase} size={16} className="shrink-0" />
-                  {COPY.devRolePreview.roleSalesRep}
+                  {COPY.roleSwitcher.roleSalesRep}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
               </>

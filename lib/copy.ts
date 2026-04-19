@@ -25,15 +25,13 @@ export const COPY = {
     markAllReadAria: 'Alle Benachrichtigungen als gelesen markieren',
     unreadBadgeAria: 'Ungelesen',
   },
-  /** Profilmenü: Rollen-Vorschau (Test-Modus, vor Launch deaktivieren) */
-  devRolePreview: {
-    badgeAdminAria: 'Vorschau: Admin / Referenz-Manager',
-    badgeSalesAria: 'Vorschau: Sales',
-    roleSwitchSectionTitle: 'Rolle wechseln (Test-Modus)',
+  /** Profilmenü: welche Rolle die Oberfläche steuert (Cookie, nur wenn die Umgebung es erlaubt). */
+  roleSwitcher: {
+    profileMenuSectionTitle: 'Rolle wechseln',
     roleMarketingAdmin: 'Marketing / Admin',
     roleAccountManager: 'Account Manager',
     roleSalesRep: 'Sales Representative',
-    switchSuccess: 'Vorschau-Rolle aktualisiert.',
+    switchSuccess: 'Oberflächen-Rolle aktualisiert.',
   },
   roles: {
     accountManager: 'Account Manager',
@@ -52,13 +50,14 @@ export const COPY = {
       'Einladung ist gespeichert, die E-Mail konnte nicht versendet werden.',
     teamInviteCopyLink: 'Einladungslink kopieren',
     teamInviteLinkCopied: 'Einladungslink in die Zwischenablage kopiert.',
-    devRoleTab: 'Entwicklung',
-    devRoleCardTitle: 'Rollen-Vorschau (nur Entwicklung)',
-    devRoleCardDescription:
-      'Wechselt nur die sichtbare Rolle in der App (Cookie). Server-Aktionen nutzen weiterhin deine echte Profil-Rolle in der Datenbank, sofern dort nicht explizit die Vorschau berücksichtigt wird.',
-    devRoleStoredLabel: 'Rolle in der Datenbank',
-    devRoleEffectiveLabel: 'Aktive Vorschau',
-    devRoleClear: 'Vorschau aufheben',
+    roleSwitcherTab: 'Entwicklung',
+    roleSwitcherCardTitle: 'Rollenauswahl (Entwicklung)',
+    roleSwitcherCardDescription:
+      'Legt fest, welche Rolle die Oberfläche steuert (Cookie). Viele Aktionen auf dem Server prüfen weiterhin deine gespeicherte Profil-Rolle in der Datenbank.',
+    roleSwitcherStoredLabel: 'Rolle in der Datenbank',
+    roleSwitcherActiveLabel: 'Rolle in der Oberfläche',
+    roleSwitcherPickLabel: 'Als folgende Rolle anzeigen',
+    roleSwitcherReset: 'Anzeige zurücksetzen',
   },
   table: {
     empty: 'Keine Ergebnisse.',

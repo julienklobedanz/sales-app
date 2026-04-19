@@ -54,9 +54,9 @@ export default async function SettingsPage() {
 
   const teamMembers = await getTeamMembers()
 
-  const devRolePreviewEnabled = isDevRolePreviewEnabled()
+  const roleSwitcherAllowed = isDevRolePreviewEnabled()
   const cookieStore = await cookies()
-  const previewRole = devRolePreviewEnabled
+  const previewRole = roleSwitcherAllowed
     ? parseAppRoleCookie(cookieStore.get(DEV_ROLE_COOKIE)?.value)
     : null
   const serverRole = (profileRow?.role ?? 'sales') as AppRole
@@ -75,8 +75,8 @@ export default async function SettingsPage() {
       </div>
 
       <SettingsTabs
-        devRolePreview={
-          devRolePreviewEnabled
+        roleSwitcher={
+          roleSwitcherAllowed
             ? { serverRole, previewRole }
             : undefined
         }

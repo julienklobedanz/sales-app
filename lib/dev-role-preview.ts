@@ -4,7 +4,11 @@ import type { AppRole } from '@/hooks/useRole'
 export const DEV_ROLE_COOKIE = 'refstack_dev_role'
 
 /**
- * Rollen-Vorschau (Profilmenü + Einstellungen → Tab „Entwicklung“).
+ * Ob die Rollen-Umschaltung für die Oberfläche aktiv ist (Profilmenü + Einstellungen → Tab „Entwicklung“).
+ *
+ * **Nur serverseitig aufrufen** (Layout, Server Actions, `page.tsx`). Nicht in Client-Komponenten
+ * zur Anzeige nutzen: `VERCEL_ENV` / `NODE_ENV` sind im Browser-Bundle nicht zuverlässig dieselbe
+ * Logik → UI-Gating über vom Layout gereichte Props (`roleSwitcherEnabled`).
  *
  * **Standard während der Entwicklung:** eingeschaltet, ohne weitere Konfiguration
  * (`next dev`, `next start`, Preview-Deployments, Tunnel, LAN-IP …).
