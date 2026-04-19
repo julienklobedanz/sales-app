@@ -987,7 +987,7 @@ export function DashboardOverview({
                 aria-label="Neue Referenz erstellen"
               >
                 <AppIcon icon={CirclePlus} size={16} className="shrink-0 lg:mr-2" />
-                <span className="hidden lg:inline">Erstellen</span>
+                <span className="hidden lg:inline">Referenz erstellen</span>
               </Button>
             </>
           )}
