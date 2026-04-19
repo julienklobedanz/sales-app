@@ -3,30 +3,37 @@
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 import type { AppRole } from '@/hooks/useRole'
-import { DEV_ROLE_COOKIE, isDevRolePreviewEnabled } from '@/lib/dev-role-preview'
+import { DEV_ROLE_COOKIE } from '@/lib/dev-role-preview'
 import { ROUTES } from '@/lib/routes'
 
 function revalidateDashboardRole() {
   revalidatePath(ROUTES.home, 'layout')
 }
 
-export async function setDevPreviewRole(role: AppRole) {
-  if (!isDevRolePreviewEnabled()) {
-    return { ok: false as const, error: 'Rollenwechsel ist in dieser Umgebung deaktiviert.' }
+export type SetDevPreviewRoleResult =
+  | { ok: true }
+  | { ok: false; error: string }
+
+export async function setDevPreviewRole(role: AppRole): Promise<SetDevPreviewRoleResult> {
+  try {
+    const jar = await cookies()
+    jar.set(DEV_ROLE_COOKIE, role, {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 30,
+      sameSite: 'lax',
+      httpOnly: true,
+    })
+    revalidateDashboardRole()
+    return { ok: true }
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : 'Rolle konnte nicht gesetzt werden.',
+    }
   }
-  const jar = await cookies()
-  jar.set(DEV_ROLE_COOKIE, role, {
-    path: '/',
-    maxAge: 60 * 60 * 24 * 30,
-    sameSite: 'lax',
-    httpOnly: true,
-  })
-  revalidateDashboardRole()
-  return { ok: true as const }
 }
 
 export async function clearDevPreviewRole() {
-  if (!isDevRolePreviewEnabled()) return { ok: true as const }
   const jar = await cookies()
   jar.set(DEV_ROLE_COOKIE, '', { path: '/', maxAge: 0 })
   revalidateDashboardRole()

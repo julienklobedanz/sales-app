@@ -3,11 +3,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { ROUTES } from '@/lib/routes'
 import type { AppRole } from '@/hooks/useRole'
-import {
-  DEV_ROLE_COOKIE,
-  isDevRolePreviewEnabled,
-  parseAppRoleCookie,
-} from '@/lib/dev-role-preview'
+import { DEV_ROLE_COOKIE, parseAppRoleCookie } from '@/lib/dev-role-preview'
 import { loadDashboardHomeForRole } from '@/app/dashboard/dashboard-home-data'
 import { SalesRepDashboard } from '@/components/dashboard/sales-rep-dashboard'
 import { AccountManagerDashboard } from '@/components/dashboard/account-manager-dashboard'
@@ -35,9 +31,8 @@ export default async function DashboardPage() {
     redirect(ROUTES.onboarding)
   }
 
-  const devSwitcher = isDevRolePreviewEnabled()
   const cookieStore = await cookies()
-  const previewRole = devSwitcher ? parseAppRoleCookie(cookieStore.get(DEV_ROLE_COOKIE)?.value) : null
+  const previewRole = parseAppRoleCookie(cookieStore.get(DEV_ROLE_COOKIE)?.value)
   const serverRole = profile.role as AppRole
   const effectiveRole: AppRole = previewRole ?? serverRole
 

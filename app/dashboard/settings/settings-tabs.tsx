@@ -19,8 +19,7 @@ export function SettingsTabs({
   org,
   teamMembers,
 }: {
-  /** Nur gesetzt, wenn {@link isDevRolePreviewEnabled} auf dem Server true ist. */
-  roleSwitcher?: {
+  roleSwitcher: {
     serverRole: AppRole
     previewRole: AppRole | null
   }
@@ -46,9 +45,7 @@ export function SettingsTabs({
     <Tabs defaultValue="workspace" className="gap-6">
       <TabsList variant="line" className="w-full justify-start">
         <TabsTrigger value="workspace">Workspace</TabsTrigger>
-        {roleSwitcher ? (
-          <TabsTrigger value="dev">{COPY.settings.roleSwitcherTab}</TabsTrigger>
-        ) : null}
+        <TabsTrigger value="dev">{COPY.settings.roleSwitcherTab}</TabsTrigger>
         <TabsTrigger value="team">Team</TabsTrigger>
         <TabsTrigger value="integrations" disabled>
           Integrationen (P2)
@@ -63,16 +60,14 @@ export function SettingsTabs({
         </TabsTrigger>
       </TabsList>
 
-      {roleSwitcher ? (
-        <TabsContent value="dev">
-          <div className={CARD_CLASS}>
-            <SettingsDevRoleCard
-              serverRole={roleSwitcher.serverRole}
-              previewRole={roleSwitcher.previewRole}
-            />
-          </div>
-        </TabsContent>
-      ) : null}
+      <TabsContent value="dev">
+        <div className={CARD_CLASS}>
+          <SettingsDevRoleCard
+            serverRole={roleSwitcher.serverRole}
+            previewRole={roleSwitcher.previewRole}
+          />
+        </div>
+      </TabsContent>
 
       <TabsContent value="workspace">
         <div className="grid gap-6 sm:grid-cols-2">

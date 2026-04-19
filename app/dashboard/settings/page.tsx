@@ -3,11 +3,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
 import type { AppRole } from '@/hooks/useRole'
-import {
-  DEV_ROLE_COOKIE,
-  isDevRolePreviewEnabled,
-  parseAppRoleCookie,
-} from '@/lib/dev-role-preview'
+import { DEV_ROLE_COOKIE, parseAppRoleCookie } from '@/lib/dev-role-preview'
 import { getTeamMembers } from './invite-actions'
 import { SettingsDangerZone } from './settings-danger-zone'
 import { SettingsTabs } from './settings-tabs'
@@ -54,11 +50,8 @@ export default async function SettingsPage() {
 
   const teamMembers = await getTeamMembers()
 
-  const roleSwitcherAllowed = isDevRolePreviewEnabled()
   const cookieStore = await cookies()
-  const previewRole = roleSwitcherAllowed
-    ? parseAppRoleCookie(cookieStore.get(DEV_ROLE_COOKIE)?.value)
-    : null
+  const previewRole = parseAppRoleCookie(cookieStore.get(DEV_ROLE_COOKIE)?.value)
   const serverRole = (profileRow?.role ?? 'sales') as AppRole
 
   const fullName = profileRow?.full_name ?? ''
@@ -75,11 +68,7 @@ export default async function SettingsPage() {
       </div>
 
       <SettingsTabs
-        roleSwitcher={
-          roleSwitcherAllowed
-            ? { serverRole, previewRole }
-            : undefined
-        }
+        roleSwitcher={{ serverRole, previewRole }}
         profile={{
           userEmail: user.email ?? '',
           firstName,

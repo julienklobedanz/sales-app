@@ -4,11 +4,7 @@ import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
 import { getDashboardData, getPendingClientApprovals } from '@/app/dashboard/actions'
 import { DashboardOverview } from '@/app/dashboard/dashboard-overview'
-import {
-  DEV_ROLE_COOKIE,
-  isDevRolePreviewEnabled,
-  parseAppRoleCookie,
-} from '@/lib/dev-role-preview'
+import { DEV_ROLE_COOKIE, parseAppRoleCookie } from '@/lib/dev-role-preview'
 import type { AppRole } from '@/hooks/useRole'
 
 export const dynamic = 'force-dynamic'
@@ -28,11 +24,8 @@ export default async function EvidenceHubPage() {
 
   if (!profile) redirect(ROUTES.onboarding)
 
-  const devSwitcher = isDevRolePreviewEnabled()
   const cookieStore = await cookies()
-  const previewRole = devSwitcher
-    ? parseAppRoleCookie(cookieStore.get(DEV_ROLE_COOKIE)?.value)
-    : null
+  const previewRole = parseAppRoleCookie(cookieStore.get(DEV_ROLE_COOKIE)?.value)
   const serverRole = profile.role as AppRole
   const effectiveRole: AppRole = previewRole ?? serverRole
 

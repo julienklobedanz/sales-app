@@ -52,14 +52,11 @@ export function DashboardShell({
   children,
   user,
   profile,
-  roleSwitcherEnabled = false,
   initialNotifications = [],
 }: {
   children: React.ReactNode
   user: User
   profile: Profile
-  /** Server: Rollenwechsel im Profilmenü / Einstellungen erlaubt (s. `isDevRolePreviewEnabled`). */
-  roleSwitcherEnabled?: boolean
   initialNotifications?: DashboardNotificationItem[]
 }) {
   const pathname = usePathname()
@@ -300,7 +297,6 @@ export function DashboardShell({
           userEmail={userEmail}
           userInitials={userInitials}
           userRole={profile.role}
-          roleSwitcherEnabled={roleSwitcherEnabled}
           initialNotifications={initialNotifications}
         />
         <div
