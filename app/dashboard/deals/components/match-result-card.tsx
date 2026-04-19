@@ -6,27 +6,15 @@ import { toast } from 'sonner'
 import { LinkIcon, Loader, Sparkles, FileText } from '@hugeicons/core-free-icons'
 
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Textarea } from '@/components/ui/textarea'
 import { AppIcon } from '@/lib/icons'
 import { ROUTES } from '@/lib/routes'
 import { formatNumberDe } from '@/lib/format'
 import { MatchScoreCircle } from '@/components/match/match-score-circle'
 import type { MatchReferenceHit } from '@/app/dashboard/actions'
-import {
-  createSharedPortfolio,
-  generateSummaryFromStory,
-  getReferencesByIds,
-} from '@/app/dashboard/actions'
+import { createSharedPortfolio } from '@/app/dashboard/actions'
 import { addReferenceToDealWithScore } from '../actions'
 import { PdfExportDialog } from '@/app/dashboard/evidence/[id]/pdf-export-dialog'
+import { KiEntwurfSheet } from './ki-entwurf-sheet'
 
 function formatVolume(raw: string | null | undefined): string {
   if (raw == null || raw === '') return '—'
@@ -40,18 +28,19 @@ function formatVolume(raw: string | null | undefined): string {
 export function MatchResultCard({
   hit,
   dealId,
+  dealContext,
   alreadyLinked,
   onLinked,
 }: {
   hit: MatchReferenceHit
   dealId: string
+  /** Deal-Infos für Epic-5-KI-Prompt (optional). */
+  dealContext?: string | null
   alreadyLinked: boolean
   onLinked: () => void
 }) {
   const [pdfOpen, setPdfOpen] = useState(false)
   const [kiOpen, setKiOpen] = useState(false)
-  const [kiLoading, setKiLoading] = useState(false)
-  const [kiText, setKiText] = useState<string | null>(null)
   const [shareLoading, setShareLoading] = useState(false)
   const [linkLoading, setLinkLoading] = useState(false)
 
@@ -69,34 +58,6 @@ export function MatchResultCard({
       toast.success('Kundenlink in die Zwischenablage kopiert.')
     } finally {
       setShareLoading(false)
-    }
-  }
-
-  async function openKi() {
-    setKiOpen(true)
-    setKiText(null)
-    setKiLoading(true)
-    try {
-      const rows = await getReferencesByIds([hit.id])
-      const ref = rows[0]
-      if (!ref) {
-        toast.error('Referenz konnte nicht geladen werden.')
-        setKiOpen(false)
-        return
-      }
-      const result = await generateSummaryFromStory(
-        ref.customer_challenge,
-        ref.our_solution,
-        ref.id
-      )
-      if (!result.success) {
-        toast.error(result.error)
-        setKiText(null)
-        return
-      }
-      setKiText(result.summary)
-    } finally {
-      setKiLoading(false)
     }
   }
 
@@ -167,7 +128,7 @@ export function MatchResultCard({
               )}
               Link erstellen
             </Button>
-            <Button type="button" variant="outline" size="sm" className="h-8 text-xs" onClick={() => void openKi()}>
+            <Button type="button" variant="outline" size="sm" className="h-8 text-xs" onClick={() => setKiOpen(true)}>
               <AppIcon icon={Sparkles} size={14} className="mr-1" />
               KI-Entwurf
             </Button>
@@ -197,39 +158,15 @@ export function MatchResultCard({
         showTriggerButton={false}
       />
 
-      <Dialog open={kiOpen} onOpenChange={setKiOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>KI-Entwurf</DialogTitle>
-            <DialogDescription>
-              Kurze vertriebsorientierte Zusammenfassung aus Herausforderung und Lösung dieser Referenz.
-            </DialogDescription>
-          </DialogHeader>
-          {kiLoading ? (
-            <p className="text-sm text-muted-foreground flex items-center gap-2">
-              <AppIcon icon={Loader} size={16} className="animate-spin" /> Wird erzeugt …
-            </p>
-          ) : kiText ? (
-            <Textarea readOnly value={kiText} className="min-h-[160px] text-sm" />
-          ) : (
-            <p className="text-sm text-muted-foreground">Kein Text.</p>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setKiOpen(false)}>
-              Schließen
-            </Button>
-            {kiText ? (
-              <Button
-                onClick={() => {
-                  void navigator.clipboard.writeText(kiText).then(() => toast.success('Kopiert.'))
-                }}
-              >
-                Kopieren
-              </Button>
-            ) : null}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <KiEntwurfSheet
+        open={kiOpen}
+        onOpenChange={setKiOpen}
+        referenceId={hit.id}
+        referenceTitle={hit.title}
+        matchScore={hit.similarity}
+        dealId={dealId}
+        dealContext={dealContext ?? null}
+      />
     </div>
   )
 }

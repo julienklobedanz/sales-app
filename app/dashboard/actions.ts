@@ -41,6 +41,7 @@ import { updateReferenceImpl } from '@/app/dashboard/references/update'
 import { updateReferenceDetailFieldsImpl } from '@/app/dashboard/references/detail-fields'
 import { bulkCreateReferencesFromFilesImpl } from '@/app/dashboard/references/bulk-import'
 import { generateSummaryFromStoryImpl } from '@/app/dashboard/references/summary'
+import { recordKiEntwurfGenerated as recordKiEntwurfGeneratedImpl } from '@/app/dashboard/references/ki-entwurf-log'
 
 export type ReferenceRow = {
   id: string
@@ -289,6 +290,13 @@ export async function generateSummaryFromStory(
   referenceId?: string | null
 ): Promise<GenerateSummaryResult> {
   return generateSummaryFromStoryImpl(customerChallenge, ourSolution, referenceId)
+}
+
+/** Epic 5: Telemetrie nach KI-Entwurf (Sheet). */
+export async function recordKiEntwurfGenerated(
+  args: Parameters<typeof recordKiEntwurfGeneratedImpl>[0]
+): Promise<void> {
+  return recordKiEntwurfGeneratedImpl(args)
 }
 
 /** Ergebniszeile für semantische Referenz-Suche (Epic 4 / Match Engine). */

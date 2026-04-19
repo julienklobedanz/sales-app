@@ -16,6 +16,18 @@ import type { MatchReferenceHit } from '@/app/dashboard/actions'
 import type { DealWithReferences } from '../types'
 import { MatchResultCard } from './match-result-card'
 
+/** Kontextzeilen für KI-Entwurf (Epic 5 / KAN-128). */
+export function buildDealContextForKiEntwurf(deal: DealWithReferences): string {
+  const parts = [
+    deal.title ? `Deal: ${deal.title}` : null,
+    deal.company_name ? `Account: ${deal.company_name}` : null,
+    deal.industry ? `Branche: ${deal.industry}` : null,
+    deal.volume ? `Volumen: ${deal.volume}` : null,
+    deal.requirements_text?.trim() ? `Anforderungen:\n${deal.requirements_text.trim()}` : null,
+  ].filter(Boolean)
+  return parts.join('\n\n')
+}
+
 /** Wireframe §14: Freitext-Match mit Ergebnis-Karten (Score, Snippet, Aktionen). */
 export function DealMatchSection({ deal }: { deal: DealWithReferences }) {
   const router = useRouter()
@@ -23,6 +35,7 @@ export function DealMatchSection({ deal }: { deal: DealWithReferences }) {
   const [loading, setLoading] = useState(false)
   const [matches, setMatches] = useState<MatchReferenceHit[] | null>(null)
   const linkedIds = new Set(deal.references.map((r) => r.id))
+  const dealContextForKi = buildDealContextForKiEntwurf(deal)
 
   async function run() {
     const q = query.trim()
@@ -83,6 +96,7 @@ export function DealMatchSection({ deal }: { deal: DealWithReferences }) {
                 key={m.id}
                 hit={m}
                 dealId={deal.id}
+                dealContext={dealContextForKi}
                 alreadyLinked={linkedIds.has(m.id)}
                 onLinked={() => router.refresh()}
               />
