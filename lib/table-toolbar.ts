@@ -5,7 +5,7 @@
 export const TABLE_TOOLBAR = {
   /** Referenzen/Evidence, Deals (`AppDataTable`) */
   list: {
-    searchWrap: "relative w-full max-w-xl",
+    searchWrap: "relative w-full min-w-0",
     searchInput: "h-10 w-full pl-9",
   },
   /** Dashboard-Übersicht, Accounts: Suche + Buttons in einer Zeile (h-11) */
