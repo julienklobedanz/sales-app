@@ -2,14 +2,13 @@
 
 import { useMemo, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { ToolbarSearchField } from '@/components/ui/toolbar-search-field'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import type { DealRow, DealStatus } from './types'
 import { DealForm } from './new/deal-form'
 import { importDealsFromXlsx, type MatchSuggestion } from './actions'
-import { ArrowUpDown, Building2, CirclePlus, Loader, UploadIcon } from '@hugeicons/core-free-icons'
+import { ArrowUpDown, CirclePlus, Loader, UploadIcon } from '@hugeicons/core-free-icons'
 import { toast } from 'sonner'
 import { AppDataTable } from '@/components/ui/app-data-table'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -17,6 +16,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { AppIcon } from '@/lib/icons'
 import { DealStatusBadge } from '@/components/deal-status-badge'
 import { COPY } from '@/lib/copy'
+import { AccountCell } from '@/components/table/account-cell'
 import {
   Select,
   SelectContent,
@@ -205,24 +205,10 @@ export function DealsClientContent({
           </Button>
         ),
         cell: ({ row }) => (
-          <div className="flex min-w-0 max-w-[260px] items-center gap-2.5">
-            {row.original.company_logo_url ? (
-              <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md border bg-muted">
-                <Image
-                  src={row.original.company_logo_url}
-                  alt=""
-                  fill
-                  className="object-contain"
-                  sizes="36px"
-                />
-              </div>
-            ) : (
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border bg-muted">
-                <AppIcon icon={Building2} size={18} className="text-muted-foreground" />
-              </div>
-            )}
-            <span className="truncate text-muted-foreground">{row.original.company_name ?? '—'}</span>
-          </div>
+          <AccountCell
+            companyName={row.original.company_name}
+            companyLogoUrl={row.original.company_logo_url}
+          />
         ),
       },
       {

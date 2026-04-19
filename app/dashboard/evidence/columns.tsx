@@ -1,10 +1,9 @@
 "use client"
 
 import * as React from "react"
-import Image from "next/image"
 import Link from "next/link"
 import type { ColumnDef } from "@tanstack/react-table"
-import { ArrowUpDown, Building2, FileText, MoreHorizontal } from "@hugeicons/core-free-icons"
+import { ArrowUpDown, FileText, MoreHorizontal } from "@hugeicons/core-free-icons"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -21,6 +20,7 @@ import type { ReferenceRow } from "@/app/dashboard/actions"
 import { AppIcon } from "@/lib/icons"
 import { ReferenceStatusBadge } from "@/components/reference-status-badge"
 import { ROUTES } from "@/lib/routes"
+import { AccountCell } from "@/components/table/account-cell"
 
 export function evidenceColumns(): ColumnDef<ReferenceRow>[] {
   return [
@@ -89,26 +89,10 @@ export function evidenceColumns(): ColumnDef<ReferenceRow>[] {
         </Button>
       ),
       cell: ({ row }) => (
-        <div className="flex min-w-0 max-w-[260px] items-center gap-2.5">
-          {row.original.company_logo_url ? (
-            <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md border bg-muted">
-              <Image
-                src={row.original.company_logo_url}
-                alt=""
-                fill
-                className="object-contain"
-                sizes="36px"
-              />
-            </div>
-          ) : (
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border bg-muted">
-              <AppIcon icon={Building2} size={18} className="text-muted-foreground" />
-            </div>
-          )}
-          <span className="truncate text-muted-foreground">
-            {row.original.company_name ?? "—"}
-          </span>
-        </div>
+        <AccountCell
+          companyName={row.original.company_name}
+          companyLogoUrl={row.original.company_logo_url}
+        />
       ),
     },
     {
