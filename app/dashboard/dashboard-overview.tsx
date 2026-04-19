@@ -59,6 +59,7 @@ import type {
   PendingClientApprovalRow,
 } from './actions'
 import { ReferenceStatusBadge } from '@/components/reference-status-badge'
+import { AccountCell } from '@/components/table/account-cell'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 import { TABLE_TOOLBAR } from '@/lib/table-toolbar'
@@ -1795,26 +1796,18 @@ export function DashboardOverview({
                       </TableCell>
                     )}
                     {visibleColumns.company && (
-                      <TableCell className="font-medium">
-                        {companyLogoById.get(ref.company_id) ? (
-                          <Link
-                            href={ROUTES.accountsDetail(ref.company_id)}
-                            onClick={(e) => e.stopPropagation()}
-                            className="inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                            aria-label={`${ref.company_name} öffnen`}
-                          >
-                            <Image
-                              src={companyLogoById.get(ref.company_id)!}
-                              alt={ref.company_name}
-                              width={22}
-                              height={22}
-                              className="h-[22px] w-[22px] rounded-sm object-contain"
-                            />
-                            <span className="sr-only">{ref.company_name}</span>
-                          </Link>
-                        ) : (
-                          ref.company_name
-                        )}
+                      <TableCell>
+                        <Link
+                          href={ROUTES.accountsDetail(ref.company_id)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex min-w-0 max-w-full items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          aria-label={`${ref.company_name} öffnen`}
+                        >
+                          <AccountCell
+                            companyName={ref.company_name}
+                            companyLogoUrl={companyLogoById.get(ref.company_id) ?? null}
+                          />
+                        </Link>
                       </TableCell>
                     )}
                     {visibleColumns.title && (
