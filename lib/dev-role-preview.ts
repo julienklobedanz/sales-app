@@ -4,18 +4,23 @@ import type { AppRole } from '@/hooks/useRole'
 export const DEV_ROLE_COOKIE = 'refstack_dev_role'
 
 /**
- * Rollen-Vorschau (Test-Modus): lokal `next dev`, Vercel Preview, Server-Env, oder NEXT_PUBLIC explizit.
- * Vor Launch: `NEXT_PUBLIC_DEV_ROLE_SWITCHER=false` setzen.
+ * Rollen-Vorschau (Profilmenü + Einstellungen → Tab „Entwicklung“).
+ *
+ * **Standard während der Entwicklung:** eingeschaltet, ohne weitere Konfiguration
+ * (`next dev`, `next start`, Preview-Deployments, Tunnel, LAN-IP …).
+ *
+ * **Aus:**
+ * - `NEXT_PUBLIC_DEV_ROLE_SWITCHER=false` (empfohlen für öffentliches Produktions-Hosting)
+ * - `VERCEL_ENV=production` (Vercel Production)
+ *
+ * **Explizit an:** `NEXT_PUBLIC_DEV_ROLE_SWITCHER=true` oder `1`
  */
 export function isDevRolePreviewEnabled(): boolean {
   if (process.env.NEXT_PUBLIC_DEV_ROLE_SWITCHER === 'false') return false
   const pub = process.env.NEXT_PUBLIC_DEV_ROLE_SWITCHER
   if (pub === 'true' || pub === '1') return true
-  return (
-    process.env.NODE_ENV === 'development' ||
-    process.env.DEV_ROLE_PREVIEW === '1' ||
-    process.env.VERCEL_ENV === 'preview'
-  )
+  if (process.env.VERCEL_ENV === 'production') return false
+  return true
 }
 
 export function parseAppRoleCookie(value: string | undefined): AppRole | null {

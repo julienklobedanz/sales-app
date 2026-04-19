@@ -2,7 +2,7 @@ import type { NextConfig } from 'next'
 import { LEGACY_REDIRECTS } from './lib/routes'
 
 const nextConfig: NextConfig = {
-  /** In `next dev` ohne .env: Rollen-Vorschau im Profilmenü aktiv (opt-out: NEXT_PUBLIC_DEV_ROLE_SWITCHER=false). */
+  /** Default für NEXT_PUBLIC_DEV_ROLE_SWITCHER in next dev (Logik: `lib/dev-role-preview.ts`). */
   env: {
     NEXT_PUBLIC_DEV_ROLE_SWITCHER:
       process.env.NEXT_PUBLIC_DEV_ROLE_SWITCHER === 'false'

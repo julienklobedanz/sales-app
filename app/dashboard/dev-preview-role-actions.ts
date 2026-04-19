@@ -3,7 +3,6 @@
 import { cookies } from 'next/headers'
 import type { AppRole } from '@/hooks/useRole'
 import { DEV_ROLE_COOKIE, isDevRolePreviewEnabled } from '@/lib/dev-role-preview'
-
 export async function setDevPreviewRole(role: AppRole) {
   if (!isDevRolePreviewEnabled()) {
     return { ok: false as const, error: 'Rollen-Vorschau ist nicht aktiv.' }

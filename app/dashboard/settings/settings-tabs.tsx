@@ -19,7 +19,7 @@ export function SettingsTabs({
   org,
   teamMembers,
 }: {
-  /** Nur gesetzt, wenn Rollen-Vorschau auf dem Server aktiv ist (s. `lib/dev-role-preview.ts`). */
+  /** Nur gesetzt, wenn {@link isDevRolePreviewEnabled} auf dem Server true ist. */
   devRolePreview?: {
     serverRole: AppRole
     previewRole: AppRole | null
