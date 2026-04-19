@@ -13,6 +13,7 @@ export type SalesRepDealCard = {
   title: string
   status: DealStatus
   company_name: string | null
+  volume: string | null
   expiry_date: string | null
   linkedCount: number
   bestMatchScore: number | null
@@ -58,6 +59,13 @@ export type AccountManagerDashboardModel = {
   pendingApprovals: Awaited<ReturnType<typeof getPendingClientApprovalsImpl>>
   usageWindowDays: number
   usageTotals: UsageTotalsRow
+  usageByReference: Array<{
+    id: string
+    title: string
+    views: number
+    shares: number
+    matches: number
+  }>
 }
 
 export type AdminKpiStrip = {
@@ -136,6 +144,7 @@ export async function loadSalesRepDashboardData(
       title: d.title,
       status: d.status,
       company_name: d.company_name,
+      volume: d.volume ?? null,
       expiry_date: d.expiry_date,
       linkedCount: d.linked_refs?.length ?? 0,
       bestMatchScore: d.best_match_score ?? null,
@@ -202,6 +211,7 @@ export async function loadSalesRepDashboardData(
 
 export async function loadAccountManagerDashboardData(
   supabase: SupabaseClient,
+  userId: string,
   fullName: string | null
 ): Promise<AccountManagerDashboardModel> {
   const greetingName = firstName(fullName) || 'du'
@@ -214,14 +224,11 @@ export async function loadAccountManagerDashboardData(
   const since = new Date()
   since.setDate(since.getDate() - usageWindowDays)
 
-  const { data: profile } = await supabase.auth.getUser()
-  const uid = profile.user?.id
-  const { data: prof } = uid
-    ? await supabase.from('profiles').select('organization_id').eq('id', uid).single()
-    : { data: null }
+  const { data: prof } = await supabase.from('profiles').select('organization_id').eq('id', userId).single()
   const orgId = prof?.organization_id as string | undefined
 
   let usageTotals: UsageTotalsRow = { views: 0, shares: 0, matches: 0 }
+  const usageByReference: AccountManagerDashboardModel['usageByReference'] = []
   if (orgId) {
     const { count: views } = await supabase
       .from('evidence_events')
@@ -256,6 +263,52 @@ export async function loadAccountManagerDashboardData(
       shares: (shareA ?? 0) + (shareB ?? 0),
       matches: matches ?? 0,
     }
+
+    // Minimal-Variante: „eigene“ Referenzen (created_by=userId) + Zählungen pro reference_id in evidence_events.
+    const { data: myRefs } = await supabase
+      .from('references')
+      .select('id, title')
+      .eq('organization_id', orgId)
+      .eq('created_by', userId)
+      .is('deleted_at', null)
+      .order('updated_at', { ascending: false })
+      .limit(30)
+
+    const refIds = (myRefs ?? []).map((r) => r.id as string)
+    if (refIds.length > 0) {
+      const { data: ev } = await supabase
+        .from('evidence_events')
+        .select('reference_id, event_type')
+        .eq('organization_id', orgId)
+        .in('reference_id', refIds)
+        .gte('created_at', since.toISOString())
+        .limit(8000)
+
+      const agg = new Map<string, { views: number; shares: number; matches: number }>()
+      for (const id of refIds) agg.set(id, { views: 0, shares: 0, matches: 0 })
+      for (const row of (ev ?? []) as Array<{ reference_id: string | null; event_type: string | null }>) {
+        const rid = row.reference_id
+        if (!rid || !agg.has(rid)) continue
+        const a = agg.get(rid)!
+        const et = String(row.event_type ?? '')
+        if (et === 'reference_viewed') a.views += 1
+        if (et === 'reference_shared' || et === 'share_link_viewed') a.shares += 1
+        if (et === 'reference_matched') a.matches += 1
+      }
+
+      for (const r of (myRefs ?? []) as Array<{ id: string; title: string | null }>) {
+        const a = agg.get(r.id) ?? { views: 0, shares: 0, matches: 0 }
+        usageByReference.push({
+          id: r.id,
+          title: r.title ?? '—',
+          views: a.views,
+          shares: a.shares,
+          matches: a.matches,
+        })
+      }
+      usageByReference.sort((a, b) => b.views + b.shares + b.matches - (a.views + a.shares + a.matches))
+      usageByReference.splice(12)
+    }
   }
 
   return {
@@ -265,6 +318,7 @@ export async function loadAccountManagerDashboardData(
     pendingApprovals,
     usageWindowDays,
     usageTotals,
+    usageByReference,
   }
 }
 
@@ -412,7 +466,7 @@ export async function loadDashboardHomeForRole(
     return { role: 'sales', data: await loadSalesRepDashboardData(supabase, userId, fullName) }
   }
   if (role === 'account_manager') {
-    return { role: 'account_manager', data: await loadAccountManagerDashboardData(supabase, fullName) }
+    return { role: 'account_manager', data: await loadAccountManagerDashboardData(supabase, userId, fullName) }
   }
   return { role: 'admin', data: await loadAdminDashboardData(supabase, fullName) }
 }

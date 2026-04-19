@@ -1,4 +1,7 @@
+'use client'
+
 import Link from 'next/link'
+import { useState } from 'react'
 import { CirclePlus, MailOpen, UploadIcon } from '@hugeicons/core-free-icons'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -6,6 +9,16 @@ import { AppIcon } from '@/lib/icons'
 import { ROUTES } from '@/lib/routes'
 import type { AccountManagerDashboardModel } from '@/app/dashboard/dashboard-home-data'
 import { formatDateUtcDe } from '@/lib/format'
+import { toast } from 'sonner'
+import { resendClientApprovalEmail } from '@/app/dashboard/actions'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 
 export function AccountManagerDashboard({ data }: { data: AccountManagerDashboardModel }) {
   const {
@@ -15,7 +28,9 @@ export function AccountManagerDashboard({ data }: { data: AccountManagerDashboar
     pendingApprovals,
     usageWindowDays,
     usageTotals,
+    usageByReference,
   } = data
+  const [remindingId, setRemindingId] = useState<string | null>(null)
 
   return (
     <div className="flex flex-col gap-6">
@@ -91,9 +106,30 @@ export function AccountManagerDashboard({ data }: { data: AccountManagerDashboar
                       {p.companyName} · angefragt {formatDateUtcDe(p.requestedAt)}
                     </div>
                   </div>
-                  <Button asChild variant="outline" size="sm">
-                    <Link href={ROUTES.evidence.detail(p.referenceId)}>Öffnen</Link>
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={remindingId === p.referenceId}
+                      onClick={() => {
+                        setRemindingId(p.referenceId)
+                        void toast
+                          .promise(resendClientApprovalEmail(p.referenceId), {
+                            loading: 'Erinnerung wird gesendet …',
+                            success: 'Erinnerung gesendet.',
+                            error: (e) => (e instanceof Error ? e.message : 'Konnte Erinnerung nicht senden.'),
+                          })
+                          .unwrap()
+                          .finally(() => setRemindingId(null))
+                      }}
+                    >
+                      Erinnerung senden
+                    </Button>
+                    <Button asChild variant="outline" size="sm">
+                      <Link href={ROUTES.evidence.detail(p.referenceId)}>Details</Link>
+                    </Button>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -124,6 +160,43 @@ export function AccountManagerDashboard({ data }: { data: AccountManagerDashboar
               <div className="text-xl font-semibold tabular-nums">{usageTotals.matches}</div>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Nutzung deiner Referenzen (Auszug)</CardTitle>
+          <CardDescription>Views, Shares und Matches der letzten {usageWindowDays} Tage.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {usageByReference.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Noch keine Nutzungsdaten für deine Referenzen.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Referenz</TableHead>
+                  <TableHead className="text-right">Views</TableHead>
+                  <TableHead className="text-right">Shares</TableHead>
+                  <TableHead className="text-right">Matches</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {usageByReference.map((r) => (
+                  <TableRow key={r.id}>
+                    <TableCell className="font-medium">
+                      <Link href={ROUTES.evidence.detail(r.id)} className="hover:underline">
+                        {r.title}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">{r.views}</TableCell>
+                    <TableCell className="text-right tabular-nums">{r.shares}</TableCell>
+                    <TableCell className="text-right tabular-nums">{r.matches}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 

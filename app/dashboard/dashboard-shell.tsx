@@ -144,6 +144,26 @@ export function DashboardShell({
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
+                    isActive={pathname === ROUTES.home}
+                    tooltip={COPY.pages.dashboard}
+                    className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-semibold data-[active=true]:hover:translate-x-0"
+                  >
+                    <Link href={ROUTES.home} className="flex items-center gap-2.5">
+                      <span className="relative z-10">
+                        <AppIcon
+                          icon={GalleryHorizontalEndIcon}
+                          size={16}
+                          strokeWidth={pathname === ROUTES.home ? 2.5 : 2}
+                        />
+                      </span>
+                      <span className="relative z-10">{COPY.pages.dashboard}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
                     isActive={pathname?.startsWith(ROUTES.accounts)}
                     tooltip={COPY.nav.accounts}
                     className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:font-semibold data-[active=true]:hover:translate-x-0"

@@ -151,24 +151,13 @@ export function DealsClientContent({
       },
       {
         id: 'reference_count',
+        accessorFn: (row) => row.linked_refs?.length ?? 0,
         header: COPY.deals.referenceCountColumn,
         cell: ({ row }) => (
           <span className="tabular-nums text-muted-foreground">
             {row.original.linked_refs?.length ?? 0}
           </span>
         ),
-      },
-      {
-        id: 'best_score',
-        header: COPY.deals.matchScoreColumn,
-        cell: ({ row }) => {
-          const s = row.original.best_match_score
-          return (
-            <span className="tabular-nums text-muted-foreground">
-              {typeof s === 'number' && !Number.isNaN(s) ? `${(s * 100).toFixed(0)} %` : '—'}
-            </span>
-          )
-        },
       },
       {
         accessorKey: 'account_manager_name',
@@ -188,26 +177,12 @@ export function DealsClientContent({
         },
       },
       {
-        id: 'matches',
-        header: COPY.deals.industryMatchColumn,
-        cell: ({ row }) => {
-          const data = matchMap[row.original.id] ?? { count: 0, suggestions: [] }
-          return (
-            <div className="flex items-center gap-2">
-              <span className={data.count > 0 ? 'text-foreground font-medium' : 'text-muted-foreground'}>
-                {data.count > 0 ? '✔' : '⚠'} {data.count}
-              </span>
-              {data.suggestions.length ? (
-                <span className="text-muted-foreground text-xs truncate max-w-[180px]">
-                  {data.suggestions.map((s) => s.title).slice(0, 2).join(' · ')}
-                </span>
-              ) : null}
-            </div>
-          )
-        },
+        accessorKey: 'sales_manager_name',
+        header: COPY.roles.salesManager,
+        cell: ({ row }) => <span className="text-muted-foreground">{row.original.sales_manager_name ?? '—'}</span>,
       },
     ]
-  }, [matchMap])
+  }, [])
 
   return (
     <div className="space-y-4">

@@ -80,6 +80,7 @@ export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
                     </div>
                     <div className="mt-1 text-xs text-muted-foreground">
                       {d.company_name ?? '—'}
+                      {d.volume?.trim() ? ` · ${d.volume.trim()}` : ''}
                       {d.expiry_date ? ` · bis ${formatDateUtcDe(d.expiry_date)}` : ''}
                     </div>
                     <div className="mt-2 text-xs text-muted-foreground">
