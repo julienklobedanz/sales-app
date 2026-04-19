@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import type { DealRow, DealStatus } from './types'
 import { DealForm } from './new/deal-form'
 import { importDealsFromXlsx, type MatchSuggestion } from './actions'
-import { CirclePlus, Loader, UploadIcon } from '@hugeicons/core-free-icons'
+import { ArrowUpDown, CirclePlus, Loader, UploadIcon } from '@hugeicons/core-free-icons'
 import { toast } from 'sonner'
 import { AppDataTable } from '@/components/ui/app-data-table'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -23,6 +23,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 type MatchMap = Record<string, { count: number; suggestions: MatchSuggestion[] }>
 
@@ -73,6 +81,7 @@ export function DealsClientContent({
   const [createOpen, setCreateOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilterValue>('all')
+  const [selectedDealIds, setSelectedDealIds] = useState<string[]>([])
 
   async function handleXlsxImport(file: File) {
     const formData = new FormData()
@@ -129,22 +138,74 @@ export function DealsClientContent({
       },
       {
         accessorKey: 'status',
-        header: 'Status',
+        header: ({ column }) => (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="-ml-2"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          >
+            Status
+            <span className="ml-2">
+              <AppIcon icon={ArrowUpDown} size={16} />
+            </span>
+          </Button>
+        ),
         cell: ({ row }) => <DealStatusBadge status={row.original.status} />,
       },
       {
         accessorKey: 'title',
-        header: 'Titel',
+        header: ({ column }) => (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="-ml-2"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          >
+            Titel
+            <span className="ml-2">
+              <AppIcon icon={ArrowUpDown} size={16} />
+            </span>
+          </Button>
+        ),
         cell: ({ row }) => <span className="font-medium">{row.original.title}</span>,
       },
       {
         accessorKey: 'company_name',
-        header: 'Account',
+        header: ({ column }) => (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="-ml-2"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          >
+            Account
+            <span className="ml-2">
+              <AppIcon icon={ArrowUpDown} size={16} />
+            </span>
+          </Button>
+        ),
         cell: ({ row }) => <span className="text-muted-foreground">{row.original.company_name ?? '—'}</span>,
       },
       {
         accessorKey: 'volume',
-        header: 'Volumen',
+        header: ({ column }) => (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="-ml-2"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          >
+            Volumen
+            <span className="ml-2">
+              <AppIcon icon={ArrowUpDown} size={16} />
+            </span>
+          </Button>
+        ),
         cell: ({ row }) => (
           <span className="text-muted-foreground tabular-nums">{row.original.volume?.trim() || '—'}</span>
         ),
@@ -152,7 +213,20 @@ export function DealsClientContent({
       {
         id: 'reference_count',
         accessorFn: (row) => row.linked_refs?.length ?? 0,
-        header: COPY.deals.referenceCountColumn,
+        header: ({ column }) => (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="-ml-2"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          >
+            {COPY.deals.referenceCountColumn}
+            <span className="ml-2">
+              <AppIcon icon={ArrowUpDown} size={16} />
+            </span>
+          </Button>
+        ),
         cell: ({ row }) => (
           <span className="tabular-nums text-muted-foreground">
             {row.original.linked_refs?.length ?? 0}
@@ -161,12 +235,38 @@ export function DealsClientContent({
       },
       {
         accessorKey: 'account_manager_name',
-        header: COPY.roles.accountManager,
+        header: ({ column }) => (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="-ml-2"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          >
+            {COPY.roles.accountManager}
+            <span className="ml-2">
+              <AppIcon icon={ArrowUpDown} size={16} />
+            </span>
+          </Button>
+        ),
         cell: ({ row }) => <span className="text-muted-foreground">{row.original.account_manager_name ?? '—'}</span>,
       },
       {
         accessorKey: 'expiry_date',
-        header: 'Ablauf',
+        header: ({ column }) => (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="-ml-2"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          >
+            Ablauf
+            <span className="ml-2">
+              <AppIcon icon={ArrowUpDown} size={16} />
+            </span>
+          </Button>
+        ),
         cell: ({ row }) => {
           const isHot = isExpiringIn30Days(row.original.expiry_date)
           return (
@@ -178,7 +278,20 @@ export function DealsClientContent({
       },
       {
         accessorKey: 'sales_manager_name',
-        header: COPY.roles.salesManager,
+        header: ({ column }) => (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="-ml-2"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          >
+            {COPY.roles.salesManager}
+            <span className="ml-2">
+              <AppIcon icon={ArrowUpDown} size={16} />
+            </span>
+          </Button>
+        ),
         cell: ({ row }) => <span className="text-muted-foreground">{row.original.sales_manager_name ?? '—'}</span>,
       },
     ]
@@ -186,12 +299,62 @@ export function DealsClientContent({
 
   return (
     <div className="space-y-4">
+      {selectedDealIds.length ? (
+        <div className="fixed bottom-6 left-1/2 z-50 w-[min(720px,calc(100vw-24px))] -translate-x-1/2">
+          <div className="flex items-center justify-between rounded-lg border bg-background/95 px-4 py-3 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/75">
+            <div className="text-sm text-muted-foreground">
+              {selectedDealIds.length} ausgewählt
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="toolbar">
+                  Aktionen
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Bulk-Aktionen</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  disabled={selectedDealIds.length !== 1}
+                  onSelect={(e) => {
+                    e.preventDefault()
+                    const id = selectedDealIds[0]
+                    if (id) router.push(`/dashboard/deals/${id}`)
+                  }}
+                >
+                  Öffnen
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={selectedDealIds.length !== 1}
+                  onSelect={(e) => {
+                    e.preventDefault()
+                    const id = selectedDealIds[0]
+                    if (id) window.open(`/dashboard/deals/${id}`, '_blank', 'noopener,noreferrer')
+                  }}
+                >
+                  In neuem Tab öffnen
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault()
+                    setSelectedDealIds([])
+                  }}
+                >
+                  Auswahl aufheben
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      ) : null}
       <AppDataTable
         tableVariant="deals"
         columns={columns}
         data={filtered}
         initialPageSize={10}
         getRowId={(row) => row.id}
+        onSelectedRowIdsChange={setSelectedDealIds}
         toolbar={() => (
           <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
             <ToolbarSearchField
@@ -199,6 +362,7 @@ export function DealsClientContent({
               value={query}
               onChange={setQuery}
               placeholder={COPY.deals.searchPlaceholder}
+              wrapperClassName="flex-1 min-w-0 max-w-none"
             />
             <Select
               value={statusFilter}

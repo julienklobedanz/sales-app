@@ -86,7 +86,6 @@ import {
   MoreHorizontal,
   Pencil,
   Send,
-  ShoppingCartIcon,
   SlidersHorizontal,
   StarIcon,
   Trash2,
@@ -1006,86 +1005,79 @@ export function DashboardOverview({
             </Button>
           )}
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="default"
-                size="icon"
-                className="relative h-11 w-11 shrink-0 rounded-lg bg-foreground text-background transition-all duration-300 hover:bg-foreground/90"
-                aria-label={selectedRefIds.size > 0 ? `Warenkorb (${selectedRefIds.size} Referenzen)` : 'Warenkorb'}
-              >
-                <AppIcon icon={ShoppingCartIcon} size={16} />
-                {selectedRefIds.size > 0 && (
-                  <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-background/90 px-1 text-[10px] font-medium text-foreground">
-                    {selectedRefIds.size}
-                  </span>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[240px]">
-              {selectedRefIds.size === 0 ? (
-                <p className="px-2 py-3 text-sm text-muted-foreground">
-                  Keine Referenzen ausgewählt. Nutze die Checkboxen links in der Tabelle, um Referenzen in den Warenkorb zu legen.
-                </p>
-              ) : (
-                <>
-                  <DropdownMenuLabel>
-                    {selectedRefLabel} ausgewählt
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {profile.role === 'sales' && (
-                    <>
-                      <DropdownMenuItem
-                        onClick={async () => {
-                          const base = process.env.NEXT_PUBLIC_SUPABASE_URL
-                          const withFile = selectedRefs.filter((r) => r.file_path)
-                          if (withFile.length === 0) {
-                            toast.error('Keine der ausgewählten Referenzen hat ein Dokument zum Herunterladen.')
-                            return
-                          }
-                          withFile.forEach((r) => {
-                            const url = `${base}/storage/v1/object/public/references/${r.file_path}`
-                            window.open(url, '_blank', 'noopener,noreferrer')
-                          })
-                          toast.success(`${withFile.length} Referenz${withFile.length !== 1 ? 'en' : ''} werden heruntergeladen.`)
-                        }}
-                      >
-                        <AppIcon icon={FileDownIcon} size={16} className="mr-2" />
-                        {selectedRefLabel} als PDF herunterladen
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        disabled={approvalEligibleCount === 0}
-                        onSelect={async (e: Event) => {
-                          e.preventDefault()
-                          await handleBulkRequestApproval()
-                        }}
-                      >
-                        <AppIcon icon={Send} size={16} className="mr-2" />
-                        {selectedRefLabel} um Freigabe anfragen
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                  {profile.role === 'admin' && (
-                    <DropdownMenuItem
-                      className="text-destructive focus:text-destructive"
-                      onSelect={(e: Event) => {
-                        e.preventDefault()
-                        setBulkDeleteConfirmOpen(true)
-                      }}
-                    >
-                      <AppIcon icon={Trash2} size={16} className="mr-2" />
-                      Ausgewählte löschen
+          {selectedRefIds.size > 0 ? (
+            <div className="fixed bottom-6 left-1/2 z-50 w-[min(720px,calc(100vw-24px))] -translate-x-1/2">
+              <div className="flex items-center justify-between rounded-lg border bg-background/95 px-4 py-3 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/75">
+                <div className="text-sm text-muted-foreground">
+                  {selectedRefIds.size} ausgewählt
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      Aktionen
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-[260px]">
+                    <DropdownMenuLabel>Bulk-Aktionen</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setPreviewRefs(selectedRefs)}>
+                      <AppIcon icon={Eye} size={16} className="mr-2" />
+                      Vorschau
                     </DropdownMenuItem>
-                  )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setSelectedRefIds(new Set())}>
-                    <AppIcon icon={Cancel01Icon} size={16} className="mr-2 text-muted-foreground" />
-                    Auswahl aufheben
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                    {profile.role === 'sales' && (
+                      <>
+                        <DropdownMenuItem
+                          onClick={async () => {
+                            const base = process.env.NEXT_PUBLIC_SUPABASE_URL
+                            const withFile = selectedRefs.filter((r) => r.file_path)
+                            if (withFile.length === 0) {
+                              toast.error('Keine der ausgewählten Referenzen hat ein Dokument zum Herunterladen.')
+                              return
+                            }
+                            withFile.forEach((r) => {
+                              const url = `${base}/storage/v1/object/public/references/${r.file_path}`
+                              window.open(url, '_blank', 'noopener,noreferrer')
+                            })
+                            toast.success(`${withFile.length} Referenz${withFile.length !== 1 ? 'en' : ''} werden heruntergeladen.`)
+                          }}
+                        >
+                          <AppIcon icon={FileDownIcon} size={16} className="mr-2" />
+                          {selectedRefLabel} als PDF herunterladen
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={approvalEligibleCount === 0}
+                          onSelect={async (e: Event) => {
+                            e.preventDefault()
+                            await handleBulkRequestApproval()
+                          }}
+                        >
+                          <AppIcon icon={Send} size={16} className="mr-2" />
+                          {selectedRefLabel} um Freigabe anfragen
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    {profile.role === 'admin' && (
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive"
+                        onSelect={(e: Event) => {
+                          e.preventDefault()
+                          setBulkDeleteConfirmOpen(true)
+                        }}
+                      >
+                        <AppIcon icon={Trash2} size={16} className="mr-2" />
+                        Ausgewählte löschen
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setSelectedRefIds(new Set())}>
+                      <AppIcon icon={Cancel01Icon} size={16} className="mr-2 text-muted-foreground" />
+                      Auswahl aufheben
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+          ) : null}
  
           {profile.role === 'admin' && (
             <BulkDeleteReferencesDialog

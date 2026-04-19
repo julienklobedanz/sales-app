@@ -76,7 +76,7 @@ export const COPY = {
     contextOpen: 'Deal öffnen',
     contextOpenNewTab: 'In neuem Tab öffnen',
     searchPlaceholder: 'Deals durchsuchen (Titel, Account, AM) …',
-    newDealButton: '+ Deal',
+    newDealButton: 'Deal anlegen',
     filterStatusAll: 'Alle Status',
     filterStatusNegotiation: 'Verhandlung',
     filterStatusRfp: 'RFP-Phase',

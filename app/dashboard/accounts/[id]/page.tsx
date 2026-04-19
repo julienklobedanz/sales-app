@@ -12,10 +12,14 @@ import {
 
 export default async function CompanyDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams?: Promise<{ edit?: string }>
 }) {
   const { id } = await params
+  const sp = (await searchParams) ?? {}
+  const initialEditOpen = sp.edit === '1' || sp.edit === 'true'
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
@@ -57,6 +61,7 @@ export default async function CompanyDetailPage({
           contacts={contacts}
           references={references}
           activeDeals={activeDeals}
+          initialEditOpen={initialEditOpen}
         />
       </div>
     </div>

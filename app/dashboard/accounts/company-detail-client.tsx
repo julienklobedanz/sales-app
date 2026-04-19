@@ -35,6 +35,7 @@ export function CompanyDetailClient({
   contacts: initialContacts,
   references,
   activeDeals,
+  initialEditOpen,
 }: CompanyDetailClientProps) {
   const { isAdmin, isAccountManager, isSales } = useRole()
   const canEdit = isAdmin || isAccountManager
@@ -71,7 +72,7 @@ export function CompanyDetailClient({
   const [shSentiment, setShSentiment] = useState('')
   const [stakeholderSaving, setStakeholderSaving] = useState(false)
 
-  const [editAccountOpen, setEditAccountOpen] = useState(false)
+  const [editAccountOpen, setEditAccountOpen] = useState(Boolean(initialEditOpen))
   const [contactOpen, setContactOpen] = useState(false)
   const [editingContact, setEditingContact] = useState<ContactPersonRow | null>(null)
   const [cFirst, setCFirst] = useState('')

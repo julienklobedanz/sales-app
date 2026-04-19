@@ -14,11 +14,6 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
 
   return (
     <div className="space-y-8">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">{COPY.pages.marketSignals}</h1>
-        <p className="text-muted-foreground text-sm">{COPY.marketSignals.pageSubtitle}</p>
-      </div>
-
       <ExecutiveTrackingList
         items={model.executives}
         companies={model.companies}

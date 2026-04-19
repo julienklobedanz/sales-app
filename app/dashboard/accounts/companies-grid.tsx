@@ -23,14 +23,19 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button, buttonVariants } from '@/components/ui/button'
 import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu'
+import {
   Building2,
   Briefcase,
-  Cancel01Icon,
   Globe,
   Loader,
   MapPinIcon,
   Plus,
-  StarIcon,
   Users,
 } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
@@ -63,6 +68,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
   const [favoritesOnly, setFavoritesOnly] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
   const { isAdmin, isAccountManager } = useRole()
+  const canManage = isAdmin || isAccountManager
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -77,19 +83,6 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
       return name.includes(q) || industry.includes(q)
     })
   }, [companies, search, favoritesOnly])
-
-  const calculateAccountScore = (company: CompanyCard): number => {
-    let score = 0
-    const referenceCount = company.reference_count ?? 0
-    const dealCount = company.open_deals_count ?? 0
-    const strategyFilled = Boolean(company.strategy_filled)
-    const stakeholderCount = company.stakeholder_count ?? 0
-    score += Math.min(referenceCount * 10, 40)
-    score += Math.min(dealCount * 10, 30)
-    score += strategyFilled ? 20 : 0
-    score += stakeholderCount > 0 ? 10 : 0
-    return score
-  }
 
   return (
     <div className="space-y-6 rounded-3xl bg-muted/20 p-4 md:p-6">
@@ -108,18 +101,15 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
             <Button
               type="button"
               variant={favoritesOnly ? 'default' : 'outline'}
-              size="icon"
-              className={`h-9 w-9 shrink-0 rounded-full ${favoritesOnly ? 'bg-accent text-accent-foreground hover:bg-accent/80' : ''}`}
+              size="toolbar"
+              className="shrink-0"
               onClick={() => setFavoritesOnly((v) => !v)}
-              aria-label={favoritesOnly ? COPY.accounts.ariaFavoritesOnlyOff : COPY.accounts.ariaFavoritesOnlyOn}
+              aria-pressed={favoritesOnly}
+              aria-label={favoritesOnly ? 'Favoritenfilter deaktivieren' : 'Nur Favoriten anzeigen'}
             >
-              <AppIcon
-                icon={StarIcon}
-                size={16}
-                className={favoritesOnly ? 'text-primary' : 'text-muted-foreground'}
-              />
+              Nur Favoriten
             </Button>
-            {(isAdmin || isAccountManager) && (
+            {canManage && (
               <>
                 <Button type="button" size="toolbar" onClick={() => setCreateOpen(true)}>
                   <AppIcon icon={Plus} size={16} />
@@ -141,131 +131,134 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filtered.map((company) => (
-            <Card
-              key={company.id}
-              className="group relative h-full overflow-hidden rounded-3xl border border-border/60 bg-card/95 shadow-sm transition-all duration-200 hover:border-primary/20 hover:shadow-md"
-            >
-              <button
-                type="button"
-                className="absolute right-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-full bg-background/80 text-muted-foreground opacity-0 shadow-sm ring-1 ring-border/60 transition-opacity duration-150 hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
-                onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  if (deleting) return
-                  setDeleteTarget(company)
-                }}
-                aria-label="Kunde löschen"
-              >
-                <AppIcon icon={Cancel01Icon} size={14} />
-              </button>
-              <Link
-                href={ROUTES.accountsDetail(company.id)}
-                className="block h-full transition-opacity duration-300 ease-out"
-              >
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3">
-                      {company.logo_url ? (
-                        <div className="relative size-12 shrink-0 overflow-hidden rounded-2xl border bg-muted">
-                          <Image
-                            src={company.logo_url}
-                            alt=""
-                            fill
-                            className="object-contain"
-                            sizes="48px"
-                          />
+            <ContextMenu key={company.id}>
+              <ContextMenuTrigger asChild>
+                <Card className="group relative h-full overflow-hidden rounded-3xl border border-border/60 bg-card/95 shadow-sm transition-all duration-200 hover:border-primary/20 hover:shadow-md">
+                  <Link
+                    href={ROUTES.accountsDetail(company.id)}
+                    className="block h-full transition-opacity duration-300 ease-out"
+                  >
+                    <CardHeader className="pb-2">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3">
+                          {company.logo_url ? (
+                            <div className="relative size-12 shrink-0 overflow-hidden rounded-2xl border bg-muted">
+                              <Image
+                                src={company.logo_url}
+                                alt=""
+                                fill
+                                className="object-contain"
+                                sizes="48px"
+                              />
+                            </div>
+                          ) : (
+                            <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border bg-muted">
+                              <AppIcon icon={Building2} size={24} className="text-muted-foreground" />
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <CardTitle className="truncate text-base font-semibold">
+                                {company.name}
+                              </CardTitle>
+                            </div>
+                            {company.industry && (
+                              <CardDescription className="mt-0.5 truncate text-xs text-muted-foreground">
+                                {company.industry}
+                              </CardDescription>
+                            )}
+                          </div>
                         </div>
-                      ) : (
-                        <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border bg-muted">
-                          <AppIcon icon={Building2} size={24} className="text-muted-foreground" />
-                        </div>
-                      )}
-                      <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <CardTitle className="truncate text-base font-semibold">
-                          {company.name}
-                        </CardTitle>
-                        <button
-                          type="button"
-                          className="inline-flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground hover:text-primary"
-                          onClick={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            const next = !company.is_favorite
-                            toggleCompanyFavorite(company.id, next).then((res) => {
-                              if (!res.success) {
-                                toast.error(res.error ?? 'Favorit konnte nicht gespeichert werden.')
-                              }
-                            })
-                          }}
-                          aria-label={company.is_favorite ? 'Als Favorit entfernen' : 'Als Favorit markieren'}
-                        >
-                          <AppIcon
-                            icon={StarIcon}
-                            size={16}
-                            className={company.is_favorite ? 'text-primary' : 'text-muted-foreground'}
-                          />
-                        </button>
                       </div>
-                        {company.industry && (
-                          <CardDescription className="mt-0.5 truncate text-xs text-muted-foreground">
-                            {company.industry}
-                          </CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-1 text-xs text-muted-foreground">
+                      <div className="flex flex-wrap items-center gap-3">
+                        {company.headquarters && (
+                          <div className="flex items-center gap-1.5">
+                            <AppIcon icon={MapPinIcon} size={14} className="shrink-0" />
+                            <span className="truncate max-w-[140px]">
+                              {company.headquarters}
+                            </span>
+                          </div>
+                        )}
+                        {company.website_url && (
+                          <div className="flex items-center gap-1.5">
+                            <AppIcon icon={Globe} size={14} className="shrink-0" />
+                            <a
+                              href={
+                                company.website_url.startsWith('http')
+                                  ? company.website_url
+                                  : `https://${company.website_url}`
+                              }
+                              target="_blank"
+                              rel="noreferrer"
+                              className="truncate max-w-[160px] text-muted-foreground hover:underline"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              Website
+                            </a>
+                          </div>
                         )}
                       </div>
-                    </div>
-                    <div className="ml-2 shrink-0 rounded-full border border-primary/30 bg-primary/5 px-2.5 py-0.5 text-[10px] font-semibold text-primary font-mono">
-                      {calculateAccountScore(company)}%
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-1 text-xs text-muted-foreground">
-                  <div className="flex flex-wrap items-center gap-3">
-                    {company.headquarters && (
-                      <div className="flex items-center gap-1.5">
-                        <AppIcon icon={MapPinIcon} size={14} className="shrink-0" />
-                        <span className="truncate max-w-[140px]">
-                          {company.headquarters}
-                        </span>
+                    </CardContent>
+                    <CardContent className="pt-2 pb-3 text-[11px] text-muted-foreground">
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1.5">
+                          <AppIcon icon={Briefcase} size={14} />
+                          <span>
+                            {company.open_deals_count ?? 0} Deals
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <AppIcon icon={Users} size={14} />
+                          <span>
+                            {company.reference_count ?? 0} Referenzen
+                          </span>
+                        </div>
                       </div>
-                    )}
-                    {company.website_url && (
-                      <div className="flex items-center gap-1.5">
-                        <AppIcon icon={Globe} size={14} className="shrink-0" />
-                        <a
-                          href={
-                            company.website_url.startsWith('http')
-                              ? company.website_url
-                              : `https://${company.website_url}`
-                          }
-                          target="_blank"
-                          rel="noreferrer"
-                          className="truncate max-w-[160px] text-muted-foreground hover:underline"
-                        >
-                          Website
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-                <CardContent className="pt-2 pb-3 text-[11px] text-muted-foreground">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1.5">
-                      <AppIcon icon={Briefcase} size={14} />
-                      <span>
-                        {company.open_deals_count ?? 0} Deals
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <AppIcon icon={Users} size={14} />
-                      <span>
-                        {company.reference_count ?? 0} Referenzen
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Link>
-            </Card>
+                    </CardContent>
+                  </Link>
+                </Card>
+              </ContextMenuTrigger>
+
+              <ContextMenuContent className="w-56">
+                <ContextMenuItem asChild>
+                  <Link href={ROUTES.accountsDetail(company.id)}>Öffnen</Link>
+                </ContextMenuItem>
+                <ContextMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault()
+                    const next = !company.is_favorite
+                    toggleCompanyFavorite(company.id, next).then((res) => {
+                      if (!res.success) {
+                        toast.error(res.error ?? 'Favorit konnte nicht gespeichert werden.')
+                      }
+                    })
+                  }}
+                >
+                  {company.is_favorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}
+                </ContextMenuItem>
+
+                {canManage ? (
+                  <>
+                    <ContextMenuSeparator />
+                    <ContextMenuItem asChild>
+                      <Link href={`${ROUTES.accountsDetail(company.id)}?edit=1`}>Bearbeiten</Link>
+                    </ContextMenuItem>
+                    <ContextMenuItem
+                      variant="destructive"
+                      onSelect={(e) => {
+                        e.preventDefault()
+                        if (deleting) return
+                        setDeleteTarget(company)
+                      }}
+                    >
+                      Löschen
+                    </ContextMenuItem>
+                  </>
+                ) : null}
+              </ContextMenuContent>
+            </ContextMenu>
           ))}
         </div>
       )}

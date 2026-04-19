@@ -25,4 +25,5 @@ export type CompanyDetailClientProps = {
   contacts: ContactPersonRow[]
   references: CompanyRefRow[]
   activeDeals: AccountDealRow[]
+  initialEditOpen?: boolean
 }

@@ -205,20 +205,10 @@ export function DashboardHeader({
       <div className="flex items-center gap-2 shrink-0 ml-auto">
         <Button
           type="button"
-          variant="outline"
-          className="hidden md:flex items-center gap-2"
-          onClick={() => setOpen(true)}
-        >
-          <AppIcon icon={SearchIcon} size={16} />
-          <span className="text-sm">Suche</span>
-          <Kbd>⌘K</Kbd>
-        </Button>
-        <Button
-          type="button"
           variant="ghost"
           size="icon"
-          aria-label="Command Palette öffnen"
-          className="md:hidden"
+          aria-label="Suche öffnen (⌘K)"
+          title="Suche (⌘K)"
           onClick={() => setOpen(true)}
         >
           <AppIcon icon={SearchIcon} size={20} />
