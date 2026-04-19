@@ -385,7 +385,7 @@ export function DealsClientContent({
         toolbar={() => (
           <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:gap-3 overflow-x-hidden">
             <ToolbarSearchField
-              variant="dashboard"
+              variant="list"
               value={query}
               onChange={setQuery}
               placeholder={COPY.deals.searchPlaceholder}
