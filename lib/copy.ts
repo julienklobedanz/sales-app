@@ -85,6 +85,27 @@ export const COPY = {
     columnVisibility: 'Sichtbarkeit',
     columnsToggleAria: 'Spalten ein-/ausblenden',
   },
+  marketSignals: {
+    pageSubtitle: 'Deine Account-Intelligenz auf einen Blick',
+    executiveSection: 'Executive Tracking',
+    newsSection: 'Account News',
+    filterAccount: 'Account filtern',
+    filterSegmentLabel: 'Typ',
+    allAccounts: 'Alle Accounts',
+    segmentAll: 'Alle',
+    segmentCustomers: 'Kunden',
+    segmentProspects: 'Prospects',
+    newBadge: 'Neu',
+    openAccount: 'Account öffnen',
+    sourcePrefix: 'Quelle',
+    executiveEmptyTitle: 'Noch keine Führungswechsel',
+    executiveEmptyBody:
+      'In Phase 1 werden Einträge manuell gepflegt oder per CSV importiert. Anschließend erscheinen sie hier.',
+    newsEmptyTitle: 'Noch keine Account-News',
+    newsEmptyBody:
+      'In Phase 1 werden Meldungen als Notizen je Account erfasst. Automatische Quellen folgen später.',
+    roleChangeArrow: '→',
+  },
   commandPalette: {
     title: 'Command Palette',
     description: 'Suche nach Referenzen, Accounts oder Deals',
