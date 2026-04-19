@@ -97,6 +97,7 @@ export function AppDataTable<TData, TValue>({
     columns,
     getRowId,
     enableRowSelection: true,
+    columnResizeMode: "onChange",
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
@@ -257,7 +258,7 @@ export function AppDataTable<TData, TValue>({
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
+                  <TableHead key={header.id} style={{ width: header.getSize() }}>
                     {header.isPlaceholder
                       ? null
                       : flexRender(header.column.columnDef.header, header.getContext())}

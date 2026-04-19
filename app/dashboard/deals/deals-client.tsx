@@ -397,20 +397,19 @@ export function DealsClientContent({
           sales_manager_name: false,
         }}
         toolbar={() => (
-          <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+          <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:gap-3 overflow-x-hidden">
             <ToolbarSearchField
-              variant="list"
+              variant="dashboard"
               value={query}
               onChange={setQuery}
               placeholder={COPY.deals.searchPlaceholder}
-              wrapperClassName="flex-1 min-w-0 !max-w-none"
-              className="w-full"
+              wrapperClassName="min-w-0 flex-1 basis-[min(100%,24rem)]"
             />
             <Select
               value={statusFilter}
               onValueChange={(v) => setStatusFilter(v as StatusFilterValue)}
             >
-              <SelectTrigger className="w-full sm:w-[200px]" data-row-nav-ignore>
+              <SelectTrigger className="w-full sm:w-[200px] shrink-0" data-row-nav-ignore>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

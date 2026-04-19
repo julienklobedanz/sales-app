@@ -72,6 +72,8 @@ export function evidenceColumns(): ColumnDef<ReferenceRow>[] {
     },
     {
       accessorKey: "company_name",
+      minSize: 240,
+      size: 280,
       header: ({ column }) => (
         <Button
           type="button"
@@ -103,9 +105,9 @@ export function evidenceColumns(): ColumnDef<ReferenceRow>[] {
               <AppIcon icon={Building2} size={18} className="text-muted-foreground" />
             </div>
           )}
-          <div className="min-w-0">
-            <div className="truncate font-medium">{row.original.company_name}</div>
-          </div>
+          <span className="truncate text-muted-foreground">
+            {row.original.company_name ?? "—"}
+          </span>
         </div>
       ),
     },
