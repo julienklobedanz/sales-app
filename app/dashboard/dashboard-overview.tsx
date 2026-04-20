@@ -1,9 +1,8 @@
 'use client'
 
 import React from 'react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -58,8 +57,6 @@ import type {
   DeletedReferenceRow,
   PendingClientApprovalRow,
 } from './actions'
-import { ReferenceStatusBadge } from '@/components/reference-status-badge'
-import { AccountCell } from '@/components/table/account-cell'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 import { TABLE_TOOLBAR } from '@/lib/table-toolbar'
@@ -74,9 +71,6 @@ import {
 } from './actions'
 import type { Profile } from './dashboard-shell'
 import {
-  ArrowDown,
-  ArrowUp,
-  ArrowUpDown,
   Cancel01Icon,
   CirclePlus,
   CopyIcon,
@@ -99,6 +93,11 @@ import { ReferencePreviewDialog } from './overview/reference-preview-dialog'
 import { ShareLinkDialog } from './overview/share-link-dialog'
 import { BulkDeleteReferencesDialog } from './overview/bulk-delete-references-dialog'
 import { TrashDialog } from './overview/trash-dialog'
+import {
+  renderReferenceColumnCell,
+  renderReferenceColumnHeader,
+  type ReferenceColumnKey,
+} from './overview/reference-table-column-renders'
 import { ReferenceDetailSheet } from './overview/reference-detail-sheet'
 import { toast } from 'sonner'
 // --- Konstanten & Hilfsfunktionen ---
@@ -115,34 +114,34 @@ const PROJECT_STATUS_LABELS: Record<string, string> = {
   completed: 'Abgeschlossen',
 }
 
-/** Spalten-Keys und Standard-Sichtbarkeit: Status, Unternehmen, Titel, Tags, Projektstatus, Letzte Änderung */
+/** Spalten-Keys und Standard-Sichtbarkeit (Reihenfolge = Tabellenreihenfolge) */
 const COLUMN_KEYS = [
-  'status',
   'company',
   'title',
-  'tags',
   'industry',
-  'country',
+  'status',
   'project_status',
+  'updated_at',
+  'tags',
+  'country',
   'project_start',
   'project_end',
   'duration_months',
   'created_at',
-  'updated_at',
 ] as const
 const DEFAULT_VISIBLE: Record<(typeof COLUMN_KEYS)[number], boolean> = {
-  status: true,
   company: true,
   title: true,
-  tags: true,
-  industry: false,
-  country: false,
+  industry: true,
+  status: true,
   project_status: true,
+  updated_at: true,
+  tags: true,
+  country: false,
   project_start: false,
   project_end: false,
   duration_months: false,
   created_at: false,
-  updated_at: true,
 }
 const COLUMN_LABELS: Record<(typeof COLUMN_KEYS)[number], string> = {
   status: 'Referenzstatus',
@@ -157,6 +156,33 @@ const COLUMN_LABELS: Record<(typeof COLUMN_KEYS)[number], string> = {
   duration_months: 'Dauer (Monate)',
   created_at: 'Hinzugefügt am',
   updated_at: 'Letzte Änderung',
+}
+
+const COLUMN_ORDER_STORAGE_KEY = 'dashboard-overview-column-order-v1'
+
+function loadColumnOrderFromStorage(): ReferenceColumnKey[] {
+  if (typeof window === 'undefined') return [...COLUMN_KEYS] as ReferenceColumnKey[]
+  try {
+    const raw = localStorage.getItem(COLUMN_ORDER_STORAGE_KEY)
+    if (!raw) return [...COLUMN_KEYS] as ReferenceColumnKey[]
+    const parsed = JSON.parse(raw) as unknown
+    if (!Array.isArray(parsed)) return [...COLUMN_KEYS] as ReferenceColumnKey[]
+    const allowed = new Set<string>(COLUMN_KEYS)
+    const seen = new Set<string>()
+    const result: ReferenceColumnKey[] = []
+    for (const item of parsed) {
+      if (typeof item === 'string' && allowed.has(item) && !seen.has(item)) {
+        seen.add(item)
+        result.push(item as ReferenceColumnKey)
+      }
+    }
+    for (const k of COLUMN_KEYS) {
+      if (!seen.has(k)) result.push(k as ReferenceColumnKey)
+    }
+    return result
+  } catch {
+    return [...COLUMN_KEYS] as ReferenceColumnKey[]
+  }
 }
 
 /** Toolbar: Favoriten / Status / Spalten – gleiche Mindestbreite */
@@ -397,6 +423,34 @@ export function DashboardOverview({
   const [visibleColumns, setVisibleColumns] = useState<
     Record<(typeof COLUMN_KEYS)[number], boolean>
   >(DEFAULT_VISIBLE)
+  const [columnOrder, setColumnOrder] = useState<ReferenceColumnKey[]>(() =>
+    loadColumnOrderFromStorage()
+  )
+  const [dragOverColumn, setDragOverColumn] = useState<string | null>(null)
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(COLUMN_ORDER_STORAGE_KEY, JSON.stringify(columnOrder))
+    } catch {
+      /* ignore */
+    }
+  }, [columnOrder])
+
+  const orderedVisibleColumnKeys = useMemo(
+    () => columnOrder.filter((k) => visibleColumns[k]),
+    [columnOrder, visibleColumns]
+  )
+
+  const moveColumnOrder = useCallback((from: string, to: string) => {
+    if (from === to) return
+    setColumnOrder((prev) => {
+      const next = prev.filter((k) => k !== from)
+      const insertAt = next.indexOf(to as ReferenceColumnKey)
+      if (insertAt === -1) return prev
+      next.splice(insertAt, 0, from as ReferenceColumnKey)
+      return next
+    })
+  }, [])
 
   const handleToggleFavorite = (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation()
@@ -919,7 +973,7 @@ export function DashboardOverview({
               <DropdownMenuContent align="end" className="w-[min(100vw-2rem,16rem)]">
                 <DropdownMenuLabel>{COPY.dashboard.columnVisibility}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {COLUMN_KEYS.map((column) => (
+                {columnOrder.map((column) => (
                   <DropdownMenuCheckboxItem
                     key={column}
                     checked={visibleColumns[column]}
@@ -1122,600 +1176,45 @@ export function DashboardOverview({
                     aria-label="Alle auswählen"
                   />
                 </TableHead>
-                {visibleColumns.status && (
-                  <TableHead>
-                    <div className="flex items-center gap-1">
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <button
-                            type="button"
-                            className={`flex items-center gap-1 text-left hover:opacity-80 ${statusFilter !== 'all' ? 'font-semibold text-foreground' : ''}`}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <span>{COLUMN_LABELS.status}</span>
-                            {statusFilter !== 'all' && <AppIcon icon={Filter} size={14} className="shrink-0 text-primary" aria-hidden />}
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent
-                          className="w-56"
-                          align="start"
-                          onClick={(e) => e.stopPropagation()}
-                          onOpenAutoFocus={(e) => e.preventDefault()}
-                        >
-                          <Input
-                            autoFocus
-                            placeholder="Status suchen…"
-                            value={statusSearch}
-                            onChange={(e) => setStatusSearch(e.target.value)}
-                            className="h-8 text-xs"
-                          />
-                          <div className="mt-2 max-h-56 space-y-1 overflow-y-auto text-sm">
-                            {['all', ...filterOptions.statuses].filter((value) => {
-                              if (!statusSearch.trim()) return true
-                              const label =
-                                value === 'all'
-                                  ? 'Alle'
-                                  : STATUS_LABELS[value as ReferenceRow['status']] ?? value
-                              return label.toLowerCase().includes(statusSearch.trim().toLowerCase())
-                            }).map((value) => {
-                              const isAll = value === 'all'
-                              const label =
-                                isAll
-                                  ? 'Alle'
-                                  : STATUS_LABELS[value as ReferenceRow['status']] ?? value
-                              const selected = statusFilter === value
-                              return (
-                                <button
-                                  key={value}
-                                  type="button"
-                                  onClick={() => {
-                                    setStatusFilter(value)
-                                  }}
-                                  className="flex w-full items-center justify-between gap-2 rounded-md px-1.5 py-1 text-left hover:bg-muted"
-                                >
-                                  <span className="truncate">{label}</span>
-                                  <div
-                                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-input ${
-                                      selected ? 'bg-primary border-primary' : 'bg-muted'
-                                    }`}
-                                  >
-                                    {selected && <span className="h-2 w-2 rounded-full bg-primary-foreground" />}
-                                  </div>
-                                </button>
-                              )
-                            })}
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                      <button
-                        type="button"
-                        className="flex items-center gap-0.5 hover:opacity-80"
-                        onClick={() => handleSort('status')}
-                      >
-                        {sortKey === 'status' ? (
-                          sortDir === 'asc' ? (
-                            <AppIcon icon={ArrowUp} size={14} className="text-primary" />
-                          ) : (
-                            <AppIcon icon={ArrowDown} size={14} className="text-primary" />
-                          )
-                        ) : (
-                          <AppIcon icon={ArrowUpDown} size={14} className="text-muted-foreground" />
-                        )}
-                      </button>
-                    </div>
-                  </TableHead>
-                )}
-                {visibleColumns.company && (
-                  <TableHead className="w-[180px]">
-                    <div className="flex items-center gap-1">
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <button
-                            type="button"
-                            className={`flex items-center gap-1 text-left hover:opacity-80 ${companyFilter !== 'all' ? 'font-semibold text-foreground' : ''}`}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <span>{COLUMN_LABELS.company}</span>
-                            {companyFilter !== 'all' && <AppIcon icon={Filter} size={14} className="shrink-0 text-primary" aria-hidden />}
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent
-                          className="w-64"
-                          align="start"
-                          onClick={(e) => e.stopPropagation()}
-                          onOpenAutoFocus={(e) => e.preventDefault()}
-                        >
-                          <Input
-                            autoFocus
-                            placeholder="Unternehmen suchen…"
-                            value={companySearch}
-                            onChange={(e) => setCompanySearch(e.target.value)}
-                            className="h-8 text-xs"
-                          />
-                          <div className="mt-2 max-h-56 space-y-1 overflow-y-auto text-sm">
-                            {['all', ...filterOptions.companies].filter((value) => {
-                              if (!companySearch.trim()) return true
-                              const label = value === 'all' ? 'Alle' : value
-                              return label.toLowerCase().includes(companySearch.trim().toLowerCase())
-                            }).map((value) => {
-                              const isAll = value === 'all'
-                              const label = isAll ? 'Alle' : value
-                              const selected = companyFilter === value
-                              return (
-                                <button
-                                  key={value}
-                                  type="button"
-                                  onClick={() => {
-                                    setCompanyFilter(value)
-                                  }}
-                                  className="flex w-full items-center justify-between gap-2 rounded-md px-1.5 py-1 text-left hover:bg-muted"
-                                >
-                                  <span className="truncate">{label}</span>
-                                  <div
-                                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-input ${
-                                      selected ? 'bg-primary border-primary' : 'bg-muted'
-                                    }`}
-                                  >
-                                    {selected && <span className="h-2 w-2 rounded-full bg-primary-foreground" />}
-                                  </div>
-                                </button>
-                              )
-                            })}
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                      <button
-                        type="button"
-                        className="flex items-center gap-0.5 hover:opacity-80"
-                        onClick={() => handleSort('company')}
-                      >
-                        {sortKey === 'company' ? (
-                          sortDir === 'asc' ? (
-                            <AppIcon icon={ArrowUp} size={14} className="text-primary" />
-                          ) : (
-                            <AppIcon icon={ArrowDown} size={14} className="text-primary" />
-                          )
-                        ) : (
-                          <AppIcon icon={ArrowUpDown} size={14} className="text-muted-foreground" />
-                        )}
-                      </button>
-                    </div>
-                  </TableHead>
-                )}
-                {visibleColumns.title && (
-                  <TableHead>
-                    <button
-                      type="button"
-                      className="flex items-center gap-0.5 hover:opacity-80"
-                      onClick={() => handleSort('title')}
-                    >
-                      {COLUMN_LABELS.title}
-                      {sortKey === 'title' ? (
-                        sortDir === 'asc' ? (
-                          <AppIcon icon={ArrowUp} size={14} className="text-primary" />
-                        ) : (
-                          <AppIcon icon={ArrowDown} size={14} className="text-primary" />
-                        )
-                      ) : (
-                        <AppIcon icon={ArrowUpDown} size={14} className="text-muted-foreground" />
-                      )}
-                    </button>
-                  </TableHead>
-                )}
-                {visibleColumns.tags && (
-                  <TableHead className="max-w-[120px]">
-                    <div className="flex items-center gap-1">
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <button
-                            type="button"
-                            className={`flex items-center gap-1 text-left hover:opacity-80 ${tagsFilter !== 'all' ? 'font-semibold text-foreground' : ''}`}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <span>{COLUMN_LABELS.tags}</span>
-                            {tagsFilter !== 'all' && <AppIcon icon={Filter} size={14} className="shrink-0 text-primary" aria-hidden />}
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent
-                          className="w-64"
-                          align="start"
-                          onClick={(e) => e.stopPropagation()}
-                          onOpenAutoFocus={(e) => e.preventDefault()}
-                        >
-                          <Input
-                            autoFocus
-                            placeholder="Tags suchen…"
-                            value={tagsSearch}
-                            onChange={(e) => setTagsSearch(e.target.value)}
-                            className="h-8 text-xs"
-                          />
-                          <div className="mt-2 max-h-56 space-y-1 overflow-y-auto text-sm">
-                            {['all', ...filterOptions.tags].filter((value) => {
-                              if (!tagsSearch.trim()) return true
-                              const label = value === 'all' ? 'Alle' : value
-                              return label.toLowerCase().includes(tagsSearch.trim().toLowerCase())
-                            }).map((value) => {
-                              const isAll = value === 'all'
-                              const label = isAll ? 'Alle' : value
-                              const selected = tagsFilter === value
-                              return (
-                                <button
-                                  key={value}
-                                  type="button"
-                                  onClick={() => {
-                                    setTagsFilter(value)
-                                  }}
-                                  className="flex w-full items-center justify-between gap-2 rounded-md px-1.5 py-1 text-left hover:bg-muted"
-                                >
-                                  <span className="truncate">{label}</span>
-                                  <div
-                                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-input ${
-                                      selected ? 'bg-primary border-primary' : 'bg-muted'
-                                    }`}
-                                  >
-                                    {selected && <span className="h-2 w-2 rounded-full bg-primary-foreground" />}
-                                  </div>
-                                </button>
-                              )
-                            })}
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                      <button
-                        type="button"
-                        className="flex items-center gap-0.5 hover:opacity-80"
-                        onClick={() => handleSort('tags')}
-                      >
-                        {sortKey === 'tags' ? (
-                          sortDir === 'asc' ? (
-                            <AppIcon icon={ArrowUp} size={14} className="text-primary" />
-                          ) : (
-                            <AppIcon icon={ArrowDown} size={14} className="text-primary" />
-                          )
-                        ) : (
-                          <AppIcon icon={ArrowUpDown} size={14} className="text-muted-foreground" />
-                        )}
-                      </button>
-                    </div>
-                  </TableHead>
-                )}
-                {visibleColumns.industry && (
-                  <TableHead>
-                    <div className="flex items-center gap-1">
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <button
-                            type="button"
-                            className={`flex items-center gap-1 text-left hover:opacity-80 ${industryFilter !== 'all' ? 'font-semibold text-foreground' : ''}`}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <span>{COLUMN_LABELS.industry}</span>
-                            {industryFilter !== 'all' && <AppIcon icon={Filter} size={14} className="shrink-0 text-primary" aria-hidden />}
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent
-                          className="w-64"
-                          align="start"
-                          onClick={(e) => e.stopPropagation()}
-                          onOpenAutoFocus={(e) => e.preventDefault()}
-                        >
-                          <Input
-                            autoFocus
-                            placeholder="Industrie suchen…"
-                            value={industrySearch}
-                            onChange={(e) => setIndustrySearch(e.target.value)}
-                            className="h-8 text-xs"
-                          />
-                          <div className="mt-2 max-h-56 space-y-1 overflow-y-auto text-sm">
-                            {['all', ...filterOptions.industries].filter((value) => {
-                              if (!industrySearch.trim()) return true
-                              const label = value === 'all' ? 'Alle' : value
-                              return label.toLowerCase().includes(industrySearch.trim().toLowerCase())
-                            }).map((value) => {
-                              const isAll = value === 'all'
-                              const label = isAll ? 'Alle' : value
-                              const selected = industryFilter === value
-                              return (
-                                <button
-                                  key={value}
-                                  type="button"
-                                  onClick={() => {
-                                    setIndustryFilter(value)
-                                  }}
-                                  className="flex w-full items-center justify-between gap-2 rounded-md px-1.5 py-1 text-left hover:bg-muted"
-                                >
-                                  <span className="truncate">{label}</span>
-                                  <div
-                                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-input ${
-                                      selected ? 'bg-primary border-primary' : 'bg-muted'
-                                    }`}
-                                  >
-                                    {selected && <span className="h-2 w-2 rounded-full bg-primary-foreground" />}
-                                  </div>
-                                </button>
-                              )
-                            })}
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                      <button
-                        type="button"
-                        className="flex items-center gap-0.5 hover:opacity-80"
-                        onClick={() => handleSort('industry')}
-                      >
-                        {sortKey === 'industry' ? (
-                          sortDir === 'asc' ? (
-                            <AppIcon icon={ArrowUp} size={14} />
-                          ) : (
-                            <AppIcon icon={ArrowDown} size={14} />
-                          )
-                        ) : (
-                          <AppIcon icon={ArrowUpDown} size={14} className="text-muted-foreground" />
-                        )}
-                      </button>
-                    </div>
-                  </TableHead>
-                )}
-                {visibleColumns.country && (
-                  <TableHead>
-                    <div className="flex items-center gap-1">
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <button
-                            type="button"
-                            className={`flex items-center gap-1 text-left hover:opacity-80 ${countryFilter !== 'all' ? 'font-semibold text-foreground' : ''}`}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <span>{COLUMN_LABELS.country}</span>
-                            {countryFilter !== 'all' && <AppIcon icon={Filter} size={14} className="shrink-0 text-primary" aria-hidden />}
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent
-                          className="w-56"
-                          align="start"
-                          onClick={(e) => e.stopPropagation()}
-                          onOpenAutoFocus={(e) => e.preventDefault()}
-                        >
-                          <Input
-                            autoFocus
-                            placeholder="HQ suchen…"
-                            value={countrySearch}
-                            onChange={(e) => setCountrySearch(e.target.value)}
-                            className="h-8 text-xs"
-                          />
-                          <div className="mt-2 max-h-56 space-y-1 overflow-y-auto text-sm">
-                            {['all', ...filterOptions.countries].filter((value) => {
-                              if (!countrySearch.trim()) return true
-                              const label = value === 'all' ? 'Alle' : value
-                              return label.toLowerCase().includes(countrySearch.trim().toLowerCase())
-                            }).map((value) => {
-                              const isAll = value === 'all'
-                              const label = isAll ? 'Alle' : value
-                              const selected = countryFilter === value
-                              return (
-                                <button
-                                  key={value}
-                                  type="button"
-                                  onClick={() => {
-                                    setCountryFilter(value)
-                                  }}
-                                  className="flex w-full items-center justify-between gap-2 rounded-md px-1.5 py-1 text-left hover:bg-muted"
-                                >
-                                  <span className="truncate">{label}</span>
-                                  <div
-                                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-input ${
-                                      selected ? 'bg-primary border-primary' : 'bg-muted'
-                                    }`}
-                                  >
-                                    {selected && <span className="h-2 w-2 rounded-full bg-primary-foreground" />}
-                                  </div>
-                                </button>
-                              )
-                            })}
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                      <button
-                        type="button"
-                        className="flex items-center gap-0.5 hover:opacity-80"
-                        onClick={() => handleSort('country')}
-                      >
-                        {sortKey === 'country' ? (
-                          sortDir === 'asc' ? (
-                            <AppIcon icon={ArrowUp} size={14} />
-                          ) : (
-                            <AppIcon icon={ArrowDown} size={14} />
-                          )
-                        ) : (
-                          <AppIcon icon={ArrowUpDown} size={14} className="text-muted-foreground" />
-                        )}
-                      </button>
-                    </div>
-                  </TableHead>
-                )}
-                {visibleColumns.project_status && (
-                  <TableHead>
-                    <div className="flex items-center gap-1">
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <button
-                            type="button"
-                            className={`flex items-center gap-1 text-left hover:opacity-80 ${projectStatusFilter !== 'all' ? 'font-semibold text-foreground' : ''}`}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <span>{COLUMN_LABELS.project_status}</span>
-                            {projectStatusFilter !== 'all' && <AppIcon icon={Filter} size={14} className="shrink-0 text-primary" aria-hidden />}
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent
-                          className="w-64"
-                          align="start"
-                          onClick={(e) => e.stopPropagation()}
-                          onOpenAutoFocus={(e) => e.preventDefault()}
-                        >
-                          <Input
-                            autoFocus
-                            placeholder="Projektstatus suchen…"
-                            value={projectStatusSearch}
-                            onChange={(e) => setProjectStatusSearch(e.target.value)}
-                            className="h-8 text-xs"
-                          />
-                          <div className="mt-2 max-h-56 space-y-1 overflow-y-auto text-sm">
-                            {['all', ...filterOptions.projectStatuses].filter((value) => {
-                              if (!projectStatusSearch.trim()) return true
-                              const label =
-                                value === 'all'
-                                  ? 'Alle'
-                                  : value === 'active'
-                                    ? 'Aktiv'
-                                    : 'Abgeschlossen'
-                              return label.toLowerCase().includes(projectStatusSearch.trim().toLowerCase())
-                            }).map((value) => {
-                              const isAll = value === 'all'
-                              const label =
-                                isAll ? 'Alle' : value === 'active' ? 'Aktiv' : 'Abgeschlossen'
-                              const selected = projectStatusFilter === value
-                              return (
-                                <button
-                                  key={value}
-                                  type="button"
-                                  onClick={() => {
-                                    setProjectStatusFilter(value)
-                                  }}
-                                  className="flex w-full items-center justify-between gap-2 rounded-md px-1.5 py-1 text-left hover:bg-muted"
-                                >
-                                  <span className="truncate">{label}</span>
-                                  <div
-                                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-input ${
-                                      selected ? 'bg-primary border-primary' : 'bg-muted'
-                                    }`}
-                                  >
-                                    {selected && <span className="h-2 w-2 rounded-full bg-primary-foreground" />}
-                                  </div>
-                                </button>
-                              )
-                            })}
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                      <button
-                        type="button"
-                        className="flex items-center gap-0.5 hover:opacity-80"
-                        onClick={() => handleSort('project_status')}
-                      >
-                        {sortKey === 'project_status' ? (
-                          sortDir === 'asc' ? (
-                            <AppIcon icon={ArrowUp} size={14} />
-                          ) : (
-                            <AppIcon icon={ArrowDown} size={14} />
-                          )
-                        ) : (
-                          <AppIcon icon={ArrowUpDown} size={14} className="text-muted-foreground" />
-                        )}
-                      </button>
-                    </div>
-                  </TableHead>
-                )}
-                {visibleColumns.project_start && (
-                  <TableHead className="text-right">
-                    <button
-                      type="button"
-                      className="ml-auto flex items-center gap-0.5 hover:opacity-80"
-                      onClick={() => handleSort('project_start')}
-                    >
-                      {COLUMN_LABELS.project_start}
-                      {sortKey === 'project_start' ? (
-                        sortDir === 'asc' ? (
-                          <AppIcon icon={ArrowUp} size={14} />
-                        ) : (
-                          <AppIcon icon={ArrowDown} size={14} />
-                        )
-                      ) : (
-                        <AppIcon icon={ArrowUpDown} size={14} className="text-muted-foreground" />
-                      )}
-                    </button>
-                  </TableHead>
-                )}
-                {visibleColumns.project_end && (
-                  <TableHead className="text-right">
-                    <button
-                      type="button"
-                      className="ml-auto flex items-center gap-0.5 hover:opacity-80"
-                      onClick={() => handleSort('project_end')}
-                    >
-                      {COLUMN_LABELS.project_end}
-                      {sortKey === 'project_end' ? (
-                        sortDir === 'asc' ? (
-                          <AppIcon icon={ArrowUp} size={14} />
-                        ) : (
-                          <AppIcon icon={ArrowDown} size={14} />
-                        )
-                      ) : (
-                        <AppIcon icon={ArrowUpDown} size={14} className="text-muted-foreground" />
-                      )}
-                    </button>
-                  </TableHead>
-                )}
-                {visibleColumns.duration_months && (
-                  <TableHead className="text-right">
-                    <button
-                      type="button"
-                      className="ml-auto flex items-center gap-0.5 hover:opacity-80"
-                      onClick={() => handleSort('duration_months')}
-                    >
-                      {COLUMN_LABELS.duration_months}
-                      {sortKey === 'duration_months' ? (
-                        sortDir === 'asc' ? (
-                          <AppIcon icon={ArrowUp} size={14} />
-                        ) : (
-                          <AppIcon icon={ArrowDown} size={14} />
-                        )
-                      ) : (
-                        <AppIcon icon={ArrowUpDown} size={14} className="text-muted-foreground" />
-                      )}
-                    </button>
-                  </TableHead>
-                )}
-                {visibleColumns.created_at && (
-                  <TableHead className="text-right">
-                    <button
-                      type="button"
-                      className="ml-auto flex items-center gap-0.5 hover:opacity-80"
-                      onClick={() => handleSort('created_at')}
-                    >
-                      {COLUMN_LABELS.created_at}
-                      {sortKey === 'created_at' ? (
-                        sortDir === 'asc' ? (
-                          <AppIcon icon={ArrowUp} size={14} />
-                        ) : (
-                          <AppIcon icon={ArrowDown} size={14} />
-                        )
-                      ) : (
-                        <AppIcon icon={ArrowUpDown} size={14} className="text-muted-foreground" />
-                      )}
-                    </button>
-                  </TableHead>
-                )}
-                {visibleColumns.updated_at && (
-                  <TableHead className="text-right">
-                    <button
-                      type="button"
-                      className="ml-auto flex items-center gap-0.5 hover:opacity-80"
-                      onClick={() => handleSort('updated_at')}
-                    >
-                      {COLUMN_LABELS.updated_at}
-                      {sortKey === 'updated_at' ? (
-                        sortDir === 'asc' ? (
-                          <AppIcon icon={ArrowUp} size={14} />
-                        ) : (
-                          <AppIcon icon={ArrowDown} size={14} />
-                        )
-                      ) : (
-                        <AppIcon icon={ArrowUpDown} size={14} className="text-muted-foreground" />
-                      )}
-                    </button>
-                  </TableHead>
-                )}
+                {orderedVisibleColumnKeys.map((column) => (
+                  <React.Fragment key={column}>
+                    {renderReferenceColumnHeader(column, {
+                      dragOverColumn,
+                      setDragOverColumn,
+                      moveColumnOrder,
+                      COLUMN_LABELS: COLUMN_LABELS as Record<ReferenceColumnKey, string>,
+                      STATUS_LABELS,
+                      filterOptions,
+                      companyFilter,
+                      setCompanyFilter,
+                      companySearch,
+                      setCompanySearch,
+                      tagsFilter,
+                      setTagsFilter,
+                      tagsSearch,
+                      setTagsSearch,
+                      industryFilter,
+                      setIndustryFilter,
+                      industrySearch,
+                      setIndustrySearch,
+                      countryFilter,
+                      setCountryFilter,
+                      countrySearch,
+                      setCountrySearch,
+                      statusFilter,
+                      setStatusFilter,
+                      statusSearch,
+                      setStatusSearch,
+                      projectStatusFilter,
+                      setProjectStatusFilter,
+                      projectStatusSearch,
+                      setProjectStatusSearch,
+                      sortKey: sortKey as ReferenceColumnKey | null,
+                      sortDir,
+                      handleSort: handleSort as (c: ReferenceColumnKey) => void,
+                    })}
+                  </React.Fragment>
+                ))}
                 <TableHead className="w-[88px] min-w-[88px] p-2 text-right">
                   <span className="sr-only">Favorit &amp; Aktionen</span>
                 </TableHead>
@@ -1725,9 +1224,7 @@ export function DashboardOverview({
               {filteredReferences.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={
-                      COLUMN_KEYS.filter((k) => visibleColumns[k]).length + 2
-                    }
+                    colSpan={orderedVisibleColumnKeys.length + 2}
                     className="h-24 text-center text-muted-foreground"
                   >
                     <div className="flex flex-col items-center justify-center gap-3 py-2">
@@ -1787,96 +1284,19 @@ export function DashboardOverview({
                         aria-label={`${ref.title} in Warenkorb`}
                       />
                     </TableCell>
-                    {visibleColumns.status && (
-                      <TableCell>
-                        <ReferenceStatusBadge
-                          status={ref.status}
-                          customerApprovalStatus={ref.customer_approval_status}
-                        />
-                      </TableCell>
-                    )}
-                    {visibleColumns.company && (
-                      <TableCell>
-                        <Link
-                          href={ROUTES.accountsDetail(ref.company_id)}
-                          onClick={(e) => e.stopPropagation()}
-                          className="inline-flex min-w-0 max-w-full items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                          aria-label={`${ref.company_name} öffnen`}
-                        >
-                          <AccountCell
-                            companyName={ref.company_name}
-                            companyLogoUrl={companyLogoById.get(ref.company_id) ?? null}
-                          />
-                        </Link>
-                      </TableCell>
-                    )}
-                    {visibleColumns.title && (
-                      <TableCell className="max-w-[200px] truncate text-muted-foreground">
-                        {ref.title}
-                      </TableCell>
-                    )}
-                    {visibleColumns.tags && (
-                      <TableCell className="max-w-[140px]">
-                        {ref.tags ? (
-                          <div className="flex flex-wrap gap-1">
-                            {ref.tags
-                              .split(/[\s,]+/)
-                              .map((t) => t.trim())
-                              .filter(Boolean)
-                              .slice(0, 3)
-                              .map((tag) => (
-                                <span
-                                  key={tag}
-                                  className="inline-flex rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
-                                >
-                                  {tag}
-                                </span>
-                              ))}
-                          </div>
-                        ) : (
-                          '—'
-                        )}
-                      </TableCell>
-                    )}
-                    {visibleColumns.industry && <TableCell>{ref.industry ?? '—'}</TableCell>}
-                    {visibleColumns.country && <TableCell>{ref.country ?? '—'}</TableCell>}
-                    {visibleColumns.project_status && (
-                      <TableCell className="text-sm text-muted-foreground">
-                        {ref.project_status
-                          ? PROJECT_STATUS_LABELS[ref.project_status] ?? ref.project_status
-                          : '—'}
-                      </TableCell>
-                    )}
-                    {visibleColumns.project_start && (
-                      <TableCell className="text-right text-muted-foreground text-sm">
-                        {ref.project_start ? formatDateUtcDe(ref.project_start) : '—'}
-                      </TableCell>
-                    )}
-                    {visibleColumns.project_end && (
-                      <TableCell className="text-right text-muted-foreground text-sm">
-                        {ref.project_end ? formatDateUtcDe(ref.project_end) : '—'}
-                      </TableCell>
-                    )}
-                    {visibleColumns.duration_months && (
-                      <TableCell className="text-right text-muted-foreground text-sm">
-                        {ref.duration_months != null ? `${ref.duration_months}` : '—'}
-                      </TableCell>
-                    )}
-                    {visibleColumns.created_at && (
-                      <TableCell className="text-right text-muted-foreground text-sm">
-                        {formatDateUtcDe(ref.created_at)}
-                      </TableCell>
-                    )}
-                    {visibleColumns.updated_at && (
-                      <TableCell className="text-right text-muted-foreground text-sm">
-                        {ref.updated_at ? formatDateUtcDe(ref.updated_at) : '—'}
-                      </TableCell>
-                    )}
+                    {orderedVisibleColumnKeys.map((column) => (
+                      <React.Fragment key={column}>
+                        {renderReferenceColumnCell(column, ref, {
+                          PROJECT_STATUS_LABELS,
+                          companyLogoById,
+                        })}
+                      </React.Fragment>
+                    ))}
                     <TableCell
                       className="w-[88px] min-w-[88px] p-1 text-right"
                       onClick={(e: React.MouseEvent) => e.stopPropagation()}
                     >
-                      <div className="flex items-center justify-end gap-0.5 pr-0">
+                      <div className="flex items-center justify-end gap-0.5 pr-0 opacity-0 transition-opacity group-hover:opacity-100 has-[[data-state=open]]:opacity-100">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -1901,7 +1321,7 @@ export function DashboardOverview({
                           <DropdownMenuTrigger asChild>
                             <Button
                               variant="ghost"
-                              className="h-8 w-8 shrink-0 p-0 opacity-0 transition-opacity group-hover:opacity-100 data-[state=open]:opacity-100"
+                              className="h-8 w-8 shrink-0 p-0"
                             >
                               <span className="sr-only">Menü öffnen</span>
                               <AppIcon icon={MoreHorizontal} size={16} />

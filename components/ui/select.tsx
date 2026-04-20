@@ -2,8 +2,9 @@
 
 import * as React from "react"
 import { Select as SelectPrimitive } from "radix-ui"
-import { Checkmark, ChevronDown, ChevronUp } from "@hugeicons/core-free-icons"
+import { ChevronDown, ChevronUp } from "@hugeicons/core-free-icons"
 
+import { CheckIcon } from "@/components/ui/check-icon"
 import { cn } from "@/lib/utils"
 import { AppIcon } from "@/lib/icons"
 
@@ -120,7 +121,7 @@ function SelectItem({
         className="absolute right-2 flex size-3.5 items-center justify-center"
       >
         <SelectPrimitive.ItemIndicator>
-          <AppIcon icon={Checkmark} size={16} />
+          <CheckIcon className="size-3.5" />
         </SelectPrimitive.ItemIndicator>
       </span>
       <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>

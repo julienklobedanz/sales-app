@@ -4,8 +4,9 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { CheckIcon } from '@/components/ui/check-icon'
 import { AppIcon } from '@/lib/icons'
-import { Cancel01Icon, Checkmark } from '@hugeicons/core-free-icons'
+import { Cancel01Icon } from '@hugeicons/core-free-icons'
 import { toast } from 'sonner'
 import { completeClientApproval } from './actions'
 
@@ -84,7 +85,7 @@ export function ApprovalDecisionForm({
           disabled={loading}
           onClick={() => void submit('approved')}
         >
-          <AppIcon icon={Checkmark} size={18} />
+          <CheckIcon className="size-[18px]" />
           Freigabe erteilen
         </Button>
         <Button

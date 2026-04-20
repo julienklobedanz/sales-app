@@ -2,8 +2,9 @@
 
 import * as React from "react"
 import { ContextMenu as ContextMenuPrimitive } from "radix-ui"
-import { Checkmark, ChevronRight, Circle } from "@hugeicons/core-free-icons"
+import { ChevronRight, Circle } from "@hugeicons/core-free-icons"
 
+import { CheckIcon } from "@/components/ui/check-icon"
 import { cn } from "@/lib/utils"
 import { AppIcon } from "@/lib/icons"
 
@@ -80,7 +81,7 @@ function ContextMenuCheckboxItem({
     >
       <span className="pointer-events-none absolute left-2 flex size-3.5 items-center justify-center">
         <ContextMenuPrimitive.ItemIndicator>
-          <AppIcon icon={Checkmark} size={16} />
+          <CheckIcon className="size-3.5" />
         </ContextMenuPrimitive.ItemIndicator>
       </span>
       {children}

@@ -2,10 +2,11 @@
 
 import * as React from "react"
 import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui"
-import { Checkmark, ChevronRight, Circle } from "@hugeicons/core-free-icons"
+import { ChevronRight, Circle } from "@hugeicons/core-free-icons"
 
 import { cn } from "@/lib/utils"
 import { AppIcon } from "@/lib/icons"
+import { CheckIcon } from "@/components/ui/check-icon"
 
 function DropdownMenu({
   ...props
@@ -101,7 +102,7 @@ function DropdownMenuCheckboxItem({
     >
       <span className="pointer-events-none absolute left-2 flex size-3.5 items-center justify-center">
         <DropdownMenuPrimitive.ItemIndicator>
-          <AppIcon icon={Checkmark} size={16} />
+          <CheckIcon className="size-3.5" />
         </DropdownMenuPrimitive.ItemIndicator>
       </span>
       {children}

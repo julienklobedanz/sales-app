@@ -15,7 +15,7 @@ export function AccountCell({
   return (
     <div className="flex min-w-0 max-w-[260px] items-center gap-2.5">
       {companyLogoUrl ? (
-        <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md border bg-muted">
+        <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md">
           <Image
             src={companyLogoUrl}
             alt=""
@@ -25,11 +25,11 @@ export function AccountCell({
           />
         </div>
       ) : (
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border bg-muted">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted/30">
           <AppIcon icon={Building2} size={18} className="text-muted-foreground" />
         </div>
       )}
-      <span className="truncate text-muted-foreground">{companyName ?? "—"}</span>
+      <span className="truncate font-semibold text-foreground">{companyName ?? "—"}</span>
     </div>
   )
 }
