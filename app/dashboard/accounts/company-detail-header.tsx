@@ -6,6 +6,7 @@ import { AppIcon } from '@/lib/icons'
 import type { CompanyDetailCompany } from './company-detail-types'
 import { ROUTES } from '@/lib/routes'
 import { COPY } from '@/lib/copy'
+import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 
 export function CompanyDetailHeader({
   company,
@@ -29,7 +30,7 @@ export function CompanyDetailHeader({
           </div>
         )}
         <div className="min-w-0">
-          <h1 className="truncate text-2xl font-bold tracking-tight">{company.name}</h1>
+          <h1 className={`${DASHBOARD_PAGE_TITLE_CLASS} truncate`}>{company.name}</h1>
           <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             {company.industry && <span>{company.industry}</span>}
             {company.headquarters && (

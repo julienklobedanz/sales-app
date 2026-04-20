@@ -9,6 +9,7 @@ import { AppIcon } from '@/lib/icons'
 import { ROUTES } from '@/lib/routes'
 import type { AccountManagerDashboardModel } from '@/app/dashboard/dashboard-home-data'
 import { formatDateUtcDe } from '@/lib/format'
+import { DASHBOARD_PAGE_SUBTITLE_CLASS, DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 import { toast } from 'sonner'
 import { resendClientApprovalEmail } from '@/app/dashboard/actions'
 import {
@@ -35,10 +36,10 @@ export function AccountManagerDashboard({ data }: { data: AccountManagerDashboar
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">
+        <h1 className={DASHBOARD_PAGE_TITLE_CLASS}>
           Dashboard{greetingName ? `, ${greetingName}` : ''}
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className={DASHBOARD_PAGE_SUBTITLE_CLASS}>
           Referenzen, Freigaben und Nutzung im Workspace.
         </p>
       </div>

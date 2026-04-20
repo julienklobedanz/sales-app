@@ -132,7 +132,7 @@ export default async function ApprovalPage({
           <p className="text-sm font-medium" style={{ color: secondary }}>
             {orgName}
           </p>
-          <h1 className="text-2xl font-bold tracking-tight" style={{ color: primary }}>
+          <h1 className="text-2xl font-semibold tracking-tight" style={{ color: primary }}>
             {row.title}
           </h1>
           {requester ? (

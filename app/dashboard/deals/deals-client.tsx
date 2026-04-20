@@ -321,7 +321,7 @@ export function DealsClientContent({
   }, [])
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3.5">
       {selectedDealIds.length ? (
         <div className="fixed bottom-6 left-1/2 z-50 w-[min(720px,calc(100vw-24px))] -translate-x-1/2">
           <div className="flex items-center justify-between rounded-lg border bg-background/95 px-4 py-3 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/75">
@@ -383,7 +383,7 @@ export function DealsClientContent({
           sales_manager_name: false,
         }}
         toolbar={() => (
-          <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:gap-3 overflow-x-hidden">
+          <div className="flex w-full min-w-0 flex-wrap items-center gap-2.5 sm:gap-3.5 overflow-x-hidden">
             <ToolbarSearchField
               variant="list"
               value={query}

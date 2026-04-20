@@ -2,6 +2,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
 import { RequestNewClient } from './request-new-client'
+import { DASHBOARD_PAGE_SUBTITLE_CLASS, DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,8 +36,8 @@ export default async function DealReferenceRequestNewPage({
   return (
     <div className="flex flex-col space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Referenzanfrage</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <h1 className={DASHBOARD_PAGE_TITLE_CLASS}>Referenzanfrage</h1>
+        <p className={DASHBOARD_PAGE_SUBTITLE_CLASS}>
           Deal auswählen und kurz beschreiben, welche Referenz benötigt wird.
         </p>
       </div>

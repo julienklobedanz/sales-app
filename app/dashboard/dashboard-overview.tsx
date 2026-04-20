@@ -186,7 +186,7 @@ function loadColumnOrderFromStorage(): ReferenceColumnKey[] {
 }
 
 /** Toolbar: Favoriten / Status / Spalten – gleiche Mindestbreite */
-const toolbarSegmentClass = `${TABLE_TOOLBAR.dashboard.toolbarButton} justify-center gap-1.5 px-2.5`
+const toolbarSegmentClass = `${TABLE_TOOLBAR.dashboard.toolbarButton} justify-center`
 
 // --- Hauptkomponente ---
 
@@ -757,7 +757,7 @@ export function DashboardOverview({
   }
 
   return (
-    <div className="flex flex-col space-y-6">
+    <div className="flex flex-col space-y-5">
       {pendingClientApprovals.length > 0 ? (
         <Card>
           <CardHeader className="pb-3">
@@ -811,9 +811,9 @@ export function DashboardOverview({
       ) : null}
 
       {/* Toolbar & Tabelle */}
-      <div className="space-y-4">
+      <div className="space-y-3.5">
         {/* Toolbar: Suche bis zu den Buttons; rechts Favoriten → Status → Spalten → … */}
-        <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:gap-3 overflow-x-hidden transition-all duration-300">
+        <div className="flex w-full min-w-0 flex-wrap items-center gap-2.5 sm:gap-3.5 overflow-x-hidden transition-all duration-300">
           <ToolbarSearchField
             variant="dashboard"
             wrapperClassName="min-w-0 flex-1 basis-[min(100%,24rem)] transition-all duration-300"
@@ -874,7 +874,7 @@ export function DashboardOverview({
             </div>
           )}
 
-          <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <div className="flex shrink-0 flex-wrap items-center gap-2.5">
             <Button
               type="button"
               variant="ghost"
@@ -1005,7 +1005,7 @@ export function DashboardOverview({
                 }}
                 aria-label="Referenzen importieren"
               >
-                <AppIcon icon={UploadIcon} size={16} className="shrink-0 lg:mr-2" />
+                <AppIcon icon={UploadIcon} size={16} className="shrink-0" />
                 <span className="hidden lg:inline">Importieren</span>
               </Button>
               {selectedRefIds.size > 0 && (
@@ -1031,7 +1031,7 @@ export function DashboardOverview({
                 onClick={() => setStatusFilter(statusFilter === 'draft' ? 'all' : 'draft')}
                 aria-label={statusFilter === 'draft' ? 'Alle Referenzen anzeigen' : 'Nur Entwürfe'}
               >
-                <AppIcon icon={FileText} size={16} className="shrink-0 lg:mr-2" />
+                <AppIcon icon={FileText} size={16} className="shrink-0" />
                 <span className="hidden lg:inline">Entwürfe</span>
               </Button>
               <Button
@@ -1043,7 +1043,7 @@ export function DashboardOverview({
                 onClick={() => setNewRefModalOpen(true)}
                 aria-label="Neue Referenz erstellen"
               >
-                <AppIcon icon={CirclePlus} size={16} className="shrink-0 lg:mr-2" />
+                <AppIcon icon={CirclePlus} size={16} className="shrink-0" />
                 <span className="hidden lg:inline">Referenz erstellen</span>
               </Button>
             </>
@@ -1266,7 +1266,7 @@ export function DashboardOverview({
                 filteredReferences.map((ref) => (
                   <TableRow
                     key={ref.id}
-                    className="group cursor-pointer hover:bg-accent/40"
+                    className="group cursor-pointer hover:bg-accent/35"
                     onClick={() => openDetail(ref)}
                     onContextMenu={(e: React.MouseEvent) => {
                       e.preventDefault()

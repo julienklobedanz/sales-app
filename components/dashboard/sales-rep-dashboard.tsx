@@ -7,6 +7,7 @@ import { AppIcon } from '@/lib/icons'
 import { ROUTES } from '@/lib/routes'
 import type { SalesRepDashboardModel } from '@/app/dashboard/dashboard-home-data'
 import { formatDateUtcDe } from '@/lib/format'
+import { DASHBOARD_PAGE_SUBTITLE_CLASS, DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 
 export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
   const { greetingName, activeDeals, recommended, recommendedNote, recentShares } = data
@@ -14,10 +15,10 @@ export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">
+        <h1 className={DASHBOARD_PAGE_TITLE_CLASS}>
           Willkommen zurück{greetingName ? `, ${greetingName}` : ''}
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className={DASHBOARD_PAGE_SUBTITLE_CLASS}>
           Dein Überblick: aktive Deals, passende Referenzen und zuletzt geteilte Links.
         </p>
       </div>

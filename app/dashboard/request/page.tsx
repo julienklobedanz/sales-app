@@ -15,6 +15,7 @@ import { submitTicket } from '../actions'
 import { TicketStatusBadge } from '@/components/ticket-status-badge'
 import { TicketTypeSelect } from './ticket-type-select'
 import { ROUTES } from '@/lib/routes'
+import { DASHBOARD_PAGE_SUBTITLE_CLASS, DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 
 export default async function RequestReferencePage({
   searchParams,
@@ -52,8 +53,8 @@ export default async function RequestReferencePage({
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Referenz anfragen</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className={DASHBOARD_PAGE_TITLE_CLASS}>Referenz anfragen</h1>
+          <p className={DASHBOARD_PAGE_SUBTITLE_CLASS}>
             Melde hier deinen Bedarf – Marketing/Account Owner erhalten ein Ticket.
           </p>
         </div>

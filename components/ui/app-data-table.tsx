@@ -241,12 +241,12 @@ export function AppDataTable<TData, TValue>({
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex w-full min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
+    <div className="space-y-3.5">
+      <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex w-full min-w-0 flex-1 flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-2.5">
           {toolbar ? toolbar(table) : null}
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2.5">
           {showViewOptions ? <DataTableViewOptions table={table} /> : null}
           {toolbarRight ? toolbarRight(table) : null}
         </div>

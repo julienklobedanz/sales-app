@@ -5,11 +5,19 @@ import { ROUTES } from './routes'
  * Horizontale/vertikale Außenabstände nur hier bzw. in `dashboard-shell.tsx` anpassen.
  */
 export const DASHBOARD_SCROLL_AREA_CLASS =
-  'flex min-h-0 w-full flex-1 flex-col gap-6 px-6 pt-6 md:px-12 lg:px-20'
+  'flex min-h-0 w-full flex-1 flex-col gap-5 px-6 pt-5 pb-6 md:px-10 lg:px-16'
 
 /** Minimaler Flex-Container ohne Shell-Padding (Wizard-Seiten, Firmen-Detail). */
 export const DASHBOARD_SCROLL_AREA_BLEED_CLASS =
   'flex min-h-0 w-full flex-1 flex-col'
+
+/** Einheitliche Seitentitel im Dashboard (Linear/Vercel-ähnliche Hierarchie). */
+export const DASHBOARD_PAGE_TITLE_CLASS =
+  'text-2xl md:text-3xl font-semibold tracking-tight text-foreground'
+
+/** Einheitlicher Untertitel / Secondary Copy direkt unter Seitentiteln. */
+export const DASHBOARD_PAGE_SUBTITLE_CLASS =
+  'mt-1 text-sm text-muted-foreground'
 
 /**
  * Routen mit eigenem Außenlayout (z. B. `min-h-screen p-4` oder Firmen-Detail-Padding).

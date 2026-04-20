@@ -6,6 +6,7 @@ import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 import { getDealWithReferences } from '@/app/dashboard/deals/actions'
 import { MatchSmartClient } from './match-smart-client'
+import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,7 +28,7 @@ export default async function MatchPage({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">{COPY.pages.match}</h1>
+      <h1 className={DASHBOARD_PAGE_TITLE_CLASS}>{COPY.pages.match}</h1>
 
       <div className="mt-6 flex flex-wrap gap-2">
         <Button asChild variant={isRfp ? 'outline' : 'default'}>

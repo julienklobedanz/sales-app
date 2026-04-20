@@ -12,6 +12,7 @@ import { RfpSidebarPanel } from '../rfp-sidebar-panel'
 import { DealStatusBadge } from '@/components/deal-status-badge'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
+import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 
 export const dynamic = 'force-dynamic'
 
@@ -107,7 +108,7 @@ export default async function DealDetailPage({
         <div className="space-y-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="space-y-2 min-w-0">
-              <h1 className="text-2xl font-bold tracking-tight break-words flex flex-wrap items-center gap-2">
+              <h1 className={`${DASHBOARD_PAGE_TITLE_CLASS} break-words flex flex-wrap items-center gap-2`}>
                 <span>{deal.title}</span>
                 <DealStatusBadge status={deal.status} />
               </h1>

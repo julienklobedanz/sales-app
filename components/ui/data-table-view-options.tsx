@@ -19,7 +19,7 @@ export function DataTableViewOptions<TData>({ table }: { table: Table<TData> }) 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="toolbar">
+        <Button variant="ghost" size="toolbar" className="hover:bg-muted/70">
           <AppIcon icon={Settings2} size={16} />
           {COPY.table.columns}
         </Button>

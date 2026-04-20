@@ -85,7 +85,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
   }, [companies, search, favoritesOnly])
 
   return (
-    <div className="space-y-6 rounded-3xl bg-muted/10 p-4 md:p-6">
+    <div className="space-y-5 rounded-3xl bg-muted/10 p-4 md:p-6">
       <div className="w-full">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <ToolbarSearchField
@@ -97,7 +97,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
             onChange={setSearch}
             aria-label="Firmen durchsuchen"
           />
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <Button
               type="button"
               variant="ghost"
@@ -162,7 +162,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                             </div>
                           )}
                           <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2.5">
                               <CardTitle className="truncate text-base font-semibold">
                                 {company.name}
                               </CardTitle>

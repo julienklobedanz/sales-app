@@ -12,6 +12,7 @@ import {
 import { ROUTES } from '@/lib/routes'
 import type { AdminDashboardModel } from '@/app/dashboard/dashboard-home-data'
 import { formatDateUtcDe } from '@/lib/format'
+import { DASHBOARD_PAGE_SUBTITLE_CLASS, DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 
 export function AdminDashboard({ data }: { data: AdminDashboardModel }) {
   const { greetingName, kpis, topReferences, openRequests, teamActivity } = data
@@ -19,10 +20,10 @@ export function AdminDashboard({ data }: { data: AdminDashboardModel }) {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">
+        <h1 className={DASHBOARD_PAGE_TITLE_CLASS}>
           Admin-Dashboard{greetingName ? `, ${greetingName}` : ''}
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className={DASHBOARD_PAGE_SUBTITLE_CLASS}>
           Team-KPIs, häufig genutzte Referenzen und offene Anfragen.
         </p>
       </div>

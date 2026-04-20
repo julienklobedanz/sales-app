@@ -83,7 +83,7 @@ export function EvidenceClient({
                 </Button>
               ) : null}
               {canCreate ? (
-                <Button asChild variant="outline">
+                <Button asChild variant="ghost" className="hover:bg-muted/70">
                   <Link href={ROUTES.evidence.newBulk}>Bulk-Import</Link>
                 </Button>
               ) : null}
@@ -100,7 +100,7 @@ export function EvidenceClient({
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="toolbar">
+                    <Button variant="ghost" size="toolbar" className="hover:bg-muted/70">
                       Aktionen
                     </Button>
                   </DropdownMenuTrigger>
@@ -137,7 +137,7 @@ export function EvidenceClient({
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="toolbar">
+                    <Button variant="ghost" size="toolbar" className="hover:bg-muted/70">
                       <AppIcon icon={SlidersHorizontal} size={16} />
                       Status
                     </Button>

@@ -6,6 +6,7 @@ import { ArrowLeftIcon } from '@hugeicons/core-free-icons'
 import { DealForm } from './deal-form'
 import { AppIcon } from '@/lib/icons'
 import { ROUTES } from '@/lib/routes'
+import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 
 export default async function NewDealPage() {
   const supabase = await createServerSupabaseClient()
@@ -37,7 +38,7 @@ export default async function NewDealPage() {
             Zurück zu Deals
           </Button>
         </Link>
-        <h1 className="text-2xl font-bold tracking-tight">Deal anlegen</h1>
+        <h1 className={DASHBOARD_PAGE_TITLE_CLASS}>Deal anlegen</h1>
         <DealForm
           companies={companies ?? []}
           orgProfiles={orgProfiles ?? []}

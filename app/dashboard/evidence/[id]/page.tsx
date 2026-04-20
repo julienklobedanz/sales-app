@@ -12,6 +12,7 @@ import { deleteReferenceFromDetailPage } from './actions'
 import { ReferenceStatusBadge } from '@/components/reference-status-badge'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
+import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 import { PdfExportDialog } from './pdf-export-dialog'
 import { AnonymizeReferenceButton } from './anonymize-reference-button'
 import { ShareLinkButton } from './share-link-button'
@@ -193,7 +194,7 @@ export default async function EvidenceDetailPage({
               <div className="flex flex-wrap items-center gap-2">
                 <ReferenceStatusBadge status={ref.status} />
               </div>
-              <h1 className="text-2xl font-bold tracking-tight break-words">
+              <h1 className={`${DASHBOARD_PAGE_TITLE_CLASS} break-words`}>
                 {ref.title}
               </h1>
               <p className="text-sm text-muted-foreground">{ref.industry ?? '—'}</p>

@@ -193,7 +193,7 @@ export function DashboardHeader({
         <Separator orientation="vertical" className="mr-2 h-4 shrink-0" />
 
         <div className="min-w-0">
-          <div className="text-2xl font-bold tracking-tight truncate">{headerMeta.title}</div>
+          <div className="text-2xl font-semibold tracking-tight truncate">{headerMeta.title}</div>
           {headerMeta.subtitle ? (
             <div className="text-sm text-muted-foreground truncate">
               {headerMeta.subtitle}

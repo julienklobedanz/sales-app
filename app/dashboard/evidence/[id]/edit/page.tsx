@@ -7,6 +7,7 @@ import { ArrowLeftIcon } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { ReferenceForm } from '../../new/reference-form'
 import type { ReferenceFormInitialData } from '../../new/reference-form'
+import { DASHBOARD_PAGE_SUBTITLE_CLASS, DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 
 export default async function EditReferencePage({
   params,
@@ -135,8 +136,8 @@ export default async function EditReferencePage({
           </Button>
         </Link>
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">Referenz bearbeiten</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className={DASHBOARD_PAGE_TITLE_CLASS}>Referenz bearbeiten</h1>
+          <p className={DASHBOARD_PAGE_SUBTITLE_CLASS}>
             Prüfe die Felder und speichere deine Änderungen.
           </p>
         </div>

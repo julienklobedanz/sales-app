@@ -7,6 +7,7 @@ import { DEV_ROLE_COOKIE, parseAppRoleCookie } from '@/lib/dev-role-preview'
 import { getTeamMembers } from './invite-actions'
 import { SettingsDangerZone } from './settings-danger-zone'
 import { SettingsTabs } from './settings-tabs'
+import { DASHBOARD_PAGE_SUBTITLE_CLASS, DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 
 const SECTION_LABEL_CLASS =
   'text-sm font-medium uppercase tracking-wider text-muted-foreground mb-3 block'
@@ -61,8 +62,8 @@ export default async function SettingsPage() {
   return (
     <div className="flex flex-col space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">Einstellungen</h1>
-        <p className="mt-1 text-muted-foreground">
+        <h1 className={DASHBOARD_PAGE_TITLE_CLASS}>Einstellungen</h1>
+        <p className={DASHBOARD_PAGE_SUBTITLE_CLASS}>
           Verwalten Sie Ihr Profil, Team und Arbeitsbereich.
         </p>
       </div>
