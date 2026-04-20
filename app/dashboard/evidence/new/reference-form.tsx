@@ -825,6 +825,12 @@ export function ReferenceForm({
                         }}
                         loading={enrichLoading}
                         disabled={submitting}
+                        inputClassName={
+                          !isAnonymized &&
+                          (mainCompanyLogoUrl || currentCompanyNameForAvatar.trim())
+                            ? 'pl-12'
+                            : undefined
+                        }
                       />
                     </div>
                     <input type="hidden" name="companyId" value={companyId} />
@@ -1633,6 +1639,7 @@ export function ReferenceForm({
             type="submit"
             form={formId}
             disabled={submitting}
+            className="rounded-lg bg-gradient-to-b from-blue-600 to-blue-700 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] hover:from-blue-600 hover:to-blue-700/95"
           >
             <AppIcon icon={CirclePlus} size={16} className="mr-2" />
             Speichern

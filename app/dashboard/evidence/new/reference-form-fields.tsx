@@ -359,6 +359,7 @@ export function CompanyCombobox({
   onConfirmValue,
   loading,
   disabled,
+  inputClassName,
 }: {
   companies: ReferenceFormCompany[]
   value: string
@@ -367,6 +368,7 @@ export function CompanyCombobox({
   onConfirmValue?: (value: string) => void
   loading: boolean
   disabled: boolean
+  inputClassName?: string
 }) {
   const [open, setOpen] = useState(false)
   const [remoteSuggestions, setRemoteSuggestions] = useState<ReferenceFormCompany[]>([])
@@ -443,7 +445,7 @@ export function CompanyCombobox({
             }
           }}
           placeholder="Unternehmen eingeben"
-          className="w-full cursor-text"
+          className={`w-full cursor-text ${inputClassName ?? ''}`}
         />
       </PopoverTrigger>
       <PopoverContent
