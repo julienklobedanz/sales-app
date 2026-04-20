@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
+import { FileDownIcon } from '@hugeicons/core-free-icons'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -11,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { AppIcon } from '@/lib/icons'
 
 type PdfTemplate = 'one_pager' | 'detail' | 'anonymized'
 
@@ -106,7 +108,8 @@ export function PdfExportDialog({
   return (
     <>
       {showButton ? (
-        <Button variant="outline" className="w-full" onClick={() => setOpen(true)}>
+        <Button variant="outline" size="sm" className="gap-2" onClick={() => setOpen(true)}>
+          <AppIcon icon={FileDownIcon} size={16} />
           PDF exportieren
         </Button>
       ) : null}

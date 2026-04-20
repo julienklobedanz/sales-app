@@ -50,8 +50,9 @@ export function ShareLinkButton({ referenceId }: { referenceId: string }) {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" className="w-full">
-          Link erstellen
+        <Button variant="outline" size="sm" className="gap-2">
+          <AppIcon icon={LinkIcon} size={16} />
+          Teilen
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-[360px] space-y-3">
@@ -131,7 +132,7 @@ export function ShareLinkButton({ referenceId }: { referenceId: string }) {
             ) : (
               <AppIcon icon={LinkIcon} size={16} className="mr-2" />
             )}
-            Link erstellen
+            Teilen
           </Button>
         )}
       </PopoverContent>

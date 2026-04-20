@@ -42,6 +42,8 @@ export const ROUTES = {
     `/dashboard/match?deal=${encodeURIComponent(dealId)}`,
   settings: '/dashboard/settings',
   request: '/dashboard/request',
+  /** Konzept: Inbox-Style Referenztabelle (Demo-Daten) */
+  conceptsInboxReferences: '/dashboard/concepts/inbox-references',
 } as const
 
 /**
