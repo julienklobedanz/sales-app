@@ -49,7 +49,7 @@
 }
 
 :root {
-  --font-sans: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-sans: "SF Pro Display", "SF Pro Text", var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --radius: 0.45rem;
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.148 0.004 228.8);
