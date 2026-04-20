@@ -61,7 +61,7 @@ export default async function SettingsPage() {
   return (
     <div className="flex flex-col space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Einstellungen</h1>
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground">Einstellungen</h1>
         <p className="mt-1 text-muted-foreground">
           Verwalten Sie Ihr Profil, Team und Arbeitsbereich.
         </p>

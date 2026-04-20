@@ -85,7 +85,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
   }, [companies, search, favoritesOnly])
 
   return (
-    <div className="space-y-6 rounded-3xl bg-muted/20 p-4 md:p-6">
+    <div className="space-y-6 rounded-3xl bg-muted/10 p-4 md:p-6">
       <div className="w-full">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <ToolbarSearchField
@@ -100,9 +100,9 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
           <div className="flex items-center gap-2">
             <Button
               type="button"
-              variant={favoritesOnly ? 'default' : 'outline'}
+              variant="ghost"
               size="toolbar"
-              className="shrink-0"
+              className="shrink-0 hover:bg-muted/70"
               onClick={() => setFavoritesOnly((v) => !v)}
               aria-pressed={favoritesOnly}
               aria-label={favoritesOnly ? 'Favoritenfilter deaktivieren' : 'Nur Favoriten anzeigen'}
@@ -111,7 +111,12 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
             </Button>
             {canManage && (
               <>
-                <Button type="button" size="toolbar" onClick={() => setCreateOpen(true)}>
+                <Button
+                  type="button"
+                  size="toolbar"
+                  className="rounded-lg bg-gradient-to-b from-blue-600 to-blue-700 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] hover:from-blue-600 hover:to-blue-700/95"
+                  onClick={() => setCreateOpen(true)}
+                >
                   <AppIcon icon={Plus} size={16} />
                   {COPY.accounts.addAccount}
                 </Button>

@@ -32,6 +32,7 @@ export function DraggableColumnHead({
   return (
     <TableHead
       className={cn(
+        "h-9 text-xs font-semibold text-muted-foreground",
         className,
         isDropTarget && "bg-primary/10 ring-1 ring-inset ring-primary/40"
       )}

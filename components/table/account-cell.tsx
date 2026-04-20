@@ -29,7 +29,7 @@ export function AccountCell({
           <AppIcon icon={Building2} size={18} className="text-muted-foreground" />
         </div>
       )}
-      <span className="truncate font-semibold text-foreground">{companyName ?? "—"}</span>
+      <span className="truncate font-semibold text-foreground">{companyName ?? "Kein Account"}</span>
     </div>
   )
 }

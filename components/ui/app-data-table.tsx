@@ -130,7 +130,7 @@ export function AppDataTable<TData, TValue>({
     ))
 
     const isNavVariant = tableVariant === "evidence" || tableVariant === "deals"
-    const rowNavClass = isNavVariant ? "cursor-pointer hover:bg-muted/50" : undefined
+    const rowNavClass = isNavVariant ? "cursor-pointer hover:bg-accent/35" : undefined
 
     const handleRowClick = (e: React.MouseEvent<HTMLTableRowElement>) => {
       if (!isNavVariant) return
@@ -252,13 +252,17 @@ export function AppDataTable<TData, TValue>({
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-md border">
+      <div className="overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm shadow-slate-900/5">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} style={{ width: header.getSize() }}>
+                  <TableHead
+                    key={header.id}
+                    style={{ width: header.getSize() }}
+                    className="h-9 text-xs font-semibold text-muted-foreground"
+                  >
                     {header.isPlaceholder
                       ? null
                       : flexRender(header.column.columnDef.header, header.getContext())}
@@ -272,7 +276,7 @@ export function AppDataTable<TData, TValue>({
               table.getRowModel().rows.map((row) => renderBodyRow(row))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+                <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
                   {emptyText}
                 </TableCell>
               </TableRow>

@@ -915,7 +915,7 @@ export function renderReferenceColumnCell(
         </TableCell>
       )
     case "industry":
-      return <TableCell className="text-muted-foreground">{ref.industry ?? "—"}</TableCell>
+      return <TableCell className="text-muted-foreground">{ref.industry ?? ""}</TableCell>
     case "status":
       return (
         <TableCell>
@@ -930,13 +930,13 @@ export function renderReferenceColumnCell(
         <TableCell className="text-sm text-muted-foreground">
           {ref.project_status
             ? PROJECT_STATUS_LABELS[ref.project_status] ?? ref.project_status
-            : "—"}
+            : ""}
         </TableCell>
       )
     case "updated_at":
       return (
         <TableCell className="text-right text-muted-foreground text-sm">
-          {ref.updated_at ? formatDateUtcDe(ref.updated_at) : "—"}
+          {ref.updated_at ? formatDateUtcDe(ref.updated_at) : ""}
         </TableCell>
       )
     case "tags":
@@ -958,29 +958,27 @@ export function renderReferenceColumnCell(
                   </span>
                 ))}
             </div>
-          ) : (
-            "—"
-          )}
+          ) : null}
         </TableCell>
       )
     case "country":
-      return <TableCell>{ref.country ?? "—"}</TableCell>
+      return <TableCell className="text-muted-foreground">{ref.country ?? ""}</TableCell>
     case "project_start":
       return (
         <TableCell className="text-right text-muted-foreground text-sm">
-          {ref.project_start ? formatDateUtcDe(ref.project_start) : "—"}
+          {ref.project_start ? formatDateUtcDe(ref.project_start) : ""}
         </TableCell>
       )
     case "project_end":
       return (
         <TableCell className="text-right text-muted-foreground text-sm">
-          {ref.project_end ? formatDateUtcDe(ref.project_end) : "—"}
+          {ref.project_end ? formatDateUtcDe(ref.project_end) : ""}
         </TableCell>
       )
     case "duration_months":
       return (
         <TableCell className="text-right text-muted-foreground text-sm">
-          {ref.duration_months != null ? `${ref.duration_months}` : "—"}
+          {ref.duration_months != null ? `${ref.duration_months}` : ""}
         </TableCell>
       )
     case "created_at":

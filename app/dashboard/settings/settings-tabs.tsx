@@ -11,7 +11,7 @@ import { SettingsExportTemplatesCard } from './settings-export-templates-card'
 import { SettingsDevRoleCard } from './settings-dev-role-card'
 import type { ExportSettings } from './settings-export-templates-actions'
 
-const CARD_CLASS = 'rounded-3xl border bg-card text-card-foreground p-6 shadow-sm'
+const CARD_CLASS = 'rounded-2xl border border-border/70 bg-card text-card-foreground p-6 shadow-sm shadow-slate-900/5'
 
 export function SettingsTabs({
   roleSwitcher,

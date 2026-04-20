@@ -117,7 +117,10 @@ export function DashboardShell({
         open={forceCollapsed ? false : undefined}
         onOpenChange={forceCollapsed ? () => {} : undefined}
       >
-        <Sidebar collapsible="icon">
+        <Sidebar
+          collapsible="icon"
+          className="border-r border-sidebar-border/90 bg-sidebar"
+        >
         <SidebarHeader className="px-3 py-4">
           <SidebarMenu>
             <SidebarMenuItem>
@@ -324,6 +327,7 @@ export function DashboardShell({
             routeExcludesDashboardContentPadding(pathname)
               ? DASHBOARD_SCROLL_AREA_BLEED_CLASS
               : DASHBOARD_SCROLL_AREA_CLASS,
+            "bg-background",
             detailRouteNeedsBottomPadding(pathname) && 'pb-10'
           )}
         >

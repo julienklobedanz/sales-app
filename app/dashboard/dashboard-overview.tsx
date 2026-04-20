@@ -824,11 +824,11 @@ export function DashboardOverview({
 
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             size="sm"
             className={cn(
               TABLE_TOOLBAR.dashboard.toolbarButton,
-              'shrink-0 rounded-lg border-dashed px-3 text-muted-foreground'
+              'shrink-0 rounded-lg border-0 px-3 text-muted-foreground hover:bg-muted/70'
             )}
             aria-label="RFP hochladen und Referenzen abgleichen"
             onClick={() => rfpInputRef.current?.click()}
@@ -854,8 +854,8 @@ export function DashboardOverview({
           />
 
           {rfpMatchedIds && (
-            <div className="flex items-center gap-2 rounded-lg border border-primary/40 bg-primary/5 px-2.5 py-2 text-xs">
-              <span className="font-medium text-foreground">
+            <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-2.5 py-2 text-xs">
+              <span className="font-medium text-muted-foreground">
                 RFP aktiv: {rfpMatchedIds.size} Treffer
                 {rfpRequirementCount !== null ? ` / ${rfpRequirementCount} Anforderungen` : ''}
               </span>
@@ -877,11 +877,11 @@ export function DashboardOverview({
           <div className="flex shrink-0 flex-wrap items-center gap-2">
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               className={cn(
                 toolbarSegmentClass,
                 favoritesOnly &&
-                  'border-amber-400/60 bg-amber-50/70 text-foreground dark:bg-amber-950/40'
+                  'bg-amber-100/70 text-foreground dark:bg-amber-950/40'
               )}
               onClick={() => setFavoritesOnly((v) => !v)}
               aria-label={favoritesOnly ? 'Alle Referenzen anzeigen' : 'Nur Favoriten'}
@@ -901,10 +901,10 @@ export function DashboardOverview({
               <PopoverTrigger asChild>
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="ghost"
                   className={cn(
                     toolbarSegmentClass,
-                    statusFilter !== 'all' && 'border-primary ring-1 ring-primary/35'
+                    statusFilter !== 'all' && 'bg-primary/10 text-primary'
                   )}
                   aria-label="Referenzstatus filtern"
                 >
@@ -962,8 +962,8 @@ export function DashboardOverview({
               <DropdownMenuTrigger asChild>
                 <Button
                   type="button"
-                  variant="outline"
-                  className={toolbarSegmentClass}
+                  variant="ghost"
+                  className={cn(toolbarSegmentClass, "hover:bg-muted/70")}
                   aria-label={COPY.dashboard.columnsToggleAria}
                 >
                   <AppIcon icon={SlidersHorizontal} size={16} className="shrink-0" />
@@ -996,9 +996,9 @@ export function DashboardOverview({
           {profile.role === 'admin' && (
             <>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                className={TABLE_TOOLBAR.dashboard.toolbarButton}
+                className={cn(TABLE_TOOLBAR.dashboard.toolbarButton, "hover:bg-muted/70")}
                 onClick={() => {
                   setBulkImportGroups([])
                   setBulkImportOpen(true)
@@ -1010,9 +1010,9 @@ export function DashboardOverview({
               </Button>
               {selectedRefIds.size > 0 && (
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
-                  className={TABLE_TOOLBAR.dashboard.toolbarButtonGap}
+                  className={cn(TABLE_TOOLBAR.dashboard.toolbarButtonGap, "hover:bg-muted/70")}
                   onClick={() => setPreviewRefs(selectedRefs)}
                   aria-label={`Vorschau (${selectedRefIds.size} Referenz${selectedRefIds.size !== 1 ? 'en' : ''})`}
                 >
@@ -1021,12 +1021,12 @@ export function DashboardOverview({
                 </Button>
               )}
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
                 className={cn(
                   TABLE_TOOLBAR.dashboard.toolbarButton,
-                  'bg-background',
-                  statusFilter === 'draft' ? 'border-primary ring-1 ring-primary' : '',
+                  'hover:bg-muted/70',
+                  statusFilter === 'draft' ? 'bg-primary/10 text-primary' : '',
                 )}
                 onClick={() => setStatusFilter(statusFilter === 'draft' ? 'all' : 'draft')}
                 aria-label={statusFilter === 'draft' ? 'Alle Referenzen anzeigen' : 'Nur Entwürfe'}
@@ -1036,7 +1036,10 @@ export function DashboardOverview({
               </Button>
               <Button
                 size="sm"
-                className={TABLE_TOOLBAR.dashboard.toolbarButton}
+                className={cn(
+                  TABLE_TOOLBAR.dashboard.toolbarButton,
+                  "rounded-lg bg-gradient-to-b from-blue-600 to-blue-700 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] hover:from-blue-600 hover:to-blue-700/95"
+                )}
                 onClick={() => setNewRefModalOpen(true)}
                 aria-label="Neue Referenz erstellen"
               >
@@ -1049,9 +1052,9 @@ export function DashboardOverview({
           {/* Sales: Vorschau-Button wenn Auswahl, dann Warenkorb */}
           {profile.role === 'sales' && selectedRefIds.size > 0 && (
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className={TABLE_TOOLBAR.dashboard.toolbarButtonGap}
+              className={cn(TABLE_TOOLBAR.dashboard.toolbarButtonGap, "hover:bg-muted/70")}
               onClick={() => setPreviewRefs(selectedRefs)}
               aria-label={`Vorschau (${selectedRefIds.size} Referenz${selectedRefIds.size !== 1 ? 'en' : ''})`}
             >
@@ -1149,7 +1152,7 @@ export function DashboardOverview({
           )}
         </div>
 
-        <div className="min-w-0 overflow-x-auto rounded-md border bg-card">
+        <div className="min-w-0 overflow-x-auto rounded-xl border border-border/70 bg-card shadow-sm shadow-slate-900/5">
           <Table className="min-w-[800px]">
             <TableHeader>
               <TableRow>
@@ -1263,7 +1266,7 @@ export function DashboardOverview({
                 filteredReferences.map((ref) => (
                   <TableRow
                     key={ref.id}
-                    className="cursor-pointer hover:bg-muted/50 group"
+                    className="group cursor-pointer hover:bg-accent/40"
                     onClick={() => openDetail(ref)}
                     onContextMenu={(e: React.MouseEvent) => {
                       e.preventDefault()

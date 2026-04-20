@@ -21,9 +21,10 @@ export function ReferenceStatusBadge({
   customerApprovalStatus,
   className,
 }: Props) {
+  const softBadgeClass = 'border-0 font-medium shadow-none'
   if (String(customerApprovalStatus ?? '').toLowerCase() === 'pending') {
     return (
-      <Badge className={className} variant="secondary">
+      <Badge className={`${softBadgeClass} bg-slate-100/70 text-slate-600 ${className ?? ''}`} variant="secondary">
         Freigabe ausstehend
       </Badge>
     )
@@ -31,30 +32,30 @@ export function ReferenceStatusBadge({
   const s = normalizeStatus(status)
   if (s === 'approved')
     return (
-      <Badge className={className} variant="default">
+      <Badge className={`${softBadgeClass} bg-blue-400/10 text-blue-600 ${className ?? ''}`} variant="default">
         Freigegeben
       </Badge>
     )
   if (s === 'internal_only')
     return (
-      <Badge className={className} variant="secondary">
+      <Badge className={`${softBadgeClass} bg-slate-100/70 text-slate-600 ${className ?? ''}`} variant="secondary">
         Intern
       </Badge>
     )
   if (s === 'anonymized')
     return (
-      <Badge className={className} variant="outline">
+      <Badge className={`${softBadgeClass} bg-slate-100/70 text-slate-700 ${className ?? ''}`} variant="outline">
         Anonymisiert
       </Badge>
     )
   if (s === 'pending')
     return (
-      <Badge className={className} variant="secondary">
+      <Badge className={`${softBadgeClass} bg-slate-100/70 text-slate-600 ${className ?? ''}`} variant="secondary">
         Freigabe ausstehend
       </Badge>
     )
   return (
-    <Badge className={className} variant="outline">
+    <Badge className={`${softBadgeClass} bg-slate-100/70 text-slate-700 ${className ?? ''}`} variant="outline">
       Entwurf
     </Badge>
   )
