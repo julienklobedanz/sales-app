@@ -36,6 +36,7 @@ import {
   Loader,
   MapPinIcon,
   Plus,
+  StarIcon,
   Users,
 } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
@@ -102,12 +103,20 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
               type="button"
               variant="ghost"
               size="toolbar"
-              className="shrink-0 hover:bg-muted/70"
+              className="shrink-0 px-2.5 hover:bg-muted/70"
               onClick={() => setFavoritesOnly((v) => !v)}
               aria-pressed={favoritesOnly}
               aria-label={favoritesOnly ? 'Favoritenfilter deaktivieren' : 'Nur Favoriten anzeigen'}
             >
-              Nur Favoriten
+              <AppIcon
+                icon={StarIcon}
+                size={16}
+                className={
+                  favoritesOnly
+                    ? 'text-amber-500 dark:text-amber-400 [&_path]:fill-current'
+                    : 'text-muted-foreground'
+                }
+              />
             </Button>
             {canManage && (
               <>

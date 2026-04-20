@@ -72,6 +72,10 @@ import {
 import type { Profile } from './dashboard-shell'
 import {
   Cancel01Icon,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   CirclePlus,
   CopyIcon,
   Eye,
@@ -100,6 +104,7 @@ import {
 } from './overview/reference-table-column-renders'
 import { ReferenceDetailSheet } from './overview/reference-detail-sheet'
 import { toast } from 'sonner'
+import { copyTableRowsSelected } from '@/lib/copy'
 // --- Konstanten & Hilfsfunktionen ---
 
 const STATUS_LABELS: Record<string, string> = {
@@ -415,6 +420,8 @@ export function DashboardOverview({
     )
   }
   const [selectedRefIds, setSelectedRefIds] = useState<Set<string>>(() => new Set())
+  const [pageSize, setPageSize] = useState(30)
+  const [pageIndex, setPageIndex] = useState(0)
   const [previewRefs, setPreviewRefs] = useState<ReferenceRow[] | null>(null)
   const [shareLinkPopoverRef, setShareLinkPopoverRef] = useState<ReferenceRow | null>(null)
   const selectAllCheckboxRef = useRef<HTMLInputElement | null>(null)
@@ -632,6 +639,15 @@ export function DashboardOverview({
     sortDir,
   ])
 
+  const pageCount = Math.max(1, Math.ceil(filteredReferences.length / pageSize))
+  useEffect(() => {
+    setPageIndex((prev) => Math.min(prev, pageCount - 1))
+  }, [pageCount])
+  const paginatedReferences = useMemo(() => {
+    const start = pageIndex * pageSize
+    return filteredReferences.slice(start, start + pageSize)
+  }, [filteredReferences, pageIndex, pageSize])
+
   const handleSort = (column: (typeof COLUMN_KEYS)[number]) => {
     if (sortKey === column) {
       setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
@@ -658,6 +674,10 @@ export function DashboardOverview({
   const selectedRefs = useMemo(
     () => initialReferences.filter((r) => selectedRefIds.has(r.id)),
     [initialReferences, selectedRefIds]
+  )
+  const filteredSelectedCount = useMemo(
+    () => filteredReferences.filter((r) => selectedRefIds.has(r.id)).length,
+    [filteredReferences, selectedRefIds]
   )
   const selectedCount = selectedRefs.length
   const selectedRefLabel = `${selectedCount} Referenz${selectedCount === 1 ? '' : 'en'}`
@@ -1263,7 +1283,7 @@ export function DashboardOverview({
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredReferences.map((ref) => (
+                paginatedReferences.map((ref) => (
                   <TableRow
                     key={ref.id}
                     className="group cursor-pointer hover:bg-accent/35"
@@ -1375,6 +1395,79 @@ export function DashboardOverview({
               )}
             </TableBody>
           </Table>
+        </div>
+        <div className="flex flex-col gap-2.5 rounded-xl border border-border/70 bg-card px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex-1 text-sm text-muted-foreground">
+            {copyTableRowsSelected(filteredSelectedCount, filteredReferences.length)}
+          </div>
+          <div className="flex items-center gap-3 sm:gap-5">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium text-muted-foreground">{COPY.table.rowsPerPage}</p>
+              <Select
+                value={String(pageSize)}
+                onValueChange={(value) => {
+                  setPageSize(Number(value))
+                  setPageIndex(0)
+                }}
+              >
+                <SelectTrigger size="sm" className="h-8 w-[84px] rounded-lg border-border/70 bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent side="top">
+                  {[10, 20, 30, 40, 50].map((size) => (
+                    <SelectItem key={size} value={String(size)}>
+                      {size}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex min-w-[126px] items-center justify-center text-sm font-medium text-muted-foreground">
+              Seite {pageIndex + 1} von {pageCount}
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="hidden size-8 rounded-lg hover:bg-muted/70 lg:flex"
+                onClick={() => setPageIndex(0)}
+                disabled={pageIndex <= 0}
+                aria-label="Zur ersten Seite"
+              >
+                <AppIcon icon={ChevronsLeft} size={16} />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8 rounded-lg hover:bg-muted/70"
+                onClick={() => setPageIndex((prev) => Math.max(0, prev - 1))}
+                disabled={pageIndex <= 0}
+                aria-label="Zur vorherigen Seite"
+              >
+                <AppIcon icon={ChevronLeft} size={16} />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8 rounded-lg hover:bg-muted/70"
+                onClick={() => setPageIndex((prev) => Math.min(pageCount - 1, prev + 1))}
+                disabled={pageIndex >= pageCount - 1}
+                aria-label="Zur nächsten Seite"
+              >
+                <AppIcon icon={ChevronRight} size={16} />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="hidden size-8 rounded-lg hover:bg-muted/70 lg:flex"
+                onClick={() => setPageIndex(pageCount - 1)}
+                disabled={pageIndex >= pageCount - 1}
+                aria-label="Zur letzten Seite"
+              >
+                <AppIcon icon={ChevronsRight} size={16} />
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 

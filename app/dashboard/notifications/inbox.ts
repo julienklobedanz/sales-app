@@ -14,15 +14,21 @@ export type DashboardNotificationItem = {
   read: boolean
 }
 
-/** Freigaben + relevante Status-Events für die Notification-Bell (kein Activity-Spam wie „Referenz angesehen“). */
+/** Freigaben für die Notification-Bell (kein Activity-Spam wie „Referenz angesehen“). */
 const INBOX_EVENT_TYPES = [
   'reference_approval_responded',
   'customer_approval_requested',
   'internal_approval_decided',
-  'deal_won',
-  'deal_lost',
-  'deal_withdrawn',
 ] as const
+
+type InboxCandidate = {
+  id: string
+  title: string
+  text: string
+  href: string
+  createdAt: string
+  priority: number
+}
 
 function refTitleFromRow(row: {
   references?: { title?: string } | { title?: string }[] | null
@@ -32,23 +38,27 @@ function refTitleFromRow(row: {
   return typeof t?.title === 'string' && t.title.trim() ? t.title : 'Referenz'
 }
 
-function dealTitleFromRow(row: { deals?: { title?: string } | { title?: string }[] | null }): string {
-  const d = row.deals
-  const t = Array.isArray(d) ? d[0] : d
-  return typeof t?.title === 'string' && t.title.trim() ? t.title : 'Deal'
+function normalizeText(value: string | null | undefined) {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
 }
 
 type EventRowForCopy = {
+  id: string
+  event_type: string
   reference_id: string | null
   deal_id: string | null
+  created_at: string
+  created_by: string | null
   payload: unknown
   references?: { title?: string } | { title?: string }[] | null
   deals?: { title?: string } | { title?: string }[] | null
 }
 
-function mapEventToCopy(eventType: string, row: EventRowForCopy): { title: string; text: string; href: string } {
+function mapEventToCopy(eventType: string, row: EventRowForCopy): InboxCandidate {
   const refTitle = refTitleFromRow(row)
-  const dealTitle = dealTitleFromRow(row)
 
   const payload = (row.payload ?? {}) as Record<string, unknown>
 
@@ -61,17 +71,23 @@ function mapEventToCopy(eventType: string, row: EventRowForCopy): { title: strin
           ? `„${refTitle}“ wurde vom Kunden abgelehnt.`
           : `Antwort zu „${refTitle}“.`
     return {
+      id: `approval:${row.id}`,
       title: 'Kunden-Freigabe',
       text,
       href: row.reference_id ? ROUTES.evidence.detail(row.reference_id) : ROUTES.evidence.root,
+      createdAt: row.created_at,
+      priority: 4,
     }
   }
 
   if (eventType === 'customer_approval_requested') {
     return {
+      id: `approval:${row.id}`,
       title: 'Kunden-Freigabe angefragt',
       text: `Freigabe-E-Mail für „${refTitle}“ wurde versendet (oder Anfrage gespeichert).`,
       href: row.reference_id ? ROUTES.evidence.detail(row.reference_id) : ROUTES.evidence.root,
+      createdAt: row.created_at,
+      priority: 4,
     }
   }
 
@@ -82,51 +98,59 @@ function mapEventToCopy(eventType: string, row: EventRowForCopy): { title: strin
     else if (d === 'approve_internal') detail = 'Freigabe: nur intern.'
     else if (d === 'reject') detail = 'Anfrage abgelehnt.'
     return {
+      id: `approval:${row.id}`,
       title: 'Interne Freigabe',
       text: `„${refTitle}“: ${detail}`,
       href: row.reference_id ? ROUTES.evidence.detail(row.reference_id) : ROUTES.evidence.root,
-    }
-  }
-
-  if (eventType === 'deal_won') {
-    const comment = typeof payload.comment === 'string' && payload.comment.trim() ? payload.comment.trim() : null
-    return {
-      title: 'Deal gewonnen',
-      text: comment ? `„${dealTitle}“ – ${comment}` : `„${dealTitle}“ wurde als gewonnen markiert.`,
-      href: row.deal_id ? ROUTES.deals.detail(row.deal_id) : ROUTES.deals.root,
-    }
-  }
-
-  if (eventType === 'deal_lost') {
-    const comment = typeof payload.comment === 'string' && payload.comment.trim() ? payload.comment.trim() : null
-    return {
-      title: 'Deal verloren',
-      text: comment ? `„${dealTitle}“ – ${comment}` : `„${dealTitle}“ wurde als verloren markiert.`,
-      href: row.deal_id ? ROUTES.deals.detail(row.deal_id) : ROUTES.deals.root,
-    }
-  }
-
-  if (eventType === 'deal_withdrawn') {
-    const comment = typeof payload.comment === 'string' && payload.comment.trim() ? payload.comment.trim() : null
-    return {
-      title: 'Deal zurückgezogen',
-      text: comment ? `„${dealTitle}“ – ${comment}` : `„${dealTitle}“ wurde zurückgezogen.`,
-      href: row.deal_id ? ROUTES.deals.detail(row.deal_id) : ROUTES.deals.root,
+      createdAt: row.created_at,
+      priority: 4,
     }
   }
 
   return {
+    id: `approval:${row.id}`,
     title: 'Hinweis',
     text: 'Neues Ereignis in Ihrer Organisation.',
     href: ROUTES.home,
+    createdAt: row.created_at,
+    priority: 4,
   }
+}
+
+function buildExecutiveSentence(input: {
+  personName: string
+  personTitleBefore: string | null
+  personTitleAfter: string | null
+  companyName: string
+  summary: string
+}) {
+  const summary = input.summary.trim()
+  const germanPattern = /von\s+(.+?)\s+bei\s+(.+?)\s+zu\s+(.+?)\s+bei\s+(.+)/i
+  const englishPattern = /from\s+(.+?)\s+at\s+(.+?)\s+to\s+(.+?)\s+at\s+(.+)/i
+  const matched = summary.match(germanPattern) ?? summary.match(englishPattern)
+  if (matched) {
+    const [, oldRole, oldCompany, newRole, newCompany] = matched
+    return `${input.personName} wechselte von ${oldRole} bei ${oldCompany} zu ${newRole} bei ${newCompany}.`
+  }
+  if (input.personTitleBefore && input.personTitleAfter) {
+    return `${input.personName} wechselte von ${input.personTitleBefore} zu ${input.personTitleAfter} bei ${input.companyName}.`
+  }
+  if (input.personTitleAfter) {
+    return `${input.personName} ist jetzt ${input.personTitleAfter} bei ${input.companyName}.`
+  }
+  return `${input.personName} wechselte zu ${input.companyName}.`
+}
+
+function roleCanSeeApprovalEvent(role: AppRole, row: EventRowForCopy, userId: string) {
+  if (role === 'admin' || role === 'account_manager') return true
+  // Sales sieht nur Freigabe-Events, die aus seinen eigenen Anfragen stammen.
+  return row.created_by === userId
 }
 
 export async function getInboxNotificationsImpl(
   userId: string,
-  _role: AppRole
+  role: AppRole
 ): Promise<DashboardNotificationItem[]> {
-  void _role
   const supabase = await createServerSupabaseClient()
 
   const { data: profile } = await supabase
@@ -162,28 +186,139 @@ export async function getInboxNotificationsImpl(
     console.error('[getInboxNotifications]', error.message)
     return []
   }
-  if (!events?.length) return []
+  const approvalCandidates: InboxCandidate[] = (events ?? [])
+    .map((row) => row as unknown as EventRowForCopy)
+    .filter((row) => roleCanSeeApprovalEvent(role, row, userId))
+    .map((row) => mapEventToCopy(row.event_type, row))
 
-  const ids = events.map((e) => e.id as string)
+  const { data: executiveRows, error: execError } = await supabase
+    .from('market_signal_executive_events')
+    .select(
+      `
+      id,
+      person_name,
+      person_title_before,
+      person_title_after,
+      change_summary,
+      detected_at,
+      company_id,
+      companies ( name, is_favorite )
+    `
+    )
+    .order('detected_at', { ascending: false })
+    .limit(80)
+  if (execError) console.error('[getInboxNotifications/executive]', execError.message)
+
+  const { data: newsRows, error: newsError } = await supabase
+    .from('market_signal_account_news')
+    .select(
+      `
+      id,
+      body,
+      source_label,
+      published_on,
+      company_id,
+      companies ( name, is_favorite )
+    `
+    )
+    .order('published_on', { ascending: false })
+    .limit(80)
+  if (newsError) console.error('[getInboxNotifications/news]', newsError.message)
+
+  const favoriteCompanyNames = new Set(
+    (executiveRows ?? [])
+      .map((row) => {
+        const co = Array.isArray(row.companies) ? row.companies[0] : row.companies
+        if (!co?.is_favorite) return null
+        return normalizeText(String(co.name ?? ''))
+      })
+      .filter((name): name is string => Boolean(name))
+  )
+
+  const executiveSeen = new Set<string>()
+  const executiveCandidates: InboxCandidate[] = (executiveRows ?? [])
+    .map((row) => {
+      const co = Array.isArray(row.companies) ? row.companies[0] : row.companies
+      const companyName = String(co?.name ?? 'Account')
+      const summary = String(row.change_summary ?? '')
+      const summaryNorm = normalizeText(summary)
+      const companyFavorite = Boolean(co?.is_favorite)
+      const mentionsFavorite = [...favoriteCompanyNames].some((name) => summaryNorm.includes(name))
+      const championMove = companyFavorite || mentionsFavorite
+      const dayKey = String(row.detected_at ?? '').slice(0, 10)
+      const dedupeKey = [
+        normalizeText(String(row.person_name ?? '')),
+        normalizeText(String(row.person_title_before ?? '')),
+        normalizeText(String(row.person_title_after ?? '')),
+        normalizeText(summary),
+        dayKey,
+      ].join('|')
+      if (executiveSeen.has(dedupeKey)) return null
+      executiveSeen.add(dedupeKey)
+      if (role === 'sales' && !championMove) return null
+      return {
+        id: `market_exec:${String(row.id)}`,
+        title: championMove ? 'Champion Move' : 'Executive Tracking',
+        text: buildExecutiveSentence({
+          personName: String(row.person_name ?? ''),
+          personTitleBefore: (row.person_title_before as string | null) ?? null,
+          personTitleAfter: (row.person_title_after as string | null) ?? null,
+          companyName,
+          summary,
+        }),
+        href: ROUTES.accountsDetail(String(row.company_id)),
+        createdAt: String(row.detected_at ?? ''),
+        priority: championMove ? 0 : 2,
+      } satisfies InboxCandidate
+    })
+    .filter((row): row is InboxCandidate => Boolean(row))
+
+  const newsSeen = new Set<string>()
+  const newsCandidates: InboxCandidate[] = (newsRows ?? [])
+    .map((row) => {
+      const co = Array.isArray(row.companies) ? row.companies[0] : row.companies
+      const companyName = String(co?.name ?? 'Account')
+      const body = String(row.body ?? '').trim()
+      const isFavorite = Boolean(co?.is_favorite)
+      if (role === 'sales' && !isFavorite) return null
+      const dayKey = String(row.published_on ?? '').slice(0, 10)
+      const dedupeKey = [normalizeText(companyName), normalizeText(body), dayKey].join('|')
+      if (newsSeen.has(dedupeKey)) return null
+      newsSeen.add(dedupeKey)
+      return {
+        id: `market_news:${String(row.id)}`,
+        title: isFavorite ? 'Account News (Following)' : 'Account News',
+        text: body || `Neues Signal bei ${companyName}.`,
+        href: ROUTES.accountsDetail(String(row.company_id)),
+        createdAt: String(row.published_on ?? ''),
+        priority: isFavorite ? 1 : 3,
+      } satisfies InboxCandidate
+    })
+    .filter((row): row is InboxCandidate => Boolean(row))
+
+  const merged = [...executiveCandidates, ...newsCandidates, ...approvalCandidates]
+    .sort((a, b) => {
+      if (a.priority !== b.priority) return a.priority - b.priority
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    })
+    .slice(0, 80)
+
+  if (!merged.length) return []
+
+  const keys = merged.map((entry) => entry.id)
   const { data: reads } = await supabase
-    .from('notification_reads')
-    .select('evidence_event_id')
+    .from('notification_inbox_reads')
+    .select('notification_key')
     .eq('user_id', userId)
-    .in('evidence_event_id', ids)
+    .in('notification_key', keys)
+  const readSet = new Set((reads ?? []).map((r) => String(r.notification_key)))
 
-  const readSet = new Set((reads ?? []).map((r) => r.evidence_event_id as string))
-
-  return events.map((row) => {
-    const et = row.event_type as string
-    const { title, text, href } = mapEventToCopy(et, row as EventRowForCopy)
-    const createdAt = row.created_at as string
-    return {
-      id: row.id as string,
-      title,
-      text,
-      time: formatRelativeTimeDe(createdAt),
-      href,
-      read: readSet.has(row.id as string),
-    }
-  })
+  return merged.map((entry) => ({
+    id: entry.id,
+    title: entry.title,
+    text: entry.text,
+    time: formatRelativeTimeDe(entry.createdAt),
+    href: entry.href,
+    read: readSet.has(entry.id),
+  }))
 }

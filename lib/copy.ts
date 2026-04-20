@@ -61,7 +61,7 @@ export const COPY = {
   },
   table: {
     empty: 'Keine Ergebnisse.',
-    rowsPerPage: 'Zeilen pro Seite',
+    rowsPerPage: 'Ergebnisse pro Seite',
     columns: 'Spalten',
     view: 'Ansicht',
   },
@@ -155,6 +155,6 @@ export const COPY = {
 
 /** Tabellen: Auswahl-Zeile („3 von 10 Zeilen ausgewählt“). */
 export function copyTableRowsSelected(selected: number, total: number) {
-  return `${selected} von ${total} Zeilen ausgewählt`
+  return `${selected} von ${total} Ergebnissen ausgewählt`
 }
 

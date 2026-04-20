@@ -4,20 +4,20 @@ import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 
-export async function markNotificationReadImpl(evidenceEventId: string) {
+export async function markNotificationReadImpl(notificationKey: string) {
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return { success: false as const, error: 'Nicht angemeldet' }
 
-  const { error } = await supabase.from('notification_reads').upsert(
+  const { error } = await supabase.from('notification_inbox_reads').upsert(
     {
       user_id: user.id,
-      evidence_event_id: evidenceEventId,
+      notification_key: notificationKey,
       read_at: new Date().toISOString(),
     },
-    { onConflict: 'user_id,evidence_event_id' }
+    { onConflict: 'user_id,notification_key' }
   )
 
   if (error) {
@@ -29,22 +29,22 @@ export async function markNotificationReadImpl(evidenceEventId: string) {
   return { success: true as const }
 }
 
-export async function markAllNotificationsReadImpl(eventIds: string[]) {
+export async function markAllNotificationsReadImpl(notificationKeys: string[]) {
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return { success: false as const, error: 'Nicht angemeldet' }
-  if (!eventIds.length) return { success: true as const }
+  if (!notificationKeys.length) return { success: true as const }
 
-  const rows = eventIds.map((id) => ({
+  const rows = notificationKeys.map((id) => ({
     user_id: user.id,
-    evidence_event_id: id,
+    notification_key: id,
     read_at: new Date().toISOString(),
   }))
 
-  const { error } = await supabase.from('notification_reads').upsert(rows, {
-    onConflict: 'user_id,evidence_event_id',
+  const { error } = await supabase.from('notification_inbox_reads').upsert(rows, {
+    onConflict: 'user_id,notification_key',
   })
 
   if (error) {

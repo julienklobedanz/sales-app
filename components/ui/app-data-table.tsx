@@ -5,6 +5,7 @@
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import {
+  type ColumnOrderState,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
@@ -68,6 +69,14 @@ export type AppDataTableProps<TData, TValue> = {
   pageSizeOptions?: number[]
   /** Initiale Sichtbarkeit einzelner Spalten (z. B. Standard: ausgeblendet). */
   initialColumnVisibility?: VisibilityState
+  /** Initiale Spalten-Reihenfolge (TanStack column ids). */
+  initialColumnOrder?: string[]
+  /** Optional kontrollierte Spalten-Reihenfolge. */
+  columnOrder?: string[]
+  /** Callback bei Reihenfolge-Änderung (z. B. Persistenz in localStorage). */
+  onColumnOrderChange?: (order: string[]) => void
+  /** Aktiviert Header Drag&Drop für Spalten-Reordering. */
+  enableColumnDrag?: boolean
 }
 
 export function AppDataTable<TData, TValue>({
@@ -83,6 +92,10 @@ export function AppDataTable<TData, TValue>({
   initialPageSize = 10,
   pageSizeOptions,
   initialColumnVisibility,
+  initialColumnOrder,
+  columnOrder,
+  onColumnOrderChange,
+  enableColumnDrag = false,
 }: AppDataTableProps<TData, TValue>) {
   const router = useRouter()
   const [sorting, setSorting] = React.useState<SortingState>([])
@@ -91,6 +104,12 @@ export function AppDataTable<TData, TValue>({
     () => initialColumnVisibility ?? {},
   )
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({})
+  const [internalColumnOrder, setInternalColumnOrder] = React.useState<ColumnOrderState>(
+    () => initialColumnOrder ?? [],
+  )
+  const [dragOverColumnId, setDragOverColumnId] = React.useState<string | null>(null)
+
+  const resolvedColumnOrder = columnOrder ?? internalColumnOrder
 
   const table = useReactTable({
     data,
@@ -102,6 +121,14 @@ export function AppDataTable<TData, TValue>({
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
+    onColumnOrderChange: (updater) => {
+      const next =
+        typeof updater === "function"
+          ? updater([...resolvedColumnOrder])
+          : updater
+      setInternalColumnOrder(next)
+      onColumnOrderChange?.(next)
+    },
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -111,12 +138,32 @@ export function AppDataTable<TData, TValue>({
       columnFilters,
       columnVisibility,
       rowSelection,
+      columnOrder: resolvedColumnOrder,
     },
     initialState: {
       pagination: { pageSize: initialPageSize },
       columnVisibility: initialColumnVisibility ?? {},
+      columnOrder: initialColumnOrder ?? [],
     },
   })
+
+  const moveColumnOrder = React.useCallback((sourceId: string, targetId: string) => {
+    if (!sourceId || !targetId || sourceId === targetId) return
+    if (sourceId === "select" || targetId === "select") return
+    table.setColumnOrder((prev) => {
+      const base =
+        prev.length > 0
+          ? [...prev]
+          : table.getAllLeafColumns().map((column) => column.id)
+      const sourceIndex = base.indexOf(sourceId)
+      const targetIndex = base.indexOf(targetId)
+      if (sourceIndex === -1 || targetIndex === -1) return prev
+      const next = [...base]
+      const [moved] = next.splice(sourceIndex, 1)
+      next.splice(targetIndex, 0, moved)
+      return next
+    })
+  }, [table])
 
   React.useEffect(() => {
     if (!onSelectedRowIdsChange) return
@@ -261,7 +308,41 @@ export function AppDataTable<TData, TValue>({
                   <TableHead
                     key={header.id}
                     style={{ width: header.getSize() }}
-                    className="h-9 text-xs font-semibold text-muted-foreground"
+                    className={
+                      "h-9 text-xs font-semibold text-muted-foreground " +
+                      (enableColumnDrag && header.column.id !== "select"
+                        ? "cursor-grab select-none"
+                        : "") +
+                      (dragOverColumnId === header.column.id ? " bg-accent/40" : "")
+                    }
+                    draggable={enableColumnDrag && header.column.id !== "select"}
+                    onDragStart={(event) => {
+                      if (!enableColumnDrag || header.column.id === "select") return
+                      event.dataTransfer.setData("text/plain", header.column.id)
+                      event.dataTransfer.effectAllowed = "move"
+                    }}
+                    onDragOver={(event) => {
+                      if (!enableColumnDrag || header.column.id === "select") return
+                      event.preventDefault()
+                      setDragOverColumnId(header.column.id)
+                    }}
+                    onDragLeave={() => {
+                      if (!enableColumnDrag) return
+                      setDragOverColumnId((prev) =>
+                        prev === header.column.id ? null : prev,
+                      )
+                    }}
+                    onDrop={(event) => {
+                      if (!enableColumnDrag || header.column.id === "select") return
+                      event.preventDefault()
+                      const sourceId = event.dataTransfer.getData("text/plain")
+                      moveColumnOrder(sourceId, header.column.id)
+                      setDragOverColumnId(null)
+                    }}
+                    onDragEnd={() => {
+                      if (!enableColumnDrag) return
+                      setDragOverColumnId(null)
+                    }}
                   >
                     {header.isPlaceholder
                       ? null

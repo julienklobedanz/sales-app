@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useRef } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ToolbarSearchField } from '@/components/ui/toolbar-search-field'
@@ -36,6 +36,7 @@ import {
 type MatchMap = Record<string, { count: number; suggestions: MatchSuggestion[] }>
 
 type StatusFilterValue = 'all' | DealStatus
+const DEAL_COLUMNS_STORAGE_KEY = 'refstack:deals:column-order'
 const STATUS_FILTER_OPTIONS: { value: StatusFilterValue; label: string }[] = [
   { value: 'all', label: COPY.deals.filterStatusAll },
   { value: 'negotiation', label: COPY.deals.filterStatusNegotiation },
@@ -94,6 +95,36 @@ export function DealsClientContent({
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilterValue>('all')
   const [selectedDealIds, setSelectedDealIds] = useState<string[]>([])
+  const [columnOrder, setColumnOrder] = useState<string[]>([
+    'select',
+    'company_name',
+    'title',
+    'volume',
+    'reference_count',
+    'status',
+    'expiry_date',
+    'account_manager_name',
+    'sales_manager_name',
+  ])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      const raw = window.localStorage.getItem(DEAL_COLUMNS_STORAGE_KEY)
+      if (!raw) return
+      const parsed = JSON.parse(raw)
+      if (!Array.isArray(parsed)) return
+      const normalized = parsed.filter((id): id is string => typeof id === 'string')
+      if (normalized.length > 0) setColumnOrder(normalized)
+    } catch {
+      // ignore invalid local storage payload
+    }
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    window.localStorage.setItem(DEAL_COLUMNS_STORAGE_KEY, JSON.stringify(columnOrder))
+  }, [columnOrder])
 
   async function handleXlsxImport(file: File) {
     const formData = new FormData()
@@ -375,13 +406,33 @@ export function DealsClientContent({
         tableVariant="deals"
         columns={columns}
         data={filtered}
-        initialPageSize={10}
+        initialPageSize={30}
         getRowId={(row) => row.id}
         onSelectedRowIdsChange={setSelectedDealIds}
         initialColumnVisibility={{
           account_manager_name: false,
           sales_manager_name: false,
+          status: true,
+          company_name: true,
+          title: true,
+          volume: true,
+          reference_count: true,
+          expiry_date: true,
         }}
+        initialColumnOrder={[
+          'select',
+          'company_name',
+          'title',
+          'volume',
+          'reference_count',
+          'status',
+          'expiry_date',
+          'account_manager_name',
+          'sales_manager_name',
+        ]}
+        columnOrder={columnOrder}
+        onColumnOrderChange={setColumnOrder}
+        enableColumnDrag
         toolbar={() => (
           <div className="flex w-full min-w-0 flex-wrap items-center gap-2.5 sm:gap-3.5 overflow-x-hidden">
             <ToolbarSearchField
