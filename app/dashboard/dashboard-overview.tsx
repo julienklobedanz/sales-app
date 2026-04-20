@@ -1176,7 +1176,7 @@ export function DashboardOverview({
           <Table className="min-w-[800px]">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[44px] pr-0">
+                <TableHead className="w-[32px] pr-0">
                   <input
                     type="checkbox"
                     ref={selectAllCheckboxRef}
@@ -1295,7 +1295,7 @@ export function DashboardOverview({
                     }}
                   >
                     <TableCell
-                      className="w-[44px] pr-0"
+                      className="w-[32px] pr-0"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <input

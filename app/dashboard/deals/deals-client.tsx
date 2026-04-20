@@ -163,21 +163,28 @@ export function DealsClientContent({
       {
         id: 'select',
         header: ({ table }) => (
-          <Checkbox
-            checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')}
-            onCheckedChange={(v) => table.toggleAllPageRowsSelected(Boolean(v))}
-            aria-label="Alle auswählen"
-          />
+          <div className="flex items-center justify-center">
+            <Checkbox
+              checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')}
+              onCheckedChange={(v) => table.toggleAllPageRowsSelected(Boolean(v))}
+              aria-label="Alle auswählen"
+            />
+          </div>
         ),
         cell: ({ row }) => (
-          <Checkbox
-            checked={row.getIsSelected()}
-            onCheckedChange={(v) => row.toggleSelected(Boolean(v))}
-            aria-label="Zeile auswählen"
-          />
+          <div className="flex items-center justify-center">
+            <Checkbox
+              checked={row.getIsSelected()}
+              onCheckedChange={(v) => row.toggleSelected(Boolean(v))}
+              aria-label="Zeile auswählen"
+            />
+          </div>
         ),
         enableSorting: false,
         enableHiding: false,
+        size: 32,
+        minSize: 32,
+        maxSize: 32,
       },
       {
         accessorKey: 'status',
