@@ -6,6 +6,7 @@ import { ReferenceStatusBadge } from "@/components/reference-status-badge"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { formatDateUtcDe, formatNumberDe } from "@/lib/format"
 
@@ -21,6 +22,7 @@ export function ReferenceDetailPane({
   externalContacts,
   assets,
   assetsLoading,
+  detailLoading,
 }: {
   selectedRef: ConceptReferenceRow | null
   profileRole: Profile["role"]
@@ -35,6 +37,7 @@ export function ReferenceDetailPane({
   }[]
   assets: ReferenceAssetRow[]
   assetsLoading: boolean
+  detailLoading: boolean
 }) {
   if (!selectedRef) {
     return (
@@ -43,6 +46,60 @@ export function ReferenceDetailPane({
         <div className="text-sm text-muted-foreground max-w-md">
           Wähle links eine Referenz aus. Rechts zeigen wir die Detail-Abschnitte im Split-Layout.
         </div>
+      </div>
+    )
+  }
+
+  if (detailLoading) {
+    return (
+      <div className="flex h-full flex-col">
+        <div className="border-b p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex min-w-0 gap-3">
+              <Skeleton className="mt-0.5 h-11 w-11 rounded-md" />
+              <div className="min-w-0 space-y-2">
+                <Skeleton className="h-5 w-[320px] max-w-[60vw]" />
+                <Skeleton className="h-4 w-[220px] max-w-[45vw]" />
+              </div>
+            </div>
+            <Skeleton className="h-6 w-28 rounded-full" />
+          </div>
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            <Skeleton className="h-6 w-16 rounded-md" />
+            <Skeleton className="h-6 w-20 rounded-md" />
+            <Skeleton className="h-6 w-14 rounded-md" />
+          </div>
+        </div>
+        <ScrollArea className="flex-1">
+          <div className="p-6 space-y-6">
+            <section className="space-y-3">
+              <Skeleton className="h-4 w-28" />
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="rounded-lg border bg-background p-3">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="mt-2 h-4 w-24" />
+                  </div>
+                ))}
+              </div>
+            </section>
+            <Separator />
+            <section className="space-y-3">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-20 w-full" />
+            </section>
+            <Separator />
+            <section className="space-y-3">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-20 w-full" />
+            </section>
+            <Separator />
+            <section className="space-y-3">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-16 w-full" />
+            </section>
+          </div>
+        </ScrollArea>
       </div>
     )
   }
@@ -189,8 +246,26 @@ export function ReferenceDetailPane({
           <section className="space-y-3">
             <div className="text-sm font-semibold">Dateien</div>
             {assetsLoading ? (
-              <div className="flex h-24 items-center justify-center rounded-lg border border-dashed text-muted-foreground text-sm">
-                Dateien werden geladen…
+              <div className="rounded-lg border border-dashed p-4">
+                <div className="space-y-3">
+                  <Skeleton className="h-4 w-40" />
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-2 rounded-lg border bg-background p-3">
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <Skeleton className="h-4 w-48 max-w-[60%]" />
+                        <Skeleton className="h-3 w-24" />
+                      </div>
+                      <Skeleton className="h-8 w-20 rounded-md" />
+                    </div>
+                    <div className="flex items-center justify-between gap-2 rounded-lg border bg-background p-3">
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <Skeleton className="h-4 w-56 max-w-[70%]" />
+                        <Skeleton className="h-3 w-28" />
+                      </div>
+                      <Skeleton className="h-8 w-20 rounded-md" />
+                    </div>
+                  </div>
+                </div>
               </div>
             ) : assets.length === 0 && !selectedRef.file_path ? (
               <div className="text-muted-foreground bg-muted/10 flex h-24 flex-col items-center justify-center gap-1 rounded-lg border border-dashed text-xs">

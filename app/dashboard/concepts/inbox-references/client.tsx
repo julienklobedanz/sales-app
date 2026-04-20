@@ -212,6 +212,7 @@ export function InboxReferencesConceptClient({
 
   const [assetsLoading, setAssetsLoading] = useState(false)
   const [assets, setAssets] = useState<ReferenceAssetRow[]>([])
+  const [detailLoading, setDetailLoading] = useState(false)
 
   React.useEffect(() => {
     let cancelled = false
@@ -219,15 +220,20 @@ export function InboxReferencesConceptClient({
       if (!selected) {
         setAssets([])
         setAssetsLoading(false)
+        setDetailLoading(false)
         return
       }
+      setDetailLoading(true)
       setAssetsLoading(true)
       try {
         const a = await getReferenceAssets(selected.id)
         if (cancelled) return
         setAssets(a)
       } finally {
-        if (!cancelled) setAssetsLoading(false)
+        if (!cancelled) {
+          setAssetsLoading(false)
+          setDetailLoading(false)
+        }
       }
     }
     void run()
@@ -243,6 +249,15 @@ export function InboxReferencesConceptClient({
     if (selected) return
     router.replace(buildUrl(pathname, searchParams, { id: null }))
   }, [selectedId, selected, data.length, router, pathname, searchParams])
+
+  // Default: wenn keine Auswahl in der URL steht, wähle das erste Element automatisch.
+  React.useEffect(() => {
+    if (selectedId) return
+    if (data.length === 0) return
+    const first = data[0]
+    if (!first?.id) return
+    router.replace(buildUrl(pathname, searchParams, { id: first.id }))
+  }, [selectedId, data, router, pathname, searchParams])
 
   const statusValue =
     (table.getColumn("status")?.getFilterValue() as StatusFilter | undefined) ??
@@ -384,6 +399,7 @@ export function InboxReferencesConceptClient({
                 externalContacts={externalContacts}
                 assets={assets}
                 assetsLoading={assetsLoading}
+                detailLoading={detailLoading}
               />
             </div>
           </div>

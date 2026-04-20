@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import {
   Card,
   CardContent,
@@ -63,6 +64,7 @@ export type CompanyCard = {
 }
 
 export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
+  const router = useRouter()
   const [search, setSearch] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<CompanyCard | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -148,9 +150,17 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
             <ContextMenu key={company.id}>
               <ContextMenuTrigger asChild>
                 <Card className="group relative h-full overflow-hidden rounded-3xl border border-border/60 bg-card/95 shadow-sm transition-all duration-200 hover:border-primary/20 hover:shadow-md">
-                  <Link
-                    href={ROUTES.accountsDetail(company.id)}
-                    className="block h-full transition-opacity duration-300 ease-out"
+                  <div
+                    role="link"
+                    tabIndex={0}
+                    className="block h-full cursor-pointer transition-opacity duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    onClick={() => router.push(ROUTES.accountsDetail(company.id))}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        router.push(ROUTES.accountsDetail(company.id))
+                      }
+                    }}
                   >
                     <CardHeader className="pb-2">
                       <div className="flex items-start justify-between gap-3">
@@ -231,7 +241,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                         </div>
                       </div>
                     </CardContent>
-                  </Link>
+                  </div>
                 </Card>
               </ContextMenuTrigger>
 

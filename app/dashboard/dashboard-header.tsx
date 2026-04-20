@@ -285,7 +285,7 @@ export function DashboardHeader({
           </PopoverContent>
         </Popover>
 
-        <Separator orientation="vertical" className="h-6 shrink-0" />
+        <div className="mx-1 h-6 w-px shrink-0 bg-border/80" aria-hidden="true" />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -295,12 +295,12 @@ export function DashboardHeader({
               className="h-9 gap-2 px-2 font-normal hover:bg-muted/60"
               aria-label="Profilmenü"
             >
-              <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarFallback className="rounded-lg text-xs">{userInitials}</AvatarFallback>
-              </Avatar>
               <span className="hidden max-w-[160px] truncate text-left text-sm font-medium sm:inline">
                 {userName}
               </span>
+              <Avatar className="h-8 w-8 rounded-lg">
+                <AvatarFallback className="rounded-lg text-xs">{userInitials}</AvatarFallback>
+              </Avatar>
               <span className="size-4 shrink-0" aria-hidden />
             </Button>
           </DropdownMenuTrigger>
