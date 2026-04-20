@@ -128,7 +128,7 @@ export function DashboardShell({
                   </div>
                   <div className="flex flex-col gap-0.5 leading-none">
                     <span className="text-sm font-semibold tracking-tight">
-                      Refstack
+                      RefStack
                     </span>
                   </div>
                 </Link>

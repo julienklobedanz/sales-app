@@ -910,12 +910,12 @@ export function renderReferenceColumnCell(
       )
     case "title":
       return (
-        <TableCell className="max-w-[200px] truncate text-muted-foreground">
+        <TableCell className="max-w-[200px] truncate text-foreground">
           {ref.title}
         </TableCell>
       )
     case "industry":
-      return <TableCell>{ref.industry ?? "—"}</TableCell>
+      return <TableCell className="text-muted-foreground">{ref.industry ?? "—"}</TableCell>
     case "status":
       return (
         <TableCell>

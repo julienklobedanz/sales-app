@@ -15,7 +15,7 @@ export function AccountCell({
   return (
     <div className="flex min-w-0 max-w-[260px] items-center gap-2.5">
       {companyLogoUrl ? (
-        <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md">
+        <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md bg-muted/30">
           <Image
             src={companyLogoUrl}
             alt=""
