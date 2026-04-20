@@ -11,28 +11,25 @@ import { Button } from '@/components/ui/button'
 import { ROUTES } from '@/lib/routes'
 
 export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }) {
-  if (model.followingCompanyIds.length === 0) {
-    return (
-      <Card className="rounded-2xl border border-dashed border-border/70 bg-card">
-        <CardContent className="flex flex-col items-center gap-4 py-14 text-center">
-          <div className="space-y-1">
-            <p className="text-base font-semibold text-slate-950">{COPY.marketSignals.emptyFollowingTitle}</p>
-            <p className="text-sm text-slate-500">{COPY.marketSignals.emptyFollowingBody}</p>
-          </div>
-          <Button
-            asChild
-            size="toolbar"
-            className="rounded-lg bg-gradient-to-b from-blue-600 to-blue-700 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] hover:from-blue-600 hover:to-blue-700/95"
-          >
-            <Link href={ROUTES.accounts}>{COPY.marketSignals.emptyFollowingCta}</Link>
-          </Button>
-        </CardContent>
-      </Card>
-    )
-  }
-
   return (
     <div className="space-y-5">
+      {model.followingCompanyIds.length === 0 ? (
+        <Card className="rounded-2xl border border-dashed border-border/70 bg-card">
+          <CardContent className="flex flex-col items-center gap-4 py-8 text-center">
+            <div className="space-y-1">
+              <p className="text-base font-semibold text-slate-950">{COPY.marketSignals.emptyFollowingTitle}</p>
+              <p className="text-sm text-slate-500">{COPY.marketSignals.emptyFollowingBody}</p>
+            </div>
+            <Button
+              asChild
+              size="toolbar"
+              className="rounded-lg bg-gradient-to-b from-blue-600 to-blue-700 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] hover:from-blue-600 hover:to-blue-700/95"
+            >
+              <Link href={ROUTES.accounts}>{COPY.marketSignals.emptyFollowingCta}</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
       <ExecutiveTrackingList
         items={model.executives}
         companies={model.companies}
