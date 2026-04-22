@@ -126,11 +126,11 @@ export function DashboardShell({
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton size="lg" asChild className="hover:bg-transparent">
-                <Link href={ROUTES.home}>
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                    <AppIcon icon={GalleryHorizontalEndIcon} size={20} strokeWidth={2.5} />
+                <Link href={ROUTES.home} className="group/link flex items-center gap-2.5 group-data-[collapsible=icon]:justify-center">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                    <AppIcon icon={GalleryHorizontalEndIcon} size={16} strokeWidth={2.5} />
                   </div>
-                  <div className="flex flex-col gap-0.5 leading-none">
+                  <div className="flex flex-col gap-0.5 leading-none group-data-[collapsible=icon]:hidden">
                     <span className="text-sm font-semibold tracking-tight">
                       RefStack
                     </span>
