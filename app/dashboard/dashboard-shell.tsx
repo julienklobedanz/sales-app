@@ -255,7 +255,7 @@ export function DashboardShell({
                     <Link href={ROUTES.conceptsInboxReferences} className="flex items-center gap-2.5">
                       <span className="relative z-10">
                         <AppIcon
-                          icon={BrainCircuit}
+                          icon={FileText}
                           size={16}
                           strokeWidth={pathname?.startsWith(ROUTES.conceptsInboxReferences) ? 2.5 : 2}
                         />
