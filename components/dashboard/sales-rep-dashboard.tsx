@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { GalleryHorizontalEndIcon, LinkIcon, SearchIcon, UploadIcon } from '@hugeicons/core-free-icons'
 import { createSharedPortfolio } from '@/app/dashboard/actions'
@@ -16,9 +16,16 @@ import type { SalesRepDashboardModel } from '@/app/dashboard/dashboard-home-data
 import { formatDateUtcDe } from '@/lib/format'
 
 export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
-  const { activeDeals, recommended, recommendedNote, recentShares } = data
+  const { greetingName, activeDeals, recommended, recommendedNote, recentShares } = data
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
+  const [isMacLike, setIsMacLike] = useState(true)
+
+  useEffect(() => {
+    const ua = navigator.userAgent.toLowerCase()
+    setIsMacLike(/mac|iphone|ipad|ipod/.test(ua))
+  }, [])
+  const shortcutLabel = isMacLike ? 'CMD + K' : 'CTRL + K'
 
   function handleQuickShare(referenceId: string | null) {
     if (!referenceId) {
@@ -40,67 +47,80 @@ export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
     <div className="flex flex-col gap-6">
       <div className="h-[62px]" aria-hidden />
 
+      <button
+        type="button"
+        className="relative flex h-16 w-full items-center rounded-2xl border border-white/70 bg-white/70 pl-12 pr-24 text-left text-lg text-slate-600 shadow-[0_8px_30px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-shadow hover:shadow-[0_0_0_1px_rgba(59,130,246,0.24),0_10px_36px_rgba(59,130,246,0.18)]"
+        onClick={() => router.push(ROUTES.match)}
+      >
+        <AppIcon icon={SearchIcon} size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+        Durchsuche Deals, Accounts und Referenzen ...
+        <span className="absolute right-4 top-1/2 -translate-y-1/2 rounded-md border border-border/70 bg-background/90 px-2.5 py-1 text-xs font-medium text-muted-foreground">
+          {shortcutLabel}
+        </span>
+      </button>
+
       <Card className="bg-white border-slate-200 shadow-sm">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Command Center</CardTitle>
-          <CardDescription>
-            Globale Suche und schnelle Aktionen fuer deinen Deal-Fokus.
-          </CardDescription>
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Deine nächsten Schritte</p>
+          <CardTitle className="text-base tracking-tight">Quick Actions</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          <button
-            type="button"
-            className="relative flex h-11 w-full items-center rounded-xl border border-white/70 bg-white/80 pl-10 pr-20 text-left text-sm text-muted-foreground shadow-sm backdrop-blur-md hover:bg-white"
-            onClick={() => router.push(ROUTES.match)}
-          >
-            <AppIcon icon={SearchIcon} size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" />
-            Nach Deal, Account oder Referenz suchen...
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md border border-border/70 bg-background px-2 py-0.5 text-xs text-muted-foreground">
-              CMD + K
-            </span>
-          </button>
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <Button asChild variant="default" className="gap-2">
-              <Link href={ROUTES.match}>
-                <AppIcon icon={SearchIcon} size={18} />
-                Match starten
-              </Link>
-            </Button>
-            <Button asChild variant="outline" className="gap-2">
-              <Link href={ROUTES.marketSignals}>
-                <AppIcon icon={UploadIcon} size={18} />
-                RFP / Marktsignale
-              </Link>
-            </Button>
-            <Button asChild variant="outline" className="gap-2">
-              <Link href={ROUTES.deals.requestNew}>
-                <AppIcon icon={LinkIcon} size={18} />
-                Referenz-Anfrage
-              </Link>
-            </Button>
+        <CardContent>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Link
+              href={ROUTES.match}
+              className="group rounded-xl border border-blue-600/20 bg-gradient-to-b from-blue-600 to-blue-700 p-4 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] transition-transform hover:-translate-y-0.5"
+            >
+              <AppIcon icon={SearchIcon} size={18} />
+              <p className="mt-2 text-sm font-semibold tracking-tight">Match starten</p>
+              <p className="mt-1 text-xs text-blue-100/90">Neue Referenztreffer fuer aktive Deals</p>
+            </Link>
+            <Link
+              href={ROUTES.marketSignals}
+              className="group rounded-xl border border-slate-200 bg-card p-4 transition-all hover:-translate-y-0.5 hover:shadow-sm"
+            >
+              <AppIcon icon={UploadIcon} size={18} className="text-slate-600" />
+              <p className="mt-2 text-sm font-semibold tracking-tight text-foreground">RFP / Marktsignale</p>
+              <p className="mt-1 text-xs text-muted-foreground">Proaktive Trigger fuer deinen Pipeline-Fokus</p>
+            </Link>
+            <Link
+              href={ROUTES.deals.requestNew}
+              className="group rounded-xl border border-slate-200 bg-card p-4 transition-all hover:-translate-y-0.5 hover:shadow-sm"
+            >
+              <AppIcon icon={LinkIcon} size={18} className="text-slate-600" />
+              <p className="mt-2 text-sm font-semibold tracking-tight text-foreground">Referenz-Anfrage</p>
+              <p className="mt-1 text-xs text-muted-foreground">Direkt den passenden Kundenbeleg anfordern</p>
+            </Link>
           </div>
         </CardContent>
       </Card>
 
       <Card className="bg-white border-slate-200 shadow-sm">
         <CardHeader>
-          <CardTitle className="text-base">Deine aktiven Deals</CardTitle>
+          <CardTitle className="text-base tracking-tight">Deine aktiven Deals</CardTitle>
           <CardDescription>
             Status offen, RFP oder Verhandlung; dir als Sales zugeordnet.
           </CardDescription>
         </CardHeader>
         <CardContent>
           {activeDeals.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/70 px-6 py-10 text-center">
-              <AppIcon icon={UploadIcon} size={24} className="text-muted-foreground" />
-              <p className="mt-3 text-base font-semibold text-foreground">No Deals synced yet</p>
-              <p className="mt-1 text-sm text-muted-foreground">Verbinde dein CRM, um proaktive Match-Vorschlaege zu erhalten.</p>
+            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/70 px-6 py-12 text-center">
+              <div className="mb-4 grid w-full max-w-sm grid-cols-5 gap-1.5 opacity-60">
+                <div className="h-3 rounded-full bg-slate-300/80" />
+                <div className="h-3 rounded-full bg-slate-300/70" />
+                <div className="h-3 rounded-full bg-slate-300/60" />
+                <div className="h-3 rounded-full bg-slate-300/50" />
+                <div className="h-3 rounded-full bg-slate-300/40" />
+              </div>
+              <p className="text-base font-semibold tracking-tight text-foreground">Noch keine aktiven Deals synchronisiert</p>
+              <p className="mt-1 max-w-xl text-sm text-muted-foreground">
+                Lass uns Deals gewinnen, {greetingName || 'du'}. Verknüpfe deine aktive Salesforce-Pipeline, um hier Live-Referenzmatches in Echtzeit zu sehen.
+              </p>
               <Button
                 type="button"
                 className="mt-4 rounded-lg bg-gradient-to-b from-blue-600 to-blue-700 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] hover:from-blue-600 hover:to-blue-700/95"
                 onClick={() => toast.info('CRM-Connect folgt im naechsten Schritt.')}
               >
-                Connect Salesforce / HubSpot
+                Salesforce / HubSpot verbinden
               </Button>
             </div>
           ) : (
@@ -161,7 +181,7 @@ export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
 
       <Card className="bg-white border-slate-200 shadow-sm">
         <CardHeader>
-          <CardTitle className="text-base">Empfohlene Referenzen</CardTitle>
+          <CardTitle className="text-base tracking-tight">Empfohlen für dich</CardTitle>
           <CardDescription>
             Automatischer Abgleich anhand deines ersten aktiven Deals (Match-Engine).
           </CardDescription>
@@ -170,7 +190,14 @@ export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
           {recommendedNote ? (
             <p className="text-sm text-muted-foreground">{recommendedNote}</p>
           ) : recommended.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Keine Treffer für die aktuelle Auswahl.</p>
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center gap-2 rounded-lg border border-slate-200/80 bg-slate-50/70 px-3 py-2.5">
+                  <span className="size-6 rounded-md bg-slate-300/60" />
+                  <span className="h-3 w-52 rounded bg-slate-300/60" />
+                </div>
+              ))}
+            </div>
           ) : (
             <ul className="space-y-3">
               {recommended.map((m) => (
@@ -199,7 +226,7 @@ export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
 
       <Card className="bg-white border-slate-200 shadow-sm">
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
+          <CardTitle className="text-base tracking-tight flex items-center gap-2">
             <AppIcon icon={GalleryHorizontalEndIcon} size={18} className="text-muted-foreground" />
             Kürzlich geteilte Links
           </CardTitle>
@@ -207,7 +234,14 @@ export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
         </CardHeader>
         <CardContent>
           {recentShares.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Noch keine Einträge.</p>
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center justify-between rounded-lg border border-slate-200/80 bg-slate-50/70 px-3 py-2.5">
+                  <span className="h-3 w-24 rounded bg-slate-300/60" />
+                  <span className="h-3 w-36 rounded bg-slate-300/60" />
+                </div>
+              ))}
+            </div>
           ) : (
             <ul className="space-y-2 text-sm">
               {recentShares.map((row, i) => (

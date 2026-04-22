@@ -73,6 +73,7 @@ export function DashboardHeader({
   const router = useRouter()
   const { resolvedTheme, setTheme } = useTheme()
   const { setOpen } = useCommandPalette()
+  const [isMacLike, setIsMacLike] = useState(true)
   const [roleSwitchPending, startRoleSwitch] = useTransition()
   const [notifications, setNotifications] =
     useState<DashboardNotificationItem[]>(initialNotifications)
@@ -81,12 +82,18 @@ export function DashboardHeader({
     setNotifications(initialNotifications)
   }, [initialNotifications])
 
+  useEffect(() => {
+    const ua = navigator.userAgent.toLowerCase()
+    setIsMacLike(/mac|iphone|ipad|ipod/.test(ua))
+  }, [])
+
   const unreadCount = useMemo(
     () => notifications.filter((n) => !n.read).length,
     [notifications]
   )
 
   const [markNotificationsPending, startMarkNotifications] = useTransition()
+  const shortcutLabel = isMacLike ? '⌘K' : 'Ctrl K'
 
   function markAllNotificationsRead() {
     const ids = notifications.filter((n) => !n.read).map((n) => n.id)
@@ -203,12 +210,14 @@ export function DashboardHeader({
         <Button
           type="button"
           variant="ghost"
-          size="icon"
-          aria-label="Suche öffnen (⌘K)"
-          title="Suche (⌘K)"
+          size="sm"
+          className="h-9 gap-1.5 px-2"
+          aria-label={`Suche öffnen (${shortcutLabel})`}
+          title={`Suche (${shortcutLabel})`}
           onClick={() => setOpen(true)}
         >
           <AppIcon icon={SearchIcon} size={20} />
+          <Kbd className="hidden sm:inline-flex">{shortcutLabel}</Kbd>
         </Button>
 
         <Popover>
