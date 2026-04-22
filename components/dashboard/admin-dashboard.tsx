@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useMemo, useTransition } from 'react'
+import { useMemo, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Cancel01Icon, UploadIcon } from '@hugeicons/core-free-icons'
 import { Button } from '@/components/ui/button'
@@ -30,6 +30,7 @@ function TrendHint({ delta }: { delta: number }) {
 export function AdminDashboard({ data }: { data: AdminDashboardModel }) {
   const { kpis, topReferences, openRequests, teamActivity } = data
   const [isPending, startTransition] = useTransition()
+  const [visibleTeamActivityCount, setVisibleTeamActivityCount] = useState(5)
   const staleThreshold = useMemo(() => {
     const d = new Date()
     d.setMonth(d.getMonth() - 12)
@@ -94,7 +95,7 @@ export function AdminDashboard({ data }: { data: AdminDashboardModel }) {
               <p className="text-sm text-muted-foreground">Noch keine ausreichenden Daten.</p>
             ) : (
               <ul className="space-y-2 text-sm">
-                {topReferences.map((r) => (
+                {topReferences.slice(0, 5).map((r) => (
                   <li key={r.id} className="flex items-center justify-between gap-2 rounded-lg border border-slate-200/80 bg-white px-2.5 py-2">
                     <Link
                       href={ROUTES.evidence.detail(r.id)}
@@ -136,7 +137,7 @@ export function AdminDashboard({ data }: { data: AdminDashboardModel }) {
               <p className="text-sm text-muted-foreground">Keine offenen Anfragen.</p>
             ) : (
               <ul className="space-y-2 text-sm">
-                {openRequests.slice(0, 8).map((r) => (
+                {openRequests.slice(0, 4).map((r) => (
                   <li key={r.id} className="group/request flex items-center justify-between gap-3 rounded-lg border border-slate-200/80 bg-white px-3 py-2">
                     <div className="min-w-0">
                       <Link href={ROUTES.evidence.detail(r.reference_id)} className="font-medium hover:underline">
@@ -172,11 +173,13 @@ export function AdminDashboard({ data }: { data: AdminDashboardModel }) {
                     </div>
                   </li>
                 ))}
+                <li className="flex items-center justify-center rounded-lg border border-slate-200/80 bg-white px-3 py-2.5">
+                  <Button asChild variant="ghost" size="sm" className="h-8">
+                    <Link href={ROUTES.request}>Alle Anfragen</Link>
+                  </Button>
+                </li>
               </ul>
             )}
-            <Button asChild variant="outline" className="mt-4 w-full sm:w-auto">
-              <Link href={ROUTES.request}>Alle Anfragen</Link>
-            </Button>
           </CardContent>
         </Card>
       </div>
@@ -190,32 +193,47 @@ export function AdminDashboard({ data }: { data: AdminDashboardModel }) {
           {teamActivity.length === 0 ? (
             <p className="text-sm text-muted-foreground">Keine Team-Aktivität in diesem Fenster.</p>
           ) : (
-            <ul className="space-y-2">
-              {teamActivity.map((row) => (
-                <li key={row.id} className="flex items-center gap-3 rounded-lg border border-slate-200/80 bg-white px-3 py-2.5">
-                  <Avatar size="sm">
-                    <AvatarFallback>{row.displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                  <p className="min-w-0 flex-1 text-sm text-foreground">
-                    <span className="font-medium">{row.displayName}</span> {row.actionLabel}
-                    {row.companyName ? (
-                      <>
-                        {' '}fuer{' '}
-                        <span className="inline-flex items-center gap-1.5">
-                          <span className="relative flex size-4 shrink-0 items-center justify-center overflow-hidden rounded-sm bg-muted/35">
-                            {row.companyLogoUrl ? (
-                              <Image src={row.companyLogoUrl} alt="" fill sizes="16px" className="object-contain p-0.5" />
-                            ) : null}
+            <>
+              <ul className="space-y-2">
+                {teamActivity.slice(0, visibleTeamActivityCount).map((row) => (
+                  <li key={row.id} className="flex items-center gap-3 rounded-lg border border-slate-200/80 bg-white px-3 py-2.5">
+                    <Avatar size="sm">
+                      <AvatarFallback>{row.displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <p className="min-w-0 flex-1 text-sm text-foreground">
+                      <span className="font-medium">{row.displayName}</span> {row.actionLabel}
+                      {row.companyName ? (
+                        <>
+                          {' '}fuer{' '}
+                          <span className="inline-flex items-center gap-1.5">
+                            <span className="relative flex size-4 shrink-0 items-center justify-center overflow-hidden rounded-sm bg-muted/35">
+                              {row.companyLogoUrl ? (
+                                <Image src={row.companyLogoUrl} alt="" fill sizes="16px" className="object-contain p-0.5" />
+                              ) : null}
+                            </span>
+                            <span className="font-medium">{row.companyName}</span>
                           </span>
-                          <span className="font-medium">{row.companyName}</span>
-                        </span>
-                      </>
-                    ) : null}
-                  </p>
-                  <span className="shrink-0 text-xs text-slate-500">{formatDateUtcDe(row.timestamp)}</span>
-                </li>
-              ))}
-            </ul>
+                        </>
+                      ) : null}
+                    </p>
+                    <span className="shrink-0 text-xs text-slate-500">{formatDateUtcDe(row.timestamp)}</span>
+                  </li>
+                ))}
+              </ul>
+              {teamActivity.length > visibleTeamActivityCount ? (
+                <div className="flex justify-center pt-3">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 text-slate-500 hover:bg-muted/70"
+                    onClick={() => setVisibleTeamActivityCount((prev) => prev + 5)}
+                  >
+                    5 weitere anzeigen
+                  </Button>
+                </div>
+              ) : null}
+            </>
           )}
         </CardContent>
       </Card>
