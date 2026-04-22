@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
-import { FilterHorizontal, InformationCircle } from '@hugeicons/core-free-icons'
+import { FilterHorizontalIcon, InformationCircleIcon } from '@hugeicons/core-free-icons'
 
 import { COPY } from '@/lib/copy'
 import { AppIcon } from '@/lib/icons'
@@ -23,7 +23,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/70 bg-card px-4 py-3 shadow-sm shadow-slate-900/5">
         <div className="flex min-w-0 items-start gap-2.5 text-sm text-muted-foreground">
-          <AppIcon icon={InformationCircle} size={16} className="mt-0.5 shrink-0" />
+          <AppIcon icon={InformationCircleIcon} size={16} className="mt-0.5 shrink-0" />
           <p className="min-w-0">
             <span className="font-medium text-foreground">Watchlist-Logik:</span> Unternehmen folgen fuer Account News,
             Personen folgen fuer Executive Moves.
@@ -41,7 +41,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                 : 'border-border/70 bg-muted/40 text-muted-foreground hover:bg-muted/70'
             }`}
           >
-            <AppIcon icon={FilterHorizontal} size={14} />
+            <AppIcon icon={FilterHorizontalIcon} size={14} />
             Nur fuer aktive Deals
           </Button>
           <Button variant="ghost" size="toolbar" className="h-9 px-3 text-slate-500 hover:bg-muted/70" asChild>
