@@ -38,8 +38,9 @@ export function AdminDashboard({ data }: { data: AdminDashboardModel }) {
 
   function requestDecision(approvalId: string, decision: 'approve_external' | 'reject') {
     startTransition(async () => {
-      const result = await reviewRequest(approvalId, decision)
-      if ((result as { success?: boolean })?.success === false) {
+      try {
+        await reviewRequest(approvalId, decision)
+      } catch {
         toast.error('Aktion fehlgeschlagen.')
         return
       }
