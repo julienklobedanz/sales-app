@@ -3,11 +3,22 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useMemo, useState } from 'react'
+import { toast } from 'sonner'
 
-import { ExternalLink, LinkIcon, Linkedin01Icon, SettingsIcon } from '@hugeicons/core-free-icons'
+import {
+  Bell,
+  Building2,
+  ExternalLink,
+  LinkIcon,
+  Linkedin01Icon,
+  MailOpen,
+  Sparkles,
+  UploadIcon,
+} from '@hugeicons/core-free-icons'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { markMarketSignalNotificationsRead } from '@/app/dashboard/market-signals/actions'
 import { COPY } from '@/lib/copy'
 import { AppIcon } from '@/lib/icons'
 import { ROUTES } from '@/lib/routes'
@@ -74,12 +85,17 @@ export function ExecutiveTrackingList({
   items,
   companies,
   followingCompanyIds,
+  initialReadKeys,
+  restrictedCompanyIds,
 }: {
   items: ExecutiveTrackingRow[]
   companies: MarketSignalsCompanyOption[]
   followingCompanyIds: string[]
+  initialReadKeys: string[]
+  restrictedCompanyIds?: string[]
 }) {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+  const [readKeys, setReadKeys] = useState(() => new Set(initialReadKeys.filter((k) => k.startsWith('market_exec:'))))
   const followed = useMemo(() => new Set(followingCompanyIds), [followingCompanyIds])
   const companyNameById = useMemo(
     () => new Map(companies.map((company) => [company.id, normalizeText(company.name)])),
@@ -102,6 +118,11 @@ export function ExecutiveTrackingList({
     })
   }, [items])
 
+  const restrictedSet = useMemo(
+    () => (restrictedCompanyIds?.length ? new Set(restrictedCompanyIds) : null),
+    [restrictedCompanyIds]
+  )
+
   const prioritized = useMemo(() => {
     const withScore = deduped.map((row) => {
       const summaryNorm = normalizeText(row.changeSummary)
@@ -112,12 +133,23 @@ export function ExecutiveTrackingList({
       const isChampionMove = followed.has(row.companyId) || mentionsFollowed
       return { ...row, isChampionMove }
     })
-    return withScore.sort((a, b) => {
+    const filtered = restrictedSet ? withScore.filter((row) => restrictedSet.has(row.companyId)) : withScore
+    return filtered.sort((a, b) => {
       if (a.isChampionMove !== b.isChampionMove) return a.isChampionMove ? -1 : 1
       return new Date(b.detectedAt).getTime() - new Date(a.detectedAt).getTime()
     })
-  }, [companyNameById, deduped, followed, followingCompanyIds])
+  }, [companyNameById, deduped, followed, followingCompanyIds, restrictedSet])
   const visibleItems = prioritized.slice(0, visibleCount)
+  const visibleReadKeys = useMemo(() => visibleItems.map((row) => `market_exec:${row.id}`), [visibleItems])
+
+  async function handleMarkRead() {
+    if (!visibleReadKeys.length) return
+    const next = new Set(readKeys)
+    visibleReadKeys.forEach((key) => next.add(key))
+    setReadKeys(next)
+    const result = await markMarketSignalNotificationsRead(visibleReadKeys)
+    if (!result.success) toast.error(result.error ?? 'Konnte Signale nicht als gelesen markieren')
+  }
 
   return (
     <Card className="rounded-2xl border border-border/70 bg-card shadow-sm shadow-slate-900/5">
@@ -125,12 +157,27 @@ export function ExecutiveTrackingList({
         <CardTitle className="text-base font-semibold text-slate-950">
           {COPY.marketSignals.championSection}
         </CardTitle>
-        <Button variant="ghost" size="toolbar" className="h-9 px-3 text-slate-500 hover:bg-muted/70" asChild>
-          <Link href={ROUTES.accounts}>
-            <AppIcon icon={SettingsIcon} size={16} />
-            {COPY.marketSignals.manage}
-          </Link>
-        </Button>
+        <div className="flex items-center gap-1.5">
+          <Button
+            type="button"
+            variant="ghost"
+            size="toolbar"
+            className="h-9 w-9 px-0 text-slate-500 hover:bg-muted/70"
+            onClick={handleMarkRead}
+            aria-label="Champion Moves als gelesen markieren"
+          >
+            <AppIcon icon={MailOpen} size={16} />
+          </Button>
+          <Button variant="ghost" size="toolbar" className="h-9 px-3 text-slate-500 hover:bg-muted/70" asChild>
+            <Link href={ROUTES.settings}>
+              <AppIcon icon={Bell} size={15} />
+              Benachrichtigungen
+            </Link>
+          </Button>
+          <Button variant="ghost" size="toolbar" className="h-9 px-3 text-slate-500 hover:bg-muted/70" asChild>
+            <Link href={ROUTES.marketSignalsManage}>{COPY.marketSignals.manage}</Link>
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {visibleItems.length === 0 ? (
@@ -149,10 +196,15 @@ export function ExecutiveTrackingList({
                 currentCompanyName: row.companyName,
                 changeSummary: row.changeSummary,
               })
+              const linkedInSearchUrl = `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(
+                `${row.personName} ${row.companyName}`
+              )}`
               return (
                 <li
                   key={row.id}
-                  className="flex flex-col gap-3 rounded-xl border border-border/70 bg-card p-4 sm:flex-row sm:items-start sm:justify-between"
+                  className={`flex flex-col gap-3 rounded-xl border border-border/70 bg-card p-4 sm:flex-row sm:items-start sm:justify-between ${
+                    readKeys.has(`market_exec:${row.id}`) ? 'opacity-55' : ''
+                  }`}
                 >
                   <div className="flex min-w-0 gap-3.5">
                     <div className="relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-muted/40">
@@ -186,9 +238,41 @@ export function ExecutiveTrackingList({
                       </div>
                     </div>
                   </div>
-                  <Button variant="ghost" size="sm" className="shrink-0 self-start text-blue-600 hover:bg-blue-50 hover:text-blue-600 sm:self-center" asChild>
-                    <Link href={ROUTES.accountsDetail(row.companyId)}>{COPY.marketSignals.openAccount}</Link>
-                  </Button>
+                  <div className="flex shrink-0 items-center gap-1 self-start sm:self-center">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+                      title="In Deal vermerken"
+                      aria-label="In Deal vermerken"
+                    >
+                      <AppIcon icon={UploadIcon} size={15} />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+                      title="Gratulieren"
+                      aria-label="Gratulieren"
+                      asChild
+                    >
+                      <Link href={linkedInSearchUrl} target="_blank" rel="noreferrer">
+                        <AppIcon icon={Sparkles} size={15} />
+                      </Link>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+                      asChild
+                    >
+                      <Link href={ROUTES.accountsDetail(row.companyId)} aria-label="Zum Account">
+                        <AppIcon icon={Building2} size={16} />
+                      </Link>
+                    </Button>
+                  </div>
                 </li>
               )
             })}

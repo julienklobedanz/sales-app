@@ -4,12 +4,12 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
+  Building2,
   FileText,
   SettingsIcon,
   GalleryHorizontalEndIcon,
   LifeBuoy,
   Send,
-  BrainCircuit,
   Handshake,
   TrendingUp,
 } from '@hugeicons/core-free-icons'
@@ -175,7 +175,7 @@ export function DashboardShell({
                     <Link href={ROUTES.accounts} className="flex items-center gap-2.5">
                       <span className="relative z-10">
                         <AppIcon
-                          icon={BrainCircuit}
+                          icon={Building2}
                           size={16}
                           strokeWidth={pathname?.startsWith(ROUTES.accounts) ? 2.5 : 2}
                         />

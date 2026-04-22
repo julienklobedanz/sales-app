@@ -112,7 +112,7 @@ export const COPY = {
     executiveSection: 'Executive Tracking',
     newsSection: 'Account News',
     championSection: 'Champion Moves',
-    manage: 'Manage',
+    manage: 'Verwalten',
     filterAccount: 'Account filtern',
     filterSegmentLabel: 'Typ',
     allAccounts: 'Alle Accounts',

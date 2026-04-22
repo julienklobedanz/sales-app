@@ -3,11 +3,13 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useMemo, useState } from 'react'
+import { toast } from 'sonner'
 
-import { ExternalLink, News01Icon, SettingsIcon } from '@hugeicons/core-free-icons'
+import { Bell, Building2, ExternalLink, MailOpen, News01Icon, Sparkles, UploadIcon } from '@hugeicons/core-free-icons'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { markMarketSignalNotificationsRead } from '@/app/dashboard/market-signals/actions'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 import { formatDateUtcDe } from '@/lib/format'
@@ -57,12 +59,17 @@ export function AccountNewsFeed({
   items,
   companies,
   followingCompanyIds,
+  initialReadKeys,
+  restrictedCompanyIds,
 }: {
   items: AccountNewsRow[]
   companies: MarketSignalsCompanyOption[]
   followingCompanyIds: string[]
+  initialReadKeys: string[]
+  restrictedCompanyIds?: string[]
 }) {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+  const [readKeys, setReadKeys] = useState(() => new Set(initialReadKeys.filter((k) => k.startsWith('market_news:'))))
   const followSet = useMemo(() => new Set(followingCompanyIds), [followingCompanyIds])
   const topTargetCompanyIds = useMemo(() => {
     const newestByCompany = new Map<string, number>()
@@ -82,28 +89,59 @@ export function AccountNewsFeed({
   }, [companies, items])
   const topTargetSet = useMemo(() => new Set(topTargetCompanyIds), [topTargetCompanyIds])
 
+  const restrictedSet = useMemo(
+    () => (restrictedCompanyIds?.length ? new Set(restrictedCompanyIds) : null),
+    [restrictedCompanyIds]
+  )
+
   const prioritized = useMemo(() => {
     return items
       .filter((item) => topTargetSet.has(item.companyId))
+      .filter((item) => (restrictedSet ? restrictedSet.has(item.companyId) : true))
       .sort((a, b) => {
         const aFollow = followSet.has(a.companyId)
         const bFollow = followSet.has(b.companyId)
         if (aFollow !== bFollow) return aFollow ? -1 : 1
         return new Date(b.publishedOn).getTime() - new Date(a.publishedOn).getTime()
       })
-  }, [followSet, items, topTargetSet])
+  }, [followSet, items, topTargetSet, restrictedSet])
   const visibleItems = prioritized.slice(0, visibleCount)
+  const visibleReadKeys = useMemo(() => visibleItems.map((row) => `market_news:${row.id}`), [visibleItems])
+
+  async function handleMarkRead() {
+    if (!visibleReadKeys.length) return
+    const next = new Set(readKeys)
+    visibleReadKeys.forEach((key) => next.add(key))
+    setReadKeys(next)
+    const result = await markMarketSignalNotificationsRead(visibleReadKeys)
+    if (!result.success) toast.error(result.error ?? 'Konnte News nicht als gelesen markieren')
+  }
 
   return (
     <Card className="rounded-2xl border border-border/70 bg-card shadow-sm shadow-slate-900/5">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
         <CardTitle className="text-base font-semibold text-slate-950">{COPY.marketSignals.newsSection}</CardTitle>
-        <Button variant="ghost" size="toolbar" className="h-9 px-3 text-slate-500 hover:bg-muted/70" asChild>
-          <Link href={ROUTES.accounts}>
-            <AppIcon icon={SettingsIcon} size={16} />
-            {COPY.marketSignals.manage}
-          </Link>
-        </Button>
+        <div className="flex items-center gap-1.5">
+          <Button
+            type="button"
+            variant="ghost"
+            size="toolbar"
+            className="h-9 w-9 px-0 text-slate-500 hover:bg-muted/70"
+            onClick={handleMarkRead}
+            aria-label="Account News als gelesen markieren"
+          >
+            <AppIcon icon={MailOpen} size={16} />
+          </Button>
+          <Button variant="ghost" size="toolbar" className="h-9 px-3 text-slate-500 hover:bg-muted/70" asChild>
+            <Link href={ROUTES.settings}>
+              <AppIcon icon={Bell} size={15} />
+              Benachrichtigungen
+            </Link>
+          </Button>
+          <Button variant="ghost" size="toolbar" className="h-9 px-3 text-slate-500 hover:bg-muted/70" asChild>
+            <Link href={ROUTES.marketSignalsManage}>{COPY.marketSignals.manage}</Link>
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {visibleItems.length === 0 ? (
@@ -116,7 +154,9 @@ export function AccountNewsFeed({
             {visibleItems.map((row) => (
               <li
                 key={row.id}
-                className="flex flex-col gap-3 rounded-xl border border-border/70 bg-card p-4 sm:flex-row sm:items-start sm:justify-between"
+                className={`flex flex-col gap-3 rounded-xl border border-border/70 bg-card p-4 sm:flex-row sm:items-start sm:justify-between ${
+                  readKeys.has(`market_news:${row.id}`) ? 'opacity-55' : ''
+                }`}
               >
                 <div className="flex min-w-0 gap-3.5">
                   <div className="relative mt-0.5 flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-muted/35">
@@ -159,14 +199,45 @@ export function AccountNewsFeed({
                     <p className="text-sm leading-relaxed text-slate-500">{row.body}</p>
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="shrink-0 self-start text-blue-600 hover:bg-blue-50 hover:text-blue-600 sm:self-center"
-                  asChild
-                >
-                  <Link href={ROUTES.accountsDetail(row.companyId)}>{COPY.marketSignals.openAccount}</Link>
-                </Button>
+                <div className="flex shrink-0 items-center gap-1 self-start sm:self-center">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2 text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+                    title="In Deal vermerken"
+                    aria-label="In Deal vermerken"
+                  >
+                    <AppIcon icon={UploadIcon} size={15} />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2 text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+                    title="Gratulieren"
+                    aria-label="Gratulieren"
+                    asChild
+                  >
+                    <Link
+                      href={`https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(row.companyName)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <AppIcon icon={Sparkles} size={15} />
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2 text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+                    asChild
+                  >
+                    <Link href={ROUTES.accountsDetail(row.companyId)} aria-label="Zum Account">
+                      <AppIcon icon={Building2} size={16} />
+                    </Link>
+                  </Button>
+                </div>
               </li>
             ))}
           </ul>

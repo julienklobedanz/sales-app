@@ -6,12 +6,34 @@ import { ROUTES } from '@/lib/routes'
 
 import type { ReferenceRow } from '@/app/dashboard/actions'
 
+function normalizeWrappedText(input: string | null | undefined): string | null {
+  const raw = String(input ?? '')
+    .replace(/\r\n/g, '\n')
+    .trim()
+  if (!raw) return null
+
+  const paragraphs = raw
+    .split(/\n{2,}/g)
+    .map((paragraph) =>
+      paragraph
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .join(' ')
+        .replace(/\s{2,}/g, ' ')
+        .trim()
+    )
+    .filter(Boolean)
+
+  return paragraphs.length ? paragraphs.join('\n\n') : null
+}
+
 export async function updateReferenceImpl(id: string, formData: FormData) {
   const supabase = await createServerSupabaseClient()
 
   const companyName = formData.get('company_name')?.toString()?.trim()
   const title = formData.get('title')?.toString()?.trim()
-  const summary = formData.get('summary')?.toString()?.trim() ?? null
+  const summary = normalizeWrappedText(formData.get('summary')?.toString())
   const industry = formData.get('industry')?.toString()?.trim() ?? null
   const country = formData.get('country')?.toString()?.trim() ?? null
   const contactIdRaw = formData.get('contactId')?.toString()?.trim() ?? null
@@ -36,8 +58,8 @@ export async function updateReferenceImpl(id: string, formData: FormData) {
   const contract_type = formData.get('contract_type')?.toString()?.trim() ?? null
   const incumbent_provider = formData.get('incumbent_provider')?.toString()?.trim() ?? null
   const competitors = formData.get('competitors')?.toString()?.trim() ?? null
-  const customer_challenge = formData.get('customer_challenge')?.toString()?.trim() ?? null
-  const our_solution = formData.get('our_solution')?.toString()?.trim() ?? null
+  const customer_challenge = normalizeWrappedText(formData.get('customer_challenge')?.toString())
+  const our_solution = normalizeWrappedText(formData.get('our_solution')?.toString())
   const customer_contact = formData.get('customer_contact')?.toString()?.trim() ?? null
   const customer_contact_id_raw = formData.get('customer_contact_id')?.toString()?.trim() ?? null
   const customer_contact_id =

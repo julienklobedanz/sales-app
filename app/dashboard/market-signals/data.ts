@@ -37,6 +37,22 @@ export type MarketSignalsPageModel = {
   news: AccountNewsRow[]
   companies: MarketSignalsCompanyOption[]
   followingCompanyIds: string[]
+  signalReadKeys: string[]
+  activeDealCompanyIds: string[]
+}
+
+function normalizeDealStatus(raw: unknown) {
+  const s = String(raw ?? '').trim()
+  if (!s) return 'open'
+  if (s === 'in_negotiation') return 'negotiation'
+  if (s === 'rfp_phase') return 'rfp'
+  if (s === 'on_hold' || s === 'reference_sought' || s === 'in_approval' || s === 'reference_found') return 'open'
+  return s
+}
+
+function isActiveDealStatus(raw: unknown) {
+  const normalized = normalizeDealStatus(raw)
+  return normalized === 'open' || normalized === 'rfp' || normalized === 'negotiation'
 }
 
 export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageModel> {
@@ -45,7 +61,7 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) {
-    return { executives: [], news: [], companies: [], followingCompanyIds: [] }
+    return { executives: [], news: [], companies: [], followingCompanyIds: [], signalReadKeys: [], activeDealCompanyIds: [] }
   }
 
   const { data: profile } = await supabase
@@ -56,7 +72,7 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
 
   const orgId = profile?.organization_id as string | undefined
   if (!orgId) {
-    return { executives: [], news: [], companies: [], followingCompanyIds: [] }
+    return { executives: [], news: [], companies: [], followingCompanyIds: [], signalReadKeys: [], activeDealCompanyIds: [] }
   }
 
   const { data: companies } = await supabase
@@ -73,6 +89,31 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
   }))
   const followingCompanyIds = companyList.filter((company) => company.isFollowing).map((company) => company.id)
   const companyMetaById = new Map(companyList.map((company) => [company.id, company]))
+
+  const { data: signalReadRows } = await supabase
+    .from('notification_inbox_reads')
+    .select('notification_key')
+    .eq('user_id', user.id)
+    .or('notification_key.like.market_exec:%,notification_key.like.market_news:%')
+    .limit(500)
+  const signalReadKeys = (signalReadRows ?? [])
+    .map((row) => String(row.notification_key ?? ''))
+    .filter(Boolean)
+
+  const { data: dealRows } = await supabase
+    .from('deals')
+    .select('company_id,status')
+    .eq('organization_id', orgId)
+    .not('company_id', 'is', null)
+    .limit(2000)
+  const activeDealCompanyIds = Array.from(
+    new Set(
+      (dealRows ?? [])
+        .filter((row) => isActiveDealStatus((row as { status?: unknown }).status))
+        .map((row) => String((row as { company_id?: string | null }).company_id ?? ''))
+        .filter(Boolean)
+    )
+  )
 
   const { data: execRows, error: execErr } = await supabase
     .from('market_signal_executive_events')
@@ -156,5 +197,7 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
     news,
     companies: companyList,
     followingCompanyIds,
+    signalReadKeys,
+    activeDealCompanyIds,
   }
 }

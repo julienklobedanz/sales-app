@@ -117,6 +117,28 @@ function domainToDisplayName(domain: string): string {
   return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase()
 }
 
+function normalizeWrappedText(input: string | null | undefined): string | null {
+  const raw = String(input ?? '')
+    .replace(/\r\n/g, '\n')
+    .trim()
+  if (!raw) return null
+
+  const paragraphs = raw
+    .split(/\n{2,}/g)
+    .map((paragraph) =>
+      paragraph
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .join(' ')
+        .replace(/\s{2,}/g, ' ')
+        .trim()
+    )
+    .filter(Boolean)
+
+  return paragraphs.length ? paragraphs.join('\n\n') : null
+}
+
 /**
  * Brand-Search (Name) — optional mit BRANDFETCH_CLIENT_ID.
  * Ohne Client-ID: einzelner Fallback über Domain-Raten + /v2/brands/domain (wie bisher).
@@ -415,7 +437,7 @@ export async function createReference(
   const companyId = formData.get('companyId')?.toString()
   const newCompanyName = formData.get('newCompanyName')?.toString()?.trim()
   const title = formData.get('title')?.toString()?.trim()
-  const summary = formData.get('summary')?.toString()?.trim()
+  const summary = normalizeWrappedText(formData.get('summary')?.toString())
   const industry = formData.get('industry')?.toString()?.trim() || null
   const country = formData.get('country')?.toString()?.trim() || null
   const contactIdRaw = formData.get('contactId')?.toString()?.trim() || null
@@ -433,8 +455,8 @@ export async function createReference(
   const contract_type = formData.get('contract_type')?.toString()?.trim() || null
   const incumbent_provider = formData.get('incumbent_provider')?.toString()?.trim() || null
   const competitors = formData.get('competitors')?.toString()?.trim() || null
-  const customer_challenge = formData.get('customer_challenge')?.toString()?.trim() || null
-  const our_solution = formData.get('our_solution')?.toString()?.trim() || null
+  const customer_challenge = normalizeWrappedText(formData.get('customer_challenge')?.toString())
+  const our_solution = normalizeWrappedText(formData.get('our_solution')?.toString())
   const customer_contact = formData.get('customer_contact')?.toString()?.trim() || null
   const customer_contact_id_raw = formData.get('customer_contact_id')?.toString()?.trim() || null
   const customer_contact_id =
@@ -574,7 +596,7 @@ export async function createReference(
     .insert({
       company_id: resolvedCompanyId,
       title,
-      summary: summary || null,
+      summary,
       industry,
       country,
       website,
