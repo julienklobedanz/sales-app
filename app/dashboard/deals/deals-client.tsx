@@ -7,7 +7,7 @@ import { ToolbarSearchField } from '@/components/ui/toolbar-search-field'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import type { DealRow, DealStatus } from './types'
 import { DealForm } from './new/deal-form'
-import { importDealsFromXlsx, type MatchSuggestion } from './actions'
+import { importDealsFromXlsx } from './actions'
 import { ArrowUpDown, CirclePlus, Loader, UploadIcon } from '@hugeicons/core-free-icons'
 import { toast } from 'sonner'
 import { AppDataTable } from '@/components/ui/app-data-table'
@@ -33,8 +33,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
-type MatchMap = Record<string, { count: number; suggestions: MatchSuggestion[] }>
-
 type StatusFilterValue = 'all' | DealStatus
 const DEAL_COLUMNS_STORAGE_KEY = 'refstack:deals:column-order'
 const STATUS_FILTER_OPTIONS: { value: StatusFilterValue; label: string }[] = [
@@ -55,7 +53,6 @@ function formatDate(iso: string) {
 
 type Props = {
   deals: DealRow[]
-  matchMap: MatchMap
   companies: { id: string; name: string }[]
   orgProfiles: { id: string; full_name: string | null }[]
 }
@@ -84,7 +81,6 @@ function formatEuroAmount(raw: string | null | undefined): string {
 
 export function DealsClientContent({
   deals,
-  matchMap,
   companies,
   orgProfiles,
 }: Props) {

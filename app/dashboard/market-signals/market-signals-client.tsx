@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { FilterHorizontalIcon, InformationCircleIcon } from '@hugeicons/core-free-icons'
 
-import { COPY } from '@/lib/copy'
 import { AppIcon } from '@/lib/icons'
 import { ExecutiveTrackingList } from '@/components/market-signals/executive-tracking-list'
 import { AccountNewsFeed } from '@/components/market-signals/account-news-feed'

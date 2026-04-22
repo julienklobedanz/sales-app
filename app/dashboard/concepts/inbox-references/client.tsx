@@ -240,7 +240,7 @@ export function InboxReferencesConceptClient({
     return () => {
       cancelled = true
     }
-  }, [selected?.id])
+  }, [selected])
 
   // Wenn eine ungültige ID in der URL steht, räumen wir sie auf (und vermeiden „leeres Detail“).
   React.useEffect(() => {

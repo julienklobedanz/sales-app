@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState, useTransition } from 'react'
+import { useMemo, useTransition } from 'react'
 import { toast } from 'sonner'
 import { GalleryHorizontalEndIcon, LinkIcon, SearchIcon, UploadIcon } from '@hugeicons/core-free-icons'
 import { createSharedPortfolio } from '@/app/dashboard/actions'
@@ -19,11 +19,10 @@ export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
   const { greetingName, activeDeals, recommended, recommendedNote, recentShares } = data
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
-  const [isMacLike, setIsMacLike] = useState(true)
-
-  useEffect(() => {
+  const isMacLike = useMemo(() => {
+    if (typeof navigator === 'undefined') return true
     const ua = navigator.userAgent.toLowerCase()
-    setIsMacLike(/mac|iphone|ipad|ipod/.test(ua))
+    return /mac|iphone|ipad|ipod/.test(ua)
   }, [])
   const shortcutLabel = isMacLike ? 'CMD + K' : 'CTRL + K'
 

@@ -1,7 +1,7 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
-import { getDeals, getMatchingReferencesForDeals } from './actions'
+import { getDeals } from './actions'
 import { DealsClientContent } from './deals-client'
 
 export const dynamic = 'force-dynamic'
@@ -24,7 +24,7 @@ export default async function DealsPage() {
 
   const deals = await getDeals()
 
-  const [companiesResult, orgProfilesResult, matchMap] = await Promise.all([
+  const [companiesResult, orgProfilesResult] = await Promise.all([
     supabase
       .from('companies')
       .select('id, name')
@@ -35,7 +35,6 @@ export default async function DealsPage() {
       .select('id, full_name')
       .eq('organization_id', profile.organization_id)
       .order('full_name'),
-    getMatchingReferencesForDeals(deals.map((d) => d.id)),
   ])
 
   const companies = companiesResult.data
@@ -45,7 +44,6 @@ export default async function DealsPage() {
     <div className="flex flex-col space-y-6">
       <DealsClientContent
         deals={deals}
-        matchMap={matchMap}
         companies={companies ?? []}
         orgProfiles={orgProfiles ?? []}
       />
