@@ -49,7 +49,7 @@ export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
 
       <button
         type="button"
-        className="relative flex h-16 w-full items-center rounded-2xl border border-white/70 bg-white/70 pl-12 pr-24 text-left text-lg text-slate-600 shadow-[0_8px_30px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-shadow hover:shadow-[0_0_0_1px_rgba(59,130,246,0.24),0_10px_36px_rgba(59,130,246,0.18)]"
+        className="relative flex h-16 w-full items-center rounded-2xl border border-white/70 bg-white/70 pl-12 pr-24 text-left text-lg text-slate-600 shadow-[0_8px_30px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-all hover:shadow-[0_0_0_1px_rgba(59,130,246,0.24),0_10px_36px_rgba(59,130,246,0.18)]"
         onClick={() => router.push(ROUTES.match)}
       >
         <AppIcon icon={SearchIcon} size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
@@ -60,7 +60,7 @@ export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
       </button>
 
       <Card className="bg-white border-slate-200 shadow-sm">
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-2.5">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Deine nächsten Schritte</p>
           <CardTitle className="text-base tracking-tight">Quick Actions</CardTitle>
         </CardHeader>
@@ -68,7 +68,7 @@ export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
           <div className="grid gap-3 sm:grid-cols-3">
             <Link
               href={ROUTES.match}
-              className="group rounded-xl border border-blue-600/20 bg-gradient-to-b from-blue-600 to-blue-700 p-4 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] transition-transform hover:-translate-y-0.5"
+              className="group flex min-h-[128px] flex-col rounded-xl border border-blue-600/20 bg-gradient-to-b from-blue-600 to-blue-700 p-4 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] transition-transform hover:-translate-y-0.5"
             >
               <AppIcon icon={SearchIcon} size={18} />
               <p className="mt-2 text-sm font-semibold tracking-tight">Match starten</p>
@@ -76,7 +76,7 @@ export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
             </Link>
             <Link
               href={ROUTES.marketSignals}
-              className="group rounded-xl border border-slate-200 bg-card p-4 transition-all hover:-translate-y-0.5 hover:shadow-sm"
+              className="group flex min-h-[128px] flex-col rounded-xl border border-slate-200 bg-card p-4 transition-all hover:-translate-y-0.5 hover:shadow-sm"
             >
               <AppIcon icon={UploadIcon} size={18} className="text-slate-600" />
               <p className="mt-2 text-sm font-semibold tracking-tight text-foreground">RFP / Marktsignale</p>
@@ -84,7 +84,7 @@ export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
             </Link>
             <Link
               href={ROUTES.deals.requestNew}
-              className="group rounded-xl border border-slate-200 bg-card p-4 transition-all hover:-translate-y-0.5 hover:shadow-sm"
+              className="group flex min-h-[128px] flex-col rounded-xl border border-slate-200 bg-card p-4 transition-all hover:-translate-y-0.5 hover:shadow-sm"
             >
               <AppIcon icon={LinkIcon} size={18} className="text-slate-600" />
               <p className="mt-2 text-sm font-semibold tracking-tight text-foreground">Referenz-Anfrage</p>
@@ -95,7 +95,7 @@ export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
       </Card>
 
       <Card className="bg-white border-slate-200 shadow-sm">
-        <CardHeader>
+        <CardHeader className="pb-2.5">
           <CardTitle className="text-base tracking-tight">Deine aktiven Deals</CardTitle>
           <CardDescription>
             Status offen, RFP oder Verhandlung; dir als Sales zugeordnet.
@@ -180,7 +180,7 @@ export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
       </Card>
 
       <Card className="bg-white border-slate-200 shadow-sm">
-        <CardHeader>
+        <CardHeader className="pb-2.5">
           <CardTitle className="text-base tracking-tight">Empfohlen für dich</CardTitle>
           <CardDescription>
             Automatischer Abgleich anhand deines ersten aktiven Deals (Match-Engine).
@@ -225,7 +225,7 @@ export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
       </Card>
 
       <Card className="bg-white border-slate-200 shadow-sm">
-        <CardHeader>
+        <CardHeader className="pb-2.5">
           <CardTitle className="text-base tracking-tight flex items-center gap-2">
             <AppIcon icon={GalleryHorizontalEndIcon} size={18} className="text-muted-foreground" />
             Kürzlich geteilte Links
