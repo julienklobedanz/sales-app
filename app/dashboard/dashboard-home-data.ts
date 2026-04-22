@@ -13,10 +13,12 @@ export type SalesRepDealCard = {
   title: string
   status: DealStatus
   company_name: string | null
+  company_logo_url?: string | null
   volume: string | null
   expiry_date: string | null
   linkedCount: number
   bestMatchScore: number | null
+  quickShareReferenceId: string | null
 }
 
 export type RecommendedRefRow = {
@@ -46,6 +48,13 @@ export type ReferenceKpiCounts = {
   draft: number
 }
 
+export type WeeklyTrendStrip = {
+  total: number
+  approved: number
+  internal: number
+  draft: number
+}
+
 export type UsageTotalsRow = {
   views: number
   shares: number
@@ -55,6 +64,7 @@ export type UsageTotalsRow = {
 export type AccountManagerDashboardModel = {
   greetingName: string
   kpis: ReferenceKpiCounts
+  kpiTrends: WeeklyTrendStrip
   pendingApprovalsCount: number
   pendingApprovals: Awaited<ReturnType<typeof getPendingClientApprovalsImpl>>
   usageWindowDays: number
@@ -78,19 +88,31 @@ export type AdminKpiStrip = {
 export type TopReferenceRow = {
   id: string
   title: string
+  companyName: string
+  companyLogoUrl: string | null
+  updatedAt: string | null
   eventCount: number
 }
 
 export type TeamActivityRow = {
+  id: string
   userId: string
   displayName: string
-  matches: number
-  shares: number
+  actionLabel: string
+  timestamp: string
+  companyName: string | null
+  companyLogoUrl: string | null
 }
 
 export type AdminDashboardModel = {
   greetingName: string
   kpis: AdminKpiStrip
+  kpiTrends: {
+    referencesTotal: number
+    matches7d: number
+    shares7d: number
+    wau7d: number
+  }
   topReferences: TopReferenceRow[]
   openRequests: Awaited<ReturnType<typeof getRequestsImpl>>
   teamActivity: TeamActivityRow[]
@@ -125,6 +147,27 @@ async function loadReferenceKpis(supabase: SupabaseClient): Promise<ReferenceKpi
   }
 }
 
+async function countReferencesInWindow(
+  supabase: SupabaseClient,
+  fromIso: string,
+  toIso: string,
+  status?: 'draft' | 'internal_only' | 'approved'
+) {
+  let q = supabase
+    .from('references')
+    .select('id', { count: 'exact', head: true })
+    .is('deleted_at', null)
+    .gte('created_at', fromIso)
+    .lt('created_at', toIso)
+  if (status === 'approved') {
+    q = q.in('status', ['approved', 'external'])
+  } else if (status) {
+    q = q.eq('status', status)
+  }
+  const { count } = await q
+  return count ?? 0
+}
+
 export async function loadSalesRepDashboardData(
   supabase: SupabaseClient,
   userId: string,
@@ -144,10 +187,12 @@ export async function loadSalesRepDashboardData(
       title: d.title,
       status: d.status,
       company_name: d.company_name,
+      company_logo_url: d.company_logo_url ?? null,
       volume: d.volume ?? null,
       expiry_date: d.expiry_date,
       linkedCount: d.linked_refs?.length ?? 0,
       bestMatchScore: d.best_match_score ?? null,
+      quickShareReferenceId: d.linked_refs?.[0]?.id ?? null,
     }))
     .slice(0, 8)
 
@@ -216,6 +261,37 @@ export async function loadAccountManagerDashboardData(
 ): Promise<AccountManagerDashboardModel> {
   const greetingName = firstName(fullName) || 'du'
   const kpis = await loadReferenceKpis(supabase)
+  const now = new Date()
+  const weekStart = new Date(now)
+  weekStart.setDate(weekStart.getDate() - 7)
+  const prevWeekStart = new Date(now)
+  prevWeekStart.setDate(prevWeekStart.getDate() - 14)
+
+  const [
+    totalThisWeek,
+    totalPrevWeek,
+    approvedThisWeek,
+    approvedPrevWeek,
+    internalThisWeek,
+    internalPrevWeek,
+    draftThisWeek,
+    draftPrevWeek,
+  ] = await Promise.all([
+    countReferencesInWindow(supabase, weekStart.toISOString(), now.toISOString()),
+    countReferencesInWindow(supabase, prevWeekStart.toISOString(), weekStart.toISOString()),
+    countReferencesInWindow(supabase, weekStart.toISOString(), now.toISOString(), 'approved'),
+    countReferencesInWindow(supabase, prevWeekStart.toISOString(), weekStart.toISOString(), 'approved'),
+    countReferencesInWindow(supabase, weekStart.toISOString(), now.toISOString(), 'internal_only'),
+    countReferencesInWindow(supabase, prevWeekStart.toISOString(), weekStart.toISOString(), 'internal_only'),
+    countReferencesInWindow(supabase, weekStart.toISOString(), now.toISOString(), 'draft'),
+    countReferencesInWindow(supabase, prevWeekStart.toISOString(), weekStart.toISOString(), 'draft'),
+  ])
+  const kpiTrends: WeeklyTrendStrip = {
+    total: totalThisWeek - totalPrevWeek,
+    approved: approvedThisWeek - approvedPrevWeek,
+    internal: internalThisWeek - internalPrevWeek,
+    draft: draftThisWeek - draftPrevWeek,
+  }
 
   const pendingApprovals = await getPendingClientApprovalsImpl()
   const pendingApprovalsCount = pendingApprovals.length
@@ -314,6 +390,7 @@ export async function loadAccountManagerDashboardData(
   return {
     greetingName,
     kpis,
+    kpiTrends,
     pendingApprovalsCount,
     pendingApprovals,
     usageWindowDays,
@@ -333,6 +410,8 @@ export async function loadAdminDashboardData(
 
   const since7 = new Date()
   since7.setDate(since7.getDate() - 7)
+  const prevSince7 = new Date()
+  prevSince7.setDate(prevSince7.getDate() - 14)
 
   const { data: profile } = await supabase.auth.getUser()
   const uid = profile.user?.id
@@ -344,10 +423,32 @@ export async function loadAdminDashboardData(
   let matches7d = 0
   let shares7d = 0
   let wau7d = 0
+  let referencesCreated7d = 0
+  let prevReferencesCreated7d = 0
+  let prevMatches7d = 0
+  let prevShares7d = 0
+  let prevWau7d = 0
   const topReferences: TopReferenceRow[] = []
   const teamActivity: TeamActivityRow[] = []
 
   if (orgId) {
+    const { count: refCurrent } = await supabase
+      .from('references')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', orgId)
+      .is('deleted_at', null)
+      .gte('created_at', since7.toISOString())
+    referencesCreated7d = refCurrent ?? 0
+
+    const { count: refPrev } = await supabase
+      .from('references')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', orgId)
+      .is('deleted_at', null)
+      .gte('created_at', prevSince7.toISOString())
+      .lt('created_at', since7.toISOString())
+    prevReferencesCreated7d = refPrev ?? 0
+
     const { count: m } = await supabase
       .from('evidence_events')
       .select('id', { count: 'exact', head: true })
@@ -355,6 +456,14 @@ export async function loadAdminDashboardData(
       .eq('event_type', 'reference_matched')
       .gte('created_at', since7.toISOString())
     matches7d = m ?? 0
+    const { count: mPrev } = await supabase
+      .from('evidence_events')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', orgId)
+      .eq('event_type', 'reference_matched')
+      .gte('created_at', prevSince7.toISOString())
+      .lt('created_at', since7.toISOString())
+    prevMatches7d = mPrev ?? 0
 
     const { count: s1 } = await supabase
       .from('evidence_events')
@@ -369,6 +478,21 @@ export async function loadAdminDashboardData(
       .eq('event_type', 'share_link_viewed')
       .gte('created_at', since7.toISOString())
     shares7d = (s1 ?? 0) + (s2 ?? 0)
+    const { count: ps1 } = await supabase
+      .from('evidence_events')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', orgId)
+      .eq('event_type', 'reference_shared')
+      .gte('created_at', prevSince7.toISOString())
+      .lt('created_at', since7.toISOString())
+    const { count: ps2 } = await supabase
+      .from('evidence_events')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', orgId)
+      .eq('event_type', 'share_link_viewed')
+      .gte('created_at', prevSince7.toISOString())
+      .lt('created_at', since7.toISOString())
+    prevShares7d = (ps1 ?? 0) + (ps2 ?? 0)
 
     const { data: distinctUsers } = await supabase
       .from('evidence_events')
@@ -378,6 +502,14 @@ export async function loadAdminDashboardData(
       .not('created_by', 'is', null)
     const u = new Set((distinctUsers ?? []).map((r) => r.created_by as string))
     wau7d = u.size
+    const { data: prevDistinctUsers } = await supabase
+      .from('evidence_events')
+      .select('created_by')
+      .eq('organization_id', orgId)
+      .gte('created_at', prevSince7.toISOString())
+      .lt('created_at', since7.toISOString())
+      .not('created_by', 'is', null)
+    prevWau7d = new Set((prevDistinctUsers ?? []).map((r) => r.created_by as string)).size
 
     const { data: evRows } = await supabase
       .from('evidence_events')
@@ -395,43 +527,95 @@ export async function loadAdminDashboardData(
     const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5)
     const refIds = sorted.map(([id]) => id)
     if (refIds.length > 0) {
-      const { data: refs } = await supabase.from('references').select('id, title').in('id', refIds)
-      const titleById = new Map((refs ?? []).map((r) => [r.id as string, (r.title as string) ?? '—']))
+      const { data: refs } = await supabase
+        .from('references')
+        .select('id, title, updated_at, companies(name, logo_url)')
+        .in('id', refIds)
+      const refById = new Map(
+        (refs ?? []).map((r) => {
+          const company = Array.isArray(r.companies)
+            ? (r.companies[0] as { name?: string; logo_url?: string | null } | undefined)
+            : (r.companies as { name?: string; logo_url?: string | null } | null)
+          return [
+            r.id as string,
+            {
+              title: (r.title as string) ?? '—',
+              updatedAt: (r.updated_at as string | null) ?? null,
+              companyName: company?.name ?? '—',
+              companyLogoUrl: company?.logo_url ?? null,
+            },
+          ]
+        })
+      )
       for (const [id, n] of sorted) {
-        topReferences.push({ id, title: titleById.get(id) ?? '—', eventCount: n })
+        const ref = refById.get(id)
+        topReferences.push({
+          id,
+          title: ref?.title ?? '—',
+          updatedAt: ref?.updatedAt ?? null,
+          companyName: ref?.companyName ?? '—',
+          companyLogoUrl: ref?.companyLogoUrl ?? null,
+          eventCount: n,
+        })
       }
     }
 
     const { data: teamRows } = await supabase
       .from('evidence_events')
-      .select('created_by, event_type')
+      .select('id, created_by, created_at, event_type, reference_id')
       .eq('organization_id', orgId)
       .gte('created_at', since7.toISOString())
       .not('created_by', 'is', null)
-      .limit(8000)
+      .order('created_at', { ascending: false })
+      .limit(80)
 
-    const agg = new Map<string, { matches: number; shares: number }>()
-    for (const row of teamRows ?? []) {
-      const id = row.created_by as string
-      if (!agg.has(id)) agg.set(id, { matches: 0, shares: 0 })
-      const a = agg.get(id)!
-      const et = row.event_type as string
-      if (et === 'reference_matched') a.matches += 1
-      if (et === 'reference_shared' || et === 'share_link_viewed') a.shares += 1
-    }
-    const userIds = [...agg.keys()]
+    const refIdsForTeam = [...new Set((teamRows ?? []).map((r) => r.reference_id).filter(Boolean) as string[])]
+    const { data: teamRefs } = refIdsForTeam.length
+      ? await supabase
+          .from('references')
+          .select('id, companies(name, logo_url)')
+          .in('id', refIdsForTeam)
+      : { data: [] as Array<Record<string, unknown>> }
+    const companyByReferenceId = new Map(
+      (teamRefs ?? []).map((row) => {
+        const company = Array.isArray(row.companies)
+          ? (row.companies[0] as { name?: string; logo_url?: string | null } | undefined)
+          : (row.companies as { name?: string; logo_url?: string | null } | null)
+        return [
+          row.id as string,
+          {
+            name: company?.name ?? null,
+            logo: company?.logo_url ?? null,
+          },
+        ]
+      })
+    )
+
+    const userIds = [...new Set((teamRows ?? []).map((r) => r.created_by as string).filter(Boolean))]
     if (userIds.length > 0) {
       const { data: names } = await supabase.from('profiles').select('id, full_name').in('id', userIds)
       const nameById = new Map((names ?? []).map((p) => [p.id as string, (p.full_name as string) ?? p.id.slice(0, 8)]))
-      for (const [userId, v] of agg) {
+      for (const row of (teamRows ?? []) as Array<Record<string, unknown>>) {
+        const userId = row.created_by as string
+        const eventType = String(row.event_type ?? '')
+        const referenceId = (row.reference_id as string | null) ?? null
+        const company = referenceId ? companyByReferenceId.get(referenceId) : null
+        const actionLabel =
+          eventType === 'share_link_viewed' || eventType === 'reference_shared'
+            ? 'hat einen Share-Link erstellt'
+            : eventType === 'reference_matched'
+              ? 'hat ein Match erzeugt'
+              : 'hat ein Event ausgelöst'
         teamActivity.push({
+          id: String(row.id),
           userId,
           displayName: nameById.get(userId) ?? userId.slice(0, 8),
-          matches: v.matches,
-          shares: v.shares,
+          actionLabel,
+          timestamp: String(row.created_at ?? ''),
+          companyName: company?.name ?? null,
+          companyLogoUrl: company?.logo ?? null,
         })
       }
-      teamActivity.sort((a, b) => b.matches + b.shares - (a.matches + a.shares))
       teamActivity.splice(12)
     }
   }
@@ -445,6 +629,12 @@ export async function loadAdminDashboardData(
       matches7d,
       shares7d,
       wau7d,
+    },
+    kpiTrends: {
+      referencesTotal: referencesCreated7d - prevReferencesCreated7d,
+      matches7d: matches7d - prevMatches7d,
+      shares7d: shares7d - prevShares7d,
+      wau7d: wau7d - prevWau7d,
     },
     topReferences,
     openRequests,

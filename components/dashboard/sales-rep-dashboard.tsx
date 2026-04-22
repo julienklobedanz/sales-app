@@ -1,58 +1,88 @@
+'use client'
+
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useTransition } from 'react'
+import { toast } from 'sonner'
 import { GalleryHorizontalEndIcon, LinkIcon, SearchIcon, UploadIcon } from '@hugeicons/core-free-icons'
+import { createSharedPortfolio } from '@/app/dashboard/actions'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { DealStatusBadge } from '@/components/deal-status-badge'
 import { AppIcon } from '@/lib/icons'
 import { ROUTES } from '@/lib/routes'
 import type { SalesRepDashboardModel } from '@/app/dashboard/dashboard-home-data'
 import { formatDateUtcDe } from '@/lib/format'
-import { DASHBOARD_PAGE_SUBTITLE_CLASS, DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 
 export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
-  const { greetingName, activeDeals, recommended, recommendedNote, recentShares } = data
+  const { activeDeals, recommended, recommendedNote, recentShares } = data
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
+
+  function handleQuickShare(referenceId: string | null) {
+    if (!referenceId) {
+      toast.info('Kein verknuepfter Referenz-Match vorhanden.')
+      return
+    }
+    startTransition(async () => {
+      const result = await createSharedPortfolio([referenceId])
+      if (!result.success) {
+        toast.error(result.error ?? 'Link konnte nicht erstellt werden.')
+        return
+      }
+      await navigator.clipboard.writeText(result.url)
+      toast.success('Quick Share Link erstellt und kopiert.')
+    })
+  }
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className={DASHBOARD_PAGE_TITLE_CLASS}>
-          Willkommen zurück{greetingName ? `, ${greetingName}` : ''}
-        </h1>
-        <p className={DASHBOARD_PAGE_SUBTITLE_CLASS}>
-          Dein Überblick: aktive Deals, passende Referenzen und zuletzt geteilte Links.
-        </p>
-      </div>
+      <div className="h-[62px]" aria-hidden />
 
-      <Card>
+      <Card className="bg-white border-slate-200 shadow-sm">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Suche &amp; Aktionen</CardTitle>
+          <CardTitle className="text-base">Command Center</CardTitle>
           <CardDescription>
-            Schnell zur semantischen Suche oder typischen nächsten Schritten.
+            Globale Suche und schnelle Aktionen fuer deinen Deal-Fokus.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-          <Button asChild variant="default" className="gap-2">
-            <Link href={ROUTES.match}>
-              <AppIcon icon={SearchIcon} size={18} />
-              Match starten
-            </Link>
-          </Button>
-          <Button asChild variant="outline" className="gap-2">
-            <Link href={ROUTES.marketSignals}>
-              <AppIcon icon={UploadIcon} size={18} />
-              RFP / Marktsignale
-            </Link>
-          </Button>
-          <Button asChild variant="outline" className="gap-2">
-            <Link href={ROUTES.deals.requestNew}>
-              <AppIcon icon={LinkIcon} size={18} />
-              Referenz-Anfrage
-            </Link>
-          </Button>
+        <CardContent className="flex flex-col gap-3">
+          <button
+            type="button"
+            className="relative flex h-11 w-full items-center rounded-xl border border-white/70 bg-white/80 pl-10 pr-20 text-left text-sm text-muted-foreground shadow-sm backdrop-blur-md hover:bg-white"
+            onClick={() => router.push(ROUTES.match)}
+          >
+            <AppIcon icon={SearchIcon} size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" />
+            Nach Deal, Account oder Referenz suchen...
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md border border-border/70 bg-background px-2 py-0.5 text-xs text-muted-foreground">
+              CMD + K
+            </span>
+          </button>
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            <Button asChild variant="default" className="gap-2">
+              <Link href={ROUTES.match}>
+                <AppIcon icon={SearchIcon} size={18} />
+                Match starten
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="gap-2">
+              <Link href={ROUTES.marketSignals}>
+                <AppIcon icon={UploadIcon} size={18} />
+                RFP / Marktsignale
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="gap-2">
+              <Link href={ROUTES.deals.requestNew}>
+                <AppIcon icon={LinkIcon} size={18} />
+                Referenz-Anfrage
+              </Link>
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="bg-white border-slate-200 shadow-sm">
         <CardHeader>
           <CardTitle className="text-base">Deine aktiven Deals</CardTitle>
           <CardDescription>
@@ -61,23 +91,51 @@ export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
         </CardHeader>
         <CardContent>
           {activeDeals.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Keine aktiven Deals.{' '}
-              <Link href={ROUTES.deals.root} className="text-primary underline underline-offset-4">
-                Zu den Deals
-              </Link>
-            </p>
+            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/70 px-6 py-10 text-center">
+              <AppIcon icon={UploadIcon} size={24} className="text-muted-foreground" />
+              <p className="mt-3 text-base font-semibold text-foreground">No Deals synced yet</p>
+              <p className="mt-1 text-sm text-muted-foreground">Verbinde dein CRM, um proaktive Match-Vorschlaege zu erhalten.</p>
+              <Button
+                type="button"
+                className="mt-4 rounded-lg bg-gradient-to-b from-blue-600 to-blue-700 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] hover:from-blue-600 hover:to-blue-700/95"
+                onClick={() => toast.info('CRM-Connect folgt im naechsten Schritt.')}
+              >
+                Connect Salesforce / HubSpot
+              </Button>
+            </div>
           ) : (
             <ul className="grid gap-3 sm:grid-cols-2">
               {activeDeals.map((d) => (
                 <li key={d.id}>
                   <Link
                     href={ROUTES.deals.detail(d.id)}
-                    className="block rounded-lg border border-border bg-card p-3 transition-colors hover:bg-muted/50"
+                    className="block rounded-lg border border-slate-200 bg-card p-3 transition-colors hover:bg-muted/50"
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <span className="font-medium leading-snug line-clamp-2">{d.title}</span>
-                      <DealStatusBadge status={d.status} />
+                      <div className="min-w-0">
+                        <span className="font-medium leading-snug line-clamp-2">{d.title}</span>
+                        {d.bestMatchScore && d.bestMatchScore > 0.65 ? (
+                          <Badge className="ml-0 mt-1 inline-flex bg-blue-600/10 text-blue-600 border-0 shadow-[0_0_0_1px_rgba(37,99,235,0.2)]">
+                            AI Match
+                          </Badge>
+                        ) : null}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <DealStatusBadge status={d.status} />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-xs"
+                          disabled={isPending}
+                          onClick={(e) => {
+                            e.preventDefault()
+                            handleQuickShare(d.quickShareReferenceId)
+                          }}
+                        >
+                          Quick Share
+                        </Button>
+                      </div>
                     </div>
                     <div className="mt-1 text-xs text-muted-foreground">
                       {d.company_name ?? '—'}
@@ -101,7 +159,7 @@ export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="bg-white border-slate-200 shadow-sm">
         <CardHeader>
           <CardTitle className="text-base">Empfohlene Referenzen</CardTitle>
           <CardDescription>
@@ -125,6 +183,9 @@ export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
                       {m.title}
                     </Link>
                     <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{m.snippet}</p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      <span className="font-medium text-foreground">Why?</span> Used by Team to close a similar deal.
+                    </p>
                   </div>
                   <div className="shrink-0 text-xs tabular-nums text-muted-foreground">
                     Score {(m.similarity * 100).toFixed(0)}%
@@ -136,7 +197,7 @@ export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="bg-white border-slate-200 shadow-sm">
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <AppIcon icon={GalleryHorizontalEndIcon} size={18} className="text-muted-foreground" />

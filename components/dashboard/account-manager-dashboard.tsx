@@ -9,7 +9,6 @@ import { AppIcon } from '@/lib/icons'
 import { ROUTES } from '@/lib/routes'
 import type { AccountManagerDashboardModel } from '@/app/dashboard/dashboard-home-data'
 import { formatDateUtcDe } from '@/lib/format'
-import { DASHBOARD_PAGE_SUBTITLE_CLASS, DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 import { toast } from 'sonner'
 import { resendClientApprovalEmail } from '@/app/dashboard/actions'
 import {
@@ -21,10 +20,21 @@ import {
   TableRow,
 } from '@/components/ui/table'
 
+function TrendHint({ delta }: { delta: number }) {
+  const sign = delta > 0 ? '+' : ''
+  const tone =
+    delta > 0
+      ? 'text-emerald-600'
+      : delta < 0
+        ? 'text-rose-600'
+        : 'text-muted-foreground'
+  return <p className={`text-xs font-medium ${tone}`}>{`${sign}${delta} diese Woche`}</p>
+}
+
 export function AccountManagerDashboard({ data }: { data: AccountManagerDashboardModel }) {
   const {
-    greetingName,
     kpis,
+    kpiTrends,
     pendingApprovalsCount,
     pendingApprovals,
     usageWindowDays,
@@ -35,14 +45,7 @@ export function AccountManagerDashboard({ data }: { data: AccountManagerDashboar
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className={DASHBOARD_PAGE_TITLE_CLASS}>
-          Dashboard{greetingName ? `, ${greetingName}` : ''}
-        </h1>
-        <p className={DASHBOARD_PAGE_SUBTITLE_CLASS}>
-          Referenzen, Freigaben und Nutzung im Workspace.
-        </p>
-      </div>
+      <div className="h-[62px]" aria-hidden />
 
       <div className="flex flex-wrap gap-2">
         <Button asChild variant="default" className="gap-2">
@@ -72,10 +75,21 @@ export function AccountManagerDashboard({ data }: { data: AccountManagerDashboar
           { label: 'Nur intern', value: kpis.internal },
           { label: 'Entwurf', value: kpis.draft },
         ].map((k) => (
-          <Card key={k.label}>
+          <Card key={k.label} className="border-slate-200 shadow-sm">
             <CardHeader className="pb-1">
               <CardDescription>{k.label}</CardDescription>
               <CardTitle className="text-2xl tabular-nums">{k.value}</CardTitle>
+              <TrendHint
+                delta={
+                  k.label === 'Gesamt'
+                    ? kpiTrends.total
+                    : k.label === 'Freigegeben'
+                      ? kpiTrends.approved
+                      : k.label === 'Nur intern'
+                        ? kpiTrends.internal
+                        : kpiTrends.draft
+                }
+              />
             </CardHeader>
           </Card>
         ))}

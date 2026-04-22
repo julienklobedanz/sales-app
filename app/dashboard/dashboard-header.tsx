@@ -14,7 +14,6 @@ import {
   SettingsIcon,
   Shield,
   Sun,
-  UserIcon,
 } from '@hugeicons/core-free-icons'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Separator } from '@/components/ui/separator'
@@ -52,8 +51,6 @@ function formatRoleBadgeLabel(role: AppRole): string {
       return 'ADMIN'
     case 'sales':
       return 'SALES'
-    case 'account_manager':
-      return 'ACCOUNT MANAGER'
     default:
       return String(role).toUpperCase()
   }
@@ -339,17 +336,6 @@ export function DashboardHeader({
             >
               <AppIcon icon={Shield} size={16} className="shrink-0" />
               {COPY.roleSwitcher.roleMarketingAdmin}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              disabled={roleSwitchPending}
-              onSelect={() => selectDevRole('account_manager')}
-              className={cn(
-                'cursor-pointer',
-                userRole === 'account_manager' && 'bg-accent font-medium'
-              )}
-            >
-              <AppIcon icon={UserIcon} size={16} className="shrink-0" />
-              {COPY.roleSwitcher.roleAccountManager}
             </DropdownMenuItem>
             <DropdownMenuItem
               disabled={roleSwitchPending}
