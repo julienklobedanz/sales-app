@@ -7,25 +7,9 @@ import { ROUTES } from '@/lib/routes'
 import type { ReferenceRow } from '@/app/dashboard/actions'
 
 function normalizeWrappedText(input: string | null | undefined): string | null {
-  const raw = String(input ?? '')
-    .replace(/\r\n/g, '\n')
-    .trim()
+  const raw = String(input ?? '').replace(/\r\n/g, '\n').trim()
   if (!raw) return null
-
-  const paragraphs = raw
-    .split(/\n{2,}/g)
-    .map((paragraph) =>
-      paragraph
-        .split('\n')
-        .map((line) => line.trim())
-        .filter(Boolean)
-        .join(' ')
-        .replace(/\s{2,}/g, ' ')
-        .trim()
-    )
-    .filter(Boolean)
-
-  return paragraphs.length ? paragraphs.join('\n\n') : null
+  return raw.replace(/\n+/g, ' ').replace(/\s{2,}/g, ' ').trim()
 }
 
 export async function updateReferenceImpl(id: string, formData: FormData) {

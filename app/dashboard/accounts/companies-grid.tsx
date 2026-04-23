@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import {
   Card,
@@ -32,7 +31,6 @@ import {
 } from '@/components/ui/context-menu'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
-  Building2,
   Cancel01Icon,
   Briefcase,
   Globe,
@@ -45,6 +43,7 @@ import {
   Users,
 } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
+import { CompanyLogo } from '@/components/ui/company-logo'
 import { deleteCompanyWithData, refreshAccountsFromBrandfetch, toggleCompanyFavorite } from './actions'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
@@ -318,21 +317,12 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                     <CardHeader className="pb-2">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-start gap-3">
-                          {company.logo_url ? (
-                            <div className="relative size-12 shrink-0 overflow-hidden rounded-2xl border bg-muted">
-                              <Image
-                                src={company.logo_url}
-                                alt=""
-                                fill
-                                className="object-contain"
-                                sizes="48px"
-                              />
-                            </div>
-                          ) : (
-                            <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl border bg-muted">
-                              <AppIcon icon={Building2} size={24} className="text-muted-foreground" />
-                            </div>
-                          )}
+                          <CompanyLogo
+                            src={company.logo_url}
+                            containerClassName="size-12 shrink-0 rounded-2xl"
+                            imageClassName="object-contain p-1.5"
+                            fallbackIconSize={24}
+                          />
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2.5">
                               <CardTitle className="truncate text-base font-semibold">

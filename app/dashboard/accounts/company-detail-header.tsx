@@ -1,4 +1,3 @@
-import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Building2, Globe, MapPinIcon } from '@hugeicons/core-free-icons'
@@ -7,6 +6,7 @@ import type { CompanyDetailCompany } from './company-detail-types'
 import { ROUTES } from '@/lib/routes'
 import { COPY } from '@/lib/copy'
 import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
+import { CompanyLogo } from '@/components/ui/company-logo'
 
 export function CompanyDetailHeader({
   company,
@@ -20,15 +20,12 @@ export function CompanyDetailHeader({
   return (
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
       <div className="flex items-start gap-4">
-        {company.logo_url ? (
-          <div className="relative size-14 overflow-hidden rounded-2xl border bg-muted">
-            <Image src={company.logo_url} alt="" fill className="object-contain" sizes="56px" />
-          </div>
-        ) : (
-          <div className="flex size-14 items-center justify-center rounded-2xl border bg-muted">
-            <AppIcon icon={Building2} size={28} className="text-muted-foreground" />
-          </div>
-        )}
+        <CompanyLogo
+          src={company.logo_url}
+          containerClassName="size-14 rounded-2xl"
+          imageClassName="object-contain p-2"
+          fallbackIconSize={28}
+        />
         <div className="min-w-0">
           <h1 className={`${DASHBOARD_PAGE_TITLE_CLASS} truncate`}>{company.name}</h1>
           <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">

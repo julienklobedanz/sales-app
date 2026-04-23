@@ -140,16 +140,17 @@ const CONTRACT_TYPE_OPTIONS = [
 ] as const
 
 const VOLUME_CURRENCY_OPTIONS = [
-  { code: 'USD', symbol: '$' },
-  { code: 'EUR', symbol: '€' },
-  { code: 'JPY', symbol: '¥' },
-  { code: 'GBP', symbol: '£' },
+  { code: 'AED', symbol: 'AED' },
   { code: 'AUD', symbol: 'A$' },
-  { code: 'CNY', symbol: '¥' },
   { code: 'CAD', symbol: 'C$' },
   { code: 'CHF', symbol: 'CHF' },
+  { code: 'CNY', symbol: '¥' },
+  { code: 'EUR', symbol: '€' },
+  { code: 'GBP', symbol: '£' },
   { code: 'HKD', symbol: 'HK$' },
+  { code: 'JPY', symbol: '¥' },
   { code: 'SGD', symbol: 'S$' },
+  { code: 'USD', symbol: '$' },
 ] as const
 
 type Company = ReferenceFormCompany
