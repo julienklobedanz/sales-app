@@ -55,7 +55,7 @@ export function ReferenceReader({ reference }: { reference: ReferenceRow }) {
 
       {/* Story – neutral, enterprise-ready */}
       <div className="w-full space-y-0 rounded-2xl border border-border bg-background p-6 shadow-sm">
-        <div className="space-y-2">
+        <div className="space-y-3">
           <p className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
             Herausforderung des Kunden
           </p>
@@ -63,8 +63,8 @@ export function ReferenceReader({ reference }: { reference: ReferenceRow }) {
             {reference.customer_challenge || '—'}
           </p>
         </div>
-        <div className="mt-6 border-t border-border" />
-        <div className="mt-6 space-y-2">
+        <div className="mt-8 border-t border-border" />
+        <div className="mt-8 space-y-3">
           <p className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
             Unsere Lösung
           </p>

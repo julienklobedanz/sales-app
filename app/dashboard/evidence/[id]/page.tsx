@@ -5,9 +5,9 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toggleFavorite } from '@/app/dashboard/actions'
-import { Eye, Mail, Pencil, StarIcon } from '@hugeicons/core-free-icons'
+import { LinkIcon, Mail, Pencil, Phone, Sparkles, StarIcon, TrendingUp } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
-import { formatReferenceVolume } from '@/lib/format'
+import { formatDateUtcDe, formatReferenceVolume } from '@/lib/format'
 import { deleteReferenceFromDetailPage } from './actions'
 import { ReferenceStatusBadge } from '@/components/reference-status-badge'
 import { COPY } from '@/lib/copy'
@@ -20,25 +20,6 @@ import { ReferenceViewedTracker } from './reference-viewed-tracker'
 import { getReferenceUsageStats } from '@/app/dashboard/references/reference-usage-stats'
 
 export const dynamic = 'force-dynamic'
-
-function ClosedEyeIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.9"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M3 12c2.3-3.3 5.5-5 9-5s6.7 1.7 9 5" />
-      <path d="M5 16c2-2.5 4.4-3.8 7-3.8S17 13.5 19 16" />
-      <path d="M12 12.2v2.8" />
-    </svg>
-  )
-}
 
 function splitTags(tags: string | null) {
   return (tags ?? '')
@@ -54,6 +35,34 @@ function anonymizeText(value: string | null | undefined, companyName: string | n
   if (!normalizedCompany) return text
   const escaped = normalizedCompany.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   return text.replace(new RegExp(escaped, 'gi'), 'Kunde')
+}
+
+function firstSentence(value: string | null | undefined) {
+  const text = String(value ?? '').trim().replace(/\s+/g, ' ')
+  if (!text) return null
+  const match = text.match(/.+?[.!?](?:\s|$)/)
+  return (match ? match[0] : text).trim()
+}
+
+function renderScannableText(value: string | null | undefined) {
+  const text = String(value ?? '')
+  if (!text.trim()) return <span className="text-muted-foreground">—</span>
+
+  const emphasisRegex =
+    /(\b\d{1,3}(?:[.,]\d{3})*(?:[.,]\d+)?\s?%|\b(?:EUR|USD|AED|CHF|GBP|JPY|HKD|SGD|CNY|€|\$|£|¥)\s?\d[\d.,]*|\b(?:SAP|Salesforce|AWS|Azure|GCP|Microsoft|Oracle|ServiceNow|Kubernetes|Snowflake|AI|KI)\b|\b(?:Kostenersparnis|Cost Savings|ROI|Umsatz|Effizienz|Automatisierung|Governance)\b)/gi
+  const emphasisExact =
+    /^\b\d{1,3}(?:[.,]\d{3})*(?:[.,]\d+)?\s?%$|^(?:EUR|USD|AED|CHF|GBP|JPY|HKD|SGD|CNY|€|\$|£|¥)\s?\d[\d.,]*$|^(?:SAP|Salesforce|AWS|Azure|GCP|Microsoft|Oracle|ServiceNow|Kubernetes|Snowflake|AI|KI)$|^(?:Kostenersparnis|Cost Savings|ROI|Umsatz|Effizienz|Automatisierung|Governance)$/i
+
+  const parts = text.split(emphasisRegex)
+  return parts.map((part, index) =>
+    emphasisExact.test(part) ? (
+      <strong key={`${part}-${index}`} className="font-semibold text-foreground">
+        {part}
+      </strong>
+    ) : (
+      <span key={`${part}-${index}`}>{part}</span>
+    )
+  )
 }
 
 export default async function EvidenceDetailPage({
@@ -94,6 +103,8 @@ export default async function EvidenceDetailPage({
       contact_id,
       customer_contact_id,
       customer_approval_status,
+      approval_requested_at,
+      approval_responded_at,
       anonymized_from_id,
       tags,
       created_at,
@@ -126,6 +137,8 @@ export default async function EvidenceDetailPage({
     contact_id: string | null
     customer_contact_id: string | null
     customer_approval_status: string | null
+    approval_requested_at: string | null
+    approval_responded_at: string | null
     anonymized_from_id: string | null
     created_at: string | null
     updated_at: string | null
@@ -144,6 +157,13 @@ export default async function EvidenceDetailPage({
   }
 
   const ref = row as unknown as ReferenceDetailRow
+  const { data: customerContact } = ref.customer_contact_id
+    ? await supabase
+        .from('external_contacts')
+        .select('first_name, last_name, email, phone')
+        .eq('id', ref.customer_contact_id)
+        .maybeSingle()
+    : { data: null }
 
   const normalizedStatus = String(ref.status ?? '').toLowerCase()
   if (
@@ -188,6 +208,28 @@ export default async function EvidenceDetailPage({
   const hasSummary = Boolean(summaryText?.trim())
   const hasChallenge = Boolean(challengeText?.trim())
   const hasSolution = Boolean(solutionText?.trim())
+  const tldrBullets = [
+    firstSentence(summaryText) || firstSentence(challengeText) || 'Kernaussage ist in der Referenz hinterlegt.',
+    firstSentence(challengeText) || 'Die zentrale Herausforderung ist dokumentiert.',
+    firstSentence(solutionText) || firstSentence(summaryText) || 'Die umgesetzte Lösung ist dokumentiert.',
+  ].slice(0, 3)
+  const outcomeText =
+    firstSentence(summaryText) ||
+    `Diese Referenz zeigt bereits messbare Nutzungssignale (${n('reference_helped')}x als hilfreich markiert).`
+  const approvalStatus = String(ref.customer_approval_status ?? '').toLowerCase()
+  const approvalRequestedLabel = ref.approval_requested_at
+    ? formatDateUtcDe(ref.approval_requested_at)
+    : null
+  const approvalRespondedLabel = ref.approval_responded_at
+    ? formatDateUtcDe(ref.approval_responded_at)
+    : null
+  const customerContactName = customerContact
+    ? [customerContact.first_name, customerContact.last_name].filter(Boolean).join(' ').trim()
+    : ''
+  const customerAvailabilitySubject = customerContactName || ref.customer_contact || 'Kunde'
+  const hasContactRelease = approvalStatus === 'approved' && Boolean(customerContact?.email || customerContact?.phone)
+  const isApprovalGranted =
+    approvalStatus === 'approved' || normalizedStatus === 'approved' || normalizedStatus === 'external'
 
   const createdAt = ref.created_at ? new Date(ref.created_at) : null
   const updatedAt = ref.updated_at ? new Date(ref.updated_at) : null
@@ -256,31 +298,68 @@ export default async function EvidenceDetailPage({
           </div>
 
           {hasSummary || hasChallenge || hasSolution ? (
-            <div className="space-y-4">
-              {hasSummary ? (
-                <div>
-                  <div className="text-sm font-semibold">Zusammenfassung</div>
-                  <p className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap">
-                    {summaryText}
-                  </p>
-                </div>
-              ) : null}
-              {hasChallenge ? (
-                <div>
-                  <div className="text-sm font-semibold">Herausforderung</div>
-                  <p className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap">
-                    {challengeText}
-                  </p>
-                </div>
-              ) : null}
-              {hasSolution ? (
-                <div>
-                  <div className="text-sm font-semibold">Unsere Lösung</div>
-                  <p className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap">
-                    {solutionText}
-                  </p>
-                </div>
-              ) : null}
+            <div className="max-w-[84ch] space-y-6">
+              <Card className="border-blue-200/70 bg-blue-50/50 dark:border-blue-500/30 dark:bg-blue-500/10">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm text-slate-950 dark:text-slate-100 inline-flex items-center gap-2">
+                    <AppIcon icon={Sparkles} size={15} className="text-blue-600 dark:text-blue-300" />
+                    Quick Summary (TL;DR)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-muted-foreground">
+                    {tldrBullets.map((bullet, idx) => (
+                      <li key={`${bullet}-${idx}`}>{bullet}</li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                {hasChallenge ? (
+                  <Card className="border-border/70">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-xs uppercase tracking-wider text-slate-950 dark:text-slate-100 inline-flex items-center gap-1.5">
+                        <AppIcon icon={TrendingUp} size={14} className="text-muted-foreground" />
+                        Herausforderung
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
+                        {renderScannableText(challengeText)}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : null}
+                {hasSolution ? (
+                  <Card className="border-border/70">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-xs uppercase tracking-wider text-slate-950 dark:text-slate-100 inline-flex items-center gap-1.5">
+                        <AppIcon icon={LinkIcon} size={14} className="text-muted-foreground" />
+                        Lösung
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
+                        {renderScannableText(solutionText)}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : null}
+                <Card className="border-border/70 md:col-span-2">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-xs uppercase tracking-wider text-slate-950 dark:text-slate-100 inline-flex items-center gap-1.5">
+                      <AppIcon icon={Sparkles} size={14} className="text-muted-foreground" />
+                      Ergebnis
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
+                      {renderScannableText(outcomeText)}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           ) : null}
 
@@ -318,6 +397,77 @@ export default async function EvidenceDetailPage({
         </div>
 
         <div className="lg:sticky lg:top-6 space-y-4 h-fit">
+          {approvalStatus === 'pending' ? (
+            <Card className="border-amber-300/70 bg-amber-50/90 dark:border-amber-500/35 dark:bg-amber-500/10">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base text-amber-900 dark:text-amber-200">
+                  Freigabe ausstehend
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-amber-900/90 dark:text-amber-100/90">
+                Kundenfreigabe wurde angefordert
+                {approvalRequestedLabel ? ` am ${approvalRequestedLabel}` : ''}.
+              </CardContent>
+            </Card>
+          ) : null}
+          {approvalStatus === 'rejected' ? (
+            <Card className="border-rose-300/70 bg-rose-50/90 dark:border-rose-500/35 dark:bg-rose-500/10">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base text-rose-900 dark:text-rose-200">
+                  Freigabe abgelehnt
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-rose-900/90 dark:text-rose-100/90">
+                Freigabe wurde abgelehnt
+                {approvalRespondedLabel ? ` am ${approvalRespondedLabel}` : ''}.
+              </CardContent>
+            </Card>
+          ) : null}
+          {approvalStatus === 'approved' && !hasContactRelease ? (
+            <Card className="border-emerald-300/70 bg-emerald-50/90 dark:border-emerald-500/35 dark:bg-emerald-500/10">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base text-emerald-900 dark:text-emerald-200">
+                  Freigegeben
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-emerald-900/90 dark:text-emerald-100/90">
+                Freigegeben
+                {approvalRespondedLabel ? ` am ${approvalRespondedLabel}` : ''}.
+              </CardContent>
+            </Card>
+          ) : null}
+          {hasContactRelease ? (
+            <Card className="border-emerald-700/45 bg-emerald-100/95 dark:border-emerald-400/35 dark:bg-emerald-900/45">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base text-emerald-950 dark:text-emerald-100">
+                  Freigegeben für Referenzgespräche
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm text-emerald-950/95 dark:text-emerald-50/95">
+                <p>
+                  Der Kunde {customerAvailabilitySubject} steht für
+                  Referenzgespräche via Telefon / E-Mail zur Verfügung. Ihr Kunde darf in Kontakt treten.
+                </p>
+                {customerContact?.phone ? (
+                  <div className="flex items-center gap-2">
+                    <AppIcon icon={Phone} size={15} />
+                    <span className="font-medium">{customerContact.phone}</span>
+                  </div>
+                ) : null}
+                {customerContact?.email ? (
+                  <div className="flex items-center gap-2">
+                    <AppIcon icon={Mail} size={15} />
+                    <span className="font-medium">{customerContact.email}</span>
+                  </div>
+                ) : null}
+                {approvalRespondedLabel ? (
+                  <p className="text-xs text-emerald-900/80 dark:text-emerald-100/80">
+                    Freigegeben am {approvalRespondedLabel}
+                  </p>
+                ) : null}
+              </CardContent>
+            </Card>
+          ) : null}
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Projektdetails</CardTitle>
@@ -365,37 +515,55 @@ export default async function EvidenceDetailPage({
               </p>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-2 text-sm">
-              <div className="rounded-md border p-2">
-                <div className="text-xs text-muted-foreground">Detail-Ansichten (App)</div>
-                <div className="font-semibold tabular-nums">{n('reference_viewed')}</div>
+              <div className="rounded-md border bg-muted/25 p-2">
+                <div className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                  <AppIcon icon={TrendingUp} size={12} />
+                  Detail-Ansichten (App)
+                </div>
+                <div className="font-semibold tabular-nums text-slate-950 dark:text-slate-100">{n('reference_viewed')}</div>
               </div>
-              <div className="rounded-md border p-2">
-                <div className="text-xs text-muted-foreground">Öffentliche Link-Aufrufe</div>
-                <div className="font-semibold tabular-nums">{n('share_link_viewed')}</div>
+              <div className="rounded-md border bg-muted/25 p-2">
+                <div className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                  <AppIcon icon={LinkIcon} size={12} />
+                  Öffentliche Link-Aufrufe
+                </div>
+                <div className="font-semibold tabular-nums text-slate-950 dark:text-slate-100">{n('share_link_viewed')}</div>
               </div>
-              <div className="rounded-md border p-2">
-                <div className="text-xs text-muted-foreground">PDF-Exports</div>
-                <div className="font-semibold tabular-nums">{n('reference_exported')}</div>
+              <div className="rounded-md border bg-muted/25 p-2">
+                <div className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                  <AppIcon icon={Sparkles} size={12} />
+                  PDF-Exports
+                </div>
+                <div className="font-semibold tabular-nums text-slate-950 dark:text-slate-100">{n('reference_exported')}</div>
               </div>
-              <div className="rounded-md border p-2">
+              <div className="rounded-md border bg-muted/25 p-2">
                 <div className="text-xs text-muted-foreground">Kundenlinks erstellt</div>
-                <div className="font-semibold tabular-nums">{n('reference_shared')}</div>
+                <div className="font-semibold tabular-nums text-slate-950 dark:text-slate-100">{n('reference_shared')}</div>
               </div>
-              <div className="rounded-md border p-2">
+              <div className="rounded-md border bg-muted/25 p-2">
                 <div className="text-xs text-muted-foreground">In Suchergebnissen</div>
-                <div className="font-semibold tabular-nums">{n('reference_matched')}</div>
+                <div className="font-semibold tabular-nums text-slate-950 dark:text-slate-100">{n('reference_matched')}</div>
               </div>
-              <div className="rounded-md border p-2">
-                <div className="text-xs text-muted-foreground">„Hat geholfen“ (Deal)</div>
-                <div className="font-semibold tabular-nums">{n('reference_helped')}</div>
+              <div className="rounded-md border bg-muted/25 p-2">
+                <div className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                  <AppIcon icon={TrendingUp} size={12} />
+                  „Hat geholfen“ (Deal)
+                </div>
+                <div className="font-semibold tabular-nums text-slate-950 dark:text-slate-100">{n('reference_helped')}</div>
               </div>
-              <div className="rounded-md border p-2">
-                <div className="text-xs text-muted-foreground">Deals verknüpft</div>
-                <div className="font-semibold tabular-nums">{usageStats?.dealsLinked ?? 0}</div>
+              <div className="rounded-md border bg-muted/25 p-2">
+                <div className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                  <AppIcon icon={LinkIcon} size={12} />
+                  Deals verknüpft
+                </div>
+                <div className="font-semibold tabular-nums text-slate-950 dark:text-slate-100">{usageStats?.dealsLinked ?? 0}</div>
               </div>
-              <div className="rounded-md border p-2">
-                <div className="text-xs text-muted-foreground">Deal-Ergebnisse</div>
-                <div className="font-semibold tabular-nums">
+              <div className="rounded-md border bg-muted/25 p-2">
+                <div className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                  <AppIcon icon={Sparkles} size={12} />
+                  Deal-Ergebnisse
+                </div>
+                <div className="font-semibold tabular-nums text-slate-950 dark:text-slate-100">
                   {usageStats
                     ? `${usageStats.dealsWon} / ${usageStats.dealsLost} / ${usageStats.dealsWithdrawn}`
                     : '—'}
@@ -412,49 +580,46 @@ export default async function EvidenceDetailPage({
               <CardTitle className="text-base">Aktionen</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-2">
-              <Button asChild variant="outline" className="w-full gap-2">
-                <Link href={isAnonymizedView ? ROUTES.evidence.detail(id) : `${ROUTES.evidence.detail(id)}?view=anonymized`}>
-                  {isAnonymizedView ? (
-                    <AppIcon icon={Eye} size={16} />
-                  ) : (
-                    <ClosedEyeIcon className="size-4" />
-                  )}
-                  {isAnonymizedView ? 'Vollversion anzeigen' : 'Anonymisierte Version anzeigen'}
-                </Link>
-              </Button>
-              <form action={toggleFavorite.bind(null, id)}>
-                <Button
-                  type="submit"
-                  variant="outline"
-                  className="w-full gap-2"
-                >
-                  <AppIcon
-                    icon={StarIcon}
-                    size={16}
-                    className={
-                      isFavorited
-                        ? 'text-amber-500 dark:text-amber-400'
-                        : 'text-muted-foreground opacity-80'
-                    }
-                  />
-                  {isFavorited ? 'Favorit' : 'Favorisieren'}
+              <div className="grid grid-cols-2 gap-2">
+                <Button type="button" variant="outline" className="w-full gap-2" disabled title="Bald verfügbar">
+                  .pptx Export
                 </Button>
-              </form>
-              <PdfExportDialog referenceId={id} />
-              <ShareLinkButton referenceId={id} />
+                <PdfExportDialog referenceId={id} triggerClassName="w-full" />
+              </div>
               {role === 'sales' ? null : (
                 <>
+                  {!isApprovalGranted ? (
+                    <RequestApprovalDialog
+                      referenceId={id}
+                      defaultContactId={ref.customer_contact_id ?? ref.contact_id}
+                      triggerIcon={<AppIcon icon={Mail} size={16} />}
+                    />
+                  ) : null}
+                  <ShareLinkButton referenceId={id} triggerClassName="w-full" />
+                  <form action={toggleFavorite.bind(null, id)}>
+                    <Button
+                      type="submit"
+                      variant="outline"
+                      className="w-full gap-2"
+                    >
+                      <AppIcon
+                        icon={StarIcon}
+                        size={16}
+                        className={
+                          isFavorited
+                            ? 'text-amber-500 dark:text-amber-400'
+                            : 'text-muted-foreground opacity-80'
+                        }
+                      />
+                      {isFavorited ? 'Favorit' : 'Favorisieren'}
+                    </Button>
+                  </form>
                   <Button asChild variant="outline" className="w-full gap-2">
                     <Link href={ROUTES.evidence.edit(id)}>
                       <AppIcon icon={Pencil} size={16} />
                       Bearbeiten
                     </Link>
                   </Button>
-                  <RequestApprovalDialog
-                    referenceId={id}
-                    defaultContactId={ref.customer_contact_id ?? ref.contact_id}
-                    triggerIcon={<AppIcon icon={Mail} size={16} />}
-                  />
                   {role === 'admin' ? (
                     <form action={deleteReferenceFromDetailPage.bind(null, id)} className="w-full">
                       <Button type="submit" variant="destructive" className="w-full">
@@ -464,6 +629,29 @@ export default async function EvidenceDetailPage({
                   ) : null}
                 </>
               )}
+              {role === 'sales' ? (
+                <>
+                  <ShareLinkButton referenceId={id} triggerClassName="w-full" />
+                  <form action={toggleFavorite.bind(null, id)}>
+                    <Button
+                      type="submit"
+                      variant="outline"
+                      className="w-full gap-2"
+                    >
+                      <AppIcon
+                        icon={StarIcon}
+                        size={16}
+                        className={
+                          isFavorited
+                            ? 'text-amber-500 dark:text-amber-400'
+                            : 'text-muted-foreground opacity-80'
+                        }
+                      />
+                      {isFavorited ? 'Favorit' : 'Favorisieren'}
+                    </Button>
+                  </form>
+                </>
+              ) : null}
             </CardContent>
           </Card>
         </div>

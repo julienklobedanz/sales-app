@@ -51,6 +51,42 @@ export default async function CompanyDetailPage({
     getActiveDealsByCompanyId(id),
   ])
 
+  const [executiveEventsResult, accountNewsResult] = await Promise.all([
+    supabase
+      .from('market_signal_executive_events')
+      .select('id, person_name, person_title_before, person_title_after, change_summary, detected_at')
+      .eq('company_id', id)
+      .order('detected_at', { ascending: false })
+      .limit(40),
+    supabase
+      .from('market_signal_account_news')
+      .select('id, body, source_label, published_on, segment')
+      .eq('company_id', id)
+      .order('published_on', { ascending: false })
+      .limit(40),
+  ])
+
+  const marketSignals = {
+    championMoves: (executiveEventsResult.data ?? []).map((row) => ({
+      id: String(row.id),
+      personName: String(row.person_name ?? ''),
+      personTitleBefore: (row.person_title_before as string | null) ?? null,
+      personTitleAfter: (row.person_title_after as string | null) ?? null,
+      changeSummary: String(row.change_summary ?? ''),
+      detectedAt: String(row.detected_at ?? ''),
+    })),
+    accountNews: (accountNewsResult.data ?? []).map((row) => {
+      const seg = String(row.segment ?? 'customer')
+      return {
+        id: String(row.id),
+        body: String(row.body ?? ''),
+        sourceLabel: (row.source_label as string | null) ?? null,
+        publishedOn: String(row.published_on ?? ''),
+        segment: seg === 'prospect' ? 'prospect' : 'customer',
+      }
+    }),
+  }
+
   return (
     <div className="px-6 py-6 md:px-10 lg:px-16 xl:px-24">
       <div className="w-full max-w-6xl mx-auto">
@@ -61,6 +97,7 @@ export default async function CompanyDetailPage({
           contacts={contacts}
           references={references}
           activeDeals={activeDeals}
+          marketSignals={marketSignals}
           initialEditOpen={initialEditOpen}
         />
       </div>

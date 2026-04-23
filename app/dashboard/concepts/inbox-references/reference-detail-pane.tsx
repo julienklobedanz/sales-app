@@ -206,16 +206,16 @@ export function ReferenceDetailPane({
 
           <Separator />
 
-          <section className="space-y-4">
-            <div>
+          <section className="space-y-7">
+            <div className="space-y-3">
               <div className="text-sm font-semibold">Herausforderung</div>
-              <p className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap">
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
                 {selectedRef.customer_challenge ?? "—"}
               </p>
             </div>
-            <div>
+            <div className="space-y-3">
               <div className="text-sm font-semibold">Unsere Lösung</div>
-              <p className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap">
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
                 {selectedRef.our_solution ?? "—"}
               </p>
             </div>

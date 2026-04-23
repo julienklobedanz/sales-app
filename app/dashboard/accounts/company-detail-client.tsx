@@ -35,6 +35,7 @@ export function CompanyDetailClient({
   contacts: initialContacts,
   references,
   activeDeals,
+  marketSignals,
   initialEditOpen,
 }: CompanyDetailClientProps) {
   const { isAdmin, isAccountManager, isSales } = useRole()
@@ -303,6 +304,7 @@ export function CompanyDetailClient({
         <TabsContent value="stakeholders" className="mt-6">
           <CompanyDetailStakeholdersTab
             stakeholders={stakeholders}
+            marketSignals={marketSignals}
             canEdit={canEdit}
             onAdd={() => openStakeholderDialog()}
             onEdit={openStakeholderDialog}

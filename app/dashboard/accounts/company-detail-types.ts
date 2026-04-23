@@ -25,5 +25,22 @@ export type CompanyDetailClientProps = {
   contacts: ContactPersonRow[]
   references: CompanyRefRow[]
   activeDeals: AccountDealRow[]
+  marketSignals: {
+    championMoves: Array<{
+      id: string
+      personName: string
+      personTitleBefore: string | null
+      personTitleAfter: string | null
+      changeSummary: string
+      detectedAt: string
+    }>
+    accountNews: Array<{
+      id: string
+      body: string
+      sourceLabel: string | null
+      publishedOn: string
+      segment: 'customer' | 'prospect'
+    }>
+  }
   initialEditOpen?: boolean
 }

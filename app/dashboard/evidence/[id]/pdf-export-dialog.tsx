@@ -50,6 +50,7 @@ export function PdfExportDialog({
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
   showTriggerButton = true,
+  triggerClassName,
 }: {
   referenceId: string
   /** Optional: Dialog von außen öffnen (z. B. Match-Karten) */
@@ -57,6 +58,7 @@ export function PdfExportDialog({
   onOpenChange?: (open: boolean) => void
   /** Bei externer Steuerung (`open` gesetzt) standardmäßig kein Button */
   showTriggerButton?: boolean
+  triggerClassName?: string
 }) {
   const [internalOpen, setInternalOpen] = useState(false)
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen
@@ -108,7 +110,12 @@ export function PdfExportDialog({
   return (
     <>
       {showButton ? (
-        <Button variant="outline" size="sm" className="gap-2" onClick={() => setOpen(true)}>
+        <Button
+          variant="outline"
+          size="sm"
+          className={triggerClassName ? `gap-2 ${triggerClassName}` : 'gap-2'}
+          onClick={() => setOpen(true)}
+        >
           <AppIcon icon={FileDownIcon} size={16} />
           PDF exportieren
         </Button>

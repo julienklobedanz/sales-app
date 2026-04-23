@@ -198,19 +198,6 @@ export async function createAnonymizedReferenceVersion(id: string): Promise<Anon
 
   const company = Array.isArray(row.companies) ? row.companies[0] : row.companies
   const originalCompanyName = company?.name ?? 'Unternehmen'
-  const anonymousCompanyName = `Führendes ${(row.industry as string | null)?.trim() || 'Branche'}-Unternehmen`
-
-  const { data: anonymousCompany, error: companyInsertError } = await supabase
-    .from('companies')
-    .insert({
-      organization_id: profile.organization_id,
-      name: anonymousCompanyName,
-    })
-    .select('id')
-    .single()
-  if (companyInsertError || !anonymousCompany?.id) {
-    return { success: false, error: companyInsertError?.message ?? 'Anonyme Firma konnte nicht erstellt werden.' }
-  }
 
   const contentInput = {
     title: (row.title as string) ?? 'Anonymisierte Referenz',
@@ -241,7 +228,8 @@ export async function createAnonymizedReferenceVersion(id: string): Promise<Anon
 
   const payload = {
     organization_id: row.organization_id as string,
-    company_id: anonymousCompany.id,
+    // Keine anonymen Firmen mehr anlegen: die anonymisierte Version bleibt beim bestehenden Account.
+    company_id: row.company_id as string,
     title: anonymized.title,
     summary: anonymized.summary,
     industry: row.industry as string | null,

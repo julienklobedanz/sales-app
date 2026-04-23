@@ -188,9 +188,9 @@ export function ReferenceDetailSheet({
                   <Card>
                     <CardContent className="space-y-4">
                       {(selectedRef.customer_challenge || selectedRef.our_solution) ? (
-                        <div className="space-y-4">
+                        <div className="space-y-7">
                           {selectedRef.customer_challenge ? (
-                            <div className="space-y-2">
+                            <div className="space-y-3">
                               <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Herausforderung des Kunden</span>
                               <p className="text-foreground text-sm leading-relaxed">
                                 {selectedRef.customer_challenge}
@@ -198,7 +198,7 @@ export function ReferenceDetailSheet({
                             </div>
                           ) : null}
                           {selectedRef.our_solution ? (
-                            <div className="space-y-2">
+                            <div className="space-y-3">
                               <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Unsere Lösung</span>
                               <p className="text-foreground text-sm leading-relaxed">
                                 {selectedRef.our_solution}
