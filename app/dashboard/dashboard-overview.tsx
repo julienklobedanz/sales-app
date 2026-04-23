@@ -55,7 +55,6 @@ import type {
   ReferenceRow,
   ReferenceAssetRow,
   DeletedReferenceRow,
-  PendingClientApprovalRow,
 } from './actions'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
@@ -65,7 +64,6 @@ import { formatDateUtcDe } from '@/lib/format'
 import {
   deleteReference,
   getReferenceAssets,
-  resendClientApprovalEmail,
   submitForApproval,
   toggleFavorite,
 } from './actions'
@@ -252,7 +250,6 @@ export function DashboardOverview({
   contacts = [],
   externalContacts = [],
   deals = [],
-  pendingClientApprovals = [],
 }: {
   references: ReferenceRow[]
   totalCount: number
@@ -264,8 +261,6 @@ export function DashboardOverview({
   contacts?: ContactOption[]
   externalContacts?: { id: string; company_id: string; first_name: string | null; last_name: string | null; email: string | null; role: string | null; phone?: string | null }[]
   deals?: DealOption[]
-  /** Kunden-Freigabe ausstehend (E-Mail-Link) – Epic 10 */
-  pendingClientApprovals?: PendingClientApprovalRow[]
 }) {
   const router = useRouter()
   const [search, setSearch] = useState('')
@@ -853,58 +848,6 @@ export function DashboardOverview({
 
   return (
     <div className="flex flex-col space-y-5">
-      {pendingClientApprovals.length > 0 ? (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Ausstehende Kunden-Freigaben</CardTitle>
-            <CardDescription>
-              Der Kunde hat die Freigabe per Link noch nicht abgeschlossen. Sie können die E-Mail mit
-              dem Link erneut senden.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {pendingClientApprovals.map((row) => (
-              <div
-                key={row.approvalId}
-                className="flex flex-col gap-3 border-b border-border pb-4 last:border-b-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div className="min-w-0 space-y-1">
-                  <Link
-                    href={ROUTES.evidence.detail(row.referenceId)}
-                    className="font-medium text-foreground hover:underline"
-                  >
-                    {row.title}
-                  </Link>
-                  <p className="text-xs text-muted-foreground">
-                    {row.companyName} · angefragt am {formatDateUtcDe(row.requestedAt)}
-                  </p>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="shrink-0"
-                  onClick={() => {
-                    toast.promise(resendClientApprovalEmail(row.referenceId), {
-                      loading: 'E-Mail wird gesendet…',
-                      success: () => {
-                        router.refresh()
-                        return 'Erinnerung wurde per E-Mail gesendet.'
-                      },
-                      error: (e) =>
-                        e instanceof Error ? e.message : 'E-Mail konnte nicht gesendet werden.',
-                    })
-                  }}
-                >
-                  <AppIcon icon={Send} size={16} className="mr-2" />
-                  Erinnerung senden
-                </Button>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      ) : null}
-
       {/* Toolbar & Tabelle */}
       <div className="space-y-3.5">
         {/* Toolbar: Suche bis zu den Buttons; rechts Favoriten → Status → Spalten → … */}

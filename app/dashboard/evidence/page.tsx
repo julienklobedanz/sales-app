@@ -2,7 +2,7 @@ import { cookies } from 'next/headers'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
-import { getDashboardData, getPendingClientApprovals } from '@/app/dashboard/actions'
+import { getDashboardData } from '@/app/dashboard/actions'
 import { DashboardOverview } from '@/app/dashboard/dashboard-overview'
 import { DEV_ROLE_COOKIE, parseAppRoleCookie } from '@/lib/dev-role-preview'
 import type { AppRole } from '@/hooks/useRole'
@@ -29,10 +29,7 @@ export default async function EvidenceHubPage() {
   const serverRole = profile.role as AppRole
   const effectiveRole: AppRole = previewRole ?? serverRole
 
-  const [dashboard, pendingClientApprovals] = await Promise.all([
-    getDashboardData(false),
-    getPendingClientApprovals(),
-  ])
+  const dashboard = await getDashboardData(false)
 
   const references =
     effectiveRole === 'sales'
@@ -66,7 +63,6 @@ export default async function EvidenceHubPage() {
       contacts={contactsResult.data ?? []}
       externalContacts={externalContactsResult.data ?? []}
       deals={dealsResult.data ?? []}
-      pendingClientApprovals={pendingClientApprovals}
     />
   )
 }
