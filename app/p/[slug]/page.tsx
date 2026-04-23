@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { getPublicPortfolio, getPublicPortfolioBranding, incrementPortfolioViews } from '../actions'
 import { PublicPortfolioKillswitch } from './killswitch'
-import { formatReferenceVolume } from '@/lib/format'
+import { formatDateUtcDe, formatReferenceVolume } from '@/lib/format'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -14,9 +14,9 @@ export const metadata: Metadata = {
 function formatDateMaybe(value: string | null) {
   const v = String(value ?? '').trim()
   if (!v) return ''
-  const d = new Date(v)
+  const d = new Date(v.includes('T') ? v : `${v}T00:00:00.000Z`)
   if (Number.isNaN(d.getTime())) return v
-  return d.toLocaleDateString('de-DE')
+  return formatDateUtcDe(d.toISOString())
 }
 
 function splitTags(tags: string | null) {
@@ -59,8 +59,8 @@ export default async function PublicPortfolioPage({
   return (
     <div className="min-h-screen bg-muted/20">
       {branding.found ? (
-        <header className="border-b bg-background/95 px-6 py-5 sm:px-12 lg:px-24">
-          <div className="mx-auto flex max-w-4xl items-center justify-between gap-4">
+        <header className="border-b bg-background/95 px-6 py-5 sm:px-12 lg:px-16">
+          <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
             <div>
               <h1
                 className="text-lg font-semibold tracking-tight"
