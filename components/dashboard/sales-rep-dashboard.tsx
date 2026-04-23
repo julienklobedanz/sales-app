@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useMemo, useTransition } from 'react'
 import { toast } from 'sonner'
 import { GalleryHorizontalEndIcon, LinkIcon, SearchIcon, UploadIcon } from '@hugeicons/core-free-icons'
@@ -14,10 +13,11 @@ import { AppIcon } from '@/lib/icons'
 import { ROUTES } from '@/lib/routes'
 import type { SalesRepDashboardModel } from '@/app/dashboard/dashboard-home-data'
 import { formatDateUtcDe } from '@/lib/format'
+import { useCommandPalette } from '@/hooks/useCommandPalette'
 
 export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
   const { greetingName, activeDeals, recommended, recommendedNote, recentShares } = data
-  const router = useRouter()
+  const { setOpen: setCommandPaletteOpen } = useCommandPalette()
   const [isPending, startTransition] = useTransition()
   const isMacLike = useMemo(() => {
     if (typeof navigator === 'undefined') return true
@@ -49,7 +49,7 @@ export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
       <button
         type="button"
         className="relative flex h-16 w-full items-center rounded-2xl border border-white/70 bg-white/70 pl-12 pr-24 text-left text-lg text-slate-600 shadow-[0_8px_30px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-all hover:shadow-[0_0_0_1px_rgba(59,130,246,0.24),0_10px_36px_rgba(59,130,246,0.18)]"
-        onClick={() => router.push(ROUTES.match)}
+        onClick={() => setCommandPaletteOpen(true)}
       >
         <AppIcon icon={SearchIcon} size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
         Durchsuche Deals, Accounts und Referenzen ...

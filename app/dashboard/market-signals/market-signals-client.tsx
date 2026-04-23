@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
-import { FilterHorizontalIcon, InformationCircleIcon } from '@hugeicons/core-free-icons'
+import { FilterHorizontalIcon, InformationCircleIcon, Sparkles } from '@hugeicons/core-free-icons'
 
 import { AppIcon } from '@/lib/icons'
 import { ExecutiveTrackingList } from '@/components/market-signals/executive-tracking-list'
@@ -41,7 +41,13 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
             }`}
           >
             <AppIcon icon={FilterHorizontalIcon} size={14} />
-            Nur fuer aktive Deals
+            Nur aktive Deals
+          </Button>
+          <Button variant="ghost" size="toolbar" className="h-9 px-3 text-slate-500 hover:bg-muted/70" asChild>
+            <Link href={`${ROUTES.marketSignalsManage}?view=champions`}>
+              <AppIcon icon={Sparkles} size={14} />
+              Champions verwalten
+            </Link>
           </Button>
           <Button variant="ghost" size="toolbar" className="h-9 px-3 text-slate-500 hover:bg-muted/70" asChild>
             <Link href={ROUTES.marketSignalsManage}>Watchlist verwalten</Link>
@@ -52,13 +58,13 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
         items={model.executives}
         companies={model.companies}
         followingCompanyIds={model.followingCompanyIds}
+        championWatchlist={model.championWatchlist}
         initialReadKeys={model.signalReadKeys}
         restrictedCompanyIds={restrictedCompanyIds}
       />
 
       <AccountNewsFeed
         items={model.news}
-        companies={model.companies}
         followingCompanyIds={model.followingCompanyIds}
         initialReadKeys={model.signalReadKeys}
         restrictedCompanyIds={restrictedCompanyIds}

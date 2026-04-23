@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
-import { Bell, Building2, ExternalLink, MailOpen, News01Icon, Sparkles, UploadIcon } from '@hugeicons/core-free-icons'
+import { Bell, Building2, ExternalLink, LinkIcon, MailOpen, News01Icon, UploadIcon } from '@hugeicons/core-free-icons'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -14,7 +14,7 @@ import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 import { formatDateUtcDe } from '@/lib/format'
 import { AppIcon } from '@/lib/icons'
-import type { AccountNewsRow, MarketSignalsCompanyOption } from '@/app/dashboard/market-signals/data'
+import type { AccountNewsRow } from '@/app/dashboard/market-signals/data'
 
 const PAGE_SIZE = 10
 
@@ -57,13 +57,11 @@ function inferSignalTags(body: string) {
 
 export function AccountNewsFeed({
   items,
-  companies,
   followingCompanyIds,
   initialReadKeys,
   restrictedCompanyIds,
 }: {
   items: AccountNewsRow[]
-  companies: MarketSignalsCompanyOption[]
   followingCompanyIds: string[]
   initialReadKeys: string[]
   restrictedCompanyIds?: string[]
@@ -71,23 +69,6 @@ export function AccountNewsFeed({
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const [readKeys, setReadKeys] = useState(() => new Set(initialReadKeys.filter((k) => k.startsWith('market_news:'))))
   const followSet = useMemo(() => new Set(followingCompanyIds), [followingCompanyIds])
-  const topTargetCompanyIds = useMemo(() => {
-    const newestByCompany = new Map<string, number>()
-    for (const item of items) {
-      const ts = new Date(item.publishedOn).getTime()
-      const prev = newestByCompany.get(item.companyId) ?? 0
-      if (ts > prev) newestByCompany.set(item.companyId, ts)
-    }
-    return companies
-      .slice()
-      .sort((a, b) => {
-        if (a.isFollowing !== b.isFollowing) return a.isFollowing ? -1 : 1
-        return (newestByCompany.get(b.id) ?? 0) - (newestByCompany.get(a.id) ?? 0)
-      })
-      .slice(0, 10)
-      .map((company) => company.id)
-  }, [companies, items])
-  const topTargetSet = useMemo(() => new Set(topTargetCompanyIds), [topTargetCompanyIds])
 
   const restrictedSet = useMemo(
     () => (restrictedCompanyIds?.length ? new Set(restrictedCompanyIds) : null),
@@ -96,7 +77,7 @@ export function AccountNewsFeed({
 
   const prioritized = useMemo(() => {
     return items
-      .filter((item) => topTargetSet.has(item.companyId))
+      .filter((item) => followSet.has(item.companyId))
       .filter((item) => (restrictedSet ? restrictedSet.has(item.companyId) : true))
       .sort((a, b) => {
         const aFollow = followSet.has(a.companyId)
@@ -104,9 +85,16 @@ export function AccountNewsFeed({
         if (aFollow !== bFollow) return aFollow ? -1 : 1
         return new Date(b.publishedOn).getTime() - new Date(a.publishedOn).getTime()
       })
-  }, [followSet, items, topTargetSet, restrictedSet])
+  }, [followSet, items, restrictedSet])
   const visibleItems = prioritized.slice(0, visibleCount)
   const visibleReadKeys = useMemo(() => visibleItems.map((row) => `market_news:${row.id}`), [visibleItems])
+
+  function sourceHref(row: AccountNewsRow) {
+    const source = String(row.sourceLabel ?? '').trim()
+    if (/^https?:\/\//i.test(source)) return source
+    const q = [source, row.companyName, row.body].filter(Boolean).join(' ')
+    return `https://www.google.com/search?q=${encodeURIComponent(q)}`
+  }
 
   async function handleMarkRead() {
     if (!visibleReadKeys.length) return
@@ -135,7 +123,6 @@ export function AccountNewsFeed({
           <Button variant="ghost" size="toolbar" className="h-9 px-3 text-slate-500 hover:bg-muted/70" asChild>
             <Link href={ROUTES.settings}>
               <AppIcon icon={Bell} size={15} />
-              Benachrichtigungen
             </Link>
           </Button>
           <Button variant="ghost" size="toolbar" className="h-9 px-3 text-slate-500 hover:bg-muted/70" asChild>
@@ -215,16 +202,12 @@ export function AccountNewsFeed({
                     variant="ghost"
                     size="sm"
                     className="h-8 px-2 text-muted-foreground hover:bg-muted/70 hover:text-foreground"
-                    title="Gratulieren"
-                    aria-label="Gratulieren"
+                    title="Zur Signalquelle"
+                    aria-label="Zur Signalquelle"
                     asChild
                   >
-                    <Link
-                      href={`https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(row.companyName)}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      <AppIcon icon={Sparkles} size={15} />
+                    <Link href={sourceHref(row)} target="_blank" rel="noreferrer">
+                      <AppIcon icon={LinkIcon} size={15} />
                     </Link>
                   </Button>
                   <Button

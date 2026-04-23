@@ -85,18 +85,21 @@ export function ExecutiveTrackingList({
   items,
   companies,
   followingCompanyIds,
+  championWatchlist,
   initialReadKeys,
   restrictedCompanyIds,
 }: {
   items: ExecutiveTrackingRow[]
   companies: MarketSignalsCompanyOption[]
   followingCompanyIds: string[]
+  championWatchlist: string[]
   initialReadKeys: string[]
   restrictedCompanyIds?: string[]
 }) {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const [readKeys, setReadKeys] = useState(() => new Set(initialReadKeys.filter((k) => k.startsWith('market_exec:'))))
   const followed = useMemo(() => new Set(followingCompanyIds), [followingCompanyIds])
+  const championWatchSet = useMemo(() => new Set(championWatchlist), [championWatchlist])
   const companyNameById = useMemo(
     () => new Map(companies.map((company) => [company.id, normalizeText(company.name)])),
     [companies]
@@ -130,15 +133,21 @@ export function ExecutiveTrackingList({
         const companyName = companyNameById.get(companyId)
         return companyName ? summaryNorm.includes(companyName) : false
       })
-      const isChampionMove = followed.has(row.companyId) || mentionsFollowed
-      return { ...row, isChampionMove }
+      const isChampionFollowed = championWatchSet.has(normalizeText(row.personName))
+      const isChampionMove = followed.has(row.companyId) || mentionsFollowed || isChampionFollowed
+      return { ...row, isChampionMove, isChampionFollowed }
     })
-    const filtered = restrictedSet ? withScore.filter((row) => restrictedSet.has(row.companyId)) : withScore
+    const watchlistFiltered = withScore.filter(
+      (row) => followed.has(row.companyId) || row.isChampionFollowed
+    )
+    const filtered = restrictedSet
+      ? watchlistFiltered.filter((row) => restrictedSet.has(row.companyId))
+      : watchlistFiltered
     return filtered.sort((a, b) => {
       if (a.isChampionMove !== b.isChampionMove) return a.isChampionMove ? -1 : 1
       return new Date(b.detectedAt).getTime() - new Date(a.detectedAt).getTime()
     })
-  }, [companyNameById, deduped, followed, followingCompanyIds, restrictedSet])
+  }, [championWatchSet, companyNameById, deduped, followed, followingCompanyIds, restrictedSet])
   const visibleItems = prioritized.slice(0, visibleCount)
   const visibleReadKeys = useMemo(() => visibleItems.map((row) => `market_exec:${row.id}`), [visibleItems])
 
@@ -171,7 +180,6 @@ export function ExecutiveTrackingList({
           <Button variant="ghost" size="toolbar" className="h-9 px-3 text-slate-500 hover:bg-muted/70" asChild>
             <Link href={ROUTES.settings}>
               <AppIcon icon={Bell} size={15} />
-              Benachrichtigungen
             </Link>
           </Button>
           <Button variant="ghost" size="toolbar" className="h-9 px-3 text-slate-500 hover:bg-muted/70" asChild>

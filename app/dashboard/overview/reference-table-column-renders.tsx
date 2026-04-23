@@ -381,19 +381,14 @@ export function renderReferenceColumnHeader(
                   .filter((value) => {
                     if (!statusSearch.trim()) return true
                     const label =
-                      value === "all"
-                        ? "Alle"
-                        : STATUS_LABELS[value as ReferenceRow["status"]] ?? value
+                      value === "all" ? "Alle" : STATUS_LABELS[value] ?? value
                     return label
                       .toLowerCase()
                       .includes(statusSearch.trim().toLowerCase())
                   })
                   .map((value) => {
                     const isAll = value === "all"
-                    const label =
-                      isAll
-                        ? "Alle"
-                        : STATUS_LABELS[value as ReferenceRow["status"]] ?? value
+                    const label = isAll ? "Alle" : STATUS_LABELS[value] ?? value
                     const selected = statusFilter === value
                     return (
                       <button

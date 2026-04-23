@@ -112,6 +112,22 @@ const STATUS_LABELS: Record<string, string> = {
   internal_only: 'Intern',
   approved: 'Freigegeben',
   anonymized: 'Anonymisiert',
+  /** Kundenfreigabe ausstehend (Epic 10) bzw. Legacy-Status pending – entspricht Badge „Freigabe ausstehend“. */
+  approval_pending: 'Freigabe ausstehend',
+}
+
+/** Alle Referenzstatus-Optionen im Filter (fest, unabhängig von aktuell geladenen Zeilen). */
+const REFERENCE_TABLE_STATUS_FILTERS: readonly string[] = [
+  'draft',
+  'internal_only',
+  'approval_pending',
+  'approved',
+  'anonymized',
+]
+
+function referenceRowShowsApprovalPending(ref: ReferenceRow): boolean {
+  if (String(ref.customer_approval_status ?? '').toLowerCase() === 'pending') return true
+  return String(ref.status ?? '').toLowerCase() === 'pending'
 }
 
 const PROJECT_STATUS_LABELS: Record<string, string> = {
@@ -210,6 +226,22 @@ type RfpAnalyzeResponse =
     }
   | { success: false; error?: string }
 
+const ACCEPTED_RFP_MIME_TYPES = new Set([
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+])
+
+function hasAcceptedDraggedFile(dataTransfer: DataTransfer | null | undefined): boolean {
+  if (!dataTransfer) return false
+  const items = Array.from(dataTransfer.items ?? [])
+  if (items.length === 0) return false
+  return items.some((item) => {
+    if (item.kind !== 'file') return false
+    if (!item.type) return true
+    return ACCEPTED_RFP_MIME_TYPES.has(item.type)
+  })
+}
+
 export function DashboardOverview({
   references: initialReferences,
   deletedCount,
@@ -286,6 +318,8 @@ export function DashboardOverview({
   const [rfpDealId, setRfpDealId] = useState<string>(deals[0]?.id ?? '')
   const [rfpMatchedIds, setRfpMatchedIds] = useState<Set<string> | null>(null)
   const [rfpRequirementCount, setRfpRequirementCount] = useState<number | null>(null)
+  const [rfpWindowDragActive, setRfpWindowDragActive] = useState(false)
+  const rfpWindowDragDepthRef = useRef(0)
 
   function openRfpFlowWithFile(file: File) {
     const ext = file.name.split('.').pop()?.toLowerCase()
@@ -345,6 +379,43 @@ export function DashboardOverview({
       if (rfpInputRef.current) rfpInputRef.current.value = ''
     }
   }
+
+  useEffect(() => {
+    const onDragEnter = (event: DragEvent) => {
+      if (!hasAcceptedDraggedFile(event.dataTransfer)) return
+      event.preventDefault()
+      rfpWindowDragDepthRef.current += 1
+      setRfpWindowDragActive(true)
+    }
+    const onDragOver = (event: DragEvent) => {
+      if (!hasAcceptedDraggedFile(event.dataTransfer)) return
+      event.preventDefault()
+      if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy'
+      setRfpWindowDragActive(true)
+    }
+    const onDragLeave = (event: DragEvent) => {
+      if (!hasAcceptedDraggedFile(event.dataTransfer)) return
+      event.preventDefault()
+      rfpWindowDragDepthRef.current = Math.max(0, rfpWindowDragDepthRef.current - 1)
+      if (rfpWindowDragDepthRef.current === 0) {
+        setRfpWindowDragActive(false)
+      }
+    }
+    const onDrop = () => {
+      rfpWindowDragDepthRef.current = 0
+      setRfpWindowDragActive(false)
+    }
+    window.addEventListener('dragenter', onDragEnter)
+    window.addEventListener('dragover', onDragOver)
+    window.addEventListener('dragleave', onDragLeave)
+    window.addEventListener('drop', onDrop)
+    return () => {
+      window.removeEventListener('dragenter', onDragEnter)
+      window.removeEventListener('dragover', onDragOver)
+      window.removeEventListener('dragleave', onDragLeave)
+      window.removeEventListener('drop', onDrop)
+    }
+  }, [])
 
   function addBulkImportFiles(newFiles: File[]) {
     setBulkImportGroups((prev) => {
@@ -515,14 +586,12 @@ export function DashboardOverview({
   }, [companies])
 
   const filterOptions = useMemo(() => {
-    const statuses = new Set<string>()
     const industries = new Set<string>()
     const countries = new Set<string>()
     const projectStatuses = new Set<string>()
     const companies = new Set<string>()
     const tags = new Set<string>()
     for (const r of initialReferences) {
-      statuses.add(r.status)
       if (r.industry) industries.add(r.industry)
       if (r.country) countries.add(r.country)
       if (r.project_status) projectStatuses.add(r.project_status)
@@ -536,7 +605,7 @@ export function DashboardOverview({
       }
     }
     return {
-      statuses: Array.from(statuses).sort(),
+      statuses: [...REFERENCE_TABLE_STATUS_FILTERS],
       industries: Array.from(industries).sort(),
       countries: Array.from(countries).sort(),
       projectStatuses: Array.from(projectStatuses).sort(),
@@ -582,7 +651,13 @@ export function DashboardOverview({
       )
     }
     if (statusFilter !== 'all') {
-      list = list.filter((r) => r.status === statusFilter)
+      if (statusFilter === 'approval_pending') {
+        list = list.filter(referenceRowShowsApprovalPending)
+      } else {
+        list = list.filter(
+          (r) => r.status === statusFilter && !referenceRowShowsApprovalPending(r)
+        )
+      }
     }
     if (companyFilter !== 'all') {
       list = list.filter((r) => r.company_name === companyFilter)
@@ -837,6 +912,7 @@ export function DashboardOverview({
           <ToolbarSearchField
             variant="dashboard"
             wrapperClassName="min-w-0 flex-1 basis-[min(100%,24rem)] transition-all duration-300"
+            className="bg-white"
             placeholder={COPY.dashboard.searchReferencesPlaceholder}
             value={search}
             onChange={setSearch}
@@ -848,19 +924,26 @@ export function DashboardOverview({
             size="sm"
             className={cn(
               TABLE_TOOLBAR.dashboard.toolbarButton,
-              'shrink-0 rounded-lg border-0 px-3 text-muted-foreground hover:bg-muted/70'
+              'shrink-0 rounded-lg border-0 px-3 text-muted-foreground hover:bg-muted/70',
+              rfpWindowDragActive &&
+                'border-2 border-dashed border-blue-500 bg-blue-50/80 text-blue-700 hover:bg-blue-100/70'
             )}
             aria-label="RFP hochladen und Referenzen abgleichen"
             onClick={() => rfpInputRef.current?.click()}
-            onDragOver={(e) => e.preventDefault()}
+            onDragOver={(e) => {
+              e.preventDefault()
+              if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'
+            }}
             onDrop={(e) => {
               e.preventDefault()
+              rfpWindowDragDepthRef.current = 0
+              setRfpWindowDragActive(false)
               const file = e.dataTransfer.files?.[0]
               if (file) openRfpFlowWithFile(file)
             }}
           >
             <AppIcon icon={UploadIcon} size={16} className="shrink-0" />
-            <span>RFP-Abgleich</span>
+            <span>{rfpWindowDragActive ? 'Hier ablegen' : 'RFP-Abgleich'}</span>
           </Button>
           <input
             ref={rfpInputRef}
@@ -944,15 +1027,12 @@ export function DashboardOverview({
                     .filter((value) => {
                       if (!statusSearch.trim()) return true
                       const label =
-                        value === 'all'
-                          ? 'Alle'
-                          : STATUS_LABELS[value as ReferenceRow['status']] ?? value
+                        value === 'all' ? 'Alle' : STATUS_LABELS[value] ?? value
                       return label.toLowerCase().includes(statusSearch.trim().toLowerCase())
                     })
                     .map((value) => {
                       const isAll = value === 'all'
-                      const label =
-                        isAll ? 'Alle' : STATUS_LABELS[value as ReferenceRow['status']] ?? value
+                      const label = isAll ? 'Alle' : STATUS_LABELS[value] ?? value
                       const selected = statusFilter === value
                       return (
                         <button

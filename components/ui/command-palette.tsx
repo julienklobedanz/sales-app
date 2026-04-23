@@ -352,7 +352,9 @@ export function CommandPalette() {
       onOpenChange={setOpen}
       title={COPY.commandPalette.title}
       description={COPY.commandPalette.description}
-      className="max-w-2xl"
+      className="max-w-[min(56rem,calc(100vw-2rem))] w-full rounded-2xl border border-border/80 shadow-[0_8px_30px_rgba(15,23,42,0.12)]"
+      overlayClassName="bg-slate-950/45 backdrop-blur-sm"
+      commandClassName="**:data-[slot=command-input-wrapper]:h-16 [&_[cmdk-input]]:h-16 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5"
       commandProps={{
         shouldFilter: false,
         loop: true,
@@ -362,6 +364,9 @@ export function CommandPalette() {
         value={query}
         onValueChange={setQuery}
         placeholder={COPY.commandPalette.placeholder}
+        wrapperClassName="h-16 gap-3 border-b px-4"
+        iconSize={20}
+        className="text-base sm:text-lg"
       />
       <CommandList className="max-h-[min(420px,70vh)]">
         {loading && hasSearchQuery ? (

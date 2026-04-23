@@ -673,6 +673,192 @@ export async function toggleCompanyFavorite(
   return { success: true }
 }
 
+type RefreshAccountsResult =
+  | {
+      success: true
+      updatedCount: number
+      skippedCount: number
+      failedCount: number
+      updatedNames: string[]
+      skippedNames: string[]
+      failedNames: string[]
+    }
+  | { success: false; error: string }
+
+function normalizeDomain(raw: string) {
+  return raw
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, '')
+    .replace(/^www\./, '')
+    .replace(/\/.*$/, '')
+}
+
+function inputToDomain(input: string | null | undefined): string | null {
+  const s = String(input ?? '').trim()
+  if (!s) return null
+  const normalized = /^https?:\/\//i.test(s) ? s : `https://${s}`
+  try {
+    const host = new URL(normalized).hostname
+    const d = normalizeDomain(host)
+    return d.includes('.') ? d : null
+  } catch {
+    const d = normalizeDomain(s)
+    return d.includes('.') ? d : null
+  }
+}
+
+type BrandfetchPayload = {
+  companyName: string | null
+  websiteUrl: string | null
+  logoUrl: string | null
+  industry: string | null
+  headquarters: string | null
+  employeeCount: number | null
+  description: string | null
+}
+
+async function fetchBrandfetchCompany(domain: string): Promise<{ success: true; data: BrandfetchPayload } | { success: false }> {
+  const apiKey = process.env.BRANDFETCH_API_KEY
+  if (!apiKey) return { success: false }
+
+  let res: Response
+  try {
+    res = await fetch(`https://api.brandfetch.io/v2/brands/domain/${encodeURIComponent(domain)}`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      next: { revalidate: 0 },
+    })
+  } catch {
+    return { success: false }
+  }
+  if (!res.ok) return { success: false }
+
+  let json: {
+    name?: string | null
+    brand?: string | null
+    domain?: string | null
+    description?: string | null
+    company?: {
+      employees?: number | null
+      industries?: { name?: string | null }[]
+      location?: { city?: string | null; country?: string | null }
+    }
+    logos?: { formats?: { src?: string | null }[] }[]
+  }
+  try {
+    json = await res.json()
+  } catch {
+    return { success: false }
+  }
+
+  const rawName = String(json.name ?? json.brand ?? '').trim()
+  const location = json.company?.location
+  const logoUrl =
+    json.logos?.[0]?.formats?.[0]?.src ??
+    json.logos?.find((logo) => logo.formats?.length)?.formats?.[0]?.src ??
+    null
+  const websiteDomain = String(json.domain ?? domain).trim()
+  const data: BrandfetchPayload = {
+    companyName: rawName || null,
+    websiteUrl: websiteDomain ? `https://${normalizeDomain(websiteDomain)}` : `https://${domain}`,
+    logoUrl: logoUrl || null,
+    industry: String(json.company?.industries?.[0]?.name ?? '').trim() || null,
+    headquarters: [location?.city, location?.country].filter(Boolean).join(', ') || null,
+    employeeCount: typeof json.company?.employees === 'number' ? json.company.employees : null,
+    description: String(json.description ?? '').trim() || null,
+  }
+  return { success: true, data }
+}
+
+export async function refreshAccountsFromBrandfetch(): Promise<RefreshAccountsResult> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht eingeloggt.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id, role')
+    .eq('id', user.id)
+    .single()
+  if (!profile?.organization_id) return { success: false, error: 'Onboarding unvollständig.' }
+  if (profile.role === 'sales') return { success: false, error: 'Keine Berechtigung.' }
+
+  const { data: companies, error } = await supabase
+    .from('companies')
+    .select('id,name,website_url,logo_url,industry,headquarters,employee_count,description')
+    .eq('organization_id', profile.organization_id)
+    .order('name')
+  if (error) return { success: false, error: error.message }
+
+  let updatedCount = 0
+  let skippedCount = 0
+  let failedCount = 0
+  const updatedNames: string[] = []
+  const skippedNames: string[] = []
+  const failedNames: string[] = []
+
+  for (const company of companies ?? []) {
+    const website = String(company.website_url ?? '').trim()
+    const domain = inputToDomain(website)
+    if (!domain) {
+      skippedCount += 1
+      skippedNames.push(String(company.name ?? 'Unbekannt'))
+      continue
+    }
+
+    const fetched = await fetchBrandfetchCompany(domain)
+    if (!fetched.success) {
+      failedCount += 1
+      failedNames.push(String(company.name ?? 'Unbekannt'))
+      continue
+    }
+
+    const hasMissingData =
+      !company.logo_url ||
+      !company.industry ||
+      !company.headquarters ||
+      company.employee_count == null ||
+      !company.description
+    if (!hasMissingData) {
+      skippedCount += 1
+      skippedNames.push(String(company.name ?? 'Unbekannt'))
+      continue
+    }
+
+    const payload = {
+      logo_url: company.logo_url || fetched.data.logoUrl,
+      industry: company.industry || fetched.data.industry,
+      headquarters: company.headquarters || fetched.data.headquarters,
+      employee_count: company.employee_count ?? fetched.data.employeeCount,
+      description: company.description || fetched.data.description,
+      website_url: website || fetched.data.websiteUrl,
+      name: String(company.name ?? '').trim() || fetched.data.companyName || 'Unbekannt',
+      updated_at: new Date().toISOString(),
+    }
+    const { error: updateError } = await supabase.from('companies').update(payload).eq('id', company.id)
+    if (updateError) {
+      failedCount += 1
+      failedNames.push(String(company.name ?? 'Unbekannt'))
+      continue
+    }
+    updatedCount += 1
+    updatedNames.push(payload.name)
+  }
+
+  revalidatePath(ROUTES.accounts)
+  return {
+    success: true,
+    updatedCount,
+    skippedCount,
+    failedCount,
+    updatedNames,
+    skippedNames,
+    failedNames,
+  }
+}
+
 export async function createCompany(payload: {
   name: string
   website_url?: string | null

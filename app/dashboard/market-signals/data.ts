@@ -39,6 +39,14 @@ export type MarketSignalsPageModel = {
   followingCompanyIds: string[]
   signalReadKeys: string[]
   activeDealCompanyIds: string[]
+  championWatchlist: string[]
+}
+
+function normalizeChampionKey(raw: string | null | undefined) {
+  return String(raw ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
 }
 
 function normalizeDealStatus(raw: unknown) {
@@ -61,7 +69,15 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) {
-    return { executives: [], news: [], companies: [], followingCompanyIds: [], signalReadKeys: [], activeDealCompanyIds: [] }
+    return {
+      executives: [],
+      news: [],
+      companies: [],
+      followingCompanyIds: [],
+      signalReadKeys: [],
+      activeDealCompanyIds: [],
+      championWatchlist: [],
+    }
   }
 
   const { data: profile } = await supabase
@@ -72,7 +88,15 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
 
   const orgId = profile?.organization_id as string | undefined
   if (!orgId) {
-    return { executives: [], news: [], companies: [], followingCompanyIds: [], signalReadKeys: [], activeDealCompanyIds: [] }
+    return {
+      executives: [],
+      news: [],
+      companies: [],
+      followingCompanyIds: [],
+      signalReadKeys: [],
+      activeDealCompanyIds: [],
+      championWatchlist: [],
+    }
   }
 
   const { data: companies } = await supabase
@@ -99,6 +123,19 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
   const signalReadKeys = (signalReadRows ?? [])
     .map((row) => String(row.notification_key ?? ''))
     .filter(Boolean)
+
+  const { data: championRows } = await supabase
+    .from('market_signal_champion_watchlist')
+    .select('person_key')
+    .eq('user_id', user.id)
+    .limit(500)
+  const championWatchlist = Array.from(
+    new Set(
+      (championRows ?? [])
+        .map((row) => normalizeChampionKey((row as { person_key?: string | null }).person_key ?? ''))
+        .filter(Boolean)
+    )
+  )
 
   const { data: dealRows } = await supabase
     .from('deals')
@@ -199,5 +236,6 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
     followingCompanyIds,
     signalReadKeys,
     activeDealCompanyIds,
+    championWatchlist,
   }
 }

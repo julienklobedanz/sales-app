@@ -235,7 +235,13 @@ export function DashboardHeader({
               ) : null}
             </button>
           </PopoverTrigger>
-          <PopoverContent align="end" className="w-80 p-0">
+          <PopoverContent
+            align="end"
+            side="bottom"
+            sideOffset={76}
+            alignOffset={-76}
+            className="w-96 p-0"
+          >
             <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
               <h3 className="text-sm font-semibold">{COPY.notifications.title}</h3>
               <Button
@@ -251,7 +257,7 @@ export function DashboardHeader({
                 <AppIcon icon={MailOpen} size={18} />
               </Button>
             </div>
-            <div className="max-h-80 overflow-auto">
+            <div className="max-h-[28rem] overflow-auto">
               {notifications.length === 0 ? (
                 <p className="px-4 py-6 text-center text-sm text-muted-foreground">
                   Keine Benachrichtigungen.
