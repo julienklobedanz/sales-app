@@ -32,7 +32,12 @@ export function CompanyDetailHeader({
         <div className="min-w-0">
           <h1 className={`${DASHBOARD_PAGE_TITLE_CLASS} truncate`}>{company.name}</h1>
           <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            {company.industry && <span>{company.industry}</span>}
+            {company.industry && (
+              <span className="inline-flex items-center gap-1">
+                <AppIcon icon={Building2} size={14} />
+                {company.industry}
+              </span>
+            )}
             {company.headquarters && (
               <span className="inline-flex items-center gap-1">
                 <AppIcon icon={MapPinIcon} size={14} />

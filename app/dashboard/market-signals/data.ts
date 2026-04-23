@@ -111,7 +111,7 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
     logoUrl: (company.logo_url as string | null) ?? null,
     isFollowing: Boolean(company.is_favorite),
   }))
-  const followingCompanyIds = companyList.filter((company) => company.isFollowing).map((company) => company.id)
+  let followingCompanyIds = companyList.filter((company) => company.isFollowing).map((company) => company.id)
   const companyMetaById = new Map(companyList.map((company) => [company.id, company]))
 
   const { data: signalReadRows } = await supabase
@@ -191,6 +191,28 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
 
   if (newsErr) {
     console.error('[market-signals] account_news', newsErr.message)
+  }
+
+  if (followingCompanyIds.length === 0) {
+    const bootstrapCompanyIds = Array.from(
+      new Set(
+        [...(execRows ?? []), ...(newsRows ?? [])]
+          .map((row) => String((row as { company_id?: string | null }).company_id ?? ''))
+          .filter((companyId) => companyId && companyMetaById.has(companyId))
+      )
+    ).slice(0, 8)
+    if (bootstrapCompanyIds.length > 0) {
+      await supabase
+        .from('companies')
+        .update({ is_favorite: true })
+        .eq('organization_id', orgId)
+        .in('id', bootstrapCompanyIds)
+      const bootstrapSet = new Set(bootstrapCompanyIds)
+      for (const company of companyList) {
+        if (bootstrapSet.has(company.id)) company.isFollowing = true
+      }
+      followingCompanyIds = bootstrapCompanyIds
+    }
   }
 
   const executives: ExecutiveTrackingRow[] = (execRows ?? []).map((row: Record<string, unknown>) => {

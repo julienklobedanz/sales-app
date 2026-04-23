@@ -54,6 +54,34 @@ export default async function MarketSignalsManagePage() {
     .order('detected_at', { ascending: false })
     .limit(500)
 
+  const { data: newsRows } = await supabase
+    .from('market_signal_account_news')
+    .select('company_id')
+    .order('published_on', { ascending: false })
+    .limit(500)
+
+  const initialFollowingCount = ((data ?? []) as CompanyRow[]).filter((row) => Boolean(row.is_favorite)).length
+  if (initialFollowingCount === 0) {
+    const knownCompanyIds = new Set(((data ?? []) as CompanyRow[]).map((row) => row.id))
+    const bootstrapCompanyIds = Array.from(
+      new Set(
+        [...(execRows ?? []), ...(newsRows ?? [])]
+          .map((row) => String((row as { company_id?: string | null }).company_id ?? ''))
+          .filter((companyId) => companyId && knownCompanyIds.has(companyId))
+      )
+    ).slice(0, 8)
+    if (bootstrapCompanyIds.length > 0) {
+      await supabase
+        .from('companies')
+        .update({ is_favorite: true })
+        .eq('organization_id', orgId)
+        .in('id', bootstrapCompanyIds)
+      for (const row of (data ?? []) as CompanyRow[]) {
+        if (bootstrapCompanyIds.includes(row.id)) row.is_favorite = true
+      }
+    }
+  }
+
   const { data: championWatchRows } = await supabase
     .from('market_signal_champion_watchlist')
     .select('person_key')

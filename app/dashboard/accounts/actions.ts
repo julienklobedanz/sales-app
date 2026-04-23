@@ -694,6 +694,13 @@ function normalizeDomain(raw: string) {
     .replace(/\/.*$/, '')
 }
 
+function normalizeTextValue(raw: string | null | undefined) {
+  return String(raw ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+}
+
 function inputToDomain(input: string | null | undefined): string | null {
   const s = String(input ?? '').trim()
   if (!s) return null
@@ -716,6 +723,17 @@ type BrandfetchPayload = {
   headquarters: string | null
   employeeCount: number | null
   description: string | null
+}
+
+function countryFromCode(raw: string | null | undefined): string | null {
+  const code = String(raw ?? '').trim().toUpperCase()
+  if (!code) return null
+  try {
+    const names = new Intl.DisplayNames(['de'], { type: 'region' })
+    return names.of(code) ?? null
+  } catch {
+    return null
+  }
 }
 
 async function fetchBrandfetchCompany(domain: string): Promise<{ success: true; data: BrandfetchPayload } | { success: false }> {
@@ -741,7 +759,12 @@ async function fetchBrandfetchCompany(domain: string): Promise<{ success: true; 
     company?: {
       employees?: number | null
       industries?: { name?: string | null }[]
-      location?: { city?: string | null; country?: string | null }
+      location?: {
+        city?: string | null
+        country?: string | null
+        countryCode?: string | null
+        region?: string | null
+      }
     }
     logos?: { formats?: { src?: string | null }[] }[]
   }
@@ -753,6 +776,18 @@ async function fetchBrandfetchCompany(domain: string): Promise<{ success: true; 
 
   const rawName = String(json.name ?? json.brand ?? '').trim()
   const location = json.company?.location
+  const countryLabel =
+    String(location?.country ?? '').trim() ||
+    countryFromCode(String(location?.countryCode ?? '').trim()) ||
+    null
+  const cityLabel = String(location?.city ?? '').trim() || null
+  const regionLabel = String(location?.region ?? '').trim() || null
+  const headquarters =
+    [cityLabel, countryLabel].filter(Boolean).join(', ') ||
+    [regionLabel, countryLabel].filter(Boolean).join(', ') ||
+    countryLabel ||
+    regionLabel ||
+    null
   const logoUrl =
     json.logos?.[0]?.formats?.[0]?.src ??
     json.logos?.find((logo) => logo.formats?.length)?.formats?.[0]?.src ??
@@ -763,7 +798,7 @@ async function fetchBrandfetchCompany(domain: string): Promise<{ success: true; 
     websiteUrl: websiteDomain ? `https://${normalizeDomain(websiteDomain)}` : `https://${domain}`,
     logoUrl: logoUrl || null,
     industry: String(json.company?.industries?.[0]?.name ?? '').trim() || null,
-    headquarters: [location?.city, location?.country].filter(Boolean).join(', ') || null,
+    headquarters,
     employeeCount: typeof json.company?.employees === 'number' ? json.company.employees : null,
     description: String(json.description ?? '').trim() || null,
   }
@@ -815,13 +850,33 @@ export async function refreshAccountsFromBrandfetch(): Promise<RefreshAccountsRe
       continue
     }
 
-    const hasMissingData =
+    const currentIndustry = normalizeTextValue(company.industry)
+    const fetchedIndustry = String(fetched.data.industry ?? '').trim()
+    const fetchedIndustryNorm = normalizeTextValue(fetchedIndustry)
+    const industryLooksGeneric =
+      currentIndustry === 'sonstige' ||
+      currentIndustry === 'other' ||
+      currentIndustry === 'unknown' ||
+      currentIndustry === 'n/a'
+    // Schutz für manuell gepflegte Branchen:
+    // - Nur leere/generische Branchen überschreiben
+    // - Konkrete vorhandene Branchen nicht automatisch ersetzen
+    const industryNeedsUpdate =
+      Boolean(fetchedIndustryNorm) &&
+      (industryLooksGeneric || !currentIndustry)
+
+    const currentHeadquarters = normalizeTextValue(company.headquarters)
+    const fetchedHeadquarters = String(fetched.data.headquarters ?? '').trim()
+    const fetchedHeadquartersNorm = normalizeTextValue(fetchedHeadquarters)
+    const headquartersNeedsUpdate = !currentHeadquarters && Boolean(fetchedHeadquartersNorm)
+
+    const hasRefreshableData =
       !company.logo_url ||
-      !company.industry ||
-      !company.headquarters ||
+      industryNeedsUpdate ||
+      headquartersNeedsUpdate ||
       company.employee_count == null ||
       !company.description
-    if (!hasMissingData) {
+    if (!hasRefreshableData) {
       skippedCount += 1
       skippedNames.push(String(company.name ?? 'Unbekannt'))
       continue
@@ -829,8 +884,8 @@ export async function refreshAccountsFromBrandfetch(): Promise<RefreshAccountsRe
 
     const payload = {
       logo_url: company.logo_url || fetched.data.logoUrl,
-      industry: company.industry || fetched.data.industry,
-      headquarters: company.headquarters || fetched.data.headquarters,
+      industry: industryNeedsUpdate ? fetched.data.industry : company.industry,
+      headquarters: headquartersNeedsUpdate ? fetched.data.headquarters : company.headquarters,
       employee_count: company.employee_count ?? fetched.data.employeeCount,
       description: company.description || fetched.data.description,
       website_url: website || fetched.data.websiteUrl,
