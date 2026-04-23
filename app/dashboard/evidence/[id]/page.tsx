@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toggleFavorite } from '@/app/dashboard/actions'
-import { StarIcon } from '@hugeicons/core-free-icons'
+import { Eye, Mail, Pencil, StarIcon } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { formatNumberDe } from '@/lib/format'
 import { deleteReferenceFromDetailPage } from './actions'
@@ -14,7 +14,6 @@ import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 import { PdfExportDialog } from './pdf-export-dialog'
-import { AnonymizeReferenceButton } from './anonymize-reference-button'
 import { ShareLinkButton } from './share-link-button'
 import { RequestApprovalDialog } from './request-approval-dialog'
 import { ReferenceViewedTracker } from './reference-viewed-tracker'
@@ -29,12 +28,24 @@ function splitTags(tags: string | null) {
     .filter(Boolean)
 }
 
+function anonymizeText(value: string | null | undefined, companyName: string | null | undefined) {
+  const text = String(value ?? '')
+  const normalizedCompany = String(companyName ?? '').trim()
+  if (!text) return text
+  if (!normalizedCompany) return text
+  const escaped = normalizedCompany.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return text.replace(new RegExp(escaped, 'gi'), 'Kunde')
+}
+
 export default async function EvidenceDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const { id } = await params
+  const qs = await searchParams
 
   const supabase = await createServerSupabaseClient()
   const {
@@ -142,12 +153,22 @@ export default async function EvidenceDetailPage({
   const n = (key: string) => ev[key] ?? 0
   const tags = splitTags(ref.tags ?? null)
   const company = Array.isArray(ref.companies) ? ref.companies[0] : ref.companies
-
-  const { data: anonymizedChild } = await supabase
-    .from('references')
-    .select('id')
-    .eq('anonymized_from_id', id)
-    .maybeSingle()
+  const isAnonymizedView = qs?.view === 'anonymized'
+  const companyName = company?.name ?? null
+  const headerCompany = isAnonymizedView ? 'Kunde' : companyName
+  const industryLabel = anonymizeText(ref.industry ?? null, companyName)
+  const summaryText = isAnonymizedView
+    ? anonymizeText(ref.summary ?? null, companyName)
+    : (ref.summary ?? null)
+  const challengeText = isAnonymizedView
+    ? anonymizeText(ref.customer_challenge ?? null, companyName)
+    : (ref.customer_challenge ?? null)
+  const solutionText = isAnonymizedView
+    ? anonymizeText(ref.our_solution ?? null, companyName)
+    : (ref.our_solution ?? null)
+  const hasSummary = Boolean(summaryText?.trim())
+  const hasChallenge = Boolean(challengeText?.trim())
+  const hasSolution = Boolean(solutionText?.trim())
 
   const createdAt = ref.created_at ? new Date(ref.created_at) : null
   const updatedAt = ref.updated_at ? new Date(ref.updated_at) : null
@@ -197,7 +218,10 @@ export default async function EvidenceDetailPage({
               <h1 className={`${DASHBOARD_PAGE_TITLE_CLASS} break-words`}>
                 {ref.title}
               </h1>
-              <p className="text-sm text-muted-foreground">{ref.industry ?? '—'}</p>
+              <p className="text-sm text-muted-foreground">
+                {headerCompany ? `${headerCompany} · ` : ''}
+                {industryLabel ?? ''}
+              </p>
               <div className="mt-2 flex flex-wrap gap-1">
                 {tags.length ? (
                   tags.map((t) => (
@@ -212,20 +236,34 @@ export default async function EvidenceDetailPage({
             </div>
           </div>
 
-          <div className="space-y-4">
-            <div>
-              <div className="text-sm font-semibold">Herausforderung</div>
-              <p className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap">
-                {ref.customer_challenge ?? '—'}
-              </p>
+          {hasSummary || hasChallenge || hasSolution ? (
+            <div className="space-y-4">
+              {hasSummary ? (
+                <div>
+                  <div className="text-sm font-semibold">Zusammenfassung</div>
+                  <p className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap">
+                    {summaryText}
+                  </p>
+                </div>
+              ) : null}
+              {hasChallenge ? (
+                <div>
+                  <div className="text-sm font-semibold">Herausforderung</div>
+                  <p className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap">
+                    {challengeText}
+                  </p>
+                </div>
+              ) : null}
+              {hasSolution ? (
+                <div>
+                  <div className="text-sm font-semibold">Unsere Lösung</div>
+                  <p className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap">
+                    {solutionText}
+                  </p>
+                </div>
+              ) : null}
             </div>
-            <div>
-              <div className="text-sm font-semibold">Unsere Lösung</div>
-              <p className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap">
-                {ref.our_solution ?? '—'}
-              </p>
-            </div>
-          </div>
+          ) : null}
 
           <Card>
             <CardHeader>
@@ -268,35 +306,35 @@ export default async function EvidenceDetailPage({
             <CardContent className="space-y-2 text-sm">
               <div className="flex justify-between gap-2">
                 <span className="text-muted-foreground">Account</span>
-                <span className="font-medium truncate max-w-[220px]">{company?.name ?? '—'}</span>
+                <span className="font-medium truncate max-w-[220px]">{headerCompany ?? ''}</span>
               </div>
               <div className="flex justify-between gap-2">
                 <span className="text-muted-foreground">Volumen</span>
                 <span className="font-medium tabular-nums">
                   {ref.volume_eur != null && ref.volume_eur !== ''
                     ? formatNumberDe(ref.volume_eur)
-                    : '—'}
+                    : ''}
                 </span>
               </div>
               <div className="flex justify-between gap-2">
                 <span className="text-muted-foreground">Vertragsart</span>
-                <span className="font-medium">{ref.contract_type ?? '—'}</span>
+                <span className="font-medium">{ref.contract_type ?? ''}</span>
               </div>
               <div className="flex justify-between gap-2">
                 <span className="text-muted-foreground">Projektstart</span>
-                <span className="font-medium">{ref.project_start ?? '—'}</span>
+                <span className="font-medium">{ref.project_start ?? ''}</span>
               </div>
               <div className="flex justify-between gap-2">
                 <span className="text-muted-foreground">Projektende</span>
-                <span className="font-medium">{ref.project_end ?? '—'}</span>
+                <span className="font-medium">{ref.project_end ?? ''}</span>
               </div>
               <div className="flex justify-between gap-2">
                 <span className="text-muted-foreground">Akt. Dienstleister</span>
-                <span className="font-medium">{ref.incumbent_provider ?? '—'}</span>
+                <span className="font-medium">{ref.incumbent_provider ?? ''}</span>
               </div>
               <div className="flex justify-between gap-2">
                 <span className="text-muted-foreground">Wettbewerber</span>
-                <span className="font-medium">{ref.competitors ?? '—'}</span>
+                <span className="font-medium">{ref.competitors ?? ''}</span>
               </div>
             </CardContent>
           </Card>
@@ -357,19 +395,17 @@ export default async function EvidenceDetailPage({
               <CardTitle className="text-base">Aktionen</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-2">
-              {ref.anonymized_from_id ? (
-                <Button asChild variant="outline" className="w-full">
-                  <Link href={ROUTES.evidence.detail(ref.anonymized_from_id)}>
-                    Vollversion anzeigen
-                  </Link>
-                </Button>
-              ) : anonymizedChild?.id ? (
-                <Button asChild variant="outline" className="w-full">
-                  <Link href={ROUTES.evidence.detail(anonymizedChild.id)}>
-                    Anonymisierte Version anzeigen
-                  </Link>
-                </Button>
-              ) : null}
+              <Button asChild variant="outline" className="w-full gap-2">
+                <Link href={isAnonymizedView ? ROUTES.evidence.detail(id) : `${ROUTES.evidence.detail(id)}?view=anonymized`}>
+                  <span className="relative inline-flex items-center justify-center">
+                    <AppIcon icon={Eye} size={16} />
+                    {!isAnonymizedView ? (
+                      <span className="absolute inset-0 -rotate-45 border-t border-current" />
+                    ) : null}
+                  </span>
+                  {isAnonymizedView ? 'Vollversion anzeigen' : 'Anonymisierte Version anzeigen'}
+                </Link>
+              </Button>
               <form action={toggleFavorite.bind(null, id)}>
                 <Button
                   type="submit"
@@ -392,15 +428,16 @@ export default async function EvidenceDetailPage({
               <ShareLinkButton referenceId={id} />
               {role === 'sales' ? null : (
                 <>
-                  {ref.anonymized_from_id || anonymizedChild?.id ? null : (
-                    <AnonymizeReferenceButton referenceId={id} />
-                  )}
-                  <Button asChild variant="outline" className="w-full">
-                    <Link href={ROUTES.evidence.edit(id)}>Bearbeiten</Link>
+                  <Button asChild variant="outline" className="w-full gap-2">
+                    <Link href={ROUTES.evidence.edit(id)}>
+                      <AppIcon icon={Pencil} size={16} />
+                      Bearbeiten
+                    </Link>
                   </Button>
                   <RequestApprovalDialog
                     referenceId={id}
                     defaultContactId={ref.customer_contact_id ?? ref.contact_id}
+                    triggerIcon={<AppIcon icon={Mail} size={16} />}
                   />
                   {role === 'admin' ? (
                     <form action={deleteReferenceFromDetailPage.bind(null, id)} className="w-full">

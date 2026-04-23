@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import type { ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -26,9 +27,11 @@ import type { SubmitForApprovalOptions } from '@/app/dashboard/references/approv
 export function RequestApprovalDialog({
   referenceId,
   defaultContactId,
+  triggerIcon,
 }: {
   referenceId: string
   defaultContactId?: string | null
+  triggerIcon?: ReactNode
 }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -88,6 +91,7 @@ export function RequestApprovalDialog({
   return (
     <>
       <Button type="button" variant="outline" className="w-full" onClick={() => setOpen(true)}>
+        {triggerIcon ? <span className="mr-2 inline-flex items-center">{triggerIcon}</span> : null}
         Freigabe anfordern
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>

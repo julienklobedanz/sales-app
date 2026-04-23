@@ -36,7 +36,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
-import { attachOriginalDocumentToReference, createReference, enrichAndSaveCompany, fetchCompanyEnrichment } from './actions'
+import { attachOriginalDocumentToReference, createReference, enrichAndSaveCompany } from './actions'
 import { createClient } from '@/lib/supabase/client'
 import {
   updateReference,
@@ -75,6 +75,12 @@ function normalizeWrappedParagraphs(input: string): string {
     .filter(Boolean)
 
   return paragraphs.join('\n\n')
+}
+
+function formatThousandsDots(raw: string | null | undefined): string {
+  const digits = String(raw ?? '').replace(/\D/g, '')
+  if (!digits) return ''
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
 }
 
 const INDUSTRIES = [
@@ -131,6 +137,19 @@ const CONTRACT_TYPE_OPTIONS = [
   'Wartungsvertrag',
   'SaaS / Subscription',
   'Sonstige',
+] as const
+
+const VOLUME_CURRENCY_OPTIONS = [
+  { code: 'USD', symbol: '$' },
+  { code: 'EUR', symbol: '€' },
+  { code: 'JPY', symbol: '¥' },
+  { code: 'GBP', symbol: '£' },
+  { code: 'AUD', symbol: 'A$' },
+  { code: 'CNY', symbol: '¥' },
+  { code: 'CAD', symbol: 'C$' },
+  { code: 'CHF', symbol: 'CHF' },
+  { code: 'HKD', symbol: 'HK$' },
+  { code: 'SGD', symbol: 'S$' },
 ] as const
 
 type Company = ReferenceFormCompany
@@ -243,7 +262,8 @@ export function ReferenceForm({
   const [employeeCount, setEmployeeCount] = useState(
     initialData?.employee_count != null ? `${initialData.employee_count}` : ''
   )
-  const [volumeEur, setVolumeEur] = useState(initialData?.volume_eur ?? '')
+  const [volumeEur, setVolumeEur] = useState(() => formatThousandsDots(initialData?.volume_eur ?? ''))
+  const [volumeCurrency, setVolumeCurrency] = useState('EUR')
   const [contractType, setContractType] = useState(
     initialData?.contract_type ?? ''
   )
@@ -293,6 +313,9 @@ export function ReferenceForm({
   const normalizeTag = (raw: string): string => {
     const trimmed = raw.trim()
     if (!trimmed) return ''
+    if (trimmed === trimmed.toUpperCase() && /[A-ZÄÖÜ]/.test(trimmed)) {
+      return trimmed
+    }
     const lower = trimmed.toLowerCase()
     return lower.charAt(0).toUpperCase() + lower.slice(1)
   }
@@ -314,6 +337,7 @@ export function ReferenceForm({
   })
   const [tagInputValue, setTagInputValue] = useState('')
   const [competitorInputValue, setCompetitorInputValue] = useState('')
+  const [incumbentInputValue, setIncumbentInputValue] = useState('')
   const [incumbentSuggestions, setIncumbentSuggestions] = useState<string[]>([])
   const [competitorSuggestions, setCompetitorSuggestions] = useState<string[]>([])
   const [projectStatus, setProjectStatus] = useState(
@@ -334,7 +358,6 @@ export function ReferenceForm({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const _enrichDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [editCompanyName, setEditCompanyName] = useState(initialData?.company_name ?? '')
-  const editEnrichDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [magicImportLoading, setMagicImportLoading] = useState(false)
   const [summaryLoading, setSummaryLoading] = useState(false)
 
@@ -342,38 +365,6 @@ export function ReferenceForm({
   const displayCompanies = enrichedCompany && !companies.some((c) => c.id === enrichedCompany.id)
     ? [...companies, enrichedCompany]
     : companies
-
-  /** Brandfetch wird nur nach Auswahl im Dropdown aufgerufen, nicht beim Tippen. */
-  useEffect(() => {
-    if (!isEditMode) return
-    const trimmed = editCompanyName.trim()
-    if (trimmed.length < 2) return
-    if (editEnrichDebounceRef.current) clearTimeout(editEnrichDebounceRef.current)
-    const nameToFetch = editCompanyName.trim()
-    editEnrichDebounceRef.current = setTimeout(() => {
-      editEnrichDebounceRef.current = null
-      setEnrichLoading(true)
-      fetchCompanyEnrichment(nameToFetch)
-        .then((result) => {
-          if (result.success) {
-            setEditCompanyName(result.company_name)
-            setWebsite(result.website_url ?? '')
-            setIndustry(result.industry ?? '')
-            setCountry(result.country ?? '')
-            setHeadquarters(result.headquarters ?? '')
-            setEmployeeCount(result.employee_count != null ? String(result.employee_count) : '')
-            setEnrichedLogoUrl(result.logo_url ?? null)
-            toast.success('Unternehmensdaten wurden geladen.')
-          } else {
-            toast.error(result.error)
-          }
-        })
-        .finally(() => setEnrichLoading(false))
-    }, 2000)
-    return () => {
-      if (editEnrichDebounceRef.current) clearTimeout(editEnrichDebounceRef.current)
-    }
-  }, [isEditMode, editCompanyName])
 
   const submitting = isEditMode ? editSubmitting : createSubmitting
   const isAnonymized = status === 'anonymized'
@@ -629,7 +620,7 @@ export function ReferenceForm({
         if (d.title != null) setTitle(d.title)
         if (d.summary != null) setSummary(d.summary)
         if (d.industry != null) setIndustry(d.industry)
-        if (d.volume_eur != null) setVolumeEur(d.volume_eur)
+        if (d.volume_eur != null) setVolumeEur(formatThousandsDots(d.volume_eur))
         if (d.employee_count != null) setEmployeeCount(String(d.employee_count))
         if (Array.isArray(d.tags) && d.tags.length > 0) {
           setTags(d.tags)
@@ -1310,24 +1301,46 @@ export function ReferenceForm({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <OptionalLabel htmlFor="volume_eur">Volumen (€)</OptionalLabel>
-          <Input
-            id="volume_eur"
-            name="volume_eur"
-            type="text"
-            inputMode="numeric"
-            placeholder="z. B. 5.000.000"
-            disabled={submitting}
-            value={volumeEur}
-            onChange={(e) => {
-              const digits = e.target.value.replace(/\D/g, '')
-              if (!digits) {
-                setVolumeEur('')
-                return
-              }
-              const withSeparators = digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
-              setVolumeEur(withSeparators)
-            }}
-          />
+          <div className="flex items-center gap-2">
+            <Input
+              id="volume_eur"
+              name="volume_eur"
+              type="text"
+              inputMode="numeric"
+              placeholder="z. B. 5.000.000"
+              disabled={submitting}
+              className="max-w-[220px]"
+              value={volumeEur}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/\D/g, '')
+                if (!digits) {
+                  setVolumeEur('')
+                  return
+                }
+                const withSeparators = digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+                setVolumeEur(withSeparators)
+              }}
+            />
+            <Select
+              value={volumeCurrency}
+              onValueChange={setVolumeCurrency}
+              disabled={submitting}
+            >
+              <SelectTrigger
+                className="h-10 w-[104px] shrink-0 rounded-lg border border-input bg-background px-2.5 text-xs font-medium"
+                aria-label="Währung wählen"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {VOLUME_CURRENCY_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.code} value={opt.code}>
+                    {opt.symbol} ({opt.code})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         <div className="space-y-2">
           <OptionalLabel htmlFor="contract_type">Vertragsart</OptionalLabel>
@@ -1360,29 +1373,86 @@ export function ReferenceForm({
           <OptionalLabel htmlFor="incumbent_provider">
             Aktueller Dienstleister (Incumbent)
           </OptionalLabel>
+          <input type="hidden" name="incumbent_provider" value={incumbentProvider} />
           <div className="relative">
-            <Input
-              id="incumbent_provider"
-              name="incumbent_provider"
-              placeholder="z. B. bisheriger Anbieter"
-              disabled={submitting}
-              value={incumbentProvider}
-              onChange={async (e) => {
-                const value = e.target.value
-                setIncumbentProvider(value)
-                if (!value.trim()) {
-                  setIncumbentSuggestions([])
-                  return
+            <div className="flex min-h-9 flex-wrap items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm">
+              {incumbentProvider
+                .split(/[;,]+/)
+                .map((s) => s.trim())
+                .filter(Boolean)
+                .map((name) => (
+                  <span
+                    key={name}
+                    className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-medium text-foreground"
+                  >
+                    {name}
+                    <button
+                      type="button"
+                      disabled={submitting}
+                      onClick={() => {
+                        setIncumbentProvider(
+                          incumbentProvider
+                            .split(/[;,]+/)
+                            .map((s) => s.trim())
+                            .filter((n) => n && n.toLowerCase() !== name.toLowerCase())
+                            .join(', ')
+                        )
+                      }}
+                      className="rounded-full px-1 hover:bg-accent"
+                      aria-label={`Incumbent „${name}" entfernen`}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              <input
+                id="incumbent_provider"
+                placeholder={
+                  incumbentProvider.trim()
+                    ? 'Weiteren Dienstleister hinzufügen…'
+                    : 'z. B. bisheriger Anbieter'
                 }
-                try {
-                  const list = await getIncumbentSuggestions(value)
-                  setIncumbentSuggestions(list)
-                } catch {
-                  setIncumbentSuggestions([])
-                }
-              }}
-            />
-            {incumbentSuggestions.length > 0 && incumbentProvider.trim() && (
+                disabled={submitting}
+                value={incumbentInputValue}
+                onChange={async (e) => {
+                  const value = e.target.value
+                  setIncumbentInputValue(value)
+                  if (!value.trim()) {
+                    setIncumbentSuggestions([])
+                    return
+                  }
+                  try {
+                    const list = await getIncumbentSuggestions(value)
+                    setIncumbentSuggestions(list)
+                  } catch {
+                    setIncumbentSuggestions([])
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === ',' || e.key === 'Enter') {
+                    e.preventDefault()
+                    const raw = incumbentInputValue.trim()
+                    if (!raw) return
+                    const parts = raw.split(/[;,]+/).map((s) => s.trim()).filter(Boolean)
+                    const existing = incumbentProvider
+                      .split(/[;,]+/)
+                      .map((s) => s.trim())
+                      .filter(Boolean)
+                    const merged = [...existing]
+                    parts.forEach((p) => {
+                      if (!merged.some((n) => n.toLowerCase() === p.toLowerCase())) {
+                        merged.push(p)
+                      }
+                    })
+                    setIncumbentProvider(merged.join(', '))
+                    setIncumbentInputValue('')
+                    setIncumbentSuggestions([])
+                  }
+                }}
+                className="min-w-[120px] flex-1 border-0 bg-transparent p-0 text-sm outline-none placeholder:text-muted-foreground"
+              />
+            </div>
+            {incumbentSuggestions.length > 0 && incumbentInputValue.trim() && (
               <div className="absolute z-20 mt-1 w-full rounded-md border bg-popover text-sm shadow-md">
                 <Command>
                   <CommandList>
@@ -1391,7 +1461,14 @@ export function ReferenceForm({
                         key={name}
                         value={name}
                         onSelect={(val) => {
-                          setIncumbentProvider(val)
+                          const existing = incumbentProvider
+                            .split(/[;,]+/)
+                            .map((s) => s.trim())
+                            .filter(Boolean)
+                          if (!existing.some((n) => n.toLowerCase() === val.toLowerCase())) {
+                            setIncumbentProvider([...existing, val].join(', '))
+                          }
+                          setIncumbentInputValue('')
                           setIncumbentSuggestions([])
                         }}
                       >
@@ -1408,12 +1485,8 @@ export function ReferenceForm({
           <OptionalLabel htmlFor="competitors">
             Weitere beteiligte Wettbewerber
           </OptionalLabel>
-          <div className="space-y-1">
-            <input
-              type="hidden"
-              name="competitors"
-              value={competitors}
-            />
+          <div className="relative">
+            <input type="hidden" name="competitors" value={competitors} />
             <div className="flex min-h-9 flex-wrap items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm">
               {competitors
                 .split(/[;,]+/)
@@ -1445,7 +1518,7 @@ export function ReferenceForm({
                   </span>
                 ))}
               <div className="relative flex-1 min-w-[120px]">
-                <Input
+                <input
                   id="competitors"
                   placeholder={
                     competitors.trim()
@@ -1489,7 +1562,7 @@ export function ReferenceForm({
                       setCompetitorSuggestions([])
                     }
                   }}
-                  className="border-0 bg-transparent p-0 text-sm outline-none placeholder:text-muted-foreground"
+                  className="w-full border-0 bg-transparent p-0 text-sm outline-none placeholder:text-muted-foreground"
                 />
                 {competitorSuggestions.length > 0 && competitorInputValue.trim() && (
                   <div className="absolute z-20 mt-1 w-full rounded-md border bg-popover text-sm shadow-md">
@@ -1598,29 +1671,25 @@ export function ReferenceForm({
 
   return (
     <div className="w-full max-w-4xl min-w-0 pb-6">
-      <Card className="border-0 shadow-none">
-        <CardContent className="px-0">
-          {isEditMode ? (
-            <form
-              id={formId}
-              noValidate
-              onSubmit={handleEditSubmit}
-              className="w-full min-w-0 space-y-6"
-            >
-              {renderFormContent()}
-            </form>
-          ) : (
-            <form
-              id={formId}
-              noValidate
-              onSubmit={handleCreateSubmit}
-              className="w-full min-w-0 space-y-6"
-            >
-              {renderFormContent()}
-            </form>
-          )}
-        </CardContent>
-      </Card>
+      {isEditMode ? (
+        <form
+          id={formId}
+          noValidate
+          onSubmit={handleEditSubmit}
+          className="w-full min-w-0 space-y-6"
+        >
+          {renderFormContent()}
+        </form>
+      ) : (
+        <form
+          id={formId}
+          noValidate
+          onSubmit={handleCreateSubmit}
+          className="w-full min-w-0 space-y-6"
+        >
+          {renderFormContent()}
+        </form>
+      )}
 
       {/* Sticky Action Bar innerhalb des Formular-Containers */}
       <div className="sticky bottom-0 z-40 border-t bg-background/80 backdrop-blur mt-6">

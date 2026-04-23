@@ -127,7 +127,7 @@ export default async function EditReferencePage({
   }
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-6">
+    <div className="min-h-screen bg-muted/10 p-4 md:p-6">
       <div className="mx-auto max-w-3xl space-y-6">
         <Link href={ROUTES.evidence.detail(id)}>
           <Button variant="ghost" size="sm" className="gap-2 -ml-2">
