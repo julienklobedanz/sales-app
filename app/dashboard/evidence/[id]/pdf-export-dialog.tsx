@@ -28,13 +28,13 @@ const TEMPLATE_OPTIONS: Array<{
   {
     key: 'one_pager',
     title: 'One-Pager',
-    description: 'Kompakte 1-Seiten-Uebersicht fuer schnelle Sales-Calls.',
+    description: 'Kompakte 1-Seiten-Übersicht für schnelle Sales-Calls.',
     mini: { pages: 1 },
   },
   {
     key: 'detail',
     title: 'Detail',
-    description: 'Mehrseitig mit Herausforderung, Loesung und Projektdetails.',
+    description: 'Mehrseitig mit Herausforderung, Lösung und Projektdetails.',
     mini: { pages: 2 },
   },
   {
@@ -117,7 +117,7 @@ export function PdfExportDialog({
           onClick={() => setOpen(true)}
         >
           <AppIcon icon={FileDownIcon} size={16} />
-          PDF exportieren
+          PDF Export
         </Button>
       ) : null}
       <Dialog open={open} onOpenChange={setOpen}>

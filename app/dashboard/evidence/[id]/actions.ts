@@ -105,12 +105,12 @@ async function anonymizeWithOpenAI(params: {
     tags: string | null
   }
 }): Promise<AnonymizedContent | null> {
-  const prompt = `Du anonymisierst Referenzinhalte fuer NDA-sichere Freigaben.
+  const prompt = `Du anonymisierst Referenzinhalte für NDA-sichere Freigaben.
 Regeln:
-- Firmenname "${params.companyName}" und Kontakte duerfen nicht vorkommen.
+- Firmenname "${params.companyName}" und Kontakte dürfen nicht vorkommen.
 - Verwende stattdessen "Führendes ${params.industry?.trim() || 'Branche'}-Unternehmen".
 - Mache spezifische Technologien/Vendoren generisch.
-- Gib nur JSON zurueck:
+- Gib nur JSON zurück:
 {
   "title":"...",
   "summary":"...",

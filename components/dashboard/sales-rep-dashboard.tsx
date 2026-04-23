@@ -28,7 +28,7 @@ export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
 
   function handleQuickShare(referenceId: string | null) {
     if (!referenceId) {
-      toast.info('Kein verknuepfter Referenz-Match vorhanden.')
+      toast.info('Kein verknüpfter Referenz-Match vorhanden.')
       return
     }
     startTransition(async () => {
@@ -71,7 +71,7 @@ export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
             >
               <AppIcon icon={SearchIcon} size={18} />
               <p className="mt-2 text-sm font-semibold tracking-tight">Match starten</p>
-              <p className="mt-1 text-xs text-blue-100/90">Neue Referenztreffer fuer aktive Deals</p>
+              <p className="mt-1 text-xs text-blue-100/90">Neue Referenztreffer für aktive Deals</p>
             </Link>
             <Link
               href={ROUTES.marketSignals}
@@ -79,7 +79,7 @@ export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
             >
               <AppIcon icon={UploadIcon} size={18} className="text-muted-foreground" />
               <p className="mt-2 text-sm font-semibold tracking-tight text-foreground">RFP / Marktsignale</p>
-              <p className="mt-1 text-xs text-muted-foreground">Proaktive Trigger fuer deinen Pipeline-Fokus</p>
+              <p className="mt-1 text-xs text-muted-foreground">Proaktive Trigger für deinen Pipeline-Fokus</p>
             </Link>
             <Link
               href={ROUTES.deals.requestNew}
@@ -102,25 +102,43 @@ export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
         </CardHeader>
         <CardContent>
           {activeDeals.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/35 px-6 py-12 text-center">
-              <div className="mb-4 grid w-full max-w-sm grid-cols-5 gap-1.5 opacity-60">
-                <div className="h-3 rounded-full bg-muted-foreground/35" />
-                <div className="h-3 rounded-full bg-muted-foreground/30" />
-                <div className="h-3 rounded-full bg-muted-foreground/25" />
-                <div className="h-3 rounded-full bg-muted-foreground/20" />
-                <div className="h-3 rounded-full bg-muted-foreground/15" />
+            <div className="relative overflow-hidden rounded-xl border border-dashed border-border bg-muted/25 px-4 py-4">
+              <div className="space-y-3 opacity-40 blur-[0.3px] grayscale-[0.25]">
+                {[
+                  { title: 'BMW - Cloud Migration', meta: 'Automotive · Renewal in 45 Tagen' },
+                  { title: 'Apple - SAP Rollout', meta: 'Technology · Multi-Region Opportunity' },
+                  { title: 'Siemens - Data Platform', meta: 'Industrial · Expansion Deal' },
+                ].map((ghost) => (
+                  <div
+                    key={ghost.title}
+                    className="rounded-lg border border-border/80 bg-card/80 px-3 py-3"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-medium text-foreground">{ghost.title}</p>
+                      <Badge className="border-0 bg-blue-600/10 text-blue-600">AI Match</Badge>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">{ghost.meta}</p>
+                    <div className="mt-2 h-2.5 w-36 rounded bg-muted-foreground/30" />
+                  </div>
+                ))}
               </div>
-              <p className="text-base font-semibold tracking-tight text-foreground">Noch keine aktiven Deals synchronisiert</p>
-              <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-                Lass uns Deals gewinnen, {greetingName || 'du'}. Verknüpfe deine aktive Salesforce-Pipeline, um hier Live-Referenzmatches in Echtzeit zu sehen.
-              </p>
-              <Button
-                type="button"
-                className="mt-4 rounded-lg bg-gradient-to-b from-blue-600 to-blue-700 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] hover:from-blue-600 hover:to-blue-700/95"
-                onClick={() => toast.info('CRM-Connect folgt im naechsten Schritt.')}
-              >
-                Salesforce / HubSpot verbinden
-              </Button>
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/72 px-6 text-center backdrop-blur-[1px]">
+                <div className="max-w-xl">
+                  <p className="text-base font-semibold tracking-tight text-foreground">
+                    Dein Deal-Radar ist noch im Standby.
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Verbinde Salesforce, um automatische Matches zu deinen Opportunities zu sehen.
+                  </p>
+                  <Button
+                    type="button"
+                    className="mt-4 rounded-lg bg-gradient-to-b from-blue-600 to-blue-700 text-white shadow-[0_0_0_1px_rgba(37,99,235,0.35),0_12px_34px_rgba(37,99,235,0.35),inset_0_1px_0_0_rgba(255,255,255,0.16)] hover:from-blue-600 hover:to-blue-700/95"
+                    onClick={() => toast.info('CRM-Connect folgt im nächsten Schritt.')}
+                  >
+                    Salesforce / HubSpot verbinden
+                  </Button>
+                </div>
+              </div>
             </div>
           ) : (
             <ul className="grid gap-3 sm:grid-cols-2">
@@ -186,16 +204,44 @@ export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {recommendedNote ? (
-            <p className="text-sm text-muted-foreground">{recommendedNote}</p>
-          ) : recommended.length === 0 ? (
-            <div className="space-y-2">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center gap-2 rounded-lg border border-border/70 bg-muted/35 px-3 py-2.5">
-                  <span className="size-6 rounded-md bg-muted-foreground/25" />
-                  <span className="h-3 w-52 rounded bg-muted-foreground/25" />
+          {recommended.length === 0 ? (
+            <div className="relative overflow-hidden rounded-xl border border-dashed border-border bg-muted/25 px-4 py-4">
+              <div className="space-y-3 opacity-40 blur-[0.3px] grayscale-[0.25]">
+                {[
+                  { title: 'BMW - Cloud Migration', snippet: 'Passende Referenz zu globaler Modernisierung.' },
+                  { title: 'Apple - SAP Rollout', snippet: 'Starkes Story-Match für Enterprise Transformation.' },
+                  { title: 'Aria - Data Platform', snippet: 'Ähnliche Anforderungen mit hoher Relevanz.' },
+                ].map((ghost) => (
+                  <div
+                    key={ghost.title}
+                    className="rounded-lg border border-border/80 bg-card/80 px-3 py-3"
+                  >
+                    <p className="text-sm font-medium text-foreground">{ghost.title}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{ghost.snippet}</p>
+                    <div className="mt-2 h-2.5 w-24 rounded bg-muted-foreground/30" />
+                  </div>
+                ))}
+              </div>
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/72 px-6 text-center backdrop-blur-[1px]">
+                <div className="max-w-xl">
+                  <p className="text-base font-semibold tracking-tight text-foreground">
+                    Dein Deal-Radar ist noch im Standby.
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Verbinde Salesforce, um automatische Matches zu deinen Opportunities zu sehen.
+                  </p>
+                  <Button
+                    type="button"
+                    className="mt-4 rounded-lg bg-gradient-to-b from-blue-600 to-blue-700 text-white shadow-[0_0_0_1px_rgba(37,99,235,0.35),0_12px_34px_rgba(37,99,235,0.35),inset_0_1px_0_0_rgba(255,255,255,0.16)] hover:from-blue-600 hover:to-blue-700/95"
+                    onClick={() => toast.info('CRM-Connect folgt im nächsten Schritt.')}
+                  >
+                    Salesforce / HubSpot verbinden
+                  </Button>
                 </div>
-              ))}
+              </div>
+              {recommendedNote ? (
+                <p className="relative z-20 mt-3 text-xs text-muted-foreground">{recommendedNote}</p>
+              ) : null}
             </div>
           ) : (
             <ul className="space-y-3">
@@ -243,19 +289,32 @@ export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
             </div>
           ) : (
             <ul className="space-y-2 text-sm">
-              {recentShares.map((row, i) => (
-                <li key={`${row.created_at}-${i}`} className="flex justify-between gap-4 border-b border-border pb-2 last:border-0 last:pb-0">
-                  <span className="text-muted-foreground">
-                    {formatDateUtcDe(row.created_at)}
-                  </span>
-                  {row.slug ? (
+              {recentShares.slice(0, 5).map((row, i) => (
+                <li
+                  key={`${row.created_at}-${i}`}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-border/70 px-3 py-2"
+                >
+                  <div className="min-w-0 flex items-center gap-2.5">
+                    <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+                      {formatDateUtcDe(row.created_at)}
+                    </span>
+                    <AppIcon icon={LinkIcon} size={14} className="shrink-0 text-muted-foreground/80" />
+                    <p className="truncate text-sm text-foreground">
+                      <span className="font-medium">{row.account_name ?? 'Unbekannter Account'}</span>
+                      <span className="text-muted-foreground"> - </span>
+                      <span className="text-muted-foreground">{row.reference_title ?? 'Unbekannte Referenz'}</span>
+                    </p>
+                  </div>
+                  {row.url ? (
                     <Link
-                      href={ROUTES.publicReference(row.slug)}
-                      className="truncate font-medium text-primary hover:underline"
+                      href={row.url}
+                      className="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                       target="_blank"
                       rel="noreferrer"
+                      aria-label="Geteilten Link öffnen"
+                      title="Geteilten Link öffnen"
                     >
-                      /p/{row.slug}
+                      <AppIcon icon={LinkIcon} size={16} />
                     </Link>
                   ) : (
                     <span className="text-muted-foreground">—</span>

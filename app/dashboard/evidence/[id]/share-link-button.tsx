@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { CopyIcon, ExternalLink, LinkIcon, Loader, RefreshCw } from '@hugeicons/core-free-icons'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/popover'
 import { AppIcon } from '@/lib/icons'
 import { createSharedPortfolio, getExistingShareForReference } from '@/app/dashboard/actions'
+import { CheckIcon } from '@/components/ui/check-icon'
 
 function sanitizeSharedUrl(url: string) {
   return url.replace(/\[([^\]]+)\]/g, '$1').replace(/\[|\]/g, '')
@@ -36,6 +37,17 @@ export function ShareLinkButton({
   const [url, setUrl] = useState<string | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [open, setOpen] = useState(false)
+  const [copiedSuccess, setCopiedSuccess] = useState(false)
+  const [showConfetti, setShowConfetti] = useState(false)
+  const [burstKey, setBurstKey] = useState(0)
+  const timeoutRefs = useRef<number[]>([])
+
+  useEffect(() => {
+    return () => {
+      timeoutRefs.current.forEach((timer) => window.clearTimeout(timer))
+      timeoutRefs.current = []
+    }
+  }, [])
 
   useEffect(() => {
     if (!open) return
@@ -74,7 +86,34 @@ export function ShareLinkButton({
   async function copyToClipboard(link: string) {
     try {
       await navigator.clipboard.writeText(link)
-      toast.success('Link kopiert')
+      setCopiedSuccess(true)
+      setShowConfetti(true)
+      setBurstKey((prev) => prev + 1)
+
+      timeoutRefs.current.push(
+        window.setTimeout(() => {
+          setCopiedSuccess(false)
+        }, 1100)
+      )
+      timeoutRefs.current.push(
+        window.setTimeout(() => {
+          setShowConfetti(false)
+        }, 650)
+      )
+
+      toast.custom(
+        () => (
+          <div className="rounded-xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50 to-white px-4 py-3 shadow-lg dark:border-emerald-500/35 dark:from-emerald-500/15 dark:to-background">
+            <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-100">
+              Link kopiert!
+            </p>
+            <p className="mt-0.5 text-xs text-emerald-800/90 dark:text-emerald-100/80">
+              Bereit zum Teilen mit dem Kunden.
+            </p>
+          </div>
+        ),
+        { duration: 2800 }
+      )
     } catch {
       toast.error('Kopieren fehlgeschlagen')
     }
@@ -128,10 +167,37 @@ export function ShareLinkButton({
           <div className="space-y-2">
             <Input value={url} readOnly className="font-mono text-xs" />
             <div className="grid grid-cols-3 gap-2">
-              <Button type="button" size="sm" variant="outline" className="w-full" onClick={() => copyToClipboard(url)}>
-                <AppIcon icon={CopyIcon} size={16} className="mr-2" />
-                Kopieren
-              </Button>
+              <div className="relative">
+                {showConfetti ? (
+                  <div key={burstKey} className="pointer-events-none absolute inset-0 z-10">
+                    <span className="absolute left-1/2 top-1/2 h-1 w-1 rounded-full bg-emerald-400 animate-ping [animation-duration:500ms]" style={{ transform: 'translate(-18px, -14px)' }} />
+                    <span className="absolute left-1/2 top-1/2 h-1 w-1 rounded-full bg-emerald-500 animate-ping [animation-duration:550ms]" style={{ transform: 'translate(16px, -16px)' }} />
+                    <span className="absolute left-1/2 top-1/2 h-1 w-1 rounded-full bg-lime-400 animate-ping [animation-duration:520ms]" style={{ transform: 'translate(22px, -2px)' }} />
+                    <span className="absolute left-1/2 top-1/2 h-1 w-1 rounded-full bg-teal-400 animate-ping [animation-duration:560ms]" style={{ transform: 'translate(14px, 14px)' }} />
+                    <span className="absolute left-1/2 top-1/2 h-1 w-1 rounded-full bg-emerald-300 animate-ping [animation-duration:530ms]" style={{ transform: 'translate(-20px, 6px)' }} />
+                    <span className="absolute left-1/2 top-1/2 h-1 w-1 rounded-full bg-lime-300 animate-ping [animation-duration:600ms]" style={{ transform: 'translate(-8px, 16px)' }} />
+                    <span className="absolute left-1/2 top-1/2 h-1 w-1 rounded-full bg-teal-300 animate-ping [animation-duration:570ms]" style={{ transform: 'translate(2px, -20px)' }} />
+                  </div>
+                ) : null}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className={`w-full transition-all duration-200 ${
+                    copiedSuccess
+                      ? 'scale-105 border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-400/50 dark:bg-emerald-500/15 dark:text-emerald-200'
+                      : ''
+                  }`}
+                  onClick={() => copyToClipboard(url)}
+                >
+                  {copiedSuccess ? (
+                    <CheckIcon className="mr-2 text-emerald-600 dark:text-emerald-300" />
+                  ) : (
+                    <AppIcon icon={CopyIcon} size={16} className="mr-2" />
+                  )}
+                  Kopieren
+                </Button>
+              </div>
               <Button type="button" size="sm" variant="outline" className="w-full" asChild>
                 <a href={url} target="_blank" rel="noopener noreferrer">
                   <AppIcon icon={ExternalLink} size={16} className="mr-2" />

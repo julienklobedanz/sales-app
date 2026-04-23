@@ -81,11 +81,12 @@ export default async function PublicPortfolioPage({
           </div>
         </header>
       ) : null}
-      <main className="mx-auto max-w-7xl px-6 py-12 sm:px-12 lg:px-16">
-        <div className="space-y-8">
-          {result.references.map((ref) => (
-            <article key={ref.id} className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
-              <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <main className="px-6 py-12 sm:px-12 lg:px-16">
+        <div className="mx-auto max-w-7xl">
+          <div className="space-y-8">
+            {result.references.map((ref) => (
+              <article key={ref.id} className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
+                <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
                 <div className="space-y-6">
                   <div className="space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
@@ -119,29 +120,45 @@ export default async function PublicPortfolioPage({
                     ) : null}
                   </div>
 
-                  {ref.summary ? (
-                    <section className="space-y-2">
-                      <h3 className="text-sm font-semibold">Zusammenfassung</h3>
-                      <p className="text-sm leading-relaxed text-muted-foreground">{ref.summary}</p>
-                    </section>
-                  ) : null}
+                  {ref.summary || ref.customer_challenge || ref.our_solution ? (
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {ref.summary ? (
+                        <Card className="border-border/70 md:col-span-2">
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-sm font-semibold">Zusammenfassung</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-sm leading-relaxed text-muted-foreground">{ref.summary}</p>
+                          </CardContent>
+                        </Card>
+                      ) : null}
 
-                  {ref.customer_challenge ? (
-                    <section className="space-y-2">
-                      <h3 className="text-sm font-semibold">Herausforderung</h3>
-                      <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
-                        {ref.customer_challenge}
-                      </p>
-                    </section>
-                  ) : null}
+                      {ref.customer_challenge ? (
+                        <Card className="border-border/70">
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-sm font-semibold">Herausforderung</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
+                              {ref.customer_challenge}
+                            </p>
+                          </CardContent>
+                        </Card>
+                      ) : null}
 
-                  {ref.our_solution ? (
-                    <section className="space-y-2">
-                      <h3 className="text-sm font-semibold">Unsere Lösung</h3>
-                      <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
-                        {ref.our_solution}
-                      </p>
-                    </section>
+                      {ref.our_solution ? (
+                        <Card className="border-border/70">
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-sm font-semibold">Unsere Lösung</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
+                              {ref.our_solution}
+                            </p>
+                          </CardContent>
+                        </Card>
+                      ) : null}
+                    </div>
                   ) : null}
                 </div>
 
@@ -200,14 +217,15 @@ export default async function PublicPortfolioPage({
                     </CardContent>
                   </Card>
                 </aside>
+                </div>
+              </article>
+            ))}
+            {result.references.length === 0 ? (
+              <div className="rounded-2xl border bg-card p-10 text-center text-sm text-muted-foreground shadow-sm">
+                Für diesen Link sind aktuell keine Referenzen sichtbar.
               </div>
-            </article>
-          ))}
-          {result.references.length === 0 ? (
-            <div className="rounded-2xl border bg-card p-10 text-center text-sm text-muted-foreground shadow-sm">
-              Für diesen Link sind aktuell keine Referenzen sichtbar.
-            </div>
-          ) : null}
+            ) : null}
+          </div>
         </div>
       </main>
       <footer className="border-t bg-muted/30 px-6 py-8 sm:px-12 lg:px-24">

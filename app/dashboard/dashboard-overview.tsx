@@ -85,7 +85,7 @@ import {
   MoreHorizontal,
   Pencil,
   Send,
-  SlidersHorizontal,
+  TrendingUp,
   StarIcon,
   Trash2,
   UploadIcon,
@@ -1011,7 +1011,7 @@ export function DashboardOverview({
                   )}
                   aria-label="Referenzstatus filtern"
                 >
-                  <AppIcon icon={Filter} size={16} className="shrink-0 text-muted-foreground" />
+                  <AppIcon icon={TrendingUp} size={16} className="shrink-0 text-muted-foreground" />
                   <span className="hidden lg:inline">Status</span>
                 </Button>
               </PopoverTrigger>
@@ -1066,7 +1066,7 @@ export function DashboardOverview({
                   className={cn(toolbarSegmentClass, "hover:bg-muted/70")}
                   aria-label={COPY.dashboard.columnsToggleAria}
                 >
-                  <AppIcon icon={SlidersHorizontal} size={16} className="shrink-0" />
+                  <AppIcon icon={Filter} size={16} className="shrink-0" />
                   <span className="hidden lg:inline">{COPY.table.columns}</span>
                 </Button>
               </DropdownMenuTrigger>

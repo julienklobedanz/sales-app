@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toggleFavorite } from '@/app/dashboard/actions'
-import { LinkIcon, Mail, Pencil, Phone, Sparkles, StarIcon, TrendingUp } from '@hugeicons/core-free-icons'
+import { FileDownIcon, LinkIcon, Mail, Pencil, Sparkles, StarIcon, TrendingUp } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { formatDateUtcDe, formatReferenceVolume } from '@/lib/format'
 import { deleteReferenceFromDetailPage } from './actions'
@@ -13,6 +13,14 @@ import { ReferenceStatusBadge } from '@/components/reference-status-badge'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
 import { PdfExportDialog } from './pdf-export-dialog'
 import { ShareLinkButton } from './share-link-button'
 import { RequestApprovalDialog } from './request-approval-dialog'
@@ -103,8 +111,6 @@ export default async function EvidenceDetailPage({
       contact_id,
       customer_contact_id,
       customer_approval_status,
-      approval_requested_at,
-      approval_responded_at,
       anonymized_from_id,
       tags,
       created_at,
@@ -137,8 +143,6 @@ export default async function EvidenceDetailPage({
     contact_id: string | null
     customer_contact_id: string | null
     customer_approval_status: string | null
-    approval_requested_at: string | null
-    approval_responded_at: string | null
     anonymized_from_id: string | null
     created_at: string | null
     updated_at: string | null
@@ -157,13 +161,6 @@ export default async function EvidenceDetailPage({
   }
 
   const ref = row as unknown as ReferenceDetailRow
-  const { data: customerContact } = ref.customer_contact_id
-    ? await supabase
-        .from('external_contacts')
-        .select('first_name, last_name, email, phone')
-        .eq('id', ref.customer_contact_id)
-        .maybeSingle()
-    : { data: null }
 
   const normalizedStatus = String(ref.status ?? '').toLowerCase()
   if (
@@ -216,20 +213,10 @@ export default async function EvidenceDetailPage({
   const outcomeText =
     firstSentence(summaryText) ||
     `Diese Referenz zeigt bereits messbare Nutzungssignale (${n('reference_helped')}x als hilfreich markiert).`
-  const approvalStatus = String(ref.customer_approval_status ?? '').toLowerCase()
-  const approvalRequestedLabel = ref.approval_requested_at
-    ? formatDateUtcDe(ref.approval_requested_at)
-    : null
-  const approvalRespondedLabel = ref.approval_responded_at
-    ? formatDateUtcDe(ref.approval_responded_at)
-    : null
-  const customerContactName = customerContact
-    ? [customerContact.first_name, customerContact.last_name].filter(Boolean).join(' ').trim()
-    : ''
-  const customerAvailabilitySubject = customerContactName || ref.customer_contact || 'Kunde'
-  const hasContactRelease = approvalStatus === 'approved' && Boolean(customerContact?.email || customerContact?.phone)
   const isApprovalGranted =
-    approvalStatus === 'approved' || normalizedStatus === 'approved' || normalizedStatus === 'external'
+    String(ref.customer_approval_status ?? '').toLowerCase() === 'approved' ||
+    normalizedStatus === 'approved' ||
+    normalizedStatus === 'external'
 
   const createdAt = ref.created_at ? new Date(ref.created_at) : null
   const updatedAt = ref.updated_at ? new Date(ref.updated_at) : null
@@ -260,13 +247,21 @@ export default async function EvidenceDetailPage({
     <div>
       <ReferenceViewedTracker referenceId={id} />
       <div className="mb-6">
-        <nav className="text-sm text-muted-foreground">
-          <Link href={ROUTES.evidence.root} className="hover:underline">
-            {COPY.nav.evidence}
-          </Link>
-          <span className="px-2">/</span>
-          <span className="text-foreground">{ref.title}</span>
-        </nav>
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild className="text-slate-400 hover:text-slate-500">
+                <Link href={ROUTES.evidence.root}>{COPY.nav.evidence}</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator className="text-slate-300">/</BreadcrumbSeparator>
+            <BreadcrumbItem>
+              <BreadcrumbPage className="text-slate-900 dark:text-slate-100 font-medium">
+                {ref.title}
+              </BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
@@ -397,77 +392,6 @@ export default async function EvidenceDetailPage({
         </div>
 
         <div className="lg:sticky lg:top-6 space-y-4 h-fit">
-          {approvalStatus === 'pending' ? (
-            <Card className="border-amber-300/70 bg-amber-50/90 dark:border-amber-500/35 dark:bg-amber-500/10">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base text-amber-900 dark:text-amber-200">
-                  Freigabe ausstehend
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm text-amber-900/90 dark:text-amber-100/90">
-                Kundenfreigabe wurde angefordert
-                {approvalRequestedLabel ? ` am ${approvalRequestedLabel}` : ''}.
-              </CardContent>
-            </Card>
-          ) : null}
-          {approvalStatus === 'rejected' ? (
-            <Card className="border-rose-300/70 bg-rose-50/90 dark:border-rose-500/35 dark:bg-rose-500/10">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base text-rose-900 dark:text-rose-200">
-                  Freigabe abgelehnt
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm text-rose-900/90 dark:text-rose-100/90">
-                Freigabe wurde abgelehnt
-                {approvalRespondedLabel ? ` am ${approvalRespondedLabel}` : ''}.
-              </CardContent>
-            </Card>
-          ) : null}
-          {approvalStatus === 'approved' && !hasContactRelease ? (
-            <Card className="border-emerald-300/70 bg-emerald-50/90 dark:border-emerald-500/35 dark:bg-emerald-500/10">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base text-emerald-900 dark:text-emerald-200">
-                  Freigegeben
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm text-emerald-900/90 dark:text-emerald-100/90">
-                Freigegeben
-                {approvalRespondedLabel ? ` am ${approvalRespondedLabel}` : ''}.
-              </CardContent>
-            </Card>
-          ) : null}
-          {hasContactRelease ? (
-            <Card className="border-emerald-700/45 bg-emerald-100/95 dark:border-emerald-400/35 dark:bg-emerald-900/45">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base text-emerald-950 dark:text-emerald-100">
-                  Freigegeben für Referenzgespräche
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm text-emerald-950/95 dark:text-emerald-50/95">
-                <p>
-                  Der Kunde {customerAvailabilitySubject} steht für
-                  Referenzgespräche via Telefon / E-Mail zur Verfügung. Ihr Kunde darf in Kontakt treten.
-                </p>
-                {customerContact?.phone ? (
-                  <div className="flex items-center gap-2">
-                    <AppIcon icon={Phone} size={15} />
-                    <span className="font-medium">{customerContact.phone}</span>
-                  </div>
-                ) : null}
-                {customerContact?.email ? (
-                  <div className="flex items-center gap-2">
-                    <AppIcon icon={Mail} size={15} />
-                    <span className="font-medium">{customerContact.email}</span>
-                  </div>
-                ) : null}
-                {approvalRespondedLabel ? (
-                  <p className="text-xs text-emerald-900/80 dark:text-emerald-100/80">
-                    Freigegeben am {approvalRespondedLabel}
-                  </p>
-                ) : null}
-              </CardContent>
-            </Card>
-          ) : null}
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Projektdetails</CardTitle>
@@ -582,6 +506,7 @@ export default async function EvidenceDetailPage({
             <CardContent className="grid gap-2">
               <div className="grid grid-cols-2 gap-2">
                 <Button type="button" variant="outline" className="w-full gap-2" disabled title="Bald verfügbar">
+                  <AppIcon icon={FileDownIcon} size={16} />
                   .pptx Export
                 </Button>
                 <PdfExportDialog referenceId={id} triggerClassName="w-full" />

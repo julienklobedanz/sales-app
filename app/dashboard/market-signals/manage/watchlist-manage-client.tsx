@@ -103,7 +103,7 @@ export function MarketSignalsManageClient({
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Watchlist verwalten</h1>
         <Link href={ROUTES.marketSignals} className="text-sm text-muted-foreground hover:text-foreground">
-          Zurueck zu Marktsignalen
+          Zurück zu Marktsignalen
         </Link>
       </div>
 

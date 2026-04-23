@@ -204,7 +204,7 @@ export function AdminDashboard({ data }: { data: AdminDashboardModel }) {
                       <span className="font-medium">{row.displayName}</span> {row.actionLabel}
                       {row.companyName ? (
                         <>
-                          {' '}fuer{' '}
+                          {' '}für{' '}
                           <span className="inline-flex items-center gap-1.5">
                             <span className="relative flex size-4 shrink-0 items-center justify-center overflow-hidden rounded-sm bg-muted/35">
                               {row.companyLogoUrl ? (

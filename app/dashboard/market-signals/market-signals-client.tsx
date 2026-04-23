@@ -24,8 +24,8 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
         <div className="flex min-w-0 items-start gap-2.5 text-sm text-muted-foreground">
           <AppIcon icon={InformationCircleIcon} size={16} className="mt-0.5 shrink-0" />
           <p className="min-w-0">
-            <span className="font-medium text-foreground">Watchlist-Logik:</span> Unternehmen folgen fuer Account News,
-            Personen folgen fuer Executive Moves.
+            <span className="font-medium text-foreground">Watchlist-Logik:</span> Unternehmen folgen für Account News,
+            Personen folgen für Executive Moves.
           </p>
         </div>
         <div className="flex items-center gap-2">

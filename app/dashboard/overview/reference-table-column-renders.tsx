@@ -2,6 +2,11 @@
 
 import type * as React from "react"
 
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card"
 import { Input } from "@/components/ui/input"
 import {
   Popover,
@@ -24,6 +29,13 @@ import { AppIcon } from "@/lib/icons"
 import Link from "next/link"
 
 import type { ReferenceRow } from "../actions"
+
+function firstSentence(value: string | null | undefined): string | null {
+  const text = String(value ?? "").trim().replace(/\s+/g, " ")
+  if (!text) return null
+  const match = text.match(/.+?[.!?](?:\s|$)/)
+  return (match ? match[0] : text).trim()
+}
 
 /** Muss mit COLUMN_KEYS in dashboard-overview übereinstimmen */
 export type ReferenceColumnKey =
@@ -904,9 +916,48 @@ export function renderReferenceColumnCell(
         </TableCell>
       )
     case "title":
+      const tldr =
+        firstSentence(ref.summary) ||
+        firstSentence(ref.customer_challenge) ||
+        firstSentence(ref.our_solution) ||
+        "TL;DR folgt aus der Detailansicht."
+      const impactMetrics = [
+        { label: "Geteilt", value: ref.share_link_count ?? 0 },
+        { label: "Deals verknüpft", value: ref.deal_link_count ?? 0 },
+      ]
       return (
         <TableCell className="max-w-[200px] truncate text-foreground">
-          {ref.title}
+          <HoverCard openDelay={2000} closeDelay={120}>
+            <HoverCardTrigger asChild>
+              <span className="cursor-default border-b border-dotted border-transparent transition-colors hover:border-slate-300">
+                {ref.title}
+              </span>
+            </HoverCardTrigger>
+            <HoverCardContent align="start" className="w-[360px] space-y-3">
+              <div className="space-y-1">
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Quick Look</p>
+                <p className="truncate text-sm font-medium text-foreground">{ref.title}</p>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-slate-900 dark:text-slate-100">TL;DR</p>
+                <p className="text-sm leading-relaxed text-muted-foreground">{tldr}</p>
+              </div>
+              <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/30 px-3 py-2">
+                <span className="text-xs text-muted-foreground">Industrie</span>
+                <span className="truncate text-xs font-medium text-foreground">
+                  {ref.industry?.trim() ? ref.industry : "—"}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {impactMetrics.map((metric) => (
+                  <div key={metric.label} className="rounded-md border bg-background px-2.5 py-2">
+                    <p className="text-[11px] text-muted-foreground">{metric.label}</p>
+                    <p className="text-sm font-semibold text-foreground">{metric.value}</p>
+                  </div>
+                ))}
+              </div>
+            </HoverCardContent>
+          </HoverCard>
         </TableCell>
       )
     case "industry":

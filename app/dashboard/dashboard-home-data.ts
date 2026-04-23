@@ -31,6 +31,9 @@ export type RecommendedRefRow = {
 export type RecentShareRow = {
   created_at: string
   slug: string | null
+  account_name: string | null
+  reference_title: string | null
+  url: string | null
 }
 
 export type SalesRepDashboardModel = {
@@ -236,11 +239,80 @@ export async function loadSalesRepDashboardData(
       .order('created_at', { ascending: false })
       .limit(5)
 
-    recentShares = (ev ?? []).map((row) => {
-      const payload = row.payload as { slug?: string } | null
+    const eventRows = (ev ?? []) as Array<{ created_at: string; payload: unknown }>
+    const slugList = eventRows
+      .map((row) => {
+        const payload = (row.payload ?? null) as { slug?: string } | null
+        return payload?.slug?.trim() || null
+      })
+      .filter((value): value is string => Boolean(value))
+
+    const { data: sharedRows } = slugList.length
+      ? await supabase
+          .from('shared_portfolios')
+          .select('slug, reference_ids')
+          .in('slug', slugList)
+      : { data: [] as Array<{ slug: string; reference_ids: string[] | null }> }
+
+    const referenceIds = Array.from(
+      new Set(
+        (sharedRows ?? [])
+          .flatMap((row) => (Array.isArray(row.reference_ids) ? row.reference_ids : []))
+          .map((id) => String(id))
+          .filter(Boolean)
+      )
+    )
+
+    const { data: refRows } = referenceIds.length
+      ? await supabase
+          .from('references')
+          .select('id, title, companies(name)')
+          .in('id', referenceIds)
+      : {
+          data: [] as Array<{
+            id: string
+            title: string | null
+            companies: { name?: string | null } | Array<{ name?: string | null }> | null
+          }>,
+        }
+
+    const refMetaById = new Map<string, { title: string | null; accountName: string | null }>()
+    for (const row of (refRows ?? []) as Array<{
+      id: string
+      title: string | null
+      companies: { name?: string | null } | Array<{ name?: string | null }> | null
+    }>) {
+      const company = Array.isArray(row.companies)
+        ? (row.companies[0] as { name?: string | null } | undefined)
+        : (row.companies as { name?: string | null } | null)
+      refMetaById.set(row.id, {
+        title: row.title ?? null,
+        accountName: company?.name ?? null,
+      })
+    }
+
+    const shareBySlug = new Map<string, { firstReferenceId: string | null }>()
+    for (const row of (sharedRows ?? []) as Array<{ slug: string; reference_ids: string[] | null }>) {
+      const ids = Array.isArray(row.reference_ids) ? row.reference_ids.map((id) => String(id)) : []
+      shareBySlug.set(String(row.slug), { firstReferenceId: ids[0] ?? null })
+    }
+
+    recentShares = eventRows.map((row) => {
+      const payload = row.payload as { slug?: string; reference_ids?: string[] } | null
+      const slug = payload?.slug?.trim() || null
+      const firstRefIdFromPayload = Array.isArray(payload?.reference_ids)
+        ? String(payload?.reference_ids?.[0] ?? '')
+        : ''
+      const firstRefId =
+        firstRefIdFromPayload ||
+        (slug ? (shareBySlug.get(slug)?.firstReferenceId ?? '') : '')
+      const refMeta = firstRefId ? refMetaById.get(firstRefId) : null
       return {
         created_at: row.created_at as string,
-        slug: payload?.slug ?? null,
+        slug,
+        account_name: refMeta?.accountName ?? null,
+        reference_title: refMeta?.title ?? null,
+        url: slug ? `/p/${slug}` : null,
       }
     })
   }
