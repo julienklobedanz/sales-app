@@ -77,12 +77,13 @@ export default async function CompanyDetailPage({
     })),
     accountNews: (accountNewsResult.data ?? []).map((row) => {
       const seg = String(row.segment ?? 'customer')
+      const segment: 'customer' | 'prospect' = seg === 'prospect' ? 'prospect' : 'customer'
       return {
         id: String(row.id),
         body: String(row.body ?? ''),
         sourceLabel: (row.source_label as string | null) ?? null,
         publishedOn: String(row.published_on ?? ''),
-        segment: seg === 'prospect' ? 'prospect' : 'customer',
+        segment,
       }
     }),
   }
