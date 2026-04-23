@@ -33,10 +33,12 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   Building2,
+  Cancel01Icon,
   Briefcase,
   Globe,
   Loader,
   MapPinIcon,
+  Pencil,
   Plus,
   RefreshCw,
   StarIcon,
@@ -272,6 +274,35 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
             <ContextMenu key={company.id}>
               <ContextMenuTrigger asChild>
                 <Card className="group relative h-full overflow-hidden rounded-3xl border border-border/60 bg-card/95 shadow-sm transition-all duration-200 hover:border-primary/20 hover:shadow-md">
+                  {isAdmin ? (
+                    <div className="absolute right-3 top-3 z-10 flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
+                      <button
+                        type="button"
+                        className="inline-flex size-8 items-center justify-center rounded-full border border-border/80 bg-background/95 text-muted-foreground shadow-sm hover:bg-muted/70 hover:text-foreground"
+                        aria-label="Account bearbeiten"
+                        title="Account bearbeiten"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          router.push(`${ROUTES.accountsDetail(company.id)}?edit=1`)
+                        }}
+                      >
+                        <AppIcon icon={Pencil} size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        className="inline-flex size-8 items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-600 shadow-sm hover:bg-red-100"
+                        aria-label="Account löschen"
+                        title="Account löschen"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          if (deleting) return
+                          setDeleteTarget(company)
+                        }}
+                      >
+                        <AppIcon icon={Cancel01Icon} size={14} />
+                      </button>
+                    </div>
+                  ) : null}
                   <div
                     role="link"
                     tabIndex={0}

@@ -725,6 +725,30 @@ type BrandfetchPayload = {
   description: string | null
 }
 
+const TLD_COUNTRY_FALLBACK: Record<string, string> = {
+  de: 'Germany',
+  at: 'Austria',
+  ch: 'Switzerland',
+  uk: 'United Kingdom',
+  'co.uk': 'United Kingdom',
+  fr: 'France',
+  it: 'Italy',
+  es: 'Spain',
+  nl: 'Netherlands',
+  be: 'Belgium',
+  se: 'Sweden',
+  no: 'Norway',
+  dk: 'Denmark',
+  fi: 'Finland',
+  ie: 'Ireland',
+  pl: 'Poland',
+  cz: 'Czechia',
+  pt: 'Portugal',
+  us: 'United States',
+  ca: 'Canada',
+  au: 'Australia',
+}
+
 function countryFromCode(raw: string | null | undefined): string | null {
   const code = String(raw ?? '').trim().toUpperCase()
   if (!code) return null
@@ -734,6 +758,27 @@ function countryFromCode(raw: string | null | undefined): string | null {
   } catch {
     return null
   }
+}
+
+function countryFromDomainTld(domain: string): string | null {
+  const host = normalizeDomain(domain)
+  if (!host.includes('.')) return null
+  const parts = host.split('.').filter(Boolean)
+  if (parts.length < 2) return null
+  const last = parts[parts.length - 1] ?? ''
+  const secondLast = parts[parts.length - 2] ?? ''
+  const compound = `${secondLast}.${last}`
+  return TLD_COUNTRY_FALLBACK[compound] ?? TLD_COUNTRY_FALLBACK[last] ?? null
+}
+
+function readStringField(obj: Record<string, unknown> | null | undefined, keys: string[]): string | null {
+  if (!obj) return null
+  for (const key of keys) {
+    const value = obj[key]
+    const s = String(value ?? '').trim()
+    if (s) return s
+  }
+  return null
 }
 
 async function fetchBrandfetchCompany(domain: string): Promise<{ success: true; data: BrandfetchPayload } | { success: false }> {
@@ -775,13 +820,12 @@ async function fetchBrandfetchCompany(domain: string): Promise<{ success: true; 
   }
 
   const rawName = String(json.name ?? json.brand ?? '').trim()
-  const location = json.company?.location
-  const countryLabel =
-    String(location?.country ?? '').trim() ||
-    countryFromCode(String(location?.countryCode ?? '').trim()) ||
-    null
-  const cityLabel = String(location?.city ?? '').trim() || null
-  const regionLabel = String(location?.region ?? '').trim() || null
+  const locationRaw = (json.company?.location ?? null) as Record<string, unknown> | null
+  const countryNameRaw = readStringField(locationRaw, ['country', 'country_name'])
+  const countryCodeRaw = readStringField(locationRaw, ['countryCode', 'country_code', 'countryISO', 'country_iso'])
+  const cityLabel = readStringField(locationRaw, ['city', 'town', 'locality'])
+  const regionLabel = readStringField(locationRaw, ['region', 'state', 'province'])
+  const countryLabel = countryNameRaw || countryFromCode(countryCodeRaw) || countryFromDomainTld(domain)
   const headquarters =
     [cityLabel, countryLabel].filter(Boolean).join(', ') ||
     [regionLabel, countryLabel].filter(Boolean).join(', ') ||
