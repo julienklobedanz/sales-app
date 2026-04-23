@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { formatDateUtcDe, formatNumberDe } from "@/lib/format"
+import { formatDateUtcDe, formatReferenceVolume } from "@/lib/format"
 
 import type { ReferenceAssetRow } from "@/app/dashboard/actions"
 import type { Profile } from "@/app/dashboard/dashboard-shell"
@@ -173,7 +173,7 @@ export function ReferenceDetailPane({
                 <div className="text-xs text-muted-foreground">Volumen</div>
                 <div className="mt-1 font-medium tabular-nums">
                   {selectedRef.volume_eur != null && selectedRef.volume_eur !== ""
-                    ? `${formatNumberDe(selectedRef.volume_eur)} €`
+                    ? formatReferenceVolume(selectedRef.volume_eur)
                     : "—"}
                 </div>
               </div>

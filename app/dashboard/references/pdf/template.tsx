@@ -9,6 +9,7 @@ import {
 } from '@react-pdf/renderer'
 import type { PdfOrgBranding, PdfReference, PdfTemplate } from './types'
 import { anonymizeReferenceForOutput } from './anonymization'
+import { formatReferenceVolume } from '@/lib/format'
 
 const styles = StyleSheet.create({
   page: { padding: 28, fontSize: 11, fontFamily: 'Helvetica', color: '#0f172a' },
@@ -32,7 +33,7 @@ function keyFacts(reference: PdfReference) {
     { label: 'Account', value: reference.company_name || '—' },
     { label: 'Branche', value: reference.industry || '—' },
     { label: 'Land', value: reference.country || '—' },
-    { label: 'Volumen', value: reference.volume_eur || '—' },
+    { label: 'Volumen', value: formatReferenceVolume(reference.volume_eur) || '—' },
     { label: 'Vertragsart', value: reference.contract_type || '—' },
     { label: 'Projektstatus', value: reference.project_status || '—' },
   ]

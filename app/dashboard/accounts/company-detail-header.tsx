@@ -23,7 +23,6 @@ export function CompanyDetailHeader({
         <CompanyLogo
           src={company.logo_url}
           containerClassName="size-14 rounded-2xl"
-          imageClassName="object-contain p-2"
           fallbackIconSize={28}
         />
         <div className="min-w-0">

@@ -49,7 +49,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { diffMonthsUtc, formatDateUtcDe, formatNumberDe } from '@/lib/format'
+import { diffMonthsUtc, formatDateUtcDe, formatNumberDe, formatReferenceVolume } from '@/lib/format'
 import { AppIcon } from '@/lib/icons'
 import { ROUTES } from '@/lib/routes'
 
@@ -241,10 +241,10 @@ export function ReferenceDetailSheet({
                         <div className="grid grid-cols-2 gap-x-6 gap-y-3">
                       <div className="space-y-0.5">
                         <span className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-                          <AppIcon icon={FileText} size={12} /> Volumen (€)
+                          <AppIcon icon={FileText} size={12} /> Volumen
                         </span>
                         <p className={`pl-4 text-xs font-medium ${selectedRef.volume_eur ? 'text-foreground' : 'text-muted-foreground'}`}>
-                          {selectedRef.volume_eur ? formatNumberDe(selectedRef.volume_eur) : '—'}
+                          {selectedRef.volume_eur ? formatReferenceVolume(selectedRef.volume_eur) : '—'}
                         </p>
                       </div>
                       <div className="space-y-0.5">

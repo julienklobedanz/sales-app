@@ -24,6 +24,36 @@ function normalizeStatus(raw: unknown): ReferenceRow['status'] {
   return STATUS_MAP[s] ?? (VALID_STATUSES.includes(s as ReferenceRow['status']) ? (s as ReferenceRow['status']) : 'draft')
 }
 
+async function deactivateActiveSharesForReferences(referenceIds: string[]) {
+  if (!referenceIds.length) return
+
+  const supabase = await createServerSupabaseClient()
+  const { data: rows, error } = await supabase
+    .from('shared_portfolios')
+    .select('slug, reference_ids')
+    .eq('is_active', true)
+
+  if (error || !rows?.length) return
+
+  const referenceSet = new Set(referenceIds)
+  const slugsToDeactivate = rows
+    .filter((row) => {
+      const ids = Array.isArray(row.reference_ids) ? (row.reference_ids as string[]) : []
+      return ids.some((id) => referenceSet.has(String(id)))
+    })
+    .map((row) => String(row.slug))
+    .filter(Boolean)
+
+  if (!slugsToDeactivate.length) return
+
+  for (const slug of slugsToDeactivate) {
+    const { error: deactivateError } = await supabase.rpc('deactivate_portfolio', { p_slug: slug })
+    if (deactivateError) {
+      console.error('[createSharedPortfolio] deactivate existing slug failed:', slug, deactivateError)
+    }
+  }
+}
+
 export async function createSharedPortfolioImpl(
   referenceIds: string[]
 ): Promise<{ success: true; url: string; slug: string } | { success: false; error: string }> {
@@ -33,6 +63,8 @@ export async function createSharedPortfolioImpl(
   } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Nicht angemeldet.' }
   if (!referenceIds?.length) return { success: false, error: 'Mindestens eine Referenz nötig.' }
+
+  await deactivateActiveSharesForReferences(referenceIds)
 
   const { data: profile } = await supabase
     .from('profiles')

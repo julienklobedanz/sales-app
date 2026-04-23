@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toggleFavorite } from '@/app/dashboard/actions'
 import { Eye, Mail, Pencil, StarIcon } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
-import { formatNumberDe } from '@/lib/format'
+import { formatReferenceVolume } from '@/lib/format'
 import { deleteReferenceFromDetailPage } from './actions'
 import { ReferenceStatusBadge } from '@/components/reference-status-badge'
 import { COPY } from '@/lib/copy'
@@ -20,6 +20,25 @@ import { ReferenceViewedTracker } from './reference-viewed-tracker'
 import { getReferenceUsageStats } from '@/app/dashboard/references/reference-usage-stats'
 
 export const dynamic = 'force-dynamic'
+
+function ClosedEyeIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M3 12c2.3-3.3 5.5-5 9-5s6.7 1.7 9 5" />
+      <path d="M5 16c2-2.5 4.4-3.8 7-3.8S17 13.5 19 16" />
+      <path d="M12 12.2v2.8" />
+    </svg>
+  )
+}
 
 function splitTags(tags: string | null) {
   return (tags ?? '')
@@ -311,9 +330,7 @@ export default async function EvidenceDetailPage({
               <div className="flex justify-between gap-2">
                 <span className="text-muted-foreground">Volumen</span>
                 <span className="font-medium tabular-nums">
-                  {ref.volume_eur != null && ref.volume_eur !== ''
-                    ? formatNumberDe(ref.volume_eur)
-                    : ''}
+                  {formatReferenceVolume(ref.volume_eur)}
                 </span>
               </div>
               <div className="flex justify-between gap-2">
@@ -397,12 +414,11 @@ export default async function EvidenceDetailPage({
             <CardContent className="grid gap-2">
               <Button asChild variant="outline" className="w-full gap-2">
                 <Link href={isAnonymizedView ? ROUTES.evidence.detail(id) : `${ROUTES.evidence.detail(id)}?view=anonymized`}>
-                  <span className="relative inline-flex items-center justify-center">
+                  {isAnonymizedView ? (
                     <AppIcon icon={Eye} size={16} />
-                    {!isAnonymizedView ? (
-                      <span className="absolute inset-0 -rotate-45 border-t border-current" />
-                    ) : null}
-                  </span>
+                  ) : (
+                    <ClosedEyeIcon className="size-4" />
+                  )}
                   {isAnonymizedView ? 'Vollversion anzeigen' : 'Anonymisierte Version anzeigen'}
                 </Link>
               </Button>

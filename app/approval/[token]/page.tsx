@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/card'
 import { Building2, Globe } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
-import { formatDateUtcDe, formatNumberDe } from '@/lib/format'
+import { formatDateUtcDe, formatReferenceVolume } from '@/lib/format'
 import { ApprovalDecisionForm } from './approval-decision-form'
 
 function InvalidLink() {
@@ -104,10 +104,7 @@ export default async function ApprovalPage({
   const requester = typeof row.approval_requester_name === 'string' ? row.approval_requester_name.trim() : ''
   const message = typeof row.approval_message === 'string' ? row.approval_message.trim() : ''
 
-  const vol =
-    row.volume_eur != null && String(row.volume_eur) !== ''
-      ? formatNumberDe(row.volume_eur as string)
-      : '—'
+  const vol = formatReferenceVolume((row.volume_eur as string | null) ?? null) || '—'
   const start =
     row.project_start && String(row.project_start) !== ''
       ? formatDateUtcDe(String(row.project_start))
@@ -193,7 +190,7 @@ export default async function ApprovalPage({
 
             <div className="grid gap-2 rounded-md border border-border p-3 text-sm">
               <div className="flex justify-between gap-2">
-                <span className="text-muted-foreground">Volumen (€)</span>
+                <span className="text-muted-foreground">Volumen</span>
                 <span className="font-medium tabular-nums">{vol}</span>
               </div>
               <div className="flex justify-between gap-2">

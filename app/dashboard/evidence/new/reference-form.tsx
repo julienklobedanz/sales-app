@@ -27,7 +27,10 @@ import { Switch } from '@/components/ui/switch'
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
@@ -55,6 +58,7 @@ import {
 } from './reference-form-fields'
 import { AppIcon } from '@/lib/icons'
 import { ROUTES } from '@/lib/routes'
+import { parseReferenceVolume } from '@/lib/format'
 
 function normalizeWrappedParagraphs(input: string): string {
   const raw = input.replace(/\r\n/g, '\n').trim()
@@ -129,14 +133,23 @@ const PROJECT_STATUS_OPTIONS = [
   { value: 'completed', label: 'Abgeschlossen' },
 ] as const
 
-const CONTRACT_TYPE_OPTIONS = [
-  'Time & Material',
-  'Festpreis (Fixed Price)',
-  'Rahmenvertrag',
-  'Projektvertrag',
-  'Wartungsvertrag',
-  'SaaS / Subscription',
-  'Sonstige',
+const CONTRACT_TYPE_GROUPS = [
+  {
+    label: 'Standard',
+    options: ['Festpreis', 'Time & Material', 'Rahmenvertrag'],
+  },
+  {
+    label: 'SaaS',
+    options: ['Subscription (Per User/Tiered)', 'Usage-Based'],
+  },
+  {
+    label: 'MSP',
+    options: ['SLA-Servicevertrag', 'Full Managed', 'Stundenkontingent'],
+  },
+  {
+    label: 'Andere',
+    options: ['Andere'],
+  },
 ] as const
 
 const VOLUME_CURRENCY_OPTIONS = [
@@ -152,6 +165,8 @@ const VOLUME_CURRENCY_OPTIONS = [
   { code: 'SGD', symbol: 'S$' },
   { code: 'USD', symbol: '$' },
 ] as const
+
+const CONTRACT_TYPE_VALUES = CONTRACT_TYPE_GROUPS.flatMap((group) => group.options)
 
 type Company = ReferenceFormCompany
 
@@ -171,6 +186,12 @@ export type ExternalContactDisplay = {
   role?: string | null
   company_id?: string
   phone?: string | null
+}
+
+function normalizeContactIdentity(parts: Array<string | null | undefined>): string {
+  return parts
+    .map((part) => String(part ?? '').trim().toLowerCase())
+    .join('|')
 }
 
 export type ReferenceFormInitialData = {
@@ -204,10 +225,19 @@ export type ReferenceFormInitialData = {
 
 type BaseLabelProps = ComponentProps<typeof Label>
 
-function RequiredLabel({ className, ...props }: BaseLabelProps) {
+function RequiredLabel({
+  className,
+  children,
+  ...props
+}: BaseLabelProps & { children?: ReactNode }) {
   const base =
     'text-xs font-medium uppercase tracking-wider text-muted-foreground'
-  return <Label className={className ? `${base} ${className}` : base} {...props} />
+  return (
+    <Label className={className ? `${base} ${className}` : base} {...props}>
+      {children}
+      <span className="ml-1 text-destructive">*</span>
+    </Label>
+  )
 }
 
 function OptionalLabel({
@@ -223,9 +253,6 @@ function OptionalLabel({
       {...props}
     >
       {children}
-      <span className="ml-1 text-[10px] font-normal normal-case text-muted-foreground">
-        (optional)
-      </span>
     </Label>
   )
 }
@@ -261,10 +288,11 @@ export function ReferenceForm({
   const [_headquarters, setHeadquarters] = useState('')
   const [website, setWebsite] = useState(initialData?.website ?? '')
   const [employeeCount, setEmployeeCount] = useState(
-    initialData?.employee_count != null ? `${initialData.employee_count}` : ''
+    initialData?.employee_count != null ? formatThousandsDots(`${initialData.employee_count}`) : ''
   )
-  const [volumeEur, setVolumeEur] = useState(() => formatThousandsDots(initialData?.volume_eur ?? ''))
-  const [volumeCurrency, setVolumeCurrency] = useState('EUR')
+  const initialVolumeParsed = parseReferenceVolume(initialData?.volume_eur ?? null)
+  const [volumeEur, setVolumeEur] = useState(() => formatThousandsDots(initialVolumeParsed?.amountDigits ?? ''))
+  const [volumeCurrency, setVolumeCurrency] = useState(initialVolumeParsed?.currencyCode ?? 'EUR')
   const [contractType, setContractType] = useState(
     initialData?.contract_type ?? ''
   )
@@ -371,8 +399,12 @@ export function ReferenceForm({
   const isAnonymized = status === 'anonymized'
   const contactsRaw = [...contacts, ...additionalContacts]
   const seenContactIds = new Set<string>()
+  const seenContactIdentities = new Set<string>()
   const displayContacts = contactsRaw.filter((c) => {
+    const identity = normalizeContactIdentity([c.first_name, c.last_name, c.email])
+    if (identity !== '||' && seenContactIdentities.has(identity)) return false
     if (seenContactIds.has(c.id)) return false
+    if (identity !== '||') seenContactIdentities.add(identity)
     seenContactIds.add(c.id)
     return true
   })
@@ -425,7 +457,7 @@ export function ReferenceForm({
     fd.set('summary', summary.trim())
     fd.set('industry', industry)
     fd.set('country', country)
-    fd.set('employee_count', employeeCount)
+    fd.set('employee_count', employeeCount.replace(/\./g, ''))
     fd.set('website', website.trim())
     fd.set('customer_challenge', customerChallenge)
     fd.set('our_solution', ourSolution)
@@ -441,7 +473,7 @@ export function ReferenceForm({
     fd.set('project_start', projectStart)
     fd.set('project_end', projectStatus === 'active' ? '' : projectEnd)
     if (volumeEur) {
-      fd.set('volume_eur', volumeEur.replace(/\./g, ''))
+      fd.set('volume_eur', `${volumeCurrency} ${volumeEur.replace(/\./g, '')}`)
     }
     fd.set('contract_type', contractType)
     fd.set('incumbent_provider', incumbentProvider)
@@ -621,8 +653,16 @@ export function ReferenceForm({
         if (d.title != null) setTitle(d.title)
         if (d.summary != null) setSummary(d.summary)
         if (d.industry != null) setIndustry(d.industry)
-        if (d.volume_eur != null) setVolumeEur(formatThousandsDots(d.volume_eur))
-        if (d.employee_count != null) setEmployeeCount(String(d.employee_count))
+        if (d.volume_eur != null) {
+          const parsedVolume = parseReferenceVolume(d.volume_eur)
+          if (parsedVolume) {
+            setVolumeCurrency(parsedVolume.currencyCode)
+            setVolumeEur(formatThousandsDots(parsedVolume.amountDigits))
+          } else {
+            setVolumeEur(formatThousandsDots(d.volume_eur))
+          }
+        }
+        if (d.employee_count != null) setEmployeeCount(formatThousandsDots(String(d.employee_count)))
         if (Array.isArray(d.tags) && d.tags.length > 0) {
           setTags(d.tags)
           setTagInputValue('')
@@ -773,7 +813,7 @@ export function ReferenceForm({
                                 setHeadquarters(result.headquarters ?? '')
                                 setEmployeeCount(
                                   result.employee_count != null
-                                    ? String(result.employee_count)
+                                    ? formatThousandsDots(String(result.employee_count))
                                     : ''
                                 )
                                 setEnrichedLogoUrl(result.logo_url ?? null)
@@ -805,7 +845,7 @@ export function ReferenceForm({
                                 setHeadquarters(result.headquarters ?? '')
                                 setEmployeeCount(
                                   result.employee_count != null
-                                    ? String(result.employee_count)
+                                    ? formatThousandsDots(String(result.employee_count))
                                     : ''
                                 )
                                 setEnrichedLogoUrl(result.logo_url ?? null)
@@ -893,12 +933,15 @@ export function ReferenceForm({
                 <Input
                   id="employee_count"
                   name="employee_count"
-                  type="number"
+                  type="text"
                   inputMode="numeric"
                   placeholder="z. B. 12000"
                   disabled={submitting}
                   value={employeeCount}
-                  onChange={(e) => setEmployeeCount(e.target.value)}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, '')
+                    setEmployeeCount(digits ? formatThousandsDots(digits) : '')
+                  }}
                 />
               </div>
             </div>
@@ -1301,7 +1344,7 @@ export function ReferenceForm({
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <OptionalLabel htmlFor="volume_eur">Volumen (€)</OptionalLabel>
+          <OptionalLabel htmlFor="volume_eur">Volumen</OptionalLabel>
           <div className="flex items-center gap-2">
             <Input
               id="volume_eur"
@@ -1355,11 +1398,28 @@ export function ReferenceForm({
               <SelectValue placeholder="Auswählen …" />
             </SelectTrigger>
             <SelectContent>
-              {CONTRACT_TYPE_OPTIONS.map((opt) => (
-                <SelectItem key={opt} value={opt}>
-                  {opt}
-                </SelectItem>
+              {CONTRACT_TYPE_GROUPS.map((group, groupIndex) => (
+                <div key={group.label}>
+                  <SelectGroup>
+                    <SelectLabel>{group.label}</SelectLabel>
+                    {group.options.map((opt) => (
+                      <SelectItem key={opt} value={opt}>
+                        {opt}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                  {groupIndex < CONTRACT_TYPE_GROUPS.length - 1 ? <SelectSeparator /> : null}
+                </div>
               ))}
+              {contractType && !CONTRACT_TYPE_VALUES.includes(contractType) ? (
+                <>
+                  <SelectSeparator />
+                  <SelectGroup>
+                    <SelectLabel>Bestehender Wert</SelectLabel>
+                    <SelectItem value={contractType}>{contractType}</SelectItem>
+                  </SelectGroup>
+                </>
+              ) : null}
             </SelectContent>
           </Select>
         </div>

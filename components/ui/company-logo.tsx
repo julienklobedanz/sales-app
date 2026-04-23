@@ -48,13 +48,13 @@ function shouldUseDarkBackground(image: HTMLImageElement): boolean {
       const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
       const saturation = max === 0 ? 0 : (max - min) / max
 
-      if (luminance > 224 && saturation < 0.18) {
+      if (luminance > 236 && saturation < 0.12) {
         whiteLike += 1
       }
     }
 
-    if (!opaque) return false
-    return whiteLike / opaque > 0.58
+    if (opaque < 40) return false
+    return whiteLike / opaque > 0.82
   } catch {
     return false
   }
@@ -85,7 +85,8 @@ export function CompanyLogo({
     <div
       className={cn(
         'relative overflow-hidden border bg-muted transition-colors',
-        darkBackground && 'border-slate-700 bg-slate-900',
+        darkBackground &&
+          'border-slate-800/60 bg-gradient-to-b from-slate-800 via-[#172033] to-slate-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]',
         containerClassName
       )}
     >
@@ -94,7 +95,7 @@ export function CompanyLogo({
         alt={alt}
         fill
         onLoad={handleImageLoad}
-        className={cn('object-contain p-1.5', imageClassName)}
+        className={cn('object-contain', imageClassName)}
         sizes="56px"
       />
     </div>

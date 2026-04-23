@@ -680,6 +680,19 @@ export async function createContact(formData: FormData) {
     return { success: false, error: 'Alle Felder sind erforderlich.' }
   }
 
+  const normalizedEmail = email.toLowerCase()
+  const { data: existing } = await supabase
+    .from('contact_persons')
+    .select('id, first_name, last_name, email')
+    .eq('organization_id', organizationId)
+    .ilike('email', normalizedEmail)
+    .limit(1)
+    .maybeSingle()
+
+  if (existing) {
+    return { success: true, contact: existing }
+  }
+
   const { data, error } = await supabase
     .from('contact_persons')
     .insert({

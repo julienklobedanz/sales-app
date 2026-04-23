@@ -1,11 +1,29 @@
 import type { Metadata } from 'next'
 import { getPublicPortfolio, getPublicPortfolioBranding, incrementPortfolioViews } from '../actions'
 import { PublicPortfolioKillswitch } from './killswitch'
+import { formatReferenceVolume } from '@/lib/format'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   robots: 'noindex, nofollow',
+}
+
+function formatDateMaybe(value: string | null) {
+  const v = String(value ?? '').trim()
+  if (!v) return ''
+  const d = new Date(v)
+  if (Number.isNaN(d.getTime())) return v
+  return d.toLocaleDateString('de-DE')
+}
+
+function splitTags(tags: string | null) {
+  return String(tags ?? '')
+    .split(',')
+    .map((tag) => tag.trim())
+    .filter(Boolean)
 }
 
 export default async function PublicPortfolioPage({
@@ -16,6 +34,12 @@ export default async function PublicPortfolioPage({
   const { slug } = await params
   const result = await getPublicPortfolio(slug)
   const branding = await getPublicPortfolioBranding(slug)
+  const workspaceName = branding.found ? branding.name : 'RefStack Workspace'
+  const singleReferenceTitle =
+    result.found && result.references.length === 1 ? result.references[0]?.title ?? null : null
+  const headerSubtitle = singleReferenceTitle
+    ? `Projektdetails ${workspaceName} - ${singleReferenceTitle}`
+    : `Projektdetails ${workspaceName}`
 
   if (!result.found) {
     return (
@@ -35,83 +59,155 @@ export default async function PublicPortfolioPage({
   return (
     <div className="min-h-screen bg-muted/20">
       {branding.found ? (
-        <header className="border-b bg-background/95 px-6 py-6 sm:px-12 lg:px-24">
+        <header className="border-b bg-background/95 px-6 py-5 sm:px-12 lg:px-24">
           <div className="mx-auto flex max-w-4xl items-center justify-between gap-4">
             <div>
-              <div
-                className="text-xs font-medium uppercase tracking-wider"
-                style={{ color: branding.secondary_color }}
-              >
-                RefStack Portfolio
-              </div>
               <h1
-                className="mt-1 text-xl font-semibold tracking-tight"
+                className="text-lg font-semibold tracking-tight"
                 style={{ color: branding.primary_color }}
               >
-                {branding.name}
+                {`Referenzportfolio - ${workspaceName}`}
               </h1>
+              <p className="mt-1 text-sm text-muted-foreground">{headerSubtitle}</p>
             </div>
             {branding.logo_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={branding.logo_url}
                 alt={`${branding.name} Logo`}
-                className="h-10 w-auto object-contain"
+                className="h-9 w-auto object-contain"
               />
             ) : null}
           </div>
         </header>
       ) : null}
-      <main className="mx-auto max-w-4xl px-6 py-24 sm:px-12 lg:px-24">
-        <div className="grid gap-4 md:grid-cols-2">
+      <main className="mx-auto max-w-7xl px-6 py-12 sm:px-12 lg:px-16">
+        <div className="space-y-8">
           {result.references.map((ref) => (
-            <article key={ref.id} className="rounded-xl border bg-card p-4 shadow-sm">
-              <div className="mb-3 flex items-center gap-2">
-                {ref.company_logo_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={ref.company_logo_url}
-                    alt={`${ref.company_name} Logo`}
-                    className="h-8 w-8 rounded-sm object-contain"
-                  />
-                ) : null}
-                <div className="min-w-0">
-                  <p className="truncate text-xs text-muted-foreground">{ref.company_name}</p>
-                  <h2 className="truncate text-sm font-semibold">{ref.title}</h2>
+            <article key={ref.id} className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
+              <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="secondary">Referenz</Badge>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      {ref.company_logo_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={ref.company_logo_url}
+                          alt={`${ref.company_name} Logo`}
+                          className="mt-0.5 h-10 w-10 rounded-md border bg-muted object-contain p-1"
+                        />
+                      ) : null}
+                      <div className="min-w-0">
+                        <h2 className="text-2xl font-semibold tracking-tight text-foreground">{ref.title}</h2>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {ref.company_name}
+                          {ref.industry ? ` · ${ref.industry}` : ''}
+                        </p>
+                      </div>
+                    </div>
+                    {splitTags(ref.tags).length ? (
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {splitTags(ref.tags).map((tag) => (
+                          <Badge key={tag} variant="outline">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+
+                  {ref.summary ? (
+                    <section className="space-y-2">
+                      <h3 className="text-sm font-semibold">Zusammenfassung</h3>
+                      <p className="text-sm leading-relaxed text-muted-foreground">{ref.summary}</p>
+                    </section>
+                  ) : null}
+
+                  {ref.customer_challenge ? (
+                    <section className="space-y-2">
+                      <h3 className="text-sm font-semibold">Herausforderung</h3>
+                      <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
+                        {ref.customer_challenge}
+                      </p>
+                    </section>
+                  ) : null}
+
+                  {ref.our_solution ? (
+                    <section className="space-y-2">
+                      <h3 className="text-sm font-semibold">Unsere Lösung</h3>
+                      <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
+                        {ref.our_solution}
+                      </p>
+                    </section>
+                  ) : null}
                 </div>
+
+                <aside className="space-y-4 lg:sticky lg:top-8 lg:h-fit">
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">Projektdetails</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-sm">
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">Account</span>
+                        <span className="text-right font-medium">{ref.company_name || '—'}</span>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">Volumen</span>
+                        <span className="text-right font-medium tabular-nums">
+                          {formatReferenceVolume(ref.volume_eur) || '—'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">Vertragsart</span>
+                        <span className="text-right font-medium">{ref.contract_type || '—'}</span>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">Projektstatus</span>
+                        <span className="text-right font-medium">{ref.project_status || '—'}</span>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">Projektstart</span>
+                        <span className="text-right font-medium">{formatDateMaybe(ref.project_start) || '—'}</span>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">Projektende</span>
+                        <span className="text-right font-medium">{formatDateMaybe(ref.project_end) || '—'}</span>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">Website</span>
+                        <span className="text-right font-medium">{ref.website || '—'}</span>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <span className="text-muted-foreground">Mitarbeiter</span>
+                        <span className="text-right font-medium tabular-nums">
+                          {ref.employee_count != null ? ref.employee_count.toLocaleString('de-DE') : '—'}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">Hinweis</CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-sm text-muted-foreground">
+                      Diese Referenz wurde als Kundenansicht freigegeben. Weitere Kontaktdaten werden
+                      nur angezeigt, wenn sie explizit freigegeben sind.
+                    </CardContent>
+                  </Card>
+                </aside>
               </div>
-
-              <p className="line-clamp-3 text-sm text-muted-foreground">
-                {ref.summary || ref.customer_challenge || 'Keine Beschreibung verfügbar.'}
-              </p>
-
-              <details className="mt-3 rounded-md border bg-muted/30 p-3">
-                <summary className="cursor-pointer text-sm font-medium">Details anzeigen</summary>
-                <div className="mt-3 space-y-2 text-sm">
-                  <div className="flex justify-between gap-3">
-                    <span className="text-muted-foreground">Branche</span>
-                    <span>{ref.industry || '—'}</span>
-                  </div>
-                  <div className="flex justify-between gap-3">
-                    <span className="text-muted-foreground">Volumen</span>
-                    <span>{ref.volume_eur || '—'}</span>
-                  </div>
-                  <div className="flex justify-between gap-3">
-                    <span className="text-muted-foreground">Projektstatus</span>
-                    <span>{ref.project_status || '—'}</span>
-                  </div>
-                  <div className="pt-2 text-xs text-muted-foreground">
-                    <p className="font-medium">Herausforderung</p>
-                    <p>{ref.customer_challenge || '—'}</p>
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    <p className="font-medium">Lösung</p>
-                    <p>{ref.our_solution || '—'}</p>
-                  </div>
-                </div>
-              </details>
             </article>
           ))}
+          {result.references.length === 0 ? (
+            <div className="rounded-2xl border bg-card p-10 text-center text-sm text-muted-foreground shadow-sm">
+              Für diesen Link sind aktuell keine Referenzen sichtbar.
+            </div>
+          ) : null}
         </div>
       </main>
       <footer className="border-t bg-muted/30 px-6 py-8 sm:px-12 lg:px-24">

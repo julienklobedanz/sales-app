@@ -320,7 +320,6 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                           <CompanyLogo
                             src={company.logo_url}
                             containerClassName="size-12 shrink-0 rounded-2xl"
-                            imageClassName="object-contain p-1.5"
                             fallbackIconSize={24}
                           />
                           <div className="min-w-0 flex-1">
