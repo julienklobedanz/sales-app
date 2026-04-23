@@ -20,9 +20,9 @@ function TrendHint({ delta }: { delta: number }) {
   const sign = delta > 0 ? '+' : ''
   const tone =
     delta > 0
-      ? 'text-emerald-600'
+      ? 'text-emerald-600 dark:text-emerald-400'
       : delta < 0
-        ? 'text-rose-600'
+        ? 'text-rose-600 dark:text-rose-400'
         : 'text-muted-foreground'
   return <p className={`text-xs font-medium ${tone}`}>{`${sign}${delta} diese Woche`}</p>
 }
@@ -54,28 +54,28 @@ export function AdminDashboard({ data }: { data: AdminDashboardModel }) {
       <div className="h-[62px]" aria-hidden />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-white border-slate-200 shadow-sm">
+        <Card className="bg-card border-border shadow-sm">
           <CardHeader className="pb-1">
             <CardDescription>Referenzen gesamt</CardDescription>
             <CardTitle className="text-2xl tabular-nums">{kpis.referencesTotal}</CardTitle>
             <TrendHint delta={data.kpiTrends.referencesTotal} />
           </CardHeader>
         </Card>
-        <Card className="bg-white border-slate-200 shadow-sm">
+        <Card className="bg-card border-border shadow-sm">
           <CardHeader className="pb-1">
             <CardDescription>Matches (7 Tage)</CardDescription>
             <CardTitle className="text-2xl tabular-nums">{kpis.matches7d}</CardTitle>
             <TrendHint delta={data.kpiTrends.matches7d} />
           </CardHeader>
         </Card>
-        <Card className="bg-white border-slate-200 shadow-sm">
+        <Card className="bg-card border-border shadow-sm">
           <CardHeader className="pb-1">
             <CardDescription>Shares &amp; Link-Views (7 Tage)</CardDescription>
             <CardTitle className="text-2xl tabular-nums">{kpis.shares7d}</CardTitle>
             <TrendHint delta={data.kpiTrends.shares7d} />
           </CardHeader>
         </Card>
-        <Card className="bg-white border-slate-200 shadow-sm">
+        <Card className="bg-card border-border shadow-sm">
           <CardHeader className="pb-1">
             <CardDescription>Aktive Nutzer (Events, 7 Tage)</CardDescription>
             <CardTitle className="text-2xl tabular-nums">{kpis.wau7d}</CardTitle>
@@ -85,7 +85,7 @@ export function AdminDashboard({ data }: { data: AdminDashboardModel }) {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="bg-white border-slate-200 shadow-sm">
+        <Card className="bg-card border-border shadow-sm">
           <CardHeader>
             <CardTitle className="text-base">Top-Referenzen (Nutzung, 7 Tage)</CardTitle>
             <CardDescription>Nach Anzahl relevanter Events mit Referenz-ID.</CardDescription>
@@ -96,7 +96,7 @@ export function AdminDashboard({ data }: { data: AdminDashboardModel }) {
             ) : (
               <ul className="space-y-2 text-sm">
                 {topReferences.slice(0, 5).map((r) => (
-                  <li key={r.id} className="flex items-center justify-between gap-2 rounded-lg border border-slate-200/80 bg-white px-2.5 py-2">
+                  <li key={r.id} className="flex items-center justify-between gap-2 rounded-lg border border-border/70 bg-card px-2.5 py-2">
                     <Link
                       href={ROUTES.evidence.detail(r.id)}
                       className="min-w-0 inline-flex items-center gap-2.5 font-medium truncate hover:underline"
@@ -112,11 +112,11 @@ export function AdminDashboard({ data }: { data: AdminDashboardModel }) {
                     </Link>
                     <div className="flex shrink-0 items-center gap-1.5">
                       {r.updatedAt && new Date(r.updatedAt).getTime() < staleThreshold ? (
-                        <span className="inline-flex items-center text-amber-600" title="Update needed">
+                        <span className="inline-flex items-center text-amber-600 dark:text-amber-400" title="Update needed">
                           <AppIcon icon={UploadIcon} size={13} />
                         </span>
                       ) : null}
-                      <Badge variant="secondary" className="bg-slate-100 text-slate-700 border-0">
+                      <Badge variant="secondary" className="bg-muted text-foreground border-0">
                         {r.eventCount}
                       </Badge>
                     </div>
@@ -127,7 +127,7 @@ export function AdminDashboard({ data }: { data: AdminDashboardModel }) {
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-slate-200 shadow-sm">
+        <Card className="bg-card border-border shadow-sm">
           <CardHeader>
             <CardTitle className="text-base">Offene Referenz-Anfragen</CardTitle>
             <CardDescription>Interne Freigabe-Anfragen (pending).</CardDescription>
@@ -138,7 +138,7 @@ export function AdminDashboard({ data }: { data: AdminDashboardModel }) {
             ) : (
               <ul className="space-y-2 text-sm">
                 {openRequests.slice(0, 4).map((r) => (
-                  <li key={r.id} className="group/request flex items-center justify-between gap-3 rounded-lg border border-slate-200/80 bg-white px-3 py-2">
+                  <li key={r.id} className="group/request flex items-center justify-between gap-3 rounded-lg border border-border/70 bg-card px-3 py-2">
                     <div className="min-w-0">
                       <Link href={ROUTES.evidence.detail(r.reference_id)} className="font-medium hover:underline">
                         {r.reference_title}
@@ -152,7 +152,7 @@ export function AdminDashboard({ data }: { data: AdminDashboardModel }) {
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="h-7 w-7 p-0 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-600"
+                        className="h-7 w-7 p-0 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-600 dark:text-emerald-400 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-300"
                         disabled={isPending}
                         onClick={() => requestDecision(r.id, 'approve_external')}
                         aria-label="Approve"
@@ -163,7 +163,7 @@ export function AdminDashboard({ data }: { data: AdminDashboardModel }) {
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="h-7 w-7 p-0 text-rose-600 hover:bg-rose-50 hover:text-rose-600"
+                        className="h-7 w-7 p-0 text-rose-600 hover:bg-rose-50 hover:text-rose-600 dark:text-rose-400 dark:hover:bg-rose-500/10 dark:hover:text-rose-300"
                         disabled={isPending}
                         onClick={() => requestDecision(r.id, 'reject')}
                         aria-label="Deny"
@@ -173,7 +173,7 @@ export function AdminDashboard({ data }: { data: AdminDashboardModel }) {
                     </div>
                   </li>
                 ))}
-                <li className="flex items-center justify-center rounded-lg border border-slate-200/80 bg-white px-3 py-2.5">
+                <li className="flex items-center justify-center rounded-lg border border-border/70 bg-card px-3 py-2.5">
                   <Button asChild variant="ghost" size="sm" className="h-8">
                     <Link href={ROUTES.request}>Alle Anfragen</Link>
                   </Button>
@@ -184,7 +184,7 @@ export function AdminDashboard({ data }: { data: AdminDashboardModel }) {
         </Card>
       </div>
 
-      <Card className="bg-white border-slate-200 shadow-sm">
+      <Card className="bg-card border-border shadow-sm">
         <CardHeader>
           <CardTitle className="text-base">Team-Aktivität (7 Tage)</CardTitle>
           <CardDescription>Lesbarer Feed aus den letzten Team-Events.</CardDescription>
@@ -196,7 +196,7 @@ export function AdminDashboard({ data }: { data: AdminDashboardModel }) {
             <>
               <ul className="space-y-2">
                 {teamActivity.slice(0, visibleTeamActivityCount).map((row) => (
-                  <li key={row.id} className="flex items-center gap-3 rounded-lg border border-slate-200/80 bg-white px-3 py-2.5">
+                  <li key={row.id} className="flex items-center gap-3 rounded-lg border border-border/70 bg-card px-3 py-2.5">
                     <Avatar size="sm">
                       <AvatarFallback>{row.displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
                     </Avatar>
@@ -216,7 +216,7 @@ export function AdminDashboard({ data }: { data: AdminDashboardModel }) {
                         </>
                       ) : null}
                     </p>
-                    <span className="shrink-0 text-xs text-slate-500">{formatDateUtcDe(row.timestamp)}</span>
+                    <span className="shrink-0 text-xs text-muted-foreground">{formatDateUtcDe(row.timestamp)}</span>
                   </li>
                 ))}
               </ul>
@@ -226,7 +226,7 @@ export function AdminDashboard({ data }: { data: AdminDashboardModel }) {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="h-8 text-slate-500 hover:bg-muted/70"
+                    className="h-8 text-muted-foreground hover:bg-muted/70"
                     onClick={() => setVisibleTeamActivityCount((prev) => prev + 5)}
                   >
                     5 weitere anzeigen

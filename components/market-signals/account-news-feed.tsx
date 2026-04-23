@@ -41,16 +41,16 @@ function inferSignalTags(body: string) {
   const text = normalizeText(body)
   const tags: Array<{ label: string; className: string }> = []
   if (/(funding|finanzierung|serie [abc]|seed|kapitalrunde)/i.test(text)) {
-    tags.push({ label: 'Funding', className: 'bg-blue-600/10 text-blue-600 border-0' })
+    tags.push({ label: 'Funding', className: 'bg-blue-600/10 text-blue-700 dark:text-blue-300 border-0' })
   }
   if (/(akquisition|übernahme|merger|m&a|fusion)/i.test(text)) {
-    tags.push({ label: 'M&A', className: 'bg-slate-100 text-slate-700 border-0' })
+    tags.push({ label: 'M&A', className: 'bg-muted text-foreground border-0' })
   }
   if (/(expansion|expandiert|neuer standort|international)/i.test(text)) {
-    tags.push({ label: 'Expansion', className: 'bg-slate-100 text-slate-700 border-0' })
+    tags.push({ label: 'Expansion', className: 'bg-muted text-foreground border-0' })
   }
   if (tags.length === 0) {
-    tags.push({ label: 'Update', className: 'bg-slate-100 text-slate-600 border-0' })
+    tags.push({ label: 'Update', className: 'bg-muted text-muted-foreground border-0' })
   }
   return tags
 }
@@ -108,24 +108,24 @@ export function AccountNewsFeed({
   return (
     <Card className="rounded-2xl border border-border/70 bg-card shadow-sm shadow-slate-900/5">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-        <CardTitle className="text-base font-semibold text-slate-950">{COPY.marketSignals.newsSection}</CardTitle>
+        <CardTitle className="text-base font-semibold text-foreground">{COPY.marketSignals.newsSection}</CardTitle>
         <div className="flex items-center gap-1.5">
           <Button
             type="button"
             variant="ghost"
             size="toolbar"
-            className="h-9 w-9 px-0 text-slate-500 hover:bg-muted/70"
+            className="h-9 w-9 px-0 text-muted-foreground hover:bg-muted/70"
             onClick={handleMarkRead}
             aria-label="Account News als gelesen markieren"
           >
             <AppIcon icon={MailOpen} size={16} />
           </Button>
-          <Button variant="ghost" size="toolbar" className="h-9 px-3 text-slate-500 hover:bg-muted/70" asChild>
+          <Button variant="ghost" size="toolbar" className="h-9 px-3 text-muted-foreground hover:bg-muted/70" asChild>
             <Link href={ROUTES.settings}>
               <AppIcon icon={Bell} size={15} />
             </Link>
           </Button>
-          <Button variant="ghost" size="toolbar" className="h-9 px-3 text-slate-500 hover:bg-muted/70" asChild>
+          <Button variant="ghost" size="toolbar" className="h-9 px-3 text-muted-foreground hover:bg-muted/70" asChild>
             <Link href={ROUTES.marketSignalsManage}>{COPY.marketSignals.manage}</Link>
           </Button>
         </div>
@@ -150,7 +150,7 @@ export function AccountNewsFeed({
                     {row.companyLogoUrl ? (
                       <Image src={row.companyLogoUrl} alt="" fill sizes="40px" className="object-contain p-1.5" />
                     ) : (
-                      <AppIcon icon={News01Icon} size={16} className="text-slate-500" />
+                      <AppIcon icon={News01Icon} size={16} className="text-muted-foreground" />
                     )}
                   </div>
                   <div className="min-w-0 space-y-2">
@@ -160,12 +160,12 @@ export function AccountNewsFeed({
                           {tag.label}
                         </Badge>
                       ))}
-                      <span className="text-xs text-slate-500">{publishedLabel(row.publishedOn)}</span>
+                      <span className="text-xs text-muted-foreground">{publishedLabel(row.publishedOn)}</span>
                     </div>
-                    <p className="text-sm font-semibold leading-snug text-slate-950">
+                    <p className="text-sm font-semibold leading-snug text-foreground">
                       {extractHeadline(row.body)}
                     </p>
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                       <span>{row.companyName}</span>
                       {row.sourceLabel ? (
                         <>
@@ -179,11 +179,11 @@ export function AccountNewsFeed({
                       {followSet.has(row.companyId) ? (
                         <>
                           <span aria-hidden>•</span>
-                          <span className="text-blue-600">Following</span>
+                          <span className="text-blue-600 dark:text-blue-300">Following</span>
                         </>
                       ) : null}
                     </div>
-                    <p className="text-sm leading-relaxed text-slate-500">{row.body}</p>
+                    <p className="text-sm leading-relaxed text-muted-foreground">{row.body}</p>
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-1 self-start sm:self-center">
@@ -231,7 +231,7 @@ export function AccountNewsFeed({
               type="button"
               variant="ghost"
               size="toolbar"
-              className="h-9 text-slate-500 hover:bg-muted/70"
+              className="h-9 text-muted-foreground hover:bg-muted/70"
               onClick={() => setVisibleCount((prev) => prev + PAGE_SIZE)}
             >
               {COPY.marketSignals.loadMore}

@@ -166,7 +166,7 @@ const VOLUME_CURRENCY_OPTIONS = [
   { code: 'USD', symbol: '$' },
 ] as const
 
-const CONTRACT_TYPE_VALUES = CONTRACT_TYPE_GROUPS.flatMap((group) => group.options)
+const CONTRACT_TYPE_VALUES: string[] = CONTRACT_TYPE_GROUPS.flatMap((group) => [...group.options])
 
 type Company = ReferenceFormCompany
 
