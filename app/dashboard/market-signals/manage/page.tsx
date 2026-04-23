@@ -32,7 +32,7 @@ export default async function MarketSignalsManagePage() {
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) return <MarketSignalsManageClient companies={[]} />
+  if (!user) return <MarketSignalsManageClient companies={[]} champions={[]} />
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -40,7 +40,7 @@ export default async function MarketSignalsManagePage() {
     .eq('id', user.id)
     .maybeSingle()
   const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
-  if (!orgId) return <MarketSignalsManageClient companies={[]} />
+  if (!orgId) return <MarketSignalsManageClient companies={[]} champions={[]} />
 
   const { data } = await supabase
     .from('companies')
