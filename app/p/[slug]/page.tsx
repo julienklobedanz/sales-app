@@ -71,12 +71,8 @@ export default async function PublicPortfolioPage({
   const shareOwnerAvatar = shareOwner.found ? shareOwner.avatar_url : null
   const shareOwnerEmail = shareOwner.found ? shareOwner.email : null
   const shareOwnerPhone = shareOwner.found ? shareOwner.phone : null
-  const ctaQuestionHref = shareOwnerEmail
-    ? `mailto:${shareOwnerEmail}?subject=${encodeURIComponent('Frage zur Referenz')}`
-    : null
-  const ctaMeetingHref = shareOwnerEmail
-    ? `mailto:${shareOwnerEmail}?subject=${encodeURIComponent('Terminvereinbarung zur Referenz')}`
-    : null
+  const ctaQuestionHref = `mailto:${shareOwnerEmail ?? ''}?subject=${encodeURIComponent('Frage zur Referenz')}`
+  const ctaMeetingHref = `mailto:${shareOwnerEmail ?? ''}?subject=${encodeURIComponent('Terminvereinbarung zur Referenz')}`
 
   return (
     <div className="min-h-screen bg-muted/20">
@@ -252,29 +248,27 @@ export default async function PublicPortfolioPage({
         </div>
       </main>
       <footer className="border-t bg-muted/30 px-6 py-8 sm:px-12 lg:px-24">
-        <div className="mx-auto grid w-full max-w-7xl grid-cols-[1fr_auto_1fr] items-center gap-4">
-          <div className="justify-self-start">
+        <div className="mx-auto grid w-full max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-4">
+          <div className="justify-self-start text-muted-foreground text-xs font-medium uppercase tracking-wider">
+            Sicherheit & Datenschutz
+          </div>
+          <div className="justify-self-center flex items-center justify-center gap-2 sm:gap-3">
+            <Button asChild className="rounded-lg">
+              <a href={ctaQuestionHref}>
+                <AppIcon icon={HelpCircleIcon} size={16} />
+                Frage stellen
+              </a>
+            </Button>
+            <Button asChild className="rounded-lg">
+              <a href={ctaMeetingHref}>
+                <AppIcon icon={Calendar} size={16} />
+                Termin vereinbaren
+              </a>
+            </Button>
+          </div>
+          <div className="justify-self-end">
             <PublicPortfolioKillswitch slug={slug} />
           </div>
-          <div className="flex items-center justify-center gap-2 sm:gap-3">
-            {ctaQuestionHref ? (
-              <Button asChild className="rounded-lg">
-                <a href={ctaQuestionHref}>
-                  <AppIcon icon={HelpCircleIcon} size={16} />
-                  Frage stellen
-                </a>
-              </Button>
-            ) : null}
-            {ctaMeetingHref ? (
-              <Button asChild className="rounded-lg">
-                <a href={ctaMeetingHref}>
-                  <AppIcon icon={Calendar} size={16} />
-                  Termin vereinbaren
-                </a>
-              </Button>
-            ) : null}
-          </div>
-          <div aria-hidden className="h-1" />
         </div>
       </footer>
     </div>
