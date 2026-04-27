@@ -4,6 +4,11 @@ import { Textarea } from '@/components/ui/textarea'
 import { Loader } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 
+function autoResizeTextarea(el: HTMLTextAreaElement) {
+  el.style.height = '0px'
+  el.style.height = `${Math.max(el.scrollHeight, 36)}px`
+}
+
 type StrategyField = {
   key: string
   label: string
@@ -61,13 +66,18 @@ export function CompanyDetailStrategyTab({
                 <Label htmlFor={`strategy-${f.key}`}>{f.label}</Label>
                 <Textarea
                   id={`strategy-${f.key}`}
+                  rows={1}
                   value={f.value}
                   onChange={(e) => f.set(e.target.value)}
+                  onInput={(e) => autoResizeTextarea(e.currentTarget)}
+                  ref={(el) => {
+                    if (el) autoResizeTextarea(el)
+                  }}
                   onBlur={() => {
                     void saveStrategy({ silent: true })
                   }}
                   disabled={strategySaving}
-                  className="min-h-[110px]"
+                  className="h-9 min-h-0 resize-none overflow-hidden leading-6"
                 />
               </div>
             ))}

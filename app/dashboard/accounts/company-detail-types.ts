@@ -3,6 +3,7 @@ import type {
   CompanyRefRow,
   CompanyStrategyRow,
   ContactPersonRow,
+  ExternalContactRow,
   StakeholderRow,
 } from './actions'
 
@@ -22,7 +23,8 @@ export type CompanyDetailClientProps = {
   company: CompanyDetailCompany
   strategy: CompanyStrategyRow | null
   stakeholders: StakeholderRow[]
-  contacts: ContactPersonRow[]
+  internalContacts: ContactPersonRow[]
+  externalContacts: ExternalContactRow[]
   references: CompanyRefRow[]
   activeDeals: AccountDealRow[]
   marketSignals: {

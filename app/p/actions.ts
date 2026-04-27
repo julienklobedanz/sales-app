@@ -41,6 +41,17 @@ export type PublicPortfolioBranding =
     }
   | { found: false }
 
+export type PublicShareOwner =
+  | {
+      found: true
+      name: string
+      position: string
+      avatar_url: string | null
+      email: string | null
+      phone: string | null
+    }
+  | { found: false }
+
 /** Öffentliches Portfolio per Slug laden (RPC; anon erlaubt wenn is_active) */
 export async function getPublicPortfolio(slug: string): Promise<PublicPortfolioResult> {
   const supabase = await createServerSupabaseClient()
@@ -83,6 +94,31 @@ export async function getPublicPortfolioBranding(
     logo_url: payload.logo_url ?? null,
     primary_color: payload.primary_color ?? '#0f172a',
     secondary_color: payload.secondary_color ?? '#334155',
+  }
+}
+
+export async function getPublicPortfolioShareOwner(
+  slug: string
+): Promise<PublicShareOwner> {
+  const supabase = await createServerSupabaseClient()
+  const { data, error } = await supabase.rpc('get_public_portfolio_share_owner', { p_slug: slug })
+  if (error) return { found: false }
+  const payload = data as {
+    found?: boolean
+    name?: string
+    position?: string
+    avatar_url?: string | null
+    email?: string | null
+    phone?: string | null
+  } | null
+  if (!payload?.found || !payload.name) return { found: false }
+  return {
+    found: true,
+    name: payload.name,
+    position: payload.position ?? 'Sales Ansprechpartner',
+    avatar_url: payload.avatar_url ?? null,
+    email: payload.email ?? null,
+    phone: payload.phone ?? null,
   }
 }
 

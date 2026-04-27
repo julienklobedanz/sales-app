@@ -6,6 +6,7 @@ import {
   getCompanyStrategy,
   getStakeholders,
   getContactsByCompanyId,
+  type ExternalContactRow,
   getReferencesByCompanyId,
   getActiveDealsByCompanyId,
 } from '../actions'
@@ -43,12 +44,18 @@ export default async function CompanyDetailPage({
 
   if (!company) notFound()
 
-  const [strategy, stakeholders, contacts, references, activeDeals] = await Promise.all([
+  const [strategy, stakeholders, internalContacts, references, activeDeals, externalContactsResult] = await Promise.all([
     getCompanyStrategy(id),
     getStakeholders(id),
     getContactsByCompanyId(id),
     getReferencesByCompanyId(id),
     getActiveDealsByCompanyId(id),
+    supabase
+      .from('external_contacts')
+      .select('id, company_id, first_name, last_name, email, role, phone, created_at, updated_at')
+      .eq('company_id', id)
+      .eq('organization_id', profile.organization_id)
+      .order('created_at', { ascending: true }),
   ])
 
   const [executiveEventsResult, accountNewsResult] = await Promise.all([
@@ -95,7 +102,8 @@ export default async function CompanyDetailPage({
           company={company}
           strategy={strategy}
           stakeholders={stakeholders}
-          contacts={contacts}
+          internalContacts={internalContacts}
+          externalContacts={(externalContactsResult.data ?? []) as ExternalContactRow[]}
           references={references}
           activeDeals={activeDeals}
           marketSignals={marketSignals}

@@ -32,7 +32,8 @@ export function CompanyDetailClient({
   company,
   strategy: initialStrategy,
   stakeholders: initialStakeholders,
-  contacts: initialContacts,
+  internalContacts: initialInternalContacts,
+  externalContacts,
   references,
   activeDeals,
   marketSignals,
@@ -57,7 +58,7 @@ export function CompanyDetailClient({
   })
 
   const [stakeholders, setStakeholders] = useState(initialStakeholders)
-  const [contacts, setContacts] = useState(initialContacts)
+  const [internalContacts, setInternalContacts] = useState(initialInternalContacts)
 
   const [stakeholderOpen, setStakeholderOpen] = useState(false)
   const [editingStakeholder, setEditingStakeholder] = useState<StakeholderRow | null>(null)
@@ -228,7 +229,7 @@ export function CompanyDetailClient({
         if (!res.success) return toast.error(res.error ?? 'Speichern fehlgeschlagen.')
         toast.success('Kontakt aktualisiert.')
         setContactOpen(false)
-        setContacts((prev) =>
+        setInternalContacts((prev) =>
           prev.map((p) =>
             p.id === editingContact.id
               ? ({
@@ -258,7 +259,7 @@ export function CompanyDetailClient({
         toast.success('Kontakt hinzugefügt.')
         setContactOpen(false)
         const created = res.contact
-        if (created) setContacts((prev) => [...prev, created])
+        if (created) setInternalContacts((prev) => [...prev, created])
       }
     } finally {
       setContactSaving(false)
@@ -269,7 +270,7 @@ export function CompanyDetailClient({
     if (!canEdit) return
     const res = await deleteContactPerson(id)
     if (!res.success) return toast.error(res.error ?? 'Löschen fehlgeschlagen.')
-    setContacts((prev) => prev.filter((c) => c.id !== id))
+    setInternalContacts((prev) => prev.filter((c) => c.id !== id))
     toast.success('Kontakt gelöscht.')
   }
 
@@ -314,7 +315,8 @@ export function CompanyDetailClient({
 
         <TabsContent value="contacts" className="mt-6">
           <CompanyDetailContactsTab
-            contacts={contacts}
+            internalContacts={internalContacts}
+            externalContacts={externalContacts}
             canEdit={canEdit}
             onAdd={() => openContactDialog()}
             onEdit={openContactDialog}

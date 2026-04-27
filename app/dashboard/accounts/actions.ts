@@ -450,6 +450,18 @@ export type ContactPersonRow = {
   updated_at: string | null
 }
 
+export type ExternalContactRow = {
+  id: string
+  company_id: string
+  first_name: string | null
+  last_name: string | null
+  email: string | null
+  phone: string | null
+  role: string | null
+  created_at: string
+  updated_at: string | null
+}
+
 export async function getContactsByCompanyId(companyId: string): Promise<ContactPersonRow[]> {
   const supabase = await createServerSupabaseClient()
   const { data, error } = await supabase

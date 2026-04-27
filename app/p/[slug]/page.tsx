@@ -1,9 +1,19 @@
 import type { Metadata } from 'next'
-import { getPublicPortfolio, getPublicPortfolioBranding, incrementPortfolioViews } from '../actions'
+import {
+  getPublicPortfolio,
+  getPublicPortfolioBranding,
+  getPublicPortfolioShareOwner,
+  incrementPortfolioViews,
+} from '../actions'
 import { PublicPortfolioKillswitch } from './killswitch'
 import { formatDateUtcDe, formatReferenceVolume } from '@/lib/format'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { ShareOwnerContactCard } from './share-owner-contact-card'
+import { Calendar, HelpCircle } from '@hugeicons/core-free-icons'
+import { AppIcon } from '@/lib/icons'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,6 +44,7 @@ export default async function PublicPortfolioPage({
   const { slug } = await params
   const result = await getPublicPortfolio(slug)
   const branding = await getPublicPortfolioBranding(slug)
+  const shareOwner = await getPublicPortfolioShareOwner(slug)
   const workspaceName = branding.found ? branding.name : 'RefStack Workspace'
   const singleReferenceTitle =
     result.found && result.references.length === 1 ? result.references[0]?.title ?? null : null
@@ -56,6 +67,21 @@ export default async function PublicPortfolioPage({
 
   await incrementPortfolioViews(slug)
 
+  const shareOwnerName = shareOwner.found ? shareOwner.name : 'RefStack Team'
+  const shareOwnerPosition = shareOwner.found ? shareOwner.position : 'Sales Ansprechpartner'
+  const shareOwnerAvatar = shareOwner.found ? shareOwner.avatar_url : null
+  const shareOwnerEmail = shareOwner.found ? shareOwner.email : null
+  const shareOwnerPhone = shareOwner.found ? shareOwner.phone : null
+  const ctaEmailHref = shareOwnerEmail
+    ? `mailto:${shareOwnerEmail}`
+    : null
+  const ctaQuestionHref = shareOwnerEmail
+    ? `mailto:${shareOwnerEmail}?subject=${encodeURIComponent('Frage zur Referenz')}`
+    : null
+  const ctaMeetingHref = shareOwnerEmail
+    ? `mailto:${shareOwnerEmail}?subject=${encodeURIComponent('Terminvereinbarung zur Referenz')}`
+    : null
+
   return (
     <div className="min-h-screen bg-muted/20">
       {branding.found ? (
@@ -70,14 +96,15 @@ export default async function PublicPortfolioPage({
               </h1>
               <p className="mt-1 text-sm text-muted-foreground">{headerSubtitle}</p>
             </div>
-            {branding.logo_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={branding.logo_url}
-                alt={`${branding.name} Logo`}
-                className="h-9 w-auto object-contain"
+            <div className="w-[280px] max-w-full">
+              <ShareOwnerContactCard
+                name={shareOwnerName}
+                position={shareOwnerPosition}
+                avatarUrl={shareOwnerAvatar}
+                email={shareOwnerEmail}
+                phone={shareOwnerPhone}
               />
-            ) : null}
+            </div>
           </div>
         </header>
       ) : null}
@@ -229,7 +256,54 @@ export default async function PublicPortfolioPage({
         </div>
       </main>
       <footer className="border-t bg-muted/30 px-6 py-8 sm:px-12 lg:px-24">
-        <PublicPortfolioKillswitch slug={slug} />
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4">
+          <div className="w-[280px] max-w-full">
+            <div className="rounded-xl border border-border/70 bg-background/80 px-3 py-2">
+              <div className="flex items-center gap-2">
+                <Avatar size="sm">
+                  {shareOwnerAvatar ? <AvatarImage src={shareOwnerAvatar} alt={shareOwnerName} /> : null}
+                  <AvatarFallback>
+                    {shareOwnerName
+                      .split(/\s+/)
+                      .map((part) => part.trim().charAt(0))
+                      .filter(Boolean)
+                      .slice(0, 2)
+                      .join('')
+                      .toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-medium text-foreground">{shareOwnerName}</p>
+                  <p className="truncate text-[11px] text-muted-foreground">{shareOwnerPosition}</p>
+                </div>
+              </div>
+              {ctaEmailHref ? (
+                <a href={ctaEmailHref} className="mt-1 block truncate text-[11px] text-muted-foreground hover:underline">
+                  {shareOwnerEmail}
+                </a>
+              ) : null}
+            </div>
+          </div>
+          <div className="flex flex-1 items-center justify-center gap-2 sm:gap-3">
+            {ctaQuestionHref ? (
+              <Button asChild className="rounded-lg">
+                <a href={ctaQuestionHref}>
+                  <AppIcon icon={HelpCircle} size={16} />
+                  Frage stellen
+                </a>
+              </Button>
+            ) : null}
+            {ctaMeetingHref ? (
+              <Button asChild className="rounded-lg">
+                <a href={ctaMeetingHref}>
+                  <AppIcon icon={Calendar} size={16} />
+                  Termin vereinbaren
+                </a>
+              </Button>
+            ) : null}
+          </div>
+          <PublicPortfolioKillswitch slug={slug} />
+        </div>
       </footer>
     </div>
   )
