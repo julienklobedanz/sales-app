@@ -10,7 +10,6 @@ import { formatDateUtcDe, formatReferenceVolume } from '@/lib/format'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ShareOwnerContactCard } from './share-owner-contact-card'
 import { Calendar, HelpCircleIcon } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
@@ -72,9 +71,6 @@ export default async function PublicPortfolioPage({
   const shareOwnerAvatar = shareOwner.found ? shareOwner.avatar_url : null
   const shareOwnerEmail = shareOwner.found ? shareOwner.email : null
   const shareOwnerPhone = shareOwner.found ? shareOwner.phone : null
-  const ctaEmailHref = shareOwnerEmail
-    ? `mailto:${shareOwnerEmail}`
-    : null
   const ctaQuestionHref = shareOwnerEmail
     ? `mailto:${shareOwnerEmail}?subject=${encodeURIComponent('Frage zur Referenz')}`
     : null
@@ -256,35 +252,11 @@ export default async function PublicPortfolioPage({
         </div>
       </main>
       <footer className="border-t bg-muted/30 px-6 py-8 sm:px-12 lg:px-24">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4">
-          <div className="w-[280px] max-w-full">
-            <div className="rounded-xl border border-border/70 bg-background/80 px-3 py-2">
-              <div className="flex items-center gap-2">
-                <Avatar size="sm">
-                  {shareOwnerAvatar ? <AvatarImage src={shareOwnerAvatar} alt={shareOwnerName} /> : null}
-                  <AvatarFallback>
-                    {shareOwnerName
-                      .split(/\s+/)
-                      .map((part) => part.trim().charAt(0))
-                      .filter(Boolean)
-                      .slice(0, 2)
-                      .join('')
-                      .toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0">
-                  <p className="truncate text-xs font-medium text-foreground">{shareOwnerName}</p>
-                  <p className="truncate text-[11px] text-muted-foreground">{shareOwnerPosition}</p>
-                </div>
-              </div>
-              {ctaEmailHref ? (
-                <a href={ctaEmailHref} className="mt-1 block truncate text-[11px] text-muted-foreground hover:underline">
-                  {shareOwnerEmail}
-                </a>
-              ) : null}
-            </div>
+        <div className="mx-auto grid w-full max-w-7xl grid-cols-[1fr_auto_1fr] items-center gap-4">
+          <div className="justify-self-start">
+            <PublicPortfolioKillswitch slug={slug} />
           </div>
-          <div className="flex flex-1 items-center justify-center gap-2 sm:gap-3">
+          <div className="flex items-center justify-center gap-2 sm:gap-3">
             {ctaQuestionHref ? (
               <Button asChild className="rounded-lg">
                 <a href={ctaQuestionHref}>
@@ -302,7 +274,7 @@ export default async function PublicPortfolioPage({
               </Button>
             ) : null}
           </div>
-          <PublicPortfolioKillswitch slug={slug} />
+          <div aria-hidden className="h-1" />
         </div>
       </footer>
     </div>
