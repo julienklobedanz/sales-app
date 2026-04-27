@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ShareOwnerContactCard } from './share-owner-contact-card'
-import { Calendar, HelpCircle } from '@hugeicons/core-free-icons'
+import { Calendar, HelpCircleIcon } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 
 export const dynamic = 'force-dynamic'
@@ -288,7 +288,7 @@ export default async function PublicPortfolioPage({
             {ctaQuestionHref ? (
               <Button asChild className="rounded-lg">
                 <a href={ctaQuestionHref}>
-                  <AppIcon icon={HelpCircle} size={16} />
+                  <AppIcon icon={HelpCircleIcon} size={16} />
                   Frage stellen
                 </a>
               </Button>
