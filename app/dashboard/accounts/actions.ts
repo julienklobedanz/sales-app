@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { ROUTES } from '@/lib/routes'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import * as XLSX from 'xlsx'
 
 export type CompanyStrategyRow = {
   id: string
@@ -1017,6 +1018,110 @@ export async function createCompany(payload: {
 
   revalidatePath(ROUTES.accounts)
   return { success: true, id: data?.id }
+}
+
+export async function bulkCreateCompaniesFromSheet(fileBuffer: Uint8Array): Promise<{
+  success: boolean
+  createdCount: number
+  skippedCount: number
+  failedCount: number
+  error?: string
+}> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, createdCount: 0, skippedCount: 0, failedCount: 0, error: 'Nicht eingeloggt.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id, role')
+    .eq('id', user.id)
+    .single()
+  if (!profile?.organization_id) {
+    return { success: false, createdCount: 0, skippedCount: 0, failedCount: 0, error: 'Onboarding unvollständig.' }
+  }
+  if (profile.role === 'sales') {
+    return { success: false, createdCount: 0, skippedCount: 0, failedCount: 0, error: 'Keine Berechtigung.' }
+  }
+
+  let workbook: XLSX.WorkBook
+  try {
+    workbook = XLSX.read(fileBuffer, { type: 'array' })
+  } catch {
+    return { success: false, createdCount: 0, skippedCount: 0, failedCount: 0, error: 'Datei konnte nicht gelesen werden.' }
+  }
+  const firstSheetName = workbook.SheetNames[0]
+  if (!firstSheetName) {
+    return { success: false, createdCount: 0, skippedCount: 0, failedCount: 0, error: 'Keine Tabelle gefunden.' }
+  }
+  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(workbook.Sheets[firstSheetName]!, { defval: '' })
+
+  const { data: existingCompanies } = await supabase
+    .from('companies')
+    .select('name')
+    .eq('organization_id', profile.organization_id)
+  const existingNames = new Set((existingCompanies ?? []).map((c) => String(c.name ?? '').trim().toLowerCase()))
+
+  const pick = (row: Record<string, unknown>, keys: string[]) => {
+    for (const key of keys) {
+      const value = String(row[key] ?? '').trim()
+      if (value) return value
+    }
+    return ''
+  }
+
+  let createdCount = 0
+  let skippedCount = 0
+  let failedCount = 0
+
+  for (const row of rows) {
+    const name = pick(row, ['name', 'Name', 'account', 'Account', 'unternehmen', 'Unternehmen'])
+    if (!name) {
+      skippedCount += 1
+      continue
+    }
+    const normalizedName = name.toLowerCase()
+    if (existingNames.has(normalizedName)) {
+      skippedCount += 1
+      continue
+    }
+
+    let website = pick(row, ['website', 'Website', 'domain', 'Domain'])
+    let industry = pick(row, ['industry', 'Industry', 'branche', 'Branche'])
+    let headquarters = pick(row, ['headquarters', 'Headquarters', 'hq', 'HQ', 'standort', 'Standort'])
+    const employeeRaw = pick(row, ['employee_count', 'Employee Count', 'employees', 'Employees', 'mitarbeiter', 'Mitarbeiter'])
+    const employeeCount = employeeRaw ? Number(employeeRaw.replace(/[^\d]/g, '')) : null
+
+    const domain = inputToDomain(website)
+    if (domain) {
+      const fetched = await fetchBrandfetchCompany(domain)
+      if (fetched.success) {
+        website = website || fetched.data.websiteUrl || ''
+        industry = industry || fetched.data.industry || ''
+        headquarters = headquarters || fetched.data.headquarters || ''
+      }
+    }
+
+    const { error } = await supabase.from('companies').insert({
+      organization_id: profile.organization_id,
+      name,
+      website_url: website || null,
+      industry: industry || null,
+      headquarters: headquarters || null,
+      employee_count: Number.isFinite(employeeCount as number) ? employeeCount : null,
+      account_status: null,
+    })
+    if (error) {
+      failedCount += 1
+      continue
+    }
+    existingNames.add(normalizedName)
+    createdCount += 1
+  }
+
+  revalidatePath(ROUTES.accounts)
+  return { success: true, createdCount, skippedCount, failedCount }
 }
 
 const COMPANY_ACCOUNT_STATUSES = ['at_risk', 'warmup', 'expansion'] as const

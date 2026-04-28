@@ -89,7 +89,7 @@ export type InviteByEmailResult =
 
 export async function inviteByEmail(
   email: string,
-  role: 'admin' | 'sales' | 'account_manager' = 'sales'
+  role: 'admin' | 'sales' = 'sales'
 ): Promise<InviteByEmailResult> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -206,7 +206,7 @@ export type UpdatePendingInviteRoleResult =
 
 export async function updatePendingInviteRole(params: {
   inviteId: string
-  role: 'admin' | 'sales' | 'account_manager'
+  role: 'admin' | 'sales'
 }): Promise<UpdatePendingInviteRoleResult> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -349,9 +349,9 @@ export type TeamMemberRow = {
   status: 'active' | 'pending'
   isSelf?: boolean
   /** Nur aktive Mitglieder; bei Einladungen siehe inviteRole */
-  role?: 'admin' | 'sales' | 'account_manager' | null
+  role?: 'admin' | 'sales' | null
   /** Nur ausstehende Einladungen */
-  inviteRole?: 'admin' | 'sales' | 'account_manager' | null
+  inviteRole?: 'admin' | 'sales' | null
 }
 
 export async function getTeamMembers(): Promise<TeamMemberRow[]> {
@@ -386,8 +386,7 @@ export async function getTeamMembers(): Promise<TeamMemberRow[]> {
       role?: string | null
     }
     const r = row.role
-    const role =
-      r === 'admin' || r === 'sales' || r === 'account_manager' ? r : null
+    const role = r === 'admin' ? 'admin' : r === 'sales' ? 'sales' : null
     return {
       id: row.id,
       email: row.email ?? '',
@@ -409,8 +408,7 @@ export async function getTeamMembers(): Promise<TeamMemberRow[]> {
     const i = row as { id?: string; email?: string | null; role?: string | null }
     if (!i?.id) return []
     const r = i.role
-    const inviteRole =
-      r === 'admin' || r === 'sales' || r === 'account_manager' ? r : 'sales'
+    const inviteRole = r === 'admin' ? 'admin' : 'sales'
     return [
       {
         id: i.id,
@@ -481,7 +479,7 @@ export type UpdateMemberRoleResult = { success: true } | { success: false; error
 
 export async function updateMemberRole(params: {
   profileId: string
-  role: 'admin' | 'sales' | 'account_manager'
+  role: 'admin' | 'sales'
 }): Promise<UpdateMemberRoleResult> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -503,7 +501,7 @@ export async function updateMemberRole(params: {
   }
 
   const role = params.role
-  if (!['admin', 'sales', 'account_manager'].includes(role)) {
+  if (!['admin', 'sales'].includes(role)) {
     return { success: false, error: 'Ungültige Rolle.' }
   }
 

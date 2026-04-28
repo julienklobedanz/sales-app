@@ -5,11 +5,11 @@ import Image from 'next/image'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
-import { Bell, Building2, ExternalLink, LinkIcon, MailOpen, News01Icon, UploadIcon } from '@hugeicons/core-free-icons'
+import { Bell, Building2, Cancel01Icon, ExternalLink, LinkIcon, MailOpen, News01Icon, UploadIcon } from '@hugeicons/core-free-icons'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { markMarketSignalNotificationsRead } from '@/app/dashboard/market-signals/actions'
+import { markMarketSignalNotificationsRead, markMarketSignalsIrrelevant } from '@/app/dashboard/market-signals/actions'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 import { formatDateUtcDe } from '@/lib/format'
@@ -68,6 +68,14 @@ export function AccountNewsFeed({
 }) {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const [readKeys, setReadKeys] = useState(() => new Set(initialReadKeys.filter((k) => k.startsWith('market_news:'))))
+  const [irrelevantKeys, setIrrelevantKeys] = useState(
+    () =>
+      new Set(
+        initialReadKeys
+          .filter((k) => k.startsWith('market_irrelevant:market_news:'))
+          .map((k) => k.replace('market_irrelevant:', ''))
+      )
+  )
   const followSet = useMemo(() => new Set(followingCompanyIds), [followingCompanyIds])
 
   const restrictedSet = useMemo(
@@ -86,7 +94,7 @@ export function AccountNewsFeed({
         return new Date(b.publishedOn).getTime() - new Date(a.publishedOn).getTime()
       })
   }, [followSet, items, restrictedSet])
-  const visibleItems = prioritized.slice(0, visibleCount)
+  const visibleItems = prioritized.filter((row) => !irrelevantKeys.has(`market_news:${row.id}`)).slice(0, visibleCount)
   const visibleReadKeys = useMemo(() => visibleItems.map((row) => `market_news:${row.id}`), [visibleItems])
 
   function sourceHref(row: AccountNewsRow) {
@@ -103,6 +111,15 @@ export function AccountNewsFeed({
     setReadKeys(next)
     const result = await markMarketSignalNotificationsRead(visibleReadKeys)
     if (!result.success) toast.error(result.error ?? 'Konnte News nicht als gelesen markieren')
+  }
+
+  async function handleMarkIrrelevant(id: string) {
+    const key = `market_news:${id}`
+    const next = new Set(irrelevantKeys)
+    next.add(key)
+    setIrrelevantKeys(next)
+    const result = await markMarketSignalsIrrelevant([key])
+    if (!result.success) toast.error(result.error ?? 'Signal konnte nicht ausgeblendet werden')
   }
 
   return (
@@ -220,6 +237,22 @@ export function AccountNewsFeed({
                       <AppIcon icon={Building2} size={16} />
                     </Link>
                   </Button>
+                  <div className="relative">
+                    {!readKeys.has(`market_news:${row.id}`) ? (
+                      <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-blue-500" />
+                    ) : null}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+                      title="Irrelevant"
+                      aria-label="Signal als irrelevant ausblenden"
+                      onClick={() => void handleMarkIrrelevant(row.id)}
+                    >
+                      <AppIcon icon={Cancel01Icon} size={15} />
+                    </Button>
+                  </div>
                 </div>
               </li>
             ))}

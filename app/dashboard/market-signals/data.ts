@@ -118,7 +118,9 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
     .from('notification_inbox_reads')
     .select('notification_key')
     .eq('user_id', user.id)
-    .or('notification_key.like.market_exec:%,notification_key.like.market_news:%')
+    .or(
+      'notification_key.like.market_exec:%,notification_key.like.market_news:%,notification_key.like.market_irrelevant:%'
+    )
     .limit(500)
   const signalReadKeys = (signalReadRows ?? [])
     .map((row) => String(row.notification_key ?? ''))

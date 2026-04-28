@@ -52,7 +52,7 @@ export default async function AccountsPage() {
   const companyIds = (companies ?? []).map((c) => c.id)
 
   // Counts für Score/Card: Deals, Referenzen, Stakeholder, Strategy-Filled
-  const [dealsRows, refRows, stakeholderRows, strategyRows] = await Promise.all([
+  const [dealsRows, refRows, stakeholderRows, strategyRows, executiveSignalRows, newsSignalRows] = await Promise.all([
     companyIds.length
       ? supabase
           .from('deals')
@@ -87,6 +87,20 @@ export default async function AccountsPage() {
             next_steps: string | null
           }[] | null,
         }),
+    companyIds.length
+      ? supabase
+          .from('market_signal_executive_events')
+          .select('company_id')
+          .in('company_id', companyIds)
+          .limit(4000)
+      : Promise.resolve({ data: [] as { company_id: string | null }[] | null }),
+    companyIds.length
+      ? supabase
+          .from('market_signal_account_news')
+          .select('company_id')
+          .in('company_id', companyIds)
+          .limit(4000)
+      : Promise.resolve({ data: [] as { company_id: string | null }[] | null }),
   ])
 
   const activeDealStatuses = new Set([
@@ -124,6 +138,15 @@ export default async function AccountsPage() {
     )
     strategyFilledByCompany[st.company_id] = filled
   }
+  const signalCountByCompany: Record<string, number> = {}
+  for (const row of executiveSignalRows.data ?? []) {
+    if (!row.company_id) continue
+    signalCountByCompany[row.company_id] = (signalCountByCompany[row.company_id] ?? 0) + 1
+  }
+  for (const row of newsSignalRows.data ?? []) {
+    if (!row.company_id) continue
+    signalCountByCompany[row.company_id] = (signalCountByCompany[row.company_id] ?? 0) + 1
+  }
 
   const enrichedCompanies =
     (companies ?? []).map((c) => ({
@@ -132,6 +155,7 @@ export default async function AccountsPage() {
       reference_count: refCountByCompany[c.id] ?? 0,
       stakeholder_count: stakeholderCountByCompany[c.id] ?? 0,
       strategy_filled: strategyFilledByCompany[c.id] ?? false,
+      signal_count: signalCountByCompany[c.id] ?? 0,
     })) ?? []
 
   return (

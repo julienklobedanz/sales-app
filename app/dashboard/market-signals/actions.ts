@@ -8,21 +8,14 @@ function normalizeChampionKey(raw: string) {
   return raw.trim().toLowerCase().replace(/\s+/g, ' ')
 }
 
-export async function markMarketSignalNotificationsRead(keys: string[]) {
+async function upsertNotificationKeys(keys: string[]) {
   const uniqueKeys = Array.from(new Set(keys.filter(Boolean)))
   if (!uniqueKeys.length) return { success: true as const }
-
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return { success: false as const, error: 'Nicht angemeldet' }
-
-  const rows = uniqueKeys.map((key) => ({
-    user_id: user.id,
-    notification_key: key,
-    read_at: new Date().toISOString(),
-  }))
 
   const { data: existingRows, error: existingError } = await supabase
     .from('notification_inbox_reads')
@@ -34,14 +27,31 @@ export async function markMarketSignalNotificationsRead(keys: string[]) {
   const existingKeys = new Set(
     (existingRows ?? []).map((row) => String((row as { notification_key?: string | null }).notification_key ?? ''))
   )
-  const toInsert = rows.filter((row) => !existingKeys.has(row.notification_key))
-  if (toInsert.length === 0) return { success: true as const }
+  const toInsert = uniqueKeys
+    .filter((key) => !existingKeys.has(key))
+    .map((key) => ({ user_id: user.id, notification_key: key, read_at: new Date().toISOString() }))
+  if (!toInsert.length) return { success: true as const }
 
   const { error } = await supabase.from('notification_inbox_reads').insert(toInsert)
   if (error) return { success: false as const, error: error.message }
-
-  revalidatePath(ROUTES.marketSignals)
   return { success: true as const }
+}
+
+export async function markMarketSignalNotificationsRead(keys: string[]) {
+  const result = await upsertNotificationKeys(keys)
+  if (!result.success) return result
+  revalidatePath(ROUTES.marketSignals)
+  return result
+}
+
+export async function markMarketSignalsIrrelevant(keys: string[]) {
+  const irrelevantKeys = keys
+    .filter(Boolean)
+    .map((key) => `market_irrelevant:${key}`)
+  const result = await upsertNotificationKeys(irrelevantKeys)
+  if (!result.success) return result
+  revalidatePath(ROUTES.marketSignals)
+  return result
 }
 
 export async function setCompanyWatchlistState(companyId: string, isFollowing: boolean) {

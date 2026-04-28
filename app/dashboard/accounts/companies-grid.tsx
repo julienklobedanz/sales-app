@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -40,11 +40,12 @@ import {
   Plus,
   RefreshCw,
   StarIcon,
+  UploadIcon,
   Users,
 } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { CompanyLogo } from '@/components/ui/company-logo'
-import { deleteCompanyWithData, refreshAccountsFromBrandfetch, toggleCompanyFavorite } from './actions'
+import { bulkCreateCompaniesFromSheet, deleteCompanyWithData, refreshAccountsFromBrandfetch, toggleCompanyFavorite } from './actions'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 import { useRole } from '@/hooks/useRole'
@@ -64,6 +65,7 @@ export type CompanyCard = {
   reference_count?: number | null
   stakeholder_count?: number | null
   strategy_filled?: boolean | null
+  signal_count?: number | null
 }
 
 export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
@@ -73,6 +75,8 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
   const [deleting, setDeleting] = useState(false)
   const [favoritesOnly, setFavoritesOnly] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
+  const [compactView, setCompactView] = useState(false)
+  const [importingAccounts, setImportingAccounts] = useState(false)
   const [refreshingAccounts, setRefreshingAccounts] = useState(false)
   const [refreshPopoverOpen, setRefreshPopoverOpen] = useState(false)
   const [refreshResultTab, setRefreshResultTab] = useState<'updated' | 'skipped' | 'failed'>('updated')
@@ -86,6 +90,25 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
   } | null>(null)
   const { isAdmin, isAccountManager } = useRole()
   const canManage = isAdmin || isAccountManager
+  const importInputRef = useRef<HTMLInputElement | null>(null)
+
+  async function handleAccountImport(file: File) {
+    setImportingAccounts(true)
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer())
+      const result = await bulkCreateCompaniesFromSheet(bytes)
+      if (!result.success) {
+        toast.error(result.error ?? 'Import fehlgeschlagen.')
+        return
+      }
+      toast.success(
+        `${result.createdCount} Accounts importiert (${result.skippedCount} übersprungen, ${result.failedCount} fehlgeschlagen).`
+      )
+      router.refresh()
+    } finally {
+      setImportingAccounts(false)
+    }
+  }
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -136,6 +159,17 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
             </Button>
             {canManage && (
               <>
+                <input
+                  ref={importInputRef}
+                  type="file"
+                  accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) void handleAccountImport(file)
+                    e.target.value = ''
+                  }}
+                />
                 <Popover open={refreshPopoverOpen} onOpenChange={setRefreshPopoverOpen}>
                   <PopoverTrigger asChild>
                     <Button
@@ -247,6 +281,35 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                 </Popover>
                 <Button
                   type="button"
+                  variant="ghost"
+                  size="toolbar"
+                  disabled={importingAccounts}
+                  className="hover:bg-muted/70"
+                  onDragOver={(e) => {
+                    e.preventDefault()
+                    if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    const file = e.dataTransfer.files?.[0]
+                    if (file) void handleAccountImport(file)
+                  }}
+                  onClick={() => importInputRef.current?.click()}
+                >
+                  <AppIcon icon={importingAccounts ? Loader : UploadIcon} size={16} className={importingAccounts ? 'animate-spin' : ''} />
+                  Bulk Upload
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="toolbar"
+                  className="hover:bg-muted/70"
+                  onClick={() => setCompactView((v) => !v)}
+                >
+                  {compactView ? 'Kartenansicht' : 'Listenansicht'}
+                </Button>
+                <Button
+                  type="button"
                   size="toolbar"
                   className="rounded-lg bg-gradient-to-b from-blue-600 to-blue-700 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] hover:from-blue-600 hover:to-blue-700/95"
                   onClick={() => setCreateOpen(true)}
@@ -268,11 +331,11 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
             : 'Keine Firma unter diesem Namen gefunden.'}
         </p>
       ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className={compactView ? 'grid grid-cols-1 gap-3' : 'grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'}>
           {filtered.map((company) => (
             <ContextMenu key={company.id}>
               <ContextMenuTrigger asChild>
-                <Card className="group relative h-full overflow-hidden rounded-3xl border border-border/60 bg-card/95 shadow-sm transition-all duration-200 hover:border-primary/20 hover:shadow-md">
+                <Card className={`group relative h-full overflow-hidden rounded-3xl border border-border/60 bg-card/95 shadow-sm transition-all duration-200 hover:border-primary/20 hover:shadow-md ${compactView ? 'rounded-xl' : ''}`}>
                   {isAdmin ? (
                     <div className="absolute right-3 top-3 z-10 flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
                       <button
@@ -319,8 +382,10 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                         <div className="flex items-start gap-3">
                           <CompanyLogo
                             src={company.logo_url}
+                            alt={company.name}
                             containerClassName="size-12 shrink-0 rounded-2xl"
                             fallbackIconSize={24}
+                            fallbackText={company.name}
                           />
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2.5">
@@ -333,6 +398,12 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                                 {company.industry}
                               </CardDescription>
                             )}
+                            {(company.signal_count ?? 0) >= 3 ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-semibold text-white">
+                                <span className="text-[11px]">▲</span>
+                                Hot
+                              </span>
+                            ) : null}
                           </div>
                         </div>
                       </div>

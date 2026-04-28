@@ -11,18 +11,22 @@ function isSupabaseAuthCookie(name: string): boolean {
   return /^sb-.*-auth-token(?:\.\d+)?$/.test(name)
 }
 
-async function convertSupabaseAuthCookiesToSessionCookies() {
+async function applySupabaseAuthCookieLifetime(remember: boolean) {
   const cookieStore = await cookies()
   const allCookies = cookieStore.getAll()
   const secure = process.env.NODE_ENV === 'production'
+  const maxAge = remember ? 60 * 60 * 24 * 30 : undefined
 
-  // Ohne maxAge/expires bleiben diese Cookies nur bis zum Browser-Schließen erhalten.
+  // remember=true: persistente Login-Cookies (30 Tage)
+  // remember=false: Session-Cookies (bis Browser-Schließen)
   for (const cookie of allCookies) {
     if (!isSupabaseAuthCookie(cookie.name)) continue
     cookieStore.set(cookie.name, cookie.value, {
       path: '/',
       sameSite: 'lax',
       secure,
+      httpOnly: true,
+      ...(typeof maxAge === 'number' ? { maxAge } : {}),
     })
   }
 }
@@ -47,9 +51,7 @@ export async function signInWithPassword(
     return { error: error.message }
   }
 
-  if (!remember) {
-    await convertSupabaseAuthCookiesToSessionCookies()
-  }
+  await applySupabaseAuthCookieLifetime(remember)
 
   const inviteToken = formData.get('invite_token')?.toString()?.trim()
   if (inviteToken) {

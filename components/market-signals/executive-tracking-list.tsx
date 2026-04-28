@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import {
   Bell,
   Building2,
+  Cancel01Icon,
   ExternalLink,
   LinkIcon,
   Linkedin01Icon,
@@ -18,7 +19,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { markMarketSignalNotificationsRead } from '@/app/dashboard/market-signals/actions'
+import { markMarketSignalNotificationsRead, markMarketSignalsIrrelevant } from '@/app/dashboard/market-signals/actions'
 import { COPY } from '@/lib/copy'
 import { AppIcon } from '@/lib/icons'
 import { ROUTES } from '@/lib/routes'
@@ -98,6 +99,14 @@ export function ExecutiveTrackingList({
 }) {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const [readKeys, setReadKeys] = useState(() => new Set(initialReadKeys.filter((k) => k.startsWith('market_exec:'))))
+  const [irrelevantKeys, setIrrelevantKeys] = useState(
+    () =>
+      new Set(
+        initialReadKeys
+          .filter((k) => k.startsWith('market_irrelevant:market_exec:'))
+          .map((k) => k.replace('market_irrelevant:', ''))
+      )
+  )
   const followed = useMemo(() => new Set(followingCompanyIds), [followingCompanyIds])
   const championWatchSet = useMemo(() => new Set(championWatchlist), [championWatchlist])
   const companyNameById = useMemo(
@@ -148,7 +157,7 @@ export function ExecutiveTrackingList({
       return new Date(b.detectedAt).getTime() - new Date(a.detectedAt).getTime()
     })
   }, [championWatchSet, companyNameById, deduped, followed, followingCompanyIds, restrictedSet])
-  const visibleItems = prioritized.slice(0, visibleCount)
+  const visibleItems = prioritized.filter((row) => !irrelevantKeys.has(`market_exec:${row.id}`)).slice(0, visibleCount)
   const visibleReadKeys = useMemo(() => visibleItems.map((row) => `market_exec:${row.id}`), [visibleItems])
 
   async function handleMarkRead() {
@@ -158,6 +167,15 @@ export function ExecutiveTrackingList({
     setReadKeys(next)
     const result = await markMarketSignalNotificationsRead(visibleReadKeys)
     if (!result.success) toast.error(result.error ?? 'Konnte Signale nicht als gelesen markieren')
+  }
+
+  async function handleMarkIrrelevant(id: string) {
+    const key = `market_exec:${id}`
+    const next = new Set(irrelevantKeys)
+    next.add(key)
+    setIrrelevantKeys(next)
+    const result = await markMarketSignalsIrrelevant([key])
+    if (!result.success) toast.error(result.error ?? 'Signal konnte nicht ausgeblendet werden')
   }
 
   return (
@@ -280,6 +298,22 @@ export function ExecutiveTrackingList({
                         <AppIcon icon={Building2} size={16} />
                       </Link>
                     </Button>
+                    <div className="relative">
+                      {!readKeys.has(`market_exec:${row.id}`) ? (
+                        <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-blue-500" />
+                      ) : null}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-2 text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+                        title="Irrelevant"
+                        aria-label="Signal als irrelevant ausblenden"
+                        onClick={() => void handleMarkIrrelevant(row.id)}
+                      >
+                        <AppIcon icon={Cancel01Icon} size={15} />
+                      </Button>
+                    </div>
                   </div>
                 </li>
               )

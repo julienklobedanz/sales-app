@@ -224,7 +224,10 @@ export async function sendTeamInvites(
   invites: Array<{ email: string; role: 'sales' | 'account_manager' | 'admin' }>
 ): Promise<SendInvitesResult> {
   const unique = invites
-    .map((i) => ({ email: i.email.trim().toLowerCase(), role: i.role }))
+    .map((i): { email: string; role: 'admin' | 'sales' } => ({
+      email: i.email.trim().toLowerCase(),
+      role: i.role === 'admin' ? 'admin' : 'sales',
+    }))
     .filter((i) => i.email.length > 0)
     .slice(0, 3)
 

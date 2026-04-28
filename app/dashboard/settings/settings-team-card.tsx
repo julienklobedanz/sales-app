@@ -45,7 +45,7 @@ import {
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
 
-type InviteRole = 'admin' | 'sales' | 'account_manager'
+type InviteRole = 'admin' | 'sales'
 
 export function SettingsTeamCard({
   initialMembers,
@@ -197,7 +197,6 @@ export function SettingsTeamCard({
               <SelectValue placeholder="Rolle" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="account_manager">{COPY.roles.accountManager}</SelectItem>
               <SelectItem value="sales">Sales</SelectItem>
               <SelectItem value="admin">Admin</SelectItem>
             </SelectContent>
@@ -254,7 +253,7 @@ export function SettingsTeamCard({
                       <Select
                         value={
                           (m.status === 'active'
-                            ? (m.role ?? 'sales')
+                            ? (m.role === 'admin' ? 'admin' : 'sales')
                             : (m.inviteRole ?? 'sales')) as InviteRole
                         }
                         onValueChange={(v) => {
@@ -271,9 +270,6 @@ export function SettingsTeamCard({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="account_manager">
-                            {COPY.roles.accountManager}
-                          </SelectItem>
                           <SelectItem value="sales">Sales</SelectItem>
                           <SelectItem value="admin">Admin</SelectItem>
                         </SelectContent>

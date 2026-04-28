@@ -62,7 +62,9 @@ import { TABLE_TOOLBAR } from '@/lib/table-toolbar'
 import { cn } from '@/lib/utils'
 import { formatDateUtcDe } from '@/lib/format'
 import {
+  createSharedPortfolio,
   deleteReference,
+  getExistingShareForReference,
   getReferenceAssets,
   submitForApproval,
   toggleFavorite,
@@ -80,6 +82,7 @@ import {
   FileDownIcon,
   FileText,
   Filter,
+  LinkIcon,
   MoreHorizontal,
   Pencil,
   Send,
@@ -836,6 +839,25 @@ export function DashboardOverview({
     }
   }
 
+  async function copyReferenceShareLink(referenceId: string) {
+    const existing = await getExistingShareForReference(referenceId)
+    let shareUrl = existing?.url ?? null
+    if (!shareUrl) {
+      const created = await createSharedPortfolio([referenceId])
+      if (!created.success) {
+        toast.error(created.error ?? 'Kundenlink konnte nicht erstellt werden.')
+        return
+      }
+      shareUrl = created.url
+    }
+    const absoluteUrl =
+      shareUrl.startsWith('http://') || shareUrl.startsWith('https://')
+        ? shareUrl
+        : new URL(shareUrl, window.location.origin).toString()
+    await navigator.clipboard.writeText(absoluteUrl)
+    toast.success('Kundenlink kopiert.')
+  }
+
   const handleRequestSpecificApproval = async (id: string) => {
     try {
       await submitForApproval(id)
@@ -1128,6 +1150,25 @@ export function DashboardOverview({
                     {profile.role === 'sales' && (
                       <>
                         <DropdownMenuItem
+                          onSelect={async () => {
+                            const selected = Array.from(selectedRefIds)
+                            const result = await createSharedPortfolio(selected)
+                            if (!result.success) {
+                              toast.error(result.error ?? 'Kollektions-Link konnte nicht erstellt werden.')
+                              return
+                            }
+                            const absoluteUrl =
+                              result.url.startsWith('http://') || result.url.startsWith('https://')
+                                ? result.url
+                                : new URL(result.url, window.location.origin).toString()
+                            await navigator.clipboard.writeText(absoluteUrl)
+                            toast.success('Kollektions-Link erstellt und kopiert.')
+                          }}
+                        >
+                          <AppIcon icon={LinkIcon} size={16} className="mr-2" />
+                          Kollektions-Link erstellen
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
                           onClick={async () => {
                             const base = process.env.NEXT_PUBLIC_SUPABASE_URL
                             const withFile = selectedRefs.filter((r) => r.file_path)
@@ -1359,6 +1400,18 @@ export function DashboardOverview({
                                 : 'text-muted-foreground/50 hover:text-amber-500/80'
                             }
                           />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 shrink-0 hover:bg-transparent"
+                          onClick={async () => {
+                            await copyReferenceShareLink(ref.id)
+                          }}
+                          aria-label="Kundenlink kopieren"
+                          title="Kundenlink kopieren"
+                        >
+                          <AppIcon icon={LinkIcon} size={16} className="text-muted-foreground/60 hover:text-foreground" />
                         </Button>
                         <DropdownMenu
                           open={rowMenuOpenId === ref.id}

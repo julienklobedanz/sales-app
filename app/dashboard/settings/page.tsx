@@ -5,12 +5,8 @@ import { redirect } from 'next/navigation'
 import type { AppRole } from '@/hooks/useRole'
 import { DEV_ROLE_COOKIE, parseAppRoleCookie } from '@/lib/dev-role-preview'
 import { getTeamMembers } from './invite-actions'
-import { SettingsDangerZone } from './settings-danger-zone'
 import { SettingsTabs } from './settings-tabs'
 import { DASHBOARD_PAGE_SUBTITLE_CLASS, DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
-
-const SECTION_LABEL_CLASS =
-  'text-sm font-medium uppercase tracking-wider text-muted-foreground mb-3 block'
 
 function parseExportSettings(raw: unknown): { pdf_layout?: 'one_pager' | 'detail' | 'anonymized'; pdf_logo_enabled?: boolean } {
   if (!raw || typeof raw !== 'object') return {}
@@ -26,6 +22,56 @@ function parseExportSettings(raw: unknown): { pdf_layout?: 'one_pager' | 'detail
   }
 }
 
+function parseProfileNotificationSettings(raw: unknown): {
+  emailOnNewMatch: boolean
+  emailOnApprovalUpdate: boolean
+} {
+  if (!raw || typeof raw !== 'object') {
+    return { emailOnNewMatch: true, emailOnApprovalUpdate: true }
+  }
+  const obj = raw as Record<string, unknown>
+  return {
+    emailOnNewMatch:
+      typeof obj.email_on_new_match === 'boolean' ? obj.email_on_new_match : true,
+    emailOnApprovalUpdate:
+      typeof obj.email_on_approval_update === 'boolean'
+        ? obj.email_on_approval_update
+        : true,
+  }
+}
+
+function parseOrganizationWorkflowSettings(raw: unknown): {
+  linkExpiryDays: number
+  requireInternalApproval: boolean
+} {
+  if (!raw || typeof raw !== 'object') {
+    return { linkExpiryDays: 14, requireInternalApproval: true }
+  }
+  const obj = raw as Record<string, unknown>
+  const linkExpiryDaysRaw = obj.link_expiry_days
+  return {
+    linkExpiryDays:
+      typeof linkExpiryDaysRaw === 'number' && Number.isFinite(linkExpiryDaysRaw)
+        ? Math.max(1, Math.min(365, Math.trunc(linkExpiryDaysRaw)))
+        : 14,
+    requireInternalApproval:
+      typeof obj.require_internal_approval === 'boolean'
+        ? obj.require_internal_approval
+        : true,
+  }
+}
+
+function parseOrganizationApiSettings(raw: unknown): { apiKeyMask: string } {
+  if (!raw || typeof raw !== 'object') return { apiKeyMask: 'sk_live_************************' }
+  const obj = raw as Record<string, unknown>
+  return {
+    apiKeyMask:
+      typeof obj.workspace_key_mask === 'string' && obj.workspace_key_mask.trim()
+        ? obj.workspace_key_mask.trim()
+        : 'sk_live_************************',
+  }
+}
+
 export default async function SettingsPage() {
   const supabase = await createServerSupabaseClient()
   const {
@@ -36,7 +82,7 @@ export default async function SettingsPage() {
 
   const { data: profileRow } = await supabase
     .from('profiles')
-    .select('*')
+    .select('*, notification_settings')
     .eq('id', user.id)
     .single()
 
@@ -45,7 +91,7 @@ export default async function SettingsPage() {
     organizationId &&
     (await supabase
       .from('organizations')
-      .select('id, name, logo_url, primary_color, secondary_color, export_settings, stripe_subscription_id, subscription_status')
+      .select('id, name, logo_url, primary_color, secondary_color, export_settings, stripe_subscription_id, subscription_status, subdomain, api_settings, workflow_settings')
       .eq('id', organizationId)
       .single())
 
@@ -75,6 +121,9 @@ export default async function SettingsPage() {
           firstName,
           lastName,
           avatarUrl: (profileRow as { avatar_url?: string | null })?.avatar_url ?? null,
+          notificationSettings: parseProfileNotificationSettings(
+            (profileRow as { notification_settings?: unknown } | null)?.notification_settings
+          ),
         }}
         org={{
           id: orgRow?.id ?? null,
@@ -91,15 +140,17 @@ export default async function SettingsPage() {
           ),
           subscriptionStatus: orgRow?.subscription_status ?? null,
           subscriptionId: orgRow?.stripe_subscription_id ?? null,
+          subdomain:
+            (orgRow as { subdomain?: string | null } | null)?.subdomain ?? '',
+          apiSettings: parseOrganizationApiSettings(
+            (orgRow as { api_settings?: unknown } | null)?.api_settings
+          ),
+          workflowSettings: parseOrganizationWorkflowSettings(
+            (orgRow as { workflow_settings?: unknown } | null)?.workflow_settings
+          ),
         }}
         teamMembers={teamMembers}
       />
-
-      {/* 4. Danger Zone */}
-      <section className="space-y-3">
-        <span className={SECTION_LABEL_CLASS}>Gefahrenbereich</span>
-        <SettingsDangerZone />
-      </section>
     </div>
   )
 }

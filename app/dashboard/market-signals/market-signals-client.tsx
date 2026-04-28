@@ -28,28 +28,28 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
             Personen folgen für Executive Moves.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="inline-flex items-center rounded-lg border border-border/70 bg-background/70 p-1">
           <Button
             type="button"
             variant="ghost"
             size="toolbar"
             onClick={() => setOnlyActiveDeals((prev) => !prev)}
-            className={`inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-medium ${
+            className={`inline-flex h-8 items-center gap-1.5 rounded-md border px-3 text-xs font-medium ${
               onlyActiveDeals
                 ? 'border-blue-500/40 bg-blue-500/10 text-blue-700 hover:bg-blue-500/15 dark:text-blue-300'
-                : 'border-border/70 bg-muted/40 text-muted-foreground hover:bg-muted/70'
+                : 'border-transparent bg-transparent text-muted-foreground hover:bg-muted/70'
             }`}
           >
             <AppIcon icon={FilterHorizontalIcon} size={14} />
             Nur aktive Deals
           </Button>
-          <Button variant="ghost" size="toolbar" className="h-9 px-3 text-muted-foreground hover:bg-muted/70" asChild>
+          <Button variant="ghost" size="toolbar" className="h-8 px-3 text-muted-foreground hover:bg-muted/70" asChild>
             <Link href={`${ROUTES.marketSignalsManage}?view=champions`}>
               <AppIcon icon={Sparkles} size={14} />
               Champions verwalten
             </Link>
           </Button>
-          <Button variant="ghost" size="toolbar" className="h-9 px-3 text-muted-foreground hover:bg-muted/70" asChild>
+          <Button variant="ghost" size="toolbar" className="h-8 px-3 text-muted-foreground hover:bg-muted/70" asChild>
             <Link href={ROUTES.marketSignalsManage}>Watchlist verwalten</Link>
           </Button>
         </div>

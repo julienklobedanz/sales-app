@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 type CompanyLogoProps = {
   src?: string | null
   alt?: string
+  fallbackText?: string | null
   containerClassName?: string
   imageClassName?: string
   fallbackIconSize?: number
@@ -63,6 +64,7 @@ function shouldUseDarkBackground(image: HTMLImageElement): boolean {
 export function CompanyLogo({
   src,
   alt = '',
+  fallbackText,
   containerClassName,
   imageClassName,
   fallbackIconSize = 24,
@@ -74,9 +76,20 @@ export function CompanyLogo({
   }, [])
 
   if (!src) {
+    const initials = String(fallbackText ?? '')
+      .split(/\s+/)
+      .map((chunk) => chunk.trim().charAt(0))
+      .filter(Boolean)
+      .slice(0, 2)
+      .join('')
+      .toUpperCase()
     return (
-      <div className={cn('flex items-center justify-center border bg-muted', containerClassName)}>
-        <AppIcon icon={Building2} size={fallbackIconSize} className="text-muted-foreground" />
+      <div className={cn('flex items-center justify-center border bg-gradient-to-br from-blue-500/90 to-violet-500/85 text-white', containerClassName)}>
+        {initials ? (
+          <span className="text-sm font-semibold tracking-wide">{initials}</span>
+        ) : (
+          <AppIcon icon={Building2} size={fallbackIconSize} className="text-white/90" />
+        )}
       </div>
     )
   }
