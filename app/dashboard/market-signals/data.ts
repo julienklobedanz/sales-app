@@ -40,6 +40,11 @@ export type MarketSignalsPageModel = {
   signalReadKeys: string[]
   activeDealCompanyIds: string[]
   championWatchlist: string[]
+  referenceSnippetsByCompanyId: Record<
+    string,
+    Array<{ id: string; title: string; industry: string | null; status: string; updatedAt: string }>
+  >
+  activeDeals: Array<{ id: string; title: string; companyId: string }>
 }
 
 function normalizeChampionKey(raw: string | null | undefined) {
@@ -77,6 +82,8 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
       signalReadKeys: [],
       activeDealCompanyIds: [],
       championWatchlist: [],
+      referenceSnippetsByCompanyId: {},
+      activeDeals: [],
     }
   }
 
@@ -96,6 +103,8 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
       signalReadKeys: [],
       activeDealCompanyIds: [],
       championWatchlist: [],
+      referenceSnippetsByCompanyId: {},
+      activeDeals: [],
     }
   }
 
@@ -153,6 +162,21 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
         .filter(Boolean)
     )
   )
+
+  const { data: activeDealRows } = await supabase
+    .from('deals')
+    .select('id,title,company_id,status')
+    .eq('organization_id', orgId)
+    .not('company_id', 'is', null)
+    .limit(500)
+  const activeDeals = (activeDealRows ?? [])
+    .filter((row) => isActiveDealStatus((row as { status?: unknown }).status))
+    .map((row) => ({
+      id: String((row as { id?: string | null }).id ?? ''),
+      title: String((row as { title?: string | null }).title ?? 'Deal'),
+      companyId: String((row as { company_id?: string | null }).company_id ?? ''),
+    }))
+    .filter((d) => d.id && d.companyId)
 
   const { data: execRows, error: execErr } = await supabase
     .from('market_signal_executive_events')
@@ -253,6 +277,47 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
     }
   })
 
+  const relevantCompanyIds = Array.from(
+    new Set([...executives, ...news].map((x) => x.companyId).filter(Boolean))
+  ).slice(0, 50)
+
+  const referenceSnippetsByCompanyId: MarketSignalsPageModel['referenceSnippetsByCompanyId'] = {}
+  if (relevantCompanyIds.length) {
+    const { data: refRows, error: refErr } = await supabase
+      .from('references')
+      .select('id,title,industry,status,company_id,updated_at')
+      .in('company_id', relevantCompanyIds)
+      .order('updated_at', { ascending: false })
+      .limit(250)
+
+    if (refErr) {
+      console.error('[market-signals] references', refErr.message)
+    }
+
+    for (const raw of refRows ?? []) {
+      const row = raw as {
+        id?: string | null
+        title?: string | null
+        industry?: string | null
+        status?: string | null
+        company_id?: string | null
+        updated_at?: string | null
+      }
+      const companyId = String(row.company_id ?? '')
+      if (!companyId) continue
+      const arr = referenceSnippetsByCompanyId[companyId] ?? []
+      if (arr.length >= 2) continue
+      arr.push({
+        id: String(row.id ?? ''),
+        title: String(row.title ?? 'Referenz'),
+        industry: (row.industry as string | null) ?? null,
+        status: String(row.status ?? ''),
+        updatedAt: String(row.updated_at ?? ''),
+      })
+      referenceSnippetsByCompanyId[companyId] = arr
+    }
+  }
+
   return {
     executives,
     news,
@@ -261,5 +326,7 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
     signalReadKeys,
     activeDealCompanyIds,
     championWatchlist,
+    referenceSnippetsByCompanyId,
+    activeDeals,
   }
 }

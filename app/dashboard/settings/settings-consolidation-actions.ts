@@ -47,6 +47,7 @@ export async function updateProfileNotificationSettings(input: {
 export async function updateWorkspaceAdminSettings(input: {
   subdomain: string
   apiKeyMask: string
+  useWorkspaceBranding: boolean
 }): Promise<ActionResult> {
   const { supabase, organizationId } = await getContext()
   if (!organizationId) {
@@ -62,6 +63,7 @@ export async function updateWorkspaceAdminSettings(input: {
     subdomain: normalizedSubdomain || null,
     api_settings: {
       workspace_key_mask: input.apiKeyMask.trim() || null,
+      use_workspace_branding: Boolean(input.useWorkspaceBranding),
     },
     updated_at: new Date().toISOString(),
   }

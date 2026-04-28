@@ -76,8 +76,8 @@ export default async function ApprovalPage({
   const orgId = company?.organization_id ?? null
   let orgName = company?.name ?? '—'
   let logoUrl: string | null = null
-  let primary = '#0f172a'
-  let secondary = '#334155'
+  let primary = '#2563EB'
+  let secondary = '#1D4ED8'
 
   if (orgId) {
     const { data: orgRow } = await supabase

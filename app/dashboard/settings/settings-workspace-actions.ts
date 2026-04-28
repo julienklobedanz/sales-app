@@ -43,10 +43,10 @@ export async function updateOrganization(
     updates.logo_url = logoDataUrl || null
   }
   if (primaryColor !== undefined) {
-    updates.primary_color = primaryColor || '#0f172a'
+    updates.primary_color = primaryColor || '#2563EB'
   }
   if (secondaryColor !== undefined) {
-    updates.secondary_color = secondaryColor || '#334155'
+    updates.secondary_color = secondaryColor || '#1D4ED8'
   }
 
   const { error } = await supabase

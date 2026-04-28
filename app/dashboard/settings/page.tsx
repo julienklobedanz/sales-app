@@ -6,7 +6,6 @@ import type { AppRole } from '@/hooks/useRole'
 import { DEV_ROLE_COOKIE, parseAppRoleCookie } from '@/lib/dev-role-preview'
 import { getTeamMembers } from './invite-actions'
 import { SettingsTabs } from './settings-tabs'
-import { DASHBOARD_PAGE_SUBTITLE_CLASS, DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 
 function parseExportSettings(raw: unknown): { pdf_layout?: 'one_pager' | 'detail' | 'anonymized'; pdf_logo_enabled?: boolean } {
   if (!raw || typeof raw !== 'object') return {}
@@ -61,14 +60,15 @@ function parseOrganizationWorkflowSettings(raw: unknown): {
   }
 }
 
-function parseOrganizationApiSettings(raw: unknown): { apiKeyMask: string } {
-  if (!raw || typeof raw !== 'object') return { apiKeyMask: 'sk_live_************************' }
+function parseOrganizationApiSettings(raw: unknown): { apiKeyMask: string; useWorkspaceBranding: boolean } {
+  if (!raw || typeof raw !== 'object') return { apiKeyMask: 'sk_live_************************', useWorkspaceBranding: false }
   const obj = raw as Record<string, unknown>
   return {
     apiKeyMask:
       typeof obj.workspace_key_mask === 'string' && obj.workspace_key_mask.trim()
         ? obj.workspace_key_mask.trim()
         : 'sk_live_************************',
+    useWorkspaceBranding: typeof obj.use_workspace_branding === 'boolean' ? obj.use_workspace_branding : false,
   }
 }
 
@@ -107,13 +107,6 @@ export default async function SettingsPage() {
 
   return (
     <div className="flex flex-col space-y-6">
-      <div>
-        <h1 className={DASHBOARD_PAGE_TITLE_CLASS}>Einstellungen</h1>
-        <p className={DASHBOARD_PAGE_SUBTITLE_CLASS}>
-          Verwalten Sie Ihr Profil, Team und Arbeitsbereich.
-        </p>
-      </div>
-
       <SettingsTabs
         roleSwitcher={{ serverRole, previewRole }}
         profile={{
@@ -131,10 +124,10 @@ export default async function SettingsPage() {
           logoUrl: orgRow?.logo_url ?? null,
           primaryColor:
             (orgRow as { primary_color?: string | null } | null)?.primary_color ??
-            '#0f172a',
+            '#2563EB',
           secondaryColor:
             (orgRow as { secondary_color?: string | null } | null)
-              ?.secondary_color ?? '#334155',
+              ?.secondary_color ?? '#1D4ED8',
           exportSettings: parseExportSettings(
             (orgRow as { export_settings?: unknown } | null)?.export_settings
           ),

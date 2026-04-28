@@ -53,11 +53,13 @@ export function DashboardShell({
   user,
   profile,
   initialNotifications = [],
+  workspaceBranding = null,
 }: {
   children: React.ReactNode
   user: User
   profile: Profile
   initialNotifications?: DashboardNotificationItem[]
+  workspaceBranding?: { enabled: boolean; primary: string; secondary: string } | null
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -111,17 +113,27 @@ export function DashboardShell({
     return user.email?.slice(0, 2).toUpperCase() ?? 'U'
   })()
 
+  const brandingStyle = workspaceBranding?.enabled
+    ? ({
+        // shadcn token variables (used by bg-primary/text-primary/ring-primary etc.)
+        ['--primary' as never]: workspaceBranding.primary,
+        ['--sidebar-primary' as never]: workspaceBranding.primary,
+        ['--ring' as never]: workspaceBranding.secondary,
+      } as React.CSSProperties)
+    : undefined
+
   return (
     <RoleProvider key={profile.role} role={profile.role}>
-      <SidebarProvider
-        defaultOpen={!forceCollapsed}
-        open={forceCollapsed ? false : undefined}
-        onOpenChange={forceCollapsed ? () => {} : undefined}
-      >
-        <Sidebar
-          collapsible="icon"
-          className="border-r border-sidebar-border/90 bg-sidebar"
+      <div style={brandingStyle}>
+        <SidebarProvider
+          defaultOpen={!forceCollapsed}
+          open={forceCollapsed ? false : undefined}
+          onOpenChange={forceCollapsed ? () => {} : undefined}
         >
+          <Sidebar
+            collapsible="icon"
+            className="border-r border-sidebar-border/90 bg-sidebar"
+          >
         <SidebarHeader className="px-3 py-4">
           <SidebarMenu>
             <SidebarMenuItem>
@@ -271,28 +283,11 @@ export function DashboardShell({
           <SidebarGroup className="mt-auto space-y-0 border-t border-sidebar-border/60 px-2 pt-3">
             <SidebarGroupContent>
               <SidebarMenu className="gap-0.5">
-                {isAdmin ? (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      asChild
-                      size="sm"
-                      tooltip="Einstellungen"
-                      isActive={pathname?.startsWith(ROUTES.settings)}
-                      className="group rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-muted data-[active=true]:text-foreground"
-                    >
-                      <Link href={ROUTES.settings}>
-                        <AppIcon icon={SettingsIcon} size={16} />
-                        <span>Einstellungen</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ) : null}
-
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
                     size="sm"
-                    tooltip="Support"
+                    tooltip="Support erhalten"
                     className="group rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60"
                   >
                     <button
@@ -304,7 +299,7 @@ export function DashboardShell({
                       className="w-full"
                     >
                       <AppIcon icon={LifeBuoy} size={16} />
-                      <span>Support</span>
+                      <span>Support erhalten</span>
                     </button>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -328,6 +323,23 @@ export function DashboardShell({
                     </button>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+
+                {isAdmin ? (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      size="sm"
+                      tooltip="Einstellungen"
+                      isActive={pathname?.startsWith(ROUTES.settings)}
+                      className="group rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-muted data-[active=true]:text-foreground"
+                    >
+                      <Link href={ROUTES.settings}>
+                        <AppIcon icon={SettingsIcon} size={16} />
+                        <span>Einstellungen</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ) : null}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -361,7 +373,8 @@ export function DashboardShell({
         onOpenChange={setTicketModalOpen}
         type={ticketModalType}
       />
-      </SidebarProvider>
+        </SidebarProvider>
+      </div>
     </RoleProvider>
   )
 }

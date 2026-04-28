@@ -47,6 +47,35 @@ import { COPY } from '@/lib/copy'
 
 type InviteRole = 'admin' | 'sales'
 
+function titleCaseWord(word: string) {
+  const w = word.trim()
+  if (!w) return ''
+  return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
+}
+
+function deriveDisplayNameFromEmail(email: string) {
+  const local = String(email ?? '').trim().split('@')[0] ?? ''
+  const cleaned = local.replace(/[^a-zA-Z0-9._-]+/g, ' ')
+  const parts = cleaned
+    .split(/[._\-\s]+/g)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .slice(0, 2)
+  if (!parts.length) return 'Ausstehend'
+  if (parts.length === 1) return titleCaseWord(parts[0])
+  return `${titleCaseWord(parts[0])} ${titleCaseWord(parts[1])}`.trim()
+}
+
+function humanizeInviteEmailError(raw: string | undefined) {
+  const msg = String(raw ?? '').trim()
+  if (!msg) return COPY.settings.teamInviteSavedEmailMissingKey
+  if (/api key is invalid/i.test(msg) || /invalid api key/i.test(msg)) {
+    return 'Einladung ist gespeichert, aber der E-Mail-Versand ist aktuell nicht korrekt konfiguriert.'
+  }
+  if (/RESEND_API_KEY/i.test(msg)) return COPY.settings.teamInviteSavedEmailMissingKey
+  return msg
+}
+
 export function SettingsTeamCard({
   initialMembers,
 }: {
@@ -83,7 +112,7 @@ export function SettingsTeamCard({
       toast.success(COPY.settings.teamInviteEmailSent)
     } else {
       toast.warning(COPY.settings.teamInviteSavedEmailFailed, {
-        description: result.emailError ?? COPY.settings.teamInviteSavedEmailMissingKey,
+        description: humanizeInviteEmailError(result.emailError),
         duration: 14_000,
         action: {
           label: COPY.settings.teamInviteCopyLink,
@@ -233,7 +262,9 @@ export function SettingsTeamCard({
                 {members.map((m) => (
                   <TableRow key={m.id}>
                     <TableCell className="font-medium">
-                      {m.status === 'active' ? m.name || 'Unbekannt' : 'Ausstehend'}
+                      {m.status === 'active'
+                        ? m.name || 'Unbekannt'
+                        : deriveDisplayNameFromEmail(m.email)}
                       <span className="ml-2">
                         {m.status === 'active' ? (
                           <Badge className="bg-accent text-accent-foreground">

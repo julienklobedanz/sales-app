@@ -58,6 +58,7 @@ export function SettingsTabs({
     subdomain: string
     apiSettings: {
       apiKeyMask: string
+      useWorkspaceBranding: boolean
     }
     workflowSettings: {
       linkExpiryDays: number
@@ -80,6 +81,9 @@ export function SettingsTabs({
   )
   const [subdomain, setSubdomain] = useState(org.subdomain)
   const [apiKeyMask, setApiKeyMask] = useState(org.apiSettings.apiKeyMask)
+  const [useWorkspaceBranding, setUseWorkspaceBranding] = useState(
+    org.apiSettings.useWorkspaceBranding
+  )
   const [profilePending, startProfileTransition] = useTransition()
   const [workspacePending, startWorkspaceTransition] = useTransition()
   const [workflowPending, startWorkflowTransition] = useTransition()
@@ -103,6 +107,7 @@ export function SettingsTabs({
       const result = await updateWorkspaceAdminSettings({
         subdomain,
         apiKeyMask,
+        useWorkspaceBranding,
       })
       if (!result.success) {
         toast.error(result.error)
@@ -154,7 +159,7 @@ export function SettingsTabs({
                 Lege fest, bei welchen Ereignissen du direkt informiert wirst.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4 px-0 pb-0">
+            <CardContent className="space-y-4 px-0 pb-0 pt-2">
               <div className="flex items-center justify-between rounded-lg border border-slate-200 p-3">
                 <div>
                   <p className="text-sm font-medium">E-Mail bei neuem Match</p>
@@ -240,6 +245,19 @@ export function SettingsTabs({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 px-0 pb-0">
+              <div className="flex items-center justify-between rounded-lg border border-slate-200 p-3">
+                <div>
+                  <p className="text-sm font-medium">Workspace Branding (opt-in)</p>
+                  <p className="text-xs text-slate-500">
+                    Nutzt Primär-/Sekundärfarbe für Links, Badges und Akzente. RefStack-Design bleibt Standard.
+                  </p>
+                </div>
+                <Switch
+                  checked={useWorkspaceBranding}
+                  onCheckedChange={setUseWorkspaceBranding}
+                  disabled={roleSwitcher.serverRole !== 'admin'}
+                />
+              </div>
               <div className="rounded-lg border border-slate-200 p-3">
                 <p className="text-sm font-medium">Workspace API Key</p>
                 <p className="mt-1 text-xs text-slate-500">Aus Sicherheitsgründen maskiert. Rotation über sicheren Backend-Flow.</p>
@@ -302,12 +320,12 @@ export function SettingsTabs({
                 <CardTitle className="text-base">{integration.key}</CardTitle>
                 <CardDescription className="text-slate-500">{integration.desc}</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3 px-0 pb-0">
+              <CardContent className="space-y-4 px-0 pb-0">
                 <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">
-                  <AppIcon icon={integration.icon} size={14} />
+                  <AppIcon icon={PlugSocketIcon} size={14} />
                   Nicht verbunden
                 </div>
-                <Button type="button" variant="outline" size="sm">
+                <Button type="button" variant="outline" size="sm" className="w-full justify-center">
                   Verbindung einrichten
                 </Button>
               </CardContent>

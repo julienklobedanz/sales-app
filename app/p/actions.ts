@@ -92,8 +92,8 @@ export async function getPublicPortfolioBranding(
     found: true,
     name: payload.name,
     logo_url: payload.logo_url ?? null,
-    primary_color: payload.primary_color ?? '#0f172a',
-    secondary_color: payload.secondary_color ?? '#334155',
+    primary_color: payload.primary_color ?? '#2563EB',
+    secondary_color: payload.secondary_color ?? '#1D4ED8',
   }
 }
 

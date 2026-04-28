@@ -141,8 +141,8 @@ export async function GET(req: NextRequest) {
   const branding: PdfOrgBranding = {
     name: org?.name ?? 'RefStack',
     logo_url: exportSettings.pdf_logo_enabled === false ? null : org?.logo_url ?? null,
-    primary_color: org?.primary_color ?? '#0f172a',
-    secondary_color: org?.secondary_color ?? '#334155',
+    primary_color: org?.primary_color ?? '#2563EB',
+    secondary_color: org?.secondary_color ?? '#1D4ED8',
   }
 
   const pdf = await renderToBuffer(
