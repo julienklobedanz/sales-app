@@ -42,12 +42,20 @@ function parseProfileNotificationSettings(raw: unknown): {
 function parseOrganizationWorkflowSettings(raw: unknown): {
   linkExpiryDays: number
   requireInternalApproval: boolean
+  publicLinkMaxTtlDays: number
+  publicLinkRequirePasswordForNew: boolean
 } {
   if (!raw || typeof raw !== 'object') {
-    return { linkExpiryDays: 14, requireInternalApproval: true }
+    return {
+      linkExpiryDays: 14,
+      requireInternalApproval: true,
+      publicLinkMaxTtlDays: 365,
+      publicLinkRequirePasswordForNew: false,
+    }
   }
   const obj = raw as Record<string, unknown>
   const linkExpiryDaysRaw = obj.link_expiry_days
+  const maxTtlRaw = obj.public_link_max_ttl_days
   return {
     linkExpiryDays:
       typeof linkExpiryDaysRaw === 'number' && Number.isFinite(linkExpiryDaysRaw)
@@ -57,6 +65,11 @@ function parseOrganizationWorkflowSettings(raw: unknown): {
       typeof obj.require_internal_approval === 'boolean'
         ? obj.require_internal_approval
         : true,
+    publicLinkMaxTtlDays:
+      typeof maxTtlRaw === 'number' && Number.isFinite(maxTtlRaw)
+        ? Math.max(7, Math.min(3650, Math.trunc(maxTtlRaw)))
+        : 365,
+    publicLinkRequirePasswordForNew: obj.public_link_require_password_for_new === true,
   }
 }
 

@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ShareOwnerContactCard } from './share-owner-contact-card'
+import { PortfolioUnlockGate } from './portfolio-unlock-gate'
 import { Calendar, HelpCircleIcon } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 
@@ -52,6 +53,21 @@ export default async function PublicPortfolioPage({
     : `Projektdetails ${workspaceName}`
 
   if (!result.found) {
+    if (result.reason === 'locked') {
+      return <PortfolioUnlockGate slug={slug} />
+    }
+    if (result.reason === 'expired') {
+      return (
+        <div className="flex min-h-screen flex-col items-center justify-center p-24">
+          <div className="mx-auto max-w-md rounded-2xl border bg-card/80 p-8 text-center shadow-sm">
+            <h1 className="text-lg font-semibold text-foreground">Link abgelaufen</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Die Gültigkeitsdauer dieses Kundenlinks ist abgelaufen. Bitte den RefStack-Nutzer um einen neuen Link.
+            </p>
+          </div>
+        </div>
+      )
+    }
     return (
       <div className="flex min-h-screen flex-col items-center justify-center p-24">
         <div className="mx-auto max-w-md rounded-2xl border bg-card/80 p-8 text-center shadow-sm">

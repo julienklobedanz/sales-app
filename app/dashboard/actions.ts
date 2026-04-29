@@ -30,6 +30,7 @@ import {
   createSharedPortfolioImpl,
   getExistingShareForReferenceImpl,
   getReferencesByIdsImpl,
+  updateShareLinkSecurityByReferenceImpl,
 } from '@/app/dashboard/references/sharing'
 import {
   getReferenceAssetsImpl,
@@ -177,13 +178,35 @@ export async function updateReferenceDetailFields(
 }
 
 /** Kundenlink erstellen: shared_portfolios Eintrag mit Slug (xxx-xxxx-xxx), gibt URL zurück */
-export async function createSharedPortfolio(referenceIds: string[]): Promise<{ success: true; url: string; slug: string } | { success: false; error: string }> {
+export async function createSharedPortfolio(
+  referenceIds: string[]
+): Promise<
+  | { success: true; url: string; slug: string; initialPassword?: string | null }
+  | { success: false; error: string }
+> {
   return createSharedPortfolioImpl(referenceIds)
 }
 
 /** Bestehenden Kundenlink für eine Referenz suchen (für Detail-Modal Popover) */
-export async function getExistingShareForReference(referenceId: string): Promise<{ slug: string; url: string } | null> {
+export async function getExistingShareForReference(referenceId: string): Promise<{
+  slug: string
+  url: string
+  expiresAt: string | null
+  hasPassword: boolean
+} | null> {
   return getExistingShareForReferenceImpl(referenceId)
+}
+
+export async function updateShareLinkSecurity(
+  referenceId: string,
+  input: {
+    passwordPlain: string | null
+    removePassword: boolean
+    expiresAtIso: string | null
+    clearExpires: boolean
+  }
+): Promise<{ success: true } | { success: false; error: string }> {
+  return updateShareLinkSecurityByReferenceImpl(referenceId, input)
 }
 
 /** Referenzen nach IDs laden (z. B. für Share-Vorschau / ReferenceReader-Liste) */

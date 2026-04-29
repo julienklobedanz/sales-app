@@ -3,8 +3,32 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { generatePortfolioSlug } from '@/lib/slug'
 import { logEvent } from '@/lib/events/log-event'
+import { parseOrgPublicLinkPolicy } from '@/lib/organization-link-policy'
 
 import type { ReferenceRow } from '@/app/dashboard/actions'
+
+function generateSharePassword(): string {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
+  const bytes = new Uint8Array(14)
+  crypto.getRandomValues(bytes)
+  let out = ''
+  for (let i = 0; i < bytes.length; i++) {
+    out += alphabet[bytes[i]! % alphabet.length]
+  }
+  return out
+}
+
+async function fetchOrgWorkflowJson(
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+  organizationId: string
+): Promise<unknown> {
+  const { data } = await supabase
+    .from('organizations')
+    .select('workflow_settings')
+    .eq('id', organizationId)
+    .single()
+  return data?.workflow_settings ?? {}
+}
 
 /** Mapping alter/legacy Status-Werte auf das 4-Status-Modell (Daten-Wiederherstellung) */
 const STATUS_MAP: Record<string, ReferenceRow['status']> = {
@@ -56,7 +80,10 @@ async function deactivateActiveSharesForReferences(referenceIds: string[]) {
 
 export async function createSharedPortfolioImpl(
   referenceIds: string[]
-): Promise<{ success: true; url: string; slug: string } | { success: false; error: string }> {
+): Promise<
+  | { success: true; url: string; slug: string; initialPassword?: string | null }
+  | { success: false; error: string }
+> {
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
@@ -83,7 +110,28 @@ export async function createSharedPortfolioImpl(
     })
     if (!error) {
       const url = `/p/${slug}`
+      let initialPassword: string | null = null
       if (orgId) {
+        const wf = await fetchOrgWorkflowJson(supabase, orgId)
+        const linkFallback =
+          typeof wf === 'object' && wf !== null && 'link_expiry_days' in wf
+            ? Number((wf as { link_expiry_days?: unknown }).link_expiry_days)
+            : 14
+        const policy = parseOrgPublicLinkPolicy(wf, Number.isFinite(linkFallback) ? linkFallback : 14)
+        const days = Math.min(Math.max(1, policy.defaultTtlDays), policy.maxTtlDays)
+        const exp = new Date()
+        exp.setDate(exp.getDate() + days)
+        initialPassword = policy.requirePasswordForNew ? generateSharePassword() : null
+        const { error: secErr } = await supabase.rpc('set_shared_portfolio_security', {
+          p_slug: slug,
+          p_password_plain: initialPassword,
+          p_password_remove: false,
+          p_expires_at: exp.toISOString(),
+          p_clear_expires: false,
+        })
+        if (secErr) {
+          console.error('[createSharedPortfolio] set_shared_portfolio_security:', secErr)
+        }
         void logEvent({
           organizationId: orgId,
           eventType: 'reference_shared',
@@ -92,7 +140,7 @@ export async function createSharedPortfolioImpl(
           createdBy: user.id,
         })
       }
-      return { success: true, url, slug }
+      return { success: true, url, slug, initialPassword: initialPassword ?? undefined }
     }
     const code = (error as { code?: string }).code
     if (code === '23505') continue // unique violation, retry
@@ -119,11 +167,16 @@ export async function createSharedPortfolioImpl(
 
 export async function getExistingShareForReferenceImpl(
   referenceId: string
-): Promise<{ slug: string; url: string } | null> {
+): Promise<{
+  slug: string
+  url: string
+  expiresAt: string | null
+  hasPassword: boolean
+} | null> {
   const supabase = await createServerSupabaseClient()
   const { data: rows, error } = await supabase
     .from('shared_portfolios')
-    .select('slug')
+    .select('slug, expires_at, password_hash')
     .eq('is_active', true)
     .contains('reference_ids', [referenceId])
     .limit(1)
@@ -140,9 +193,79 @@ export async function getExistingShareForReferenceImpl(
     console.error('[getExistingShareForReference] Fehler beim Laden von shared_portfolios:', error)
     return null
   }
-  const row = rows?.[0]
+  const row = rows?.[0] as { slug?: string; expires_at?: string | null; password_hash?: string | null } | undefined
   if (!row?.slug) return null
-  return { slug: row.slug, url: `/p/${row.slug}` }
+  return {
+    slug: row.slug,
+    url: `/p/${row.slug}`,
+    expiresAt: row.expires_at ?? null,
+    hasPassword: Boolean(row.password_hash),
+  }
+}
+
+export async function updateShareLinkSecurityByReferenceImpl(
+  referenceId: string,
+  input: {
+    passwordPlain: string | null
+    removePassword: boolean
+    expiresAtIso: string | null
+    clearExpires: boolean
+  }
+): Promise<{ success: true } | { success: false; error: string }> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .single()
+  const orgId = profile?.organization_id as string | undefined
+  if (!orgId) return { success: false, error: 'Keine Organisation zugeordnet.' }
+
+  const { data: rows, error: findErr } = await supabase
+    .from('shared_portfolios')
+    .select('slug')
+    .eq('is_active', true)
+    .contains('reference_ids', [referenceId])
+    .limit(1)
+  if (findErr) return { success: false, error: findErr.message }
+  const slug = rows?.[0]?.slug as string | undefined
+  if (!slug) return { success: false, error: 'Kein aktiver Share-Link für diese Referenz.' }
+
+  const wf = await fetchOrgWorkflowJson(supabase, orgId)
+  const linkFallback =
+    typeof wf === 'object' && wf !== null && 'link_expiry_days' in wf
+      ? Number((wf as { link_expiry_days?: unknown }).link_expiry_days)
+      : 14
+  const policy = parseOrgPublicLinkPolicy(wf, Number.isFinite(linkFallback) ? linkFallback : 14)
+
+  let expiresAtIso = input.expiresAtIso
+  if (expiresAtIso && !input.clearExpires) {
+    const cap = new Date()
+    cap.setDate(cap.getDate() + policy.maxTtlDays)
+    const want = new Date(expiresAtIso)
+    if (!Number.isNaN(want.getTime()) && want > cap) {
+      expiresAtIso = cap.toISOString()
+    }
+  }
+
+  const { data: rpcData, error: rpcErr } = await supabase.rpc('set_shared_portfolio_security', {
+    p_slug: slug,
+    p_password_plain: input.passwordPlain,
+    p_password_remove: input.removePassword,
+    p_expires_at: input.clearExpires ? null : expiresAtIso,
+    p_clear_expires: input.clearExpires,
+  })
+  if (rpcErr) return { success: false, error: rpcErr.message }
+  const payload = rpcData as { success?: boolean; error?: string } | null
+  if (!payload?.success) {
+    return { success: false, error: payload?.error ?? 'Sicherheitseinstellungen konnten nicht gespeichert werden.' }
+  }
+  return { success: true }
 }
 
 export async function getReferencesByIdsImpl(ids: string[]): Promise<ReferenceRow[]> {

@@ -22,6 +22,7 @@ import {
   updateProfileNotificationSettings,
   updateWorkflowSettings,
   updateWorkspaceAdminSettings,
+  updateWorkspaceSecurityCompliance,
 } from './settings-consolidation-actions'
 
 const CARD_CLASS = 'rounded-xl border border-slate-200 bg-white p-6 shadow-sm'
@@ -63,6 +64,8 @@ export function SettingsTabs({
     workflowSettings: {
       linkExpiryDays: number
       requireInternalApproval: boolean
+      publicLinkMaxTtlDays: number
+      publicLinkRequirePasswordForNew: boolean
     }
   }
   teamMembers: Parameters<typeof SettingsTeamCard>[0]['initialMembers']
@@ -87,6 +90,13 @@ export function SettingsTabs({
   const [profilePending, startProfileTransition] = useTransition()
   const [workspacePending, startWorkspaceTransition] = useTransition()
   const [workflowPending, startWorkflowTransition] = useTransition()
+  const [publicLinkMaxTtl, setPublicLinkMaxTtl] = useState(
+    String(org.workflowSettings.publicLinkMaxTtlDays)
+  )
+  const [publicLinkReqPwNew, setPublicLinkReqPwNew] = useState(
+    org.workflowSettings.publicLinkRequirePasswordForNew
+  )
+  const [securityPending, startSecurityTransition] = useTransition()
 
   function saveProfileNotifications() {
     startProfileTransition(async () => {
@@ -129,6 +139,21 @@ export function SettingsTabs({
         return
       }
       toast.success('Workflow-Einstellungen gespeichert')
+    })
+  }
+
+  function saveSecurityCompliance() {
+    startSecurityTransition(async () => {
+      const parsed = Number(publicLinkMaxTtl)
+      const result = await updateWorkspaceSecurityCompliance({
+        publicLinkMaxTtlDays: Number.isFinite(parsed) ? parsed : 365,
+        publicLinkRequirePasswordForNew: publicLinkReqPwNew,
+      })
+      if (!result.success) {
+        toast.error(result.error)
+        return
+      }
+      toast.success('Sicherheitsrichtlinien gespeichert')
     })
   }
 
@@ -216,6 +241,57 @@ export function SettingsTabs({
                 subscriptionId={org.subscriptionId}
               />
             </div>
+          </div>
+          <div className={CARD_CLASS}>
+            <CardHeader className="px-0 pt-0">
+              <CardTitle className="text-base">Security & Compliance</CardTitle>
+              <CardDescription className="text-slate-500">
+                Globale Regeln für öffentliche Kundenlinks (DSGVO: Speicherbegrenzung, Zugriffskontrolle). Nur
+                Administratoren.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 px-0 pb-0">
+              <div className="max-w-md space-y-2">
+                <Label htmlFor="public-link-max-ttl">Maximale Link-Gültigkeit (Tage)</Label>
+                <Input
+                  id="public-link-max-ttl"
+                  value={publicLinkMaxTtl}
+                  onChange={(e) => setPublicLinkMaxTtl(e.target.value)}
+                  inputMode="numeric"
+                  disabled={roleSwitcher.serverRole !== 'admin'}
+                  className={roleSwitcher.serverRole !== 'admin' ? 'bg-slate-50' : ''}
+                />
+                <p className="text-xs text-slate-500">
+                  Obergrenze für Ablaufdatum pro Link (7–3650 Tage). Einzelne Links können kürzer sein; längere
+                  Werte werden beim Speichern begrenzt.
+                </p>
+              </div>
+              <div className="flex items-center justify-between rounded-lg border border-slate-200 p-3">
+                <div>
+                  <p className="text-sm font-medium">Passwort für neue Links erzwingen</p>
+                  <p className="text-xs text-slate-500">
+                    Jeder neu erstellte Kundenlink erhält automatisch ein Passwort und ein Ablaufdatum gemäß
+                    Workflow-Standard (Tage).
+                  </p>
+                </div>
+                <Switch
+                  checked={publicLinkReqPwNew}
+                  onCheckedChange={setPublicLinkReqPwNew}
+                  disabled={roleSwitcher.serverRole !== 'admin'}
+                />
+              </div>
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={saveSecurityCompliance}
+                  disabled={!org.id || securityPending || roleSwitcher.serverRole !== 'admin'}
+                >
+                  <AppIcon icon={Shield} size={16} />
+                  Sicherheit speichern
+                </Button>
+              </div>
+            </CardContent>
           </div>
           <div className={CARD_CLASS}>
             <CardHeader className="px-0 pt-0">
