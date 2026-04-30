@@ -24,6 +24,8 @@ import {
   ArrowUp,
   ArrowUpDown,
   Filter,
+  InformationCircleIcon,
+  Sparkles,
 } from "@hugeicons/core-free-icons"
 import { AppIcon } from "@/lib/icons"
 import Link from "next/link"
@@ -35,6 +37,21 @@ function firstSentence(value: string | null | undefined): string | null {
   if (!text) return null
   const match = text.match(/.+?[.!?](?:\s|$)/)
   return (match ? match[0] : text).trim()
+}
+
+function quickBullets(value: string | null | undefined, limit = 3): string[] {
+  const text = String(value ?? "").trim().replace(/\s+/g, " ")
+  if (!text) return []
+  const sentences = text
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+  if (sentences.length) return sentences.slice(0, limit)
+  return text
+    .split(/[;,]/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, limit)
 }
 
 /** Muss mit COLUMN_KEYS in dashboard-overview übereinstimmen */
@@ -916,15 +933,20 @@ export function renderReferenceColumnCell(
         </TableCell>
       )
     case "title":
+      const challengeBullets = quickBullets(ref.customer_challenge, 3)
+      const solutionBullets = quickBullets(ref.our_solution, 3)
       const tldr =
         firstSentence(ref.summary) ||
-        firstSentence(ref.customer_challenge) ||
-        firstSentence(ref.our_solution) ||
+        [firstSentence(ref.customer_challenge), firstSentence(ref.our_solution)]
+          .filter(Boolean)
+          .join(" ")
+          .trim() ||
         "TL;DR folgt aus der Detailansicht."
-      const impactMetrics = [
-        { label: "Geteilt", value: ref.share_link_count ?? 0 },
-        { label: "Deals verknüpft", value: ref.deal_link_count ?? 0 },
-      ]
+      const tags = String(ref.tags ?? "")
+        .split(/[\s,]+/)
+        .map((t) => t.trim())
+        .filter(Boolean)
+        .slice(0, 3)
       return (
         <TableCell className="max-w-[200px] truncate text-foreground">
           <HoverCard openDelay={2000} closeDelay={120}>
@@ -933,28 +955,62 @@ export function renderReferenceColumnCell(
                 {ref.title}
               </span>
             </HoverCardTrigger>
-            <HoverCardContent align="start" className="w-[360px] space-y-3">
+            <HoverCardContent align="start" className="w-[420px] space-y-3">
               <div className="space-y-1">
                 <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Quick Look</p>
                 <p className="truncate text-sm font-medium text-foreground">{ref.title}</p>
               </div>
-              <div className="space-y-1.5">
-                <p className="text-xs font-medium text-slate-900 dark:text-slate-100">TL;DR</p>
-                <p className="text-sm leading-relaxed text-muted-foreground">{tldr}</p>
-              </div>
-              <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/30 px-3 py-2">
-                <span className="text-xs text-muted-foreground">Industrie</span>
-                <span className="truncate text-xs font-medium text-foreground">
-                  {ref.industry?.trim() ? ref.industry : "—"}
-                </span>
+              {tags.length ? (
+                <div className="flex flex-wrap gap-1.5 rounded-md border bg-slate-50 px-3 py-2">
+                  {tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+              <div className="rounded-md border bg-slate-50 px-3 py-2">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">TL;DR</p>
+                <p className="mt-1 text-xs leading-relaxed text-slate-700">{tldr}</p>
               </div>
               <div className="grid grid-cols-2 gap-2">
-                {impactMetrics.map((metric) => (
-                  <div key={metric.label} className="rounded-md border bg-background px-2.5 py-2">
-                    <p className="text-[11px] text-muted-foreground">{metric.label}</p>
-                    <p className="text-sm font-semibold text-foreground">{metric.value}</p>
+                <div className="rounded-md border bg-white px-2.5 py-2">
+                  <p className="mb-1 inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600">
+                    <AppIcon icon={InformationCircleIcon} size={12} />
+                    Herausforderung
+                  </p>
+                  {challengeBullets.length ? (
+                    <ul className="space-y-1 text-[11px] text-slate-700">
+                      {challengeBullets.map((item, idx) => (
+                        <li key={`${idx}-${item}`} className="line-clamp-2">
+                          • {item}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-[11px] text-slate-500">Keine Daten</p>
+                  )}
+                </div>
+                <div className="rounded-md border bg-white px-2.5 py-2">
+                  <p className="mb-1 inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600">
+                    <AppIcon icon={Sparkles} size={12} />
+                    Lösung
+                  </p>
+                  {solutionBullets.length ? (
+                    <ul className="space-y-1 text-[11px] text-slate-700">
+                      {solutionBullets.map((item, idx) => (
+                        <li key={`${idx}-${item}`} className="line-clamp-2">
+                          • {item}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-[11px] text-slate-500">Keine Daten</p>
+                  )}
                   </div>
-                ))}
               </div>
             </HoverCardContent>
           </HoverCard>

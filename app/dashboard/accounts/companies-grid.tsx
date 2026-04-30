@@ -80,6 +80,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
   const [refreshingAccounts, setRefreshingAccounts] = useState(false)
   const [refreshPopoverOpen, setRefreshPopoverOpen] = useState(false)
   const [refreshResultTab, setRefreshResultTab] = useState<'updated' | 'skipped' | 'failed'>('updated')
+  const [sortMode, setSortMode] = useState<'activity' | 'az'>('activity')
   const [refreshSummary, setRefreshSummary] = useState<{
     updatedCount: number
     skippedCount: number
@@ -116,13 +117,21 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
     if (favoritesOnly) {
       list = list.filter((c) => c.is_favorite)
     }
-    if (!q) return list
-    return list.filter((c) => {
+    const searched = !q
+      ? list
+      : list.filter((c) => {
       const name = (c.name ?? '').toLowerCase()
       const industry = (c.industry ?? '').toLowerCase()
       return name.includes(q) || industry.includes(q)
+      })
+    return [...searched].sort((a, b) => {
+      if (sortMode === 'az') return String(a.name ?? '').localeCompare(String(b.name ?? ''), 'de')
+      const scoreA = (a.signal_count ?? 0) * 100 + (a.open_deals_count ?? 0) * 10 + (a.reference_count ?? 0)
+      const scoreB = (b.signal_count ?? 0) * 100 + (b.open_deals_count ?? 0) * 10 + (b.reference_count ?? 0)
+      if (scoreA !== scoreB) return scoreB - scoreA
+      return String(a.name ?? '').localeCompare(String(b.name ?? ''), 'de')
     })
-  }, [companies, search, favoritesOnly])
+  }, [companies, search, favoritesOnly, sortMode])
 
   return (
     <div className="space-y-5 rounded-3xl bg-muted/10 p-4 md:p-6">
@@ -299,6 +308,26 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                   <AppIcon icon={importingAccounts ? Loader : UploadIcon} size={16} className={importingAccounts ? 'animate-spin' : ''} />
                   Bulk Upload
                 </Button>
+                <div className="inline-flex items-center rounded-lg border border-border/70 bg-background/70 p-1">
+                  <Button
+                    type="button"
+                    size="toolbar"
+                    variant={sortMode === 'az' ? 'secondary' : 'ghost'}
+                    className="h-8 px-3 text-xs"
+                    onClick={() => setSortMode('az')}
+                  >
+                    A-Z
+                  </Button>
+                  <Button
+                    type="button"
+                    size="toolbar"
+                    variant={sortMode === 'activity' ? 'secondary' : 'ghost'}
+                    className="h-8 px-3 text-xs"
+                    onClick={() => setSortMode('activity')}
+                  >
+                    Letzte Aktivität
+                  </Button>
+                </div>
                 <Button
                   type="button"
                   variant="ghost"

@@ -4,7 +4,7 @@ import { Cancel01Icon, CopyIcon } from '@hugeicons/core-free-icons'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { AppIcon } from '@/lib/icons'
 
 import type { ReferenceRow } from '../actions'
@@ -20,33 +20,36 @@ export function ReferencePreviewDialog({
   const open = previewRefs !== null && previewRefs.length > 0
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent
+        side="right"
         showCloseButton={false}
-        className="fixed inset-0 z-50 flex flex-col rounded-none border-0 p-0 overflow-hidden bg-background !top-0 !left-0 !right-0 !bottom-0 !translate-x-0 !translate-y-0 !w-full !h-full"
+        className="w-[min(1200px,66vw)] max-w-none border-l border-slate-200 bg-slate-50 p-0"
       >
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <header className="flex shrink-0 items-center justify-between border-b bg-background px-6 py-4">
-            <h2 className="text-lg font-semibold">
+        <div className="flex h-full min-h-0 flex-col overflow-hidden">
+          <SheetHeader className="shrink-0 border-b bg-white px-6 py-4">
+            <div className="flex items-center justify-between gap-3">
+              <SheetTitle className="text-lg font-semibold">
               {previewRefs && previewRefs.length > 1
                 ? `Portfolio-Vorschau (${previewRefs.length} Referenzen)`
                 : 'Vorschau – Kundenansicht'}
-            </h2>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              aria-label="Schließen"
-            >
-              <AppIcon icon={Cancel01Icon} size={20} />
-            </Button>
-          </header>
-          <div className="preview-modal-scroll flex-1 min-h-0 overflow-y-auto p-8 md:p-16 lg:p-24 space-y-20 max-w-[100vw]">
+              </SheetTitle>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onClose}
+                aria-label="Schließen"
+              >
+                <AppIcon icon={Cancel01Icon} size={20} />
+              </Button>
+            </div>
+          </SheetHeader>
+          <div className="preview-modal-scroll min-h-0 flex-1 space-y-5 overflow-y-auto p-6">
             {previewRefs?.map((ref) => (
               <ReferenceReader key={ref.id} reference={ref} />
             ))}
           </div>
-          <footer className="flex shrink-0 flex-wrap items-center justify-center gap-3 border-t bg-muted/30 px-6 py-4">
+          <footer className="sticky bottom-0 z-10 flex shrink-0 flex-wrap items-center justify-end gap-3 border-t border-slate-200 bg-white/95 px-6 py-4 backdrop-blur">
             <Button variant="outline" size="sm" disabled className="opacity-70">
               PDF Export (Coming Soon)
             </Button>
@@ -65,7 +68,7 @@ export function ReferencePreviewDialog({
             </Button>
           </footer>
         </div>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   )
 }

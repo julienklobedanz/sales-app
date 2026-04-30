@@ -320,6 +320,9 @@ export function SettingsTabs({
                 Globale Regeln für öffentliche Kundenlinks (DSGVO: Speicherbegrenzung, Zugriffskontrolle). Nur
                 Administratoren.
               </CardDescription>
+              <p className="text-xs text-slate-500">
+                Security Alerts werden ausschließlich per Admin-E-Mail versendet (Resend), nicht über die Notification-Bell.
+              </p>
             </CardHeader>
             <CardContent className="space-y-4 px-0 pb-0">
               <div className="max-w-md space-y-2">

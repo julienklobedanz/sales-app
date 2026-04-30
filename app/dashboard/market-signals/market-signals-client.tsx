@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import {
   FilterHorizontalIcon,
@@ -170,7 +170,29 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const selected = useMemo(() => items.find((x) => `${x.kind}:${x.id}` === selectedKey) ?? null, [items, selectedKey])
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
   const [addToDealPendingId, setAddToDealPendingId] = useState<string | null>(null)
+
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 1023px)')
+    const apply = () => setIsMobile(mql.matches)
+    apply()
+    mql.addEventListener('change', apply)
+    return () => mql.removeEventListener('change', apply)
+  }, [])
+
+  const sourcePreview = useMemo(() => {
+    if (!selected) return null
+    try {
+      const url = new URL(selected.sourceHref)
+      return {
+        hostname: url.hostname.replace(/^www\./, ''),
+        favicon: `https://www.google.com/s2/favicons?domain=${encodeURIComponent(url.hostname)}&sz=64`,
+      }
+    } catch {
+      return null
+    }
+  }, [selected])
 
   async function markReadForItem(item: InboxItem) {
     const key = `${item.kind === 'exec' ? 'market_exec' : 'market_news'}:${item.id}`
@@ -269,7 +291,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                     type="button"
                                     onClick={() => {
                                       setSelectedKey(key)
-                                      setMobileOpen(true)
+                                      if (isMobile) setMobileOpen(true)
                                       void markReadForItem(it)
                                     }}
                                     className={`group relative flex w-full items-center gap-2 rounded-lg border bg-white px-2.5 py-2 text-left transition-colors ${
@@ -421,31 +443,37 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                         </div>
                       </div>
 
-                      {selected.kind === 'news' ? (
-                        <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Signal</p>
-                          <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
-                            {selected.body}
-                          </p>
+                      <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Link-Vorschau</p>
+                        <div className="mt-2 flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                          <div className="flex min-w-0 items-center gap-2">
+                            {sourcePreview?.favicon ? (
+                              <img src={sourcePreview.favicon} alt="" className="size-4 rounded-sm" />
+                            ) : (
+                              <AppIcon icon={LinkIcon} size={14} className="text-slate-500" />
+                            )}
+                            <div className="min-w-0">
+                              <p className="truncate text-xs font-medium text-slate-900">
+                                {selected.sourceLabel || sourcePreview?.hostname || 'Quelle'}
+                              </p>
+                              <p className="truncate text-[11px] text-slate-500">{sourcePreview?.hostname ?? selected.sourceHref}</p>
+                            </div>
+                          </div>
+                          <Button size="sm" variant="outline" asChild>
+                            <Link href={selected.sourceHref} target="_blank" rel="noreferrer">
+                              Direkt zur Quelle
+                            </Link>
+                          </Button>
                         </div>
-                      ) : null}
+                      </div>
                     </div>
 
                     <div className="sticky bottom-0 border-t border-slate-200 bg-white px-6 py-3">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <Button
-                          type="button"
-                          size="sm"
-                          className="gap-2"
-                          onClick={() => toast.success('Intro-Draft (P2): Wird mit KI-Flow verbunden.')}
-                        >
-                          <AppIcon icon={Sparkles} size={16} />
-                          Intro-Draft generieren
-                        </Button>
-                        <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        <div className="flex items-center gap-2 justify-end">
                           <Button
                             type="button"
-                            variant="outline"
+                            variant="ghost"
                             size="sm"
                             className="gap-2"
                             asChild
@@ -467,7 +495,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                           </Button>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button type="button" variant="ghost" size="sm" className="gap-2">
+                              <Button type="button" variant="outline" size="sm" className="gap-2">
                                 <AppIcon icon={UploadIcon} size={16} />
                                 Zu Deal hinzufügen
                               </Button>
@@ -518,6 +546,15 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                               )}
                             </DropdownMenuContent>
                           </DropdownMenu>
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="gap-2"
+                            onClick={() => toast.success('Intro-Draft (P2): Wird mit KI-Flow verbunden.')}
+                          >
+                            <AppIcon icon={Sparkles} size={16} />
+                            Intro-Draft generieren
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -574,18 +611,110 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                       </Link>
                     </div>
                   </div>
-
-                  {selected.kind === 'news' ? (
-                    <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Signal</p>
-                      <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
-                        {selected.body}
-                      </p>
+                  <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Link-Vorschau</p>
+                    <div className="mt-2 flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                      <div className="flex min-w-0 items-center gap-2">
+                        {sourcePreview?.favicon ? (
+                          <img src={sourcePreview.favicon} alt="" className="size-4 rounded-sm" />
+                        ) : (
+                          <AppIcon icon={LinkIcon} size={14} className="text-slate-500" />
+                        )}
+                        <div className="min-w-0">
+                          <p className="truncate text-xs font-medium text-slate-900">
+                            {selected.sourceLabel || sourcePreview?.hostname || 'Quelle'}
+                          </p>
+                          <p className="truncate text-[11px] text-slate-500">{sourcePreview?.hostname ?? selected.sourceHref}</p>
+                        </div>
+                      </div>
+                      <Button size="sm" variant="outline" asChild>
+                        <Link href={selected.sourceHref} target="_blank" rel="noreferrer">
+                          Direkt zur Quelle
+                        </Link>
+                      </Button>
                     </div>
-                  ) : null}
+                  </div>
                 </>
               ) : null}
             </div>
+            {selected ? (
+              <div className="sticky bottom-0 border-t border-slate-200 bg-white px-4 py-3">
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="gap-2"
+                    asChild
+                  >
+                    <Link
+                      href={
+                        selected.kind === 'exec'
+                          ? selected.sourceHref
+                          : `https://www.linkedin.com/search/results/companies/?keywords=${encodeURIComponent(
+                              selected.companyName
+                            )}`
+                      }
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <AppIcon icon={Linkedin01Icon} size={16} />
+                      Auf LinkedIn öffnen
+                    </Link>
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button type="button" variant="outline" size="sm" className="gap-2">
+                        <AppIcon icon={UploadIcon} size={16} />
+                        Zu Deal hinzufügen
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {model.activeDeals.length === 0 ? (
+                        <DropdownMenuItem disabled>Keine aktiven Deals</DropdownMenuItem>
+                      ) : (
+                        model.activeDeals.slice(0, 12).map((d) => (
+                          <DropdownMenuItem
+                            key={d.id}
+                            disabled={addToDealPendingId === d.id}
+                            onSelect={async () => {
+                              if (!selected) return
+                              setAddToDealPendingId(d.id)
+                              const signalKey = `${selected.kind === 'exec' ? 'market_exec' : 'market_news'}:${selected.id}`
+                              const res = await addMarketSignalToDeal({
+                                dealId: d.id,
+                                companyId: selected.companyId,
+                                signalKey,
+                                referenceIds: (quickRefs ?? []).map((r) => r.id),
+                              })
+                              setAddToDealPendingId(null)
+                              if (!res.success) {
+                                toast.error(res.error)
+                                return
+                              }
+                              toast.success('Zum Deal hinzugefügt')
+                              await dismissItem(selected)
+                              setSelectedKey(null)
+                            }}
+                          >
+                            {d.title}
+                          </DropdownMenuItem>
+                        ))
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => toast.success('Intro-Draft (P2): Wird mit KI-Flow verbunden.')}
+                  >
+                    <AppIcon icon={Sparkles} size={16} />
+                    Intro-Draft generieren
+                  </Button>
+                </div>
+              </div>
+            ) : null}
           </div>
         </DialogContent>
       </Dialog>
