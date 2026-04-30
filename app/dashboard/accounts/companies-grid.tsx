@@ -81,6 +81,8 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
   const [refreshPopoverOpen, setRefreshPopoverOpen] = useState(false)
   const [refreshResultTab, setRefreshResultTab] = useState<'updated' | 'skipped' | 'failed'>('updated')
   const [sortMode, setSortMode] = useState<'activity' | 'az'>('activity')
+  const [favoriteOverrides, setFavoriteOverrides] = useState<Record<string, boolean>>({})
+  const [favoriteSaving, setFavoriteSaving] = useState<Record<string, boolean>>({})
   const [refreshSummary, setRefreshSummary] = useState<{
     updatedCount: number
     skippedCount: number
@@ -92,6 +94,33 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
   const { isAdmin, isAccountManager } = useRole()
   const canManage = isAdmin || isAccountManager
   const importInputRef = useRef<HTMLInputElement | null>(null)
+
+  const companiesWithFavoriteState = useMemo(
+    () =>
+      companies.map((company) => ({
+        ...company,
+        is_favorite:
+          favoriteOverrides[company.id] === undefined
+            ? Boolean(company.is_favorite)
+            : favoriteOverrides[company.id],
+      })),
+    [companies, favoriteOverrides]
+  )
+
+  async function handleToggleFavorite(company: CompanyCard) {
+    const current = favoriteOverrides[company.id] === undefined
+      ? Boolean(company.is_favorite)
+      : favoriteOverrides[company.id]
+    const next = !current
+    setFavoriteOverrides((prev) => ({ ...prev, [company.id]: next }))
+    setFavoriteSaving((prev) => ({ ...prev, [company.id]: true }))
+    const result = await toggleCompanyFavorite(company.id, next)
+    setFavoriteSaving((prev) => ({ ...prev, [company.id]: false }))
+    if (!result.success) {
+      setFavoriteOverrides((prev) => ({ ...prev, [company.id]: current }))
+      toast.error(result.error ?? 'Favorit konnte nicht gespeichert werden.')
+    }
+  }
 
   async function handleAccountImport(file: File) {
     setImportingAccounts(true)
@@ -113,7 +142,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
-    let list = companies
+    let list = companiesWithFavoriteState
     if (favoritesOnly) {
       list = list.filter((c) => c.is_favorite)
     }
@@ -131,7 +160,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
       if (scoreA !== scoreB) return scoreB - scoreA
       return String(a.name ?? '').localeCompare(String(b.name ?? ''), 'de')
     })
-  }, [companies, search, favoritesOnly, sortMode])
+  }, [companiesWithFavoriteState, search, favoritesOnly, sortMode])
 
   return (
     <div className="space-y-5 rounded-3xl bg-muted/10 p-4 md:p-6">
@@ -365,8 +394,29 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
             <ContextMenu key={company.id}>
               <ContextMenuTrigger asChild>
                 <Card className={`group relative h-full overflow-hidden rounded-3xl border border-border/60 bg-card/95 shadow-sm transition-all duration-200 hover:border-primary/20 hover:shadow-md ${compactView ? 'rounded-xl' : ''}`}>
-                  {isAdmin ? (
+                  {canManage ? (
                     <div className="absolute right-3 top-3 z-10 flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
+                      <button
+                        type="button"
+                        className="inline-flex size-8 items-center justify-center rounded-full border border-border/80 bg-background/95 text-muted-foreground shadow-sm hover:bg-muted/70 hover:text-foreground"
+                        aria-label={company.is_favorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}
+                        title={company.is_favorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}
+                        disabled={favoriteSaving[company.id]}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          void handleToggleFavorite(company)
+                        }}
+                      >
+                        <AppIcon
+                          icon={StarIcon}
+                          size={14}
+                          className={
+                            company.is_favorite
+                              ? 'text-amber-500 dark:text-amber-400 [&_path]:fill-current'
+                              : 'text-muted-foreground'
+                          }
+                        />
+                      </button>
                       <button
                         type="button"
                         className="inline-flex size-8 items-center justify-center rounded-full border border-border/80 bg-background/95 text-muted-foreground shadow-sm hover:bg-muted/70 hover:text-foreground"
@@ -494,12 +544,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                 <ContextMenuItem
                   onSelect={(e) => {
                     e.preventDefault()
-                    const next = !company.is_favorite
-                    toggleCompanyFavorite(company.id, next).then((res) => {
-                      if (!res.success) {
-                        toast.error(res.error ?? 'Favorit konnte nicht gespeichert werden.')
-                      }
-                    })
+                    void handleToggleFavorite(company)
                   }}
                 >
                   {company.is_favorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}

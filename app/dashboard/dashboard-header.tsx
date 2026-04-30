@@ -191,7 +191,7 @@ export function DashboardHeader({
     if (pathname.startsWith(ROUTES.settings)) {
       return {
         title: 'Einstellungen',
-        subtitle: `${COPY.misc.workspace}, Team und Profil`,
+        subtitle: undefined,
       }
     }
     return {

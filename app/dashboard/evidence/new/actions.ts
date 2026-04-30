@@ -396,10 +396,38 @@ async function fetchBrandfetchData(normalizedDomain: string): Promise<FetchEnric
 }
 
 /** Nur Brandfetch-Daten abrufen (kein Speichern in DB). Für Referenz bearbeiten. */
+async function resolveDomainForEnrichmentInput(input: string): Promise<string | null> {
+  const trimmed = input.trim()
+  if (!trimmed) return null
+  const directDomain = inputToDomain(trimmed) ?? normalizeDomain(trimmed)
+  if (directDomain && directDomain.includes('.')) return directDomain
+
+  // Name-basierter Fallback über Brandfetch Search (wenn Client-ID konfiguriert ist)
+  const clientId = process.env.BRANDFETCH_CLIENT_ID?.trim()
+  if (!clientId || trimmed.length < 2) return null
+  try {
+    const res = await fetch(
+      `https://api.brandfetch.io/v2/search/${encodeURIComponent(trimmed)}?c=${encodeURIComponent(clientId)}`,
+      { next: { revalidate: 0 } }
+    )
+    if (!res.ok) return null
+    const arr = (await res.json()) as Array<{ domain?: string | null }>
+    if (!Array.isArray(arr) || arr.length === 0) return null
+    const firstDomain = normalizeDomain(String(arr[0]?.domain ?? ''))
+    return firstDomain && firstDomain.includes('.') ? firstDomain : null
+  } catch {
+    return null
+  }
+}
+
 export async function fetchCompanyEnrichment(input: string): Promise<FetchEnrichmentResult> {
-  const domain = inputToDomain(input) ?? normalizeDomain(input)
-  if (!domain || !domain.includes('.')) {
-    return { success: false, error: 'Bitte eine Domain (z. B. bmw.de) oder einen Firmennamen (z. B. BMW) eingeben.' }
+  const domain = await resolveDomainForEnrichmentInput(input)
+  if (!domain) {
+    return {
+      success: false,
+      error:
+        'Kein passender Account gefunden. Gib eine Domain ein oder hinterlege BRANDFETCH_CLIENT_ID für Namenssuche.',
+    }
   }
   return fetchBrandfetchData(domain)
 }

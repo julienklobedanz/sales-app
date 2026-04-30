@@ -126,22 +126,7 @@ export function CreateAccountDialog({
     const reqId = ++enrichReqRef.current
     setEnriching(true)
     ;(async () => {
-      let enrichInput: string | null = null
-      const suggestionsResult = await searchCompanySuggestions(query)
-      if (suggestionsResult.success) {
-        const brandfetchCandidate = suggestionsResult.suggestions.find((s) => s.id.startsWith('brandfetch:'))
-        if (brandfetchCandidate) {
-          enrichInput = brandfetchCandidate.id.slice('brandfetch:'.length)
-        }
-      }
-      if (!enrichInput && query.includes('.')) {
-        enrichInput = query
-      }
-      if (!enrichInput) {
-        if (reqId === enrichReqRef.current) setEnriching(false)
-        return
-      }
-      const enriched = await fetchCompanyEnrichment(enrichInput)
+      const enriched = await fetchCompanyEnrichment(query)
       if (reqId !== enrichReqRef.current) return
       setEnriching(false)
       if (!enriched.success) return

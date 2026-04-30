@@ -24,7 +24,7 @@ export function ReferencePreviewDialog({
       <SheetContent
         side="left"
         showCloseButton={false}
-        className="w-[min(1200px,66vw)] max-w-none border-r border-slate-200 bg-slate-50 p-0"
+        className="max-sm:!w-[100vw] max-sm:!max-w-[100vw] !w-[66.666vw] !max-w-[66.666vw] border-r border-slate-200 bg-slate-50 p-0"
       >
         <div className="flex h-full min-h-0 flex-col overflow-hidden">
           <SheetHeader className="shrink-0 border-b bg-white px-6 py-4">

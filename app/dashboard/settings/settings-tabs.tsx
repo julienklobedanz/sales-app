@@ -866,26 +866,31 @@ export function SettingsTabs({
               key: 'Salesforce',
               desc: 'Synchronisiere Opportunities und Pipeline-Daten.',
               logo: 'https://logo.clearbit.com/salesforce.com',
+              href: 'https://login.salesforce.com/',
             },
             {
               key: 'HubSpot',
               desc: 'Verbinde CRM-Kontakte und Deal-Daten mit RefStack.',
               logo: 'https://logo.clearbit.com/hubspot.com',
+              href: 'https://app.hubspot.com/login',
             },
             {
               key: 'Google News',
               desc: 'Nutze News-Signale für Market-Intelligence im Team.',
               logo: 'https://logo.clearbit.com/news.google.com',
+              href: 'https://news.google.com/',
             },
             {
               key: 'CIO.de',
               desc: 'Binde deutschsprachige CIO-/IT-Entscheider-Signale für Account Research ein.',
               logo: 'https://logo.clearbit.com/cio.de',
+              href: 'https://www.cio.de/',
             },
             {
               key: 'The Org',
               desc: 'Nutze Org-Charts und Rollenwechsel zur Identifikation von Decision Makern.',
               logo: 'https://logo.clearbit.com/theorg.com',
+              href: 'https://theorg.com/',
             },
           ].map((integration) => (
             <div key={integration.key} className={CARD_CLASS}>
@@ -905,13 +910,15 @@ export function SettingsTabs({
                 </div>
                 <CardDescription className="text-slate-500">{integration.desc}</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-5 px-0 pb-0">
+              <CardContent className="space-y-5 px-0 pb-0 pt-5">
                 <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">
                   <AppIcon icon={PlugSocketIcon} size={14} />
                   Nicht verbunden
                 </div>
-                <Button type="button" variant="outline" size="sm" className="w-full justify-center">
-                  Verbindung einrichten
+                <Button type="button" variant="outline" size="sm" className="w-full justify-center" asChild>
+                  <a href={integration.href} target="_blank" rel="noreferrer">
+                    Verbindung einrichten
+                  </a>
                 </Button>
               </CardContent>
             </div>
