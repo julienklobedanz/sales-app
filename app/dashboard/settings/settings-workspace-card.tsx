@@ -100,7 +100,7 @@ export function SettingsWorkspaceCard({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-5">
       <div className="flex items-center gap-3 text-muted-foreground">
         <AppIcon icon={Building2} size={20} />
         <span className="text-sm font-medium uppercase tracking-wider">
@@ -118,9 +118,9 @@ export function SettingsWorkspaceCard({
           className={organizationId ? 'bg-background' : 'bg-muted/50 cursor-not-allowed'}
         />
       </div>
-      <div className="space-y-2">
+      <div className="space-y-2.5">
         <Label className="text-muted-foreground">Logo</Label>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-5">
           <button
             type="button"
             className="group relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-muted-foreground/25 bg-muted/30"
@@ -177,7 +177,7 @@ export function SettingsWorkspaceCard({
           />
         </div>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="primary-color">Primärfarbe</Label>
           <Input

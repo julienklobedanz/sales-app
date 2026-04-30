@@ -123,6 +123,7 @@ export async function updateWorkflowSettings(input: {
 export async function updateWorkspaceSecurityCompliance(input: {
   publicLinkMaxTtlDays: number
   publicLinkRequirePasswordForNew: boolean
+  auditLogRetentionDays: number
 }): Promise<ActionResult> {
   const { supabase, user, organizationId } = await getContext()
   if (!user) return { success: false, error: 'Nicht angemeldet.' }
@@ -143,6 +144,10 @@ export async function updateWorkspaceSecurityCompliance(input: {
     7,
     Math.min(3650, Number.isFinite(input.publicLinkMaxTtlDays) ? Math.trunc(input.publicLinkMaxTtlDays) : 365)
   )
+  const retentionDays = Math.max(
+    30,
+    Math.min(3650, Number.isFinite(input.auditLogRetentionDays) ? Math.trunc(input.auditLogRetentionDays) : 365)
+  )
 
   const { data: orgRow, error: readErr } = await supabase
     .from('organizations')
@@ -159,6 +164,7 @@ export async function updateWorkspaceSecurityCompliance(input: {
     ...prev,
     public_link_max_ttl_days: maxTtl,
     public_link_require_password_for_new: Boolean(input.publicLinkRequirePasswordForNew),
+    audit_log_retention_days: retentionDays,
   }
 
   const { error } = await supabase
@@ -170,6 +176,12 @@ export async function updateWorkspaceSecurityCompliance(input: {
     .eq('id', organizationId)
 
   if (error) return { success: false, error: error.message }
+  const retentionCutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000).toISOString()
+  await supabase
+    .from('audit_logs')
+    .delete()
+    .eq('org_id', organizationId)
+    .lt('timestamp', retentionCutoff)
   void writeAuditLog({
     orgId: organizationId,
     userId: user.id,
@@ -178,6 +190,7 @@ export async function updateWorkspaceSecurityCompliance(input: {
     actionDetails: {
       public_link_max_ttl_days: maxTtl,
       public_link_require_password_for_new: Boolean(input.publicLinkRequirePasswordForNew),
+      audit_log_retention_days: retentionDays,
     },
   })
   revalidatePath(ROUTES.settings)

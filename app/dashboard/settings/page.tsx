@@ -53,6 +53,7 @@ function parseOrganizationWorkflowSettings(raw: unknown): {
   requireInternalApproval: boolean
   publicLinkMaxTtlDays: number
   publicLinkRequirePasswordForNew: boolean
+  auditLogRetentionDays: number
 } {
   if (!raw || typeof raw !== 'object') {
     return {
@@ -60,11 +61,13 @@ function parseOrganizationWorkflowSettings(raw: unknown): {
       requireInternalApproval: true,
       publicLinkMaxTtlDays: 365,
       publicLinkRequirePasswordForNew: false,
+      auditLogRetentionDays: 365,
     }
   }
   const obj = raw as Record<string, unknown>
   const linkExpiryDaysRaw = obj.link_expiry_days
   const maxTtlRaw = obj.public_link_max_ttl_days
+  const retentionRaw = obj.audit_log_retention_days
   return {
     linkExpiryDays:
       typeof linkExpiryDaysRaw === 'number' && Number.isFinite(linkExpiryDaysRaw)
@@ -79,6 +82,10 @@ function parseOrganizationWorkflowSettings(raw: unknown): {
         ? Math.max(7, Math.min(3650, Math.trunc(maxTtlRaw)))
         : 365,
     publicLinkRequirePasswordForNew: obj.public_link_require_password_for_new === true,
+    auditLogRetentionDays:
+      typeof retentionRaw === 'number' && Number.isFinite(retentionRaw)
+        ? Math.max(30, Math.min(3650, Math.trunc(retentionRaw)))
+        : 365,
   }
 }
 

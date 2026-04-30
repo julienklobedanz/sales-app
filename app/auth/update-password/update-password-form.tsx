@@ -26,7 +26,7 @@ export function UpdatePasswordForm() {
           type="password"
           placeholder="••••••••"
           required
-          minLength={6}
+          minLength={12}
           disabled={isPending}
           autoComplete="new-password"
           className="h-10 rounded-lg"
@@ -40,7 +40,7 @@ export function UpdatePasswordForm() {
           type="password"
           placeholder="••••••••"
           required
-          minLength={6}
+          minLength={12}
           disabled={isPending}
           autoComplete="new-password"
           className="h-10 rounded-lg"
@@ -54,6 +54,9 @@ export function UpdatePasswordForm() {
           {state.error}
         </div>
       )}
+      <p className="text-xs text-muted-foreground">
+        Mindestens 12 Zeichen sowie Groß-/Kleinbuchstaben, Zahl und Sonderzeichen.
+      </p>
       <Button type="submit" className="h-10 w-full rounded-lg" disabled={isPending}>
         {isPending ? 'Wird gespeichert …' : 'Passwort speichern'}
       </Button>

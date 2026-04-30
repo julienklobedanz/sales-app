@@ -48,13 +48,16 @@ export function RegisterForm({ inviteToken = null }: { inviteToken?: string | nu
           id="password"
           name="password"
           type="password"
-          placeholder="Mindestens 6 Zeichen"
+          placeholder="Mindestens 12 Zeichen"
           required
-          minLength={6}
+          minLength={12}
           disabled={isPending}
           autoComplete="new-password"
           className="h-10"
         />
+        <p className="text-xs text-muted-foreground">
+          Mindestens 12 Zeichen inkl. Groß-/Kleinbuchstaben, Zahl und Sonderzeichen.
+        </p>
       </div>
       {state?.error && (
         <div

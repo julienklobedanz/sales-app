@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
+import { validatePasswordPolicy } from '@/lib/security/password-policy'
 
 export type UpdatePasswordResult = { error?: string }
 
@@ -13,9 +14,8 @@ export async function updatePasswordAfterReset(
   const confirm = formData.get('confirm')?.toString()
 
   if (!password) return { error: 'Bitte neues Passwort eingeben.' }
-  if (password.length < 6) {
-    return { error: 'Das Passwort muss mindestens 6 Zeichen haben.' }
-  }
+  const policy = validatePasswordPolicy(password)
+  if (!policy.ok) return { error: policy.error }
   if (password !== confirm) {
     return { error: 'Die Passwörter stimmen nicht überein.' }
   }

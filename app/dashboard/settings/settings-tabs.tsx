@@ -9,6 +9,17 @@ import { CardContent, CardDescription, CardHeader, CardTitle } from '@/component
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { AppIcon } from '@/lib/icons'
 import { Calendar, LinkIcon, PlugSocketIcon, Shield, ShieldAlert, Trash2 } from '@hugeicons/core-free-icons'
 import { SettingsProfileCard } from './settings-profile-card'
@@ -18,6 +29,7 @@ import { SettingsBillingCard } from './settings-billing-card'
 import { SettingsExportTemplatesCard } from './settings-export-templates-card'
 import { SettingsDevRoleCard } from './settings-dev-role-card'
 import type { ExportSettings } from './settings-export-templates-actions'
+import { changeOwnPassword } from './actions'
 import {
   updateProfileNotificationSettings,
   updateWorkflowSettings,
@@ -67,6 +79,7 @@ export function SettingsTabs({
       requireInternalApproval: boolean
       publicLinkMaxTtlDays: number
       publicLinkRequirePasswordForNew: boolean
+      auditLogRetentionDays: number
     }
   }
   teamMembers: Parameters<typeof SettingsTeamCard>[0]['initialMembers']
@@ -105,11 +118,17 @@ export function SettingsTabs({
   const [publicLinkReqPwNew, setPublicLinkReqPwNew] = useState(
     org.workflowSettings.publicLinkRequirePasswordForNew
   )
+  const [auditRetentionDays, setAuditRetentionDays] = useState(
+    String(org.workflowSettings.auditLogRetentionDays)
+  )
   const [securityPending, startSecurityTransition] = useTransition()
+  const [passwordPending, startPasswordTransition] = useTransition()
   const [auditActionFilter, setAuditActionFilter] = useState('all')
   const [auditSearch, setAuditSearch] = useState('')
   const [auditTimeFilter, setAuditTimeFilter] = useState<'24h' | '7d' | '30d' | 'all'>('7d')
   const [auditQuickView, setAuditQuickView] = useState<'all' | 'security' | 'policy'>('all')
+  const [workspaceDeleteStep, setWorkspaceDeleteStep] = useState<1 | 2 | 3>(1)
+  const [workspaceDeleteSubdomainInput, setWorkspaceDeleteSubdomainInput] = useState('')
 
   function saveProfileNotifications() {
     startProfileTransition(async () => {
@@ -161,12 +180,26 @@ export function SettingsTabs({
       const result = await updateWorkspaceSecurityCompliance({
         publicLinkMaxTtlDays: Number.isFinite(parsed) ? parsed : 365,
         publicLinkRequirePasswordForNew: publicLinkReqPwNew,
+        auditLogRetentionDays: Number.isFinite(Number(auditRetentionDays))
+          ? Number(auditRetentionDays)
+          : 365,
       })
       if (!result.success) {
         toast.error(result.error)
         return
       }
       toast.success('Sicherheitsrichtlinien gespeichert')
+    })
+  }
+
+  function saveOwnPassword(formData: FormData) {
+    startPasswordTransition(async () => {
+      const result = await changeOwnPassword(formData)
+      if (result?.error) {
+        toast.error(result.error)
+        return
+      }
+      toast.success('Passwort erfolgreich geändert')
     })
   }
 
@@ -228,6 +261,24 @@ export function SettingsTabs({
     URL.revokeObjectURL(url)
   }
 
+  function resetWorkspaceDeleteFlow() {
+    setWorkspaceDeleteStep(1)
+    setWorkspaceDeleteSubdomainInput('')
+  }
+
+  function confirmWorkspaceDeleteStep() {
+    if (workspaceDeleteStep < 3) {
+      setWorkspaceDeleteStep((prev) => (prev < 3 ? ((prev + 1) as 1 | 2 | 3) : prev))
+      return
+    }
+    if (workspaceDeleteSubdomainInput.trim().toLowerCase() !== org.subdomain.trim().toLowerCase()) {
+      toast.error('Subdomain stimmt nicht überein.')
+      return
+    }
+    toast.error('Workspace-Löschung wird in einem gesicherten Backend-Flow freigeschaltet.')
+    resetWorkspaceDeleteFlow()
+  }
+
   return (
     <Tabs defaultValue="profile" className="gap-6">
       <TabsList variant="line" className="w-full justify-start">
@@ -277,6 +328,38 @@ export function SettingsTabs({
               </div>
             </CardContent>
           </div>
+          <div className={CARD_CLASS}>
+            <CardHeader className="px-0 pt-0">
+              <CardTitle className="text-base">Passwort ändern</CardTitle>
+              <CardDescription className="text-slate-500">
+                Für Enterprise-Sicherheit gilt eine starke Passwortpolicy (mindestens 12 Zeichen).
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="px-0 pb-0">
+              <form action={saveOwnPassword} className="grid gap-3 sm:grid-cols-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="currentPassword">Aktuelles Passwort</Label>
+                  <Input id="currentPassword" name="currentPassword" type="password" autoComplete="current-password" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="newPassword">Neues Passwort</Label>
+                  <Input id="newPassword" name="newPassword" type="password" minLength={12} autoComplete="new-password" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="confirmPassword">Neues Passwort bestätigen</Label>
+                  <Input id="confirmPassword" name="confirmPassword" type="password" minLength={12} autoComplete="new-password" />
+                </div>
+                <div className="sm:col-span-3 flex items-center justify-between gap-2">
+                  <p className="text-xs text-slate-500">
+                    Mindestens 12 Zeichen inkl. Groß-/Kleinbuchstaben, Zahl und Sonderzeichen.
+                  </p>
+                  <Button type="submit" size="sm" disabled={passwordPending}>
+                    {passwordPending ? 'Speichert …' : 'Passwort speichern'}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </div>
           <div className="rounded-xl border border-red-300 bg-red-50/50 p-6 shadow-sm">
             <p className="text-sm font-semibold text-red-700">Danger Zone</p>
             <p className="mt-1 text-xs text-red-600/90">Konto dauerhaft entfernen. Dieser Vorgang ist irreversibel.</p>
@@ -314,17 +397,17 @@ export function SettingsTabs({
             </div>
           </div>
           <div className={CARD_CLASS}>
-            <CardHeader className="px-0 pt-0">
+            <CardHeader className="space-y-2 px-0 pt-0">
               <CardTitle className="text-base">Security & Compliance</CardTitle>
               <CardDescription className="text-slate-500">
                 Globale Regeln für öffentliche Kundenlinks (DSGVO: Speicherbegrenzung, Zugriffskontrolle). Nur
                 Administratoren.
               </CardDescription>
-              <p className="text-xs text-slate-500">
+              <p className="pt-1 text-xs text-slate-500">
                 Security Alerts werden ausschließlich per Admin-E-Mail versendet (Resend), nicht über die Notification-Bell.
               </p>
             </CardHeader>
-            <CardContent className="space-y-4 px-0 pb-0">
+            <CardContent className="space-y-5 px-0 pb-0 pt-1">
               <div className="max-w-md space-y-2">
                 <Label htmlFor="public-link-max-ttl">Maximale Link-Gültigkeit (Tage)</Label>
                 <Input
@@ -340,10 +423,24 @@ export function SettingsTabs({
                   Werte werden beim Speichern begrenzt.
                 </p>
               </div>
-              <div className="flex items-center justify-between rounded-lg border border-slate-200 p-3">
+              <div className="max-w-md space-y-2">
+                <Label htmlFor="audit-retention-days">Audit-Retention (Tage)</Label>
+                <Input
+                  id="audit-retention-days"
+                  value={auditRetentionDays}
+                  onChange={(e) => setAuditRetentionDays(e.target.value)}
+                  inputMode="numeric"
+                  disabled={roleSwitcher.serverRole !== 'admin'}
+                  className={roleSwitcher.serverRole !== 'admin' ? 'bg-slate-50' : ''}
+                />
+                <p className="text-xs text-slate-500">
+                  Best-Practice für Enterprise: 365 Tage. Konfigurierbar zwischen 30 und 3650 Tagen.
+                </p>
+              </div>
+              <div className="flex items-center justify-between rounded-lg border border-slate-200 p-4">
                 <div>
                   <p className="text-sm font-medium">Passwort für neue Links erzwingen</p>
-                  <p className="text-xs text-slate-500">
+                  <p className="mt-1.5 text-xs text-slate-500">
                     Jeder neu erstellte Kundenlink erhält automatisch ein Passwort und ein Ablaufdatum gemäß
                     Workflow-Standard (Tage).
                   </p>
@@ -369,14 +466,14 @@ export function SettingsTabs({
           </div>
           {roleSwitcher.serverRole === 'admin' ? (
             <div className={CARD_CLASS}>
-              <CardHeader className="px-0 pt-0">
+              <CardHeader className="space-y-2 px-0 pt-0">
                 <CardTitle className="text-base">Audit Log</CardTitle>
                 <CardDescription className="text-slate-500">
                   Nachweisbare Security- und Compliance-Ereignisse (PII-minimiert, IDs only).
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3 px-0 pb-0">
-                <div className="flex flex-wrap items-center gap-2">
+              <CardContent className="space-y-4 px-0 pb-0 pt-1">
+                <div className="flex flex-wrap items-center gap-2.5">
                   <div className="flex items-center gap-1 rounded-md border border-slate-200 p-1">
                     {([
                       ['all', 'Alle'],
@@ -427,7 +524,7 @@ export function SettingsTabs({
                     CSV Export
                   </Button>
                 </div>
-                <div className="max-h-[360px] overflow-auto rounded-lg border border-slate-200">
+                <div className="mt-1 max-h-[360px] overflow-auto rounded-lg border border-slate-200">
                   <table className="w-full text-xs">
                     <thead className="sticky top-0 bg-slate-50 text-slate-600">
                       <tr>
@@ -487,13 +584,13 @@ export function SettingsTabs({
             </div>
           ) : null}
           <div className={CARD_CLASS}>
-            <CardHeader className="px-0 pt-0">
+            <CardHeader className="space-y-2 px-0 pt-0">
               <CardTitle className="text-base">Subdomain</CardTitle>
               <CardDescription className="text-slate-500">
                 Definiere deine Workspace-URL, z. B. <span className="font-medium">company.refstack.io</span>.
               </CardDescription>
             </CardHeader>
-            <CardContent className="px-0 pb-0">
+            <CardContent className="px-0 pb-0 pt-1">
               <div className="max-w-md space-y-2">
                 <Label htmlFor="workspace-subdomain">Subdomain</Label>
                 <Input
@@ -507,17 +604,17 @@ export function SettingsTabs({
             </CardContent>
           </div>
           <div className={CARD_CLASS}>
-            <CardHeader className="px-0 pt-0">
+            <CardHeader className="space-y-2 px-0 pt-0">
               <CardTitle className="text-base">Entwicklung / API Keys</CardTitle>
               <CardDescription className="text-slate-500">
                 Verwalte technische Schlüssel für Integrationen und Systemzugriffe.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3 px-0 pb-0">
-              <div className="flex items-center justify-between rounded-lg border border-slate-200 p-3">
+            <CardContent className="space-y-4 px-0 pb-0 pt-1">
+              <div className="flex items-center justify-between rounded-lg border border-slate-200 p-4">
                 <div>
                   <p className="text-sm font-medium">Workspace Branding (opt-in)</p>
-                  <p className="text-xs text-slate-500">
+                  <p className="mt-1.5 text-xs text-slate-500">
                     Nutzt Primär-/Sekundärfarbe für Links, Badges und Akzente. RefStack-Design bleibt Standard.
                   </p>
                 </div>
@@ -527,13 +624,13 @@ export function SettingsTabs({
                   disabled={roleSwitcher.serverRole !== 'admin'}
                 />
               </div>
-              <div className="rounded-lg border border-slate-200 p-3">
+              <div className="rounded-lg border border-slate-200 p-4">
                 <p className="text-sm font-medium">Workspace API Key</p>
-                <p className="mt-1 text-xs text-slate-500">Aus Sicherheitsgründen maskiert. Rotation über sicheren Backend-Flow.</p>
+                <p className="mt-2 text-xs text-slate-500">Aus Sicherheitsgründen maskiert. Rotation über sicheren Backend-Flow.</p>
                 <Input
                   value={apiKeyMask}
                   onChange={(e) => setApiKeyMask(e.target.value)}
-                  className="mt-2 bg-slate-50"
+                  className="mt-3 bg-slate-50"
                 />
               </div>
               <div className={CARD_CLASS}>
@@ -557,16 +654,66 @@ export function SettingsTabs({
           <div className="rounded-xl border border-red-300 bg-red-50/50 p-6 shadow-sm">
             <p className="text-sm font-semibold text-red-700">Danger Zone</p>
             <p className="mt-1 text-xs text-red-600/90">Workspace inkl. Daten dauerhaft löschen. Nicht rückgängig zu machen.</p>
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              className="mt-4"
-              onClick={() => toast.error('Workspace-Löschung wird in einem gesicherten Backend-Flow freigeschaltet.')}
+            <AlertDialog
+              onOpenChange={(open) => {
+                if (!open) resetWorkspaceDeleteFlow()
+              }}
             >
-              <AppIcon icon={ShieldAlert} size={16} />
-              Workspace löschen
-            </Button>
+              <AlertDialogTrigger asChild>
+                <Button type="button" variant="destructive" size="sm" className="mt-4">
+                  <AppIcon icon={ShieldAlert} size={16} />
+                  Workspace löschen
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    {workspaceDeleteStep === 1 && 'Workspace wirklich löschen?'}
+                    {workspaceDeleteStep === 2 && 'Bitte erneut bestätigen'}
+                    {workspaceDeleteStep === 3 && 'Letzte Sicherheitsabfrage'}
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {workspaceDeleteStep === 1 &&
+                      'Diese Aktion betrifft den gesamten Workspace der Firma. Alle Teamdaten und Referenzen wären betroffen.'}
+                    {workspaceDeleteStep === 2 &&
+                      'Das ist die zweite Bestätigung. Dieser Vorgang ist irreversibel und betrifft alle Nutzer im Workspace.'}
+                    {workspaceDeleteStep === 3 &&
+                      'Bitte gib zur finalen Bestätigung die Workspace-Subdomain ein.'}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                {workspaceDeleteStep === 3 ? (
+                  <div className="space-y-2">
+                    <Label htmlFor="workspace-delete-subdomain">Subdomain</Label>
+                    <Input
+                      id="workspace-delete-subdomain"
+                      value={workspaceDeleteSubdomainInput}
+                      onChange={(e) => setWorkspaceDeleteSubdomainInput(e.target.value)}
+                      placeholder={org.subdomain || 'firmenname'}
+                      autoComplete="off"
+                    />
+                    <p className="text-xs text-slate-500">
+                      Gib exakt <span className="font-mono">{org.subdomain || 'deine-subdomain'}</span> ein.
+                    </p>
+                  </div>
+                ) : null}
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={(e) => {
+                      e.preventDefault()
+                      confirmWorkspaceDeleteStep()
+                    }}
+                    disabled={
+                      workspaceDeleteStep === 3 &&
+                      workspaceDeleteSubdomainInput.trim().toLowerCase() !==
+                        org.subdomain.trim().toLowerCase()
+                    }
+                  >
+                    {workspaceDeleteStep < 3 ? 'Weiter bestätigen' : 'Final bestätigen'}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </TabsContent>

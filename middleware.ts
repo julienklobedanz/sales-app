@@ -2,7 +2,54 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { ROUTES } from '@/lib/routes'
 
+type WindowLimit = { count: number; resetAt: number }
+type RateStore = Map<string, WindowLimit>
+
+function getRateStore(): RateStore {
+  const g = globalThis as unknown as { __refstackEdgeRateStore?: RateStore }
+  if (!g.__refstackEdgeRateStore) g.__refstackEdgeRateStore = new Map<string, WindowLimit>()
+  return g.__refstackEdgeRateStore
+}
+
+function getClientIp(request: NextRequest): string {
+  const fwd = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+  const real = request.headers.get('x-real-ip')?.trim()
+  return fwd || real || 'unknown'
+}
+
+function hitLimit(key: string, max: number, windowMs: number): { limited: boolean; remaining: number } {
+  const store = getRateStore()
+  const now = Date.now()
+  const prev = store.get(key)
+  if (!prev || prev.resetAt <= now) {
+    store.set(key, { count: 1, resetAt: now + windowMs })
+    return { limited: false, remaining: max - 1 }
+  }
+  prev.count += 1
+  store.set(key, prev)
+  return { limited: prev.count > max, remaining: Math.max(0, max - prev.count) }
+}
+
 export async function middleware(request: NextRequest) {
+  if (request.nextUrl.pathname.startsWith('/p/')) {
+    const ip = getClientIp(request)
+    const isPost = request.method === 'POST'
+    const max = isPost ? 20 : 180
+    const windowMs = isPost ? 15 * 60 * 1000 : 60 * 1000
+    const key = `p:${request.nextUrl.pathname}:${request.method}:${ip}`
+    const status = hitLimit(key, max, windowMs)
+    if (status.limited) {
+      return new NextResponse('Too Many Requests', {
+        status: 429,
+        headers: {
+          'Retry-After': isPost ? '900' : '60',
+          'X-RateLimit-Policy': isPost ? 'public-link-post-20/15m' : 'public-link-get-180/1m',
+          'X-RateLimit-Remaining': '0',
+        },
+      })
+    }
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   })

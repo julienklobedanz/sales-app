@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
+import { validatePasswordPolicy } from '@/lib/security/password-policy'
 
 function parseDataUrlImage(dataUrl: string): { bytes: Uint8Array; contentType: string; ext: string } | null {
   const trimmed = dataUrl.trim()
@@ -77,6 +78,41 @@ export async function updateProfile(formData: FormData) {
   }
 
   revalidatePath(ROUTES.home)
+  revalidatePath(ROUTES.settings)
+  return { success: true }
+}
+
+export async function changeOwnPassword(formData: FormData): Promise<{ success?: true; error?: string }> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user?.email) return { error: 'Nicht authentifiziert.' }
+
+  const currentPassword = formData.get('currentPassword')?.toString() ?? ''
+  const newPassword = formData.get('newPassword')?.toString() ?? ''
+  const confirmPassword = formData.get('confirmPassword')?.toString() ?? ''
+
+  if (!currentPassword) return { error: 'Bitte aktuelles Passwort eingeben.' }
+  if (!newPassword) return { error: 'Bitte neues Passwort eingeben.' }
+  if (newPassword !== confirmPassword) {
+    return { error: 'Die neuen Passwörter stimmen nicht überein.' }
+  }
+  const policy = validatePasswordPolicy(newPassword)
+  if (!policy.ok) return { error: policy.error }
+
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password: currentPassword,
+  })
+  if (signInError) {
+    return { error: 'Aktuelles Passwort ist ungültig.' }
+  }
+
+  const { error: updateError } = await supabase.auth.updateUser({ password: newPassword })
+  if (updateError) return { error: updateError.message }
+
   revalidatePath(ROUTES.settings)
   return { success: true }
 }

@@ -5,6 +5,7 @@ import { Resend } from 'resend'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
 import { ROUTES } from '@/lib/routes'
+import { validatePasswordPolicy } from '@/lib/security/password-policy'
 
 export type SignUpResult = {
   error?: string
@@ -76,9 +77,8 @@ export async function signUp(formData: FormData): Promise<SignUpResult> {
   if (!fullName) return { error: 'Bitte Name eingeben.' }
   if (!email) return { error: 'Bitte E-Mail-Adresse eingeben.' }
   if (!password) return { error: 'Bitte Passwort eingeben.' }
-  if (password.length < 6) {
-    return { error: 'Das Passwort muss mindestens 6 Zeichen haben.' }
-  }
+  const policy = validatePasswordPolicy(password)
+  if (!policy.ok) return { error: policy.error }
 
   const supabase = await createServerSupabaseClient()
 
