@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import {
@@ -27,6 +27,7 @@ import { updateCompany } from './actions'
 import { COPY } from '@/lib/copy'
 import type { CompanyDetailCompany } from './company-detail-types'
 import { displayHostFromUrl, normalizeWebsiteForSave } from './account-company-helpers'
+import { fetchCompanyEnrichment, searchCompanySuggestions } from '@/app/dashboard/evidence/new/actions'
 
 type AccountStatusOption = '__none__' | 'at_risk' | 'warmup' | 'expansion'
 
@@ -46,6 +47,7 @@ export function EditAccountDialog({
 }) {
   const router = useRouter()
   const [pending, setPending] = useState(false)
+  const [enriching, setEnriching] = useState(false)
   const [name, setName] = useState('')
   const [websiteUrl, setWebsiteUrl] = useState('')
   const [logoUrl, setLogoUrl] = useState('')
@@ -54,6 +56,9 @@ export function EditAccountDialog({
   const [employeeCount, setEmployeeCount] = useState('')
   const [description, setDescription] = useState('')
   const [accountStatus, setAccountStatus] = useState<AccountStatusOption>('__none__')
+  const [debouncedName, setDebouncedName] = useState('')
+  const enrichReqRef = useRef(0)
+  const lastAutoQueryRef = useRef('')
 
   useEffect(() => {
     if (!open) return
@@ -69,9 +74,56 @@ export function EditAccountDialog({
     )
     setDescription(company.description ?? '')
     setAccountStatus(statusFromCompany(company.account_status))
+    setDebouncedName('')
+    lastAutoQueryRef.current = ''
   }, [open, company])
 
-  const canSubmit = name.trim().length > 0 && !pending
+  useEffect(() => {
+    if (!open) return
+    const t = window.setTimeout(() => setDebouncedName(name.trim()), 2000)
+    return () => window.clearTimeout(t)
+  }, [name, open])
+
+  useEffect(() => {
+    if (!open) return
+    const query = debouncedName.trim()
+    if (query.length < 2) return
+    const normalized = query.toLowerCase()
+    if (normalized === lastAutoQueryRef.current) return
+    const reqId = ++enrichReqRef.current
+    setEnriching(true)
+    ;(async () => {
+      let enrichInput: string | null = null
+      const suggestions = await searchCompanySuggestions(query)
+      if (suggestions.success) {
+        const brandfetchCandidate = suggestions.suggestions.find((s) => s.id.startsWith('brandfetch:'))
+        if (brandfetchCandidate) {
+          enrichInput = brandfetchCandidate.id.slice('brandfetch:'.length)
+        }
+      }
+      if (!enrichInput && query.includes('.')) {
+        enrichInput = query
+      }
+      if (!enrichInput) {
+        if (reqId === enrichReqRef.current) setEnriching(false)
+        return
+      }
+      const enriched = await fetchCompanyEnrichment(enrichInput)
+      if (reqId !== enrichReqRef.current) return
+      setEnriching(false)
+      if (!enriched.success) return
+      lastAutoQueryRef.current = normalized
+      setName(enriched.company_name?.trim() || query)
+      setWebsiteUrl(displayHostFromUrl(enriched.website_url))
+      setLogoUrl(enriched.logo_url ?? '')
+      setIndustry(enriched.industry ?? '')
+      setHeadquarters(enriched.headquarters?.trim() || enriched.country?.trim() || '')
+      setEmployeeCount(enriched.employee_count != null ? String(enriched.employee_count) : '')
+      setDescription(enriched.description ?? '')
+    })()
+  }, [debouncedName, open])
+
+  const canSubmit = name.trim().length > 0 && !pending && !enriching
 
   const submit = async () => {
     if (!canSubmit) return
@@ -122,7 +174,7 @@ export function EditAccountDialog({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="z. B. ACME GmbH"
-              disabled={pending}
+              disabled={pending || enriching}
               autoComplete="off"
             />
           </div>
@@ -134,7 +186,7 @@ export function EditAccountDialog({
               value={websiteUrl}
               onChange={(e) => setWebsiteUrl(e.target.value)}
               placeholder="acme.com"
-              disabled={pending}
+              disabled={pending || enriching}
             />
           </div>
 
@@ -145,7 +197,7 @@ export function EditAccountDialog({
               value={logoUrl}
               onChange={(e) => setLogoUrl(e.target.value)}
               placeholder="https://…"
-              disabled={pending}
+              disabled={pending || enriching}
             />
           </div>
 
@@ -156,18 +208,18 @@ export function EditAccountDialog({
               value={industry}
               onChange={(e) => setIndustry(e.target.value)}
               placeholder="z. B. Manufacturing"
-              disabled={pending}
+              disabled={pending || enriching}
             />
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="edit-account-hq">Ort</Label>
+            <Label htmlFor="edit-account-hq">HQ</Label>
             <Input
               id="edit-account-hq"
               value={headquarters}
               onChange={(e) => setHeadquarters(e.target.value)}
               placeholder="z. B. München, DE"
-              disabled={pending}
+              disabled={pending || enriching}
             />
           </div>
 
@@ -179,7 +231,7 @@ export function EditAccountDialog({
               value={employeeCount}
               onChange={(e) => setEmployeeCount(e.target.value)}
               placeholder="z. B. 2500"
-              disabled={pending}
+              disabled={pending || enriching}
             />
           </div>
 
@@ -188,7 +240,7 @@ export function EditAccountDialog({
             <Select
               value={accountStatus}
               onValueChange={(v) => setAccountStatus(v as AccountStatusOption)}
-              disabled={pending}
+              disabled={pending || enriching}
             >
               <SelectTrigger>
                 <SelectValue placeholder="— Keine Angabe" />
@@ -209,18 +261,18 @@ export function EditAccountDialog({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Kurzprofil, Besonderheiten, Kontext…"
-              disabled={pending}
+              disabled={pending || enriching}
               className="min-h-[90px]"
             />
           </div>
         </div>
 
         <DialogFooter className="mt-2">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={pending}>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={pending || enriching}>
             Abbrechen
           </Button>
           <Button type="button" onClick={submit} disabled={!canSubmit}>
-            {pending && <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />}
+            {(pending || enriching) && <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />}
             Speichern
           </Button>
         </DialogFooter>

@@ -321,7 +321,10 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
     }
   }, [decisionCandidatesByCompany, selected])
 
-  const decisionCandidates = selected ? decisionCandidatesByCompany[selected.companyId] ?? [] : []
+  const decisionCandidates = useMemo(
+    () => (selected ? decisionCandidatesByCompany[selected.companyId] ?? [] : []),
+    [decisionCandidatesByCompany, selected]
+  )
 
   const mutualConnectionsHint = useMemo(() => {
     if (!selected) return 'Gemeinsame Kontakte: mit LinkedIn-Integration'

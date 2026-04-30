@@ -129,7 +129,7 @@ function normalizeWrappedText(input: string | null | undefined): string | null {
  */
 async function brandfetchSuggestionsForQuery(query: string): Promise<CompanySearchSuggestion[]> {
   const q = query.trim()
-  if (q.length < 2) return []
+  if (q.length < 1) return []
 
   const clientId = process.env.BRANDFETCH_CLIENT_ID?.trim()
   if (clientId) {
@@ -204,7 +204,7 @@ export async function searchCompanySuggestions(input: string): Promise<CompanySe
     return { success: false, error: 'Dein Profil ist keiner Organisation zugeordnet.' }
   }
 
-  const pattern = `%${query}%`
+  const pattern = `${query}%`
 
   // 1. Schnelle Suche in bestehenden Companies der Organisation
   const { data: companies, error } = await supabase

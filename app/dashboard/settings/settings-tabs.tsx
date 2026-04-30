@@ -22,7 +22,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { AppIcon } from '@/lib/icons'
-import { Calendar, LinkIcon, PlugSocketIcon, Shield, ShieldAlert, Trash2 } from '@hugeicons/core-free-icons'
+import { PlugSocketIcon, Shield, ShieldAlert, Trash2 } from '@hugeicons/core-free-icons'
 import { SettingsProfileCard } from './settings-profile-card'
 import { SettingsTeamCard } from './settings-team-card'
 import { SettingsWorkspaceCard } from './settings-workspace-card'

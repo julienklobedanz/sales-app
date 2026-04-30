@@ -49,12 +49,15 @@ export function CreateAccountDialog({
   const [accountStatus, setAccountStatus] = useState<'__none__' | 'at_risk' | 'warmup' | 'expansion'>('__none__')
 
   const [debouncedQuery, setDebouncedQuery] = useState('')
+  const [debouncedEnrichQuery, setDebouncedEnrichQuery] = useState('')
   const [suggestions, setSuggestions] = useState<CompanySearchSuggestion[]>([])
   const [searchLoading, setSearchLoading] = useState(false)
   const [suggestOpen, setSuggestOpen] = useState(false)
 
   const wrapRef = useRef<HTMLDivElement>(null)
   const searchAbortRef = useRef(0)
+  const enrichReqRef = useRef(0)
+  const lastAutoQueryRef = useRef('')
 
   const resetForm = useCallback(() => {
     setName('')
@@ -67,8 +70,10 @@ export function CreateAccountDialog({
     setAccountStatus('__none__')
     setSuggestions([])
     setDebouncedQuery('')
+    setDebouncedEnrichQuery('')
     setSuggestOpen(false)
     setSearchLoading(false)
+    lastAutoQueryRef.current = ''
   }, [])
 
   useEffect(() => {
@@ -83,7 +88,12 @@ export function CreateAccountDialog({
   }, [name])
 
   useEffect(() => {
-    if (!open || debouncedQuery.length < 2) {
+    const t = window.setTimeout(() => setDebouncedEnrichQuery(name.trim()), 2000)
+    return () => window.clearTimeout(t)
+  }, [name])
+
+  useEffect(() => {
+    if (!open || debouncedQuery.length < 1) {
       setSuggestions([])
       setSearchLoading(false)
       return
@@ -105,6 +115,46 @@ export function CreateAccountDialog({
       }
     })()
   }, [debouncedQuery, open])
+
+  useEffect(() => {
+    if (!open) return
+    const query = debouncedEnrichQuery.trim()
+    if (query.length < 2) return
+    const normalized = query.toLowerCase()
+    if (normalized === lastAutoQueryRef.current) return
+
+    const reqId = ++enrichReqRef.current
+    setEnriching(true)
+    ;(async () => {
+      let enrichInput: string | null = null
+      const suggestionsResult = await searchCompanySuggestions(query)
+      if (suggestionsResult.success) {
+        const brandfetchCandidate = suggestionsResult.suggestions.find((s) => s.id.startsWith('brandfetch:'))
+        if (brandfetchCandidate) {
+          enrichInput = brandfetchCandidate.id.slice('brandfetch:'.length)
+        }
+      }
+      if (!enrichInput && query.includes('.')) {
+        enrichInput = query
+      }
+      if (!enrichInput) {
+        if (reqId === enrichReqRef.current) setEnriching(false)
+        return
+      }
+      const enriched = await fetchCompanyEnrichment(enrichInput)
+      if (reqId !== enrichReqRef.current) return
+      setEnriching(false)
+      if (!enriched.success) return
+      lastAutoQueryRef.current = normalized
+      setName(enriched.company_name?.trim() || query)
+      setWebsiteUrl(displayHostFromUrl(enriched.website_url))
+      setIndustry(enriched.industry ?? '')
+      setHeadquarters(enriched.headquarters?.trim() || enriched.country?.trim() || '')
+      setEmployeeCount(enriched.employee_count != null ? String(enriched.employee_count) : '')
+      setDescription(enriched.description ?? '')
+      setLogoUrl(enriched.logo_url ?? '')
+    })()
+  }, [debouncedEnrichQuery, open])
 
   useEffect(() => {
     const fn = (e: MouseEvent) => {
@@ -200,7 +250,7 @@ export function CreateAccountDialog({
                 value={name}
                 onChange={(e) => {
                   setName(e.target.value)
-                  if (e.target.value.trim().length >= 2) setSuggestOpen(true)
+                  if (e.target.value.trim().length >= 1) setSuggestOpen(true)
                 }}
                 onFocus={() => {
                   if (suggestions.length > 0) setSuggestOpen(true)
@@ -284,7 +334,7 @@ export function CreateAccountDialog({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="account-hq">Ort</Label>
+            <Label htmlFor="account-hq">HQ</Label>
             <Input
               id="account-hq"
               value={headquarters}
