@@ -28,6 +28,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 
 export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }) {
+  const [nowTs] = useState(() => new Date().getTime())
   const [onlyActiveDeals, setOnlyActiveDeals] = useState(false)
   const restrictedCompanyIds = useMemo(
     () => (onlyActiveDeals ? model.activeDealCompanyIds : undefined),
@@ -62,7 +63,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
   function relativeTime(iso: string) {
     const t = new Date(iso).getTime()
     if (Number.isNaN(t)) return '—'
-    const diff = Math.max(0, Date.now() - t)
+    const diff = Math.max(0, nowTs - t)
     const min = Math.floor(diff / 60000)
     if (min < 1) return 'jetzt'
     if (min < 60) return `vor ${min}m`
@@ -448,7 +449,14 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                         <div className="mt-2 flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
                           <div className="flex min-w-0 items-center gap-2">
                             {sourcePreview?.favicon ? (
-                              <img src={sourcePreview.favicon} alt="" className="size-4 rounded-sm" />
+                              <Image
+                                src={sourcePreview.favicon}
+                                alt=""
+                                width={16}
+                                height={16}
+                                className="size-4 rounded-sm"
+                                unoptimized
+                              />
                             ) : (
                               <AppIcon icon={LinkIcon} size={14} className="text-slate-500" />
                             )}
@@ -616,7 +624,14 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                     <div className="mt-2 flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
                       <div className="flex min-w-0 items-center gap-2">
                         {sourcePreview?.favicon ? (
-                          <img src={sourcePreview.favicon} alt="" className="size-4 rounded-sm" />
+                          <Image
+                            src={sourcePreview.favicon}
+                            alt=""
+                            width={16}
+                            height={16}
+                            className="size-4 rounded-sm"
+                            unoptimized
+                          />
                         ) : (
                           <AppIcon icon={LinkIcon} size={14} className="text-slate-500" />
                         )}

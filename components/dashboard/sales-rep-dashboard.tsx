@@ -16,7 +16,7 @@ import { formatDateUtcDe } from '@/lib/format'
 import { useCommandPalette } from '@/hooks/useCommandPalette'
 
 export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
-  const { greetingName, activeDeals, recommended, recommendedNote, recentShares } = data
+  const { activeDeals, recommended, recommendedNote, recentShares } = data
   const { setOpen: setCommandPaletteOpen } = useCommandPalette()
   const [isPending, startTransition] = useTransition()
   const isMacLike = useMemo(() => {

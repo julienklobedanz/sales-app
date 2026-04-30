@@ -15,6 +15,7 @@ function getResend(): Resend | null {
 }
 
 type ReferenceApprovalRow = {
+  id?: string
   title: string
   status: string | null
   company_id: string
@@ -32,6 +33,57 @@ type ReferenceApprovalRow = {
   approval_scope_logo_use?: boolean | null
   approval_scope_press_release?: boolean | null
   companies: { name?: string } | { name?: string }[] | null
+}
+
+async function sendClientApprovalEmail(args: {
+  supabase: SupabaseClient
+  referenceId: string
+  ref: ReferenceApprovalRow
+  requesterName: string
+  contactEmail: string
+  firstName: string
+  companyName: string
+}): Promise<{ success: boolean; token: string }> {
+  const newToken = crypto.randomUUID()
+  const { error: updateError } = await args.supabase
+    .from('references')
+    .update({
+      approval_token: newToken,
+      customer_approval_status: 'pending',
+      approval_internal_status: 'approved_internal',
+      approval_internal_reviewed_at: new Date().toISOString(),
+    })
+    .eq('id', args.referenceId)
+  if (updateError) throw new Error(updateError.message)
+
+  const resend = getResend()
+  if (args.contactEmail && resend) {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const requesterBlock = args.requesterName
+      ? `<p><strong>${escapeHtml(args.requesterName)}</strong> bittet Sie um Freigabe dieser Referenz.</p>`
+      : '<p>Es liegt eine Freigabe-Anfrage für diese Referenz vor.</p>'
+    try {
+      await resend.emails.send({
+        from: 'Refstack <onboarding@resend.dev>',
+        to: args.contactEmail,
+        subject: `Freigabe-Anfrage: ${args.companyName} – ${args.ref.title}`,
+        html: `
+          <h1>Hallo${args.firstName ? ` ${escapeHtml(args.firstName)}` : ''}!</h1>
+          ${requesterBlock}
+          <p>Für das Unternehmen <strong>${escapeHtml(args.companyName)}</strong>:</p>
+          <p><em>"${escapeHtml(args.ref.title)}"</em></p>
+          <p>Bitte öffnen Sie den Link, um die Referenz zu prüfen und zu entscheiden:</p>
+          <a href="${baseUrl}/approval/${newToken}"
+            style="display:inline-block;background:var(--primary,#0f172a);color:#fff;padding:12px 20px;text-decoration:none;border-radius:6px;">
+            Zur Freigabe-Seite
+          </a>
+        `,
+      })
+    } catch (e) {
+      console.error('E-Mail-Versand fehlgeschlagen:', e)
+    }
+  }
+  return { success: true, token: newToken }
 }
 
 async function resolveContactForApproval(
@@ -101,8 +153,6 @@ export async function submitForApprovalImpl(
 
   if (!user) throw new Error('Nicht authentifiziert')
 
-  const newToken = crypto.randomUUID()
-
   const { data: row, error: fetchError } = await supabase
     .from('references')
     .select(
@@ -126,15 +176,9 @@ export async function submitForApprovalImpl(
 
   const ref = row as unknown as ReferenceApprovalRow
 
-  const company =
-    Array.isArray(ref.companies) && ref.companies.length > 0
-      ? (ref.companies[0] as { name?: string })
-      : (ref.companies as { name?: string } | null)
-  const company_name = company?.name ?? 'Referenz'
-
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name')
+    .select('full_name, role')
     .eq('id', user.id)
     .maybeSingle()
   const requesterName =
@@ -142,7 +186,7 @@ export async function submitForApprovalImpl(
       ? (profile as { full_name: string }).full_name.trim()
       : ''
 
-  const { contactId, email: contactEmail, firstName } = await resolveContactForApproval(
+  const { contactId } = await resolveContactForApproval(
     supabase,
     ref,
     ref.company_id,
@@ -154,8 +198,9 @@ export async function submitForApprovalImpl(
   const { error: updateError } = await supabase
     .from('references')
     .update({
-      approval_token: newToken,
-      customer_approval_status: 'pending',
+      approval_token: null,
+      customer_approval_status: null,
+      approval_internal_status: 'pending_internal',
       approval_message: options?.message?.trim() ? options.message.trim() : null,
       approval_contact_id: contactId,
       approval_requested_at: new Date().toISOString(),
@@ -166,11 +211,18 @@ export async function submitForApprovalImpl(
       approval_expires_at: options?.approvalExpiresInDays
         ? new Date(Date.now() + Math.max(1, Math.min(365, options.approvalExpiresInDays)) * 24 * 60 * 60 * 1000).toISOString()
         : null,
+      approval_grace_until: options?.approvalExpiresInDays
+        ? new Date(Date.now() + (Math.max(1, Math.min(365, options.approvalExpiresInDays)) + 30) * 24 * 60 * 60 * 1000).toISOString()
+        : null,
       approval_scope_named_mention: options?.scope?.namedMention ?? true,
       approval_scope_anonymous_mention: options?.scope?.anonymousMention ?? true,
       approval_scope_reference_call: options?.scope?.referenceCall ?? false,
       approval_scope_logo_use: options?.scope?.logoUse ?? false,
       approval_scope_press_release: options?.scope?.pressRelease ?? false,
+      approval_reference_giver_name: options?.referenceGiverName?.trim() ? options.referenceGiverName.trim() : null,
+      approval_reference_giver_title: options?.referenceGiverTitle?.trim() ? options.referenceGiverTitle.trim() : null,
+      approval_competitor_blacklist: options?.competitorBlacklist ?? [],
+      approval_quote_proposed: options?.proposedQuote?.trim() ? options.proposedQuote.trim() : null,
     })
     .eq('id', id)
 
@@ -191,60 +243,8 @@ export async function submitForApprovalImpl(
     })
   }
 
-  const resend = getResend()
-  if (contactEmail && resend) {
-    try {
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-      const msgBlock = options?.message?.trim()
-        ? `<p><strong>Persönliche Nachricht:</strong></p><p>${escapeHtml(options.message.trim())}</p>`
-        : ''
-      const requesterBlock = requesterName
-        ? `<p><strong>${escapeHtml(requesterName)}</strong> bittet Sie um Freigabe dieser Referenz.</p>`
-        : '<p>Es liegt eine Freigabe-Anfrage für diese Referenz vor.</p>'
-      const scope = options?.scope
-      const scopeItems = [
-        (scope?.namedMention ?? true) ? 'Namentliche Nennung' : null,
-        (scope?.anonymousMention ?? true) ? 'Anonyme Nennung' : null,
-        (scope?.referenceCall ?? false) ? 'Referenz-Call' : null,
-        (scope?.logoUse ?? false) ? 'Logo-Nutzung' : null,
-        (scope?.pressRelease ?? false) ? 'Pressemeldung / Öffentliches Zitat' : null,
-      ].filter(Boolean)
-      const scopeBlock = scopeItems.length
-        ? `<p><strong>Angefragter Umfang:</strong></p><ul>${scopeItems.map((i) => `<li>${escapeHtml(String(i))}</li>`).join('')}</ul>`
-        : ''
-      const ownerBlock = options?.ownerName?.trim()
-        ? `<p><strong>Interner Verantwortlicher:</strong> ${escapeHtml(options.ownerName.trim())}</p>`
-        : ''
-      const expiryBlock = options?.approvalExpiresInDays
-        ? `<p><strong>Bitte entscheiden bis:</strong> ${new Date(Date.now() + Math.max(1, Math.min(365, options.approvalExpiresInDays)) * 24 * 60 * 60 * 1000).toLocaleDateString('de-DE')}</p>`
-        : ''
-      await resend.emails.send({
-        from: 'Refstack <onboarding@resend.dev>',
-        to: contactEmail,
-        subject: `Freigabe-Anfrage: ${company_name} – ${ref.title}`,
-        html: `
-          <h1>Hallo${firstName ? ` ${escapeHtml(firstName)}` : ''}!</h1>
-          ${requesterBlock}
-          ${msgBlock}
-          ${ownerBlock}
-          ${scopeBlock}
-          ${expiryBlock}
-          <p>Für das Unternehmen <strong>${escapeHtml(company_name)}</strong>:</p>
-          <p><em>"${escapeHtml(ref.title)}"</em></p>
-          <p>Bitte öffnen Sie den Link, um die Referenz zu prüfen und zu entscheiden:</p>
-          <a href="${baseUrl}/approval/${newToken}"
-             style="display:inline-block;background:var(--primary,#0f172a);color:#fff;padding:12px 20px;text-decoration:none;border-radius:6px;">
-            Zur Freigabe-Seite
-          </a>
-        `,
-      })
-    } catch (e) {
-      console.error('E-Mail-Versand fehlgeschlagen:', e)
-    }
-  }
-
   await logEventForCurrentOrg({
-    eventType: 'customer_approval_requested',
+    eventType: 'internal_approval_requested',
     referenceId: id,
     payload: {},
   })
@@ -252,6 +252,136 @@ export async function submitForApprovalImpl(
   revalidatePath(ROUTES.home)
   revalidatePath(ROUTES.evidence.detail(id))
   revalidatePath(ROUTES.evidence.root)
+  return { success: true as const, stage: 'internal_review_pending' as const, requesterRole: (profile as { role?: string } | null)?.role ?? null }
+}
+
+export async function approveInternalAndSendImpl(referenceId: string) {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) throw new Error('Nicht authentifiziert')
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, full_name')
+    .eq('id', user.id)
+    .single()
+  const role = String((profile as { role?: string } | null)?.role ?? '')
+  if (role !== 'admin' && role !== 'account_manager') {
+    throw new Error('Nur Admin oder Account Manager dürfen extern versenden.')
+  }
+
+  const { data: row, error } = await supabase
+    .from('references')
+    .select(`id, title, status, company_id, contact_id, customer_contact_id, approval_contact_id, customer_approval_status, approval_reference_status_snapshot, approval_requested_by, companies(name)`)
+    .eq('id', referenceId)
+    .single()
+  if (error || !row) throw new Error('Referenz nicht gefunden')
+  const ref = row as unknown as ReferenceApprovalRow
+  const company =
+    Array.isArray(ref.companies) && ref.companies.length > 0
+      ? (ref.companies[0] as { name?: string })
+      : (ref.companies as { name?: string } | null)
+  const company_name = company?.name ?? 'Referenz'
+  const { email: contactEmail, firstName } = await resolveContactForApproval(
+    supabase,
+    ref,
+    ref.company_id
+  )
+
+  const requesterName =
+    typeof (profile as { full_name?: string } | null)?.full_name === 'string'
+      ? (profile as { full_name: string }).full_name.trim()
+      : ''
+
+  await supabase
+    .from('references')
+    .update({
+      approval_internal_status: 'approved_internal',
+      approval_internal_reviewer_id: user.id,
+      approval_internal_reviewed_at: new Date().toISOString(),
+    })
+    .eq('id', referenceId)
+  await sendClientApprovalEmail({
+    supabase,
+    referenceId,
+    ref,
+    requesterName,
+    contactEmail,
+    firstName,
+    companyName: company_name,
+  })
+  revalidatePath(ROUTES.evidence.detail(referenceId))
+  return { success: true as const }
+}
+
+export async function getApprovalLinkImpl(referenceId: string): Promise<string | null> {
+  const supabase = await createServerSupabaseClient()
+  const { data } = await supabase
+    .from('references')
+    .select('approval_token')
+    .eq('id', referenceId)
+    .maybeSingle()
+  const token = (data as { approval_token?: string | null } | null)?.approval_token
+  if (!token) return null
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  return `${baseUrl}/approval/${token}`
+}
+
+export async function withdrawApprovalRequestImpl(referenceId: string): Promise<{ success: true }> {
+  const supabase = await createServerSupabaseClient()
+  await supabase
+    .from('references')
+    .update({
+      approval_token: null,
+      customer_approval_status: null,
+      approval_internal_status: 'withdrawn_internal',
+      approval_requested_at: null,
+    })
+    .eq('id', referenceId)
+  await supabase
+    .from('approvals')
+    .update({ status: 'rejected' })
+    .eq('reference_id', referenceId)
+    .eq('status', 'pending')
+  revalidatePath(ROUTES.evidence.detail(referenceId))
+  return { success: true }
+}
+
+export async function delegateClientApprovalImpl(params: {
+  token: string
+  delegateName?: string
+  delegateEmail: string
+}): Promise<{ success: true } | { success: false; error: string }> {
+  const supabase = await createServerSupabaseClient()
+  const token = params.token.trim()
+  const email = params.delegateEmail.trim().toLowerCase()
+  if (!token || !email.includes('@')) return { success: false, error: 'Ungültige Delegationsdaten.' }
+  const { data: ref } = await supabase
+    .from('references')
+    .select('id, title, approval_token, approval_delegated_to_name, approval_delegated_to_email')
+    .eq('approval_token', token)
+    .maybeSingle()
+  if (!ref) return { success: false, error: 'Link ungültig.' }
+  await supabase
+    .from('references')
+    .update({
+      approval_delegated_to_name: params.delegateName?.trim() || null,
+      approval_delegated_to_email: email,
+    })
+    .eq('id', (ref as { id: string }).id)
+  const resend = getResend()
+  if (resend) {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    await resend.emails.send({
+      from: 'Refstack <onboarding@resend.dev>',
+      to: email,
+      subject: `Weitergeleitete Freigabe: ${(ref as { title?: string }).title ?? 'Referenz'}`,
+      html: `<p>Eine Freigabe wurde an Sie delegiert.</p><a href="${baseUrl}/approval/${token}">Zur Freigabe-Seite</a>`,
+    })
+  }
+  return { success: true }
 }
 
 /** Erneuter Versand der Freigabe-E-Mail (gleicher Flow, neuer Token-Link). */

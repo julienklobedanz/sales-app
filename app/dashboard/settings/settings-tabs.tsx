@@ -127,6 +127,7 @@ export function SettingsTabs({
   const [auditSearch, setAuditSearch] = useState('')
   const [auditTimeFilter, setAuditTimeFilter] = useState<'24h' | '7d' | '30d' | 'all'>('7d')
   const [auditQuickView, setAuditQuickView] = useState<'all' | 'security' | 'policy'>('all')
+  const [auditNowTs] = useState(() => new Date().getTime())
   const [workspaceDeleteStep, setWorkspaceDeleteStep] = useState<1 | 2 | 3>(1)
   const [workspaceDeleteSubdomainInput, setWorkspaceDeleteSubdomainInput] = useState('')
 
@@ -214,7 +215,7 @@ export function SettingsTabs({
     if (auditQuickView === 'policy' && !row.action.includes('policy')) return false
     if (auditActionFilter !== 'all' && row.action !== auditActionFilter) return false
     if (auditTimeFilter !== 'all') {
-      const now = Date.now()
+      const now = auditNowTs
       const ts = new Date(row.timestamp).getTime()
       const diff = now - ts
       const max =

@@ -30,13 +30,6 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -60,7 +53,6 @@ import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 import { TABLE_TOOLBAR } from '@/lib/table-toolbar'
 import { cn } from '@/lib/utils'
-import { formatDateUtcDe } from '@/lib/format'
 import {
   createSharedPortfolio,
   deleteReference,

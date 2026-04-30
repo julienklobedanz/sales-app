@@ -3,6 +3,12 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { deleteReference } from '@/app/dashboard/actions'
+import {
+  approveInternalAndSend,
+  getApprovalLink,
+  resendClientApprovalEmail,
+  withdrawApprovalRequest,
+} from '@/app/dashboard/actions'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { logEventForCurrentOrg } from '@/lib/events/log-event'
@@ -21,6 +27,25 @@ export async function deleteReferenceFromDetailPage(id: string) {
   await deleteReference(id)
   revalidatePath(ROUTES.evidence.root)
   redirect(ROUTES.evidence.root)
+}
+
+export async function approveInternalAndSendFromDetail(referenceId: string) {
+  await approveInternalAndSend(referenceId)
+  revalidatePath(ROUTES.evidence.detail(referenceId))
+}
+
+export async function resendApprovalFromDetail(referenceId: string) {
+  await resendClientApprovalEmail(referenceId)
+  revalidatePath(ROUTES.evidence.detail(referenceId))
+}
+
+export async function withdrawApprovalFromDetail(referenceId: string) {
+  await withdrawApprovalRequest(referenceId)
+  revalidatePath(ROUTES.evidence.detail(referenceId))
+}
+
+export async function getApprovalLinkFromDetail(referenceId: string) {
+  return getApprovalLink(referenceId)
 }
 
 type AnonymizeResult =

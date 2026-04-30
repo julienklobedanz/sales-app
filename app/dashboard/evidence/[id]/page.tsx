@@ -26,6 +26,7 @@ import { ShareLinkButton } from './share-link-button'
 import { RequestApprovalDialog } from './request-approval-dialog'
 import { ReferenceViewedTracker } from './reference-viewed-tracker'
 import { getReferenceUsageStats } from '@/app/dashboard/references/reference-usage-stats'
+import { ApprovalPendingActions } from './approval-pending-actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -118,6 +119,14 @@ export default async function EvidenceDetailPage({
       approval_scope_reference_call,
       approval_scope_logo_use,
       approval_scope_press_release,
+      approval_grace_until,
+      approval_internal_status,
+      approval_reference_giver_name,
+      approval_reference_giver_title,
+      approval_competitor_blacklist,
+      approval_quote_proposed,
+      approval_quote_approved,
+      approval_consent_file_url,
       anonymized_from_id,
       tags,
       created_at,
@@ -157,6 +166,14 @@ export default async function EvidenceDetailPage({
     approval_scope_reference_call: boolean | null
     approval_scope_logo_use: boolean | null
     approval_scope_press_release: boolean | null
+    approval_grace_until: string | null
+    approval_internal_status: string | null
+    approval_reference_giver_name: string | null
+    approval_reference_giver_title: string | null
+    approval_competitor_blacklist: string[] | null
+    approval_quote_proposed: string | null
+    approval_quote_approved: string | null
+    approval_consent_file_url: string | null
     anonymized_from_id: string | null
     created_at: string | null
     updated_at: string | null
@@ -231,7 +248,14 @@ export default async function EvidenceDetailPage({
     String(ref.customer_approval_status ?? '').toLowerCase() === 'approved' ||
     normalizedStatus === 'approved' ||
     normalizedStatus === 'external'
-  const approvalStatus = String(ref.customer_approval_status ?? '').toLowerCase()
+  const nowMs = new Date().getTime()
+  const expiresMs = ref.approval_expires_at ? new Date(ref.approval_expires_at).getTime() : null
+  const graceMs = ref.approval_grace_until ? new Date(ref.approval_grace_until).getTime() : null
+  const baseApprovalStatus = String(ref.customer_approval_status ?? '').toLowerCase()
+  const approvalStatus =
+    baseApprovalStatus === 'approved' && expiresMs && expiresMs < nowMs && graceMs && graceMs >= nowMs
+      ? 'expired'
+      : baseApprovalStatus
   const readinessLabel =
     approvalStatus === 'approved'
       ? 'Freigegeben'
@@ -239,7 +263,9 @@ export default async function EvidenceDetailPage({
         ? 'Anfrage läuft'
         : approvalStatus === 'rejected'
           ? 'Abgelehnt'
-          : 'Nicht angefragt'
+          : approvalStatus === 'expired'
+            ? 'Grace Period'
+            : 'Nicht angefragt'
   const readinessTone =
     approvalStatus === 'approved'
       ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
@@ -247,6 +273,8 @@ export default async function EvidenceDetailPage({
         ? 'bg-amber-50 text-amber-700 border-amber-200'
         : approvalStatus === 'rejected'
           ? 'bg-red-50 text-red-700 border-red-200'
+          : approvalStatus === 'expired'
+            ? 'bg-orange-50 text-orange-700 border-orange-200'
           : 'bg-slate-100 text-slate-600 border-slate-200'
   const scopeBadges = [
     (ref.approval_scope_named_mention ?? true) ? 'Namentlich' : null,
@@ -255,6 +283,10 @@ export default async function EvidenceDetailPage({
     (ref.approval_scope_logo_use ?? false) ? 'Logo-Nutzung' : null,
     (ref.approval_scope_press_release ?? false) ? 'Pressemeldung' : null,
   ].filter(Boolean) as string[]
+  const competitorBlacklist = Array.isArray(ref.approval_competitor_blacklist)
+    ? ref.approval_competitor_blacklist
+    : []
+  const internalStatus = String(ref.approval_internal_status ?? '')
 
   const createdAt = ref.created_at ? new Date(ref.created_at) : null
   const updatedAt = ref.updated_at ? new Date(ref.updated_at) : null
@@ -465,6 +497,46 @@ export default async function EvidenceDetailPage({
                   )}
                 </div>
               </div>
+              {competitorBlacklist.length ? (
+                <div className="space-y-1.5">
+                  <p className="text-muted-foreground">Nicht verwenden für</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {competitorBlacklist.map((item) => (
+                      <Badge key={item} variant="outline">
+                        {item}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+              {ref.approval_quote_approved || ref.approval_quote_proposed ? (
+                <div className="space-y-1.5">
+                  <p className="text-muted-foreground">Zitat</p>
+                  <p className="rounded-md border bg-muted/20 p-2 text-xs">
+                    {ref.approval_quote_approved ?? ref.approval_quote_proposed}
+                  </p>
+                </div>
+              ) : null}
+              {ref.approval_reference_giver_name ? (
+                <div className="space-y-1">
+                  <p className="text-muted-foreground">Referenz-Geber</p>
+                  <p className="text-sm font-medium">
+                    {ref.approval_reference_giver_name}
+                    {ref.approval_reference_giver_title ? ` · ${ref.approval_reference_giver_title}` : ''}
+                  </p>
+                </div>
+              ) : null}
+              {ref.approval_consent_file_url ? (
+                <a className="text-xs text-blue-600 underline" href={ref.approval_consent_file_url} target="_blank" rel="noreferrer">
+                  Consent-Dokument ansehen
+                </a>
+              ) : null}
+              {(approvalStatus === 'pending' || internalStatus === 'pending_internal') ? (
+                <ApprovalPendingActions
+                  referenceId={id}
+                  canInternalApprove={internalStatus === 'pending_internal' && (role === 'admin' || role === 'account_manager')}
+                />
+              ) : null}
             </CardContent>
           </Card>
 

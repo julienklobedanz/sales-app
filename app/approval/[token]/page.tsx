@@ -61,6 +61,10 @@ export default async function ApprovalPage({
       approval_scope_reference_call,
       approval_scope_logo_use,
       approval_scope_press_release,
+      approval_grace_until,
+      approval_quote_proposed,
+      approval_reference_giver_name,
+      approval_reference_giver_title,
       companies (
         name,
         organization_id
@@ -103,10 +107,13 @@ export default async function ApprovalPage({
   const pending =
     row.customer_approval_status === 'pending' ||
     (row.customer_approval_status == null && String(row.status ?? '') === 'pending')
+  const nowTs = new Date().getTime()
   const isExpired =
-    !!row.approval_expires_at && new Date(String(row.approval_expires_at)).getTime() < Date.now()
+    !!row.approval_expires_at && new Date(String(row.approval_expires_at)).getTime() < nowTs
+  const inGrace =
+    !!row.approval_grace_until && new Date(String(row.approval_grace_until)).getTime() >= nowTs
 
-  if (!pending || isExpired) {
+  if (!pending || (isExpired && !inGrace)) {
     return <InvalidLink />
   }
 
@@ -184,6 +191,22 @@ export default async function ApprovalPage({
                     ))}
                   </ul>
                 </div>
+              ) : null}
+              {row.approval_quote_proposed ? (
+                <p className="mt-2">
+                  <span className="font-medium">Zitatvorschlag:</span> {row.approval_quote_proposed}
+                </p>
+              ) : null}
+              {row.approval_reference_giver_name ? (
+                <p className="mt-1">
+                  <span className="font-medium">Offizieller Referenz-Geber:</span> {row.approval_reference_giver_name}
+                  {row.approval_reference_giver_title ? ` · ${row.approval_reference_giver_title}` : ''}
+                </p>
+              ) : null}
+              {isExpired && inGrace ? (
+                <p className="mt-2 rounded bg-amber-50 px-2 py-1 text-amber-700">
+                  Hinweis: Diese Anfrage befindet sich in der Karenzzeit.
+                </p>
               ) : null}
             </div>
           ) : null}

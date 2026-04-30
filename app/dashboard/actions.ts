@@ -1,7 +1,13 @@
 'use server'
 
 import { toggleFavoriteImpl } from '@/app/dashboard/references/favorites'
-import { submitForApprovalImpl, resendClientApprovalEmailImpl } from '@/app/dashboard/references/approvals'
+import {
+  submitForApprovalImpl,
+  resendClientApprovalEmailImpl,
+  approveInternalAndSendImpl,
+  getApprovalLinkImpl,
+  withdrawApprovalRequestImpl,
+} from '@/app/dashboard/references/approvals'
 import type { SubmitForApprovalOptions } from '@/app/dashboard/references/approval-submit-types'
 import { getPendingClientApprovalsImpl } from '@/app/dashboard/references/pending-approvals'
 import { getInboxNotificationsImpl } from '@/app/dashboard/notifications/inbox'
@@ -258,6 +264,18 @@ export async function submitForApproval(
   options?: SubmitForApprovalOptions
 ) {
   return submitForApprovalImpl(id, options)
+}
+
+export async function approveInternalAndSend(referenceId: string) {
+  return approveInternalAndSendImpl(referenceId)
+}
+
+export async function getApprovalLink(referenceId: string) {
+  return getApprovalLinkImpl(referenceId)
+}
+
+export async function withdrawApprovalRequest(referenceId: string) {
+  return withdrawApprovalRequestImpl(referenceId)
 }
 
 export async function getContactOptionsForReference(referenceId: string) {

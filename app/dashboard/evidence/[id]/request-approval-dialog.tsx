@@ -43,6 +43,10 @@ export function RequestApprovalDialog({
   const [contactId, setContactId] = useState<string>('')
   const [step, setStep] = useState<1 | 2>(1)
   const [ownerName, setOwnerName] = useState('')
+  const [referenceGiverName, setReferenceGiverName] = useState('')
+  const [referenceGiverTitle, setReferenceGiverTitle] = useState('')
+  const [competitorBlacklist, setCompetitorBlacklist] = useState('')
+  const [proposedQuote, setProposedQuote] = useState('')
   const [expiryDays, setExpiryDays] = useState('14')
   const [allowNamed, setAllowNamed] = useState(true)
   const [allowAnonymous, setAllowAnonymous] = useState(true)
@@ -84,6 +88,15 @@ export function RequestApprovalDialog({
     if (message.trim()) options.message = message.trim()
     if (contactId) options.contactId = contactId
     if (ownerName.trim()) options.ownerName = ownerName.trim()
+    if (referenceGiverName.trim()) options.referenceGiverName = referenceGiverName.trim()
+    if (referenceGiverTitle.trim()) options.referenceGiverTitle = referenceGiverTitle.trim()
+    if (proposedQuote.trim()) options.proposedQuote = proposedQuote.trim()
+    if (competitorBlacklist.trim()) {
+      options.competitorBlacklist = competitorBlacklist
+        .split(',')
+        .map((x) => x.trim())
+        .filter(Boolean)
+    }
     const parsedDays = Number(expiryDays)
     if (Number.isFinite(parsedDays)) {
       options.approvalExpiresInDays = Math.max(1, Math.min(365, Math.trunc(parsedDays)))
@@ -98,12 +111,20 @@ export function RequestApprovalDialog({
 
     setLoading(true)
     try {
-      await submitForApproval(referenceId, options)
-      toast.success('Freigabe angefordert. E-Mail wurde versendet.')
+      const result = await submitForApproval(referenceId, options)
+      if ((result as { stage?: string } | null)?.stage === 'internal_review_pending') {
+        toast.success('Zur internen Prüfung eingereicht. Versand erfolgt nach Vier-Augen-Freigabe.')
+      } else {
+        toast.success('Freigabe angefordert. E-Mail wurde versendet.')
+      }
       setOpen(false)
       setStep(1)
       setMessage('')
       setOwnerName('')
+      setReferenceGiverName('')
+      setReferenceGiverTitle('')
+      setCompetitorBlacklist('')
+      setProposedQuote('')
       setExpiryDays('14')
       setAllowNamed(true)
       setAllowAnonymous(true)
@@ -151,6 +172,26 @@ export function RequestApprovalDialog({
                 <p className="text-xs text-muted-foreground">
                   Falls Salesforce-Owner noch nicht angebunden ist, hier manuell setzen.
                 </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-2">
+                  <Label htmlFor="approval-giver-name">Offizieller Referenz-Geber (Name)</Label>
+                  <Input
+                    id="approval-giver-name"
+                    value={referenceGiverName}
+                    onChange={(e) => setReferenceGiverName(e.target.value)}
+                    placeholder="z. B. CIO Name"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="approval-giver-title">Referenz-Geber (Position)</Label>
+                  <Input
+                    id="approval-giver-title"
+                    value={referenceGiverTitle}
+                    onChange={(e) => setReferenceGiverTitle(e.target.value)}
+                    placeholder="z. B. CIO"
+                  />
+                </div>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="approval-contact">Kontakt beim Kunden</Label>
@@ -215,6 +256,26 @@ export function RequestApprovalDialog({
                   inputMode="numeric"
                   onChange={(e) => setExpiryDays(e.target.value)}
                   placeholder="14"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="approval-blacklist">Wettbewerber-Ausschlussliste</Label>
+                <Input
+                  id="approval-blacklist"
+                  value={competitorBlacklist}
+                  onChange={(e) => setCompetitorBlacklist(e.target.value)}
+                  placeholder="z. B. SAP, Oracle, Accenture"
+                />
+                <p className="text-xs text-muted-foreground">Kommagetrennt; Referenz wird für diese Accounts gesperrt.</p>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="approval-quote">Zitatvorschlag (optional)</Label>
+                <Textarea
+                  id="approval-quote"
+                  value={proposedQuote}
+                  onChange={(e) => setProposedQuote(e.target.value)}
+                  rows={3}
+                  placeholder="Vorgeschlagenes Kundenzitat …"
                 />
               </div>
             </div>
