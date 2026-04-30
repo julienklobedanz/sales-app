@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { ROUTES } from '@/lib/routes'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { writeAuditLog } from '@/lib/audit/log-audit'
 
 type ActionResult = { success: true } | { success: false; error: string }
 
@@ -169,6 +170,16 @@ export async function updateWorkspaceSecurityCompliance(input: {
     .eq('id', organizationId)
 
   if (error) return { success: false, error: error.message }
+  void writeAuditLog({
+    orgId: organizationId,
+    userId: user.id,
+    action: 'security_policy_updated',
+    entityId: organizationId,
+    actionDetails: {
+      public_link_max_ttl_days: maxTtl,
+      public_link_require_password_for_new: Boolean(input.publicLinkRequirePasswordForNew),
+    },
+  })
   revalidatePath(ROUTES.settings)
   return { success: true }
 }

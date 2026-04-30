@@ -23,6 +23,8 @@ export function PortfolioUnlockGate({ slug }: { slug: string }) {
       if (!res.success) {
         if (res.error === 'invalid_password') {
           toast.error('Passwort ist ungültig.')
+        } else if (res.error === 'rate_limited') {
+          toast.error('Zu viele Fehlversuche. Bitte in 15 Minuten erneut versuchen.')
         } else if (res.error === 'expired') {
           toast.error('Dieser Link ist abgelaufen.')
         } else {

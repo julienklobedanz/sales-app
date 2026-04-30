@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { logEvent } from '@/lib/events/log-event'
+import { writeAuditLog } from '@/lib/audit/log-audit'
 import {
   ReferencePdfDocument,
 } from '@/app/dashboard/references/pdf/template'
@@ -163,6 +164,13 @@ export async function GET(req: NextRequest) {
     referenceId: id,
     payload: { template },
     createdBy: user.id,
+  })
+  void writeAuditLog({
+    orgId: profile.organization_id as string,
+    userId: user.id,
+    action: 'export_pdf',
+    entityId: id,
+    actionDetails: { reference_id: id, template },
   })
 
   const bytes = new Uint8Array(pdf)

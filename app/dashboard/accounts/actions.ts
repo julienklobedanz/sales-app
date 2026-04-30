@@ -927,8 +927,12 @@ export async function refreshAccountsFromBrandfetch(): Promise<RefreshAccountsRe
     const fetchedHeadquartersNorm = normalizeTextValue(fetchedHeadquarters)
     const headquartersNeedsUpdate = !currentHeadquarters && Boolean(fetchedHeadquartersNorm)
 
+    const currentLogo = String(company.logo_url ?? '').trim()
+    const fetchedLogo = String(fetched.data.logoUrl ?? '').trim()
+    const logoNeedsUpdate = Boolean(fetchedLogo) && fetchedLogo !== currentLogo
+
     const hasRefreshableData =
-      !company.logo_url ||
+      logoNeedsUpdate ||
       industryNeedsUpdate ||
       headquartersNeedsUpdate ||
       company.employee_count == null ||
@@ -940,7 +944,7 @@ export async function refreshAccountsFromBrandfetch(): Promise<RefreshAccountsRe
     }
 
     const payload = {
-      logo_url: company.logo_url || fetched.data.logoUrl,
+      logo_url: logoNeedsUpdate ? fetched.data.logoUrl : company.logo_url,
       industry: industryNeedsUpdate ? fetched.data.industry : company.industry,
       headquarters: headquartersNeedsUpdate ? fetched.data.headquarters : company.headquarters,
       employee_count: company.employee_count ?? fetched.data.employeeCount,

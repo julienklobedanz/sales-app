@@ -4,6 +4,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { generatePortfolioSlug } from '@/lib/slug'
 import { logEvent } from '@/lib/events/log-event'
 import { parseOrgPublicLinkPolicy } from '@/lib/organization-link-policy'
+import { writeAuditLog } from '@/lib/audit/log-audit'
 
 import type { ReferenceRow } from '@/app/dashboard/actions'
 
@@ -139,6 +140,18 @@ export async function createSharedPortfolioImpl(
           referenceId: referenceIds[0] ?? null,
           createdBy: user.id,
         })
+        void writeAuditLog({
+          orgId,
+          userId: user.id,
+          action: 'link_created',
+          entityId: slug,
+          actionDetails: {
+            slug,
+            reference_ids: referenceIds,
+            has_password: Boolean(initialPassword),
+            expires_at: exp.toISOString(),
+          },
+        })
       }
       return { success: true, url, slug, initialPassword: initialPassword ?? undefined }
     }
@@ -265,6 +278,20 @@ export async function updateShareLinkSecurityByReferenceImpl(
   if (!payload?.success) {
     return { success: false, error: payload?.error ?? 'Sicherheitseinstellungen konnten nicht gespeichert werden.' }
   }
+  void writeAuditLog({
+    orgId,
+    userId: user.id,
+    action: 'link_security_updated',
+    entityId: slug,
+    actionDetails: {
+      slug,
+      reference_id: referenceId,
+      password_changed: Boolean(input.passwordPlain) || input.removePassword,
+      password_removed: input.removePassword,
+      expires_at: input.clearExpires ? null : expiresAtIso,
+      clear_expires: input.clearExpires,
+    },
+  })
   return { success: true }
 }
 

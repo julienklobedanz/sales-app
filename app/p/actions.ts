@@ -1,8 +1,10 @@
 'use server'
 
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { publicPortfolioUnlockCookieName } from '@/lib/public-portfolio-cookie'
+import { writeAuditLog } from '@/lib/audit/log-audit'
+import { createHash } from 'crypto'
 
 /** Referenz-Objekt wie von get_public_portfolio RPC zurückgegeben (kompatibel mit ReferenceRow) */
 export type PublicReference = {
@@ -164,7 +166,48 @@ export async function getPublicPortfolioShareOwner(
 
 export type UnlockPortfolioResult =
   | { success: true }
-  | { success: false; error: 'not_found' | 'expired' | 'invalid_password' | 'no_password_required' | 'unknown' }
+  | {
+      success: false
+      error:
+        | 'not_found'
+        | 'expired'
+        | 'invalid_password'
+        | 'no_password_required'
+        | 'rate_limited'
+        | 'unknown'
+    }
+
+function extractClientIpFromHeaders(
+  headerMap: Pick<Headers, 'get'>
+): string | null {
+  const forwarded = headerMap.get('x-forwarded-for') ?? headerMap.get('x-real-ip') ?? null
+  if (!forwarded) return null
+  const ip = forwarded.split(',')[0]?.trim() ?? ''
+  return ip || null
+}
+
+async function getUnlockAuditContext(
+  slug: string
+): Promise<{ orgId: string | null; referenceId: string | null }> {
+  const supabase = await createServerSupabaseClient()
+  const { data } = await supabase
+    .from('shared_portfolios')
+    .select('reference_ids')
+    .eq('slug', slug)
+    .limit(1)
+    .maybeSingle()
+  const referenceId =
+    data && Array.isArray((data as { reference_ids?: unknown }).reference_ids)
+      ? (data as { reference_ids: string[] }).reference_ids[0] ?? null
+      : null
+  if (!referenceId) return { orgId: null, referenceId: null }
+  const { data: ref } = await supabase
+    .from('references')
+    .select('organization_id')
+    .eq('id', referenceId)
+    .single()
+  return { orgId: (ref?.organization_id as string | null) ?? null, referenceId }
+}
 
 /** Kundenansicht: Passwort prüfen und Session-Cookie setzen (ohne Login). */
 export async function unlockPublicPortfolio(
@@ -172,6 +215,37 @@ export async function unlockPublicPortfolio(
   password: string
 ): Promise<UnlockPortfolioResult> {
   const supabase = await createServerSupabaseClient()
+  const reqHeaders = await headers()
+  const clientIp = extractClientIpFromHeaders(reqHeaders)
+  const ipHash = clientIp ? createHash('sha256').update(clientIp).digest('hex') : null
+  const rateWindowStart = new Date(Date.now() - 15 * 60 * 1000).toISOString()
+  const unlockCtx = await getUnlockAuditContext(slug)
+
+  if (ipHash) {
+    const { count } = await supabase
+      .from('portfolio_unlock_attempts')
+      .select('id', { count: 'exact', head: true })
+      .eq('slug', slug)
+      .eq('ip_hash', String(ipHash))
+      .eq('was_success', false)
+      .gte('attempted_at', rateWindowStart)
+    if ((count ?? 0) >= 5) {
+      await supabase.from('portfolio_unlock_attempts').insert({
+        slug,
+        ip_hash: String(ipHash),
+        was_success: false,
+      })
+      void writeAuditLog({
+        orgId: unlockCtx.orgId,
+        userId: null,
+        action: 'unlock_rate_limited',
+        entityId: slug,
+        actionDetails: { slug, reference_id: unlockCtx.referenceId, ip_hash: String(ipHash) },
+      })
+      return { success: false, error: 'rate_limited' }
+    }
+  }
+
   const { data, error } = await supabase.rpc('try_unlock_shared_portfolio', {
     p_slug: slug,
     p_password: password,
@@ -179,6 +253,20 @@ export async function unlockPublicPortfolio(
   if (error) return { success: false, error: 'unknown' }
   const payload = data as { success?: boolean; token?: string; error?: string } | null
   if (!payload?.success || !payload.token) {
+    if (ipHash) {
+      await supabase.from('portfolio_unlock_attempts').insert({
+        slug,
+        ip_hash: String(ipHash),
+        was_success: false,
+      })
+    }
+    void writeAuditLog({
+      orgId: unlockCtx.orgId,
+      userId: null,
+      action: 'unlock_failed',
+      entityId: slug,
+      actionDetails: { slug, reference_id: unlockCtx.referenceId, ip_hash: ipHash ?? null },
+    })
     const e = payload?.error
     if (e === 'expired') return { success: false, error: 'expired' }
     if (e === 'invalid_password') return { success: false, error: 'invalid_password' }
@@ -202,6 +290,21 @@ export async function unlockPublicPortfolio(
     secure: process.env.NODE_ENV === 'production',
     path: '/',
     maxAge: maxAgeSec,
+  })
+
+  if (ipHash) {
+    await supabase.from('portfolio_unlock_attempts').insert({
+      slug,
+      ip_hash: String(ipHash),
+      was_success: true,
+    })
+  }
+  void writeAuditLog({
+    orgId: unlockCtx.orgId,
+    userId: null,
+    action: 'unlock_success',
+    entityId: slug,
+    actionDetails: { slug, reference_id: unlockCtx.referenceId, ip_hash: ipHash ?? null },
   })
 
   return { success: true }

@@ -32,6 +32,7 @@ export function SettingsTabs({
   profile,
   org,
   teamMembers,
+  auditLogs,
 }: {
   roleSwitcher: {
     serverRole: AppRole
@@ -69,6 +70,14 @@ export function SettingsTabs({
     }
   }
   teamMembers: Parameters<typeof SettingsTeamCard>[0]['initialMembers']
+  auditLogs: Array<{
+    id: string
+    action: string
+    entity_id: string | null
+    action_details: Record<string, unknown> | null
+    timestamp: string
+    user_id: string | null
+  }>
 }) {
   const [notifyNewMatch, setNotifyNewMatch] = useState(
     profile.notificationSettings.emailOnNewMatch
@@ -97,6 +106,10 @@ export function SettingsTabs({
     org.workflowSettings.publicLinkRequirePasswordForNew
   )
   const [securityPending, startSecurityTransition] = useTransition()
+  const [auditActionFilter, setAuditActionFilter] = useState('all')
+  const [auditSearch, setAuditSearch] = useState('')
+  const [auditTimeFilter, setAuditTimeFilter] = useState<'24h' | '7d' | '30d' | 'all'>('7d')
+  const [auditQuickView, setAuditQuickView] = useState<'all' | 'security' | 'policy'>('all')
 
   function saveProfileNotifications() {
     startProfileTransition(async () => {
@@ -155,6 +168,64 @@ export function SettingsTabs({
       }
       toast.success('Sicherheitsrichtlinien gespeichert')
     })
+  }
+
+  function actionSeverity(action: string): 'high' | 'medium' | 'low' {
+    if (action === 'unlock_rate_limited') return 'high'
+    if (action === 'unlock_failed' || action === 'security_policy_updated') return 'medium'
+    return 'low'
+  }
+
+  const filteredAuditLogs = auditLogs.filter((row) => {
+    if (auditQuickView === 'security' && !row.action.startsWith('unlock_')) return false
+    if (auditQuickView === 'policy' && !row.action.includes('policy')) return false
+    if (auditActionFilter !== 'all' && row.action !== auditActionFilter) return false
+    if (auditTimeFilter !== 'all') {
+      const now = Date.now()
+      const ts = new Date(row.timestamp).getTime()
+      const diff = now - ts
+      const max =
+        auditTimeFilter === '24h'
+          ? 24 * 60 * 60 * 1000
+          : auditTimeFilter === '7d'
+            ? 7 * 24 * 60 * 60 * 1000
+            : 30 * 24 * 60 * 60 * 1000
+      if (Number.isFinite(ts) && diff > max) return false
+    }
+    const q = auditSearch.trim().toLowerCase()
+    if (!q) return true
+    return (
+      String(row.entity_id ?? '').toLowerCase().includes(q) ||
+      String(row.action).toLowerCase().includes(q) ||
+      String(row.user_id ?? '').toLowerCase().includes(q) ||
+      JSON.stringify(row.action_details ?? {}).toLowerCase().includes(q)
+    )
+  })
+
+  function exportAuditCsv() {
+    const header = ['timestamp', 'action', 'entity_id', 'user_id', 'action_details']
+    const lines = filteredAuditLogs.map((row) => {
+      const fields = [
+        row.timestamp,
+        row.action,
+        row.entity_id ?? '',
+        row.user_id ?? '',
+        JSON.stringify(row.action_details ?? {}),
+      ]
+      return fields
+        .map((f) => `"${String(f).replace(/"/g, '""')}"`)
+        .join(',')
+    })
+    const csv = [header.join(','), ...lines].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `audit-logs-${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
   }
 
   return (
@@ -293,6 +364,125 @@ export function SettingsTabs({
               </div>
             </CardContent>
           </div>
+          {roleSwitcher.serverRole === 'admin' ? (
+            <div className={CARD_CLASS}>
+              <CardHeader className="px-0 pt-0">
+                <CardTitle className="text-base">Audit Log</CardTitle>
+                <CardDescription className="text-slate-500">
+                  Nachweisbare Security- und Compliance-Ereignisse (PII-minimiert, IDs only).
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3 px-0 pb-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-1 rounded-md border border-slate-200 p-1">
+                    {([
+                      ['all', 'Alle'],
+                      ['security', 'Security'],
+                      ['policy', 'Policy'],
+                    ] as const).map(([value, label]) => (
+                      <Button
+                        key={value}
+                        type="button"
+                        size="sm"
+                        variant={auditQuickView === value ? 'secondary' : 'ghost'}
+                        className="h-7 px-2 text-xs"
+                        onClick={() => setAuditQuickView(value)}
+                      >
+                        {label}
+                      </Button>
+                    ))}
+                  </div>
+                  <Input
+                    value={auditSearch}
+                    onChange={(e) => setAuditSearch(e.target.value)}
+                    placeholder="Suche in action/entity/user/details"
+                    className="h-9 max-w-sm"
+                  />
+                  <select
+                    value={auditTimeFilter}
+                    onChange={(e) => setAuditTimeFilter(e.target.value as '24h' | '7d' | '30d' | 'all')}
+                    className="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm"
+                  >
+                    <option value="24h">Letzte 24h</option>
+                    <option value="7d">Letzte 7 Tage</option>
+                    <option value="30d">Letzte 30 Tage</option>
+                    <option value="all">Alle Zeiträume</option>
+                  </select>
+                  <select
+                    value={auditActionFilter}
+                    onChange={(e) => setAuditActionFilter(e.target.value)}
+                    className="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm"
+                  >
+                    <option value="all">Alle Actions</option>
+                    {Array.from(new Set(auditLogs.map((r) => r.action))).sort().map((action) => (
+                      <option key={action} value={action}>
+                        {action}
+                      </option>
+                    ))}
+                  </select>
+                  <Button type="button" variant="outline" size="sm" onClick={exportAuditCsv}>
+                    CSV Export
+                  </Button>
+                </div>
+                <div className="max-h-[360px] overflow-auto rounded-lg border border-slate-200">
+                  <table className="w-full text-xs">
+                    <thead className="sticky top-0 bg-slate-50 text-slate-600">
+                      <tr>
+                        <th className="px-3 py-2 text-left font-medium">Zeit</th>
+                        <th className="px-3 py-2 text-left font-medium">Action</th>
+                        <th className="px-3 py-2 text-left font-medium">Severity</th>
+                        <th className="px-3 py-2 text-left font-medium">Entity</th>
+                        <th className="px-3 py-2 text-left font-medium">User</th>
+                        <th className="px-3 py-2 text-left font-medium">Details</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredAuditLogs.length === 0 ? (
+                        <tr>
+                          <td className="px-3 py-3 text-slate-500" colSpan={6}>
+                            Keine Einträge für den gewählten Filter.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredAuditLogs.map((row) => (
+                          <tr key={row.id} className="border-t border-slate-100 align-top">
+                            <td className="whitespace-nowrap px-3 py-2 text-slate-600">
+                              {new Date(row.timestamp).toLocaleString('de-DE')}
+                            </td>
+                            <td className="px-3 py-2 font-medium text-slate-900">{row.action}</td>
+                            <td className="px-3 py-2">
+                              <span
+                                className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                                  actionSeverity(row.action) === 'high'
+                                    ? 'bg-red-100 text-red-700'
+                                    : actionSeverity(row.action) === 'medium'
+                                      ? 'bg-amber-100 text-amber-700'
+                                      : 'bg-slate-100 text-slate-600'
+                                }`}
+                              >
+                                {actionSeverity(row.action) === 'high'
+                                  ? 'HIGH'
+                                  : actionSeverity(row.action) === 'medium'
+                                    ? 'MEDIUM'
+                                    : 'LOW'}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2 font-mono text-slate-700">{row.entity_id ?? '—'}</td>
+                            <td className="px-3 py-2 font-mono text-slate-700">{row.user_id ?? '—'}</td>
+                            <td className="max-w-[360px] px-3 py-2 font-mono text-slate-600">
+                              <pre className="whitespace-pre-wrap break-all">
+                                {JSON.stringify(row.action_details ?? {}, null, 0)}
+                              </pre>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </div>
+          ) : null}
           <div className={CARD_CLASS}>
             <CardHeader className="px-0 pt-0">
               <CardTitle className="text-base">Subdomain</CardTitle>

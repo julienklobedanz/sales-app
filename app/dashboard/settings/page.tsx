@@ -7,6 +7,15 @@ import { DEV_ROLE_COOKIE, parseAppRoleCookie } from '@/lib/dev-role-preview'
 import { getTeamMembers } from './invite-actions'
 import { SettingsTabs } from './settings-tabs'
 
+type AuditLogRow = {
+  id: string
+  action: string
+  entity_id: string | null
+  action_details: Record<string, unknown> | null
+  timestamp: string
+  user_id: string | null
+}
+
 function parseExportSettings(raw: unknown): { pdf_layout?: 'one_pager' | 'detail' | 'anonymized'; pdf_logo_enabled?: boolean } {
   if (!raw || typeof raw !== 'object') return {}
   const obj = raw as Record<string, unknown>
@@ -113,6 +122,17 @@ export default async function SettingsPage() {
   const cookieStore = await cookies()
   const previewRole = parseAppRoleCookie(cookieStore.get(DEV_ROLE_COOKIE)?.value)
   const serverRole = (profileRow?.role ?? 'sales') as AppRole
+  const auditLogs: AuditLogRow[] =
+    serverRole === 'admin' && organizationId
+      ? (
+          await supabase
+            .from('audit_logs')
+            .select('id, action, entity_id, action_details, timestamp, user_id')
+            .eq('org_id', organizationId)
+            .order('timestamp', { ascending: false })
+            .limit(200)
+        ).data ?? []
+      : []
 
   const fullName = profileRow?.full_name ?? ''
   const [firstName = '', ...rest] = fullName.trim().split(/\s+/)
@@ -156,6 +176,7 @@ export default async function SettingsPage() {
           ),
         }}
         teamMembers={teamMembers}
+        auditLogs={auditLogs}
       />
     </div>
   )
