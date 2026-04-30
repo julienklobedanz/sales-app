@@ -140,6 +140,17 @@ function DetailPages({ reference, org }: { reference: PdfReference; org: PdfOrgB
   )
 }
 
+function renderReferencePages(reference: PdfReference, org: PdfOrgBranding, template: PdfTemplate) {
+  const effective = template === 'anonymized'
+    ? anonymizeReferenceForOutput(reference)
+    : reference
+  return template === 'detail' ? (
+    <DetailPages reference={effective} org={org} />
+  ) : (
+    <OnePager reference={effective} org={org} />
+  )
+}
+
 export function ReferencePdfDocument({
   reference,
   org,
@@ -149,17 +160,29 @@ export function ReferencePdfDocument({
   org: PdfOrgBranding
   template: PdfTemplate
 }) {
-  const effective = template === 'anonymized'
-    ? anonymizeReferenceForOutput(reference)
-    : reference
-
   return (
     <Document>
-      {template === 'detail' ? (
-        <DetailPages reference={effective} org={org} />
-      ) : (
-        <OnePager reference={effective} org={org} />
-      )}
+      {renderReferencePages(reference, org, template)}
+    </Document>
+  )
+}
+
+export function ReferencePdfBundleDocument({
+  references,
+  org,
+  template,
+}: {
+  references: PdfReference[]
+  org: PdfOrgBranding
+  template: PdfTemplate
+}) {
+  return (
+    <Document>
+      {references.map((reference) => (
+        <React.Fragment key={reference.id}>
+          {renderReferencePages(reference, org, template)}
+        </React.Fragment>
+      ))}
     </Document>
   )
 }

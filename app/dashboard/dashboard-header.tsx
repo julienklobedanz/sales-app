@@ -88,6 +88,8 @@ export function DashboardHeader({
   const [notifications, setNotifications] =
     useState<DashboardNotificationItem[]>(initialNotifications)
   const [dynamicCrumbs, setDynamicCrumbs] = useState<Array<{ label: string; href?: string }>>([])
+  const [accountCrumbNames, setAccountCrumbNames] = useState<Record<string, string>>({})
+  const [dealCrumbTitles, setDealCrumbTitles] = useState<Record<string, string>>({})
 
   useEffect(() => {
     setNotifications(initialNotifications)
@@ -155,7 +157,7 @@ export function DashboardHeader({
     if (pathname === ROUTES.home) {
       return {
         title: 'Dashboard',
-        subtitle: 'Übersicht und Schnellzugriffe',
+        subtitle: undefined,
       }
     }
     if (pathname.startsWith(ROUTES.evidence.root)) {
@@ -173,7 +175,7 @@ export function DashboardHeader({
     if (pathname.startsWith(ROUTES.deals.root)) {
       return {
         title: 'Deals',
-        subtitle: 'Deals und Referenz-Anfragen',
+        subtitle: undefined,
       }
     }
     if (pathname.startsWith(ROUTES.match)) {
@@ -185,7 +187,7 @@ export function DashboardHeader({
     if (pathname.startsWith(ROUTES.marketSignals)) {
       return {
         title: COPY.pages.marketSignals,
-        subtitle: 'News, Trends und Signale (in Arbeit)',
+        subtitle: undefined,
       }
     }
     if (pathname.startsWith(ROUTES.settings)) {
@@ -213,6 +215,63 @@ export function DashboardHeader({
         return
       }
 
+      if (pathname === ROUTES.deals.new) {
+        if (!cancelled) {
+          setDynamicCrumbs([
+            { label: 'Deals', href: ROUTES.deals.root },
+            { label: 'Neuer Deal' },
+          ])
+        }
+        return
+      }
+
+      if (pathname === ROUTES.deals.requestNew) {
+        if (!cancelled) {
+          setDynamicCrumbs([
+            { label: 'Deals', href: ROUTES.deals.root },
+            { label: 'Anfrage erstellen' },
+          ])
+        }
+        return
+      }
+
+      if (pathname === ROUTES.marketSignalsManage) {
+        if (!cancelled) {
+          setDynamicCrumbs([
+            { label: COPY.pages.marketSignals, href: ROUTES.marketSignals },
+            { label: 'Watchlist verwalten' },
+          ])
+        }
+        return
+      }
+
+      if (pathname === ROUTES.settings) {
+        const tab = searchParams.get('tab')
+        const tabLabel =
+          tab === 'workspace'
+            ? 'Workspace'
+            : tab === 'team'
+              ? 'Team'
+              : tab === 'integrations'
+                ? 'Integrationen'
+                : tab === 'workflow'
+                  ? 'Workflow'
+                  : tab === 'profile'
+                    ? 'Profil'
+                    : null
+        if (!tabLabel) {
+          if (!cancelled) setDynamicCrumbs([])
+          return
+        }
+        if (!cancelled) {
+          setDynamicCrumbs([
+            { label: 'Einstellungen', href: ROUTES.settings },
+            { label: tabLabel },
+          ])
+        }
+        return
+      }
+
       const accountMatch = pathname.match(/^\/dashboard\/accounts\/([^/]+)$/)
       if (accountMatch) {
         const id = accountMatch[1]
@@ -225,13 +284,50 @@ export function DashboardHeader({
               : tab === 'links'
                 ? 'Referenzen & Deals'
                 : 'Strategie'
-        const supabase = createClient()
-        const { data } = await supabase.from('companies').select('name').eq('id', id).maybeSingle()
+        const fallbackName = accountCrumbNames[id] ?? 'Account'
         if (!cancelled) {
           setDynamicCrumbs([
             { label: 'Accounts', href: ROUTES.accounts },
-            { label: data?.name ?? 'Account' },
+            { label: fallbackName, href: ROUTES.accountsDetail(id) },
             { label: tabLabel },
+          ])
+        }
+        if (accountCrumbNames[id]) return
+        const supabase = createClient()
+        const { data } = await supabase.from('companies').select('name').eq('id', id).maybeSingle()
+        if (!cancelled) {
+          if (data?.name) {
+            setAccountCrumbNames((prev) => ({ ...prev, [id]: data.name as string }))
+          }
+          setDynamicCrumbs([
+            { label: 'Accounts', href: ROUTES.accounts },
+            { label: data?.name ?? fallbackName, href: ROUTES.accountsDetail(id) },
+            { label: tabLabel },
+          ])
+        }
+        return
+      }
+
+      const dealMatch = pathname.match(/^\/dashboard\/deals\/([^/]+)$/)
+      if (dealMatch) {
+        const id = dealMatch[1]
+        const fallbackTitle = dealCrumbTitles[id] ?? 'Deal'
+        if (!cancelled) {
+          setDynamicCrumbs([
+            { label: 'Deals', href: ROUTES.deals.root },
+            { label: fallbackTitle },
+          ])
+        }
+        if (dealCrumbTitles[id]) return
+        const supabase = createClient()
+        const { data } = await supabase.from('deals').select('title').eq('id', id).maybeSingle()
+        if (!cancelled) {
+          if (data?.title) {
+            setDealCrumbTitles((prev) => ({ ...prev, [id]: data.title as string }))
+          }
+          setDynamicCrumbs([
+            { label: 'Deals', href: ROUTES.deals.root },
+            { label: data?.title ?? fallbackTitle },
           ])
         }
         return
@@ -243,14 +339,15 @@ export function DashboardHeader({
         const supabase = createClient()
         const { data } = await supabase
           .from('references')
-          .select('title, companies(name)')
+          .select('title, company_id, companies(name)')
           .eq('id', id)
           .maybeSingle()
         const company = Array.isArray(data?.companies) ? data?.companies[0] : data?.companies
+        const companyId = typeof data?.company_id === 'string' ? data.company_id : null
         if (!cancelled) {
           setDynamicCrumbs([
             { label: COPY.pages.evidence, href: ROUTES.evidence.root },
-            { label: company?.name ?? 'Account' },
+            { label: company?.name ?? 'Account', href: companyId ? ROUTES.accountsDetail(companyId) : ROUTES.accounts },
             { label: data?.title ?? 'Referenz' },
           ])
         }
@@ -263,7 +360,7 @@ export function DashboardHeader({
     return () => {
       cancelled = true
     }
-  }, [pathname, searchParams])
+  }, [pathname, searchParams, accountCrumbNames, dealCrumbTitles])
 
   return (
     <header className="flex min-h-[84px] shrink-0 items-center gap-2 border-b px-4 py-3 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:py-2">
@@ -281,13 +378,13 @@ export function DashboardHeader({
                   {dynamicCrumbs.map((crumb, idx) => (
                     <Fragment key={`${crumb.label}-${idx}`}>
                       <BreadcrumbItem>
-                        {idx === dynamicCrumbs.length - 1 || !crumb.href ? (
+                        {idx === dynamicCrumbs.length - 1 ? (
                           <BreadcrumbPage className="text-slate-900 dark:text-slate-100 font-medium">
                             {crumb.label}
                           </BreadcrumbPage>
                         ) : (
                           <BreadcrumbLink asChild className="text-slate-400 hover:text-slate-500">
-                            <Link href={crumb.href}>{crumb.label}</Link>
+                            <Link href={crumb.href ?? ROUTES.home}>{crumb.label}</Link>
                           </BreadcrumbLink>
                         )}
                       </BreadcrumbItem>

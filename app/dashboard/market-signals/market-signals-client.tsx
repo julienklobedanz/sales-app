@@ -4,8 +4,8 @@ import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import {
+  Delete02Icon,
   FilterHorizontalIcon,
-  InformationCircleIcon,
   Linkedin01Icon,
   LinkIcon,
   Paperclip,
@@ -13,6 +13,7 @@ import {
   UploadIcon,
   UserMultipleIcon,
 } from '@hugeicons/core-free-icons'
+import { BarChart3, Zap } from 'lucide-react'
 
 import { AppIcon } from '@/lib/icons'
 import { CheckIcon } from '@/components/ui/check-icon'
@@ -33,8 +34,10 @@ import { toast } from 'sonner'
 
 export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }) {
   type IntroTone = 'challenging' | 'advisory' | 'concise'
+  type InboxCategory = 'all' | 'people' | 'company'
   const [nowTs] = useState(() => new Date().getTime())
   const [onlyActiveDeals, setOnlyActiveDeals] = useState(false)
+  const [onlyFocusAccounts, setOnlyFocusAccounts] = useState(true)
   const restrictedCompanyIds = useMemo(
     () => (onlyActiveDeals ? model.activeDealCompanyIds : undefined),
     [model.activeDealCompanyIds, onlyActiveDeals]
@@ -51,6 +54,11 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
         detectedAt: string
         sourceLabel: string
         sourceHref: string
+        sourceSummary: string
+        listTitlePrefix: string
+        listTitleRest: string
+        categoryBadge: 'people' | 'finance' | 'strategy'
+        personName?: string
       }
     | {
         kind: 'news'
@@ -63,7 +71,20 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
         publishedOn: string
         sourceLabel: string
         sourceHref: string
+        sourceSummary: string
+        listTitlePrefix: string
+        listTitleRest: string
+        categoryBadge: 'people' | 'finance' | 'strategy'
+        personName?: string
       }
+  type InboxGroup = {
+    key: string
+    representative: InboxItem
+    items: InboxItem[]
+    personNames: string[]
+    sourceLabels: string[]
+    latestTs: string
+  }
 
   function relativeTime(iso: string) {
     const t = new Date(iso).getTime()
@@ -96,6 +117,81 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
     return compact.length <= 120 ? compact : `${compact.slice(0, 117)}...`
   }
 
+  function summarizeSourceText(raw: string) {
+    const compact = String(raw ?? '').replace(/\s+/g, ' ').trim()
+    if (!compact) return 'Keine Quelle verfügbar.'
+    return compact.length <= 92 ? compact : `${compact.slice(0, 89)}...`
+  }
+
+  function inferNewsCategory(raw: string): 'finance' | 'strategy' {
+    const t = String(raw ?? '').toLowerCase()
+    if (
+      /(budget|umsatz|revenue|quartal|q1|q2|q3|q4|profit|finanz|ebit|cost|invest|capex|opex)/.test(
+        t
+      )
+    ) {
+      return 'finance'
+    }
+    return 'strategy'
+  }
+
+  function toTitleCaseWords(input: string) {
+    return input
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ')
+  }
+
+  function normalizeGroupingToken(input: string) {
+    return String(input ?? '')
+      .toLowerCase()
+      .replace(/\([^)]*\)/g, '')
+      .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+  }
+
+  function buildCompanyNewsHeadline(companyName: string, body: string) {
+    const compact = String(body ?? '').replace(/\s+/g, ' ').trim()
+    if (!compact) return `${companyName} • Neues Signal`
+
+    const normalized = compact
+      .replace(/[–—]/g, '-')
+      .replace(/\s*-\s*/g, ' | ')
+      .replace(/\s*,\s*/g, ', ')
+    const rawParts = normalized
+      .split('|')
+      .map((part) => part.trim())
+      .filter(Boolean)
+
+    const first = rawParts[0] ?? compact
+    const second = rawParts[1] ?? ''
+
+    const quarterMatch = compact.match(/\bQ[1-4]\b/i)
+    const quarter = quarterMatch ? quarterMatch[0].toUpperCase() : ''
+
+    let trigger = first
+      .replace(/\b(geplant|angekündigt|angekuendigt|läuft|laeuft|startet|gestartet)\b/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+    if (trigger.length > 46) trigger = `${trigger.slice(0, 43).trim()}...`
+    trigger = toTitleCaseWords(trigger || 'Signal')
+
+    let context = second || compact
+    context = context
+      .replace(/\b(geplant|angekündigt|angekuendigt)\b/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+    if (quarter && !new RegExp(`\\b${quarter}\\b`, 'i').test(context)) {
+      context = `${quarter} ${context}`.trim()
+    }
+    if (context.length > 38) context = `${context.slice(0, 35).trim()}...`
+    context = context || 'Update'
+
+    return `${companyName} • ${trigger} (${context})`
+  }
+
   const restrictedSet = useMemo(
     () => (restrictedCompanyIds?.length ? new Set(restrictedCompanyIds) : null),
     [restrictedCompanyIds]
@@ -110,6 +206,11 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
           .map((k) => k.replace('market_irrelevant:', ''))
       )
   )
+  const [inboxCategory, setInboxCategory] = useState<InboxCategory>(() => {
+    if (typeof window === 'undefined') return 'all'
+    const saved = window.localStorage.getItem('market-signals-inbox-category')
+    return saved === 'people' || saved === 'company' ? saved : 'all'
+  })
 
   const items: InboxItem[] = useMemo(() => {
     const execItems: InboxItem[] = model.executives.map((row) => {
@@ -127,6 +228,11 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
         detectedAt: row.detectedAt,
         sourceLabel: 'LinkedIn',
         sourceHref: href,
+        sourceSummary: summarizeSourceText(row.changeSummary || `${row.personName} in neuer Rolle bei ${row.companyName}`),
+        listTitlePrefix: row.personName || 'Person',
+        listTitleRest: `${row.companyName} · Executive Tracking`,
+        categoryBadge: 'people',
+        personName: row.personName,
       }
     })
     const newsItems: InboxItem[] = model.news.map((row) => {
@@ -142,17 +248,25 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
         companyId: row.companyId,
         companyName: row.companyName,
         companyLogoUrl: row.companyLogoUrl,
-        headline: extractHeadline(row.body),
+        headline: buildCompanyNewsHeadline(row.companyName, row.body),
         body: row.body,
         publishedOn: row.publishedOn,
         sourceLabel: row.sourceLabel?.trim() ? String(row.sourceLabel) : 'Google News',
         sourceHref: href,
+        sourceSummary: summarizeSourceText(row.body),
+        listTitlePrefix: row.companyName || 'Unternehmen',
+        listTitleRest: buildCompanyNewsHeadline(row.companyName, row.body).replace(
+          new RegExp(`^${String(row.companyName || 'Unternehmen').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*•\\s*`),
+          ''
+        ),
+        categoryBadge: inferNewsCategory(row.body),
+        personName: undefined,
       }
     })
 
     const merged = [...execItems, ...newsItems]
       .filter((x) => (restrictedSet ? restrictedSet.has(x.companyId) : true))
-      .filter((x) => model.followingCompanyIds.includes(x.companyId))
+      .filter((x) => (onlyFocusAccounts ? model.followingCompanyIds.includes(x.companyId) : true))
       .filter((x) => !irrelevantKeys.has(`${x.kind === 'exec' ? 'market_exec' : 'market_news'}:${x.id}`))
       .sort((a, b) => {
         const aT = new Date(a.kind === 'exec' ? a.detectedAt : a.publishedOn).getTime()
@@ -160,21 +274,113 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
         return bT - aT
       })
     return merged
-  }, [irrelevantKeys, model.executives, model.followingCompanyIds, model.news, restrictedSet])
+  }, [irrelevantKeys, model.executives, model.followingCompanyIds, model.news, onlyFocusAccounts, restrictedSet])
+
+  const visibleItems = useMemo(() => {
+    if (inboxCategory === 'people') return items.filter((item) => item.kind === 'exec')
+    if (inboxCategory === 'company') return items.filter((item) => item.kind === 'news')
+    return items
+  }, [inboxCategory, items])
+
+  const groupedVisibleItems = useMemo(() => {
+    const byKey = new Map<string, InboxGroup>()
+    for (const item of visibleItems) {
+      const ts = item.kind === 'exec' ? item.detectedAt : item.publishedOn
+      const topicToken =
+        item.kind === 'exec'
+          ? normalizeGroupingToken(`${item.companyName} ${item.personName ?? ''} ${item.listTitleRest}`)
+          : normalizeGroupingToken(`${item.companyName} ${item.listTitleRest}`)
+      const groupKey = `${item.kind}:${item.companyId}:${topicToken}`
+      const existing = byKey.get(groupKey)
+      if (!existing) {
+        byKey.set(groupKey, {
+          key: groupKey,
+          representative: item,
+          items: [item],
+          personNames: item.personName ? [item.personName] : [],
+          sourceLabels: [item.sourceLabel],
+          latestTs: ts,
+        })
+        continue
+      }
+      existing.items.push(item)
+      if (item.personName && !existing.personNames.includes(item.personName)) {
+        existing.personNames.push(item.personName)
+      }
+      if (!existing.sourceLabels.includes(item.sourceLabel)) {
+        existing.sourceLabels.push(item.sourceLabel)
+      }
+      if (new Date(ts).getTime() > new Date(existing.latestTs).getTime()) {
+        existing.latestTs = ts
+        existing.representative = item
+      }
+      byKey.set(groupKey, existing)
+    }
+    return Array.from(byKey.values()).sort(
+      (a, b) => new Date(b.latestTs).getTime() - new Date(a.latestTs).getTime()
+    )
+  }, [visibleItems])
+
+  const trendingAccounts = useMemo(() => {
+    const stats = new Map<
+      string,
+      { companyId: string; companyName: string; companyLogoUrl: string | null; count: number; latestTs: number }
+    >()
+    for (const row of model.executives) {
+      const ts = new Date(row.detectedAt).getTime()
+      const existing = stats.get(row.companyId)
+      if (!existing) {
+        stats.set(row.companyId, {
+          companyId: row.companyId,
+          companyName: row.companyName,
+          companyLogoUrl: row.companyLogoUrl,
+          count: 1,
+          latestTs: Number.isFinite(ts) ? ts : 0,
+        })
+        continue
+      }
+      existing.count += 1
+      if (Number.isFinite(ts) && ts > existing.latestTs) existing.latestTs = ts
+      stats.set(row.companyId, existing)
+    }
+    for (const row of model.news) {
+      const ts = new Date(row.publishedOn).getTime()
+      const existing = stats.get(row.companyId)
+      if (!existing) {
+        stats.set(row.companyId, {
+          companyId: row.companyId,
+          companyName: row.companyName,
+          companyLogoUrl: row.companyLogoUrl,
+          count: 1,
+          latestTs: Number.isFinite(ts) ? ts : 0,
+        })
+        continue
+      }
+      existing.count += 1
+      if (Number.isFinite(ts) && ts > existing.latestTs) existing.latestTs = ts
+      stats.set(row.companyId, existing)
+    }
+    return Array.from(stats.values())
+      .sort((a, b) => (b.count !== a.count ? b.count - a.count : b.latestTs - a.latestTs))
+      .slice(0, 3)
+  }, [model.executives, model.news])
 
   const grouped = useMemo(() => {
-    const buckets: Record<string, InboxItem[]> = { Heute: [], Gestern: [], Ältere: [] }
-    for (const it of items) {
-      const ts = it.kind === 'exec' ? it.detectedAt : it.publishedOn
+    const buckets: Record<string, InboxGroup[]> = { Heute: [], Gestern: [], Ältere: [] }
+    for (const it of groupedVisibleItems) {
+      const ts = it.latestTs
       const g = groupLabel(ts)
       buckets[g] = buckets[g] ?? []
       buckets[g].push(it)
     }
     return buckets
-  }, [items])
+  }, [groupedVisibleItems])
 
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
-  const selected = useMemo(() => items.find((x) => `${x.kind}:${x.id}` === selectedKey) ?? null, [items, selectedKey])
+  const selected = useMemo(
+    () => groupedVisibleItems.find((x) => x.key === selectedKey)?.representative ?? null,
+    [groupedVisibleItems, selectedKey]
+  )
   const [mobileOpen, setMobileOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [addToDealPendingId, setAddToDealPendingId] = useState<string | null>(null)
@@ -195,6 +401,20 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
     return () => mql.removeEventListener('change', apply)
   }, [])
 
+  useEffect(() => {
+    if (!selectedKey && groupedVisibleItems.length > 0) {
+      setSelectedKey(groupedVisibleItems[0].key)
+      return
+    }
+    if (selectedKey && !groupedVisibleItems.some((item) => item.key === selectedKey)) {
+      setSelectedKey(groupedVisibleItems.length > 0 ? groupedVisibleItems[0].key : null)
+    }
+  }, [groupedVisibleItems, selectedKey])
+
+  useEffect(() => {
+    window.localStorage.setItem('market-signals-inbox-category', inboxCategory)
+  }, [inboxCategory])
+
   const sourcePreview = useMemo(() => {
     if (!selected) return null
     try {
@@ -208,23 +428,47 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
     }
   }, [selected])
 
-  async function markReadForItem(item: InboxItem) {
-    const key = `${item.kind === 'exec' ? 'market_exec' : 'market_news'}:${item.id}`
-    if (readKeys.has(key)) return
+  async function markReadForGroup(itemsToMark: InboxItem[]) {
+    const keys = itemsToMark.map(
+      (item) => `${item.kind === 'exec' ? 'market_exec' : 'market_news'}:${item.id}`
+    )
+    const unseen = keys.filter((key) => !readKeys.has(key))
+    if (!unseen.length) return
     const next = new Set(readKeys)
-    next.add(key)
+    for (const key of unseen) next.add(key)
     setReadKeys(next)
-    const result = await markMarketSignalNotificationsRead([key])
+    const result = await markMarketSignalNotificationsRead(unseen)
     if (!result.success) toast.error(result.error ?? 'Konnte Signal nicht als gelesen markieren')
   }
 
-  async function dismissItem(item: InboxItem) {
-    const key = `${item.kind === 'exec' ? 'market_exec' : 'market_news'}:${item.id}`
+  async function dismissItems(itemsToDismiss: InboxItem[]) {
+    const keys = itemsToDismiss.map(
+      (item) => `${item.kind === 'exec' ? 'market_exec' : 'market_news'}:${item.id}`
+    )
     const next = new Set(irrelevantKeys)
-    next.add(key)
+    for (const key of keys) next.add(key)
     setIrrelevantKeys(next)
-    const result = await markMarketSignalsIrrelevant([key])
+    const result = await markMarketSignalsIrrelevant(keys)
     if (!result.success) toast.error(result.error ?? 'Signal konnte nicht archiviert werden')
+  }
+
+  async function dismissAllVisible() {
+    if (!groupedVisibleItems.length) return
+    const keys = groupedVisibleItems.flatMap((group) =>
+      group.items.map(
+      (item) => `${item.kind === 'exec' ? 'market_exec' : 'market_news'}:${item.id}`
+      )
+    )
+    const next = new Set(irrelevantKeys)
+    for (const key of keys) next.add(key)
+    setIrrelevantKeys(next)
+    const result = await markMarketSignalsIrrelevant(keys)
+    if (!result.success) {
+      toast.error(result.error ?? 'Signale konnten nicht archiviert werden')
+      return
+    }
+    setSelectedKey(null)
+    toast.success(`${keys.length} Signale archiviert.`)
   }
 
   const quickRefs = useMemo(() => {
@@ -273,6 +517,18 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
       return `Frisches Account-Signal bei ${item.companyName} mit hoher Outreach-Relevanz.${refPart}`
     }
     return `Das aktuelle Account-Signal bei ${item.companyName} bietet einen idealen Gesprächseinstieg für einen beratenden, lösungsorientierten Erstkontakt.${refPart}`
+  }
+
+  function buildOutreachSummary(item: InboxItem, tone: IntroTone) {
+    return `${item.sourceSummary} ${buildWhyNowMessage(item, tone)}`
+  }
+
+  function buildIntroSnippet(item: InboxItem) {
+    const opener =
+      item.kind === 'exec'
+        ? `${item.listTitlePrefix} ist bei ${item.companyName} in einer neuen Rolle.`
+        : `${item.companyName} sendet ein relevantes Signal: ${item.listTitleRest}.`
+    return `${opener} ${buildWhyNowMessage(item, 'concise')}`
   }
 
   function readinessForReference(status: string): { label: string; dotClass: string; hint: string } {
@@ -338,14 +594,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/70 bg-card px-4 py-3 shadow-sm shadow-slate-900/5">
-        <div className="flex min-w-0 items-start gap-2.5 text-sm text-muted-foreground">
-          <AppIcon icon={InformationCircleIcon} size={16} className="mt-0.5 shrink-0" />
-          <p className="min-w-0">
-            <span className="font-medium text-foreground">Watchlist-Logik:</span> Unternehmen folgen für Account News,
-            Personen folgen für Executive Moves.
-          </p>
-        </div>
+      <div className="flex flex-wrap items-center justify-end gap-3 rounded-xl border border-border/70 bg-card px-4 py-3 shadow-sm shadow-slate-900/5">
         <div className="inline-flex items-center rounded-lg border border-border/70 bg-background/70 p-1">
           <Button
             type="button"
@@ -360,6 +609,20 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
           >
             <AppIcon icon={FilterHorizontalIcon} size={14} />
             Nur aktive Deals
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="toolbar"
+            onClick={() => setOnlyFocusAccounts((prev) => !prev)}
+            className={`inline-flex h-8 items-center gap-1.5 rounded-md border px-3 text-xs font-medium ${
+              onlyFocusAccounts
+                ? 'border-blue-500/40 bg-blue-500/10 text-blue-700 hover:bg-blue-500/15 dark:text-blue-300'
+                : 'border-transparent bg-transparent text-muted-foreground hover:bg-muted/70'
+            }`}
+          >
+            <AppIcon icon={FilterHorizontalIcon} size={14} />
+            Nur Fokus-Accounts
           </Button>
           <Button variant="ghost" size="toolbar" className="h-8 px-3 text-muted-foreground hover:bg-muted/70" asChild>
             <Link href={`${ROUTES.marketSignalsManage}?view=champions`}>
@@ -379,10 +642,60 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
             <div className="h-full overflow-hidden">
               <div className="flex h-12 items-center justify-between border-b border-slate-200 bg-white px-3">
                 <p className="text-sm font-semibold text-slate-900">Inbox</p>
-                <p className="text-xs text-slate-500">{items.length} Signale</p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs text-slate-500">
+                    {groupedVisibleItems.length} Gruppen
+                    {groupedVisibleItems.length !== visibleItems.length
+                      ? ` · ${visibleItems.length} Signale`
+                      : ''}
+                  </p>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-7 text-slate-500 hover:text-slate-700"
+                    onClick={() => void dismissAllVisible()}
+                    disabled={groupedVisibleItems.length === 0}
+                    aria-label="Alle sichtbaren Signale archivieren"
+                    title="Alle sichtbaren Signale archivieren"
+                  >
+                    <AppIcon icon={Delete02Icon} size={14} />
+                  </Button>
+                </div>
               </div>
-              <div className="h-[calc(100%-3rem)] overflow-y-auto p-2">
-                {items.length === 0 ? (
+              <div className="border-b border-slate-200 bg-white px-2 py-1.5">
+                <div className="inline-flex w-full items-center rounded-lg border border-slate-200 bg-slate-50 p-1">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={inboxCategory === 'all' ? 'secondary' : 'ghost'}
+                    className="h-7 flex-1 text-xs"
+                    onClick={() => setInboxCategory('all')}
+                  >
+                    Alle
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={inboxCategory === 'people' ? 'secondary' : 'ghost'}
+                    className="h-7 flex-1 text-xs"
+                    onClick={() => setInboxCategory('people')}
+                  >
+                    Personen
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={inboxCategory === 'company' ? 'secondary' : 'ghost'}
+                    className="h-7 flex-1 text-xs"
+                    onClick={() => setInboxCategory('company')}
+                  >
+                    Company
+                  </Button>
+                </div>
+              </div>
+              <div className="h-[calc(100%-6.25rem)] overflow-y-auto p-2">
+                {groupedVisibleItems.length === 0 ? (
                   <div className="flex h-full items-center justify-center px-6 text-center">
                     <div className="max-w-sm">
                       <p className="text-sm font-semibold text-slate-900">You&apos;re all caught up</p>
@@ -398,11 +711,21 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                             {label}
                           </p>
                           <ul className="space-y-1">
-                            {(grouped[label] ?? []).map((it) => {
-                              const key = `${it.kind}:${it.id}`
+                            {(grouped[label] ?? []).map((groupItem) => {
+                              const rep = groupItem.representative
+                              const key = groupItem.key
                               const isActive = key === selectedKey
-                              const readKey = `${it.kind === 'exec' ? 'market_exec' : 'market_news'}:${it.id}`
-                              const ts = it.kind === 'exec' ? it.detectedAt : it.publishedOn
+                              const readKeysForGroup = groupItem.items.map(
+                                (item) => `${item.kind === 'exec' ? 'market_exec' : 'market_news'}:${item.id}`
+                              )
+                              const allRead = readKeysForGroup.every((rk) => readKeys.has(rk))
+                              const ts = groupItem.latestTs
+                              const leftBorderClass =
+                                rep.categoryBadge === 'people'
+                                  ? 'bg-blue-500'
+                                  : rep.categoryBadge === 'finance'
+                                    ? 'bg-emerald-500'
+                                    : 'bg-amber-400'
                               return (
                                 <li key={key}>
                                   <button
@@ -410,7 +733,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                     onClick={() => {
                                       setSelectedKey(key)
                                       if (isMobile) setMobileOpen(true)
-                                      void markReadForItem(it)
+                                      void markReadForGroup(groupItem.items)
                                     }}
                                     className={`group relative flex w-full items-center gap-2 rounded-lg border bg-white px-2.5 py-2 text-left transition-colors ${
                                       isActive
@@ -418,13 +741,11 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                         : 'border-slate-200 hover:bg-slate-50'
                                     }`}
                                   >
-                                    {isActive ? (
-                                      <span className="absolute left-0 top-0 h-full w-1 rounded-l-lg bg-blue-600" />
-                                    ) : null}
+                                    <span className={`absolute left-0 top-0 h-full w-1 rounded-l-lg ${leftBorderClass}`} />
                                     <div className="relative size-7 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-white">
-                                      {it.companyLogoUrl ? (
+                                      {rep.companyLogoUrl ? (
                                         <Image
-                                          src={it.companyLogoUrl}
+                                          src={rep.companyLogoUrl}
                                           alt=""
                                           fill
                                           sizes="28px"
@@ -433,26 +754,78 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                       ) : null}
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                      <p className="truncate text-xs font-medium text-slate-900">{it.headline}</p>
+                                      <p className="truncate text-xs text-slate-900">
+                                        <span className="font-semibold">{rep.listTitlePrefix}</span>
+                                        <span className="text-slate-700"> • {rep.listTitleRest}</span>
+                                      </p>
+                                      <p className="mt-0.5 truncate text-[11px] text-slate-500">{rep.sourceSummary}</p>
                                       <p className="mt-0.5 text-[11px] text-slate-500">{relativeTime(ts)}</p>
+                                      {groupItem.personNames.length > 1 ? (
+                                        <div className="mt-1 flex items-center gap-1">
+                                          {groupItem.personNames.slice(0, 4).map((person) => (
+                                            <span
+                                              key={person}
+                                              className="inline-flex size-5 items-center justify-center rounded-full border border-slate-200 bg-white text-[10px] font-medium text-slate-600"
+                                              title={person}
+                                            >
+                                              {person
+                                                .split(' ')
+                                                .filter(Boolean)
+                                                .slice(0, 2)
+                                                .map((x) => x[0]?.toUpperCase() ?? '')
+                                                .join('')}
+                                            </span>
+                                          ))}
+                                          {groupItem.personNames.length > 4 ? (
+                                            <span className="text-[10px] text-slate-500">
+                                              +{groupItem.personNames.length - 4}
+                                            </span>
+                                          ) : null}
+                                        </div>
+                                      ) : null}
                                     </div>
                                     <div className="relative shrink-0">
-                                      {!readKeys.has(readKey) ? (
+                                      {!allRead ? (
                                         <span className="absolute -left-2 top-1/2 size-2 -translate-y-1/2 rounded-full bg-blue-500" />
                                       ) : null}
-                                      <button
-                                        type="button"
-                                        className="ml-1 inline-flex size-7 items-center justify-center rounded-md text-slate-400 opacity-0 transition-opacity hover:bg-white hover:text-slate-700 group-hover:opacity-100"
-                                        aria-label="Archivieren"
-                                        title="Archivieren"
-                                        onClick={(e) => {
-                                          e.preventDefault()
-                                          e.stopPropagation()
-                                          void dismissItem(it)
-                                        }}
-                                      >
-                                        <CheckIcon className="size-4" />
-                                      </button>
+                                      <div className="pointer-events-none absolute right-0 top-1/2 flex -translate-y-1/2 translate-x-3 items-center gap-1 rounded-md border border-slate-200 bg-white/95 px-1 py-0.5 opacity-0 shadow-sm transition-all duration-200 group-hover:pointer-events-auto group-hover:translate-x-0 group-hover:opacity-100">
+                                        <button
+                                          type="button"
+                                          className="inline-flex size-6 items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                                          aria-label="Archivieren"
+                                          title="Archivieren"
+                                          onClick={(e) => {
+                                            e.preventDefault()
+                                            e.stopPropagation()
+                                            void dismissItems(groupItem.items)
+                                          }}
+                                        >
+                                          <CheckIcon className="size-4" />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className="inline-flex size-6 items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                                          aria-label="AI-Snippet kopieren"
+                                          title="AI-Snippet kopieren"
+                                          onClick={(e) => {
+                                            e.preventDefault()
+                                            e.stopPropagation()
+                                            void navigator.clipboard.writeText(buildIntroSnippet(rep))
+                                            toast.success('AI-Intro-Snippet kopiert.')
+                                          }}
+                                        >
+                                          <AppIcon icon={Sparkles} size={14} />
+                                        </button>
+                                        <span className="inline-flex size-6 items-center justify-center rounded border border-slate-200 bg-white text-slate-600">
+                                        {rep.categoryBadge === 'people' ? (
+                                          <AppIcon icon={UserMultipleIcon} size={13} className="text-blue-600" />
+                                        ) : rep.categoryBadge === 'finance' ? (
+                                          <BarChart3 className="size-3 text-emerald-600" />
+                                        ) : (
+                                          <Zap className="size-3 text-amber-500" />
+                                        )}
+                                        </span>
+                                      </div>
                                     </div>
                                   </button>
                                 </li>
@@ -476,13 +849,45 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                 {!selected ? (
                   <div className="flex h-full items-center justify-center px-6 text-center">
                     <div className="max-w-sm">
-                      <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
-                        <AppIcon icon={Sparkles} size={18} />
-                      </div>
-                      <p className="mt-3 text-sm font-semibold text-slate-900">Kein Signal ausgewählt</p>
-                      <p className="mt-1 text-sm text-slate-500">
-                        Wähle ein Signal aus, um Details und passende Referenzen zu sehen.
-                      </p>
+                      {groupedVisibleItems.length === 0 ? (
+                        <>
+                          <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+                            <CheckIcon className="size-5" />
+                          </div>
+                          <p className="mt-3 text-sm font-semibold text-slate-900">Inbox Zero erreicht</p>
+                          <p className="mt-1 text-sm text-slate-500">
+                            Stark! Keine offenen Signale mehr. Hier sind die Top Trending Accounts als nächster Fokus.
+                          </p>
+                          <div className="mt-4 space-y-2 text-left">
+                            {trendingAccounts.length === 0 ? (
+                              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                                Aktuell keine Trending Accounts verfügbar.
+                              </div>
+                            ) : (
+                              trendingAccounts.map((account) => (
+                                <Link
+                                  key={account.companyId}
+                                  href={ROUTES.accountsDetail(account.companyId)}
+                                  className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700 hover:bg-slate-100"
+                                >
+                                  <span className="truncate font-medium text-slate-900">{account.companyName}</span>
+                                  <span className="shrink-0 text-slate-500">{account.count} Signale</span>
+                                </Link>
+                              ))
+                            )}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+                            <AppIcon icon={Sparkles} size={18} />
+                          </div>
+                          <p className="mt-3 text-sm font-semibold text-slate-900">Kein Signal ausgewählt</p>
+                          <p className="mt-1 text-sm text-slate-500">
+                            Wähle ein Signal aus, um Details und passende Referenzen zu sehen.
+                          </p>
+                        </>
+                      )}
                     </div>
                   </div>
                 ) : (
@@ -529,9 +934,11 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                     <div className="flex-1 overflow-y-auto px-6 py-5">
                       <div className="grid gap-4 md:grid-cols-2">
                         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Why now?</p>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            Summary & Grund für Outreach
+                          </p>
                           <p className="mt-2 text-sm text-slate-700">
-                            {buildWhyNowMessage(selected, introTone)}
+                            {buildOutreachSummary(selected, introTone)}
                           </p>
                         </div>
 
@@ -746,7 +1153,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                           },
                                         }
                                       )
-                                      await dismissItem(selected)
+                                      await dismissItems([selected])
                                       setSelectedKey(null)
                                     }}
                                   >
@@ -954,7 +1361,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                 return
                               }
                               toast.success('Zum Deal hinzugefügt')
-                              await dismissItem(selected)
+                              await dismissItems([selected])
                               setSelectedKey(null)
                             }}
                           >
