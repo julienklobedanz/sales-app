@@ -13,7 +13,6 @@ import {
   UploadIcon,
   UserMultipleIcon,
 } from '@hugeicons/core-free-icons'
-import { BarChart3, Zap } from 'lucide-react'
 
 import { AppIcon } from '@/lib/icons'
 import { CheckIcon } from '@/components/ui/check-icon'
@@ -820,9 +819,9 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                         {rep.categoryBadge === 'people' ? (
                                           <AppIcon icon={UserMultipleIcon} size={13} className="text-blue-600" />
                                         ) : rep.categoryBadge === 'finance' ? (
-                                          <BarChart3 className="size-3 text-emerald-600" />
+                                          <span className="inline-flex size-3 rounded-sm bg-emerald-500" />
                                         ) : (
-                                          <Zap className="size-3 text-amber-500" />
+                                          <span className="inline-flex size-2.5 rotate-45 rounded-[1px] bg-amber-400" />
                                         )}
                                         </span>
                                       </div>
