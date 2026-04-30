@@ -111,7 +111,7 @@ export const COPY = {
     pageSubtitle: 'Deine Account-Intelligenz auf einen Blick',
     executiveSection: 'Executive Tracking',
     newsSection: 'Account News',
-    championSection: 'Champion Moves',
+    championSection: 'Executive Tracking',
     manage: 'Verwalten',
     filterAccount: 'Account filtern',
     filterSegmentLabel: 'Typ',

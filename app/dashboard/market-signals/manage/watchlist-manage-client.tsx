@@ -93,7 +93,7 @@ export function MarketSignalsManageClient({
         setChampionRows((prev) =>
           prev.map((row) => (row.key === championKey ? { ...row, isFollowing: !nextValue } : row))
         )
-        toast.error(result.error ?? 'Champion-Watchlist konnte nicht aktualisiert werden')
+        toast.error(result.error ?? 'Executive-Watchlist konnte nicht aktualisiert werden')
       }
     })
   }
@@ -154,7 +154,7 @@ export function MarketSignalsManageClient({
       >
         <div className="flex items-center gap-2">
           <AppIcon icon={Sparkles} size={16} className="text-muted-foreground" />
-          <h2 className="text-base font-semibold text-foreground">Champions verwalten</h2>
+          <h2 className="text-base font-semibold text-foreground">Executives verwalten</h2>
           {isChampionsView ? (
             <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-[11px] font-medium text-blue-700">
               Aktiv
@@ -166,7 +166,7 @@ export function MarketSignalsManageClient({
           <Input
             value={championQuery}
             onChange={(event) => setChampionQuery(event.target.value)}
-            placeholder="Champions durchsuchen"
+            placeholder="Executives durchsuchen"
             className="h-10 rounded-lg border-border/70 bg-card pl-10"
           />
         </div>
@@ -182,7 +182,7 @@ export function MarketSignalsManageClient({
                 onCheckedChange={(checked) =>
                   toggleChampionRow(champion.key, champion.personName, checked === true)
                 }
-                aria-label={`${champion.personName} zur Champion-Watchlist hinzufügen`}
+                aria-label={`${champion.personName} zur Executive-Watchlist hinzufügen`}
               />
               <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
                 <div className="min-w-0">
@@ -196,7 +196,7 @@ export function MarketSignalsManageClient({
             </li>
           ))}
           {filteredChampions.length === 0 ? (
-            <li className="px-4 py-8 text-center text-sm text-muted-foreground">Keine Champions gefunden.</li>
+            <li className="px-4 py-8 text-center text-sm text-muted-foreground">Keine Executives gefunden.</li>
           ) : null}
         </ul>
       </div>

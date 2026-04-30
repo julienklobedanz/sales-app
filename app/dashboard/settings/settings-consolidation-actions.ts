@@ -82,6 +82,11 @@ export async function updateWorkspaceAdminSettings(input: {
 export async function updateWorkflowSettings(input: {
   linkExpiryDays: number
   requireInternalApproval: boolean
+  reminder1Days: number
+  reminder2Days: number
+  escalationAfterDays: number
+  autoNotifyRequesterOnEscalation: boolean
+  autoAllowDelegation: boolean
 }): Promise<ActionResult> {
   const { supabase, organizationId } = await getContext()
   if (!organizationId) {
@@ -89,6 +94,18 @@ export async function updateWorkflowSettings(input: {
   }
 
   const safeLinkExpiry = Math.max(1, Math.min(365, Number.isFinite(input.linkExpiryDays) ? Math.trunc(input.linkExpiryDays) : 14))
+  const safeReminder1 = Math.max(
+    1,
+    Math.min(30, Number.isFinite(input.reminder1Days) ? Math.trunc(input.reminder1Days) : 3)
+  )
+  const safeReminder2 = Math.max(
+    safeReminder1,
+    Math.min(45, Number.isFinite(input.reminder2Days) ? Math.trunc(input.reminder2Days) : 7)
+  )
+  const safeEscalationAfter = Math.max(
+    safeReminder2,
+    Math.min(60, Number.isFinite(input.escalationAfterDays) ? Math.trunc(input.escalationAfterDays) : 10)
+  )
 
   const { data: orgRow, error: readErr } = await supabase
     .from('organizations')
@@ -105,6 +122,11 @@ export async function updateWorkflowSettings(input: {
     ...prev,
     link_expiry_days: safeLinkExpiry,
     require_internal_approval: Boolean(input.requireInternalApproval),
+    approval_reminder_1_days: safeReminder1,
+    approval_reminder_2_days: safeReminder2,
+    approval_escalation_after_days: safeEscalationAfter,
+    approval_notify_requester_on_escalation: Boolean(input.autoNotifyRequesterOnEscalation),
+    approval_allow_delegation: Boolean(input.autoAllowDelegation),
   }
 
   const { error } = await supabase

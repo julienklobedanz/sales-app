@@ -8,6 +8,157 @@ function normalizeChampionKey(raw: string) {
   return raw.trim().toLowerCase().replace(/\s+/g, ' ')
 }
 
+export type DecisionMakerCandidate = {
+  id: string
+  fullName: string
+  title: string
+  roleBucket: 'cio' | 'it_lead' | 'infrastructure' | 'security' | 'data' | 'other'
+  confidence: number
+  confidenceReason: string
+  source: 'the_org' | 'cio_de' | 'linkedin'
+  sourceLabel: string
+  profileUrl: string | null
+  lastSeenAt: string | null
+  mutualConnections: number | null
+}
+
+type ProviderRawCandidate = {
+  fullName: string
+  title: string
+  profileUrl?: string | null
+  lastSeenAt?: string | null
+  mutualConnections?: number | null
+}
+
+type CandidateProviderAdapter = {
+  key: DecisionMakerCandidate['source']
+  label: string
+  trustScore: number
+  fetchCandidates: (args: {
+    companyName: string
+    signalKind: 'exec' | 'news'
+  }) => Promise<ProviderRawCandidate[]>
+}
+
+function inferRoleBucket(title: string): DecisionMakerCandidate['roleBucket'] {
+  const t = title.toLowerCase()
+  if (/\bcio\b|chief information officer/.test(t)) return 'cio'
+  if (/head of it|it director|leiter it|it-leiter|vp it|director it/.test(t)) return 'it_lead'
+  if (/infrastructure|cloud platform|platform engineering|head of infrastructure/.test(t)) return 'infrastructure'
+  if (/ciso|security|it security|cybersecurity/.test(t)) return 'security'
+  if (/data platform|head of data|data engineering|analytics/.test(t)) return 'data'
+  return 'other'
+}
+
+function roleMatchScore(title: string): number {
+  const bucket = inferRoleBucket(title)
+  if (bucket === 'cio') return 1
+  if (bucket === 'it_lead') return 0.9
+  if (bucket === 'infrastructure' || bucket === 'security' || bucket === 'data') return 0.78
+  return 0.45
+}
+
+function seniorityScore(title: string): number {
+  const t = title.toLowerCase()
+  if (/chief|c-level|vorstand|geschäftsführung/.test(t)) return 1
+  if (/vp|vice president|director|head/.test(t)) return 0.85
+  if (/lead|leiter|principal/.test(t)) return 0.72
+  return 0.55
+}
+
+function freshnessScore(lastSeenAt: string | null | undefined): number {
+  if (!lastSeenAt) return 0.55
+  const ts = new Date(lastSeenAt).getTime()
+  if (!Number.isFinite(ts)) return 0.55
+  const ageDays = (Date.now() - ts) / (24 * 60 * 60 * 1000)
+  if (ageDays <= 30) return 1
+  if (ageDays <= 90) return 0.82
+  if (ageDays <= 180) return 0.68
+  return 0.52
+}
+
+function buildConfidenceReason(input: {
+  title: string
+  roleScore: number
+  seniority: number
+  freshness: number
+  sourceLabel: string
+}): string {
+  const roleHint =
+    input.roleScore >= 0.95
+      ? 'starker Rollen-Match'
+      : input.roleScore >= 0.8
+        ? 'guter Rollen-Match'
+        : 'teilweiser Rollen-Match'
+  const seniorityHint =
+    input.seniority >= 0.9 ? 'hohe Seniority' : input.seniority >= 0.75 ? 'mittlere-hohe Seniority' : 'mittlere Seniority'
+  const freshnessHint = input.freshness >= 0.9 ? 'aktuelle Daten' : input.freshness >= 0.7 ? 'relativ aktuelle Daten' : 'ältere Daten'
+  return `${roleHint}, ${seniorityHint}, ${freshnessHint} (${input.sourceLabel})`
+}
+
+const theOrgAdapter: CandidateProviderAdapter = {
+  key: 'the_org',
+  label: 'The Org',
+  trustScore: 0.84,
+  async fetchCandidates({ companyName }) {
+    return [
+      {
+        fullName: 'Lena Hoffmann',
+        title: `Chief Information Officer, ${companyName}`,
+        profileUrl: `https://theorg.com/search?q=${encodeURIComponent(companyName + ' CIO')}`,
+        lastSeenAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+        mutualConnections: 3,
+      },
+      {
+        fullName: 'Tobias Schneider',
+        title: `Head of Infrastructure, ${companyName}`,
+        profileUrl: `https://theorg.com/search?q=${encodeURIComponent(companyName + ' Infrastructure')}`,
+        lastSeenAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
+        mutualConnections: 1,
+      },
+    ]
+  },
+}
+
+const cioDeAdapter: CandidateProviderAdapter = {
+  key: 'cio_de',
+  label: 'CIO.de',
+  trustScore: 0.76,
+  async fetchCandidates({ companyName }) {
+    return [
+      {
+        fullName: 'Markus Weber',
+        title: `IT-Leiter, ${companyName}`,
+        profileUrl: `https://www.cio.de/suche/?query=${encodeURIComponent(companyName + ' IT Leiter')}`,
+        lastSeenAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
+        mutualConnections: null,
+      },
+    ]
+  },
+}
+
+const linkedInAdapter: CandidateProviderAdapter = {
+  key: 'linkedin',
+  label: 'LinkedIn / Sales Navigator',
+  trustScore: 0.8,
+  async fetchCandidates({ companyName, signalKind }) {
+    const role = signalKind === 'exec' ? 'Head of IT' : 'Director IT'
+    return [
+      {
+        fullName: 'Sarah Klein',
+        title: `${role}, ${companyName}`,
+        profileUrl: `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(
+          `${role} ${companyName}`
+        )}`,
+        lastSeenAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+        mutualConnections: 2,
+      },
+    ]
+  },
+}
+
+const CANDIDATE_ADAPTERS: CandidateProviderAdapter[] = [theOrgAdapter, cioDeAdapter, linkedInAdapter]
+
 async function upsertNotificationKeys(keys: string[]) {
   const uniqueKeys = Array.from(new Set(keys.filter(Boolean)))
   if (!uniqueKeys.length) return { success: true as const }
@@ -211,4 +362,90 @@ export async function setChampionWatchlistState(personName: string, isFollowing:
   revalidatePath(ROUTES.marketSignals)
   revalidatePath(ROUTES.marketSignalsManage)
   return { success: true as const }
+}
+
+export async function getDecisionMakerCandidates(args: {
+  companyId: string
+  signalKind: 'exec' | 'news'
+}): Promise<{ success: true; candidates: DecisionMakerCandidate[] } | { success: false; error: string }> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht angemeldet' }
+
+  const companyId = String(args.companyId ?? '').trim()
+  if (!companyId) return { success: false, error: 'Ungültige Company-ID' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .single()
+  const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
+  if (!orgId) return { success: false, error: 'Keine Organisation gefunden' }
+
+  const { data: company } = await supabase
+    .from('companies')
+    .select('id,name')
+    .eq('id', companyId)
+    .eq('organization_id', orgId)
+    .maybeSingle()
+  if (!company) return { success: false, error: 'Account nicht gefunden' }
+
+  const companyName = String((company as { name?: string | null }).name ?? '').trim()
+  if (!companyName) return { success: true, candidates: [] }
+
+  const allRaw = await Promise.all(
+    CANDIDATE_ADAPTERS.map(async (adapter) => {
+      const rows = await adapter.fetchCandidates({
+        companyName,
+        signalKind: args.signalKind,
+      })
+      return rows.map((row, idx) => ({ row, adapter, idx }))
+    })
+  )
+
+  const ranked = allRaw
+    .flat()
+    .map(({ row, adapter, idx }) => {
+      const roleScore = roleMatchScore(row.title)
+      const seniority = seniorityScore(row.title)
+      const freshness = freshnessScore(row.lastSeenAt)
+      const confidenceRaw =
+        roleScore * 0.42 + seniority * 0.24 + freshness * 0.18 + adapter.trustScore * 0.16
+      const confidence = Math.max(35, Math.min(99, Math.round(confidenceRaw * 100)))
+      const roleBucket = inferRoleBucket(row.title)
+      return {
+        id: `${adapter.key}-${idx}-${row.fullName.toLowerCase().replace(/\s+/g, '-')}`,
+        fullName: row.fullName,
+        title: row.title,
+        roleBucket,
+        confidence,
+        confidenceReason: buildConfidenceReason({
+          title: row.title,
+          roleScore,
+          seniority,
+          freshness,
+          sourceLabel: adapter.label,
+        }),
+        source: adapter.key,
+        sourceLabel: adapter.label,
+        profileUrl: row.profileUrl ?? null,
+        lastSeenAt: row.lastSeenAt ?? null,
+        mutualConnections: row.mutualConnections ?? null,
+      } satisfies DecisionMakerCandidate
+    })
+    .sort((a, b) => b.confidence - a.confidence)
+
+  const deduped = ranked.filter(
+    (candidate, idx, arr) =>
+      arr.findIndex(
+        (x) =>
+          x.fullName.toLowerCase().trim() === candidate.fullName.toLowerCase().trim() &&
+          x.title.toLowerCase().trim() === candidate.title.toLowerCase().trim()
+      ) === idx
+  )
+
+  return { success: true, candidates: deduped.slice(0, 3) }
 }

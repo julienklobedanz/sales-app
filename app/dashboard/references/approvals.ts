@@ -178,20 +178,45 @@ export async function submitForApprovalImpl(
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, role')
+    .select('full_name, role, organization_id')
     .eq('id', user.id)
     .maybeSingle()
+  const organizationId =
+    typeof (profile as { organization_id?: string | null } | null)?.organization_id === 'string'
+      ? (profile as { organization_id: string }).organization_id
+      : null
   const requesterName =
     typeof (profile as { full_name?: string } | null)?.full_name === 'string'
       ? (profile as { full_name: string }).full_name.trim()
       : ''
 
-  const { contactId } = await resolveContactForApproval(
+  let requireInternalApproval = true
+  if (organizationId) {
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('workflow_settings')
+      .eq('id', organizationId)
+      .maybeSingle()
+    const workflow =
+      org?.workflow_settings && typeof org.workflow_settings === 'object'
+        ? (org.workflow_settings as Record<string, unknown>)
+        : {}
+    if (workflow.require_internal_approval === false) {
+      requireInternalApproval = false
+    }
+  }
+
+  const { contactId, email: contactEmail, firstName } = await resolveContactForApproval(
     supabase,
     ref,
     ref.company_id,
     options
   )
+  const company =
+    Array.isArray(ref.companies) && ref.companies.length > 0
+      ? (ref.companies[0] as { name?: string })
+      : (ref.companies as { name?: string } | null)
+  const companyName = company?.name ?? 'Referenz'
 
   const snapshot = computeStatusSnapshot(ref)
 
@@ -200,12 +225,14 @@ export async function submitForApprovalImpl(
     .update({
       approval_token: null,
       customer_approval_status: null,
-      approval_internal_status: 'pending_internal',
+      approval_internal_status: requireInternalApproval ? 'pending_internal' : 'approved_internal',
       approval_message: options?.message?.trim() ? options.message.trim() : null,
       approval_contact_id: contactId,
       approval_requested_at: new Date().toISOString(),
       approval_requested_by: user.id,
       approval_requester_name: requesterName || null,
+      approval_internal_reviewer_id: requireInternalApproval ? null : user.id,
+      approval_internal_reviewed_at: requireInternalApproval ? null : new Date().toISOString(),
       approval_reference_status_snapshot: snapshot,
       approval_owner_name: options?.ownerName?.trim() ? options.ownerName.trim() : null,
       approval_expires_at: options?.approvalExpiresInDays
@@ -243,16 +270,39 @@ export async function submitForApprovalImpl(
     })
   }
 
-  await logEventForCurrentOrg({
-    eventType: 'internal_approval_requested',
-    referenceId: id,
-    payload: {},
-  })
+  if (requireInternalApproval) {
+    await logEventForCurrentOrg({
+      eventType: 'internal_approval_requested',
+      referenceId: id,
+      payload: {},
+    })
+  } else {
+    await sendClientApprovalEmail({
+      supabase,
+      referenceId: id,
+      ref,
+      requesterName,
+      contactEmail,
+      firstName,
+      companyName,
+    })
+    await logEventForCurrentOrg({
+      eventType: 'customer_approval_requested',
+      referenceId: id,
+      payload: {},
+    })
+  }
 
   revalidatePath(ROUTES.home)
   revalidatePath(ROUTES.evidence.detail(id))
   revalidatePath(ROUTES.evidence.root)
-  return { success: true as const, stage: 'internal_review_pending' as const, requesterRole: (profile as { role?: string } | null)?.role ?? null }
+  return {
+    success: true as const,
+    stage: requireInternalApproval
+      ? ('internal_review_pending' as const)
+      : ('customer_review_pending' as const),
+    requesterRole: (profile as { role?: string } | null)?.role ?? null,
+  }
 }
 
 export async function approveInternalAndSendImpl(referenceId: string) {

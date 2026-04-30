@@ -13,14 +13,6 @@ import { ReferenceStatusBadge } from '@/components/reference-status-badge'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb'
 import { PdfExportDialog } from './pdf-export-dialog'
 import { ShareLinkButton } from './share-link-button'
 import { RequestApprovalDialog } from './request-approval-dialog'
@@ -316,24 +308,6 @@ export default async function EvidenceDetailPage({
   return (
     <div>
       <ReferenceViewedTracker referenceId={id} />
-      <div className="mb-6">
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild className="text-slate-400 hover:text-slate-500">
-                <Link href={ROUTES.evidence.root}>{COPY.nav.evidence}</Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator className="text-slate-300">/</BreadcrumbSeparator>
-            <BreadcrumbItem>
-              <BreadcrumbPage className="text-slate-900 dark:text-slate-100 font-medium">
-                {ref.title}
-              </BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-      </div>
-
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
         <div className="space-y-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -464,6 +438,44 @@ export default async function EvidenceDetailPage({
         <div className="lg:sticky lg:top-6 space-y-4 h-fit">
           <Card>
             <CardHeader>
+              <CardTitle className="text-base">Projektdetails</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div className="flex justify-between gap-2">
+                <span className="text-muted-foreground">Account</span>
+                <span className="font-medium truncate max-w-[220px]">{headerCompany ?? ''}</span>
+              </div>
+              <div className="flex justify-between gap-2">
+                <span className="text-muted-foreground">Volumen</span>
+                <span className="font-medium tabular-nums">
+                  {formatReferenceVolume(ref.volume_eur)}
+                </span>
+              </div>
+              <div className="flex justify-between gap-2">
+                <span className="text-muted-foreground">Vertragsart</span>
+                <span className="font-medium">{ref.contract_type ?? ''}</span>
+              </div>
+              <div className="flex justify-between gap-2">
+                <span className="text-muted-foreground">Projektstart</span>
+                <span className="font-medium">{ref.project_start ?? ''}</span>
+              </div>
+              <div className="flex justify-between gap-2">
+                <span className="text-muted-foreground">Projektende</span>
+                <span className="font-medium">{ref.project_end ?? ''}</span>
+              </div>
+              <div className="flex justify-between gap-2">
+                <span className="text-muted-foreground">Akt. Dienstleister</span>
+                <span className="font-medium">{ref.incumbent_provider ?? ''}</span>
+              </div>
+              <div className="flex justify-between gap-2">
+                <span className="text-muted-foreground">Wettbewerber</span>
+                <span className="font-medium">{ref.competitors ?? ''}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
               <CardTitle className="text-base">Reference Readiness</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
@@ -537,44 +549,6 @@ export default async function EvidenceDetailPage({
                   canInternalApprove={internalStatus === 'pending_internal' && (role === 'admin' || role === 'account_manager')}
                 />
               ) : null}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Projektdetails</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <div className="flex justify-between gap-2">
-                <span className="text-muted-foreground">Account</span>
-                <span className="font-medium truncate max-w-[220px]">{headerCompany ?? ''}</span>
-              </div>
-              <div className="flex justify-between gap-2">
-                <span className="text-muted-foreground">Volumen</span>
-                <span className="font-medium tabular-nums">
-                  {formatReferenceVolume(ref.volume_eur)}
-                </span>
-              </div>
-              <div className="flex justify-between gap-2">
-                <span className="text-muted-foreground">Vertragsart</span>
-                <span className="font-medium">{ref.contract_type ?? ''}</span>
-              </div>
-              <div className="flex justify-between gap-2">
-                <span className="text-muted-foreground">Projektstart</span>
-                <span className="font-medium">{ref.project_start ?? ''}</span>
-              </div>
-              <div className="flex justify-between gap-2">
-                <span className="text-muted-foreground">Projektende</span>
-                <span className="font-medium">{ref.project_end ?? ''}</span>
-              </div>
-              <div className="flex justify-between gap-2">
-                <span className="text-muted-foreground">Akt. Dienstleister</span>
-                <span className="font-medium">{ref.incumbent_provider ?? ''}</span>
-              </div>
-              <div className="flex justify-between gap-2">
-                <span className="text-muted-foreground">Wettbewerber</span>
-                <span className="font-medium">{ref.competitors ?? ''}</span>
-              </div>
             </CardContent>
           </Card>
 

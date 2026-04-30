@@ -258,7 +258,7 @@ export async function getInboxNotificationsImpl(
       if (role === 'sales' && !championMove) return null
       return {
         id: `market_exec:${String(row.id)}`,
-        title: championMove ? 'Champion Move' : 'Executive Tracking',
+        title: 'Executive Tracking',
         text: buildExecutiveSentence({
           personName: String(row.person_name ?? ''),
           personTitleBefore: (row.person_title_before as string | null) ?? null,

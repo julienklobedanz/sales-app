@@ -48,7 +48,7 @@ export function CompanyDetailStakeholdersTab({
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">Stakeholder</h2>
-          <p className="text-sm text-muted-foreground">Economic Buyer, Champion, Blocker usw.</p>
+          <p className="text-sm text-muted-foreground">Economic Buyer, Executive Sponsor, Blocker usw.</p>
         </div>
         {canEdit && (
           <Button type="button" onClick={onAdd}>
@@ -126,16 +126,16 @@ export function CompanyDetailStakeholdersTab({
         <div>
           <h3 className="text-base font-semibold">Marktsignal-Historie</h3>
           <p className="text-sm text-muted-foreground">
-            Verlauf der Signale für diesen Account, getrennt nach Champion Moves und Account News.
+            Verlauf der Signale für diesen Account, getrennt nach Executive Tracking und Account News.
           </p>
         </div>
 
         <div className="grid gap-4 lg:grid-cols-2">
           <Card>
             <CardContent className="pt-5">
-              <h4 className="text-sm font-semibold">Champion Moves</h4>
+              <h4 className="text-sm font-semibold">Executive Tracking</h4>
               {marketSignals.championMoves.length === 0 ? (
-                <p className="mt-2 text-sm text-muted-foreground">Keine Champion Moves vorhanden.</p>
+                <p className="mt-2 text-sm text-muted-foreground">Kein Executive Tracking vorhanden.</p>
               ) : (
                 <>
                   <ul className="mt-3 space-y-2">

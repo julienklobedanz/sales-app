@@ -51,6 +51,11 @@ function parseProfileNotificationSettings(raw: unknown): {
 function parseOrganizationWorkflowSettings(raw: unknown): {
   linkExpiryDays: number
   requireInternalApproval: boolean
+  reminder1Days: number
+  reminder2Days: number
+  escalationAfterDays: number
+  autoNotifyRequesterOnEscalation: boolean
+  autoAllowDelegation: boolean
   publicLinkMaxTtlDays: number
   publicLinkRequirePasswordForNew: boolean
   auditLogRetentionDays: number
@@ -59,6 +64,11 @@ function parseOrganizationWorkflowSettings(raw: unknown): {
     return {
       linkExpiryDays: 14,
       requireInternalApproval: true,
+      reminder1Days: 3,
+      reminder2Days: 7,
+      escalationAfterDays: 10,
+      autoNotifyRequesterOnEscalation: true,
+      autoAllowDelegation: true,
       publicLinkMaxTtlDays: 365,
       publicLinkRequirePasswordForNew: false,
       auditLogRetentionDays: 365,
@@ -66,6 +76,9 @@ function parseOrganizationWorkflowSettings(raw: unknown): {
   }
   const obj = raw as Record<string, unknown>
   const linkExpiryDaysRaw = obj.link_expiry_days
+  const reminder1Raw = obj.approval_reminder_1_days
+  const reminder2Raw = obj.approval_reminder_2_days
+  const escalationRaw = obj.approval_escalation_after_days
   const maxTtlRaw = obj.public_link_max_ttl_days
   const retentionRaw = obj.audit_log_retention_days
   return {
@@ -77,6 +90,20 @@ function parseOrganizationWorkflowSettings(raw: unknown): {
       typeof obj.require_internal_approval === 'boolean'
         ? obj.require_internal_approval
         : true,
+    reminder1Days:
+      typeof reminder1Raw === 'number' && Number.isFinite(reminder1Raw)
+        ? Math.max(1, Math.min(30, Math.trunc(reminder1Raw)))
+        : 3,
+    reminder2Days:
+      typeof reminder2Raw === 'number' && Number.isFinite(reminder2Raw)
+        ? Math.max(1, Math.min(45, Math.trunc(reminder2Raw)))
+        : 7,
+    escalationAfterDays:
+      typeof escalationRaw === 'number' && Number.isFinite(escalationRaw)
+        ? Math.max(1, Math.min(60, Math.trunc(escalationRaw)))
+        : 10,
+    autoNotifyRequesterOnEscalation: obj.approval_notify_requester_on_escalation !== false,
+    autoAllowDelegation: obj.approval_allow_delegation !== false,
     publicLinkMaxTtlDays:
       typeof maxTtlRaw === 'number' && Number.isFinite(maxTtlRaw)
         ? Math.max(7, Math.min(3650, Math.trunc(maxTtlRaw)))

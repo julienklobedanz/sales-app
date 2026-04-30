@@ -8,8 +8,10 @@ import {
   InformationCircleIcon,
   Linkedin01Icon,
   LinkIcon,
+  Paperclip,
   Sparkles,
   UploadIcon,
+  UserMultipleIcon,
 } from '@hugeicons/core-free-icons'
 
 import { AppIcon } from '@/lib/icons'
@@ -20,14 +22,17 @@ import { ROUTES } from '@/lib/routes'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import {
   addMarketSignalToDeal,
+  getDecisionMakerCandidates,
   markMarketSignalNotificationsRead,
   markMarketSignalsIrrelevant,
 } from '@/app/dashboard/market-signals/actions'
+import type { DecisionMakerCandidate } from '@/app/dashboard/market-signals/actions'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 
 export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }) {
+  type IntroTone = 'challenging' | 'advisory' | 'concise'
   const [nowTs] = useState(() => new Date().getTime())
   const [onlyActiveDeals, setOnlyActiveDeals] = useState(false)
   const restrictedCompanyIds = useMemo(
@@ -173,6 +178,14 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
   const [mobileOpen, setMobileOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [addToDealPendingId, setAddToDealPendingId] = useState<string | null>(null)
+  const [introTone, setIntroTone] = useState<IntroTone>('advisory')
+  const [attachedRefIds, setAttachedRefIds] = useState<Set<string>>(new Set())
+  const [decisionCandidatesByCompany, setDecisionCandidatesByCompany] = useState<
+    Record<string, DecisionMakerCandidate[]>
+  >({})
+  const [decisionCandidatesLoadingCompanyId, setDecisionCandidatesLoadingCompanyId] = useState<string | null>(
+    null
+  )
 
   useEffect(() => {
     const mql = window.matchMedia('(max-width: 1023px)')
@@ -219,6 +232,107 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
     return model.referenceSnippetsByCompanyId[selected.companyId] ?? []
   }, [model.referenceSnippetsByCompanyId, selected])
 
+  useEffect(() => {
+    if (!selected) {
+      setAttachedRefIds(new Set())
+      return
+    }
+    setAttachedRefIds((prev) => {
+      const allowed = new Set(quickRefs.map((r) => r.id))
+      return new Set(Array.from(prev).filter((id) => allowed.has(id)))
+    })
+  }, [quickRefs, selected])
+
+  function toggleAttachedReference(referenceId: string) {
+    setAttachedRefIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(referenceId)) next.delete(referenceId)
+      else next.add(referenceId)
+      return next
+    })
+  }
+
+  function buildWhyNowMessage(item: InboxItem, tone: IntroTone) {
+    const refs = quickRefs.slice(0, 2).map((r) => r.title)
+    const refPart = refs.length
+      ? ` Mit ${refs.join(refs.length > 1 ? ' und ' : '')} haben wir belastbare Evidence für einen schnellen Transfer auf ${item.companyName}.`
+      : ` Wir sollten schnell eine passende Referenz für ${item.companyName} ergänzen, um den Trigger im Outreach direkt zu kapitalisieren.`
+    if (item.kind === 'exec') {
+      if (tone === 'challenging') {
+        return `Das Leadership-Signal öffnet ein Reframing-Fenster bei ${item.companyName}: Prioritäten werden neu gesetzt und bestehende Tools hinterfragt.${refPart}`
+      }
+      if (tone === 'concise') {
+        return `Executive-Wechsel bei ${item.companyName} = hohes Timing-Signal für neue Initiativen.${refPart}`
+      }
+      return `Der Executive-Change bei ${item.companyName} schafft ein starkes Momentum für beratungsgetriebenes Outreach mit klarem Business Case.${refPart}`
+    }
+    if (tone === 'challenging') {
+      return `Das News-Signal zeigt aktiven Veränderungsdruck bei ${item.companyName}. Jetzt ist der richtige Zeitpunkt, die Zielarchitektur und Time-to-Value offensiv zu challengen.${refPart}`
+    }
+    if (tone === 'concise') {
+      return `Frisches Account-Signal bei ${item.companyName} mit hoher Outreach-Relevanz.${refPart}`
+    }
+    return `Das aktuelle Account-Signal bei ${item.companyName} bietet einen idealen Gesprächseinstieg für einen beratenden, lösungsorientierten Erstkontakt.${refPart}`
+  }
+
+  function readinessForReference(status: string): { label: string; dotClass: string; hint: string } {
+    const s = String(status ?? '').toLowerCase()
+    if (s === 'approved') {
+      return {
+        label: 'Named Reference',
+        dotClass: 'bg-emerald-500',
+        hint: 'Logo/Nennung extern nutzbar',
+      }
+    }
+    if (s === 'anonymized') {
+      return {
+        label: 'Anonymous',
+        dotClass: 'bg-amber-400',
+        hint: 'Nur anonym extern nutzbar',
+      }
+    }
+    return {
+      label: 'Intern only',
+      dotClass: 'bg-red-500',
+      hint: 'Nicht extern freigegeben',
+    }
+  }
+
+  useEffect(() => {
+    if (!selected) return
+    if (decisionCandidatesByCompany[selected.companyId]) return
+    let cancelled = false
+    setDecisionCandidatesLoadingCompanyId(selected.companyId)
+    ;(async () => {
+      const result = await getDecisionMakerCandidates({
+        companyId: selected.companyId,
+        signalKind: selected.kind,
+      })
+      if (cancelled) return
+      setDecisionCandidatesLoadingCompanyId(null)
+      if (!result.success) {
+        toast.error(result.error ?? 'Decision-Maker konnten nicht geladen werden.')
+        return
+      }
+      setDecisionCandidatesByCompany((prev) => ({ ...prev, [selected.companyId]: result.candidates }))
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [decisionCandidatesByCompany, selected])
+
+  const decisionCandidates = selected ? decisionCandidatesByCompany[selected.companyId] ?? [] : []
+
+  const mutualConnectionsHint = useMemo(() => {
+    if (!selected) return 'Gemeinsame Kontakte: mit LinkedIn-Integration'
+    const topMutual = decisionCandidates
+      .map((candidate) => candidate.mutualConnections ?? 0)
+      .sort((a, b) => b - a)[0]
+    return topMutual && topMutual > 0
+      ? `${topMutual} gemeinsame Kontakte`
+      : 'Gemeinsame Kontakte: keine Daten'
+  }, [decisionCandidates, selected])
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/70 bg-card px-4 py-3 shadow-sm shadow-slate-900/5">
@@ -247,7 +361,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
           <Button variant="ghost" size="toolbar" className="h-8 px-3 text-muted-foreground hover:bg-muted/70" asChild>
             <Link href={`${ROUTES.marketSignalsManage}?view=champions`}>
               <AppIcon icon={Sparkles} size={14} />
-              Champions verwalten
+              Executives verwalten
             </Link>
           </Button>
           <Button variant="ghost" size="toolbar" className="h-8 px-3 text-muted-foreground hover:bg-muted/70" asChild>
@@ -414,34 +528,100 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Why now?</p>
                           <p className="mt-2 text-sm text-slate-700">
-                            {selected.kind === 'exec'
-                              ? 'Ein Executive Move kann ein starkes Buying-Signal sein – ideal für eine warme Reaktivierung oder Intro an ein High-Intent Account.'
-                              : 'Account News kann Timing- und Prioritäts-Signale liefern – nutze das Update für einen relevanten Aufhänger im Outreach.'}
+                            {buildWhyNowMessage(selected, introTone)}
                           </p>
                         </div>
 
                         <div className="rounded-xl border border-slate-200 bg-white p-4">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Quick Matches</p>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Evidence</p>
                           {quickRefs.length === 0 ? (
                             <p className="mt-2 text-sm text-slate-500">Noch keine Referenzen für diesen Account gefunden.</p>
                           ) : (
                             <ul className="mt-2 space-y-2">
-                              {quickRefs.slice(0, 2).map((r) => (
+                              {quickRefs.slice(0, 2).map((r) => {
+                                const readiness = readinessForReference(r.status)
+                                const attached = attachedRefIds.has(r.id)
+                                return (
                                 <li key={r.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
                                   <div className="min-w-0">
                                     <p className="truncate text-sm font-medium text-slate-900">{r.title}</p>
                                     <p className="mt-0.5 text-xs text-slate-500">
                                       {r.industry ?? '—'} · {r.status}
                                     </p>
+                                    <div className="mt-1 inline-flex items-center gap-1.5 text-[11px] text-slate-600">
+                                      <span className={`inline-flex size-2 rounded-full ${readiness.dotClass}`} />
+                                      <span>{readiness.label}</span>
+                                      <span className="text-slate-400">·</span>
+                                      <span>{readiness.hint}</span>
+                                    </div>
                                   </div>
-                                  <Button size="sm" variant="outline" asChild>
-                                    <Link href={ROUTES.evidence.detail(r.id)}>Öffnen</Link>
-                                  </Button>
+                                  <div className="flex items-center gap-1.5">
+                                    <Button
+                                      size="icon"
+                                      variant={attached ? 'default' : 'outline'}
+                                      className={attached ? 'bg-blue-600 hover:bg-blue-700' : ''}
+                                      onClick={() => toggleAttachedReference(r.id)}
+                                      aria-label={attached ? 'Aus Intro entfernen' : 'An Intro anhängen'}
+                                      title={attached ? 'Aus Intro entfernen' : 'An Intro anhängen'}
+                                    >
+                                      <AppIcon icon={Paperclip} size={14} />
+                                    </Button>
+                                    <Button size="sm" variant="outline" asChild>
+                                      <Link href={ROUTES.evidence.detail(r.id)}>Öffnen</Link>
+                                    </Button>
+                                  </div>
                                 </li>
-                              ))}
+                                )
+                              })}
                             </ul>
                           )}
                         </div>
+                      </div>
+
+                      <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            Decision Maker Candidates
+                          </p>
+                          <span className="text-[11px] text-slate-500">
+                            Connector + Role-Inference + Ranking
+                          </span>
+                        </div>
+                        {decisionCandidatesLoadingCompanyId === selected.companyId ? (
+                          <p className="mt-2 text-sm text-slate-500">Kandidaten werden geladen …</p>
+                        ) : decisionCandidates.length === 0 ? (
+                          <p className="mt-2 text-sm text-slate-500">
+                            Noch keine Kandidaten. Verbinde `The Org`, `CIO.de` oder LinkedIn/Sales Navigator.
+                          </p>
+                        ) : (
+                          <ul className="mt-2 space-y-2">
+                            {decisionCandidates.map((candidate) => (
+                              <li
+                                key={candidate.id}
+                                className="flex items-start justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+                              >
+                                <div className="min-w-0">
+                                  <p className="truncate text-sm font-medium text-slate-900">{candidate.fullName}</p>
+                                  <p className="truncate text-xs text-slate-600">{candidate.title}</p>
+                                  <p className="mt-1 text-[11px] text-slate-500">{candidate.confidenceReason}</p>
+                                </div>
+                                <div className="flex shrink-0 items-center gap-2">
+                                  <span className="inline-flex rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-medium text-blue-700">
+                                    {candidate.confidence}%
+                                  </span>
+                                  {candidate.profileUrl ? (
+                                    <Button size="sm" variant="outline" asChild>
+                                      <Link href={candidate.profileUrl} target="_blank" rel="noreferrer">
+                                        <AppIcon icon={UserMultipleIcon} size={14} />
+                                        Profil
+                                      </Link>
+                                    </Button>
+                                  ) : null}
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
                       </div>
 
                       <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
@@ -477,6 +657,24 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                     </div>
 
                     <div className="sticky bottom-0 border-t border-slate-200 bg-white px-6 py-3">
+                      <div className="mb-2.5 flex flex-wrap items-center justify-end gap-1.5">
+                        {([
+                          ['challenging', 'Herausfordernd'],
+                          ['advisory', 'Beratend'],
+                          ['concise', 'Kurz & Knapp'],
+                        ] as const).map(([value, label]) => (
+                          <Button
+                            key={value}
+                            type="button"
+                            size="sm"
+                            variant={introTone === value ? 'secondary' : 'ghost'}
+                            className="h-7 px-2.5 text-xs"
+                            onClick={() => setIntroTone(value)}
+                          >
+                            {label}
+                          </Button>
+                        ))}
+                      </div>
                       <div className="flex flex-wrap items-center justify-end gap-2">
                         <div className="flex items-center gap-2 justify-end">
                           <Button
@@ -501,6 +699,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                               Auf LinkedIn öffnen
                             </Link>
                           </Button>
+                          <span className="text-xs text-slate-500">{mutualConnectionsHint}</span>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button type="button" variant="outline" size="sm" className="gap-2">
@@ -558,7 +757,25 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                             type="button"
                             size="sm"
                             className="gap-2"
-                            onClick={() => toast.success('Intro-Draft (P2): Wird mit KI-Flow verbunden.')}
+                            onClick={() =>
+                              toast.success(
+                                attachedRefIds.size > 0
+                                  ? `Intro-Draft wird generiert (${attachedRefIds.size} Evidence angehängt, Ton: ${
+                                      introTone === 'challenging'
+                                        ? 'Herausfordernd'
+                                        : introTone === 'concise'
+                                          ? 'Kurz & Knapp'
+                                          : 'Beratend'
+                                    }).`
+                                  : `Intro-Draft wird generiert (Ton: ${
+                                      introTone === 'challenging'
+                                        ? 'Herausfordernd'
+                                        : introTone === 'concise'
+                                          ? 'Kurz & Knapp'
+                                          : 'Beratend'
+                                    }).`
+                              )
+                            }
                           >
                             <AppIcon icon={Sparkles} size={16} />
                             Intro-Draft generieren
@@ -618,6 +835,32 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                         Quelle öffnen
                       </Link>
                     </div>
+                  </div>
+                  <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Decision Maker Candidates
+                      </p>
+                    </div>
+                    {selected && decisionCandidatesLoadingCompanyId === selected.companyId ? (
+                      <p className="mt-2 text-sm text-slate-500">Kandidaten werden geladen …</p>
+                    ) : decisionCandidates.length === 0 ? (
+                      <p className="mt-2 text-sm text-slate-500">Noch keine Kandidaten verfügbar.</p>
+                    ) : (
+                      <ul className="mt-2 space-y-2">
+                        {decisionCandidates.map((candidate) => (
+                          <li key={candidate.id} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="truncate text-sm font-medium text-slate-900">{candidate.fullName}</p>
+                              <span className="inline-flex rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-medium text-blue-700">
+                                {candidate.confidence}%
+                              </span>
+                            </div>
+                            <p className="truncate text-xs text-slate-600">{candidate.title}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                   <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Link-Vorschau</p>

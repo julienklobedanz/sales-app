@@ -266,38 +266,44 @@ export function DashboardHeader({
   }, [pathname, searchParams])
 
   return (
-    <header className="flex shrink-0 items-center gap-2 border-b px-4 py-3 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:py-2">
+    <header className="flex min-h-[84px] shrink-0 items-center gap-2 border-b px-4 py-3 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:py-2">
       <div className="flex flex-1 items-center gap-2 min-w-0">
         <SidebarTrigger className="-ml-1 shrink-0 md:hidden" aria-label="Menü öffnen" />
         <SidebarTrigger className="-ml-1 shrink-0 hidden md:inline-flex" aria-label="Sidebar ein-/ausklappen" />
         <Separator orientation="vertical" className="mr-2 h-4 shrink-0" />
 
-        <div className="min-w-0">
+        <div className="flex min-w-0 flex-col justify-center py-0.5">
           <div className="text-2xl font-semibold tracking-tight truncate">{headerMeta.title}</div>
-          {dynamicCrumbs.length ? (
-            <Breadcrumb className="mt-1.5">
-              <BreadcrumbList>
-                {dynamicCrumbs.map((crumb, idx) => (
-                  <Fragment key={`${crumb.label}-${idx}`}>
-                    <BreadcrumbItem>
-                      {idx === dynamicCrumbs.length - 1 || !crumb.href ? (
-                        <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
-                      ) : (
-                        <BreadcrumbLink asChild>
-                          <Link href={crumb.href}>{crumb.label}</Link>
-                        </BreadcrumbLink>
-                      )}
-                    </BreadcrumbItem>
-                    {idx < dynamicCrumbs.length - 1 ? <BreadcrumbSeparator /> : null}
-                  </Fragment>
-                ))}
-              </BreadcrumbList>
-            </Breadcrumb>
-          ) : headerMeta.subtitle ? (
-            <div className="text-sm text-muted-foreground truncate">
-              {headerMeta.subtitle}
-            </div>
-          ) : null}
+          <div className="mt-1.5 min-h-5">
+            {dynamicCrumbs.length ? (
+              <Breadcrumb>
+                <BreadcrumbList>
+                  {dynamicCrumbs.map((crumb, idx) => (
+                    <Fragment key={`${crumb.label}-${idx}`}>
+                      <BreadcrumbItem>
+                        {idx === dynamicCrumbs.length - 1 || !crumb.href ? (
+                          <BreadcrumbPage className="text-slate-900 dark:text-slate-100 font-medium">
+                            {crumb.label}
+                          </BreadcrumbPage>
+                        ) : (
+                          <BreadcrumbLink asChild className="text-slate-400 hover:text-slate-500">
+                            <Link href={crumb.href}>{crumb.label}</Link>
+                          </BreadcrumbLink>
+                        )}
+                      </BreadcrumbItem>
+                      {idx < dynamicCrumbs.length - 1 ? (
+                        <BreadcrumbSeparator className="text-slate-300" />
+                      ) : null}
+                    </Fragment>
+                  ))}
+                </BreadcrumbList>
+              </Breadcrumb>
+            ) : headerMeta.subtitle ? (
+              <div className="text-sm text-muted-foreground truncate">
+                {headerMeta.subtitle}
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
 

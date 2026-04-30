@@ -46,7 +46,7 @@ function normalizeText(value: string | null | undefined) {
 
 function pickSignalBadge(input: { isChampionMove: boolean; detectedAt: string }) {
   if (input.isChampionMove) {
-    return { label: 'Champion Move', className: 'bg-blue-600/10 text-blue-700 dark:text-blue-300 border-0' }
+    return { label: 'Executive Tracking', className: 'bg-blue-600/10 text-blue-700 dark:text-blue-300 border-0' }
   }
   const isFresh = Date.now() - new Date(input.detectedAt).getTime() <= 7 * 86400000
   if (isFresh) {
@@ -191,7 +191,7 @@ export function ExecutiveTrackingList({
             size="toolbar"
             className="h-9 w-9 px-0 text-muted-foreground hover:bg-muted/70"
             onClick={handleMarkRead}
-            aria-label="Champion Moves als gelesen markieren"
+            aria-label="Executive Tracking als gelesen markieren"
           >
             <AppIcon icon={MailOpen} size={16} />
           </Button>

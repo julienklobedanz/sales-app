@@ -8,7 +8,7 @@ export const STAKEHOLDER_ROLE_BADGES: Record<
     label: 'Wirtschaftlicher Entscheider',
     className: 'bg-muted text-foreground border-border',
   },
-  champion: { label: 'Champion', className: 'bg-muted text-foreground border-border' },
+  champion: { label: 'Executive Sponsor', className: 'bg-muted text-foreground border-border' },
   blocker: { label: 'Blocker', className: 'bg-muted text-foreground border-border' },
   technical_buyer: {
     label: 'Technischer Entscheider',
