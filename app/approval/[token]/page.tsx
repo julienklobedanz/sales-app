@@ -54,6 +54,13 @@ export default async function ApprovalPage({
       project_end,
       approval_message,
       approval_requester_name,
+      approval_owner_name,
+      approval_expires_at,
+      approval_scope_named_mention,
+      approval_scope_anonymous_mention,
+      approval_scope_reference_call,
+      approval_scope_logo_use,
+      approval_scope_press_release,
       companies (
         name,
         organization_id
@@ -96,13 +103,22 @@ export default async function ApprovalPage({
   const pending =
     row.customer_approval_status === 'pending' ||
     (row.customer_approval_status == null && String(row.status ?? '') === 'pending')
+  const isExpired =
+    !!row.approval_expires_at && new Date(String(row.approval_expires_at)).getTime() < Date.now()
 
-  if (!pending) {
+  if (!pending || isExpired) {
     return <InvalidLink />
   }
 
   const requester = typeof row.approval_requester_name === 'string' ? row.approval_requester_name.trim() : ''
   const message = typeof row.approval_message === 'string' ? row.approval_message.trim() : ''
+  const scopeItems = [
+    row.approval_scope_named_mention ? 'Namentliche Nennung' : null,
+    row.approval_scope_anonymous_mention ? 'Anonyme Nennung' : null,
+    row.approval_scope_reference_call ? 'Referenz-Call' : null,
+    row.approval_scope_logo_use ? 'Logo-Nutzung' : null,
+    row.approval_scope_press_release ? 'Pressemeldung / Öffentliches Zitat' : null,
+  ].filter(Boolean) as string[]
 
   const vol = formatReferenceVolume((row.volume_eur as string | null) ?? null) || '—'
   const start =
@@ -143,6 +159,32 @@ export default async function ApprovalPage({
           {message ? (
             <div className="rounded-md border border-border bg-background/80 p-4 text-left text-sm text-foreground whitespace-pre-wrap">
               {message}
+            </div>
+          ) : null}
+          {(row.approval_owner_name || row.approval_expires_at || scopeItems.length) ? (
+            <div className="rounded-md border border-border bg-background/80 p-4 text-left text-sm">
+              {row.approval_owner_name ? (
+                <p>
+                  <span className="font-medium">Interner Verantwortlicher:</span>{' '}
+                  {row.approval_owner_name}
+                </p>
+              ) : null}
+              {row.approval_expires_at ? (
+                <p className="mt-1">
+                  <span className="font-medium">Antwort bis:</span>{' '}
+                  {formatDateUtcDe(String(row.approval_expires_at))}
+                </p>
+              ) : null}
+              {scopeItems.length ? (
+                <div className="mt-2">
+                  <p className="font-medium">Angefragter Umfang:</p>
+                  <ul className="list-disc pl-5">
+                    {scopeItems.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
             </div>
           ) : null}
         </header>

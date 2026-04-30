@@ -24,6 +24,13 @@ type ReferenceApprovalRow = {
   customer_approval_status: string | null
   approval_reference_status_snapshot: string | null
   approval_requested_by?: string | null
+  approval_owner_name?: string | null
+  approval_expires_at?: string | null
+  approval_scope_named_mention?: boolean | null
+  approval_scope_anonymous_mention?: boolean | null
+  approval_scope_reference_call?: boolean | null
+  approval_scope_logo_use?: boolean | null
+  approval_scope_press_release?: boolean | null
   companies: { name?: string } | { name?: string }[] | null
 }
 
@@ -155,6 +162,15 @@ export async function submitForApprovalImpl(
       approval_requested_by: user.id,
       approval_requester_name: requesterName || null,
       approval_reference_status_snapshot: snapshot,
+      approval_owner_name: options?.ownerName?.trim() ? options.ownerName.trim() : null,
+      approval_expires_at: options?.approvalExpiresInDays
+        ? new Date(Date.now() + Math.max(1, Math.min(365, options.approvalExpiresInDays)) * 24 * 60 * 60 * 1000).toISOString()
+        : null,
+      approval_scope_named_mention: options?.scope?.namedMention ?? true,
+      approval_scope_anonymous_mention: options?.scope?.anonymousMention ?? true,
+      approval_scope_reference_call: options?.scope?.referenceCall ?? false,
+      approval_scope_logo_use: options?.scope?.logoUse ?? false,
+      approval_scope_press_release: options?.scope?.pressRelease ?? false,
     })
     .eq('id', id)
 
@@ -185,6 +201,23 @@ export async function submitForApprovalImpl(
       const requesterBlock = requesterName
         ? `<p><strong>${escapeHtml(requesterName)}</strong> bittet Sie um Freigabe dieser Referenz.</p>`
         : '<p>Es liegt eine Freigabe-Anfrage für diese Referenz vor.</p>'
+      const scope = options?.scope
+      const scopeItems = [
+        (scope?.namedMention ?? true) ? 'Namentliche Nennung' : null,
+        (scope?.anonymousMention ?? true) ? 'Anonyme Nennung' : null,
+        (scope?.referenceCall ?? false) ? 'Referenz-Call' : null,
+        (scope?.logoUse ?? false) ? 'Logo-Nutzung' : null,
+        (scope?.pressRelease ?? false) ? 'Pressemeldung / Öffentliches Zitat' : null,
+      ].filter(Boolean)
+      const scopeBlock = scopeItems.length
+        ? `<p><strong>Angefragter Umfang:</strong></p><ul>${scopeItems.map((i) => `<li>${escapeHtml(String(i))}</li>`).join('')}</ul>`
+        : ''
+      const ownerBlock = options?.ownerName?.trim()
+        ? `<p><strong>Interner Verantwortlicher:</strong> ${escapeHtml(options.ownerName.trim())}</p>`
+        : ''
+      const expiryBlock = options?.approvalExpiresInDays
+        ? `<p><strong>Bitte entscheiden bis:</strong> ${new Date(Date.now() + Math.max(1, Math.min(365, options.approvalExpiresInDays)) * 24 * 60 * 60 * 1000).toLocaleDateString('de-DE')}</p>`
+        : ''
       await resend.emails.send({
         from: 'Refstack <onboarding@resend.dev>',
         to: contactEmail,
@@ -193,6 +226,9 @@ export async function submitForApprovalImpl(
           <h1>Hallo${firstName ? ` ${escapeHtml(firstName)}` : ''}!</h1>
           ${requesterBlock}
           ${msgBlock}
+          ${ownerBlock}
+          ${scopeBlock}
+          ${expiryBlock}
           <p>Für das Unternehmen <strong>${escapeHtml(company_name)}</strong>:</p>
           <p><em>"${escapeHtml(ref.title)}"</em></p>
           <p>Bitte öffnen Sie den Link, um die Referenz zu prüfen und zu entscheiden:</p>

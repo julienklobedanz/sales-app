@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useRef, useState } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useRole } from '@/hooks/useRole'
@@ -40,7 +41,21 @@ export function CompanyDetailClient({
   initialEditOpen,
 }: CompanyDetailClientProps) {
   const { isAdmin, isAccountManager, isSales } = useRole()
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const canEdit = isAdmin || isAccountManager
+  const initialTabParam = searchParams.get('tab')
+  const initialTab =
+    initialTabParam === 'stakeholders' ||
+    initialTabParam === 'contacts' ||
+    initialTabParam === 'links' ||
+    initialTabParam === 'strategy'
+      ? initialTabParam
+      : 'strategy'
+  const [activeTab, setActiveTab] = useState<'strategy' | 'stakeholders' | 'contacts' | 'links'>(
+    initialTab
+  )
 
   const [goals, setGoals] = useState(initialStrategy?.company_goals ?? '')
   const [valueProposition, setValueProposition] = useState(initialStrategy?.value_proposition ?? '')
@@ -284,7 +299,20 @@ export function CompanyDetailClient({
 
       <EditAccountDialog open={editAccountOpen} onOpenChange={setEditAccountOpen} company={company} />
 
-      <Tabs defaultValue="strategy" className="w-full">
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => {
+          const next =
+            value === 'stakeholders' || value === 'contacts' || value === 'links' || value === 'strategy'
+              ? value
+              : 'strategy'
+          setActiveTab(next)
+          const params = new URLSearchParams(searchParams.toString())
+          params.set('tab', next)
+          router.replace(`${pathname}?${params.toString()}`)
+        }}
+        className="w-full"
+      >
         <TabsList className="w-full justify-start gap-1">
           <TabsTrigger value="strategy">Strategie</TabsTrigger>
           <TabsTrigger value="stakeholders">Stakeholder</TabsTrigger>

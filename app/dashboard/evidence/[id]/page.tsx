@@ -111,6 +111,13 @@ export default async function EvidenceDetailPage({
       contact_id,
       customer_contact_id,
       customer_approval_status,
+      approval_owner_name,
+      approval_expires_at,
+      approval_scope_named_mention,
+      approval_scope_anonymous_mention,
+      approval_scope_reference_call,
+      approval_scope_logo_use,
+      approval_scope_press_release,
       anonymized_from_id,
       tags,
       created_at,
@@ -143,6 +150,13 @@ export default async function EvidenceDetailPage({
     contact_id: string | null
     customer_contact_id: string | null
     customer_approval_status: string | null
+    approval_owner_name: string | null
+    approval_expires_at: string | null
+    approval_scope_named_mention: boolean | null
+    approval_scope_anonymous_mention: boolean | null
+    approval_scope_reference_call: boolean | null
+    approval_scope_logo_use: boolean | null
+    approval_scope_press_release: boolean | null
     anonymized_from_id: string | null
     created_at: string | null
     updated_at: string | null
@@ -217,6 +231,30 @@ export default async function EvidenceDetailPage({
     String(ref.customer_approval_status ?? '').toLowerCase() === 'approved' ||
     normalizedStatus === 'approved' ||
     normalizedStatus === 'external'
+  const approvalStatus = String(ref.customer_approval_status ?? '').toLowerCase()
+  const readinessLabel =
+    approvalStatus === 'approved'
+      ? 'Freigegeben'
+      : approvalStatus === 'pending'
+        ? 'Anfrage läuft'
+        : approvalStatus === 'rejected'
+          ? 'Abgelehnt'
+          : 'Nicht angefragt'
+  const readinessTone =
+    approvalStatus === 'approved'
+      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+      : approvalStatus === 'pending'
+        ? 'bg-amber-50 text-amber-700 border-amber-200'
+        : approvalStatus === 'rejected'
+          ? 'bg-red-50 text-red-700 border-red-200'
+          : 'bg-slate-100 text-slate-600 border-slate-200'
+  const scopeBadges = [
+    (ref.approval_scope_named_mention ?? true) ? 'Namentlich' : null,
+    (ref.approval_scope_anonymous_mention ?? true) ? 'Anonym' : null,
+    (ref.approval_scope_reference_call ?? false) ? 'Referenz-Call' : null,
+    (ref.approval_scope_logo_use ?? false) ? 'Logo-Nutzung' : null,
+    (ref.approval_scope_press_release ?? false) ? 'Pressemeldung' : null,
+  ].filter(Boolean) as string[]
 
   const createdAt = ref.created_at ? new Date(ref.created_at) : null
   const updatedAt = ref.updated_at ? new Date(ref.updated_at) : null
@@ -392,6 +430,44 @@ export default async function EvidenceDetailPage({
         </div>
 
         <div className="lg:sticky lg:top-6 space-y-4 h-fit">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Reference Readiness</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-muted-foreground">Status</span>
+                <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${readinessTone}`}>
+                  {readinessLabel}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-muted-foreground">Verantwortlich</span>
+                <span className="font-medium text-right">{ref.approval_owner_name ?? '—'}</span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-muted-foreground">Gültig bis</span>
+                <span className="font-medium">
+                  {ref.approval_expires_at ? formatDateUtcDe(ref.approval_expires_at) : '—'}
+                </span>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-muted-foreground">Erlaubte Nutzung</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {scopeBadges.length ? (
+                    scopeBadges.map((item) => (
+                      <Badge key={item} variant="secondary">
+                        {item}
+                      </Badge>
+                    ))
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Projektdetails</CardTitle>

@@ -2,4 +2,13 @@
 export type SubmitForApprovalOptions = {
   contactId?: string
   message?: string
+  ownerName?: string
+  approvalExpiresInDays?: number
+  scope?: {
+    namedMention: boolean
+    anonymousMention: boolean
+    referenceCall: boolean
+    logoUse: boolean
+    pressRelease: boolean
+  }
 }

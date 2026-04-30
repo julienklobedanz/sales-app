@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useMemo, useState, useTransition } from 'react'
+import { Fragment } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import {
   Bell,
@@ -30,6 +31,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
 import { useCommandPalette } from '@/hooks/useCommandPalette'
 import { type AppRole } from '@/hooks/useRole'
 import { createClient } from '@/lib/supabase/client'
@@ -70,6 +79,7 @@ export function DashboardHeader({
   initialNotifications?: DashboardNotificationItem[]
 }) {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const router = useRouter()
   const { resolvedTheme, setTheme } = useTheme()
   const { setOpen } = useCommandPalette()
@@ -77,6 +87,7 @@ export function DashboardHeader({
   const [roleSwitchPending, startRoleSwitch] = useTransition()
   const [notifications, setNotifications] =
     useState<DashboardNotificationItem[]>(initialNotifications)
+  const [dynamicCrumbs, setDynamicCrumbs] = useState<Array<{ label: string; href?: string }>>([])
 
   useEffect(() => {
     setNotifications(initialNotifications)
@@ -150,13 +161,13 @@ export function DashboardHeader({
     if (pathname.startsWith(ROUTES.evidence.root)) {
       return {
         title: COPY.pages.evidence,
-        subtitle: 'Referenzen verwalten und finden',
+        subtitle: pathname === ROUTES.evidence.root ? undefined : undefined,
       }
     }
     if (pathname.startsWith(ROUTES.accounts)) {
       return {
         title: 'Accounts',
-        subtitle: 'Strategisches Account-Management',
+        subtitle: pathname === ROUTES.accounts ? undefined : undefined,
       }
     }
     if (pathname.startsWith(ROUTES.deals.root)) {
@@ -189,6 +200,71 @@ export function DashboardHeader({
     }
   }, [pathname])
 
+  useEffect(() => {
+    let cancelled = false
+    async function resolveCrumbs() {
+      if (!pathname) {
+        if (!cancelled) setDynamicCrumbs([])
+        return
+      }
+
+      if (pathname === ROUTES.accounts || pathname === ROUTES.evidence.root) {
+        if (!cancelled) setDynamicCrumbs([])
+        return
+      }
+
+      const accountMatch = pathname.match(/^\/dashboard\/accounts\/([^/]+)$/)
+      if (accountMatch) {
+        const id = accountMatch[1]
+        const tab = searchParams.get('tab') ?? 'strategy'
+        const tabLabel =
+          tab === 'stakeholders'
+            ? 'Stakeholder'
+            : tab === 'contacts'
+              ? 'Kontakte'
+              : tab === 'links'
+                ? 'Referenzen & Deals'
+                : 'Strategie'
+        const supabase = createClient()
+        const { data } = await supabase.from('companies').select('name').eq('id', id).maybeSingle()
+        if (!cancelled) {
+          setDynamicCrumbs([
+            { label: 'Accounts', href: ROUTES.accounts },
+            { label: data?.name ?? 'Account' },
+            { label: tabLabel },
+          ])
+        }
+        return
+      }
+
+      const referenceMatch = pathname.match(/^\/dashboard\/evidence\/([^/]+)$/)
+      if (referenceMatch) {
+        const id = referenceMatch[1]
+        const supabase = createClient()
+        const { data } = await supabase
+          .from('references')
+          .select('title, companies(name)')
+          .eq('id', id)
+          .maybeSingle()
+        const company = Array.isArray(data?.companies) ? data?.companies[0] : data?.companies
+        if (!cancelled) {
+          setDynamicCrumbs([
+            { label: COPY.pages.evidence, href: ROUTES.evidence.root },
+            { label: company?.name ?? 'Account' },
+            { label: data?.title ?? 'Referenz' },
+          ])
+        }
+        return
+      }
+
+      if (!cancelled) setDynamicCrumbs([])
+    }
+    void resolveCrumbs()
+    return () => {
+      cancelled = true
+    }
+  }, [pathname, searchParams])
+
   return (
     <header className="flex shrink-0 items-center gap-2 border-b px-4 py-3 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:py-2">
       <div className="flex flex-1 items-center gap-2 min-w-0">
@@ -198,7 +274,26 @@ export function DashboardHeader({
 
         <div className="min-w-0">
           <div className="text-2xl font-semibold tracking-tight truncate">{headerMeta.title}</div>
-          {headerMeta.subtitle ? (
+          {dynamicCrumbs.length ? (
+            <Breadcrumb className="mt-1.5">
+              <BreadcrumbList>
+                {dynamicCrumbs.map((crumb, idx) => (
+                  <Fragment key={`${crumb.label}-${idx}`}>
+                    <BreadcrumbItem>
+                      {idx === dynamicCrumbs.length - 1 || !crumb.href ? (
+                        <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
+                      ) : (
+                        <BreadcrumbLink asChild>
+                          <Link href={crumb.href}>{crumb.label}</Link>
+                        </BreadcrumbLink>
+                      )}
+                    </BreadcrumbItem>
+                    {idx < dynamicCrumbs.length - 1 ? <BreadcrumbSeparator /> : null}
+                  </Fragment>
+                ))}
+              </BreadcrumbList>
+            </Breadcrumb>
+          ) : headerMeta.subtitle ? (
             <div className="text-sm text-muted-foreground truncate">
               {headerMeta.subtitle}
             </div>
