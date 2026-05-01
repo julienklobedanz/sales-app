@@ -280,6 +280,8 @@ export default async function EvidenceDetailPage({
     ? ref.approval_competitor_blacklist
     : []
   const internalStatus = String(ref.approval_internal_status ?? '')
+  const salesReadinessLabel =
+    (ref.approval_scope_named_mention ?? true) ? 'Namentlich freigegeben' : 'Anonymisiert nutzen'
 
   const createdAt = ref.created_at ? new Date(ref.created_at) : null
   const updatedAt = ref.updated_at ? new Date(ref.updated_at) : null
@@ -403,7 +405,7 @@ export default async function EvidenceDetailPage({
             </div>
           ) : null}
 
-          <Card>
+          <Card className={role === 'sales' ? 'order-3' : 'order-2'}>
             <CardHeader>
               <CardTitle className="text-base">Letzte Aktivitäten</CardTitle>
             </CardHeader>
@@ -437,7 +439,7 @@ export default async function EvidenceDetailPage({
         </div>
 
         <div className="lg:sticky lg:top-6 space-y-4 h-fit">
-          <Card>
+          <Card className={role === 'sales' ? 'order-2' : 'order-1'}>
             <CardHeader>
               <CardTitle className="text-base">Projektdetails</CardTitle>
             </CardHeader>
@@ -480,80 +482,93 @@ export default async function EvidenceDetailPage({
               <CardTitle className="text-base">Reference Readiness</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-muted-foreground">Status</span>
-                <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${readinessTone}`}>
-                  {readinessLabel}
-                </span>
-              </div>
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-muted-foreground">Verantwortlich</span>
-                <span className="font-medium text-right">{ref.approval_owner_name ?? '—'}</span>
-              </div>
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-muted-foreground">Gültig bis</span>
-                <span className="font-medium">
-                  {ref.approval_expires_at ? formatDateUtcDe(ref.approval_expires_at) : '—'}
-                </span>
-              </div>
-              <div className="space-y-1.5">
-                <p className="text-muted-foreground">Erlaubte Nutzung</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {scopeBadges.length ? (
-                    scopeBadges.map((item) => (
-                      <Badge key={item} variant="secondary">
-                        {item}
-                      </Badge>
-                    ))
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
+              {role === 'sales' ? (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-muted-foreground">Freigabe</span>
+                  <span className="rounded-full border bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-700">
+                    {salesReadinessLabel}
+                  </span>
                 </div>
-              </div>
-              {competitorBlacklist.length ? (
-                <div className="space-y-1.5">
-                  <p className="text-muted-foreground">Nicht verwenden für</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {competitorBlacklist.map((item) => (
-                      <Badge key={item} variant="outline">
-                        {item}
-                      </Badge>
-                    ))}
+              ) : (
+                <>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-muted-foreground">Status</span>
+                    <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${readinessTone}`}>
+                      {readinessLabel}
+                    </span>
                   </div>
-                </div>
-              ) : null}
-              {ref.approval_quote_approved || ref.approval_quote_proposed ? (
-                <div className="space-y-1.5">
-                  <p className="text-muted-foreground">Zitat</p>
-                  <p className="rounded-md border bg-muted/20 p-2 text-xs">
-                    {ref.approval_quote_approved ?? ref.approval_quote_proposed}
-                  </p>
-                </div>
-              ) : null}
-              {ref.approval_reference_giver_name ? (
-                <div className="space-y-1">
-                  <p className="text-muted-foreground">Referenz-Geber</p>
-                  <p className="text-sm font-medium">
-                    {ref.approval_reference_giver_name}
-                    {ref.approval_reference_giver_title ? ` · ${ref.approval_reference_giver_title}` : ''}
-                  </p>
-                </div>
-              ) : null}
-              {ref.approval_consent_file_url ? (
-                <a className="text-xs text-blue-600 underline" href={ref.approval_consent_file_url} target="_blank" rel="noreferrer">
-                  Consent-Dokument ansehen
-                </a>
-              ) : null}
-              {(approvalStatus === 'pending' || internalStatus === 'pending_internal') ? (
-                <ApprovalPendingActions
-                  referenceId={id}
-                  canInternalApprove={internalStatus === 'pending_internal' && (role === 'admin' || role === 'account_manager')}
-                />
-              ) : null}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-muted-foreground">Verantwortlich</span>
+                    <span className="font-medium text-right">{ref.approval_owner_name ?? '—'}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-muted-foreground">Gültig bis</span>
+                    <span className="font-medium">
+                      {ref.approval_expires_at ? formatDateUtcDe(ref.approval_expires_at) : '—'}
+                    </span>
+                  </div>
+                  <div className="space-y-1.5">
+                    <p className="text-muted-foreground">Erlaubte Nutzung</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {scopeBadges.length ? (
+                        scopeBadges.map((item) => (
+                          <Badge key={item} variant="secondary">
+                            {item}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </div>
+                  </div>
+                  {competitorBlacklist.length ? (
+                    <div className="space-y-1.5">
+                      <p className="text-muted-foreground">Nicht verwenden für</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {competitorBlacklist.map((item) => (
+                          <Badge key={item} variant="outline">
+                            {item}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                  {ref.approval_quote_approved || ref.approval_quote_proposed ? (
+                    <div className="space-y-1.5">
+                      <p className="text-muted-foreground">Zitat</p>
+                      <p className="rounded-md border bg-muted/20 p-2 text-xs">
+                        {ref.approval_quote_approved ?? ref.approval_quote_proposed}
+                      </p>
+                    </div>
+                  ) : null}
+                  {ref.approval_reference_giver_name ? (
+                    <div className="space-y-1">
+                      <p className="text-muted-foreground">Referenz-Geber</p>
+                      <p className="text-sm font-medium">
+                        {ref.approval_reference_giver_name}
+                        {ref.approval_reference_giver_title ? ` · ${ref.approval_reference_giver_title}` : ''}
+                      </p>
+                    </div>
+                  ) : null}
+                  {ref.approval_consent_file_url ? (
+                    <a className="text-xs text-blue-600 underline" href={ref.approval_consent_file_url} target="_blank" rel="noreferrer">
+                      Consent-Dokument ansehen
+                    </a>
+                  ) : null}
+                  <ApprovalPendingActions
+                    referenceId={id}
+                    canInternalApprove={internalStatus === 'pending_internal' && (role === 'admin' || role === 'account_manager')}
+                    approvalStatus={approvalStatus}
+                    internalStatus={internalStatus}
+                    approvalOwnerName={ref.approval_owner_name ?? null}
+                  />
+                </>
+              )}
             </CardContent>
           </Card>
 
-          <Card>
+          {role === 'sales' ? null : (
+          <Card className="order-3">
             <CardHeader>
               <CardTitle className="text-base">Nutzung & Impact</CardTitle>
               <p className="text-xs text-muted-foreground">
@@ -621,8 +636,28 @@ export default async function EvidenceDetailPage({
               </div>
             </CardContent>
           </Card>
+          )}
 
-          <Card>
+          {role === 'sales' ? (
+            <Card className="order-4">
+              <CardHeader>
+                <CardTitle className="text-base">CRM-Sync</CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Direkter Sprung in den Deal-Kontext.
+                </p>
+              </CardHeader>
+              <CardContent className="grid gap-2">
+                <Button asChild variant="outline" className="w-full gap-2">
+                  <a href="https://login.salesforce.com" target="_blank" rel="noreferrer">
+                    <AppIcon icon={LinkIcon} size={16} />
+                    Salesforce Deal öffnen (Demo)
+                  </a>
+                </Button>
+              </CardContent>
+            </Card>
+          ) : null}
+
+          <Card className={role === 'sales' ? 'order-1' : 'order-4'}>
             <CardHeader>
               <CardTitle className="text-base">Aktionen</CardTitle>
             </CardHeader>
