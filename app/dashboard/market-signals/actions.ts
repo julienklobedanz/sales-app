@@ -20,6 +20,8 @@ export type DecisionMakerCandidate = {
   profileUrl: string | null
   lastSeenAt: string | null
   mutualConnections: number | null
+  /** Lesbare Warm-Intro-Brücken (z. B. Kollege X kennt Stakeholder Y). */
+  mutualConnectionBridges: string[]
 }
 
 type ProviderRawCandidate = {
@@ -75,6 +77,20 @@ function freshnessScore(lastSeenAt: string | null | undefined): number {
   if (ageDays <= 90) return 0.82
   if (ageDays <= 180) return 0.68
   return 0.52
+}
+
+function mockMutualConnectionBridges(
+  targetFullName: string,
+  count: number | null | undefined,
+  seed: number
+): string[] {
+  const n = typeof count === 'number' && count > 0 ? Math.min(count, 4) : 0
+  if (!n) return []
+  const colleagues = ['Markus Weber', 'Anna Schmidt', 'Julia Braun', 'Tom Schneider', 'Lea Hoffmann']
+  return Array.from({ length: n }, (_, i) => {
+    const c = colleagues[(seed + i) % colleagues.length]
+    return `Dein Kollege ${c} kennt ${targetFullName} – starker Einstieg für ein Warm-Intro.`
+  })
 }
 
 function buildConfidenceReason(input: {
@@ -434,6 +450,7 @@ export async function getDecisionMakerCandidates(args: {
         profileUrl: row.profileUrl ?? null,
         lastSeenAt: row.lastSeenAt ?? null,
         mutualConnections: row.mutualConnections ?? null,
+        mutualConnectionBridges: mockMutualConnectionBridges(row.fullName, row.mutualConnections, idx),
       } satisfies DecisionMakerCandidate
     })
     .sort((a, b) => b.confidence - a.confidence)

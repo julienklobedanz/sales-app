@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toggleFavorite } from '@/app/dashboard/actions'
-import { FileDownIcon, LinkIcon, Mail, Pencil, Sparkles, StarIcon, TrendingUp } from '@hugeicons/core-free-icons'
+import { LinkIcon, Mail, Pencil, Sparkles, StarIcon, TrendingUp } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { formatDateUtcDe, formatReferenceVolume } from '@/lib/format'
 import { deleteReferenceFromDetailPage } from './actions'
@@ -14,6 +14,7 @@ import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 import { PdfExportDialog } from './pdf-export-dialog'
+import { PptxOnepagerExportButton } from './pptx-onepager-export-button'
 import { ShareLinkButton } from './share-link-button'
 import { RequestApprovalDialog } from './request-approval-dialog'
 import { ReferenceViewedTracker } from './reference-viewed-tracker'
@@ -627,10 +628,7 @@ export default async function EvidenceDetailPage({
             </CardHeader>
             <CardContent className="grid gap-2">
               <div className="grid grid-cols-2 gap-2">
-                <Button type="button" variant="outline" className="w-full gap-2" disabled title="Bald verfügbar">
-                  <AppIcon icon={FileDownIcon} size={16} />
-                  .pptx Export
-                </Button>
+                <PptxOnepagerExportButton referenceId={id} className="w-full gap-2" />
                 <PdfExportDialog referenceId={id} triggerClassName="w-full" />
               </div>
               {role === 'sales' ? null : (
