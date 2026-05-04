@@ -71,11 +71,13 @@ export async function GET(req: NextRequest) {
     duration_months: 6,
   }
 
+  const exportedAtLabel = new Date().toLocaleDateString('de-DE', { dateStyle: 'long' })
   const pdf = await renderToBuffer(
     ReferencePdfDocument({
       reference,
       org: branding,
       template,
+      exportedAtLabel,
     })
   )
 

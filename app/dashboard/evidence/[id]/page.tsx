@@ -10,7 +10,6 @@ import { AppIcon } from '@/lib/icons'
 import { formatDateUtcDe, formatReferenceVolume } from '@/lib/format'
 import { deleteReferenceFromDetailPage } from './actions'
 import { ReferenceStatusBadge } from '@/components/reference-status-badge'
-import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 import { PdfExportDialog } from './pdf-export-dialog'
@@ -20,6 +19,8 @@ import { RequestApprovalDialog } from './request-approval-dialog'
 import { ReferenceViewedTracker } from './reference-viewed-tracker'
 import { getReferenceUsageStats } from '@/app/dashboard/references/reference-usage-stats'
 import { ApprovalPendingActions } from './approval-pending-actions'
+import { getReferenceDetailActivities } from './reference-detail-activities'
+import { ReferenceActivitiesTimeline } from './reference-activities-timeline'
 
 export const dynamic = 'force-dynamic'
 
@@ -229,6 +230,11 @@ export default async function EvidenceDetailPage({
   const hasSummary = Boolean(summaryText?.trim())
   const hasChallenge = Boolean(challengeText?.trim())
   const hasSolution = Boolean(solutionText?.trim())
+  /** 40 % Herausforderung / 60 % Lösung – nur wenn beide Karten da sind (sonst volle Breite). */
+  const challengeSolutionGridClass =
+    hasChallenge && hasSolution
+      ? 'grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]'
+      : 'grid gap-4 md:grid-cols-1'
   const tldrBullets = [
     firstSentence(summaryText) || firstSentence(challengeText) || 'Kernaussage ist in der Referenz hinterlegt.',
     firstSentence(challengeText) || 'Die zentrale Herausforderung ist dokumentiert.',
@@ -249,26 +255,33 @@ export default async function EvidenceDetailPage({
     baseApprovalStatus === 'approved' && expiresMs && expiresMs < nowMs && graceMs && graceMs >= nowMs
       ? 'expired'
       : baseApprovalStatus
-  const readinessLabel =
-    approvalStatus === 'approved'
-      ? 'Freigegeben'
-      : approvalStatus === 'pending'
-        ? 'Anfrage läuft'
-        : approvalStatus === 'rejected'
-          ? 'Abgelehnt'
-          : approvalStatus === 'expired'
-            ? 'Grace Period'
-            : 'Nicht angefragt'
-  const readinessTone =
-    approvalStatus === 'approved'
-      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-      : approvalStatus === 'pending'
-        ? 'bg-amber-50 text-amber-700 border-amber-200'
-        : approvalStatus === 'rejected'
-          ? 'bg-red-50 text-red-700 border-red-200'
-          : approvalStatus === 'expired'
-            ? 'bg-orange-50 text-orange-700 border-orange-200'
-          : 'bg-slate-100 text-slate-600 border-slate-200'
+  const internalApproval = String(ref.approval_internal_status ?? '').toLowerCase()
+
+  let readinessLabel: string
+  let readinessTone: string
+
+  if (internalApproval === 'pending_internal') {
+    readinessLabel = 'Interne Freigabe ausstehend'
+    readinessTone = 'bg-sky-50 text-sky-800 border-sky-200'
+  } else if (internalApproval === 'withdrawn_internal') {
+    readinessLabel = 'Anfrage widerrufen'
+    readinessTone = 'bg-slate-100 text-slate-600 border-slate-200'
+  } else if (approvalStatus === 'approved') {
+    readinessLabel = 'Freigegeben'
+    readinessTone = 'bg-emerald-50 text-emerald-700 border-emerald-200'
+  } else if (approvalStatus === 'pending') {
+    readinessLabel = 'Kundenfreigabe läuft'
+    readinessTone = 'bg-amber-50 text-amber-700 border-amber-200'
+  } else if (approvalStatus === 'rejected') {
+    readinessLabel = 'Abgelehnt'
+    readinessTone = 'bg-red-50 text-red-700 border-red-200'
+  } else if (approvalStatus === 'expired') {
+    readinessLabel = 'Grace Period'
+    readinessTone = 'bg-orange-50 text-orange-700 border-orange-200'
+  } else {
+    readinessLabel = 'Nicht angefragt'
+    readinessTone = 'bg-slate-100 text-slate-600 border-slate-200'
+  }
   const scopeBadges = [
     (ref.approval_scope_named_mention ?? true) ? 'Namentlich' : null,
     (ref.approval_scope_anonymous_mention ?? true) ? 'Anonym' : null,
@@ -283,30 +296,10 @@ export default async function EvidenceDetailPage({
   const salesReadinessLabel =
     (ref.approval_scope_named_mention ?? true) ? 'Namentlich freigegeben' : 'Anonymisiert nutzen'
 
-  const createdAt = ref.created_at ? new Date(ref.created_at) : null
-  const updatedAt = ref.updated_at ? new Date(ref.updated_at) : null
-  const activities = [
-    ...(createdAt
-      ? [
-          {
-            at: createdAt,
-            title: 'Referenz erstellt',
-            detail: `Die Referenz wurde in ${COPY.nav.evidence} angelegt.`,
-          },
-        ]
-      : []),
-    ...(updatedAt && createdAt && updatedAt.getTime() !== createdAt.getTime()
-      ? [
-          {
-            at: updatedAt,
-            title: 'Referenz bearbeitet',
-            detail: 'Inhalte oder Metadaten wurden aktualisiert.',
-          },
-        ]
-      : []),
-  ]
-    .sort((a, b) => b.at.getTime() - a.at.getTime())
-    .slice(0, 10)
+  const referenceActivities = await getReferenceDetailActivities(
+    id,
+    role as 'admin' | 'sales' | 'account_manager'
+  )
 
   return (
     <div>
@@ -357,7 +350,7 @@ export default async function EvidenceDetailPage({
                 </CardContent>
               </Card>
 
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className={challengeSolutionGridClass}>
                 {hasChallenge ? (
                   <Card className="border-border/70">
                     <CardHeader className="pb-2">
@@ -388,7 +381,7 @@ export default async function EvidenceDetailPage({
                     </CardContent>
                   </Card>
                 ) : null}
-                <Card className="border-border/70 md:col-span-2">
+                <Card className="border-border/70 col-span-full">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-xs uppercase tracking-wider text-slate-950 dark:text-slate-100 inline-flex items-center gap-1.5">
                       <AppIcon icon={Sparkles} size={14} className="text-muted-foreground" />
@@ -410,30 +403,12 @@ export default async function EvidenceDetailPage({
               <CardTitle className="text-base">Letzte Aktivitäten</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {activities.length ? (
-                <ol className="relative ml-2 border-l pl-6">
-                  {activities.map((a) => (
-                    <li key={`${a.title}-${a.at.toISOString()}`} className="pb-4 last:pb-0">
-                      <span className="absolute -left-1.5 mt-1.5 size-3 rounded-full bg-muted ring-4 ring-background" />
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="text-sm font-medium">{a.title}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {a.at.toLocaleString('de-DE', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </div>
-                      </div>
-                      <div className="mt-1 text-sm text-muted-foreground">{a.detail}</div>
-                    </li>
-                  ))}
-                </ol>
-              ) : (
-                <p className="text-sm text-muted-foreground">Noch keine Aktivitäten.</p>
-              )}
+              <p className="text-xs text-muted-foreground">
+                {role === 'sales'
+                  ? 'Nur Teilen- und Export-Ereignisse.'
+                  : 'Aus dem Aktivitätsprotokoll (evidence_events), bis zu fünf neueste Einträge.'}
+              </p>
+              <ReferenceActivitiesTimeline items={referenceActivities} />
             </CardContent>
           </Card>
         </div>

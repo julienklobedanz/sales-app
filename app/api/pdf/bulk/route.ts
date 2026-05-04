@@ -143,11 +143,13 @@ export async function POST(req: NextRequest) {
     secondary_color: org?.secondary_color ?? '#1D4ED8',
   }
 
+  const exportedAtLabel = new Date().toLocaleDateString('de-DE', { dateStyle: 'long' })
   const pdf = await renderToBuffer(
     ReferencePdfBundleDocument({
       references,
       org: branding,
       template,
+      exportedAtLabel,
     })
   )
 

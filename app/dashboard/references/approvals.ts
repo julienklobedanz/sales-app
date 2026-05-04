@@ -22,6 +22,7 @@ type ReferenceApprovalRow = {
   contact_id: string | null
   customer_contact_id: string | null
   approval_contact_id?: string | null
+  approval_external_contact_id?: string | null
   customer_approval_status: string | null
   approval_reference_status_snapshot: string | null
   approval_requested_by?: string | null
@@ -33,6 +34,13 @@ type ReferenceApprovalRow = {
   approval_scope_logo_use?: boolean | null
   approval_scope_press_release?: boolean | null
   companies: { name?: string } | { name?: string }[] | null
+}
+
+type ResolvedApprovalRecipient = {
+  email: string
+  firstName: string
+  approvalContactId: string | null
+  approvalExternalContactId: string | null
 }
 
 async function sendClientApprovalEmail(args: {
@@ -91,11 +99,40 @@ async function resolveContactForApproval(
   row: ReferenceApprovalRow,
   companyId: string,
   options?: SubmitForApprovalOptions
-): Promise<{ contactId: string; email: string; firstName: string }> {
-  const pickEmail = (c: { email?: string | null; first_name?: string | null } | null) => {
-    const email = typeof c?.email === 'string' && c.email.includes('@') ? c.email : null
+): Promise<ResolvedApprovalRecipient> {
+  const fromPerson = (c: { id: string; email?: string | null; first_name?: string | null } | null) => {
+    const email = typeof c?.email === 'string' && c.email.includes('@') ? c.email : ''
     const firstName = typeof c?.first_name === 'string' ? c.first_name : ''
-    return { email, firstName }
+    return {
+      email,
+      firstName,
+      approvalContactId: c?.id ?? null,
+      approvalExternalContactId: null as string | null,
+    }
+  }
+
+  const fromExternal = (c: { id: string; email?: string | null; first_name?: string | null } | null) => {
+    const email = typeof c?.email === 'string' && c.email.includes('@') ? c.email : ''
+    const firstName = typeof c?.first_name === 'string' ? c.first_name : ''
+    return {
+      email,
+      firstName,
+      approvalContactId: null as string | null,
+      approvalExternalContactId: c?.id ?? null,
+    }
+  }
+
+  if (options?.externalContactId) {
+    const { data: c, error } = await supabase
+      .from('external_contacts')
+      .select('id, email, first_name')
+      .eq('id', options.externalContactId)
+      .eq('company_id', companyId)
+      .single()
+    if (error || !c) throw new Error('Ungültiger Kundenkontakt für dieses Unternehmen')
+    const r = fromExternal(c)
+    if (!r.email) throw new Error('Der gewählte Kundenkontakt hat keine gültige E-Mail-Adresse')
+    return r
   }
 
   if (options?.contactId) {
@@ -106,22 +143,58 @@ async function resolveContactForApproval(
       .eq('company_id', companyId)
       .single()
     if (error || !c) throw new Error('Ungültiger Kontakt für dieses Unternehmen')
-    const { email, firstName } = pickEmail(c)
-    if (!email) throw new Error('Der gewählte Kontakt hat keine gültige E-Mail-Adresse')
-    return { contactId: c.id, email, firstName }
+    const r = fromPerson(c)
+    if (!r.email) throw new Error('Der gewählte Kontakt hat keine gültige E-Mail-Adresse')
+    return r
   }
 
-  const tryId = row.approval_contact_id ?? row.customer_contact_id ?? row.contact_id
-  if (tryId) {
+  if (row.approval_contact_id) {
     const { data: c } = await supabase
       .from('contact_persons')
       .select('id, email, first_name')
-      .eq('id', tryId)
+      .eq('id', row.approval_contact_id)
       .eq('company_id', companyId)
       .maybeSingle()
-    const { email, firstName } = pickEmail(c)
-    if (email && c?.id) {
-      return { contactId: c.id, email, firstName }
+    if (c?.id) {
+      const r = fromPerson(c)
+      if (r.email) return r
+    }
+  }
+
+  if (row.approval_external_contact_id) {
+    const { data: c } = await supabase
+      .from('external_contacts')
+      .select('id, email, first_name')
+      .eq('id', row.approval_external_contact_id)
+      .eq('company_id', companyId)
+      .maybeSingle()
+    if (c?.id) {
+      const r = fromExternal(c)
+      if (r.email) return r
+    }
+  }
+
+  const tryIds = [row.customer_contact_id, row.contact_id].filter(Boolean) as string[]
+  for (const id of tryIds) {
+    const { data: cp } = await supabase
+      .from('contact_persons')
+      .select('id, email, first_name')
+      .eq('id', id)
+      .eq('company_id', companyId)
+      .maybeSingle()
+    if (cp?.id) {
+      const r = fromPerson(cp)
+      if (r.email) return r
+    }
+    const { data: ec } = await supabase
+      .from('external_contacts')
+      .select('id, email, first_name')
+      .eq('id', id)
+      .eq('company_id', companyId)
+      .maybeSingle()
+    if (ec?.id) {
+      const r = fromExternal(ec)
+      if (r.email) return r
     }
   }
 
@@ -206,12 +279,8 @@ export async function submitForApprovalImpl(
     }
   }
 
-  const { contactId, email: contactEmail, firstName } = await resolveContactForApproval(
-    supabase,
-    ref,
-    ref.company_id,
-    options
-  )
+  const resolvedRecipient = await resolveContactForApproval(supabase, ref, ref.company_id, options)
+  const { email: contactEmail, firstName } = resolvedRecipient
   const company =
     Array.isArray(ref.companies) && ref.companies.length > 0
       ? (ref.companies[0] as { name?: string })
@@ -227,7 +296,8 @@ export async function submitForApprovalImpl(
       customer_approval_status: null,
       approval_internal_status: requireInternalApproval ? 'pending_internal' : 'approved_internal',
       approval_message: options?.message?.trim() ? options.message.trim() : null,
-      approval_contact_id: contactId,
+      approval_contact_id: resolvedRecipient.approvalContactId,
+      approval_external_contact_id: resolvedRecipient.approvalExternalContactId,
       approval_requested_at: new Date().toISOString(),
       approval_requested_by: user.id,
       approval_requester_name: requesterName || null,
@@ -324,7 +394,9 @@ export async function approveInternalAndSendImpl(referenceId: string) {
 
   const { data: row, error } = await supabase
     .from('references')
-    .select(`id, title, status, company_id, contact_id, customer_contact_id, approval_contact_id, customer_approval_status, approval_reference_status_snapshot, approval_requested_by, companies(name)`)
+    .select(
+      `id, title, status, company_id, contact_id, customer_contact_id, approval_contact_id, approval_external_contact_id, customer_approval_status, approval_reference_status_snapshot, approval_requested_by, companies(name)`
+    )
     .eq('id', referenceId)
     .single()
   if (error || !row) throw new Error('Referenz nicht gefunden')
@@ -334,11 +406,7 @@ export async function approveInternalAndSendImpl(referenceId: string) {
       ? (ref.companies[0] as { name?: string })
       : (ref.companies as { name?: string } | null)
   const company_name = company?.name ?? 'Referenz'
-  const { email: contactEmail, firstName } = await resolveContactForApproval(
-    supabase,
-    ref,
-    ref.company_id
-  )
+  const { email: contactEmail, firstName } = await resolveContactForApproval(supabase, ref, ref.company_id)
 
   const requesterName =
     typeof (profile as { full_name?: string } | null)?.full_name === 'string'
@@ -388,6 +456,8 @@ export async function withdrawApprovalRequestImpl(referenceId: string): Promise<
       customer_approval_status: null,
       approval_internal_status: 'withdrawn_internal',
       approval_requested_at: null,
+      approval_contact_id: null,
+      approval_external_contact_id: null,
     })
     .eq('id', referenceId)
   await supabase
@@ -462,6 +532,7 @@ export async function resendClientApprovalEmailImpl(referenceId: string) {
       approval_reference_status_snapshot,
       approval_requested_by,
       approval_contact_id,
+      approval_external_contact_id,
       companies ( name )
     `
     )
@@ -512,12 +583,7 @@ export async function resendClientApprovalEmailImpl(referenceId: string) {
       ? (requesterProfile as { full_name: string }).full_name.trim()
       : ''
 
-  const { email: contactEmail, firstName } = await resolveContactForApproval(
-    supabase,
-    ref,
-    ref.company_id,
-    ref.approval_contact_id ? { contactId: ref.approval_contact_id } : undefined
-  )
+  const { email: contactEmail, firstName } = await resolveContactForApproval(supabase, ref, ref.company_id)
 
   const resend = getResend()
   if (contactEmail && resend) {

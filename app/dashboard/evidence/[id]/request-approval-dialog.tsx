@@ -39,7 +39,9 @@ export function RequestApprovalDialog({
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [loadingContacts, setLoadingContacts] = useState(false)
-  const [contacts, setContacts] = useState<{ id: string; label: string }[]>([])
+  const [contacts, setContacts] = useState<
+    { id: string; label: string; kind: 'contact_person' | 'external_contact' }[]
+  >([])
   const [contactId, setContactId] = useState<string>('')
   const [step, setStep] = useState<1 | 2>(1)
   const [ownerName, setOwnerName] = useState('')
@@ -67,7 +69,7 @@ export function RequestApprovalDialog({
         setContacts([])
         return
       }
-      const opts = res.contacts.map((c) => ({ id: c.id, label: c.label }))
+      const opts = res.contacts.map((c) => ({ id: c.id, label: c.label, kind: c.kind }))
       setContacts(opts)
       const def = defaultContactId && opts.some((o) => o.id === defaultContactId)
       if (def) {
@@ -86,7 +88,12 @@ export function RequestApprovalDialog({
   async function onSubmit() {
     const options: SubmitForApprovalOptions = {}
     if (message.trim()) options.message = message.trim()
-    if (contactId) options.contactId = contactId
+    const picked = contacts.find((c) => c.id === contactId)
+    if (picked?.kind === 'external_contact') {
+      options.externalContactId = contactId
+    } else if (picked?.kind === 'contact_person') {
+      options.contactId = contactId
+    }
     if (ownerName.trim()) options.ownerName = ownerName.trim()
     if (referenceGiverName.trim()) options.referenceGiverName = referenceGiverName.trim()
     if (referenceGiverTitle.trim()) options.referenceGiverTitle = referenceGiverTitle.trim()
@@ -284,6 +291,14 @@ export function RequestApprovalDialog({
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
                 E-Mail-Vorschau: Der Empfänger erhält einen sicheren Link zur Freigabe ohne Login.
               </div>
+              <div className="rounded-lg border border-slate-200 p-3 text-xs">
+                <p className="font-medium text-foreground">Empfänger der Kundenfreigabe</p>
+                <p className="mt-1 text-muted-foreground">
+                  {contactId
+                    ? contacts.find((c) => c.id === contactId)?.label ?? 'Ausgewählter Kontakt'
+                    : 'Kein Kontakt gewählt – es wird der in der Referenz hinterlegte Kundenkontakt verwendet, falls möglich.'}
+                </p>
+              </div>
               <div className="grid gap-2">
                 <Label htmlFor="approval-msg">Nachricht (optional)</Label>
                 <Textarea
@@ -295,7 +310,9 @@ export function RequestApprovalDialog({
                   disabled={loading}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Scope, Verantwortlicher und Ablauf werden automatisch in die Anfrage übernommen.
+                  Freigabe-Umfang, interner Verantwortlicher (Name), Referenz-Geber und Link-Ablauf werden mit
+                  übernommen. Wer intern freigibt (Vier-Augen), ist klar: Admin oder Account Manager in eurem
+                  Team.
                 </p>
               </div>
             </div>
