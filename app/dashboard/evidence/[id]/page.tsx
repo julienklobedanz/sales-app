@@ -333,7 +333,7 @@ export default async function EvidenceDetailPage({
           </div>
 
           {hasSummary || hasChallenge || hasSolution ? (
-            <div className="max-w-[84ch] space-y-6">
+            <div className="w-full min-w-0 space-y-6">
               <Card className="border-blue-200/70 bg-blue-50/50 dark:border-blue-500/30 dark:bg-blue-500/10">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm text-slate-950 dark:text-slate-100 inline-flex items-center gap-2">

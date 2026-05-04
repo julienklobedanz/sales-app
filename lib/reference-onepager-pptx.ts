@@ -56,6 +56,48 @@ function clipNormalized(text: string | null | undefined, maxChars: number): stri
   return clip(normalizePptxFlowText(text), maxChars)
 }
 
+/** Zeilenhöhe in Zoll (Arial-ähnlich, konservativ → eher etwas mehr Platz). */
+function lineHeightInches(fontSizePt: number): number {
+  return fontSizePt * 0.015
+}
+
+function charsPerLineForWidth(boxWidthIn: number, fontSizePt: number): number {
+  const avgCharPt = fontSizePt * 0.52
+  return Math.max(18, Math.floor((boxWidthIn * 72) / avgCharPt))
+}
+
+/**
+ * Geschätzte Höhe des Fließtextes in Zoll (mit Umbruch), damit Folienabschnitte untereinander
+ * platziert werden können ohne mit fixen Y-Werten zu kollidieren.
+ */
+function estimateBodyHeightInches(text: string, boxWidthIn: number, fontSizePt: number): number {
+  const t = String(text ?? '').trim()
+  const lh = lineHeightInches(fontSizePt)
+  if (!t || t === '—') return lh * 0.85
+  const cpl = charsPerLineForWidth(boxWidthIn, fontSizePt)
+  let lines = 0
+  for (const line of t.split('\n')) {
+    const p = line.trim()
+    if (!p) continue
+    lines += Math.max(1, Math.ceil(p.length / cpl))
+  }
+  if (lines === 0) lines = 1
+  return lines * lh + 0.04
+}
+
+/** Maximale Zeichenzahl, die in maxHeightIn Zoll voraussichtlich ohne Überlauf passt. */
+function maxCharsForHeight(
+  boxWidthIn: number,
+  fontSizePt: number,
+  maxHeightIn: number,
+  hardCap: number
+): number {
+  const lh = lineHeightInches(fontSizePt)
+  const maxLines = Math.max(1, Math.floor((maxHeightIn - 0.06) / lh))
+  const cpl = charsPerLineForWidth(boxWidthIn, fontSizePt)
+  return Math.min(hardCap, Math.max(32, maxLines * cpl - 14))
+}
+
 function statusLegalLineDe(status: string): string {
   const s = String(status ?? '').toLowerCase()
   if (s === 'approved') return 'Freigabe: öffentlich / Named Reference – externe Nutzung gemäß Policy erlaubt.'
@@ -93,7 +135,10 @@ export async function buildReferenceOnepagerPptxBuffer(input: ReferenceOnepagerP
 
   const SECTION_LABEL_H = 0.22
   const GAP_AFTER_LEGAL = 0.08
-  const GAP_MIDDLE_TO_BOTTOM = 0.08
+  /** Titel → Fließtext */
+  const GAP_AFTER_SECTION_TITLE = 0.04
+  /** Ende erster Block → Titel zweiter Block (gleich in beiden Spalten). */
+  const GAP_BETWEEN_STACKED_SECTIONS = 0.14
 
   slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: 10, h: TOP_BAR_H, fill: { color: '2563EB' } })
 
@@ -167,20 +212,34 @@ export async function buildReferenceOnepagerPptxBuffer(input: ReferenceOnepagerP
     valign: 'top',
   })
 
-  const row1BodyY = row1LabelY + SECTION_LABEL_H + 0.02
+  const row1BodyY = row1LabelY + SECTION_LABEL_H + GAP_AFTER_SECTION_TITLE
 
-  /** Unterer Block: Label + Lücke + Fläche, endet exakt bei contentBottomY */
-  const maxRow2Block = contentBottomY - row1BodyY - GAP_MIDDLE_TO_BOTTOM
-  const row2BodyH = Math.max(0.55, maxRow2Block - SECTION_LABEL_H - 0.02)
-  const row2BodyY = contentBottomY - row2BodyH
-  const row2LabelY = row2BodyY - SECTION_LABEL_H - 0.02
-  const row1BodyH = row2LabelY - GAP_MIDDLE_TO_BOTTOM - row1BodyY
+  /** Mindesthöhe für zweite Sektion (Titel + Text) oberhalb des Footers */
+  const minRow2Block =
+    SECTION_LABEL_H + GAP_AFTER_SECTION_TITLE + 0.42
+  let maxRow1Body = contentBottomY - row1BodyY - GAP_BETWEEN_STACKED_SECTIONS - minRow2Block
+  maxRow1Body = Math.max(0.45, maxRow1Body)
 
-  slide.addText(clipNormalized(input.summary, 620), {
+  const summaryText = clipNormalized(
+    input.summary,
+    maxCharsForHeight(LEFT.w, 10, maxRow1Body, 620)
+  )
+  const solutionText = clipNormalized(
+    input.ourSolution,
+    maxCharsForHeight(RIGHT.w, 10, maxRow1Body, 620)
+  )
+
+  const estSummaryH = Math.min(estimateBodyHeightInches(summaryText, LEFT.w, 10), maxRow1Body)
+  const estSolutionH = Math.min(estimateBodyHeightInches(solutionText, RIGHT.w, 10), maxRow1Body)
+  const row1StackH = Math.max(estSummaryH, estSolutionH)
+
+  const row2LabelY = row1BodyY + row1StackH + GAP_BETWEEN_STACKED_SECTIONS
+
+  slide.addText(summaryText, {
     x: LEFT.x,
     y: row1BodyY,
     w: LEFT.w,
-    h: Math.max(0.35, row1BodyH),
+    h: Math.max(0.18, estSummaryH),
     fontSize: 10,
     color: '334155',
     valign: 'top',
@@ -188,11 +247,11 @@ export async function buildReferenceOnepagerPptxBuffer(input: ReferenceOnepagerP
     fontFace: 'Arial',
   })
 
-  slide.addText(clipNormalized(input.ourSolution, 620), {
+  slide.addText(solutionText, {
     x: RIGHT.x,
     y: row1BodyY,
     w: RIGHT.w,
-    h: Math.max(0.35, row1BodyH),
+    h: Math.max(0.18, estSolutionH),
     fontSize: 10,
     color: '334155',
     valign: 'top',
@@ -223,14 +282,17 @@ export async function buildReferenceOnepagerPptxBuffer(input: ReferenceOnepagerP
     valign: 'top',
   })
 
-  const challengeMaxChars = Math.min(500, Math.max(220, Math.floor(340 * (row2BodyH / 0.95))))
-  const metricsMaxChars = 260
+  const row2BodyY = row2LabelY + SECTION_LABEL_H + GAP_AFTER_SECTION_TITLE
+  const row2BodyH = Math.max(0.22, contentBottomY - row2BodyY)
+
+  const challengeMaxChars = maxCharsForHeight(LEFT.w, 10, row2BodyH, 500)
+  const metricsMaxChars = maxCharsForHeight(RIGHT.w, 10, row2BodyH, 260)
 
   slide.addText(clipNormalized(input.customerChallenge, challengeMaxChars), {
     x: LEFT.x,
     y: row2BodyY,
     w: LEFT.w,
-    h: Math.max(0.2, row2BodyH),
+    h: row2BodyH,
     fontSize: 10,
     color: '334155',
     valign: 'top',
@@ -252,7 +314,7 @@ export async function buildReferenceOnepagerPptxBuffer(input: ReferenceOnepagerP
     x: RIGHT.x,
     y: row2BodyY,
     w: RIGHT.w,
-    h: Math.max(0.2, row2BodyH),
+    h: row2BodyH,
     fontSize: 10,
     color: '334155',
     valign: 'top',
