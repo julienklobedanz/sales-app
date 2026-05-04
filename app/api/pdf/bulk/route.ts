@@ -4,6 +4,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { writeAuditLog } from '@/lib/audit/log-audit'
 import { ReferencePdfBundleDocument } from '@/app/dashboard/references/pdf/template'
 import type { PdfOrgBranding, PdfReference, PdfTemplate } from '@/app/dashboard/references/pdf/types'
+import { computeReferenceDurationMonths } from '@/lib/references/reference-duration-months'
 
 export const runtime = 'nodejs'
 
@@ -69,7 +70,6 @@ export async function POST(req: NextRequest) {
       project_status,
       project_start,
       project_end,
-      duration_months,
       company_id,
       companies ( name, logo_url )
     `)
@@ -81,9 +81,14 @@ export async function POST(req: NextRequest) {
   }
 
   const role = String(profile.role ?? 'sales').toLowerCase()
-  const allowedRows = role === 'sales'
-    ? rows.filter((row) => ['approved', 'internal_only', 'anonymized'].includes(String(row.status ?? '').toLowerCase()))
-    : rows
+  const allowedRows =
+    role === 'sales'
+      ? rows.filter((row) =>
+          ['approved', 'internal_only', 'anonymized', 'external', 'internal'].includes(
+            String(row.status ?? '').toLowerCase()
+          )
+        )
+      : rows
   if (allowedRows.length === 0) {
     return NextResponse.json({ error: 'Keine berechtigten Referenzen gefunden.' }, { status: 403 })
   }
@@ -117,7 +122,11 @@ export async function POST(req: NextRequest) {
       project_status: row.project_status ?? null,
       project_start: row.project_start ?? null,
       project_end: row.project_end ?? null,
-      duration_months: row.duration_months ?? null,
+      duration_months: computeReferenceDurationMonths({
+        project_start: row.project_start ?? null,
+        project_end: row.project_end ?? null,
+        project_status: row.project_status ?? null,
+      }),
     }
   })
 

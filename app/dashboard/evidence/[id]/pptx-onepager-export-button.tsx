@@ -69,7 +69,7 @@ export function PptxOnepagerExportButton({
       onClick={() => void onExport()}
     >
       <AppIcon icon={FileDownIcon} size={16} />
-      {pending ? 'PPTX wird erstellt…' : 'PPTX One-Pager'}
+      {pending ? 'PPTX wird erstellt…' : 'PPTX Export'}
     </Button>
   )
 }

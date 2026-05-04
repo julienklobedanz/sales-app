@@ -7,6 +7,7 @@ import {
   ReferencePdfDocument,
 } from '@/app/dashboard/references/pdf/template'
 import type { PdfOrgBranding, PdfReference, PdfTemplate } from '@/app/dashboard/references/pdf/types'
+import { computeReferenceDurationMonths } from '@/lib/references/reference-duration-months'
 
 export const runtime = 'nodejs'
 
@@ -86,7 +87,6 @@ export async function GET(req: NextRequest) {
       project_status,
       project_start,
       project_end,
-      duration_months,
       companies ( name, logo_url )
     `)
     .eq('id', id)
@@ -97,7 +97,10 @@ export async function GET(req: NextRequest) {
   }
 
   const normalizedStatus = String(row.status ?? '').toLowerCase()
-  if (role === 'sales' && !['approved', 'internal_only', 'anonymized'].includes(normalizedStatus)) {
+  if (
+    role === 'sales' &&
+    !['approved', 'internal_only', 'anonymized', 'external', 'internal'].includes(normalizedStatus)
+  ) {
     return NextResponse.json({ error: 'Keine Berechtigung für diese Referenz.' }, { status: 403 })
   }
 
@@ -136,7 +139,11 @@ export async function GET(req: NextRequest) {
     project_status: row.project_status ?? null,
     project_start: row.project_start ?? null,
     project_end: row.project_end ?? null,
-    duration_months: row.duration_months ?? null,
+    duration_months: computeReferenceDurationMonths({
+      project_start: row.project_start ?? null,
+      project_end: row.project_end ?? null,
+      project_status: row.project_status ?? null,
+    }),
   }
 
   const branding: PdfOrgBranding = {

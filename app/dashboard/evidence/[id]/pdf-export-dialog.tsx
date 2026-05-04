@@ -16,6 +16,12 @@ import { AppIcon } from '@/lib/icons'
 
 type PdfTemplate = 'one_pager' | 'detail' | 'anonymized'
 
+function parseFilenameFromContentDisposition(header: string | null): string | null {
+  if (!header) return null
+  const m = /filename\*?=(?:UTF-8''|")?([^";\n]+)"?/i.exec(header)
+  return m?.[1]?.trim() ?? null
+}
+
 const TEMPLATE_OPTIONS: Array<{
   key: PdfTemplate
   title: string
@@ -79,16 +85,19 @@ export function PdfExportDialog({
     setLoading(true)
     try {
       const res = await fetch(
-        `/api/pdf?referenceId=${encodeURIComponent(referenceId)}&template=${encodeURIComponent(template)}`
+        `/api/pdf?referenceId=${encodeURIComponent(referenceId)}&template=${encodeURIComponent(template)}`,
+        { method: 'GET', credentials: 'same-origin' }
       )
       if (!res.ok) {
         const err = await res.json().catch(() => null)
         throw new Error(err?.error ?? 'PDF-Export fehlgeschlagen.')
       }
       const blob = await res.blob()
-      const contentDisposition = res.headers.get('Content-Disposition') ?? ''
-      const match = contentDisposition.match(/filename="(.+)"/)
-      const fileName = match?.[1] ?? 'RefStack.pdf'
+      const fallback = 'RefStack.pdf'
+      const fromHeader = parseFilenameFromContentDisposition(res.headers.get('Content-Disposition'))
+      const fileName = fromHeader
+        ? decodeURIComponent(fromHeader.replace(/^"|"$/g, ''))
+        : fallback
 
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -111,8 +120,8 @@ export function PdfExportDialog({
     <>
       {showButton ? (
         <Button
+          type="button"
           variant="outline"
-          size="sm"
           className={triggerClassName ? `gap-2 ${triggerClassName}` : 'gap-2'}
           onClick={() => setOpen(true)}
         >
