@@ -5,6 +5,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 
 import type { ReferenceRow } from '@/app/dashboard/actions'
+import { narrativeFieldLengthError } from '@/lib/references/reference-narrative-limits'
 
 function normalizeWrappedText(input: string | null | undefined): string | null {
   const raw = String(input ?? '').replace(/\r\n/g, '\n').trim()
@@ -59,6 +60,17 @@ export async function updateReferenceImpl(id: string, formData: FormData) {
   if (!title) {
     throw new Error('Titel ist erforderlich.')
   }
+
+  const summaryLenErr = narrativeFieldLengthError(formData.get('summary')?.toString(), 'Zusammenfassung')
+  if (summaryLenErr) throw new Error(summaryLenErr)
+  const challengeLenErr = narrativeFieldLengthError(
+    formData.get('customer_challenge')?.toString(),
+    'Herausforderung'
+  )
+  if (challengeLenErr) throw new Error(challengeLenErr)
+  const solutionLenErr = narrativeFieldLengthError(formData.get('our_solution')?.toString(), 'Lösung')
+  if (solutionLenErr) throw new Error(solutionLenErr)
+
   // Kontakt/Projekt sind in der DB optional; nicht blockieren (analog createReference).
   if (project_status === 'completed' && !project_end) {
     throw new Error('Bei abgeschlossenem Projekt ist das Projektende erforderlich.')

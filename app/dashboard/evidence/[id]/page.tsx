@@ -338,7 +338,7 @@ export default async function EvidenceDetailPage({
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm text-slate-950 dark:text-slate-100 inline-flex items-center gap-2">
                     <AppIcon icon={Sparkles} size={15} className="text-blue-600 dark:text-blue-300" />
-                    Quick Summary (TL;DR)
+                    Zusammenfassung
                   </CardTitle>
                 </CardHeader>
                 <CardContent>

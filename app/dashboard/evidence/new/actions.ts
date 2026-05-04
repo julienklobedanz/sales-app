@@ -3,20 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { REVALIDATE, ROUTES } from '@/lib/routes'
-
-// Mapping für Brandfetch → Formular (Industrie-Dropdown, deutsch)
-const INDUSTRIES_MAP: { keywords: string[]; value: string }[] = [
-  { keywords: ['finance', 'finanz', 'banking', 'insurance', 'versicherung'], value: 'Finanzdienstleistungen & Versicherung' },
-  { keywords: ['retail', 'handel', 'ecommerce', 'consumer', 'cpg'], value: 'Handel & Konsumgüter' },
-  { keywords: ['manufacturing', 'industrie', 'production', 'automotive', 'engineering'], value: 'Industrie & Automotive' },
-  { keywords: ['software', 'it ', 'technology', 'tech', 'internet', 'computer', 'media', 'telecom', 'tmt'], value: 'Technologie, Medien & Telekommunikation' },
-  { keywords: ['energy', 'utilities', 'resources', 'oil', 'gas', 'mining'], value: 'Energie, Rohstoffe & Versorgung' },
-  { keywords: ['health', 'gesundheit', 'medical', 'pharma', 'life sciences'], value: 'Gesundheitswesen & Life Sciences' },
-  { keywords: ['government', 'public', 'öffentlich', 'defence', 'administration', 'education'], value: 'Öffentlicher Sektor & Bildung' },
-  { keywords: ['professional services', 'consulting', 'logistics'], value: 'Beratung & Logistik' },
-  { keywords: ['travel', 'transport', 'hospitality', 'tourism'], value: 'Reise, Transport & Gastgewerbe' },
-]
-const INDUSTRY_DEFAULT = 'Sonstige'
+import { narrativeFieldLengthError } from '@/lib/references/reference-narrative-limits'
+import { mapBrandfetchIndustryToGermanCategory } from '@/lib/brandfetch/map-brandfetch-industry-to-de'
 
 const COUNTRY_MAP: Record<string, string> = {
   germany: 'Deutschland', deutschland: 'Deutschland',
@@ -81,15 +69,6 @@ function inputToDomain(input: string): string | null {
     .replace(/[^a-z0-9-]/gi, '')
   if (slug.length < 2) return null
   return `${slug}.com`
-}
-
-function mapBrandfetchIndustry(name: string | undefined): string | null {
-  if (!name) return null
-  const lower = name.toLowerCase()
-  for (const { keywords, value } of INDUSTRIES_MAP) {
-    if (keywords.some((k) => lower.includes(k))) return value
-  }
-  return INDUSTRY_DEFAULT
 }
 
 function mapBrandfetchCountry(countryName: string | undefined, countryCode?: string | undefined): string | null {
@@ -375,7 +354,7 @@ async function fetchBrandfetchData(normalizedDomain: string): Promise<FetchEnric
   const description = data.description?.toString().trim() || null
   const employeeCount = typeof data.company?.employees === 'number' ? data.company.employees : null
   const firstIndustry = data.company?.industries?.[0]?.name
-  const industry = mapBrandfetchIndustry(firstIndustry)
+  const industry = mapBrandfetchIndustryToGermanCategory(firstIndustry)
   const loc = data.company?.location
   const headquarters = [loc?.city, loc?.country].filter(Boolean).join(', ') || null
   const country = mapBrandfetchCountry(loc?.country, loc?.countryCode)
@@ -486,6 +465,17 @@ export async function createReference(
   if (!title) {
     return { success: false, error: 'Titel ist erforderlich.' }
   }
+
+  const summaryLenErr = narrativeFieldLengthError(formData.get('summary')?.toString(), 'Zusammenfassung')
+  if (summaryLenErr) return { success: false, error: summaryLenErr }
+  const challengeLenErr = narrativeFieldLengthError(
+    formData.get('customer_challenge')?.toString(),
+    'Herausforderung'
+  )
+  if (challengeLenErr) return { success: false, error: challengeLenErr }
+  const solutionLenErr = narrativeFieldLengthError(formData.get('our_solution')?.toString(), 'Lösung')
+  if (solutionLenErr) return { success: false, error: solutionLenErr }
+
   // NOTE: Diese Felder sind in der DB optional. UI kann sie später nachpflegen,
   // daher blockieren wir das Speichern hier nicht.
   if (project_status === 'completed' && !project_end) {

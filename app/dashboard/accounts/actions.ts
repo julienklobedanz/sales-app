@@ -4,6 +4,13 @@ import { revalidatePath } from 'next/cache'
 import { ROUTES } from '@/lib/routes'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import * as XLSX from 'xlsx'
+import { mapBrandfetchIndustryToGermanCategory } from '@/lib/brandfetch/map-brandfetch-industry-to-de'
+import {
+  normalizeCompanyAccountStatus,
+  type CompanyAccountStatusValue,
+} from '@/lib/accounts/company-account-status'
+
+export type { CompanyAccountStatusValue } from '@/lib/accounts/company-account-status'
 
 export type CompanyStrategyRow = {
   id: string
@@ -649,7 +656,7 @@ export async function getExpiringDealsByCompanyId(
 /** Setzt nur `account_status`. Stammdaten inkl. Status: {@link updateCompany}. */
 export async function updateCompanyAccountStatus(
   companyId: string,
-  account_status: 'at_risk' | 'warmup' | 'expansion' | null
+  account_status: CompanyAccountStatusValue | null
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createServerSupabaseClient()
   const { error } = await supabase
@@ -850,11 +857,12 @@ async function fetchBrandfetchCompany(domain: string): Promise<{ success: true; 
     json.logos?.find((logo) => logo.formats?.length)?.formats?.[0]?.src ??
     null
   const websiteDomain = String(json.domain ?? domain).trim()
+  const rawIndustry = String(json.company?.industries?.[0]?.name ?? '').trim() || null
   const data: BrandfetchPayload = {
     companyName: rawName || null,
     websiteUrl: websiteDomain ? `https://${normalizeDomain(websiteDomain)}` : `https://${domain}`,
     logoUrl: logoUrl || null,
-    industry: String(json.company?.industries?.[0]?.name ?? '').trim() || null,
+    industry: rawIndustry ? mapBrandfetchIndustryToGermanCategory(rawIndustry) : null,
     headquarters,
     employeeCount: typeof json.company?.employees === 'number' ? json.company.employees : null,
     description: String(json.description ?? '').trim() || null,
@@ -1013,7 +1021,7 @@ export async function createCompany(payload: {
       logo_url: payload.logo_url?.trim() || null,
       employee_count: payload.employee_count ?? null,
       description: payload.description?.trim() || null,
-      account_status: payload.account_status?.trim() || null,
+      account_status: normalizeCompanyAccountStatus(payload.account_status),
     })
     .select('id')
     .single()
@@ -1128,9 +1136,6 @@ export async function bulkCreateCompaniesFromSheet(fileBuffer: Uint8Array): Prom
   return { success: true, createdCount, skippedCount, failedCount }
 }
 
-const COMPANY_ACCOUNT_STATUSES = ['at_risk', 'warmup', 'expansion'] as const
-export type CompanyAccountStatusValue = (typeof COMPANY_ACCOUNT_STATUSES)[number]
-
 export async function updateCompany(payload: {
   id: string
   name: string
@@ -1159,11 +1164,7 @@ export async function updateCompany(payload: {
   const name = payload.name.trim()
   if (!name) return { success: false, error: 'Name ist erforderlich.' }
 
-  const statusRaw = payload.account_status?.trim() || null
-  const account_status =
-    statusRaw && COMPANY_ACCOUNT_STATUSES.includes(statusRaw as CompanyAccountStatusValue)
-      ? statusRaw
-      : null
+  const account_status = normalizeCompanyAccountStatus(payload.account_status)
 
   const { data: row, error: fetchError } = await supabase
     .from('companies')

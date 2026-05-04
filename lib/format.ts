@@ -15,6 +15,21 @@ export function formatNumberDe(value: number | string | null | undefined): strin
   return n.toLocaleString('de-DE')
 }
 
+/** Nur Ziffern → Tausenderpunkte (Eingabefelder, konsistent mit Referenz-Formular). */
+export function formatThousandsDots(raw: string | null | undefined): string {
+  const digits = String(raw ?? '').replace(/\D/g, '')
+  if (!digits) return ''
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+}
+
+/** Aus Eingabe mit Tausenderpunkten eine ganze Zahl (oder null). */
+export function parseThousandsDotsToInt(raw: string | null | undefined): number | null {
+  const digits = String(raw ?? '').replace(/\D/g, '')
+  if (!digits) return null
+  const n = Number.parseInt(digits, 10)
+  return Number.isNaN(n) ? null : n
+}
+
 const VOLUME_SYMBOL_BY_CODE: Record<string, string> = {
   AED: 'AED',
   AUD: 'A$',

@@ -4,6 +4,7 @@ import type {
   ExtractedReferenceData,
   ExtractDataFromDocumentResult,
 } from '@/app/dashboard/evidence/new/types'
+import { clampNarrativeTextNullable } from '@/lib/references/reference-narrative-limits'
 
 const INDUSTRIES_LIST =
   'Financial Services & Insurance, Retail & Consumer Goods (CPG), Manufacturing & Automotive, Technology, Media & Telecom (TMT), Energy, Resources & Utilities, Healthcare & Life Sciences, Public Sector & Education, Professional Services & Logistics, Travel, Transport & Hospitality, Sonstige'
@@ -123,7 +124,8 @@ Dokumenttext (Ausschnitt):
   const parsed = JSON.parse(content) as ExtractedReferenceData
   return {
     title: typeof parsed.title === 'string' ? parsed.title : null,
-    summary: typeof parsed.summary === 'string' ? parsed.summary : null,
+    summary:
+      typeof parsed.summary === 'string' ? clampNarrativeTextNullable(parsed.summary) : null,
     industry: typeof parsed.industry === 'string' ? parsed.industry : null,
     volume_eur: typeof parsed.volume_eur === 'string' ? parsed.volume_eur : null,
     employee_count:
@@ -135,10 +137,12 @@ Dokumenttext (Ausschnitt):
       typeof parsed.company_name === 'string' ? parsed.company_name : null,
     customer_challenge:
       typeof parsed.customer_challenge === 'string'
-        ? parsed.customer_challenge
+        ? clampNarrativeTextNullable(parsed.customer_challenge)
         : null,
     our_solution:
-      typeof parsed.our_solution === 'string' ? parsed.our_solution : null,
+      typeof parsed.our_solution === 'string'
+        ? clampNarrativeTextNullable(parsed.our_solution)
+        : null,
   }
 }
 

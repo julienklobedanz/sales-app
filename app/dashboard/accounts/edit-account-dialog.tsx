@@ -28,13 +28,12 @@ import { COPY } from '@/lib/copy'
 import type { CompanyDetailCompany } from './company-detail-types'
 import { displayHostFromUrl, normalizeWebsiteForSave } from './account-company-helpers'
 import { fetchCompanyEnrichment, searchCompanySuggestions } from '@/app/dashboard/evidence/new/actions'
-
-type AccountStatusOption = '__none__' | 'at_risk' | 'warmup' | 'expansion'
-
-function statusFromCompany(raw: string | null): AccountStatusOption {
-  if (raw === 'at_risk' || raw === 'warmup' || raw === 'expansion') return raw
-  return '__none__'
-}
+import {
+  ACCOUNT_STATUS_FORM_OPTIONS,
+  accountStatusFromDb,
+  type AccountStatusFormValue,
+} from '@/lib/accounts/company-account-status'
+import { formatThousandsDots, parseThousandsDotsToInt } from '@/lib/format'
 
 export function EditAccountDialog({
   open,
@@ -55,7 +54,7 @@ export function EditAccountDialog({
   const [headquarters, setHeadquarters] = useState('')
   const [employeeCount, setEmployeeCount] = useState('')
   const [description, setDescription] = useState('')
-  const [accountStatus, setAccountStatus] = useState<AccountStatusOption>('__none__')
+  const [accountStatus, setAccountStatus] = useState<AccountStatusFormValue>('__none__')
   const [debouncedName, setDebouncedName] = useState('')
   const enrichReqRef = useRef(0)
   const lastAutoQueryRef = useRef('')
@@ -69,11 +68,11 @@ export function EditAccountDialog({
     setHeadquarters(company.headquarters ?? '')
     setEmployeeCount(
       company.employee_count != null && !Number.isNaN(company.employee_count)
-        ? String(company.employee_count)
+        ? formatThousandsDots(String(company.employee_count))
         : ''
     )
     setDescription(company.description ?? '')
-    setAccountStatus(statusFromCompany(company.account_status))
+    setAccountStatus(accountStatusFromDb(company.account_status))
     setDebouncedName('')
     lastAutoQueryRef.current = ''
   }, [open, company])
@@ -118,7 +117,9 @@ export function EditAccountDialog({
       setLogoUrl(enriched.logo_url ?? '')
       setIndustry(enriched.industry ?? '')
       setHeadquarters(enriched.headquarters?.trim() || enriched.country?.trim() || '')
-      setEmployeeCount(enriched.employee_count != null ? String(enriched.employee_count) : '')
+      setEmployeeCount(
+        enriched.employee_count != null ? formatThousandsDots(String(enriched.employee_count)) : ''
+      )
       setDescription(enriched.description ?? '')
     })()
   }, [debouncedName, open])
@@ -130,8 +131,8 @@ export function EditAccountDialog({
     setPending(true)
     try {
       const employee =
-        employeeCount.trim().length > 0 ? Number(employeeCount.trim()) : null
-      if (employeeCount.trim().length > 0 && Number.isNaN(employee as number)) {
+        employeeCount.trim().length > 0 ? parseThousandsDotsToInt(employeeCount) : null
+      if (employeeCount.trim().length > 0 && employee == null) {
         toast.error('Mitarbeiterzahl muss eine Zahl sein.')
         return
       }
@@ -229,8 +230,11 @@ export function EditAccountDialog({
               id="edit-account-employee"
               inputMode="numeric"
               value={employeeCount}
-              onChange={(e) => setEmployeeCount(e.target.value)}
-              placeholder="z. B. 2500"
+              onChange={(e) => {
+                const digits = e.target.value.replace(/\D/g, '')
+                setEmployeeCount(digits ? formatThousandsDots(digits) : '')
+              }}
+              placeholder="z. B. 10.001"
               disabled={pending || enriching}
             />
           </div>
@@ -239,17 +243,22 @@ export function EditAccountDialog({
             <Label>Account-Status</Label>
             <Select
               value={accountStatus}
-              onValueChange={(v) => setAccountStatus(v as AccountStatusOption)}
+              onValueChange={(v) => setAccountStatus(v as AccountStatusFormValue)}
               disabled={pending || enriching}
             >
               <SelectTrigger>
                 <SelectValue placeholder="— Keine Angabe" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="__none__">— Keine Angabe</SelectItem>
-                <SelectItem value="warmup">Warm-up</SelectItem>
-                <SelectItem value="expansion">Expansion</SelectItem>
-                <SelectItem value="at_risk">Account at Risk</SelectItem>
+                {ACCOUNT_STATUS_FORM_OPTIONS.map((opt) => (
+                  <SelectItem
+                    key={opt.value}
+                    value={opt.value}
+                    title={opt.description || undefined}
+                  >
+                    {opt.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

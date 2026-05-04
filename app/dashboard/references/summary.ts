@@ -1,6 +1,7 @@
 'use server'
 
 import { logEventForCurrentOrg } from '@/lib/events/log-event'
+import { clampNarrativeText } from '@/lib/references/reference-narrative-limits'
 
 export type GenerateSummaryResult =
   | { success: true; summary: string }
@@ -22,7 +23,7 @@ export async function generateSummaryFromStoryImpl(
     return { success: false, error: 'OpenAI API ist nicht konfiguriert (OPENAI_API_KEY).' }
   }
 
-  const prompt = `Du bist ein Vertriebs-Assistent. Erstelle aus den folgenden Angaben eine prägnante, vertriebsorientierte Zusammenfassung in 3–4 Sätzen auf Deutsch. Betone den Mehrwert und das Ergebnis für den Kunden. Schreibe nur die Zusammenfassung, ohne Überschriften oder Bullet-Points.
+  const prompt = `Du bist ein Vertriebs-Assistent. Erstelle aus den folgenden Angaben eine prägnante, vertriebsorientierte Zusammenfassung in 3–4 Sätzen auf Deutsch. Maximal 700 Zeichen. Betone den Mehrwert und das Ergebnis für den Kunden. Schreibe nur die Zusammenfassung, ohne Überschriften oder Bullet-Points.
 
 Herausforderung des Kunden:
 ${challenge}
@@ -76,7 +77,7 @@ Zusammenfassung:`
         payload: {},
       })
     }
-    return { success: true, summary }
+    return { success: true, summary: clampNarrativeText(summary) }
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Unbekannter Fehler'
     return { success: false, error: message }

@@ -48,6 +48,7 @@ import {
   getCompetitorSuggestions,
 } from '../../actions'
 import { extractDataFromDocument } from '@/lib/document-extraction'
+import { REFERENCE_NARRATIVE_MAX_CHARS } from '@/lib/references/reference-narrative-limits'
 import { CreateContactDialog, type CreatedContact } from './create-contact-dialog'
 import type { ExternalContact } from './actions'
 import {
@@ -498,13 +499,27 @@ export function ReferenceForm({
     return fd
   }
 
+  const narrativeMaxMsg = (label: string) =>
+    `${label}: höchstens ${REFERENCE_NARRATIVE_MAX_CHARS} Zeichen.`
+
   const requiredSchema = z
     .object({
       title: z.string().trim().min(1, 'Titel ist ein Pflichtfeld.'),
       companyId: z.string().optional(),
       newCompanyName: z.string().optional(),
-      customerChallenge: z.string().trim().min(1, 'Herausforderung ist ein Pflichtfeld.'),
-      ourSolution: z.string().trim().min(1, 'Lösung ist ein Pflichtfeld.'),
+      summary: z
+        .string()
+        .max(REFERENCE_NARRATIVE_MAX_CHARS, narrativeMaxMsg('Zusammenfassung')),
+      customerChallenge: z
+        .string()
+        .trim()
+        .min(1, 'Herausforderung ist ein Pflichtfeld.')
+        .max(REFERENCE_NARRATIVE_MAX_CHARS, narrativeMaxMsg('Herausforderung')),
+      ourSolution: z
+        .string()
+        .trim()
+        .min(1, 'Lösung ist ein Pflichtfeld.')
+        .max(REFERENCE_NARRATIVE_MAX_CHARS, narrativeMaxMsg('Lösung')),
     })
     .superRefine((val, ctx) => {
       const hasCompany =
@@ -521,8 +536,19 @@ export function ReferenceForm({
   const editRequiredSchema = z.object({
     title: z.string().trim().min(1, 'Titel ist ein Pflichtfeld.'),
     editCompanyName: z.string().trim().min(1, 'Unternehmen ist ein Pflichtfeld.'),
-    customerChallenge: z.string().trim().min(1, 'Herausforderung ist ein Pflichtfeld.'),
-    ourSolution: z.string().trim().min(1, 'Lösung ist ein Pflichtfeld.'),
+    summary: z
+      .string()
+      .max(REFERENCE_NARRATIVE_MAX_CHARS, narrativeMaxMsg('Zusammenfassung')),
+    customerChallenge: z
+      .string()
+      .trim()
+      .min(1, 'Herausforderung ist ein Pflichtfeld.')
+      .max(REFERENCE_NARRATIVE_MAX_CHARS, narrativeMaxMsg('Herausforderung')),
+    ourSolution: z
+      .string()
+      .trim()
+      .min(1, 'Lösung ist ein Pflichtfeld.')
+      .max(REFERENCE_NARRATIVE_MAX_CHARS, narrativeMaxMsg('Lösung')),
   })
 
   async function handleCreateSubmit(e: FormEvent<HTMLFormElement>) {
@@ -531,6 +557,7 @@ export function ReferenceForm({
       title,
       companyId,
       newCompanyName,
+      summary,
       customerChallenge,
       ourSolution,
     })
@@ -602,6 +629,7 @@ export function ReferenceForm({
     const parsed = editRequiredSchema.safeParse({
       title,
       editCompanyName,
+      summary,
       customerChallenge,
       ourSolution,
     })
@@ -975,6 +1003,7 @@ export function ReferenceForm({
                   rows={4}
                   disabled={submitting}
                   value={summary}
+                  maxLength={REFERENCE_NARRATIVE_MAX_CHARS}
                   onChange={(e) => setSummary(e.target.value)}
                   className="pr-10"
                 />
@@ -1011,6 +1040,9 @@ export function ReferenceForm({
                   )}
                 </Button>
               </div>
+              <p className="text-xs text-muted-foreground text-right tabular-nums">
+                {summary.length}/{REFERENCE_NARRATIVE_MAX_CHARS}
+              </p>
             </div>
 
             {/* Storytelling: Herausforderung & Lösung */}
@@ -1026,9 +1058,13 @@ export function ReferenceForm({
                   rows={4}
                   disabled={submitting}
                   value={customerChallenge}
+                  maxLength={REFERENCE_NARRATIVE_MAX_CHARS}
                   onChange={(e) => setCustomerChallenge(e.target.value)}
                   className="text-sm leading-relaxed"
                 />
+                <p className="text-xs text-muted-foreground text-right tabular-nums">
+                  {customerChallenge.length}/{REFERENCE_NARRATIVE_MAX_CHARS}
+                </p>
               </div>
               <div className="space-y-1">
                 <OptionalLabel htmlFor="our_solution">Unsere Lösung</OptionalLabel>
@@ -1039,9 +1075,13 @@ export function ReferenceForm({
                   rows={4}
                   disabled={submitting}
                   value={ourSolution}
+                  maxLength={REFERENCE_NARRATIVE_MAX_CHARS}
                   onChange={(e) => setOurSolution(e.target.value)}
                   className="text-sm leading-relaxed"
                 />
+                <p className="text-xs text-muted-foreground text-right tabular-nums">
+                  {ourSolution.length}/{REFERENCE_NARRATIVE_MAX_CHARS}
+                </p>
               </div>
             </div>
 

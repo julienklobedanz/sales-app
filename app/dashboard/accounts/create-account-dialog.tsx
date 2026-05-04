@@ -28,6 +28,11 @@ import {
 } from '@/app/dashboard/evidence/new/actions'
 import { cn } from '@/lib/utils'
 import { displayHostFromUrl, normalizeWebsiteForSave } from './account-company-helpers'
+import {
+  ACCOUNT_STATUS_FORM_OPTIONS,
+  type AccountStatusFormValue,
+} from '@/lib/accounts/company-account-status'
+import { formatThousandsDots, parseThousandsDotsToInt } from '@/lib/format'
 
 export function CreateAccountDialog({
   open,
@@ -46,7 +51,7 @@ export function CreateAccountDialog({
   const [headquarters, setHeadquarters] = useState('')
   const [employeeCount, setEmployeeCount] = useState('')
   const [description, setDescription] = useState('')
-  const [accountStatus, setAccountStatus] = useState<'__none__' | 'at_risk' | 'warmup' | 'expansion'>('__none__')
+  const [accountStatus, setAccountStatus] = useState<AccountStatusFormValue>('__none__')
 
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [debouncedEnrichQuery, setDebouncedEnrichQuery] = useState('')
@@ -135,7 +140,9 @@ export function CreateAccountDialog({
       setWebsiteUrl(displayHostFromUrl(enriched.website_url))
       setIndustry(enriched.industry ?? '')
       setHeadquarters(enriched.headquarters?.trim() || enriched.country?.trim() || '')
-      setEmployeeCount(enriched.employee_count != null ? String(enriched.employee_count) : '')
+      setEmployeeCount(
+        enriched.employee_count != null ? formatThousandsDots(String(enriched.employee_count)) : ''
+      )
       setDescription(enriched.description ?? '')
       setLogoUrl(enriched.logo_url ?? '')
     })()
@@ -174,7 +181,9 @@ export function CreateAccountDialog({
       setWebsiteUrl(displayHostFromUrl(res.website_url))
       setIndustry(res.industry ?? '')
       setHeadquarters(res.headquarters?.trim() || res.country?.trim() || '')
-      setEmployeeCount(res.employee_count != null ? String(res.employee_count) : '')
+      setEmployeeCount(
+        res.employee_count != null ? formatThousandsDots(String(res.employee_count)) : ''
+      )
       setDescription(res.description ?? '')
       setLogoUrl(res.logo_url ?? '')
       toast.success('Daten übernommen.')
@@ -190,8 +199,8 @@ export function CreateAccountDialog({
     setPending(true)
     try {
       const employee =
-        employeeCount.trim().length > 0 ? Number(employeeCount.trim()) : null
-      if (employeeCount.trim().length > 0 && Number.isNaN(employee as number)) {
+        employeeCount.trim().length > 0 ? parseThousandsDotsToInt(employeeCount) : null
+      if (employeeCount.trim().length > 0 && employee == null) {
         toast.error('Mitarbeiterzahl muss eine Zahl sein.')
         return
       }
@@ -210,7 +219,7 @@ export function CreateAccountDialog({
         toast.success('Account erstellt.')
         onOpenChange(false)
         resetForm()
-        router.push(ROUTES.accountsDetail(res.id))
+        router.refresh()
       } else {
         toast.error(res.error ?? 'Erstellen fehlgeschlagen.')
       }
@@ -335,8 +344,11 @@ export function CreateAccountDialog({
               id="account-employee"
               inputMode="numeric"
               value={employeeCount}
-              onChange={(e) => setEmployeeCount(e.target.value)}
-              placeholder="z. B. 2500"
+              onChange={(e) => {
+                const digits = e.target.value.replace(/\D/g, '')
+                setEmployeeCount(digits ? formatThousandsDots(digits) : '')
+              }}
+              placeholder="z. B. 10.001"
               disabled={pending || enriching}
             />
           </div>
@@ -345,19 +357,22 @@ export function CreateAccountDialog({
             <Label>Account Status</Label>
             <Select
               value={accountStatus}
-              onValueChange={(v) =>
-                setAccountStatus(v as '__none__' | 'at_risk' | 'warmup' | 'expansion')
-              }
+              onValueChange={(v) => setAccountStatus(v as AccountStatusFormValue)}
               disabled={pending || enriching}
             >
               <SelectTrigger>
                 <SelectValue placeholder="— Keine Angabe" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="__none__">— Keine Angabe</SelectItem>
-                <SelectItem value="warmup">Warm-up</SelectItem>
-                <SelectItem value="expansion">Expansion</SelectItem>
-                <SelectItem value="at_risk">Account at Risk</SelectItem>
+                {ACCOUNT_STATUS_FORM_OPTIONS.map((opt) => (
+                  <SelectItem
+                    key={opt.value}
+                    value={opt.value}
+                    title={opt.description || undefined}
+                  >
+                    {opt.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

@@ -64,8 +64,6 @@ export function DashboardShell({
   const pathname = usePathname()
   const router = useRouter()
 
-  const isAdmin = profile.role === 'admin'
-
   const [ticketModalOpen, setTicketModalOpen] = useState(false)
   const [ticketModalType, setTicketModalType] = useState<'support' | 'feedback'>('support')
 
@@ -324,22 +322,20 @@ export function DashboardShell({
                   </SidebarMenuButton>
                 </SidebarMenuItem>
 
-                {isAdmin ? (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      asChild
-                      size="sm"
-                      tooltip="Einstellungen"
-                      isActive={pathname?.startsWith(ROUTES.settings)}
-                      className="group rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-muted data-[active=true]:text-foreground"
-                    >
-                      <Link href={ROUTES.settings}>
-                        <AppIcon icon={SettingsIcon} size={16} />
-                        <span>Einstellungen</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ) : null}
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    size="sm"
+                    tooltip="Einstellungen"
+                    isActive={pathname?.startsWith(ROUTES.settings)}
+                    className="group rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-muted data-[active=true]:text-foreground"
+                  >
+                    <Link href={ROUTES.settings}>
+                      <AppIcon icon={SettingsIcon} size={16} />
+                      <span>Einstellungen</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

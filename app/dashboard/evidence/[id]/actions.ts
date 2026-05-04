@@ -12,6 +12,7 @@ import {
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { logEventForCurrentOrg } from '@/lib/events/log-event'
+import { clampNarrativeTextNullable } from '@/lib/references/reference-narrative-limits'
 
 /** Einmal pro Detail-Ansicht: Referenz geöffnet (Epic 15). */
 export async function logReferenceViewed(referenceId: string) {
@@ -256,7 +257,7 @@ export async function createAnonymizedReferenceVersion(id: string): Promise<Anon
     // Keine anonymen Firmen mehr anlegen: die anonymisierte Version bleibt beim bestehenden Account.
     company_id: row.company_id as string,
     title: anonymized.title,
-    summary: anonymized.summary,
+    summary: clampNarrativeTextNullable(anonymized.summary),
     industry: row.industry as string | null,
     country: row.country as string | null,
     status: 'anonymized',
@@ -267,8 +268,8 @@ export async function createAnonymizedReferenceVersion(id: string): Promise<Anon
     contract_type: anonymized.contract_type,
     incumbent_provider: anonymized.incumbent_provider,
     competitors: anonymized.competitors,
-    customer_challenge: anonymized.customer_challenge,
-    our_solution: anonymized.our_solution,
+    customer_challenge: clampNarrativeTextNullable(anonymized.customer_challenge),
+    our_solution: clampNarrativeTextNullable(anonymized.our_solution),
     contact_id: null,
     customer_contact_id: null,
     customer_contact: null,

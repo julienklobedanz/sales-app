@@ -941,7 +941,7 @@ export function renderReferenceColumnCell(
           .filter(Boolean)
           .join(" ")
           .trim() ||
-        "TL;DR folgt aus der Detailansicht."
+        "Zusammenfassung folgt aus der Detailansicht."
       const tags = String(ref.tags ?? "")
         .split(/[\s,]+/)
         .map((t) => t.trim())
@@ -973,7 +973,7 @@ export function renderReferenceColumnCell(
                 </div>
               ) : null}
               <div className="rounded-md border bg-slate-50 px-3 py-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">TL;DR</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Zusammenfassung</p>
                 <p className="mt-1 text-xs leading-relaxed text-slate-700">{tldr}</p>
               </div>
               <div className="grid grid-cols-2 gap-2">
