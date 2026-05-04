@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { REVALIDATE, ROUTES } from '@/lib/routes'
 import { narrativeFieldLengthError } from '@/lib/references/reference-narrative-limits'
-import { mapBrandfetchIndustryToGermanCategory } from '@/lib/brandfetch/map-brandfetch-industry-to-de'
+import { mapBrandfetchIndustriesArrayToGermanCategory } from '@/lib/brandfetch/map-brandfetch-industry-to-de'
 
 const COUNTRY_MAP: Record<string, string> = {
   germany: 'Deutschland', deutschland: 'Deutschland',
@@ -353,8 +353,7 @@ async function fetchBrandfetchData(normalizedDomain: string): Promise<FetchEnric
   const websiteUrl = data.domain ? `https://${data.domain.toString().replace(/^https?:\/\//, '').replace(/^www\./, '')}` : `https://${normalizedDomain}`
   const description = data.description?.toString().trim() || null
   const employeeCount = typeof data.company?.employees === 'number' ? data.company.employees : null
-  const firstIndustry = data.company?.industries?.[0]?.name
-  const industry = mapBrandfetchIndustryToGermanCategory(firstIndustry)
+  const industry = mapBrandfetchIndustriesArrayToGermanCategory(data.company?.industries)
   const loc = data.company?.location
   const headquarters = [loc?.city, loc?.country].filter(Boolean).join(', ') || null
   const country = mapBrandfetchCountry(loc?.country, loc?.countryCode)

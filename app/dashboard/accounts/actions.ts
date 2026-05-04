@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { ROUTES } from '@/lib/routes'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import * as XLSX from 'xlsx'
-import { mapBrandfetchIndustryToGermanCategory } from '@/lib/brandfetch/map-brandfetch-industry-to-de'
+import { mapBrandfetchIndustriesArrayToGermanCategory } from '@/lib/brandfetch/map-brandfetch-industry-to-de'
 import {
   normalizeCompanyAccountStatus,
   type CompanyAccountStatusValue,
@@ -857,12 +857,11 @@ async function fetchBrandfetchCompany(domain: string): Promise<{ success: true; 
     json.logos?.find((logo) => logo.formats?.length)?.formats?.[0]?.src ??
     null
   const websiteDomain = String(json.domain ?? domain).trim()
-  const rawIndustry = String(json.company?.industries?.[0]?.name ?? '').trim() || null
   const data: BrandfetchPayload = {
     companyName: rawName || null,
     websiteUrl: websiteDomain ? `https://${normalizeDomain(websiteDomain)}` : `https://${domain}`,
     logoUrl: logoUrl || null,
-    industry: rawIndustry ? mapBrandfetchIndustryToGermanCategory(rawIndustry) : null,
+    industry: mapBrandfetchIndustriesArrayToGermanCategory(json.company?.industries),
     headquarters,
     employeeCount: typeof json.company?.employees === 'number' ? json.company.employees : null,
     description: String(json.description ?? '').trim() || null,
@@ -933,7 +932,10 @@ export async function refreshAccountsFromBrandfetch(): Promise<RefreshAccountsRe
     const currentHeadquarters = normalizeTextValue(company.headquarters)
     const fetchedHeadquarters = String(fetched.data.headquarters ?? '').trim()
     const fetchedHeadquartersNorm = normalizeTextValue(fetchedHeadquarters)
-    const headquartersNeedsUpdate = !currentHeadquarters && Boolean(fetchedHeadquartersNorm)
+    // HQ: fehlende Einträge füllen und bei geändertem Brandfetch-Standort aktualisieren (kein Löschen, wenn API leer bleibt)
+    const headquartersNeedsUpdate =
+      Boolean(fetchedHeadquartersNorm) &&
+      (!currentHeadquarters || fetchedHeadquartersNorm !== currentHeadquarters)
 
     const currentLogo = String(company.logo_url ?? '').trim()
     const fetchedLogo = String(fetched.data.logoUrl ?? '').trim()
