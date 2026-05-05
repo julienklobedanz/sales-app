@@ -1,13 +1,16 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useEffect, useMemo, useState, useTransition } from 'react'
 import Image from 'next/image'
 import {
   Delete02Icon,
   FilterHorizontalIcon,
   Linkedin01Icon,
   LinkIcon,
+  Loader,
+  News01Icon,
   Paperclip,
   Sparkles,
   UploadIcon,
@@ -25,6 +28,7 @@ import {
   getDecisionMakerCandidates,
   markMarketSignalNotificationsRead,
   markMarketSignalsIrrelevant,
+  triggerMarketSignalsIngestForMyOrg,
 } from '@/app/dashboard/market-signals/actions'
 import type { DecisionMakerCandidate } from '@/app/dashboard/market-signals/actions'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -32,6 +36,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { toast } from 'sonner'
+import { useRole } from '@/hooks/useRole'
 
 function formatLinkedInActivityLine(iso: string | null | undefined): string | null {
   if (!iso) return null
@@ -104,6 +109,27 @@ function computeSignalIcpScore(input: {
 export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }) {
   type IntroTone = 'challenging' | 'advisory' | 'concise'
   type InboxCategory = 'all' | 'people' | 'company'
+  const { isAdmin, isAccountManager } = useRole()
+  const router = useRouter()
+  const [newsIngestPending, startNewsIngest] = useTransition()
+
+  useEffect(() => {
+    const REFRESH_MS = 120_000
+    const tick = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return
+      router.refresh()
+    }
+    const id = window.setInterval(tick, REFRESH_MS)
+    const onVis = () => {
+      if (document.visibilityState === 'visible') router.refresh()
+    }
+    document.addEventListener('visibilitychange', onVis)
+    return () => {
+      window.clearInterval(id)
+      document.removeEventListener('visibilitychange', onVis)
+    }
+  }, [router])
+  const canRunNewsIngest = isAdmin || isAccountManager
   const [nowTs] = useState(() => new Date().getTime())
   const [onlyActiveDeals, setOnlyActiveDeals] = useState(false)
   const [onlyFocusAccounts, setOnlyFocusAccounts] = useState(true)
@@ -302,9 +328,13 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
 
   const items: InboxItem[] = useMemo(() => {
     const execItems: InboxItem[] = model.executives.map((row) => {
-      const href = `https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(
+      const linkedInHref = `https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(
         `${row.personName} ${row.companyName}`
       )}`
+      const pressUrl = String(row.sourceUrl ?? '').trim()
+      const isPress = row.eventKind === 'news_mention'
+      const href =
+        isPress && pressUrl && /^https?:\/\//i.test(pressUrl) ? pressUrl : linkedInHref
       const headline = `${row.personName} · ${row.companyName}`
       return {
         kind: 'exec',
@@ -314,22 +344,28 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
         companyLogoUrl: row.companyLogoUrl,
         headline,
         detectedAt: row.detectedAt,
-        sourceLabel: 'LinkedIn',
+        sourceLabel: isPress ? 'Presse' : 'LinkedIn',
         sourceHref: href,
-        sourceSummary: summarizeSourceText(row.changeSummary || `${row.personName} in neuer Rolle bei ${row.companyName}`),
+        sourceSummary: summarizeSourceText(
+          row.changeSummary || `${row.personName} in neuer Rolle bei ${row.companyName}`
+        ),
         listTitlePrefix: row.personName || 'Person',
-        listTitleRest: `${row.companyName} · Executive Tracking`,
+        listTitleRest: isPress ? `${row.companyName} · Executive in den Medien` : `${row.companyName} · Executive Tracking`,
         categoryBadge: 'people',
         personName: row.personName,
       }
     })
     const newsItems: InboxItem[] = model.news.map((row) => {
       const source = String(row.sourceLabel ?? '').trim()
-      const href = /^https?:\/\//i.test(source)
-        ? source
-        : `https://www.google.com/search?q=${encodeURIComponent(
-            [source, row.companyName, row.body].filter(Boolean).join(' ')
-          )}`
+      const directUrl = String(row.sourceUrl ?? '').trim()
+      const href =
+        directUrl && /^https?:\/\//i.test(directUrl)
+          ? directUrl
+          : /^https?:\/\//i.test(source)
+            ? source
+            : `https://www.google.com/search?q=${encodeURIComponent(
+                [source, row.companyName, row.body].filter(Boolean).join(' ')
+              )}`
       return {
         kind: 'news',
         id: row.id,
@@ -905,6 +941,43 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
           <Button variant="ghost" size="toolbar" className="h-8 px-3 text-muted-foreground hover:bg-muted/70" asChild>
             <Link href={ROUTES.marketSignalsManage}>Watchlist verwalten</Link>
           </Button>
+          {canRunNewsIngest ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="toolbar"
+              className="h-8 gap-1.5 text-xs"
+              disabled={newsIngestPending}
+              title="Company News + Executive-Presse (Google News RSS, inkl. Fachmedien-Suche)"
+              onClick={() => {
+                startNewsIngest(async () => {
+                  const result = await triggerMarketSignalsIngestForMyOrg()
+                  if (!result.success) {
+                    toast.error(result.error)
+                    return
+                  }
+                  const ne = result.news.errors.length
+                  const ee = result.executives.errors.length
+                  if (ne > 0) console.warn('[market-signals ingest / news]', result.news.errors)
+                  if (ee > 0) console.warn('[market-signals ingest / executives]', result.executives.errors)
+                  toast.success(
+                    `Signale: ${result.news.articlesInserted} News · ${result.executives.signalsInserted} Executive` +
+                      (result.executives.skippedNoCompany > 0
+                        ? ` (${result.executives.skippedNoCompany} Exec. ohne Account-Zuordnung übersprungen)`
+                        : '')
+                  )
+                  router.refresh()
+                })
+              }}
+            >
+              {newsIngestPending ? (
+                <AppIcon icon={Loader} size={14} className="animate-spin" />
+              ) : (
+                <AppIcon icon={News01Icon} size={14} />
+              )}
+              Signale abrufen
+            </Button>
+          ) : null}
         </div>
       </div>
 

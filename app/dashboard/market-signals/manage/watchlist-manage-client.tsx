@@ -152,6 +152,11 @@ export function MarketSignalsManageClient({
           isChampionsView ? 'bg-blue-500/5 ring-1 ring-blue-500/30' : ''
         }`}
       >
+        <p className="text-xs text-muted-foreground">
+          Für automatische Presse-Signale (Google News): Person als{' '}
+          <strong className="font-medium text-foreground">Stakeholder</strong> am Account pflegen oder zuerst ein
+          manuelles Executive-Event anlegen – sonst fehlt die Firmen-Zuordnung.
+        </p>
         <div className="flex items-center gap-2">
           <AppIcon icon={Sparkles} size={16} className="text-muted-foreground" />
           <h2 className="text-base font-semibold text-foreground">Executives verwalten</h2>

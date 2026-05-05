@@ -12,6 +12,8 @@ export type ExecutiveTrackingRow = {
   personTitleAfter: string | null
   changeSummary: string
   detectedAt: string
+  eventKind: 'role_change' | 'news_mention'
+  sourceUrl: string | null
 }
 
 export type AccountNewsRow = {
@@ -21,6 +23,8 @@ export type AccountNewsRow = {
   companyLogoUrl: string | null
   body: string
   sourceLabel: string | null
+  /** Original-Artikel-URL (z. B. aus Google News RSS). */
+  sourceUrl: string | null
   publishedOn: string
   segment: 'customer' | 'prospect'
 }
@@ -189,6 +193,8 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
       change_summary,
       detected_at,
       company_id,
+      event_kind,
+      source_url,
       companies ( name, logo_url )
     `
     )
@@ -206,6 +212,7 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
       id,
       body,
       source_label,
+      source_url,
       published_on,
       segment,
       company_id,
@@ -245,6 +252,7 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
     const co = Array.isArray(row.companies)
       ? (row.companies as { name?: string; logo_url?: string | null }[])[0]
       : (row.companies as { name?: string; logo_url?: string | null } | null)
+    const ek = String(row.event_kind ?? 'role_change')
     return {
       id: String(row.id),
       companyId: String(row.company_id),
@@ -256,6 +264,8 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
       personTitleAfter: (row.person_title_after as string | null) ?? null,
       changeSummary: String(row.change_summary ?? ''),
       detectedAt: String(row.detected_at ?? ''),
+      eventKind: ek === 'news_mention' ? 'news_mention' : 'role_change',
+      sourceUrl: (row.source_url as string | null) ?? null,
     }
   })
 
@@ -272,6 +282,7 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
         (co?.logo_url as string | undefined) ?? companyMetaById.get(String(row.company_id))?.logoUrl ?? null,
       body: String(row.body ?? ''),
       sourceLabel: (row.source_label as string | null) ?? null,
+      sourceUrl: (row.source_url as string | null) ?? null,
       publishedOn: String(row.published_on ?? ''),
       segment: seg === 'prospect' ? 'prospect' : 'customer',
     }

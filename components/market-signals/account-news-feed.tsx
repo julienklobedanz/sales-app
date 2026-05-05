@@ -98,6 +98,8 @@ export function AccountNewsFeed({
   const visibleReadKeys = useMemo(() => visibleItems.map((row) => `market_news:${row.id}`), [visibleItems])
 
   function sourceHref(row: AccountNewsRow) {
+    const url = String(row.sourceUrl ?? '').trim()
+    if (url && /^https?:\/\//i.test(url)) return url
     const source = String(row.sourceLabel ?? '').trim()
     if (/^https?:\/\//i.test(source)) return source
     const q = [source, row.companyName, row.body].filter(Boolean).join(' ')

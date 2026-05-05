@@ -9,6 +9,13 @@ import { Button } from '@/components/ui/button'
 import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import {
   AlertDialog,
@@ -30,7 +37,9 @@ import { SettingsBillingCard } from './settings-billing-card'
 import { SettingsExportTemplatesCard } from './settings-export-templates-card'
 import { SettingsDevRoleCard } from './settings-dev-role-card'
 import type { ExportSettings } from './settings-export-templates-actions'
+import { DIGEST_TIMEZONE_OPTIONS } from '@/lib/market-signals/digest-schedule'
 import { changeOwnPassword } from './actions'
+import { MarketSignalsPushCard } from './market-signals-push-card'
 import {
   updateProfileNotificationSettings,
   updateWorkflowSettings,
@@ -59,6 +68,12 @@ export function SettingsTabs({
     notificationSettings: {
       emailOnNewMatch: boolean
       emailOnApprovalUpdate: boolean
+      emailDailyMarketSignalsDigest: boolean
+      emailDigestEmptyDay: boolean
+      digestTimezone: string
+      digestLocalTime: string
+      emailInstantMarketSignals: boolean
+      browserPushMarketSignals: boolean
     }
   }
   org: {
@@ -109,6 +124,20 @@ export function SettingsTabs({
   )
   const [notifyApproval, setNotifyApproval] = useState(
     profile.notificationSettings.emailOnApprovalUpdate
+  )
+  const [notifyMarketSignalsDigest, setNotifyMarketSignalsDigest] = useState(
+    profile.notificationSettings.emailDailyMarketSignalsDigest
+  )
+  const [notifyDigestEmptyDay, setNotifyDigestEmptyDay] = useState(
+    profile.notificationSettings.emailDigestEmptyDay
+  )
+  const [digestTimezone, setDigestTimezone] = useState(profile.notificationSettings.digestTimezone)
+  const [digestLocalTime, setDigestLocalTime] = useState(profile.notificationSettings.digestLocalTime)
+  const [notifyInstantMarketSignals, setNotifyInstantMarketSignals] = useState(
+    profile.notificationSettings.emailInstantMarketSignals
+  )
+  const [browserPushMarketSignals, setBrowserPushMarketSignals] = useState(
+    profile.notificationSettings.browserPushMarketSignals
   )
   const [linkExpiryDays, setLinkExpiryDays] = useState(
     String(org.workflowSettings.linkExpiryDays)
@@ -176,6 +205,12 @@ export function SettingsTabs({
       const result = await updateProfileNotificationSettings({
         emailOnNewMatch: notifyNewMatch,
         emailOnApprovalUpdate: notifyApproval,
+        emailDailyMarketSignalsDigest: notifyMarketSignalsDigest,
+        emailDigestEmptyDay: notifyDigestEmptyDay,
+        digestTimezone,
+        digestLocalTime,
+        emailInstantMarketSignals: notifyInstantMarketSignals,
+        browserPushMarketSignals,
       })
       if (!result.success) {
         toast.error(result.error)
@@ -456,6 +491,91 @@ export function SettingsTabs({
                 </div>
                 <Switch checked={notifyApproval} onCheckedChange={setNotifyApproval} />
               </div>
+              <div className="flex items-center justify-between rounded-lg border border-slate-200 p-3">
+                <div>
+                  <p className="text-sm font-medium">Täglicher Markt-Signale-Überblick</p>
+                  <p className="text-xs text-slate-500">
+                    Einmal pro Tag per E-Mail (24h-Fenster): neue Account-News und Executive-Signale für deine
+                    Favoriten (Admin und Account-Manager zusätzlich Accounts mit aktivem Deal). Versandzeit unten
+                    in deiner Zeitzone.
+                  </p>
+                </div>
+                <Switch
+                  checked={notifyMarketSignalsDigest}
+                  onCheckedChange={setNotifyMarketSignalsDigest}
+                />
+              </div>
+              <div className="flex items-center justify-between rounded-lg border border-slate-200 p-3">
+                <div>
+                  <p className="text-sm font-medium">Auch bei leerem Tag benachrichtigen</p>
+                  <p className="text-xs text-slate-500">
+                    Kurze E-Mail, wenn im 24h-Fenster keine neuen Signale vorliegen (nur zusammen mit
+                    Tagesüberblick).
+                  </p>
+                </div>
+                <Switch checked={notifyDigestEmptyDay} onCheckedChange={setNotifyDigestEmptyDay} />
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="digestTimezone">Zeitzone (Tagesüberblick)</Label>
+                  <Select value={digestTimezone} onValueChange={setDigestTimezone}>
+                    <SelectTrigger id="digestTimezone" className="bg-background">
+                      <SelectValue placeholder="Zeitzone" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DIGEST_TIMEZONE_OPTIONS.map((tz) => (
+                        <SelectItem key={tz} value={tz}>
+                          {tz}
+                        </SelectItem>
+                      ))}
+                      {digestTimezone &&
+                      !(DIGEST_TIMEZONE_OPTIONS as readonly string[]).includes(digestTimezone) ? (
+                        <SelectItem value={digestTimezone}>{digestTimezone}</SelectItem>
+                      ) : null}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="digestLocalTime">Uhrzeit (lokal)</Label>
+                  <Input
+                    id="digestLocalTime"
+                    type="time"
+                    value={digestLocalTime}
+                    onChange={(e) => setDigestLocalTime(e.target.value)}
+                    className="bg-background"
+                  />
+                  <p className="text-[11px] text-slate-500">
+                    10-Minuten-Fenster ab dieser Zeit (Cron). Pro Kalendertag nur eine Mail (Idempotenz).
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between rounded-lg border border-slate-200 p-3">
+                <div>
+                  <p className="text-sm font-medium">Sofort per E-Mail bei neuen Signalen</p>
+                  <p className="text-xs text-slate-500">
+                    Nach jedem Abruf (Cron oder „Signale abrufen“): eine gebündelte Mail, wenn für dich relevante
+                    Einträge dazukamen.
+                  </p>
+                </div>
+                <Switch
+                  checked={notifyInstantMarketSignals}
+                  onCheckedChange={setNotifyInstantMarketSignals}
+                />
+              </div>
+              <div className="flex items-center justify-between rounded-lg border border-slate-200 p-3">
+                <div>
+                  <p className="text-sm font-medium">Web Push für Markt-Signale</p>
+                  <p className="text-xs text-slate-500">
+                    Hinweis im Browser nach neuen Signalen (wie E-Mail-Sofortbenachrichtigung). Zuerst unten
+                    „Push erlauben“ ausführen.
+                  </p>
+                </div>
+                <Switch
+                  checked={browserPushMarketSignals}
+                  onCheckedChange={setBrowserPushMarketSignals}
+                />
+              </div>
+              <MarketSignalsPushCard />
               <div className="flex justify-end">
                 <Button type="button" size="sm" onClick={saveProfileNotifications} disabled={profilePending}>
                   Benachrichtigungen speichern

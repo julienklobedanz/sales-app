@@ -23,16 +23,59 @@ async function getContext() {
   return { supabase, user, organizationId: profile?.organization_id ?? null }
 }
 
+function normalizeDigestLocalTime(raw: string): string {
+  const s = raw.trim()
+  const m = /^(\d{1,2}):(\d{2})$/.exec(s)
+  if (!m) return '08:00'
+  let h = parseInt(m[1], 10)
+  let min = parseInt(m[2], 10)
+  if (!Number.isFinite(h)) h = 8
+  if (!Number.isFinite(min)) min = 0
+  h = Math.max(0, Math.min(23, h))
+  min = Math.max(0, Math.min(59, min))
+  return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`
+}
+
+function normalizeDigestTimezone(raw: string): string {
+  const s = raw.trim().slice(0, 64)
+  return s || 'Europe/Berlin'
+}
+
 export async function updateProfileNotificationSettings(input: {
   emailOnNewMatch: boolean
   emailOnApprovalUpdate: boolean
+  emailDailyMarketSignalsDigest: boolean
+  emailDigestEmptyDay: boolean
+  digestTimezone: string
+  digestLocalTime: string
+  emailInstantMarketSignals: boolean
+  browserPushMarketSignals: boolean
 }): Promise<ActionResult> {
   const { supabase, user } = await getContext()
   if (!user) return { success: false, error: 'Nicht angemeldet.' }
 
+  const { data: existing, error: readErr } = await supabase
+    .from('profiles')
+    .select('notification_settings')
+    .eq('id', user.id)
+    .single()
+  if (readErr) return { success: false, error: readErr.message }
+
+  const prev =
+    existing?.notification_settings && typeof existing.notification_settings === 'object'
+      ? (existing.notification_settings as Record<string, unknown>)
+      : {}
+
   const notificationSettings = {
+    ...prev,
     email_on_new_match: Boolean(input.emailOnNewMatch),
     email_on_approval_update: Boolean(input.emailOnApprovalUpdate),
+    email_daily_market_signals_digest: Boolean(input.emailDailyMarketSignalsDigest),
+    email_digest_empty_day: Boolean(input.emailDigestEmptyDay),
+    digest_timezone: normalizeDigestTimezone(input.digestTimezone),
+    digest_local_time: normalizeDigestLocalTime(input.digestLocalTime),
+    email_instant_market_signals: Boolean(input.emailInstantMarketSignals),
+    browser_push_market_signals: Boolean(input.browserPushMarketSignals),
   }
 
   const { error } = await supabase

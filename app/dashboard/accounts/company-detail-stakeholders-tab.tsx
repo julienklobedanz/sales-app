@@ -32,6 +32,8 @@ export function CompanyDetailStakeholdersTab({
   const [visibleNewsCount, setVisibleNewsCount] = useState(3)
 
   function newsSourceHref(row: CompanyDetailClientProps['marketSignals']['accountNews'][number]) {
+    const url = String(row.sourceUrl ?? '').trim()
+    if (url && /^https?:\/\//i.test(url)) return url
     const source = String(row.sourceLabel ?? '').trim()
     if (/^https?:\/\//i.test(source)) return source
     const q = [source, row.body].filter(Boolean).join(' ')
@@ -39,6 +41,8 @@ export function CompanyDetailStakeholdersTab({
   }
 
   function championHref(row: CompanyDetailClientProps['marketSignals']['championMoves'][number]) {
+    const url = String(row.sourceUrl ?? '').trim()
+    if (row.eventKind === 'news_mention' && url && /^https?:\/\//i.test(url)) return url
     const search = `${row.personName} ${row.personTitleAfter ?? ''}`.trim()
     return `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(search)}`
   }
@@ -149,10 +153,14 @@ export function CompanyDetailStakeholdersTab({
                       >
                         <p className="text-sm font-medium leading-snug">
                           {row.personName}
+                          {row.eventKind === 'news_mention' ? (
+                            <span className="ml-2 text-[11px] font-normal text-muted-foreground">Presse</span>
+                          ) : null}
                           {row.personTitleAfter ? ` → ${row.personTitleAfter}` : ''}
                         </p>
                         <p className="mt-0.5 text-xs text-muted-foreground">
-                          {row.changeSummary || 'Positionswechsel erkannt'}
+                          {row.changeSummary ||
+                            (row.eventKind === 'news_mention' ? 'Erwähnung in den Medien' : 'Positionswechsel erkannt')}
                         </p>
                         <p className="mt-1 text-[11px] text-muted-foreground">
                           {row.detectedAt ? formatDateUtcDe(row.detectedAt) : '—'}

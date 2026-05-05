@@ -345,6 +345,7 @@ export function DashboardShell({
       </Sidebar>
       <SidebarInset>
         <DashboardHeader
+          userId={user.id}
           userName={userName}
           userEmail={userEmail}
           userInitials={userInitials}

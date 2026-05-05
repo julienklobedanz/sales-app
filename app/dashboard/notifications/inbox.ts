@@ -138,7 +138,10 @@ function buildExecutiveSentence(input: {
   if (input.personTitleAfter) {
     return `${input.personName} ist jetzt ${input.personTitleAfter} bei ${input.companyName}.`
   }
-  return `${input.personName} wechselte zu ${input.companyName}.`
+  if (summary) {
+    return `${input.personName} (${input.companyName}): ${summary}`
+  }
+  return `${input.personName} – Update bei ${input.companyName}.`
 }
 
 function roleCanSeeApprovalEvent(role: AppRole, row: EventRowForCopy, userId: string) {

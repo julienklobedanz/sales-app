@@ -4,6 +4,7 @@ import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
 import type { AppRole } from '@/hooks/useRole'
 import { DEV_ROLE_COOKIE, parseAppRoleCookie } from '@/lib/dev-role-preview'
+import { DEFAULT_DIGEST_LOCAL_TIME, DEFAULT_DIGEST_TIMEZONE } from '@/lib/market-signals/digest-schedule'
 import { getTeamMembers } from './invite-actions'
 import { SettingsTabs } from './settings-tabs'
 
@@ -33,11 +34,28 @@ function parseExportSettings(raw: unknown): { pdf_layout?: 'one_pager' | 'detail
 function parseProfileNotificationSettings(raw: unknown): {
   emailOnNewMatch: boolean
   emailOnApprovalUpdate: boolean
+  emailDailyMarketSignalsDigest: boolean
+  emailDigestEmptyDay: boolean
+  digestTimezone: string
+  digestLocalTime: string
+  emailInstantMarketSignals: boolean
+  browserPushMarketSignals: boolean
 } {
   if (!raw || typeof raw !== 'object') {
-    return { emailOnNewMatch: true, emailOnApprovalUpdate: true }
+    return {
+      emailOnNewMatch: true,
+      emailOnApprovalUpdate: true,
+      emailDailyMarketSignalsDigest: false,
+      emailDigestEmptyDay: false,
+      digestTimezone: DEFAULT_DIGEST_TIMEZONE,
+      digestLocalTime: DEFAULT_DIGEST_LOCAL_TIME,
+      emailInstantMarketSignals: false,
+      browserPushMarketSignals: false,
+    }
   }
   const obj = raw as Record<string, unknown>
+  const tzRaw = typeof obj.digest_timezone === 'string' ? obj.digest_timezone.trim() : ''
+  const timeRaw = typeof obj.digest_local_time === 'string' ? obj.digest_local_time.trim() : ''
   return {
     emailOnNewMatch:
       typeof obj.email_on_new_match === 'boolean' ? obj.email_on_new_match : true,
@@ -45,6 +63,18 @@ function parseProfileNotificationSettings(raw: unknown): {
       typeof obj.email_on_approval_update === 'boolean'
         ? obj.email_on_approval_update
         : true,
+    emailDailyMarketSignalsDigest:
+      typeof obj.email_daily_market_signals_digest === 'boolean'
+        ? obj.email_daily_market_signals_digest
+        : false,
+    emailDigestEmptyDay:
+      typeof obj.email_digest_empty_day === 'boolean' ? obj.email_digest_empty_day : false,
+    digestTimezone: tzRaw || DEFAULT_DIGEST_TIMEZONE,
+    digestLocalTime: timeRaw || DEFAULT_DIGEST_LOCAL_TIME,
+    emailInstantMarketSignals:
+      typeof obj.email_instant_market_signals === 'boolean' ? obj.email_instant_market_signals : false,
+    browserPushMarketSignals:
+      typeof obj.browser_push_market_signals === 'boolean' ? obj.browser_push_market_signals : false,
   }
 }
 

@@ -49,6 +49,7 @@ import { ROUTES } from '@/lib/routes'
 import { toast } from 'sonner'
 import { clearDevPreviewRole, setDevPreviewRole } from '@/app/dashboard/dev-preview-role-actions'
 import {
+  getInboxNotificationsForLayout,
   markAllNotificationReads,
   markNotificationRead,
   type DashboardNotificationItem,
@@ -65,13 +66,17 @@ function formatRoleBadgeLabel(role: AppRole): string {
   }
 }
 
+const INBOX_POLL_MS = 120_000
+
 export function DashboardHeader({
+  userId,
   userName,
   userEmail,
   userInitials,
   userRole,
   initialNotifications = [],
 }: {
+  userId: string
   userName: string
   userEmail: string
   userInitials: string
@@ -94,6 +99,29 @@ export function DashboardHeader({
   useEffect(() => {
     setNotifications(initialNotifications)
   }, [initialNotifications])
+
+  useEffect(() => {
+    async function refreshInbox() {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return
+      try {
+        const next = await getInboxNotificationsForLayout(userId, userRole)
+        setNotifications(next)
+      } catch {
+        // offline / transient — keep current list
+      }
+    }
+
+    const id = window.setInterval(refreshInbox, INBOX_POLL_MS)
+    const onVis = () => {
+      if (document.visibilityState === 'visible') void refreshInbox()
+    }
+    document.addEventListener('visibilitychange', onVis)
+
+    return () => {
+      window.clearInterval(id)
+      document.removeEventListener('visibilitychange', onVis)
+    }
+  }, [userId, userRole])
 
   useEffect(() => {
     const ua = navigator.userAgent.toLowerCase()

@@ -61,27 +61,34 @@ export default async function CompanyDetailPage({
   const [executiveEventsResult, accountNewsResult] = await Promise.all([
     supabase
       .from('market_signal_executive_events')
-      .select('id, person_name, person_title_before, person_title_after, change_summary, detected_at')
+      .select(
+        'id, person_name, person_title_before, person_title_after, change_summary, detected_at, event_kind, source_url'
+      )
       .eq('company_id', id)
       .order('detected_at', { ascending: false })
       .limit(40),
     supabase
       .from('market_signal_account_news')
-      .select('id, body, source_label, published_on, segment')
+      .select('id, body, source_label, source_url, published_on, segment')
       .eq('company_id', id)
       .order('published_on', { ascending: false })
       .limit(40),
   ])
 
   const marketSignals = {
-    championMoves: (executiveEventsResult.data ?? []).map((row) => ({
-      id: String(row.id),
-      personName: String(row.person_name ?? ''),
-      personTitleBefore: (row.person_title_before as string | null) ?? null,
-      personTitleAfter: (row.person_title_after as string | null) ?? null,
-      changeSummary: String(row.change_summary ?? ''),
-      detectedAt: String(row.detected_at ?? ''),
-    })),
+    championMoves: (executiveEventsResult.data ?? []).map((row) => {
+      const ek = String((row as { event_kind?: string }).event_kind ?? 'role_change')
+      return {
+        id: String(row.id),
+        personName: String(row.person_name ?? ''),
+        personTitleBefore: (row.person_title_before as string | null) ?? null,
+        personTitleAfter: (row.person_title_after as string | null) ?? null,
+        changeSummary: String(row.change_summary ?? ''),
+        detectedAt: String(row.detected_at ?? ''),
+        eventKind: ek === 'news_mention' ? ('news_mention' as const) : ('role_change' as const),
+        sourceUrl: ((row as { source_url?: string | null }).source_url as string | null) ?? null,
+      }
+    }),
     accountNews: (accountNewsResult.data ?? []).map((row) => {
       const seg = String(row.segment ?? 'customer')
       const segment: 'customer' | 'prospect' = seg === 'prospect' ? 'prospect' : 'customer'
@@ -89,6 +96,7 @@ export default async function CompanyDetailPage({
         id: String(row.id),
         body: String(row.body ?? ''),
         sourceLabel: (row.source_label as string | null) ?? null,
+        sourceUrl: (row.source_url as string | null) ?? null,
         publishedOn: String(row.published_on ?? ''),
         segment,
       }

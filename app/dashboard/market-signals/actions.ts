@@ -2,6 +2,10 @@
 
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
+import { runCompanyNewsIngest } from '@/lib/market-signals/ingest-company-news'
+import { runExecutiveIntelIngest } from '@/lib/market-signals/ingest-executive-intel'
+import { notifyInstantMarketSignalsAfterIngest } from '@/lib/market-signals/market-signals-instant-alerts'
 import { ROUTES } from '@/lib/routes'
 
 function normalizeChampionKey(raw: string) {
@@ -465,4 +469,88 @@ export async function getDecisionMakerCandidates(args: {
   )
 
   return { success: true, candidates: deduped.slice(0, 3) }
+}
+
+export type TriggerMarketSignalsIngestResult =
+  | {
+      success: true
+      news: {
+        companiesScanned: number
+        articlesInserted: number
+        errors: string[]
+      }
+      executives: {
+        peopleScanned: number
+        signalsInserted: number
+        skippedNoCompany: number
+        errors: string[]
+      }
+    }
+  | { success: false; error: string }
+
+/** Company News + Executive-Presse-Signale (Google News RSS, kein Scraping). */
+export async function triggerMarketSignalsIngestForMyOrg(): Promise<TriggerMarketSignalsIngestResult> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id, role')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
+  const role = String((profile as { role?: string | null } | null)?.role ?? '')
+  if (!orgId) return { success: false, error: 'Keine Organisation gefunden.' }
+  if (role !== 'admin' && role !== 'account_manager') {
+    return { success: false, error: 'Nur Admin oder Account Manager können Signale abrufen.' }
+  }
+
+  const admin = createServiceRoleSupabaseClient()
+  if (!admin) {
+    return { success: false, error: 'Server-Konfiguration: SUPABASE_SERVICE_ROLE_KEY fehlt.' }
+  }
+
+  const ingestSince = new Date().toISOString()
+
+  const news = await runCompanyNewsIngest(admin, {
+    organizationId: orgId,
+    maxCompanies: 40,
+    perCompanyMaxArticles: 8,
+  })
+
+  const executives = await runExecutiveIntelIngest(admin, {
+    organizationId: orgId,
+    maxPeople: 30,
+  })
+
+  if (process.env.MARKET_SIGNALS_INSTANT_ALERTS_DISABLED !== '1') {
+    await notifyInstantMarketSignalsAfterIngest(admin, { sinceIso: ingestSince, organizationId: orgId })
+  }
+
+  revalidatePath(ROUTES.marketSignals)
+  revalidatePath(ROUTES.marketSignalsManage)
+  revalidatePath(ROUTES.home)
+  return {
+    success: true,
+    news: {
+      companiesScanned: news.companiesScanned,
+      articlesInserted: news.articlesInserted,
+      errors: news.errors,
+    },
+    executives: {
+      peopleScanned: executives.peopleScanned,
+      signalsInserted: executives.signalsInserted,
+      skippedNoCompany: executives.skippedNoCompany,
+      errors: executives.errors,
+    },
+  }
+}
+
+/** @deprecated Alias – nutze triggerMarketSignalsIngestForMyOrg */
+export async function triggerCompanyNewsIngestForMyOrg() {
+  return triggerMarketSignalsIngestForMyOrg()
 }

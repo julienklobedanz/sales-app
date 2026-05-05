@@ -35,11 +35,14 @@ export type CompanyDetailClientProps = {
       personTitleAfter: string | null
       changeSummary: string
       detectedAt: string
+      eventKind: 'role_change' | 'news_mention'
+      sourceUrl: string | null
     }>
     accountNews: Array<{
       id: string
       body: string
       sourceLabel: string | null
+      sourceUrl: string | null
       publishedOn: string
       segment: 'customer' | 'prospect'
     }>
