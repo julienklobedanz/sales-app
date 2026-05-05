@@ -270,6 +270,8 @@ export async function approveInternalAndSend(referenceId: string) {
   return approveInternalAndSendImpl(referenceId)
 }
 
+export type { ApproveInternalAndSendResult } from '@/app/dashboard/references/approvals'
+
 export async function getApprovalLink(referenceId: string) {
   return getApprovalLinkImpl(referenceId)
 }

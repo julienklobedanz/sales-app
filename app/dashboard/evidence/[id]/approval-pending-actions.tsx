@@ -90,7 +90,11 @@ export function ApprovalPendingActions({
 
   function onApproveAndSend() {
     startTransition(async () => {
-      await approveInternalAndSend(referenceId)
+      const result = await approveInternalAndSend(referenceId)
+      if (!result.success) {
+        toast.error(result.error)
+        return
+      }
       toast.success('Interne Freigabe erteilt, E-Mail an Kunden versendet.')
     })
   }

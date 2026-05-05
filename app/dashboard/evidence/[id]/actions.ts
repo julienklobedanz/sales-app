@@ -31,8 +31,11 @@ export async function deleteReferenceFromDetailPage(id: string) {
 }
 
 export async function approveInternalAndSendFromDetail(referenceId: string) {
-  await approveInternalAndSend(referenceId)
-  revalidatePath(ROUTES.evidence.detail(referenceId))
+  const result = await approveInternalAndSend(referenceId)
+  if (result.success) {
+    revalidatePath(ROUTES.evidence.detail(referenceId))
+  }
+  return result
 }
 
 export async function resendApprovalFromDetail(referenceId: string) {

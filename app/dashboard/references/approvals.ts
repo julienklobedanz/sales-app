@@ -51,17 +51,27 @@ async function sendClientApprovalEmail(args: {
   contactEmail: string
   firstName: string
   companyName: string
+  /** Gleiches Update wie Token/Freigabe: interne Freigabe inkl. Prüfer (ohne zweites Roundtrip). */
+  internalReviewerId?: string | null
 }): Promise<{ success: boolean; token: string }> {
   const newToken = crypto.randomUUID()
-  const { error: updateError } = await args.supabase
-    .from('references')
-    .update({
-      approval_token: newToken,
-      customer_approval_status: 'pending',
-      approval_internal_status: 'approved_internal',
-      approval_internal_reviewed_at: new Date().toISOString(),
-    })
-    .eq('id', args.referenceId)
+  const reviewedAt = new Date().toISOString()
+  const patch: {
+    approval_token: string
+    customer_approval_status: string
+    approval_internal_status: string
+    approval_internal_reviewed_at: string
+    approval_internal_reviewer_id?: string
+  } = {
+    approval_token: newToken,
+    customer_approval_status: 'pending',
+    approval_internal_status: 'approved_internal',
+    approval_internal_reviewed_at: reviewedAt,
+  }
+  if (args.internalReviewerId) {
+    patch.approval_internal_reviewer_id = args.internalReviewerId
+  }
+  const { error: updateError } = await args.supabase.from('references').update(patch).eq('id', args.referenceId)
   if (updateError) throw new Error(updateError.message)
 
   const resend = getResend()
@@ -375,21 +385,28 @@ export async function submitForApprovalImpl(
   }
 }
 
-export async function approveInternalAndSendImpl(referenceId: string) {
+export type ApproveInternalAndSendResult =
+  | { success: true }
+  | { success: false; error: string }
+
+export async function approveInternalAndSendImpl(referenceId: string): Promise<ApproveInternalAndSendResult> {
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) throw new Error('Nicht authentifiziert')
+  if (!user) return { success: false, error: 'Nicht authentifiziert.' }
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('role, full_name')
     .eq('id', user.id)
-    .single()
-  const role = String((profile as { role?: string } | null)?.role ?? '')
+    .maybeSingle()
+  if (profileError || !profile) {
+    return { success: false, error: 'Profil nicht gefunden. Bitte Onboarding abschließen.' }
+  }
+  const role = String((profile as { role?: string }).role ?? '')
   if (role !== 'admin' && role !== 'account_manager') {
-    throw new Error('Nur Admin oder Account Manager dürfen extern versenden.')
+    return { success: false, error: 'Nur Admin oder Account Manager dürfen extern versenden.' }
   }
 
   const { data: row, error } = await supabase
@@ -399,39 +416,56 @@ export async function approveInternalAndSendImpl(referenceId: string) {
     )
     .eq('id', referenceId)
     .single()
-  if (error || !row) throw new Error('Referenz nicht gefunden')
+  if (error || !row) return { success: false, error: 'Referenz nicht gefunden.' }
   const ref = row as unknown as ReferenceApprovalRow
   const company =
     Array.isArray(ref.companies) && ref.companies.length > 0
       ? (ref.companies[0] as { name?: string })
       : (ref.companies as { name?: string } | null)
   const company_name = company?.name ?? 'Referenz'
-  const { email: contactEmail, firstName } = await resolveContactForApproval(supabase, ref, ref.company_id)
+
+  let contactEmail: string
+  let firstName: string
+  try {
+    const resolved = await resolveContactForApproval(supabase, ref, ref.company_id)
+    contactEmail = resolved.email
+    firstName = resolved.firstName
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Kein gültiger Empfänger für die Freigabe.'
+    return { success: false, error: msg }
+  }
 
   const requesterName =
-    typeof (profile as { full_name?: string } | null)?.full_name === 'string'
+    typeof (profile as { full_name?: string }).full_name === 'string'
       ? (profile as { full_name: string }).full_name.trim()
       : ''
 
-  await supabase
-    .from('references')
-    .update({
-      approval_internal_status: 'approved_internal',
-      approval_internal_reviewer_id: user.id,
-      approval_internal_reviewed_at: new Date().toISOString(),
+  try {
+    await sendClientApprovalEmail({
+      supabase,
+      referenceId,
+      ref,
+      requesterName,
+      contactEmail,
+      firstName,
+      companyName: company_name,
+      internalReviewerId: user.id,
     })
-    .eq('id', referenceId)
-  await sendClientApprovalEmail({
-    supabase,
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Freigabe konnte nicht gespeichert werden.'
+    return { success: false, error: msg }
+  }
+
+  await logEventForCurrentOrg({
+    eventType: 'customer_approval_requested',
     referenceId,
-    ref,
-    requesterName,
-    contactEmail,
-    firstName,
-    companyName: company_name,
+    payload: {},
   })
+
+  revalidatePath(ROUTES.home)
   revalidatePath(ROUTES.evidence.detail(referenceId))
-  return { success: true as const }
+  revalidatePath(ROUTES.evidence.root)
+  return { success: true }
 }
 
 export async function getApprovalLinkImpl(referenceId: string): Promise<string | null> {
