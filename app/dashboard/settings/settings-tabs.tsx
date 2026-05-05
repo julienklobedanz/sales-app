@@ -545,7 +545,10 @@ export function SettingsTabs({
                     className="bg-background"
                   />
                   <p className="text-[11px] text-slate-500">
-                    10-Minuten-Fenster ab dieser Zeit (Cron). Pro Kalendertag nur eine Mail (Idempotenz).
+                    Mit Vercel Pro und Digest-Cron alle 10&nbsp;Min.: Versand im 10-Min-Fenster ab dieser lokalen Zeit.
+                    Vercel Hobby (Cron 1×/Tag): setze{' '}
+                    <code className="text-[10px]">MARKET_SIGNALS_DIGEST_SKIP_TIME_WINDOW=1</code> – Versand beim
+                    täglichen Cron (UTC), Einstellung Uhrzeit dann ohne Wirkung.
                   </p>
                 </div>
               </div>

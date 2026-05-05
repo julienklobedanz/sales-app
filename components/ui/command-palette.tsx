@@ -261,7 +261,7 @@ export function CommandPalette() {
           setOpen(false)
           router.push(ROUTES.deals.new)
         },
-        visible: true,
+        visible: false,
       },
       {
         key: "rfp-upload",
@@ -272,7 +272,7 @@ export function CommandPalette() {
           setOpen(false)
           router.push(ROUTES.deals.root)
         },
-        visible: true,
+        visible: false,
       },
       {
         key: "new-reference",

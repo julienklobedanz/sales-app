@@ -2,7 +2,6 @@
 
 import React from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -1321,20 +1320,6 @@ export function DashboardOverview({
                             Erstelle eine Referenz
                           </Button>
                         )}
-                      {profile.role === 'sales' && (
-                        <div className="flex flex-wrap items-center justify-center gap-2">
-                          <Link href={ROUTES.deals.new}>
-                            <Button className="mt-1">
-                              Lege deinen ersten Deal an
-                            </Button>
-                          </Link>
-                          <Link href={ROUTES.deals.new}>
-                            <Button className="mt-1">
-                              Auslaufenden Deal hinzufügen
-                            </Button>
-                          </Link>
-                        </div>
-                      )}
                     </div>
                   </TableCell>
                 </TableRow>

@@ -47,8 +47,9 @@ function lastDigestSentLocalDate(raw: unknown): string | null {
 }
 
 /**
- * Täglicher Markt-Signale-Überblick – Versand im konfigurierbaren lokalen Zeitfenster (Timezone + Uhrzeit).
- * Cron z. B. alle 10 Minuten; Idempotenz über market_signals_digest_last_sent_local_date im Profil-JSON.
+ * Täglicher Markt-Signale-Überblick.
+ * Pro: Cron z. B. alle 10 Min. + lokales Zeitfenster (Timezone/Uhrzeit im Profil).
+ * Hobby (Vercel): Cron höchstens 1×/Tag → MARKET_SIGNALS_DIGEST_SKIP_TIME_WINDOW=1 setzen (Versand beim Cron-Lauf, Idempotenz per UTC-Datum).
  * Authorization: Bearer CRON_SECRET · Optional: MARKET_SIGNALS_DIGEST_CRON_DISABLED=1
  */
 export async function GET(request: Request) {
@@ -106,6 +107,9 @@ export async function GET(request: Request) {
 
   const subscribers = (profileRows ?? []).filter((p) => wantsDailyDigest(p.notification_settings))
 
+  /** Vercel Hobby: Cron nur 1×/Tag – kein 10-Min-Fenster; Idempotenz über UTC-Tag (YYYY-MM-DD). */
+  const skipDigestTimeWindow = process.env.MARKET_SIGNALS_DIGEST_SKIP_TIME_WINDOW === '1'
+
   let sent = 0
   let skippedWindow = 0
   let skippedIdempotent = 0
@@ -118,20 +122,30 @@ export async function GET(request: Request) {
     if (!userId || !orgId) continue
 
     const nsRaw = (row as { notification_settings?: unknown }).notification_settings
-    const tz = parseDigestTimezone(
-      nsRaw && typeof nsRaw === 'object' ? (nsRaw as Record<string, unknown>).digest_timezone : undefined
-    )
-    const { hours: dh, minutes: dm } = parseDigestLocalTime(
-      nsRaw && typeof nsRaw === 'object' ? (nsRaw as Record<string, unknown>).digest_local_time : undefined
-    )
 
-    if (!isDigestSendWindow(now, tz, dh, dm, DIGEST_SEND_WINDOW_MINUTES)) {
-      skippedWindow += 1
-      continue
+    if (!skipDigestTimeWindow) {
+      const tz = parseDigestTimezone(
+        nsRaw && typeof nsRaw === 'object' ? (nsRaw as Record<string, unknown>).digest_timezone : undefined
+      )
+      const { hours: dh, minutes: dm } = parseDigestLocalTime(
+        nsRaw && typeof nsRaw === 'object' ? (nsRaw as Record<string, unknown>).digest_local_time : undefined
+      )
+      if (!isDigestSendWindow(now, tz, dh, dm, DIGEST_SEND_WINDOW_MINUTES)) {
+        skippedWindow += 1
+        continue
+      }
     }
 
-    const { ymd: localYmd } = getLocalYmdAndMinutesFromMidnight(now, tz)
-    if (lastDigestSentLocalDate(nsRaw) === localYmd) {
+    const idempotencyYmd = skipDigestTimeWindow
+      ? now.toISOString().slice(0, 10)
+      : getLocalYmdAndMinutesFromMidnight(
+          now,
+          parseDigestTimezone(
+            nsRaw && typeof nsRaw === 'object' ? (nsRaw as Record<string, unknown>).digest_timezone : undefined
+          )
+        ).ymd
+
+    if (lastDigestSentLocalDate(nsRaw) === idempotencyYmd) {
       skippedIdempotent += 1
       continue
     }
@@ -198,7 +212,7 @@ export async function GET(request: Request) {
         : {}
     const nextNs = {
       ...prevNs,
-      market_signals_digest_last_sent_local_date: localYmd,
+      market_signals_digest_last_sent_local_date: idempotencyYmd,
     }
     const { error: upErr } = await admin.from('profiles').update({ notification_settings: nextNs }).eq('id', userId)
     if (upErr) errors.push(`${userId}: Marker nicht gespeichert: ${upErr.message}`)
@@ -213,6 +227,7 @@ export async function GET(request: Request) {
     skippedEmpty,
     errors: errors.slice(0, 20),
     windowMinutes: DIGEST_SEND_WINDOW_MINUTES,
+    skipDigestTimeWindow,
     marketSignalsUrl: `${appOrigin.replace(/\/$/, '')}${ROUTES.marketSignals}`,
   })
 }

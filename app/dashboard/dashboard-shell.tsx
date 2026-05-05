@@ -10,7 +10,6 @@ import {
   GalleryHorizontalEndIcon,
   LifeBuoy,
   Send,
-  Handshake,
   TrendingUp,
 } from '@hugeicons/core-free-icons'
 import {
@@ -82,7 +81,6 @@ export function DashboardShell({
   // Prefetch wichtige Routen für snappige Navigation
   useEffect(() => {
     router.prefetch(ROUTES.home)
-    router.prefetch(ROUTES.deals.root)
     router.prefetch(ROUTES.accounts)
     router.prefetch(ROUTES.evidence.root)
     router.prefetch(ROUTES.marketSignals)
@@ -191,26 +189,6 @@ export function DashboardShell({
                         />
                       </span>
                       <span className="relative z-10">{COPY.nav.marketSignals}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname?.startsWith(ROUTES.deals.root)}
-                    tooltip={COPY.nav.deals}
-                    className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-gradient-to-b data-[active=true]:from-blue-600 data-[active=true]:to-blue-700 data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] data-[active=true]:hover:translate-x-0"
-                  >
-                    <Link href={ROUTES.deals.root} className="flex items-center gap-2.5">
-                      <span className="relative z-10">
-                        <AppIcon
-                          icon={Handshake}
-                          size={16}
-                          strokeWidth={pathname?.startsWith(ROUTES.deals.root) ? 2.5 : 2}
-                        />
-                      </span>
-                      <span className="relative z-10">{COPY.nav.deals}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
