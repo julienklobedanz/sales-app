@@ -1,4 +1,5 @@
 import PptxGenJS from 'pptxgenjs'
+import { REFERENCE_NARRATIVE_MAX_CHARS } from '@/lib/references/reference-narrative-limits'
 
 /** PptxGenJS LAYOUT_16x9 — alle Y/H-Werte in Zoll, damit nichts unter 5.625" ragt */
 const SLIDE_H_IN = 5.625
@@ -189,7 +190,7 @@ export async function buildReferenceOnepagerPptxBuffer(input: ReferenceOnepagerP
   y += 0.26 + GAP_AFTER_LEGAL
 
   const row1LabelY = y
-  slide.addText('Überblick', {
+  slide.addText('Zusammenfassung', {
     x: LEFT.x,
     y: row1LabelY,
     w: LEFT.w,
@@ -200,7 +201,7 @@ export async function buildReferenceOnepagerPptxBuffer(input: ReferenceOnepagerP
     fontFace: 'Arial',
     valign: 'top',
   })
-  slide.addText('Lösung & Nutzen', {
+  slide.addText('Projektdetails', {
     x: RIGHT.x,
     y: row1LabelY,
     w: RIGHT.w,
@@ -214,24 +215,32 @@ export async function buildReferenceOnepagerPptxBuffer(input: ReferenceOnepagerP
 
   const row1BodyY = row1LabelY + SECTION_LABEL_H + GAP_AFTER_SECTION_TITLE
 
-  /** Mindesthöhe für zweite Sektion (Titel + Text) oberhalb des Footers */
+  /** Mindesthöhe für zweite Zeile (Herausforderung + Lösung) oberhalb des Footers */
   const minRow2Block =
     SECTION_LABEL_H + GAP_AFTER_SECTION_TITLE + 0.42
   let maxRow1Body = contentBottomY - row1BodyY - GAP_BETWEEN_STACKED_SECTIONS - minRow2Block
   maxRow1Body = Math.max(0.45, maxRow1Body)
 
+  const projektDetailsRaw = [
+    input.volumeEur ? `Volumen: ${input.volumeEur}` : null,
+    input.contractType ? `Vertragsart: ${input.contractType}` : null,
+    input.projectStart ? `Projektstart: ${input.projectStart}` : null,
+    input.projectEnd ? `Projektende: ${input.projectEnd}` : null,
+    input.tags ? `Tags: ${clip(input.tags, 80)}` : null,
+  ]
+    .filter(Boolean)
+    .join('\n')
+
   const summaryText = clipNormalized(
     input.summary,
-    maxCharsForHeight(LEFT.w, 10, maxRow1Body, 620)
+    maxCharsForHeight(LEFT.w, 10, maxRow1Body, REFERENCE_NARRATIVE_MAX_CHARS)
   )
-  const solutionText = clipNormalized(
-    input.ourSolution,
-    maxCharsForHeight(RIGHT.w, 10, maxRow1Body, 620)
-  )
+  const projektDetailsMaxChars = maxCharsForHeight(RIGHT.w, 10, maxRow1Body, 320)
+  const projektDetailsText = clipNormalized(projektDetailsRaw || '—', projektDetailsMaxChars)
 
   const estSummaryH = Math.min(estimateBodyHeightInches(summaryText, LEFT.w, 10), maxRow1Body)
-  const estSolutionH = Math.min(estimateBodyHeightInches(solutionText, RIGHT.w, 10), maxRow1Body)
-  const row1StackH = Math.max(estSummaryH, estSolutionH)
+  const estProjektDetailsH = Math.min(estimateBodyHeightInches(projektDetailsText, RIGHT.w, 10), maxRow1Body)
+  const row1StackH = Math.max(estSummaryH, estProjektDetailsH)
 
   const row2LabelY = row1BodyY + row1StackH + GAP_BETWEEN_STACKED_SECTIONS
 
@@ -247,11 +256,11 @@ export async function buildReferenceOnepagerPptxBuffer(input: ReferenceOnepagerP
     fontFace: 'Arial',
   })
 
-  slide.addText(solutionText, {
+  slide.addText(projektDetailsText, {
     x: RIGHT.x,
     y: row1BodyY,
     w: RIGHT.w,
-    h: Math.max(0.18, estSolutionH),
+    h: Math.max(0.18, estProjektDetailsH),
     fontSize: 10,
     color: '334155',
     valign: 'top',
@@ -270,7 +279,7 @@ export async function buildReferenceOnepagerPptxBuffer(input: ReferenceOnepagerP
     fontFace: 'Arial',
     valign: 'top',
   })
-  slide.addText('Kennzahlen & Rahmen', {
+  slide.addText('Lösung', {
     x: RIGHT.x,
     y: row2LabelY,
     w: RIGHT.w,
@@ -285,10 +294,13 @@ export async function buildReferenceOnepagerPptxBuffer(input: ReferenceOnepagerP
   const row2BodyY = row2LabelY + SECTION_LABEL_H + GAP_AFTER_SECTION_TITLE
   const row2BodyH = Math.max(0.22, contentBottomY - row2BodyY)
 
-  const challengeMaxChars = maxCharsForHeight(LEFT.w, 10, row2BodyH, 500)
-  const metricsMaxChars = maxCharsForHeight(RIGHT.w, 10, row2BodyH, 260)
+  const challengeMaxChars = maxCharsForHeight(LEFT.w, 10, row2BodyH, REFERENCE_NARRATIVE_MAX_CHARS)
+  const solutionMaxChars = maxCharsForHeight(RIGHT.w, 10, row2BodyH, REFERENCE_NARRATIVE_MAX_CHARS)
 
-  slide.addText(clipNormalized(input.customerChallenge, challengeMaxChars), {
+  const challengeText = clipNormalized(input.customerChallenge, challengeMaxChars)
+  const solutionText = clipNormalized(input.ourSolution, solutionMaxChars)
+
+  slide.addText(challengeText, {
     x: LEFT.x,
     y: row2BodyY,
     w: LEFT.w,
@@ -300,17 +312,7 @@ export async function buildReferenceOnepagerPptxBuffer(input: ReferenceOnepagerP
     fontFace: 'Arial',
   })
 
-  const metrics = [
-    input.volumeEur ? `Volumen: ${input.volumeEur}` : null,
-    input.contractType ? `Modell: ${input.contractType}` : null,
-    input.projectStart ? `Start: ${input.projectStart}` : null,
-    input.projectEnd ? `Ende: ${input.projectEnd}` : null,
-    input.tags ? `Tags: ${clip(input.tags, 80)}` : null,
-  ]
-    .filter(Boolean)
-    .join('\n')
-
-  slide.addText(clipNormalized(metrics || '—', metricsMaxChars), {
+  slide.addText(solutionText, {
     x: RIGHT.x,
     y: row2BodyY,
     w: RIGHT.w,

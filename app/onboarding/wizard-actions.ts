@@ -11,6 +11,7 @@ import {
   attachOriginalDocumentToReference,
   createReference,
 } from '@/app/dashboard/evidence/new/actions'
+import { isValidSalesPhone, salesContactValidationMessage } from '@/lib/profile/sales-contact'
 
 export type FinalizeWorkspaceResult =
   | { success: true }
@@ -21,6 +22,8 @@ export async function finalizeWorkspaceAndProfile(params: {
   organizationName: string
   logoDataUrl: string | null
   role: 'sales' | 'account_manager' | 'admin' | null
+  fullName: string
+  phone: string
 }): Promise<FinalizeWorkspaceResult> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -80,10 +83,29 @@ export async function finalizeWorkspaceAndProfile(params: {
     return { success: false, error: 'Bitte deine Rolle auswählen.' }
   }
 
+  const finalRole = joinedViaInvite ? inviteRole : chosenRole!
+  const nameTrim = params.fullName.trim()
+  if (!nameTrim) {
+    return { success: false, error: 'Bitte deinen vollständigen Namen eingeben.' }
+  }
+
+  const phoneTrim = params.phone.trim()
+  const salesMsg = salesContactValidationMessage()
+  if (finalRole === 'sales') {
+    if (!user.email?.trim()) {
+      return { success: false, error: salesMsg.email }
+    }
+    if (!isValidSalesPhone(phoneTrim)) {
+      return { success: false, error: salesMsg.phone }
+    }
+  }
+
   const upsertPayload: Record<string, unknown> = {
     id: user.id,
     organization_id: organizationId,
-    role: joinedViaInvite ? inviteRole : chosenRole,
+    role: finalRole,
+    full_name: nameTrim,
+    phone: phoneTrim.length ? phoneTrim : null,
   }
 
   const { error } = await supabase.from('profiles').upsert(upsertPayload)

@@ -7,6 +7,7 @@ import {
   approveInternalAndSendImpl,
   getApprovalLinkImpl,
   withdrawApprovalRequestImpl,
+  type ApproveInternalRecipientOptions,
 } from '@/app/dashboard/references/approvals'
 import type { SubmitForApprovalOptions } from '@/app/dashboard/references/approval-submit-types'
 import { getPendingClientApprovalsImpl } from '@/app/dashboard/references/pending-approvals'
@@ -266,11 +267,14 @@ export async function submitForApproval(
   return submitForApprovalImpl(id, options)
 }
 
-export async function approveInternalAndSend(referenceId: string) {
-  return approveInternalAndSendImpl(referenceId)
+export async function approveInternalAndSend(referenceId: string, recipient?: ApproveInternalRecipientOptions) {
+  return approveInternalAndSendImpl(referenceId, recipient)
 }
 
-export type { ApproveInternalAndSendResult } from '@/app/dashboard/references/approvals'
+export type {
+  ApproveInternalAndSendResult,
+  ApproveInternalRecipientOptions,
+} from '@/app/dashboard/references/approvals'
 
 export async function getApprovalLink(referenceId: string) {
   return getApprovalLinkImpl(referenceId)

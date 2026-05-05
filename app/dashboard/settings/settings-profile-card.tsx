@@ -17,12 +17,19 @@ export function SettingsProfileCard({
   firstName,
   lastName,
   avatarUrl,
+  bookingUrl,
+  phone,
+  profileRole,
 }: {
   userEmail: string
   firstName: string
   lastName: string
   avatarUrl?: string | null
+  bookingUrl?: string | null
+  phone?: string | null
+  profileRole: 'admin' | 'sales' | 'account_manager'
 }) {
+  const salesRequired = profileRole === 'sales'
   const router = useRouter()
   const [pending, setPending] = useState(false)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(avatarUrl ?? null)
@@ -170,7 +177,10 @@ export function SettingsProfileCard({
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="email">E-Mail</Label>
+            <Label htmlFor="email">
+              E-Mail
+              {salesRequired ? <span className="text-destructive"> *</span> : null}
+            </Label>
             <Input
               id="email"
               type="email"
@@ -179,7 +189,48 @@ export function SettingsProfileCard({
               className="bg-muted/50 cursor-not-allowed"
             />
             <p className="text-xs text-muted-foreground">
-              Die E-Mail wird über den Anmeldeprozess verwaltet.
+              {salesRequired
+                ? 'Pflicht für Sales: wird in der Kundenansicht für Rückfragen genutzt (Anmeldung).'
+                : 'Die E-Mail wird über den Anmeldeprozess verwaltet.'}
+            </p>
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="phone">
+              Telefon
+              {salesRequired ? <span className="text-destructive"> *</span> : null}
+            </Label>
+            <Input
+              id="phone"
+              name="phone"
+              type="tel"
+              inputMode="tel"
+              defaultValue={phone ?? ''}
+              placeholder="+49 …"
+              className="bg-background"
+              autoComplete="tel"
+              required={salesRequired}
+            />
+            <p className="text-xs text-muted-foreground">
+              {salesRequired
+                ? 'Pflicht für Sales: erscheint in der Kundenansicht geteilter Links (mindestens 8 Ziffern).'
+                : 'Optional; für die öffentliche Kundenansicht empfohlen.'}
+            </p>
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="bookingUrl">Terminbuchung (öffentliche Kundenansicht)</Label>
+            <Input
+              id="bookingUrl"
+              name="bookingUrl"
+              type="url"
+              inputMode="url"
+              placeholder="https://calendly.com/…"
+              defaultValue={bookingUrl ?? ''}
+              className="bg-background"
+              autoComplete="off"
+            />
+            <p className="text-xs text-muted-foreground">
+              HTTPS-Link zu Calendly, Microsoft Bookings o. Ä. Wird für „Termin vereinbaren“ im
+              geteilten Portfolio verwendet (kein E-Mail-Entwurf).
             </p>
           </div>
         </div>

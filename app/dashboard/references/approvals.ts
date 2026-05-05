@@ -389,7 +389,12 @@ export type ApproveInternalAndSendResult =
   | { success: true }
   | { success: false; error: string }
 
-export async function approveInternalAndSendImpl(referenceId: string): Promise<ApproveInternalAndSendResult> {
+export type ApproveInternalRecipientOptions = Pick<SubmitForApprovalOptions, 'contactId' | 'externalContactId'>
+
+export async function approveInternalAndSendImpl(
+  referenceId: string,
+  recipient?: ApproveInternalRecipientOptions
+): Promise<ApproveInternalAndSendResult> {
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
@@ -427,9 +432,21 @@ export async function approveInternalAndSendImpl(referenceId: string): Promise<A
   let contactEmail: string
   let firstName: string
   try {
-    const resolved = await resolveContactForApproval(supabase, ref, ref.company_id)
+    const resolved = await resolveContactForApproval(supabase, ref, ref.company_id, {
+      contactId: recipient?.contactId,
+      externalContactId: recipient?.externalContactId,
+    })
     contactEmail = resolved.email
     firstName = resolved.firstName
+
+    const { error: syncErr } = await supabase
+      .from('references')
+      .update({
+        approval_contact_id: resolved.approvalContactId,
+        approval_external_contact_id: resolved.approvalExternalContactId,
+      })
+      .eq('id', referenceId)
+    if (syncErr) return { success: false, error: syncErr.message }
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Kein gültiger Empfänger für die Freigabe.'
     return { success: false, error: msg }

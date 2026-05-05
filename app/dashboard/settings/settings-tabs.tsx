@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -44,6 +45,7 @@ import {
   updateProfileNotificationSettings,
   updateWorkflowSettings,
   updateWorkspaceAdminSettings,
+  updateWorkspaceReferenceHighlightGlossary,
   updateWorkspaceSecurityCompliance,
 } from './settings-consolidation-actions'
 
@@ -65,6 +67,9 @@ export function SettingsTabs({
     firstName: string
     lastName: string
     avatarUrl: string | null
+    bookingUrl: string | null
+    phone: string | null
+    profileRole: 'admin' | 'sales' | 'account_manager'
     notificationSettings: {
       emailOnNewMatch: boolean
       emailOnApprovalUpdate: boolean
@@ -101,6 +106,7 @@ export function SettingsTabs({
       publicLinkMaxTtlDays: number
       publicLinkRequirePasswordForNew: boolean
       auditLogRetentionDays: number
+      referenceHighlightGlossary: string
     }
   }
   teamMembers: Parameters<typeof SettingsTeamCard>[0]['initialMembers']
@@ -174,6 +180,10 @@ export function SettingsTabs({
     String(org.workflowSettings.auditLogRetentionDays)
   )
   const [securityPending, startSecurityTransition] = useTransition()
+  const [referenceHighlightGlossary, setReferenceHighlightGlossary] = useState(
+    org.workflowSettings.referenceHighlightGlossary
+  )
+  const [glossaryPending, startGlossaryTransition] = useTransition()
   const [passwordPending, startPasswordTransition] = useTransition()
   const [auditActionFilter, setAuditActionFilter] = useState('all')
   const [auditSearch, setAuditSearch] = useState('')
@@ -273,6 +283,17 @@ export function SettingsTabs({
         return
       }
       toast.success('Sicherheitsrichtlinien gespeichert')
+    })
+  }
+
+  function saveReferenceHighlightGlossary() {
+    startGlossaryTransition(async () => {
+      const result = await updateWorkspaceReferenceHighlightGlossary(referenceHighlightGlossary)
+      if (!result.success) {
+        toast.error(result.error)
+        return
+      }
+      toast.success('Hervorhebungs-Glossar gespeichert')
     })
   }
 
@@ -467,6 +488,9 @@ export function SettingsTabs({
               firstName={profile.firstName}
               lastName={profile.lastName}
               avatarUrl={profile.avatarUrl}
+              bookingUrl={profile.bookingUrl}
+              phone={profile.phone}
+              profileRole={profile.profileRole}
             />
           </div>
           <div className={CARD_CLASS}>
@@ -722,6 +746,44 @@ export function SettingsTabs({
               </div>
             </CardContent>
           </div>
+          {roleSwitcher.serverRole === 'admin' ? (
+            <div className={CARD_CLASS}>
+              <CardHeader className="space-y-2 px-0 pt-0">
+                <CardTitle className="text-base">Referenztext-Hervorhebungen</CardTitle>
+                <CardDescription className="text-slate-500">
+                  Zusätzlich zu Tags, Branche sowie Dienstleister/Wettbewerber je Referenz werden diese Begriffe in
+                  Herausforderung, Lösung und Ergebnis <span className="font-medium">fett</span> gesetzt (ganzes Wort,
+                  nicht Teilstrings). Eine Zeile oder Komma pro Begriff.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3 px-0 pb-0 pt-1">
+                <div className="space-y-2">
+                  <Label htmlFor="ref-highlight-glossary">Workspace-Glossar (optional)</Label>
+                  <Textarea
+                    id="ref-highlight-glossary"
+                    value={referenceHighlightGlossary}
+                    onChange={(e) => setReferenceHighlightGlossary(e.target.value)}
+                    placeholder={'z. B. Lakehouse\nGovernance\nProcess Mining'}
+                    rows={5}
+                    className="font-mono text-sm"
+                  />
+                  <p className="text-xs text-slate-500">
+                    Generische Kurzformen wie „IT“ werden ignoriert; sehr kurze Begriffe nur bei KI, AI, BI.
+                  </p>
+                </div>
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={saveReferenceHighlightGlossary}
+                    disabled={glossaryPending || !org.id}
+                  >
+                    Glossar speichern
+                  </Button>
+                </div>
+              </CardContent>
+            </div>
+          ) : null}
           {roleSwitcher.serverRole === 'admin' ? (
             <div className={CARD_CLASS}>
               <CardHeader className="space-y-2 px-0 pt-0">

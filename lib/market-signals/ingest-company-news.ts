@@ -71,7 +71,7 @@ export async function runCompanyNewsIngest(
   const errors: string[] = []
   let articlesInserted = 0
 
-  let dealCompanyIds = new Set<string>()
+  const dealCompanyIds = new Set<string>()
   let dealQuery = supabase.from('deals').select('company_id,status,organization_id').not('company_id', 'is', null)
   if (options?.organizationId) {
     dealQuery = dealQuery.eq('organization_id', options.organizationId)

@@ -1,14 +1,32 @@
 'use client'
 
-import { useTransition } from 'react'
+import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   approveInternalAndSend,
   getApprovalLink,
+  getContactOptionsForReference,
   resendClientApprovalEmail,
   withdrawApprovalRequest,
 } from '@/app/dashboard/actions'
+import type { ApprovalContactOption } from '@/app/dashboard/references/approval-contacts'
 
 export function ApprovalPendingActions({
   referenceId,
@@ -16,14 +34,38 @@ export function ApprovalPendingActions({
   approvalStatus,
   internalStatus,
   approvalOwnerName,
+  approvalContactId,
+  approvalExternalContactId,
+  referenceContactId,
+  referenceCustomerContactId,
+  staleInternalPending = false,
 }: {
   referenceId: string
   canInternalApprove: boolean
   approvalStatus: string
   internalStatus: string
   approvalOwnerName: string | null
+  approvalContactId: string | null
+  approvalExternalContactId: string | null
+  referenceContactId: string | null
+  referenceCustomerContactId: string | null
+  /** Referenz laut Status/Kunde nutzbar, DB-Feld approval_internal_status veraltet */
+  staleInternalPending?: boolean
 }) {
+  const router = useRouter()
   const [pending, startTransition] = useTransition()
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [loadingContacts, setLoadingContacts] = useState(false)
+  const [contacts, setContacts] = useState<ApprovalContactOption[]>([])
+  const [contactId, setContactId] = useState('')
+
+  if (staleInternalPending) {
+    return (
+      <p className="rounded-md border border-dashed border-border/80 bg-muted/20 p-2.5 text-xs text-muted-foreground leading-relaxed">
+        Diese Referenz ist bereits freigegeben bzw. einsatzbereit — es sind keine weiteren Freigabe-Schritte nötig.
+      </p>
+    )
+  }
 
   const isInternalPending = internalStatus === 'pending_internal'
   const isClientPending = approvalStatus === 'pending'
@@ -62,6 +104,38 @@ export function ApprovalPendingActions({
             ? 'Status klar: Freigabe ist abgelaufen. Bitte neue Anfrage starten.'
             : 'Status klar: noch keine aktive Anfrage. Starte die Freigabe über „Aktionen“.'
 
+  async function loadContactsForDialog() {
+    setLoadingContacts(true)
+    setContactId('')
+    const res = await getContactOptionsForReference(referenceId)
+    setLoadingContacts(false)
+    if (res.error) {
+      toast.error(res.error)
+      setContacts([])
+      return
+    }
+    const withEmail = res.contacts.filter((c) => typeof c.email === 'string' && c.email.includes('@'))
+    setContacts(withEmail)
+    const opts = withEmail
+    const pick = (id: string | null, kind: ApprovalContactOption['kind']) => {
+      if (!id) return false
+      return opts.some((o) => o.id === id && o.kind === kind)
+    }
+    if (pick(approvalExternalContactId, 'external_contact')) {
+      setContactId(approvalExternalContactId!)
+    } else if (pick(approvalContactId, 'contact_person')) {
+      setContactId(approvalContactId!)
+    } else if (referenceCustomerContactId) {
+      const m = opts.find((o) => o.id === referenceCustomerContactId)
+      if (m) setContactId(m.id)
+    } else if (referenceContactId) {
+      const m = opts.find((o) => o.id === referenceContactId)
+      if (m) setContactId(m.id)
+    } else if (opts.length === 1) {
+      setContactId(opts[0].id)
+    }
+  }
+
   function onResend() {
     startTransition(async () => {
       await resendClientApprovalEmail(referenceId)
@@ -88,14 +162,34 @@ export function ApprovalPendingActions({
     })
   }
 
-  function onApproveAndSend() {
+  function openInternalApproveDialog() {
+    setDialogOpen(true)
+    void loadContactsForDialog()
+  }
+
+  function onConfirmInternalApprove() {
+    const picked = contacts.find((c) => c.id === contactId)
+    if (!picked) {
+      toast.error('Bitte einen Empfänger mit E-Mail wählen.')
+      return
+    }
+    if (!picked.email?.includes('@')) {
+      toast.error('Der gewählte Kontakt hat keine gültige E-Mail-Adresse.')
+      return
+    }
     startTransition(async () => {
-      const result = await approveInternalAndSend(referenceId)
+      const recipient =
+        picked.kind === 'external_contact'
+          ? { externalContactId: picked.id }
+          : { contactId: picked.id }
+      const result = await approveInternalAndSend(referenceId, recipient)
       if (!result.success) {
         toast.error(result.error)
         return
       }
+      setDialogOpen(false)
       toast.success('Interne Freigabe erteilt, E-Mail an Kunden versendet.')
+      router.refresh()
     })
   }
 
@@ -106,7 +200,12 @@ export function ApprovalPendingActions({
         <p className="text-xs text-muted-foreground">{responsibilityHint}</p>
       </div>
       {canInternalApprove ? (
-        <Button type="button" variant="default" onClick={onApproveAndSend} disabled={disableInternalApprove}>
+        <Button
+          type="button"
+          variant="default"
+          onClick={openInternalApproveDialog}
+          disabled={disableInternalApprove}
+        >
           Interne Freigabe erteilen & Versand
         </Button>
       ) : null}
@@ -121,6 +220,45 @@ export function ApprovalPendingActions({
       <Button type="button" variant="destructive" onClick={onWithdraw} disabled={disableWithdraw} title={isClientPending ? undefined : 'Nur bei laufender Kundenanfrage verfügbar'}>
         Anfrage widerrufen
       </Button>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Empfänger für Kunden-Freigabe</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Die Freigabe-E-Mail geht an den gewählten Kontakt. Ohne gültige E-Mail-Adresse kann kein Versand erfolgen — bitte Kontakt im Account pflegen oder hier auswählen.
+          </p>
+          <div className="grid gap-2 py-2">
+            <Label htmlFor="internal-approve-contact">Kontakt</Label>
+            <Select value={contactId} onValueChange={setContactId} disabled={loadingContacts || contacts.length === 0}>
+              <SelectTrigger id="internal-approve-contact">
+                <SelectValue placeholder={loadingContacts ? 'Lade Kontakte…' : contacts.length ? 'Kontakt wählen' : 'Kein Kontakt mit E-Mail'} />
+              </SelectTrigger>
+              <SelectContent>
+                {contacts.map((c) => (
+                  <SelectItem key={`${c.kind}-${c.id}`} value={c.id}>
+                    {c.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {!loadingContacts && contacts.length === 0 ? (
+              <p className="text-xs text-amber-700 dark:text-amber-500">
+                Kein Kontakt mit E-Mail für dieses Unternehmen. Bitte unter Accounts einen Kundenkontakt anlegen oder in der Referenz einen Kontakt verknüpfen.
+              </p>
+            ) : null}
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} disabled={pending}>
+              Abbrechen
+            </Button>
+            <Button type="button" onClick={onConfirmInternalApprove} disabled={pending || !contactId || loadingContacts}>
+              Freigabe erteilen & senden
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

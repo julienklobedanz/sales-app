@@ -4,6 +4,21 @@ import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { validatePasswordPolicy } from '@/lib/security/password-policy'
+import { isValidSalesPhone, salesContactValidationMessage } from '@/lib/profile/sales-contact'
+
+function normalizeHttpsBookingUrl(raw: string | null | undefined): string | null {
+  const t = raw?.trim() ?? ''
+  if (!t) return null
+  try {
+    const u = new URL(t)
+    if (u.protocol !== 'https:') {
+      return null
+    }
+    return u.toString()
+  } catch {
+    return null
+  }
+}
 
 function parseDataUrlImage(dataUrl: string): { bytes: Uint8Array; contentType: string; ext: string } | null {
   const trimmed = dataUrl.trim()
@@ -32,18 +47,61 @@ export async function updateProfile(formData: FormData) {
 
   if (!user) throw new Error('Nicht authentifiziert')
 
+  const { data: profileRow } = await supabase
+    .from('profiles')
+    .select('role, phone')
+    .eq('id', user.id)
+    .single()
+
+  const currentRole = (profileRow?.role as string) ?? 'sales'
+  const existingPhone = String((profileRow as { phone?: string | null })?.phone ?? '').trim()
+
   const firstName = formData.get('firstName')?.toString()?.trim()
   const lastName = formData.get('lastName')?.toString()?.trim()
-  const fullName = [firstName, lastName].filter(Boolean).join(' ') || undefined
-  const role = formData.get('role')?.toString() as 'admin' | 'sales' | undefined
+  const fullNameSingle = formData.get('fullName')?.toString()?.trim()
+  const fullNameFromParts = [firstName, lastName].filter(Boolean).join(' ') || undefined
+  const fullName = fullNameFromParts || (fullNameSingle ? fullNameSingle : undefined)
+  const roleField = formData.get('role')?.toString()
+  const role =
+    roleField === 'admin' || roleField === 'sales' || roleField === 'account_manager'
+      ? roleField
+      : undefined
+  const effectiveRole = role ?? currentRole
   const avatarDataUrlRaw = formData.get('avatarDataUrl')?.toString() ?? undefined
   const avatarDataUrl =
     avatarDataUrlRaw !== undefined ? avatarDataUrlRaw.trim() || null : undefined
+  const bookingUrlRaw = formData.get('bookingUrl')?.toString()?.trim() ?? ''
+  const bookingUrlNormalized = bookingUrlRaw ? normalizeHttpsBookingUrl(bookingUrlRaw) : null
+  if (bookingUrlRaw && !bookingUrlNormalized) {
+    return { error: 'Buchungslink muss eine gültige https://-URL sein (z. B. Calendly).' }
+  }
+
+  const phoneRaw = formData.get('phone')?.toString() ?? ''
+  const phoneTrim = phoneRaw.trim()
+  const phoneAfterUpdate = formData.has('phone') ? phoneTrim : existingPhone
+
+  if (effectiveRole === 'sales') {
+    const msg = salesContactValidationMessage()
+    if (!user.email?.trim()) {
+      return { error: msg.email }
+    }
+    if (!isValidSalesPhone(phoneAfterUpdate)) {
+      return { error: msg.phone }
+    }
+  }
 
   const updates: Record<string, unknown> = {}
 
   if (fullName !== undefined && fullName !== '') updates.full_name = fullName
-  if (role && (role === 'admin' || role === 'sales')) updates.role = role
+  if (role && (role === 'admin' || role === 'sales' || role === 'account_manager')) {
+    updates.role = role
+  }
+  if (formData.has('bookingUrl')) {
+    updates.booking_url = bookingUrlNormalized
+  }
+  if (formData.has('phone')) {
+    updates.phone = phoneTrim.length ? phoneTrim : null
+  }
   if (avatarDataUrl !== undefined) {
     if (!avatarDataUrl) {
       updates.avatar_url = null

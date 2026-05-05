@@ -89,6 +89,7 @@ function parseOrganizationWorkflowSettings(raw: unknown): {
   publicLinkMaxTtlDays: number
   publicLinkRequirePasswordForNew: boolean
   auditLogRetentionDays: number
+  referenceHighlightGlossary: string
 } {
   if (!raw || typeof raw !== 'object') {
     return {
@@ -102,6 +103,7 @@ function parseOrganizationWorkflowSettings(raw: unknown): {
       publicLinkMaxTtlDays: 365,
       publicLinkRequirePasswordForNew: false,
       auditLogRetentionDays: 365,
+      referenceHighlightGlossary: '',
     }
   }
   const obj = raw as Record<string, unknown>
@@ -111,6 +113,7 @@ function parseOrganizationWorkflowSettings(raw: unknown): {
   const escalationRaw = obj.approval_escalation_after_days
   const maxTtlRaw = obj.public_link_max_ttl_days
   const retentionRaw = obj.audit_log_retention_days
+  const glossaryRaw = obj.reference_highlight_glossary
   return {
     linkExpiryDays:
       typeof linkExpiryDaysRaw === 'number' && Number.isFinite(linkExpiryDaysRaw)
@@ -143,6 +146,8 @@ function parseOrganizationWorkflowSettings(raw: unknown): {
       typeof retentionRaw === 'number' && Number.isFinite(retentionRaw)
         ? Math.max(30, Math.min(3650, Math.trunc(retentionRaw)))
         : 365,
+    referenceHighlightGlossary:
+      typeof glossaryRaw === 'string' ? glossaryRaw : '',
   }
 }
 
@@ -211,6 +216,14 @@ export default async function SettingsPage() {
           firstName,
           lastName,
           avatarUrl: (profileRow as { avatar_url?: string | null })?.avatar_url ?? null,
+          bookingUrl: (profileRow as { booking_url?: string | null })?.booking_url ?? null,
+          phone: (profileRow as { phone?: string | null })?.phone ?? null,
+          profileRole:
+            profileRow?.role === 'admin' ||
+            profileRow?.role === 'sales' ||
+            profileRow?.role === 'account_manager'
+              ? profileRow.role
+              : 'sales',
           notificationSettings: parseProfileNotificationSettings(
             (profileRow as { notification_settings?: unknown } | null)?.notification_settings
           ),

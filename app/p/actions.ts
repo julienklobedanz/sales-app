@@ -29,6 +29,8 @@ export type PublicReference = {
   project_start: string | null
   project_end: string | null
   duration_months: number | null
+  approval_quote_approved: string | null
+  approval_reference_giver_name: string | null
 }
 
 export type PublicPortfolioResult =
@@ -53,6 +55,7 @@ export type PublicShareOwner =
       avatar_url: string | null
       email: string | null
       phone: string | null
+      booking_url: string | null
     }
   | { found: false }
 
@@ -152,6 +155,7 @@ export async function getPublicPortfolioShareOwner(
     avatar_url?: string | null
     email?: string | null
     phone?: string | null
+    booking_url?: string | null
   } | null
   if (!payload?.found || !payload.name) return { found: false }
   return {
@@ -161,6 +165,7 @@ export async function getPublicPortfolioShareOwner(
     avatar_url: payload.avatar_url ?? null,
     email: payload.email ?? null,
     phone: payload.phone ?? null,
+    booking_url: payload.booking_url?.trim() ? payload.booking_url.trim() : null,
   }
 }
 

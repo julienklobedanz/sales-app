@@ -1,5 +1,9 @@
-/** Einheitliches Limit für Zusammenfassung, Herausforderung und Lösung (Formular + Server). */
-export const REFERENCE_NARRATIVE_MAX_CHARS = 700
+/**
+ * Einheitliches Limit für Zusammenfassung, Herausforderung und Lösung (Formular + Server).
+ * Abgestimmt mit dem RefStack-PPTX-One-Pager (`reference-onepager-pptx`): dort begrenzen wir
+ * Fließtext-Spalten mit demselben Hardcap, damit typischerweise kein „…“ nötig ist und nichts in den Footer rutscht.
+ */
+export const REFERENCE_NARRATIVE_MAX_CHARS = 620
 
 export function narrativeFieldLengthError(
   raw: string | null | undefined,

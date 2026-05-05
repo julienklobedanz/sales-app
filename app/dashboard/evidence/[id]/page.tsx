@@ -21,6 +21,11 @@ import { getReferenceUsageStats } from '@/app/dashboard/references/reference-usa
 import { ApprovalPendingActions } from './approval-pending-actions'
 import { getReferenceDetailActivities } from './reference-detail-activities'
 import { ReferenceActivitiesTimeline } from './reference-activities-timeline'
+import { ReferenceContextHighlighted } from '@/components/reference-context-highlighted'
+import {
+  buildReferenceHighlightPhrases,
+  extractWorkflowHighlightGlossary,
+} from '@/lib/references/reference-context-highlights'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,27 +52,6 @@ function firstSentence(value: string | null | undefined) {
   return (match ? match[0] : text).trim()
 }
 
-function renderScannableText(value: string | null | undefined) {
-  const text = String(value ?? '')
-  if (!text.trim()) return <span className="text-muted-foreground">—</span>
-
-  const emphasisRegex =
-    /(\b\d{1,3}(?:[.,]\d{3})*(?:[.,]\d+)?\s?%|\b(?:EUR|USD|AED|CHF|GBP|JPY|HKD|SGD|CNY|€|\$|£|¥)\s?\d[\d.,]*|\b(?:SAP|Salesforce|AWS|Azure|GCP|Microsoft|Oracle|ServiceNow|Kubernetes|Snowflake|AI|KI)\b|\b(?:Kostenersparnis|Cost Savings|ROI|Umsatz|Effizienz|Automatisierung|Governance)\b)/gi
-  const emphasisExact =
-    /^\b\d{1,3}(?:[.,]\d{3})*(?:[.,]\d+)?\s?%$|^(?:EUR|USD|AED|CHF|GBP|JPY|HKD|SGD|CNY|€|\$|£|¥)\s?\d[\d.,]*$|^(?:SAP|Salesforce|AWS|Azure|GCP|Microsoft|Oracle|ServiceNow|Kubernetes|Snowflake|AI|KI)$|^(?:Kostenersparnis|Cost Savings|ROI|Umsatz|Effizienz|Automatisierung|Governance)$/i
-
-  const parts = text.split(emphasisRegex)
-  return parts.map((part, index) =>
-    emphasisExact.test(part) ? (
-      <strong key={`${part}-${index}`} className="font-semibold text-foreground">
-        {part}
-      </strong>
-    ) : (
-      <span key={`${part}-${index}`}>{part}</span>
-    )
-  )
-}
-
 export default async function EvidenceDetailPage({
   params,
   searchParams,
@@ -86,12 +70,13 @@ export default async function EvidenceDetailPage({
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, organization_id')
     .eq('id', user.id)
     .single()
   if (!profile) redirect(ROUTES.onboarding)
 
   const role = (profile as { role?: 'admin' | 'sales' | 'account_manager' }).role ?? 'sales'
+  const organizationId = (profile as { organization_id?: string | null }).organization_id ?? null
 
   const { data: row, error } = await supabase
     .from('references')
@@ -115,6 +100,8 @@ export default async function EvidenceDetailPage({
       approval_scope_press_release,
       approval_grace_until,
       approval_internal_status,
+      approval_contact_id,
+      approval_external_contact_id,
       approval_reference_giver_name,
       approval_reference_giver_title,
       approval_competitor_blacklist,
@@ -162,6 +149,8 @@ export default async function EvidenceDetailPage({
     approval_scope_press_release: boolean | null
     approval_grace_until: string | null
     approval_internal_status: string | null
+    approval_contact_id: string | null
+    approval_external_contact_id: string | null
     approval_reference_giver_name: string | null
     approval_reference_giver_title: string | null
     approval_competitor_blacklist: string[] | null
@@ -256,17 +245,26 @@ export default async function EvidenceDetailPage({
       ? 'expired'
       : baseApprovalStatus
   const internalApproval = String(ref.approval_internal_status ?? '').toLowerCase()
+  /** DB-Hygiene: Status/Kunde schon freigegeben, aber approval_internal_status hängt noch auf pending_internal. */
+  const staleInternalPending =
+    internalApproval === 'pending_internal' &&
+    (isApprovalGranted ||
+      normalizedStatus === 'approved' ||
+      normalizedStatus === 'external' ||
+      normalizedStatus === 'anonymized' ||
+      normalizedStatus === 'internal_only' ||
+      normalizedStatus === 'internal')
 
   let readinessLabel: string
   let readinessTone: string
 
-  if (internalApproval === 'pending_internal') {
+  if (internalApproval === 'pending_internal' && !staleInternalPending) {
     readinessLabel = 'Interne Freigabe ausstehend'
     readinessTone = 'bg-sky-50 text-sky-800 border-sky-200'
   } else if (internalApproval === 'withdrawn_internal') {
     readinessLabel = 'Anfrage widerrufen'
     readinessTone = 'bg-slate-100 text-slate-600 border-slate-200'
-  } else if (approvalStatus === 'approved') {
+  } else if (approvalStatus === 'approved' || staleInternalPending) {
     readinessLabel = 'Freigegeben'
     readinessTone = 'bg-emerald-50 text-emerald-700 border-emerald-200'
   } else if (approvalStatus === 'pending') {
@@ -296,6 +294,23 @@ export default async function EvidenceDetailPage({
   const salesReadinessLabel =
     (ref.approval_scope_named_mention ?? true) ? 'Namentlich freigegeben' : 'Anonymisiert nutzen'
 
+  let glossaryFromWorkflow: string[] = []
+  if (organizationId) {
+    const { data: orgRow } = await supabase
+      .from('organizations')
+      .select('workflow_settings')
+      .eq('id', organizationId)
+      .maybeSingle()
+    glossaryFromWorkflow = extractWorkflowHighlightGlossary(orgRow?.workflow_settings)
+  }
+  const highlightPhrases = buildReferenceHighlightPhrases({
+    tags,
+    industry: industryLabel,
+    incumbentProvider: ref.incumbent_provider,
+    competitors: ref.competitors,
+    glossary: glossaryFromWorkflow,
+  })
+
   const referenceActivities = await getReferenceDetailActivities(
     id,
     role as 'admin' | 'sales' | 'account_manager'
@@ -309,7 +324,7 @@ export default async function EvidenceDetailPage({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="space-y-2 min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <ReferenceStatusBadge status={ref.status} />
+                <ReferenceStatusBadge status={ref.status} customerApprovalStatus={ref.customer_approval_status} />
               </div>
               <h1 className={`${DASHBOARD_PAGE_TITLE_CLASS} break-words`}>
                 {ref.title}
@@ -361,7 +376,7 @@ export default async function EvidenceDetailPage({
                     </CardHeader>
                     <CardContent>
                       <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
-                        {renderScannableText(challengeText)}
+                        <ReferenceContextHighlighted text={challengeText} phrases={highlightPhrases} />
                       </p>
                     </CardContent>
                   </Card>
@@ -376,7 +391,7 @@ export default async function EvidenceDetailPage({
                     </CardHeader>
                     <CardContent>
                       <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
-                        {renderScannableText(solutionText)}
+                        <ReferenceContextHighlighted text={solutionText} phrases={highlightPhrases} />
                       </p>
                     </CardContent>
                   </Card>
@@ -390,7 +405,7 @@ export default async function EvidenceDetailPage({
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
-                      {renderScannableText(outcomeText)}
+                      <ReferenceContextHighlighted text={outcomeText} phrases={highlightPhrases} />
                     </p>
                   </CardContent>
                 </Card>
@@ -458,11 +473,38 @@ export default async function EvidenceDetailPage({
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               {role === 'sales' ? (
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-muted-foreground">Freigabe</span>
-                  <span className="rounded-full border bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-700">
-                    {salesReadinessLabel}
-                  </span>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-muted-foreground">Freigabe</span>
+                    <span
+                      className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${
+                        staleInternalPending || isApprovalGranted
+                          ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                          : internalApproval === 'pending_internal'
+                            ? 'border-sky-200 bg-sky-50 text-sky-800'
+                            : approvalStatus === 'pending'
+                              ? 'border-amber-200 bg-amber-50 text-amber-800'
+                              : 'border-border bg-slate-50 text-slate-700'
+                      }`}
+                    >
+                      {staleInternalPending || isApprovalGranted
+                        ? 'Einsatzbereit'
+                        : internalApproval === 'pending_internal'
+                          ? 'Interne Prüfung'
+                          : approvalStatus === 'pending'
+                            ? 'Kundenfreigabe läuft'
+                            : salesReadinessLabel}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {staleInternalPending || isApprovalGranted
+                      ? `Nutzen: ${salesReadinessLabel.toLowerCase()}.`
+                      : internalApproval === 'pending_internal'
+                        ? 'Die Referenz wird intern geprüft. Du musst nichts tun.'
+                        : approvalStatus === 'pending'
+                          ? 'Der Kunde bearbeitet die Freigabe.'
+                          : 'Freigabe-Details siehst du nach Abschluss des Freigabeprozesses.'}
+                  </p>
                 </div>
               ) : (
                 <>
@@ -532,10 +574,19 @@ export default async function EvidenceDetailPage({
                   ) : null}
                   <ApprovalPendingActions
                     referenceId={id}
-                    canInternalApprove={internalStatus === 'pending_internal' && (role === 'admin' || role === 'account_manager')}
+                    canInternalApprove={
+                      internalStatus === 'pending_internal' &&
+                      !staleInternalPending &&
+                      (role === 'admin' || role === 'account_manager')
+                    }
                     approvalStatus={approvalStatus}
                     internalStatus={internalStatus}
                     approvalOwnerName={ref.approval_owner_name ?? null}
+                    approvalContactId={ref.approval_contact_id ?? null}
+                    approvalExternalContactId={ref.approval_external_contact_id ?? null}
+                    referenceContactId={ref.contact_id ?? null}
+                    referenceCustomerContactId={ref.customer_contact_id ?? null}
+                    staleInternalPending={staleInternalPending}
                   />
                 </>
               )}

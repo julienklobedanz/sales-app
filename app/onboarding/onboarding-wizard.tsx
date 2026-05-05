@@ -19,9 +19,13 @@ import { ROUTES } from "@/lib/routes"
 export function OnboardingWizard({
   inviteToken,
   inviteOrganizationName,
+  inviteRole,
+  initialFullName,
 }: {
   inviteToken: string | null
   inviteOrganizationName: string | null
+  inviteRole: 'admin' | 'sales' | 'account_manager' | null
+  initialFullName: string
 }) {
   const router = useRouter()
   const isInvite = Boolean(inviteToken && inviteOrganizationName)
@@ -33,6 +37,8 @@ export function OnboardingWizard({
     organizationName: inviteOrganizationName ?? "",
     logoDataUrl: null,
     role: "account_manager",
+    fullName: initialFullName,
+    phone: "",
   })
 
   const [referencePreview, setReferencePreview] = React.useState<ExtractedReferenceData | null>(null)
@@ -56,6 +62,8 @@ export function OnboardingWizard({
       organizationName: workspace.organizationName,
       logoDataUrl: workspace.logoDataUrl,
       role: isInvite ? null : workspace.role,
+      fullName: workspace.fullName,
+      phone: workspace.phone,
     })
     setSavingWorkspace(false)
     if (!res.success) {
@@ -126,6 +134,7 @@ export function OnboardingWizard({
               disabled={savingWorkspace}
               isInvite={isInvite}
               inviteOrganizationName={inviteOrganizationName}
+              inviteRole={inviteRole}
             />
           ) : null}
 

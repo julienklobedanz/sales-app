@@ -190,6 +190,17 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
     return { short: 'Strategie', full: 'Account News · Strategie' }
   }
 
+  /** Erklärt die Farbe am Kartenrand und im Aktions-Stack (Grün ≠ Gelb). */
+  function signalCategoryColorHint(badge: InboxItem['categoryBadge']): string {
+    if (badge === 'people') {
+      return 'Blau · Personen: Executive-Tracking, Führungswechsel, Presse zu Führungskräften.'
+    }
+    if (badge === 'finance') {
+      return 'Grün · Finanz: Budget, Kennzahlen, Finanzierungen, IT-Kosten / CFO-relevante News.'
+    }
+    return 'Gelb · Strategie: Programme, Digitalisierung, CRM- & Tool-Rollouts, Unternehmens- und IT-Strategie.'
+  }
+
   function mergeGroupCompany(list: GroupCompany[], item: InboxItem) {
     if (!list.some((c) => c.id === item.companyId)) {
       list.push({
@@ -1048,6 +1059,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                     </div>
                   </div>
                 ) : (
+                  <TooltipProvider delayDuration={250}>
                   <div className="space-y-3">
                     {(['Heute', 'Gestern', 'Ältere'] as const).map((label) =>
                       (grouped[label] ?? []).length ? (
@@ -1093,10 +1105,17 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                         : 'border-slate-200 hover:bg-slate-50'
                                     }`}
                                   >
-                                    <span
-                                      className={`absolute left-0 top-0 h-full w-1.5 rounded-l-lg ${leftBorderClass}`}
-                                      aria-hidden
-                                    />
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <span
+                                          className={`absolute left-0 top-0 h-full w-1.5 cursor-help rounded-l-lg ${leftBorderClass}`}
+                                          aria-hidden
+                                        />
+                                      </TooltipTrigger>
+                                      <TooltipContent side="right" className="max-w-[240px] text-xs leading-snug">
+                                        {signalCategoryColorHint(rep.categoryBadge)}
+                                      </TooltipContent>
+                                    </Tooltip>
                                     <div className="relative flex shrink-0 -space-x-1.5">
                                       {groupItem.companies.length > 1
                                         ? groupItem.companies.slice(0, 3).map((co) => (
@@ -1178,42 +1197,66 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                         <span className="absolute -left-2 top-1/2 size-2 -translate-y-1/2 rounded-full bg-blue-500" />
                                       ) : null}
                                       <div className="pointer-events-none absolute right-0 top-1/2 flex -translate-y-1/2 translate-x-3 items-center gap-1 rounded-md border border-slate-200 bg-white/95 px-1 py-0.5 opacity-0 shadow-sm transition-all duration-200 group-hover:pointer-events-auto group-hover:translate-x-0 group-hover:opacity-100">
-                                        <button
-                                          type="button"
-                                          className="inline-flex size-6 items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-800"
-                                          aria-label="Archivieren"
-                                          title="Archivieren"
-                                          onClick={(e) => {
-                                            e.preventDefault()
-                                            e.stopPropagation()
-                                            void dismissItems(groupItem.items)
-                                          }}
-                                        >
-                                          <CheckIcon className="size-4" />
-                                        </button>
-                                        <button
-                                          type="button"
-                                          className="inline-flex size-6 items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-800"
-                                          aria-label="AI-Snippet kopieren"
-                                          title="AI-Snippet kopieren"
-                                          onClick={(e) => {
-                                            e.preventDefault()
-                                            e.stopPropagation()
-                                            void navigator.clipboard.writeText(buildIntroSnippet(rep, groupItem))
-                                            toast.success('AI-Intro-Snippet kopiert.')
-                                          }}
-                                        >
-                                          <AppIcon icon={Sparkles} size={14} />
-                                        </button>
-                                        <span className="inline-flex size-6 items-center justify-center rounded border border-slate-200 bg-white text-slate-600">
-                                        {rep.categoryBadge === 'people' ? (
-                                          <AppIcon icon={UserMultipleIcon} size={13} className="text-blue-600" />
-                                        ) : rep.categoryBadge === 'finance' ? (
-                                          <span className="inline-flex size-3 rounded-sm bg-emerald-500" />
-                                        ) : (
-                                          <span className="inline-flex size-2.5 rotate-45 rounded-[1px] bg-amber-400" />
-                                        )}
-                                        </span>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <button
+                                              type="button"
+                                              className="inline-flex size-6 items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                                              aria-label="Aus Inbox ausblenden"
+                                              onClick={(e) => {
+                                                e.preventDefault()
+                                                e.stopPropagation()
+                                                void dismissItems(groupItem.items)
+                                              }}
+                                            >
+                                              <CheckIcon className="size-4" />
+                                            </button>
+                                          </TooltipTrigger>
+                                          <TooltipContent side="left" className="max-w-[220px] text-xs">
+                                            Aus Inbox ausblenden (erledigt / nicht mehr anzeigen).
+                                          </TooltipContent>
+                                        </Tooltip>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <button
+                                              type="button"
+                                              className="inline-flex size-6 items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                                              aria-label="KI-Intro-Snippet kopieren"
+                                              onClick={(e) => {
+                                                e.preventDefault()
+                                                e.stopPropagation()
+                                                void navigator.clipboard.writeText(buildIntroSnippet(rep, groupItem))
+                                                toast.success('AI-Intro-Snippet kopiert.')
+                                              }}
+                                            >
+                                              <AppIcon icon={Sparkles} size={14} />
+                                            </button>
+                                          </TooltipTrigger>
+                                          <TooltipContent side="left" className="max-w-[220px] text-xs">
+                                            KI-Intro-Snippet in die Zwischenablage kopieren.
+                                          </TooltipContent>
+                                        </Tooltip>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <span
+                                              role="img"
+                                              aria-label={signalCategoryColorHint(rep.categoryBadge)}
+                                              className="inline-flex size-6 cursor-help items-center justify-center rounded border border-slate-200 bg-white text-slate-600"
+                                              tabIndex={-1}
+                                            >
+                                              {rep.categoryBadge === 'people' ? (
+                                                <AppIcon icon={UserMultipleIcon} size={13} className="text-blue-600" />
+                                              ) : rep.categoryBadge === 'finance' ? (
+                                                <span className="inline-flex size-3 rounded-sm bg-emerald-500" />
+                                              ) : (
+                                                <span className="inline-flex size-2.5 rotate-45 rounded-[1px] bg-amber-400" />
+                                              )}
+                                            </span>
+                                          </TooltipTrigger>
+                                          <TooltipContent side="left" className="max-w-[240px] text-xs leading-snug">
+                                            Signal-Kategorie: {signalCategoryColorHint(rep.categoryBadge)}
+                                          </TooltipContent>
+                                        </Tooltip>
                                       </div>
                                     </div>
                                   </button>
@@ -1225,6 +1268,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                       ) : null
                     )}
                   </div>
+                  </TooltipProvider>
                 )}
               </div>
             </div>

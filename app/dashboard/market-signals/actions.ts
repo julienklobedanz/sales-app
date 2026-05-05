@@ -511,7 +511,11 @@ export async function triggerMarketSignalsIngestForMyOrg(): Promise<TriggerMarke
 
   const admin = createServiceRoleSupabaseClient()
   if (!admin) {
-    return { success: false, error: 'Server-Konfiguration: SUPABASE_SERVICE_ROLE_KEY fehlt.' }
+    return {
+      success: false,
+      error:
+        'SUPABASE_SERVICE_ROLE_KEY fehlt. Lokal: in .env.local den service_role-Key aus Supabase (Project Settings → API) eintragen und Dev-Server neu starten. Production: gleiche Variable in Vercel setzen. Der Key wird für „Signale abrufen“ und Cron-Ingest benötigt (Org-weiter Zugriff inkl. Champion-Watchlist).',
+    }
   }
 
   const ingestSince = new Date().toISOString()

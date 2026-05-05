@@ -5,21 +5,21 @@ import {
   getPublicPortfolioShareOwner,
   incrementPortfolioViews,
 } from '../actions'
-import { PublicPortfolioKillswitch } from './killswitch'
 import { formatDateUtcDe, formatReferenceVolume } from '@/lib/format'
+import { kpisForPublicReference } from '@/lib/public-portfolio/kpis-for-reference'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ShareOwnerContactCard } from './share-owner-contact-card'
 import { PortfolioUnlockGate } from './portfolio-unlock-gate'
-import { Calendar, HelpCircleIcon } from '@hugeicons/core-free-icons'
-import { AppIcon } from '@/lib/icons'
+import { PublicPortfolioFooter } from './public-portfolio-footer'
 
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   robots: 'noindex, nofollow',
 }
+
+const RELEASE_NOT_INCLUDED = 'In dieser Freigabe nicht enthalten'
 
 function formatDateMaybe(value: string | null) {
   const v = String(value ?? '').trim()
@@ -36,6 +36,32 @@ function splitTags(tags: string | null) {
     .filter(Boolean)
 }
 
+function releaseText(value: string | null | undefined): string {
+  const s = value != null ? String(value).trim() : ''
+  return s || RELEASE_NOT_INCLUDED
+}
+
+function releaseVolume(volumeEur: string | null): string {
+  return formatReferenceVolume(volumeEur) || RELEASE_NOT_INCLUDED
+}
+
+function releaseEmployees(n: number | null): string {
+  if (n == null) return RELEASE_NOT_INCLUDED
+  return n.toLocaleString('de-DE')
+}
+
+function buildHeaderSubtitle(
+  workspaceName: string,
+  singleTitle: string | null,
+  country: string | null
+) {
+  const countryPart = country?.trim() ? ` - (${country.trim()})` : ''
+  if (singleTitle) {
+    return `Projektdetails ${workspaceName} - ${singleTitle}${countryPart}`
+  }
+  return `Projektdetails ${workspaceName}${countryPart}`
+}
+
 export default async function PublicPortfolioPage({
   params,
 }: {
@@ -48,9 +74,11 @@ export default async function PublicPortfolioPage({
   const workspaceName = branding.found ? branding.name : 'RefStack Workspace'
   const singleReferenceTitle =
     result.found && result.references.length === 1 ? result.references[0]?.title ?? null : null
-  const headerSubtitle = singleReferenceTitle
-    ? `Projektdetails ${workspaceName} - ${singleReferenceTitle}`
-    : `Projektdetails ${workspaceName}`
+  const headerCountry =
+    result.found && result.references.length === 1
+      ? (result.references[0]?.country?.trim() ? result.references[0].country.trim() : null)
+      : null
+  const headerSubtitle = buildHeaderSubtitle(workspaceName, singleReferenceTitle, headerCountry)
 
   if (!result.found) {
     if (result.reason === 'locked') {
@@ -87,8 +115,7 @@ export default async function PublicPortfolioPage({
   const shareOwnerAvatar = shareOwner.found ? shareOwner.avatar_url : null
   const shareOwnerEmail = shareOwner.found ? shareOwner.email : null
   const shareOwnerPhone = shareOwner.found ? shareOwner.phone : null
-  const ctaQuestionHref = `mailto:${shareOwnerEmail ?? ''}?subject=${encodeURIComponent('Frage zur Referenz')}`
-  const ctaMeetingHref = `mailto:${shareOwnerEmail ?? ''}?subject=${encodeURIComponent('Terminvereinbarung zur Referenz')}`
+  const shareOwnerBookingUrl = shareOwner.found ? shareOwner.booking_url : null
 
   return (
     <div className="min-h-screen bg-muted/20">
@@ -119,142 +146,225 @@ export default async function PublicPortfolioPage({
       <main className="px-6 py-12 sm:px-12 lg:px-16">
         <div className="mx-auto max-w-7xl">
           <div className="space-y-8">
-            {result.references.map((ref) => (
-              <article key={ref.id} className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
-                <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant="secondary">Referenz</Badge>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      {ref.company_logo_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={ref.company_logo_url}
-                          alt={`${ref.company_name} Logo`}
-                          className="mt-0.5 h-10 w-10 rounded-md border bg-muted object-contain p-1"
-                        />
+            {result.references.map((ref) => {
+              const kpis = kpisForPublicReference(ref, { max: 3 })
+              const quoteApproved = ref.approval_quote_approved?.trim()
+              const quoteGiver = ref.approval_reference_giver_name?.trim()
+              return (
+                <article key={ref.id} className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
+                  <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+                    <div className="space-y-6">
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant="secondary">Referenz</Badge>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          {ref.company_logo_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={ref.company_logo_url}
+                              alt={`${ref.company_name} Logo`}
+                              className="mt-0.5 h-10 w-10 rounded-md border bg-muted object-contain p-1"
+                            />
+                          ) : null}
+                          <div className="min-w-0">
+                            <h2 className="text-2xl font-semibold tracking-tight text-foreground">
+                              {ref.title}
+                            </h2>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                              {ref.company_name}
+                              {ref.industry ? ` · ${ref.industry}` : ''}
+                              {ref.country?.trim() ? ` · ${ref.country.trim()}` : ''}
+                            </p>
+                          </div>
+                        </div>
+                        {splitTags(ref.tags).length ? (
+                          <div className="mt-3 flex flex-wrap gap-1.5">
+                            {splitTags(ref.tags).map((tag) => (
+                              <Badge key={tag} variant="outline">
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+
+                      {quoteApproved || quoteGiver ? (
+                        <Card className="border-border/70">
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-sm font-semibold">
+                              Stimme zur Zusammenarbeit
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="text-sm text-muted-foreground">
+                            {quoteApproved ? (
+                              <p className="leading-relaxed italic text-foreground/90">
+                                „{quoteApproved}“
+                              </p>
+                            ) : null}
+                            {quoteGiver ? (
+                              <p className="mt-2 text-xs font-medium text-foreground">{quoteGiver}</p>
+                            ) : null}
+                          </CardContent>
+                        </Card>
                       ) : null}
-                      <div className="min-w-0">
-                        <h2 className="text-2xl font-semibold tracking-tight text-foreground">{ref.title}</h2>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {ref.company_name}
-                          {ref.industry ? ` · ${ref.industry}` : ''}
-                        </p>
-                      </div>
+
+                      {ref.summary || ref.customer_challenge || ref.our_solution ? (
+                        <div className="grid gap-4 md:grid-cols-2">
+                          {ref.summary ? (
+                            <Card className="border-border/70 md:col-span-2">
+                              <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-semibold">Zusammenfassung</CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                <p className="text-sm leading-relaxed text-muted-foreground">
+                                  {ref.summary}
+                                </p>
+                              </CardContent>
+                            </Card>
+                          ) : null}
+
+                          {ref.customer_challenge ? (
+                            <Card className="border-border/70">
+                              <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-semibold">Herausforderung</CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
+                                  {ref.customer_challenge}
+                                </p>
+                              </CardContent>
+                            </Card>
+                          ) : null}
+
+                          {ref.our_solution ? (
+                            <div className="md:col-span-2 grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-stretch">
+                              <Card className="border-border/70 flex flex-col">
+                                <CardHeader className="pb-2">
+                                  <CardTitle className="text-sm font-semibold">Unsere Lösung</CardTitle>
+                                </CardHeader>
+                                <CardContent className="flex-1">
+                                  <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
+                                    {ref.our_solution}
+                                  </p>
+                                </CardContent>
+                              </Card>
+                              <div className="flex flex-col gap-3">
+                                {kpis.length ? (
+                                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
+                                    {kpis.map((kpi) => (
+                                      <Card
+                                        key={kpi.label}
+                                        className="border-border/70 bg-muted/20 shadow-none"
+                                      >
+                                        <CardHeader className="py-3 pb-1">
+                                          <CardTitle className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                                            {kpi.label}
+                                          </CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="pt-0 pb-3">
+                                          <p className="text-base font-semibold tabular-nums text-foreground">
+                                            {kpi.value}
+                                          </p>
+                                        </CardContent>
+                                      </Card>
+                                    ))}
+                                  </div>
+                                ) : null}
+                                <Card className="border-dashed border-border/80 bg-muted/10 shadow-none mt-auto">
+                                  <CardHeader className="pb-2 pt-4">
+                                    <CardTitle className="text-xs font-semibold text-muted-foreground">
+                                      Hinweis
+                                    </CardTitle>
+                                  </CardHeader>
+                                  <CardContent className="pb-4 text-xs leading-relaxed text-muted-foreground">
+                                    Diese Referenz wurde als Kundenansicht freigegeben. Weitere
+                                    Kontaktdaten werden nur angezeigt, wenn sie explizit freigegeben
+                                    sind.
+                                  </CardContent>
+                                </Card>
+                              </div>
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : null}
                     </div>
-                    {splitTags(ref.tags).length ? (
-                      <div className="mt-3 flex flex-wrap gap-1.5">
-                        {splitTags(ref.tags).map((tag) => (
-                          <Badge key={tag} variant="outline">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    ) : null}
+
+                    <aside className="space-y-4 lg:sticky lg:top-8 lg:h-fit">
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-base">Projektdetails</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2 text-sm">
+                          <div className="flex justify-between gap-3">
+                            <span className="text-muted-foreground">Account</span>
+                            <span className="text-right font-medium">
+                              {releaseText(ref.company_name)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between gap-3">
+                            <span className="text-muted-foreground">Volumen</span>
+                            <span className="text-right font-medium tabular-nums">
+                              {releaseVolume(ref.volume_eur)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between gap-3">
+                            <span className="text-muted-foreground">Vertragsart</span>
+                            <span className="text-right font-medium">
+                              {releaseText(ref.contract_type)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between gap-3">
+                            <span className="text-muted-foreground">Projektstatus</span>
+                            <span className="text-right font-medium">
+                              {releaseText(ref.project_status)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between gap-3">
+                            <span className="text-muted-foreground">Projektstart</span>
+                            <span className="text-right font-medium">
+                              {formatDateMaybe(ref.project_start) || RELEASE_NOT_INCLUDED}
+                            </span>
+                          </div>
+                          <div className="flex justify-between gap-3">
+                            <span className="text-muted-foreground">Projektende</span>
+                            <span className="text-right font-medium">
+                              {formatDateMaybe(ref.project_end) || RELEASE_NOT_INCLUDED}
+                            </span>
+                          </div>
+                          <div className="flex justify-between gap-3">
+                            <span className="text-muted-foreground">Website</span>
+                            <span className="text-right font-medium break-all">
+                              {releaseText(ref.website)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between gap-3">
+                            <span className="text-muted-foreground">Mitarbeiter</span>
+                            <span className="text-right font-medium tabular-nums">
+                              {releaseEmployees(ref.employee_count)}
+                            </span>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {!ref.our_solution ? (
+                        <Card className="border-dashed border-border/80 bg-muted/10 shadow-none">
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-xs font-semibold text-muted-foreground">
+                              Hinweis
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="text-xs leading-relaxed text-muted-foreground">
+                            Diese Referenz wurde als Kundenansicht freigegeben. Weitere Kontaktdaten
+                            werden nur angezeigt, wenn sie explizit freigegeben sind.
+                          </CardContent>
+                        </Card>
+                      ) : null}
+                    </aside>
                   </div>
-
-                  {ref.summary || ref.customer_challenge || ref.our_solution ? (
-                    <div className="grid gap-4 md:grid-cols-2">
-                      {ref.summary ? (
-                        <Card className="border-border/70 md:col-span-2">
-                          <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-semibold">Zusammenfassung</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <p className="text-sm leading-relaxed text-muted-foreground">{ref.summary}</p>
-                          </CardContent>
-                        </Card>
-                      ) : null}
-
-                      {ref.customer_challenge ? (
-                        <Card className="border-border/70">
-                          <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-semibold">Herausforderung</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
-                              {ref.customer_challenge}
-                            </p>
-                          </CardContent>
-                        </Card>
-                      ) : null}
-
-                      {ref.our_solution ? (
-                        <Card className="border-border/70">
-                          <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-semibold">Unsere Lösung</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
-                              {ref.our_solution}
-                            </p>
-                          </CardContent>
-                        </Card>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </div>
-
-                <aside className="space-y-4 lg:sticky lg:top-8 lg:h-fit">
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Projektdetails</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2 text-sm">
-                      <div className="flex justify-between gap-3">
-                        <span className="text-muted-foreground">Account</span>
-                        <span className="text-right font-medium">{ref.company_name || '—'}</span>
-                      </div>
-                      <div className="flex justify-between gap-3">
-                        <span className="text-muted-foreground">Volumen</span>
-                        <span className="text-right font-medium tabular-nums">
-                          {formatReferenceVolume(ref.volume_eur) || '—'}
-                        </span>
-                      </div>
-                      <div className="flex justify-between gap-3">
-                        <span className="text-muted-foreground">Vertragsart</span>
-                        <span className="text-right font-medium">{ref.contract_type || '—'}</span>
-                      </div>
-                      <div className="flex justify-between gap-3">
-                        <span className="text-muted-foreground">Projektstatus</span>
-                        <span className="text-right font-medium">{ref.project_status || '—'}</span>
-                      </div>
-                      <div className="flex justify-between gap-3">
-                        <span className="text-muted-foreground">Projektstart</span>
-                        <span className="text-right font-medium">{formatDateMaybe(ref.project_start) || '—'}</span>
-                      </div>
-                      <div className="flex justify-between gap-3">
-                        <span className="text-muted-foreground">Projektende</span>
-                        <span className="text-right font-medium">{formatDateMaybe(ref.project_end) || '—'}</span>
-                      </div>
-                      <div className="flex justify-between gap-3">
-                        <span className="text-muted-foreground">Website</span>
-                        <span className="text-right font-medium">{ref.website || '—'}</span>
-                      </div>
-                      <div className="flex justify-between gap-3">
-                        <span className="text-muted-foreground">Mitarbeiter</span>
-                        <span className="text-right font-medium tabular-nums">
-                          {ref.employee_count != null ? ref.employee_count.toLocaleString('de-DE') : '—'}
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Hinweis</CardTitle>
-                    </CardHeader>
-                    <CardContent className="text-sm text-muted-foreground">
-                      Diese Referenz wurde als Kundenansicht freigegeben. Weitere Kontaktdaten werden
-                      nur angezeigt, wenn sie explizit freigegeben sind.
-                    </CardContent>
-                  </Card>
-                </aside>
-                </div>
-              </article>
-            ))}
+                </article>
+              )
+            })}
             {result.references.length === 0 ? (
               <div className="rounded-2xl border bg-card p-10 text-center text-sm text-muted-foreground shadow-sm">
                 Für diesen Link sind aktuell keine Referenzen sichtbar.
@@ -263,30 +373,12 @@ export default async function PublicPortfolioPage({
           </div>
         </div>
       </main>
-      <footer className="border-t bg-muted/30 px-6 py-8 sm:px-12 lg:px-24">
-        <div className="mx-auto grid w-full max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-4">
-          <div className="justify-self-start text-muted-foreground text-xs font-medium uppercase tracking-wider">
-            Sicherheit & Datenschutz
-          </div>
-          <div className="justify-self-center flex items-center justify-center gap-2 sm:gap-3">
-            <Button asChild className="rounded-lg">
-              <a href={ctaQuestionHref}>
-                <AppIcon icon={HelpCircleIcon} size={16} />
-                Frage stellen
-              </a>
-            </Button>
-            <Button asChild className="rounded-lg">
-              <a href={ctaMeetingHref}>
-                <AppIcon icon={Calendar} size={16} />
-                Termin vereinbaren
-              </a>
-            </Button>
-          </div>
-          <div className="justify-self-end">
-            <PublicPortfolioKillswitch slug={slug} />
-          </div>
-        </div>
-      </footer>
+      <PublicPortfolioFooter
+        slug={slug}
+        workspaceName={workspaceName}
+        shareOwnerEmail={shareOwnerEmail}
+        bookingUrl={shareOwnerBookingUrl}
+      />
     </div>
   )
 }

@@ -425,8 +425,16 @@ events as (
     now() - interval '3 days'
   from cfg2 join refs r on true
   union all
-  select cfg2.org_id, null::uuid, r.id, 'reference_shared', jsonb_build_object('slug','seed'), cfg2.sales_user_id, now() - interval '2 days'
-  from cfg2 join refs r on true
+  select
+    cfg2.org_id,
+    null::uuid,
+    (p.reference_ids)[1],
+    'reference_shared',
+    jsonb_build_object('slug', p.slug),
+    cfg2.sales_user_id,
+    now() - interval '2 days'
+  from cfg2
+  cross join portfolios p
   union all
   select cfg2.org_id, null::uuid, r.id, 'reference_matched', jsonb_build_object('matched_reference_ids', jsonb_build_array(r.id::text)), cfg2.sales_user_id, now() - interval '1 day'
   from cfg2 join refs r on true
