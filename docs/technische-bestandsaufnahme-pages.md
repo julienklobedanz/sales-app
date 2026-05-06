@@ -20,17 +20,20 @@ Diese Punkte betreffen viele Pages gleichzeitig (weil Auth/Server-Actions/Integr
 - **Erforderlich**:
   - `NEXT_PUBLIC_SUPABASE_URL`
   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- **Hinweis**: Beide Werte sind in `.env.example` bereits **vorbelegt** (für lokale Setups). Technisch kritisch wird es vor allem, wenn sie in der tatsächlichen Laufzeitumgebung (z. B. Vercel) **nicht gesetzt** oder **falsch** sind.
 - **Auswirkung bei Fehlen**: Auth-Checks, DB-Reads/Writes, Middleware/Callback brechen bzw. funktionieren nicht.
 
 ### 0.2 App-URL für Links aus E-Mails
 
 - **Benutzt**: `NEXT_PUBLIC_APP_URL`
 - **Fallbacks (hardcodiert)**: teils `http://localhost:3000` als Default (z. B. in Actions).
+- **Hinweis**: `NEXT_PUBLIC_APP_URL` ist in `.env.example` bereits **vorbelegt**. Wenn die Variable dennoch fehlt/leer ist (oder auf eine falsche Domain zeigt), entstehen kaputte Links (Reset/Einladung/Approval) oder es gibt eine explizite Fehlermeldung.
 - **Auswirkung bei Fehlen**: Passwort-Reset/Einladungen/Approval-Links können falsche Ziele erzeugen oder werden blockiert (teils explizite Fehlermeldung).
 
 ### 0.3 Resend (E-Mail Versand)
 
 - **Benutzt**: `RESEND_API_KEY` (teils auch `RESEND_FROM`)
+- **Hinweis**: `RESEND_API_KEY` und `RESEND_FROM` sind in `.env.example` bereits **gesetzt** (Default/Tests). Für produktive Zustellung braucht `RESEND_FROM` eine verifizierte Absender-Domain.
 - **Auswirkung bei Fehlen**: Einladungen/Benachrichtigungen/Workflows, die E-Mails versenden, funktionieren nicht.
 
 ### 0.4 OpenAI (KI/Analyse/Extraktion)
@@ -41,6 +44,7 @@ Diese Punkte betreffen viele Pages gleichzeitig (weil Auth/Server-Actions/Integr
 ### 0.5 Market Signals (org-weite Jobs / Cron)
 
 - **Benutzt**: `SUPABASE_SERVICE_ROLE_KEY` (org-weiter Zugriff), Cron/Feature-Flags (z. B. `CRON_SECRET`, diverse `*_DISABLED` Flags)
+- **Hinweis**: `MARKET_SIGNALS_DIGEST_SKIP_TIME_WINDOW` ist in `.env.example` bereits **gesetzt** (speziell für Vercel Hobby / tägliche Cron-Ausführung). Das ist kein Blocker, sondern ein bewusstes Scheduling-Verhalten.
 - **Auswirkung bei Fehlen**: Ingest/Digest/Signale abrufen können teilweise nicht funktionieren.
 
 ### 0.6 Push Notifications
@@ -88,7 +92,7 @@ Diese Punkte betreffen viele Pages gleichzeitig (weil Auth/Server-Actions/Integr
   - Registrierung (`RegisterForm`) optional mit Invite-Token
   - Wenn bereits eingeloggt → `ROUTES.home`
 - **Kann technisch nicht funktionieren, wenn**
-  - Registrierungs-Actions Env/Email/DB benötigen und fehlen (z. B. Resend/App URL).
+  - Registrierungs-Actions Env/Email/DB benötigen und die Werte in der Laufzeitumgebung nicht korrekt gesetzt sind (Resend/App URL). (`RESEND_API_KEY`, `RESEND_FROM`, `NEXT_PUBLIC_APP_URL` sind in `.env.example` zwar gesetzt, müssen aber pro Umgebung stimmen.)
 - **Hardcodiert / Demo**
   - UI-Strings fix.
 
@@ -98,7 +102,7 @@ Diese Punkte betreffen viele Pages gleichzeitig (weil Auth/Server-Actions/Integr
   - Passwort-Reset (`ForgotPasswordForm`)
   - Redirect nach `ROUTES.home`, wenn eingeloggt
 - **Kann technisch nicht funktionieren, wenn**
-  - `NEXT_PUBLIC_APP_URL` nicht konfiguriert ist (Actions melden/benötigen Base-URL).
+  - `NEXT_PUBLIC_APP_URL` in der Laufzeitumgebung fehlt/leer/falsch ist (die Actions benötigen eine korrekte Base-URL; in `.env.example` ist sie gesetzt, aber das gilt nicht automatisch für jede Umgebung).
 - **Hardcodiert / Demo**
   - Keine direkten Hardcodings in der Page; Link-Basis hängt an Env (teilweise mit localhost-Fallback in Actions).
 
@@ -416,4 +420,100 @@ Diese Punkte betreffen viele Pages gleichzeitig (weil Auth/Server-Actions/Integr
 - **CRM-Sync** auf Referenz-Detail: **Salesforce-Link hardcodiert** als Demo
 - Mehrere Defaultwerte/Masken/Branding-Farben in Settings & Public/Approval sind **hardcodiert** (Fallback-Defaults)
 - Mehrere Flows hängen zwingend an Env/Integrationen (Resend/OpenAI/Service Role/VAPID/Stripe)
+
+---
+
+## 13) Nächste notwendige Schritte, um „vollständig funktional“ zu werden
+
+Dieser Abschnitt beschreibt die **konkreten technischen Maßnahmen**, damit alle derzeit vorhandenen Screens/Flows in der App in einer realen Umgebung zuverlässig funktionieren (lokal + Deployment).
+
+### 13.1 Umgebungsvariablen & Deployment konsistent machen
+
+- **.env → echte Umgebung spiegeln**
+  - Sicherstellen, dass alle Variablen aus `.env.example` auch in der echten Zielumgebung gesetzt sind (z. B. Vercel Environment Variables) und **nicht nur lokal**.
+  - Speziell kritisch: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_APP_URL`, `RESEND_API_KEY`, `RESEND_FROM`.
+- **Resend produktionsreif konfigurieren**
+  - Verifizierte Absender-Domain einrichten und `RESEND_FROM` entsprechend setzen (nicht nur `onboarding@resend.dev`).
+- **Optionale Integrationen aktivieren, falls Features genutzt werden**
+  - **OpenAI**: `OPENAI_API_KEY` setzen, wenn KI-Extraktion/Analyse im Produkt angeboten wird.
+  - **Push**: `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` setzen, wenn Browser-Push im UI aktiv ist.
+  - **Stripe**: Stripe Keys/Price IDs setzen, wenn Billing in Settings „echt“ bedient werden soll.
+
+### 13.2 Datenbank: Migrationen, RPCs, Tabellen, Views – Stand herstellen
+
+- **Migrationen in der Ziel-DB anwenden**
+  - Sicherstellen, dass der Ziel-Supabase-Stack die Migrationen aus `supabase/migrations/` wirklich enthält (lokal und Prod).
+  - Besonders relevant für Pages in diesem Dokument: `profiles`, `organizations`, `companies`, `references`, `favorites`, `tickets`, `external_contacts`, `contact_persons`, `audit_logs`, `evidence_events` sowie market-signal Tabellen.
+- **Erwartete RPCs prüfen**
+  - Mindestens: Onboarding lädt Invite-Infos über `get_invite_by_token`. Diese RPC muss existieren und korrekt berechtigt sein.
+  - Public/Portfolio/Approval Actions können weitere RPCs/Views nutzen (je nach Implementierung in `app/p/actions.ts`, `app/approval/[token]/actions.ts`).
+
+### 13.3 RLS/Policies: „es funktioniert technisch“ vs. „es ist erlaubt“
+
+Viele Screens sind technisch implementiert, funktionieren aber in der Praxis nur, wenn RLS korrekt ist.
+
+- **Server-Reads/Writes pro Tabelle verifizieren**
+  - `profiles`: User muss die eigene Zeile lesen können (inkl. `organization_id`, `role`).
+  - `companies`, `references`, `deals`, `tickets`, `external_contacts`: Reads/Writes scoped auf Organization/User.
+  - `favorites`: pro User.
+  - `audit_logs`: typischerweise Admin-only.
+  - Public-Access: `approval_token`-Lookup und `/p/[slug]`-Portfolio müssen gezielt öffentlich lesbar sein (ohne ungewollte Datenleaks).
+- **Service-Role nur dort einsetzen, wo nötig**
+  - Für org-weite Jobs (market signals ingest/digest) und Admin-Tasks ist `SUPABASE_SERVICE_ROLE_KEY` nötig; UI/Browser darf ihn nie sehen.
+
+### 13.4 Offensichtlich unvollständige / deaktivierte Features fertigstellen
+
+- **RFP-Analyse Tab in `/dashboard/match`**
+  - Der Tab ist aktuell explizit „Noch nicht verfügbar“. Um „vollständig funktional“ zu sein, muss hier entweder
+    - die echte Funktion implementiert werden (API/Route Handler + UI), oder
+    - der Tab/Entry aus der Navigation/UX entfernt werden, damit es kein „totes“ Feature ist.
+- **Deals-Übersicht `/dashboard/deals`**
+  - Die Übersicht ist absichtlich deaktiviert (Redirect). Für vollständige Funktionalität:
+    - echte Deals-List-Page reaktivieren/implementieren, oder
+    - Route entfernen/umleiten, sodass keine Deep-Link-Inkonsistenzen entstehen (Detailrouten bleiben aktuell nutzbar).
+
+### 13.5 Demo-/Hardcodings in produktive Integrationen überführen
+
+- **CRM-Sync (Salesforce)**
+  - Der Link ist derzeit Demo-hardcoded. Für produktiven Nutzen:
+    - CRM-Deal-URL pro Referenz/Deal im Datenmodell speichern (z. B. Feld `crm_deal_url`),
+    - UI-Link daraus generieren (und nur anzeigen, wenn vorhanden),
+    - optional: org-spezifische CRM-Konfiguration in Settings.
+- **Default-Brandingfarben / API-Key-Maske**
+  - Defaults sind ok als Fallback, aber prüfen, ob sie im Produkt als „echte“ Werte erscheinen sollen oder ob Settings-UI zwingend eine Konfiguration erfordert.
+
+### 13.6 Market Signals (End-to-End): UI + Jobs + Mail/Push
+
+- **Ingest/Digest Jobs in der Zielumgebung aktivieren**
+  - Cron-Routen absichern (`CRON_SECRET`) und in Vercel korrekt konfigurieren.
+  - `MARKET_SIGNALS_DIGEST_SKIP_TIME_WINDOW` Verhalten bewusst wählen (Hobby vs Pro).
+- **E-Mail und Push wirklich ausliefern**
+  - Resend + VAPID vollständig konfigurieren, sonst bleiben UI-Toggles „Schein-Funktionen“.
+
+### 13.7 Public Flows absichern und vollständig machen (Approval + Portfolio)
+
+- **Approval-Link-Funktionalität**
+  - Sicherstellen, dass Token-Flow nicht nur lesend, sondern auch schreibend korrekt funktioniert (Approve/Reject Actions, Audit-Logs, Status-Transitions).
+  - Ablauf/Karenzzeit: prüfen, ob Status-Übergänge mit Datenmodell konsistent sind.
+- **Public Portfolio**
+  - Unlock/Expiry/Disable-States wirklich testbar machen (DB-Felder, TTL, Password-Gate).
+  - `incrementPortfolioViews` braucht eine sichere Write-Policy (ohne generelle Public-Write-Lücke).
+
+### 13.8 QA: „funktional“ als Definition festnageln und verifizieren
+
+- **Build-/Lint-/Test Mindeststandard**
+  - `npm run lint`
+  - `npm test`
+  - `npm run build`
+- **Smoke-Test-Checkliste (manuell)**
+  - Auth: Login/Register/Forgot/Update Password + Redirects
+  - Onboarding: Invite-Token → Org + Rolle setzen
+  - Dashboard: role-basiertes Home
+  - Evidence: Liste → Detail → Export/Share/Approval → Edit/Delete (rollenabhängig)
+  - Accounts: Liste → Detail inkl. Kontakte/Signals
+  - Deals: New + Detail (und Liste, falls reaktiviert)
+  - Match: Smart-Flow; RFP-Tab (implementieren oder entfernen)
+  - Settings: Team/Invites/Notifications/Billing (je nach Env)
+  - Public: Approval-Link, Portfolio-Link (locked/expired/ok)
+
 
