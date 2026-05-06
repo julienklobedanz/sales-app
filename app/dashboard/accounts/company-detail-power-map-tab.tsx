@@ -29,15 +29,7 @@ export function CompanyDetailPowerMapTab({
   onRemoveInternalContact: (id: string) => void
 }) {
   return (
-    <div className="space-y-6">
-      <div className="space-y-1">
-        <h2 className="text-lg font-semibold">Power Map</h2>
-        <p className="text-sm text-muted-foreground">
-          Buying Center: Rollen, Einfluss und Interaktionsstatus im Überblick.
-        </p>
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-2">
+    <div className="grid gap-6 xl:grid-cols-2">
         <CompanyDetailStakeholdersTab
           stakeholders={stakeholders}
           marketSignals={marketSignals}
@@ -54,7 +46,6 @@ export function CompanyDetailPowerMapTab({
           onEdit={onEditInternalContact}
           onRemove={onRemoveInternalContact}
         />
-      </div>
     </div>
   )
 }

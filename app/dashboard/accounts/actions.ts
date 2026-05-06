@@ -90,7 +90,7 @@ export async function getCompanyStrategy(
   companyId: string
 ): Promise<CompanyStrategyRow | null> {
   const supabase = await createServerSupabaseClient()
-  const { data } = await supabase
+  const full = await supabase
     .from('company_strategies')
     // DB-Spalten: main_goals, competitive_situation; wir mappen per Alias auf unsere Feldnamen
     .select(
@@ -98,7 +98,27 @@ export async function getCompanyStrategy(
     )
     .eq('company_id', companyId)
     .maybeSingle()
-  return data as CompanyStrategyRow | null
+  if (!full.error) return full.data as CompanyStrategyRow | null
+
+  const msg = (full.error.message ?? '').toLowerCase()
+  const missingOptionalColumns =
+    msg.includes('metrics_pain') || msg.includes('mh_assessment') || msg.includes('value_proposition')
+  if (!missingOptionalColumns) return null
+
+  const fallback = await supabase
+    .from('company_strategies')
+    .select(
+      'id, company_id, company_goals:main_goals, red_flags, competition:competitive_situation, next_steps, updated_at'
+    )
+    .eq('company_id', companyId)
+    .maybeSingle()
+  if (fallback.error || !fallback.data) return null
+  return {
+    ...(fallback.data as CompanyStrategyRow),
+    value_proposition: null,
+    metrics_pain: null,
+    mh_assessment: null,
+  }
 }
 
 export async function upsertCompanyStrategy(
@@ -114,7 +134,7 @@ export async function upsertCompanyStrategy(
   }
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createServerSupabaseClient()
-  const { error } = await supabase.from('company_strategies').upsert(
+  const full = await supabase.from('company_strategies').upsert(
     {
       company_id: companyId,
       // DB-Spalten heißen main_goals und competitive_situation
@@ -129,7 +149,29 @@ export async function upsertCompanyStrategy(
     },
     { onConflict: 'company_id' }
   )
-  if (error) return { success: false, error: error.message }
+  if (!full.error) {
+    revalidatePath(ROUTES.accounts)
+    revalidatePath(ROUTES.accountsDetail(companyId))
+    return { success: true }
+  }
+
+  const msg = (full.error.message ?? '').toLowerCase()
+  const missingOptionalColumns =
+    msg.includes('metrics_pain') || msg.includes('mh_assessment') || msg.includes('value_proposition')
+  if (!missingOptionalColumns) return { success: false, error: full.error.message }
+
+  const fallback = await supabase.from('company_strategies').upsert(
+    {
+      company_id: companyId,
+      main_goals: payload.company_goals ?? null,
+      red_flags: payload.red_flags ?? null,
+      competitive_situation: payload.competition ?? null,
+      next_steps: payload.next_steps ?? null,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'company_id' }
+  )
+  if (fallback.error) return { success: false, error: fallback.error.message }
   revalidatePath(ROUTES.accounts)
   revalidatePath(ROUTES.accountsDetail(companyId))
   return { success: true }

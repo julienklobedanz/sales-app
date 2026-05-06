@@ -21,13 +21,6 @@ export function CompanyDetailPipelineTab({
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h2 className="text-lg font-semibold">Deal Engine</h2>
-        <p className="text-sm text-muted-foreground">
-          Pipeline-Brücke zum CRM. Ohne Integration werden Deals in RefStack gepflegt.
-        </p>
-      </div>
-
       <Card>
         <CardHeader>
           <div className="flex items-start justify-between gap-3">

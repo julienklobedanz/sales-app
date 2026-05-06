@@ -33,13 +33,6 @@ export function CompanyDetailProofPointsTab({
 }) {
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h2 className="text-lg font-semibold">Proof Points</h2>
-        <p className="text-sm text-muted-foreground">
-          Relevante Referenzen für diesen Account – inkl. Readiness (Freigabe-Status) und Match-Score.
-        </p>
-      </div>
-
       <Card>
         <CardHeader>
           <CardTitle>Referenz-Bibliothek</CardTitle>

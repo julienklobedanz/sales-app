@@ -152,11 +152,11 @@ export function CompanyDetailClient({
 
   const strategyFields = useMemo(
     () => [
-      { key: 'metrics_pain', label: 'Metrics & Pain (MEDDPICC)', value: metricsPain, set: setMetricsPain },
-      { key: 'company_goals', label: 'Geschäftsziele (konkret)', value: goals, set: setGoals },
+      { key: 'metrics_pain', label: 'Metrics & Pain', value: metricsPain, set: setMetricsPain },
+      { key: 'company_goals', label: 'Geschäftsziele', value: goals, set: setGoals },
       {
         key: 'value_proposition',
-        label: 'Value Proposition (Warum gewinnen wir hier?)',
+        label: 'Value Proposition',
         value: valueProposition,
         set: setValueProposition,
       },
@@ -350,15 +350,12 @@ export function CompanyDetailClient({
 
         <TabsContent value="mission_control" className="mt-6">
           <CompanyDetailStrategyTab
-            isSales={isSales}
             canEdit={canEditStrategy}
             strategySaving={strategySaving}
             strategyFields={strategyFields}
             saveStrategy={saveStrategy}
             stakeholders={stakeholders}
             marketSignals={marketSignals}
-            mhAssessment={mhAssessment}
-            setMhAssessment={setMhAssessment}
             onSetStakeholderRole={async (id, role) => {
               const res = await updateStakeholder(id, { role })
               if (!res.success) {
