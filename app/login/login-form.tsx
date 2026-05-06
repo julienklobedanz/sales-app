@@ -32,6 +32,7 @@ export function LoginForm({ inviteToken = null }: { inviteToken?: string | null 
           required
           disabled={isPending}
           autoComplete="email"
+          autoFocus
           className="h-10 rounded-lg"
         />
       </div>

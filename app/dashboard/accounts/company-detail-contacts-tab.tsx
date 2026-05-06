@@ -57,12 +57,16 @@ export function CompanyDetailContactsTab({
                       <TableHead>LinkedIn</TableHead>
                       <TableHead>Rolle</TableHead>
                       <TableHead>Position</TableHead>
+                      <TableHead>Letzte Interaktion</TableHead>
                       <TableHead className="text-right">Aktionen</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {internalContacts.map((c) => {
                       const name = [c.first_name, c.last_name].filter(Boolean).join(' ') || '—'
+                      const last =
+                        ((c as unknown as { last_interaction_at?: string | null }).last_interaction_at ?? '') ||
+                        '—'
                       return (
                         <TableRow key={c.id}>
                           <TableCell className="font-medium">{name}</TableCell>
@@ -86,6 +90,7 @@ export function CompanyDetailContactsTab({
                           <TableCell className="text-muted-foreground">
                             {((c as unknown as { position?: string | null }).position ?? '') || '—'}
                           </TableCell>
+                          <TableCell className="text-muted-foreground">{last}</TableCell>
                           <TableCell className="text-right">
                             {canEdit ? (
                               <div className="inline-flex items-center gap-1">
@@ -128,17 +133,22 @@ export function CompanyDetailContactsTab({
                       <TableHead>E-Mail</TableHead>
                       <TableHead>Telefon</TableHead>
                       <TableHead>Rolle</TableHead>
+                      <TableHead>Letzte Interaktion</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {externalContacts.map((c) => {
                       const name = [c.first_name, c.last_name].filter(Boolean).join(' ') || '—'
+                      const last =
+                        ((c as unknown as { last_interaction_at?: string | null }).last_interaction_at ?? '') ||
+                        '—'
                       return (
                         <TableRow key={c.id}>
                           <TableCell className="font-medium">{name}</TableCell>
                           <TableCell className="text-muted-foreground">{c.email ?? '—'}</TableCell>
                           <TableCell className="text-muted-foreground">{c.phone ?? '—'}</TableCell>
                           <TableCell className="text-muted-foreground">{c.role ?? '—'}</TableCell>
+                          <TableCell className="text-muted-foreground">{last}</TableCell>
                         </TableRow>
                       )
                     })}

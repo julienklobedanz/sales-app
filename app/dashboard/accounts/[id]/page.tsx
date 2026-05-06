@@ -52,7 +52,7 @@ export default async function CompanyDetailPage({
     getActiveDealsByCompanyId(id),
     supabase
       .from('external_contacts')
-      .select('id, company_id, first_name, last_name, email, role, phone, created_at, updated_at')
+      .select('id, company_id, first_name, last_name, email, role, phone, last_interaction_at, created_at, updated_at')
       .eq('company_id', id)
       .eq('organization_id', profile.organization_id)
       .order('created_at', { ascending: true }),

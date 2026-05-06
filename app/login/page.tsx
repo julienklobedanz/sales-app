@@ -32,10 +32,7 @@ export default async function LoginPage({ searchParams }: Props) {
     : undefined
 
   return (
-    <AuthShell
-      topRightLink={{ href: ROUTES.register, label: 'Registrieren' }}
-      topRightLinkSearch={inviteToken ? `?invite=${encodeURIComponent(inviteToken)}` : undefined}
-    >
+    <AuthShell>
       <div className="space-y-6">
         <div className="space-y-2 text-center md:text-left">
           <h1 className="text-2xl font-semibold tracking-tight">Bei Ihrem Konto anmelden</h1>

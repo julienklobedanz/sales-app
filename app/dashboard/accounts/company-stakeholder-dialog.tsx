@@ -140,7 +140,7 @@ export function CompanyStakeholderDialog({
             />
           </div>
           <div className="grid gap-2">
-            <Label>Letzter Kontakt</Label>
+            <Label>Letzte Interaktion</Label>
             <Input
               type="date"
               value={shLastContact}

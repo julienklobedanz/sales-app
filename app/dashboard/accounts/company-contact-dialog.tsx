@@ -25,6 +25,8 @@ type Props = {
   setCLinkedIn: (v: string) => void
   cRole: string
   setCRole: (v: string) => void
+  cLastInteraction: string
+  setCLastInteraction: (v: string) => void
   onSave: () => void
 }
 
@@ -48,6 +50,8 @@ export function CompanyContactDialog({
   setCLinkedIn,
   cRole,
   setCRole,
+  cLastInteraction,
+  setCLastInteraction,
   onSave,
 }: Props) {
   return (
@@ -107,6 +111,15 @@ export function CompanyContactDialog({
               onChange={(e) => setCRole(e.target.value)}
               disabled={saving}
               placeholder="z. B. Economic Buyer (optional)"
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label>Letzte Interaktion</Label>
+            <Input
+              type="date"
+              value={cLastInteraction}
+              onChange={(e) => setCLastInteraction(e.target.value)}
+              disabled={saving}
             />
           </div>
         </div>

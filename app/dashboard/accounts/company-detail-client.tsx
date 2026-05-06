@@ -28,6 +28,9 @@ import { CompanyDetailStakeholdersTab } from './company-detail-stakeholders-tab'
 import { CompanyDetailStrategyTab } from './company-detail-strategy-tab'
 import { CompanyStakeholderDialog } from './company-stakeholder-dialog'
 import { EditAccountDialog } from './edit-account-dialog'
+import { CompanyDetailPipelineTab } from './company-detail-pipeline-tab'
+import { CompanyDetailProofPointsTab } from './company-detail-proof-points-tab'
+import { CompanyDetailPowerMapTab } from './company-detail-power-map-tab'
 
 export function CompanyDetailClient({
   company,
@@ -44,24 +47,31 @@ export function CompanyDetailClient({
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const canEdit = isAdmin || isAccountManager
+  const canEditAccount = isAdmin || isAccountManager
+  const canEditStrategy = isAdmin || isAccountManager || isSales
+  const canEditBuyingCenter = isAdmin || isAccountManager || isSales
+  const canEditPipeline = isAdmin || isAccountManager || isSales
   const initialTabParam = searchParams.get('tab')
   const initialTab =
-    initialTabParam === 'stakeholders' ||
-    initialTabParam === 'contacts' ||
-    initialTabParam === 'links' ||
-    initialTabParam === 'strategy'
+    initialTabParam === 'mission_control' ||
+    initialTabParam === 'buying_center' ||
+    initialTabParam === 'pipeline' ||
+    initialTabParam === 'proof_points'
       ? initialTabParam
-      : 'strategy'
-  const [activeTab, setActiveTab] = useState<'strategy' | 'stakeholders' | 'contacts' | 'links'>(
-    initialTab
-  )
+      : 'mission_control'
+  const [activeTab, setActiveTab] = useState<
+    'mission_control' | 'buying_center' | 'pipeline' | 'proof_points'
+  >(initialTab)
 
   const [goals, setGoals] = useState(initialStrategy?.company_goals ?? '')
   const [valueProposition, setValueProposition] = useState(initialStrategy?.value_proposition ?? '')
   const [redFlags, setRedFlags] = useState(initialStrategy?.red_flags ?? '')
   const [competition, setCompetition] = useState(initialStrategy?.competition ?? '')
   const [nextSteps, setNextSteps] = useState(initialStrategy?.next_steps ?? '')
+  const [metricsPain, setMetricsPain] = useState((initialStrategy as { metrics_pain?: string | null } | null)?.metrics_pain ?? '')
+  const [mhAssessment, setMhAssessment] = useState<Record<string, unknown>>(
+    ((initialStrategy as { mh_assessment?: Record<string, unknown> | null } | null)?.mh_assessment as Record<string, unknown> | null) ?? {}
+  )
   const [strategySaving, setStrategySaving] = useState(false)
 
   const lastSavedRef = useRef({
@@ -70,6 +80,8 @@ export function CompanyDetailClient({
     redFlags: initialStrategy?.red_flags ?? '',
     competition: initialStrategy?.competition ?? '',
     nextSteps: initialStrategy?.next_steps ?? '',
+    metricsPain: (initialStrategy as { metrics_pain?: string | null } | null)?.metrics_pain ?? '',
+    mhAssessment: ((initialStrategy as { mh_assessment?: Record<string, unknown> | null } | null)?.mh_assessment as Record<string, unknown> | null) ?? {},
   })
 
   const [stakeholders, setStakeholders] = useState(initialStakeholders)
@@ -100,27 +112,32 @@ export function CompanyDetailClient({
   const [contactSaving, setContactSaving] = useState(false)
   const [cPosition, setCPosition] = useState('')
   const [cLinkedIn, setCLinkedIn] = useState('')
+  const [cLastInteraction, setCLastInteraction] = useState('')
 
   const saveStrategy = async (opts?: { silent?: boolean }) => {
-    if (!canEdit) return
-    const snapshot = { goals, valueProposition, redFlags, competition, nextSteps }
+    if (!canEditStrategy) return
+    const snapshot = { goals, valueProposition, redFlags, competition, nextSteps, metricsPain, mhAssessment }
     const last = lastSavedRef.current
     const changed =
       snapshot.goals !== last.goals ||
       snapshot.valueProposition !== last.valueProposition ||
       snapshot.redFlags !== last.redFlags ||
       snapshot.competition !== last.competition ||
-      snapshot.nextSteps !== last.nextSteps
+      snapshot.nextSteps !== last.nextSteps ||
+      snapshot.metricsPain !== last.metricsPain ||
+      JSON.stringify(snapshot.mhAssessment) !== JSON.stringify(last.mhAssessment)
     if (!changed) return
 
     setStrategySaving(true)
     try {
       const res = await upsertCompanyStrategy(company.id, {
+        metrics_pain: snapshot.metricsPain || null,
         company_goals: snapshot.goals || null,
         red_flags: snapshot.redFlags || null,
         competition: snapshot.competition || null,
         next_steps: snapshot.nextSteps || null,
         value_proposition: snapshot.valueProposition || null,
+        mh_assessment: snapshot.mhAssessment,
       })
       if (!res.success) {
         toast.error(res.error ?? 'Speichern fehlgeschlagen.')
@@ -135,7 +152,8 @@ export function CompanyDetailClient({
 
   const strategyFields = useMemo(
     () => [
-      { key: 'company_goals', label: 'Unternehmensziele', value: goals, set: setGoals },
+      { key: 'metrics_pain', label: 'Metrics & Pain (MEDDPICC)', value: metricsPain, set: setMetricsPain },
+      { key: 'company_goals', label: 'Geschäftsziele (konkret)', value: goals, set: setGoals },
       {
         key: 'value_proposition',
         label: 'Value Proposition (Warum gewinnen wir hier?)',
@@ -144,14 +162,14 @@ export function CompanyDetailClient({
       },
       {
         key: 'red_flags',
-        label: 'Herausforderungen / Red Flags',
+        label: 'Risiken / Red Flags',
         value: redFlags,
         set: setRedFlags,
       },
-      { key: 'competition', label: 'Wettbewerb', value: competition, set: setCompetition },
+      { key: 'competition', label: 'Wettbewerb / Incumbent', value: competition, set: setCompetition },
       { key: 'next_steps', label: 'Nächste Schritte', value: nextSteps, set: setNextSteps },
     ],
-    [goals, valueProposition, redFlags, competition, nextSteps]
+    [metricsPain, goals, valueProposition, redFlags, competition, nextSteps]
   )
 
   const openStakeholderDialog = (s?: StakeholderRow) => {
@@ -164,13 +182,16 @@ export function CompanyDetailClient({
     setShNotes((s as unknown as { notes?: string | null })?.notes ?? '')
     setShLinkedIn((s as unknown as { linkedin_url?: string | null })?.linkedin_url ?? '')
     setShPriorities((s as unknown as { priorities_topics?: string | null })?.priorities_topics ?? '')
-    setShLastContact(((s as unknown as { last_contact_at?: string | null })?.last_contact_at ?? '')?.slice(0, 10))
+    const lastI = ((s as unknown as { last_interaction_at?: string | null })?.last_interaction_at ??
+      (s as unknown as { last_contact_at?: string | null })?.last_contact_at ??
+      '') as string
+    setShLastContact((lastI ?? '').slice(0, 10))
     setShSentiment((s as unknown as { sentiment?: string | null })?.sentiment ?? '')
     setStakeholderOpen(true)
   }
 
   const saveStakeholder = async () => {
-    if (!canEdit) return
+    if (!canEditBuyingCenter) return
     if (!shName.trim()) return toast.error('Name ist erforderlich.')
     setStakeholderSaving(true)
     try {
@@ -183,6 +204,7 @@ export function CompanyDetailClient({
         notes: shNotes.trim() || null,
         linkedin_url: shLinkedIn.trim() || null,
         priorities_topics: shPriorities.trim() || null,
+        last_interaction_at: shLastContact || null,
         last_contact_at: shLastContact || null,
         sentiment: shSentiment.trim() || null,
       }
@@ -208,7 +230,7 @@ export function CompanyDetailClient({
   }
 
   const removeStakeholder = async (id: string) => {
-    if (!canEdit) return
+    if (!canEditBuyingCenter) return
     const res = await deleteStakeholder(id)
     if (!res.success) return toast.error(res.error ?? 'Löschen fehlgeschlagen.')
     setStakeholders((prev) => prev.filter((s) => s.id !== id))
@@ -224,11 +246,12 @@ export function CompanyDetailClient({
     setCRole(c?.role ?? '')
     setCPosition((c as unknown as { position?: string | null })?.position ?? '')
     setCLinkedIn((c as unknown as { linkedin_url?: string | null })?.linkedin_url ?? '')
+    setCLastInteraction(((c as unknown as { last_interaction_at?: string | null })?.last_interaction_at ?? '')?.slice(0, 10))
     setContactOpen(true)
   }
 
   const saveContact = async () => {
-    if (!canEdit) return
+    if (!canEditBuyingCenter) return
     setContactSaving(true)
     try {
       if (editingContact) {
@@ -238,6 +261,7 @@ export function CompanyDetailClient({
           email: cEmail.trim() || null,
           phone: cPhone.trim() || null,
           linkedin_url: cLinkedIn.trim() || null,
+          last_interaction_at: cLastInteraction || null,
           role: cRole.trim() || null,
           position: cPosition.trim() || null,
         })
@@ -267,6 +291,7 @@ export function CompanyDetailClient({
           email: cEmail.trim() || null,
           phone: cPhone.trim() || null,
           linkedin_url: cLinkedIn.trim() || null,
+          last_interaction_at: cLastInteraction || null,
           role: cRole.trim() || null,
           position: cPosition.trim() || null,
         })
@@ -282,7 +307,7 @@ export function CompanyDetailClient({
   }
 
   const removeContact = async (id: string) => {
-    if (!canEdit) return
+    if (!canEditBuyingCenter) return
     const res = await deleteContactPerson(id)
     if (!res.success) return toast.error(res.error ?? 'Löschen fehlgeschlagen.')
     setInternalContacts((prev) => prev.filter((c) => c.id !== id))
@@ -293,7 +318,7 @@ export function CompanyDetailClient({
     <div className="space-y-6">
       <CompanyDetailHeader
         company={company}
-        canEdit={canEdit}
+        canEdit={canEditAccount}
         onEditClick={() => setEditAccountOpen(true)}
       />
 
@@ -303,9 +328,12 @@ export function CompanyDetailClient({
         value={activeTab}
         onValueChange={(value) => {
           const next =
-            value === 'stakeholders' || value === 'contacts' || value === 'links' || value === 'strategy'
+            value === 'mission_control' ||
+            value === 'buying_center' ||
+            value === 'pipeline' ||
+            value === 'proof_points'
               ? value
-              : 'strategy'
+              : 'mission_control'
           setActiveTab(next)
           const params = new URLSearchParams(searchParams.toString())
           params.set('tab', next)
@@ -314,46 +342,57 @@ export function CompanyDetailClient({
         className="w-full"
       >
         <TabsList className="w-full justify-start gap-1">
-          <TabsTrigger value="strategy">Strategie</TabsTrigger>
-          <TabsTrigger value="stakeholders">Stakeholder</TabsTrigger>
-          <TabsTrigger value="contacts">Kontakte</TabsTrigger>
-          <TabsTrigger value="links">Referenzen &amp; Deals</TabsTrigger>
+          <TabsTrigger value="mission_control">Strategie</TabsTrigger>
+          <TabsTrigger value="buying_center">Buying Center</TabsTrigger>
+          <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
+          <TabsTrigger value="proof_points">Passende Referenzen</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="strategy" className="mt-6">
+        <TabsContent value="mission_control" className="mt-6">
           <CompanyDetailStrategyTab
             isSales={isSales}
-            canEdit={canEdit}
+            canEdit={canEditStrategy}
             strategySaving={strategySaving}
             strategyFields={strategyFields}
             saveStrategy={saveStrategy}
-          />
-        </TabsContent>
-
-        <TabsContent value="stakeholders" className="mt-6">
-          <CompanyDetailStakeholdersTab
             stakeholders={stakeholders}
             marketSignals={marketSignals}
-            canEdit={canEdit}
-            onAdd={() => openStakeholderDialog()}
-            onEdit={openStakeholderDialog}
-            onRemove={removeStakeholder}
+            mhAssessment={mhAssessment}
+            setMhAssessment={setMhAssessment}
+            onSetStakeholderRole={async (id, role) => {
+              const res = await updateStakeholder(id, { role })
+              if (!res.success) {
+                toast.error(res.error ?? 'Speichern fehlgeschlagen.')
+                return
+              }
+              setStakeholders((prev) => prev.map((s) => (s.id === id ? ({ ...s, role } as StakeholderRow) : s)))
+              toast.success('Rolle aktualisiert.')
+            }}
           />
         </TabsContent>
 
-        <TabsContent value="contacts" className="mt-6">
-          <CompanyDetailContactsTab
+        <TabsContent value="buying_center" className="mt-6">
+          <CompanyDetailPowerMapTab
+            stakeholders={stakeholders}
+            marketSignals={marketSignals}
             internalContacts={internalContacts}
             externalContacts={externalContacts}
-            canEdit={canEdit}
-            onAdd={() => openContactDialog()}
-            onEdit={openContactDialog}
-            onRemove={removeContact}
+            canEdit={canEditBuyingCenter}
+            onAddStakeholder={() => openStakeholderDialog()}
+            onEditStakeholder={openStakeholderDialog}
+            onRemoveStakeholder={removeStakeholder}
+            onAddInternalContact={() => openContactDialog()}
+            onEditInternalContact={openContactDialog}
+            onRemoveInternalContact={removeContact}
           />
         </TabsContent>
 
-        <TabsContent value="links" className="mt-6">
-          <CompanyDetailLinksTab references={references} activeDeals={activeDeals} />
+        <TabsContent value="pipeline" className="mt-6">
+          <CompanyDetailPipelineTab activeDeals={activeDeals} canEdit={canEditPipeline} />
+        </TabsContent>
+
+        <TabsContent value="proof_points" className="mt-6">
+          <CompanyDetailProofPointsTab company={company} references={references} />
         </TabsContent>
       </Tabs>
 
@@ -405,6 +444,8 @@ export function CompanyDetailClient({
         setCLinkedIn={setCLinkedIn}
         cRole={cRole}
         setCRole={setCRole}
+          cLastInteraction={cLastInteraction}
+          setCLastInteraction={setCLastInteraction}
         onSave={saveContact}
       />
     </div>

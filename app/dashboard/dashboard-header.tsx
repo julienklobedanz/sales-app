@@ -229,6 +229,7 @@ export function DashboardHeader({
       subtitle: undefined,
     }
   }, [pathname])
+  const hasHeaderSecondaryLine = dynamicCrumbs.length > 0 || Boolean(headerMeta.subtitle)
 
   useEffect(() => {
     let cancelled = false
@@ -395,9 +396,16 @@ export function DashboardHeader({
       <div className="flex flex-1 items-center gap-2 min-w-0">
         <SidebarTrigger className="-ml-1 shrink-0 md:hidden" aria-label="Menü öffnen" />
         <SidebarTrigger className="-ml-1 shrink-0 hidden md:inline-flex" aria-label="Sidebar ein-/ausklappen" />
-        <Separator orientation="vertical" className="mr-2 h-4 shrink-0" />
+        {hasHeaderSecondaryLine ? (
+          <Separator orientation="vertical" className="mr-2 h-4 shrink-0" />
+        ) : null}
 
-        <div className="flex min-w-0 flex-col justify-center py-0.5">
+        <div
+          className={cn(
+            "flex min-w-0 flex-col justify-center py-0.5",
+            hasHeaderSecondaryLine ? "" : "pl-0"
+          )}
+        >
           <div className="text-2xl font-semibold tracking-tight truncate">{headerMeta.title}</div>
           <div className="mt-1.5 min-h-5">
             {dynamicCrumbs.length ? (

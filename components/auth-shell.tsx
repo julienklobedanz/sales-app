@@ -2,14 +2,16 @@ import Link from 'next/link'
 
 type AuthShellProps = {
   children: React.ReactNode
-  /** Link oben rechts (z. B. "Registrieren" auf Login-Seite) */
-  topRightLink: { href: string; label: string }
+  /** Link oben rechts (z. B. "Anmelden" auf Registrieren); weglassen, wenn nicht nötig */
+  topRightLink?: { href: string; label: string }
   /** Optional: zusätzliche query params für den Link (z. B. invite) */
   topRightLinkSearch?: string
 }
 
 export function AuthShell({ children, topRightLink, topRightLinkSearch }: AuthShellProps) {
-  const href = topRightLinkSearch ? `${topRightLink.href}${topRightLinkSearch}` : topRightLink.href
+  const href =
+    topRightLink &&
+    (topRightLinkSearch ? `${topRightLink.href}${topRightLinkSearch}` : topRightLink.href)
   return (
     <div className="min-h-screen grid lg:grid-cols-[0.34fr_0.66fr]">
       {/* Linke Seite: Branding-Panel (Wireframe §26) */}
@@ -27,24 +29,25 @@ export function AuthShell({ children, topRightLink, topRightLinkSearch }: AuthSh
         </div>
 
         <div className="max-w-lg">
-          <div className="text-3xl font-semibold tracking-tight">Move deals faster.</div>
-          <p className="mt-3 text-sm text-muted-foreground">
-            One workspace for your references, account strategy, curated news on your targets and
-            live executive tracking. Sharp information. From first call to close.
+          <div className="text-3xl font-semibold tracking-tight">Stop searching, start closing.</div>
+          <p className="mt-3 text-sm font-normal text-muted-foreground">
+            Your space for references, company signals and executive insights.
           </p>
         </div>
       </div>
 
       {/* Rechte Seite: Formular */}
       <div className="flex flex-col items-center justify-center p-6 md:p-10 xl:p-12 relative">
-        <div className="absolute right-4 top-4 md:right-8 md:top-8">
-          <Link
-            href={href}
-            className="text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-          >
-            {topRightLink.label}
-          </Link>
-        </div>
+        {topRightLink && href ? (
+          <div className="absolute right-4 top-4 md:right-8 md:top-8">
+            <Link
+              href={href}
+              className="text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+            >
+              {topRightLink.label}
+            </Link>
+          </div>
+        ) : null}
         <div className="w-full max-w-[520px]">{children}</div>
       </div>
     </div>

@@ -20,6 +20,8 @@ export type CompanyStrategyRow = {
   competition: string | null
   next_steps: string | null
   value_proposition?: string | null
+  metrics_pain?: string | null
+  mh_assessment?: Record<string, unknown> | null
   updated_at: string | null
 }
 
@@ -43,6 +45,7 @@ export type StakeholderRow = {
   linkedin_url?: string | null
   priorities_topics?: string | null
   last_contact_at?: string | null
+  last_interaction_at?: string | null
   sentiment?: string | null
   created_at: string
   updated_at: string | null
@@ -53,6 +56,8 @@ export type CompanyRefRow = {
   title: string
   status: string
   project_status: string | null
+  industry?: string | null
+  country?: string | null
   created_at: string
 }
 
@@ -89,7 +94,7 @@ export async function getCompanyStrategy(
     .from('company_strategies')
     // DB-Spalten: main_goals, competitive_situation; wir mappen per Alias auf unsere Feldnamen
     .select(
-      'id, company_id, company_goals:main_goals, red_flags, competition:competitive_situation, next_steps, updated_at'
+      'id, company_id, company_goals:main_goals, red_flags, competition:competitive_situation, next_steps, value_proposition, metrics_pain, mh_assessment, updated_at'
     )
     .eq('company_id', companyId)
     .maybeSingle()
@@ -103,9 +108,9 @@ export async function upsertCompanyStrategy(
     red_flags?: string | null
     competition?: string | null
     next_steps?: string | null
-    // value_proposition wird aktuell nicht in allen Deployments als Spalte geführt;
-    // wir akzeptieren es im Payload für Vorwärtskompatibilität, mappen es aber nicht zwingend auf die DB.
     value_proposition?: string | null
+    metrics_pain?: string | null
+    mh_assessment?: Record<string, unknown> | null
   }
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createServerSupabaseClient()
@@ -117,6 +122,9 @@ export async function upsertCompanyStrategy(
       red_flags: payload.red_flags ?? null,
       competitive_situation: payload.competition ?? null,
       next_steps: payload.next_steps ?? null,
+      value_proposition: payload.value_proposition ?? null,
+      metrics_pain: payload.metrics_pain ?? null,
+      mh_assessment: payload.mh_assessment ?? {},
       updated_at: new Date().toISOString(),
     },
     { onConflict: 'company_id' }
@@ -353,6 +361,7 @@ export async function createStakeholder(
     linkedin_url?: string | null
     priorities_topics?: string | null
     last_contact_at?: string | null
+    last_interaction_at?: string | null
     sentiment?: string | null
   }
 ): Promise<{ success: boolean; stakeholder?: StakeholderRow; error?: string }> {
@@ -370,6 +379,7 @@ export async function createStakeholder(
       linkedin_url: payload.linkedin_url?.trim() || null,
       priorities_topics: payload.priorities_topics?.trim() || null,
       last_contact_at: payload.last_contact_at || null,
+      last_interaction_at: payload.last_interaction_at || payload.last_contact_at || null,
       sentiment: payload.sentiment?.trim() || null,
     })
     .select('*')
@@ -391,6 +401,7 @@ export async function updateStakeholder(
     linkedin_url?: string | null
     priorities_topics?: string | null
     last_contact_at?: string | null
+    last_interaction_at?: string | null
     sentiment?: string | null
   }
 ): Promise<{ success: boolean; error?: string }> {
@@ -410,6 +421,7 @@ export async function updateStakeholder(
   if (payload.linkedin_url !== undefined) update.linkedin_url = payload.linkedin_url?.trim() || null
   if (payload.priorities_topics !== undefined) update.priorities_topics = payload.priorities_topics?.trim() || null
   if (payload.last_contact_at !== undefined) update.last_contact_at = payload.last_contact_at || null
+  if (payload.last_interaction_at !== undefined) update.last_interaction_at = payload.last_interaction_at || null
   if (payload.sentiment !== undefined) update.sentiment = payload.sentiment?.trim() || null
   const { error } = await supabase.from('stakeholders').update(update).eq('id', id)
   if (error) return { success: false, error: error.message }
@@ -436,7 +448,7 @@ export async function getReferencesByCompanyId(
   const supabase = await createServerSupabaseClient()
   const { data } = await supabase
     .from('references')
-    .select('id, title, status, project_status, created_at')
+    .select('id, title, status, project_status, industry, country, created_at')
     .eq('company_id', companyId)
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
@@ -454,6 +466,7 @@ export type ContactPersonRow = {
   role?: string | null
   position?: string | null
   avatar_url?: string | null
+  last_interaction_at?: string | null
   created_at: string
   updated_at: string | null
 }
@@ -466,6 +479,7 @@ export type ExternalContactRow = {
   email: string | null
   phone: string | null
   role: string | null
+  last_interaction_at?: string | null
   created_at: string
   updated_at: string | null
 }
@@ -494,6 +508,7 @@ export async function createContactPerson(
     linkedin_url?: string | null
     role?: string | null
     position?: string | null
+    last_interaction_at?: string | null
   }
 ): Promise<{ success: boolean; contact?: ContactPersonRow; error?: string }> {
   const supabase = await createServerSupabaseClient()
@@ -520,6 +535,7 @@ export async function createContactPerson(
     linkedin_url: payload.linkedin_url?.trim() || null,
     role: payload.role?.trim() || null,
     position: payload.position?.trim() || null,
+    last_interaction_at: payload.last_interaction_at || null,
   }
   if (organization_id) insertRow.organization_id = organization_id
 
@@ -553,6 +569,7 @@ export async function updateContactPerson(
     role?: string | null
     position?: string | null
     company_id?: string | null
+    last_interaction_at?: string | null
   }
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createServerSupabaseClient()
@@ -570,6 +587,7 @@ export async function updateContactPerson(
   if (payload.role !== undefined) update.role = payload.role?.trim() || null
   if (payload.position !== undefined) update.position = payload.position?.trim() || null
   if (payload.company_id !== undefined) update.company_id = payload.company_id || null
+  if (payload.last_interaction_at !== undefined) update.last_interaction_at = payload.last_interaction_at || null
   const { error } = await supabase.from('contact_persons').update(update).eq('id', id)
   if (error) return { success: false, error: error.message }
   if (row?.company_id) revalidatePath(ROUTES.accountsDetail(row.company_id))
@@ -595,6 +613,9 @@ export type AccountDealRow = {
   volume: string | null
   status: string
   expiry_date: string | null
+  salesforce_opportunity_id?: string | null
+  crm_source?: string | null
+  crm_synced_at?: string | null
   created_at: string
   updated_at: string | null
 }
@@ -611,7 +632,7 @@ export async function getActiveDealsByCompanyId(companyId: string): Promise<Acco
 
   const { data } = await supabase
     .from('deals')
-    .select('id, title, volume, status, expiry_date, created_at, updated_at')
+    .select('id, title, volume, status, expiry_date, salesforce_opportunity_id, crm_source, crm_synced_at, created_at, updated_at')
     .eq('organization_id', orgId)
     .eq('company_id', companyId)
     .not('status', 'in', '("won","lost")')

@@ -75,7 +75,7 @@ export function CompanyDetailStakeholdersTab({
                   <TableHead>Rolle</TableHead>
                   <TableHead>Einfluss</TableHead>
                   <TableHead>Haltung</TableHead>
-                  <TableHead>Letzter Kontakt</TableHead>
+                  <TableHead>Letzte Interaktion</TableHead>
                   <TableHead className="text-right">Aktionen</TableHead>
                 </TableRow>
               </TableHeader>
@@ -94,10 +94,11 @@ export function CompanyDetailStakeholdersTab({
                       {(s as unknown as { attitude?: string | null }).attitude ?? '—'}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {((s as unknown as { last_contact_at?: string | null }).last_contact_at ?? '')?.slice(
-                        0,
-                        10
-                      ) || '—'}
+                      {(
+                        (s as unknown as { last_interaction_at?: string | null }).last_interaction_at ??
+                        (s as unknown as { last_contact_at?: string | null }).last_contact_at ??
+                        ''
+                      )?.slice(0, 10) || '—'}
                     </TableCell>
                     <TableCell className="text-right">
                       {canEdit ? (
