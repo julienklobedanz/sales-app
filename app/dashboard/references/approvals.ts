@@ -7,6 +7,7 @@ import { Resend } from 'resend'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { SubmitForApprovalOptions } from '@/app/dashboard/references/approval-submit-types'
 import { logEventForCurrentOrg } from '@/lib/events/log-event'
+import { getAppOrigin } from '@/lib/env/app-origin'
 
 function getResend(): Resend | null {
   const key = process.env.RESEND_API_KEY
@@ -76,7 +77,6 @@ async function sendClientApprovalEmail(args: {
 
   const resend = getResend()
   if (args.contactEmail && resend) {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
     const requesterBlock = args.requesterName
       ? `<p><strong>${escapeHtml(args.requesterName)}</strong> bittet Sie um Freigabe dieser Referenz.</p>`
       : '<p>Es liegt eine Freigabe-Anfrage für diese Referenz vor.</p>'
@@ -91,7 +91,7 @@ async function sendClientApprovalEmail(args: {
           <p>Für das Unternehmen <strong>${escapeHtml(args.companyName)}</strong>:</p>
           <p><em>"${escapeHtml(args.ref.title)}"</em></p>
           <p>Bitte öffnen Sie den Link, um die Referenz zu prüfen und zu entscheiden:</p>
-          <a href="${baseUrl}/approval/${newToken}"
+          <a href="${getAppOrigin()}/approval/${newToken}"
             style="display:inline-block;background:var(--primary,#0f172a);color:#fff;padding:12px 20px;text-decoration:none;border-radius:6px;">
             Zur Freigabe-Seite
           </a>
@@ -494,8 +494,7 @@ export async function getApprovalLinkImpl(referenceId: string): Promise<string |
     .maybeSingle()
   const token = (data as { approval_token?: string | null } | null)?.approval_token
   if (!token) return null
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-  return `${baseUrl}/approval/${token}`
+  return `${getAppOrigin()}/approval/${token}`
 }
 
 export async function withdrawApprovalRequestImpl(referenceId: string): Promise<{ success: true }> {
@@ -544,12 +543,11 @@ export async function delegateClientApprovalImpl(params: {
     .eq('id', (ref as { id: string }).id)
   const resend = getResend()
   if (resend) {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
     await resend.emails.send({
       from: 'Refstack <onboarding@resend.dev>',
       to: email,
       subject: `Weitergeleitete Freigabe: ${(ref as { title?: string }).title ?? 'Referenz'}`,
-      html: `<p>Eine Freigabe wurde an Sie delegiert.</p><a href="${baseUrl}/approval/${token}">Zur Freigabe-Seite</a>`,
+      html: `<p>Eine Freigabe wurde an Sie delegiert.</p><a href="${getAppOrigin()}/approval/${token}">Zur Freigabe-Seite</a>`,
     })
   }
   return { success: true }
@@ -639,7 +637,6 @@ export async function resendClientApprovalEmailImpl(referenceId: string) {
   const resend = getResend()
   if (contactEmail && resend) {
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
       const requesterBlock = requesterName
         ? `<p><strong>${escapeHtml(requesterName)}</strong> bittet Sie um Freigabe dieser Referenz.</p>`
         : '<p>Es liegt eine Freigabe-Anfrage für diese Referenz vor.</p>'
@@ -653,7 +650,7 @@ export async function resendClientApprovalEmailImpl(referenceId: string) {
           <p>Für das Unternehmen <strong>${escapeHtml(company_name)}</strong>:</p>
           <p><em>"${escapeHtml(ref.title)}"</em></p>
           <p>Bitte öffnen Sie den Link, um die Referenz zu prüfen und zu entscheiden:</p>
-          <a href="${baseUrl}/approval/${newToken}"
+          <a href="${getAppOrigin()}/approval/${newToken}"
              style="display:inline-block;background:var(--primary,#0f172a);color:#fff;padding:12px 20px;text-decoration:none;border-radius:6px;">
             Zur Freigabe-Seite
           </a>

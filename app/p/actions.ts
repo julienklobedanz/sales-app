@@ -107,8 +107,17 @@ export async function getPublicPortfolio(slug: string): Promise<PublicPortfolioR
 export async function incrementPortfolioViews(slug: string): Promise<void> {
   const supabase = await createServerSupabaseClient()
   const token = await getUnlockTokenForSlug(slug)
-  await supabase.rpc('increment_portfolio_views', { p_slug: slug, p_unlock_token: token })
-  await supabase.rpc('log_share_link_viewed', { p_slug: slug, p_unlock_token: token })
+  try {
+    await supabase.rpc('increment_portfolio_views', { p_slug: slug, p_unlock_token: token })
+  } catch (e) {
+    // Views-Zähler/Telemetrie soll die öffentliche Seite niemals komplett blockieren.
+    console.error('[incrementPortfolioViews] increment_portfolio_views failed:', e)
+  }
+  try {
+    await supabase.rpc('log_share_link_viewed', { p_slug: slug, p_unlock_token: token })
+  } catch (e) {
+    console.error('[incrementPortfolioViews] log_share_link_viewed failed:', e)
+  }
 }
 
 export async function getPublicPortfolioBranding(

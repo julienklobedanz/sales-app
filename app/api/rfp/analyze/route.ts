@@ -46,8 +46,11 @@ export async function POST(req: NextRequest) {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) {
     return NextResponse.json(
-      { success: false, error: 'OpenAI API ist nicht konfiguriert (OPENAI_API_KEY).' },
-      { status: 500 }
+      {
+        success: false,
+        error: 'RFP-Analyse ist deaktiviert: OPENAI_API_KEY ist nicht konfiguriert (fehlender OPENAI-Schlüssel).',
+      },
+      { status: 501 }
     )
   }
 

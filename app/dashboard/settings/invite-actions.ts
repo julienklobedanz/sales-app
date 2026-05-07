@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { Resend } from 'resend'
+import { getAppOrigin } from '@/lib/env/app-origin'
 
 const INVITE_VALID_DAYS = 7
 
@@ -65,8 +66,7 @@ export async function createInvite(): Promise<CreateInviteResult> {
     return { success: false, error: error.message }
   }
 
-  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').trim().replace(/\/$/, '')
-  const origin = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`
+  const origin = getAppOrigin()
   const link = `${origin}${ROUTES.register}?invite=${token}`
 
   return {
@@ -138,8 +138,7 @@ export async function inviteByEmail(
 
   revalidatePath(ROUTES.settings)
 
-  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').trim().replace(/\/$/, '')
-  const origin = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`
+  const origin = getAppOrigin()
   const inviteLink = `${origin}${ROUTES.register}?invite=${token}`
   const inviterName = profile?.full_name || user.email || 'Ein Teammitglied'
   const orgName = org?.name ?? 'Refstack'
@@ -278,10 +277,7 @@ export async function resendInviteEmail(params: {
     return { success: false, error: 'Einladung nicht gefunden oder abgelaufen.' }
   }
 
-  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000')
-    .trim()
-    .replace(/\/$/, '')
-  const origin = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`
+  const origin = getAppOrigin()
   const inviteLink = `${origin}${ROUTES.register}?invite=${token}`
   const inviterName = profile?.full_name || user.email || 'Ein Teammitglied'
   const orgName = org?.name ?? 'Refstack'

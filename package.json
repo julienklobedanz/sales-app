@@ -10,6 +10,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "verify:launch-env": "node scripts/verify-launch-env.mjs",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "test": "vitest run"

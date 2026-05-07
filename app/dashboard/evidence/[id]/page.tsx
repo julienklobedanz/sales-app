@@ -22,6 +22,7 @@ import { ApprovalPendingActions } from './approval-pending-actions'
 import { getReferenceDetailActivities } from './reference-detail-activities'
 import { ReferenceActivitiesTimeline } from './reference-activities-timeline'
 import { ReferenceContextHighlighted } from '@/components/reference-context-highlighted'
+import { buildSalesforceOpportunityUrl } from '@/lib/crm/salesforce'
 import {
   buildReferenceHighlightPhrases,
   extractWorkflowHighlightGlossary,
@@ -175,6 +176,50 @@ export default async function EvidenceDetailPage({
   }
 
   const ref = row as unknown as ReferenceDetailRow
+
+  const [{ data: linkedDealsRaw }, { data: orgForCrm }] = await Promise.all([
+    supabase
+      .from('deal_references')
+      .select('deals(id, title, salesforce_opportunity_id, organization_id)')
+      .eq('reference_id', id)
+      .limit(5),
+    organizationId
+      ? supabase.from('organizations').select('workflow_settings').eq('id', organizationId).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ])
+
+  const linkedDeals = (linkedDealsRaw ?? [])
+    .map((row) => {
+      const dealRaw = (row as { deals?: unknown }).deals
+      const deal = Array.isArray(dealRaw) ? dealRaw[0] : dealRaw
+      return deal as {
+        id?: string
+        title?: string | null
+        salesforce_opportunity_id?: string | null
+        organization_id?: string | null
+      } | null
+    })
+    .filter(
+      (
+        d
+      ): d is {
+        id: string
+        title: string | null
+        salesforce_opportunity_id: string | null
+        organization_id: string | null
+      } => Boolean(d?.id) && (!organizationId || d?.organization_id === organizationId)
+    )
+
+  const primaryLinkedDeal = linkedDeals[0] ?? null
+  const workflowSettings = (orgForCrm as { workflow_settings?: unknown } | null)?.workflow_settings
+  const crmBaseUrl =
+    workflowSettings && typeof workflowSettings === 'object'
+      ? ((workflowSettings as Record<string, unknown>).crm_base_url as string | undefined)
+      : undefined
+  const salesforceDealUrl = buildSalesforceOpportunityUrl({
+    opportunityId: primaryLinkedDeal?.salesforce_opportunity_id ?? null,
+    baseUrl: crmBaseUrl ?? process.env.SALESFORCE_BASE_URL ?? null,
+  })
 
   const normalizedStatus = String(ref.status ?? '').toLowerCase()
   if (
@@ -673,12 +718,25 @@ export default async function EvidenceDetailPage({
                 </p>
               </CardHeader>
               <CardContent className="grid gap-2">
-                <Button asChild variant="outline" className="w-full gap-2">
-                  <a href="https://login.salesforce.com" target="_blank" rel="noreferrer">
-                    <AppIcon icon={LinkIcon} size={16} />
-                    Salesforce Deal öffnen (Demo)
-                  </a>
-                </Button>
+                {salesforceDealUrl ? (
+                  <Button asChild variant="outline" className="w-full gap-2">
+                    <a href={salesforceDealUrl} target="_blank" rel="noreferrer">
+                      <AppIcon icon={LinkIcon} size={16} />
+                      Salesforce Deal öffnen
+                    </a>
+                  </Button>
+                ) : primaryLinkedDeal ? (
+                  <Button asChild variant="outline" className="w-full gap-2">
+                    <Link href={ROUTES.deals.detail(primaryLinkedDeal.id)}>
+                      <AppIcon icon={LinkIcon} size={16} />
+                      Deal in RefStack öffnen
+                    </Link>
+                  </Button>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Kein verknüpfter Deal mit CRM-ID vorhanden.
+                  </p>
+                )}
               </CardContent>
             </Card>
           ) : null}

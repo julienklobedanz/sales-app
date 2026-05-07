@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { Resend } from 'resend'
+import { getAppOrigin } from '@/lib/env/app-origin'
 import * as XLSX from 'xlsx'
 import type { DealRow, DealStatus, DealWithReferences } from './types'
 
@@ -756,7 +757,7 @@ export async function submitReferenceRequest(
           ${deal.volume ? `<p><strong>Volumen:</strong> ${deal.volume}</p>` : ''}
           <p><strong>Nachricht:</strong></p>
           <pre style="white-space: pre-wrap; background: #f5f5f5; padding: 12px;">${message || '—'}</pre>
-          <p><a href="${(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '')}${ROUTES.deals.detail(dealId)}">Deal in Refstack öffnen</a></p>
+          <p><a href="${getAppOrigin()}${ROUTES.deals.detail(dealId)}">Deal in Refstack öffnen</a></p>
         `,
       })
     } catch (e) {

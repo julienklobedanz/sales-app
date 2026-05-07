@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
 import webpush from 'web-push'
 import { ROUTES } from '@/lib/routes'
+import { getAppOrigin } from '@/lib/env/app-origin'
 import {
   parseMarketSignalsDigestRole,
   resolveAllowedCompanyIdsForMarketSignals,
@@ -190,8 +191,7 @@ export async function notifyInstantMarketSignalsAfterIngest(
   const resend = getResend()
   const pushOk = ensureWebPushConfigured()
 
-  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').trim()
-  const appOrigin = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`
+  const appOrigin = getAppOrigin()
 
   for (const [orgIdKey, content] of byOrg) {
     if (!content.news.length && !content.executives.length) continue

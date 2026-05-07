@@ -1,6 +1,7 @@
 'use server'
 
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { getAppOrigin } from '@/lib/env/app-origin'
 
 export type CompleteClientApprovalResult =
   | { success: true }
@@ -77,7 +78,7 @@ export async function delegateClientApproval(params: {
     const key = process.env.RESEND_API_KEY?.trim()
     if (key) {
       const resend = new Resend(key)
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+      const baseUrl = getAppOrigin()
       await resend.emails.send({
         from: 'Refstack <onboarding@resend.dev>',
         to: email,

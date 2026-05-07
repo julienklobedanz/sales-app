@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
+import { getAppOrigin } from '@/lib/env/app-origin'
 
 type CheckoutResult =
   | { success: true; url: string }
@@ -14,9 +15,12 @@ type PortalResult =
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY
 const STRIPE_PRICE_ID_PRO = process.env.STRIPE_PRICE_ID_PRO
-const STRIPE_RETURN_URL =
-  process.env.STRIPE_BILLING_RETURN_URL ||
-  `${(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '')}${ROUTES.settings}`
+
+function stripeReturnUrl(): string {
+  const overridden = process.env.STRIPE_BILLING_RETURN_URL?.trim()
+  if (overridden) return overridden
+  return `${getAppOrigin()}${ROUTES.settings}`
+}
 
 function stripeNotConfigured(): string | null {
   if (!STRIPE_SECRET_KEY) return 'Stripe Secret Key (STRIPE_SECRET_KEY) ist nicht gesetzt.'
@@ -54,10 +58,11 @@ export async function createCheckoutSession(): Promise<CheckoutResult> {
   }
 
   try {
+    const returnUrl = stripeReturnUrl()
     const body = new URLSearchParams()
     body.set('mode', 'subscription')
-    body.set('success_url', STRIPE_RETURN_URL)
-    body.set('cancel_url', STRIPE_RETURN_URL)
+    body.set('success_url', returnUrl)
+    body.set('cancel_url', returnUrl)
     body.append('line_items[0][price]', STRIPE_PRICE_ID_PRO!)
     body.append('line_items[0][quantity]', '1')
     if (org?.stripe_customer_id) {
@@ -121,9 +126,10 @@ export async function createPortalSession(): Promise<PortalResult> {
   }
 
   try {
+    const returnUrl = stripeReturnUrl()
     const body = new URLSearchParams()
     body.set('customer', org.stripe_customer_id)
-    body.set('return_url', STRIPE_RETURN_URL)
+    body.set('return_url', returnUrl)
 
     const response = await fetch('https://api.stripe.com/v1/billing_portal/sessions', {
       method: 'POST',

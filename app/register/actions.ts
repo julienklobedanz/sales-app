@@ -6,6 +6,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
 import { ROUTES } from '@/lib/routes'
 import { validatePasswordPolicy } from '@/lib/security/password-policy'
+import { getAppOrigin } from '@/lib/env/app-origin'
 
 export type SignUpResult = {
   error?: string
@@ -82,8 +83,7 @@ export async function signUp(formData: FormData): Promise<SignUpResult> {
 
   const supabase = await createServerSupabaseClient()
 
-  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || '').trim().replace(/\/$/, '') || 'http://localhost:3000'
-  const redirectTo = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`
+  const redirectTo = getAppOrigin()
 
   const { data, error } = await supabase.auth.signUp({
     email,

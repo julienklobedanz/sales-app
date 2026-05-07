@@ -7,6 +7,7 @@ import { ROUTES } from '@/lib/routes'
 import { getDealWithReferences } from '@/app/dashboard/deals/actions'
 import { MatchSmartClient } from './match-smart-client'
 import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
+import { MatchRfpClient } from './match-rfp-client'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,24 +51,26 @@ export default async function MatchPage({
       </div>
 
       {isRfp ? (
-        <Card className="rounded-3xl">
-          <CardHeader>
-            <CardTitle>Noch nicht verfügbar</CardTitle>
-            <CardDescription>
-              RFP-Analyse ist aktuell ein Platzhalter und wird in einem späteren Epic umgesetzt.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              <Button asChild>
-                <Link href={ROUTES.deals.root}>Zu den Deals</Link>
-              </Button>
-              <Button asChild variant="outline">
-                <Link href={ROUTES.evidence.root}>Zu den Referenzen</Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        initialDeal ? (
+          <MatchRfpClient deal={initialDeal} />
+        ) : (
+          <Card className="rounded-3xl">
+            <CardHeader>
+              <CardTitle>RFP-Analyse</CardTitle>
+              <CardDescription>Für die RFP-Analyse wird ein Deal-Kontext benötigt. Öffne einen Deal und starte die RFP-Analyse von dort.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                <Button asChild variant="outline">
+                  <Link href={ROUTES.match}>Zurück zur Suche</Link>
+                </Button>
+                <Button asChild>
+                  <Link href={ROUTES.evidence.root}>Zu den Referenzen</Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )
       ) : (
         <MatchSmartClient initialDeal={initialDeal} />
       )}

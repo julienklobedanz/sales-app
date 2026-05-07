@@ -15,6 +15,7 @@ import {
   parseDigestTimezone,
 } from '@/lib/market-signals/digest-schedule'
 import { ROUTES } from '@/lib/routes'
+import { getAppOrigin } from '@/lib/env/app-origin'
 
 export const maxDuration = 300
 
@@ -93,8 +94,7 @@ export async function GET(request: Request) {
   const sinceIso = since.toISOString()
   const sinceDate = sinceIso.slice(0, 10)
 
-  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').trim()
-  const appOrigin = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`
+  const appOrigin = getAppOrigin()
 
   const { data: profileRows, error: profErr } = await admin
     .from('profiles')
