@@ -5,6 +5,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { REVALIDATE, ROUTES } from '@/lib/routes'
 import { narrativeFieldLengthError } from '@/lib/references/reference-narrative-limits'
 import { mapBrandfetchIndustriesArrayToGermanCategory } from '@/lib/brandfetch/map-brandfetch-industry-to-de'
+import { normalizeNarrativeText } from '@/lib/references/narrative-normalize'
 
 const COUNTRY_MAP: Record<string, string> = {
   germany: 'Deutschland', deutschland: 'Deutschland',
@@ -94,12 +95,6 @@ function domainToDisplayName(domain: string): string {
   const withoutTld = withoutProtocol.replace(/\.(com|de|net|org|io|eu|co|ai|cloud|global|[a-z]{2,})$/i, '').trim()
   const name = withoutTld || withoutProtocol
   return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase()
-}
-
-function normalizeWrappedText(input: string | null | undefined): string | null {
-  const raw = String(input ?? '').replace(/\r\n/g, '\n').trim()
-  if (!raw) return null
-  return raw.replace(/\n+/g, ' ').replace(/\s{2,}/g, ' ').trim()
 }
 
 /**
@@ -427,7 +422,7 @@ export async function createReference(
   const companyId = formData.get('companyId')?.toString()
   const newCompanyName = formData.get('newCompanyName')?.toString()?.trim()
   const title = formData.get('title')?.toString()?.trim()
-  const summary = normalizeWrappedText(formData.get('summary')?.toString())
+  const summary = normalizeNarrativeText(formData.get('summary')?.toString())
   const industry = formData.get('industry')?.toString()?.trim() || null
   const country = formData.get('country')?.toString()?.trim() || null
   const contactIdRaw = formData.get('contactId')?.toString()?.trim() || null
@@ -445,8 +440,8 @@ export async function createReference(
   const contract_type = formData.get('contract_type')?.toString()?.trim() || null
   const incumbent_provider = formData.get('incumbent_provider')?.toString()?.trim() || null
   const competitors = formData.get('competitors')?.toString()?.trim() || null
-  const customer_challenge = normalizeWrappedText(formData.get('customer_challenge')?.toString())
-  const our_solution = normalizeWrappedText(formData.get('our_solution')?.toString())
+  const customer_challenge = normalizeNarrativeText(formData.get('customer_challenge')?.toString())
+  const our_solution = normalizeNarrativeText(formData.get('our_solution')?.toString())
   const customer_contact = formData.get('customer_contact')?.toString()?.trim() || null
   const customer_contact_id_raw = formData.get('customer_contact_id')?.toString()?.trim() || null
   const customer_contact_id =

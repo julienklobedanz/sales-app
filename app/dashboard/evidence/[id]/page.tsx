@@ -27,6 +27,7 @@ import {
   buildReferenceHighlightPhrases,
   extractWorkflowHighlightGlossary,
 } from '@/lib/references/reference-context-highlights'
+import { normalizeNarrativeText } from '@/lib/references/narrative-normalize'
 
 export const dynamic = 'force-dynamic'
 
@@ -252,15 +253,18 @@ export default async function EvidenceDetailPage({
   const companyName = company?.name ?? null
   const headerCompany = isAnonymizedView ? 'Kunde' : companyName
   const industryLabel = anonymizeText(ref.industry ?? null, companyName)
-  const summaryText = isAnonymizedView
+  const summaryTextRaw = isAnonymizedView
     ? anonymizeText(ref.summary ?? null, companyName)
     : (ref.summary ?? null)
-  const challengeText = isAnonymizedView
+  const challengeTextRaw = isAnonymizedView
     ? anonymizeText(ref.customer_challenge ?? null, companyName)
     : (ref.customer_challenge ?? null)
-  const solutionText = isAnonymizedView
+  const solutionTextRaw = isAnonymizedView
     ? anonymizeText(ref.our_solution ?? null, companyName)
     : (ref.our_solution ?? null)
+  const summaryText = normalizeNarrativeText(summaryTextRaw)
+  const challengeText = normalizeNarrativeText(challengeTextRaw)
+  const solutionText = normalizeNarrativeText(solutionTextRaw)
   const hasSummary = Boolean(summaryText?.trim())
   const hasChallenge = Boolean(challengeText?.trim())
   const hasSolution = Boolean(solutionText?.trim())
@@ -269,14 +273,19 @@ export default async function EvidenceDetailPage({
     hasChallenge && hasSolution
       ? 'grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]'
       : 'grid gap-4 md:grid-cols-1'
-  const tldrBullets = [
+  const tldrBullets = Array.from(
+    new Set([
     firstSentence(summaryText) || firstSentence(challengeText) || 'Kernaussage ist in der Referenz hinterlegt.',
     firstSentence(challengeText) || 'Die zentrale Herausforderung ist dokumentiert.',
     firstSentence(solutionText) || firstSentence(summaryText) || 'Die umgesetzte Lösung ist dokumentiert.',
-  ].slice(0, 3)
-  const outcomeText =
+    ])
+  )
+    .filter(Boolean)
+    .slice(0, 3)
+  const outcomeText = normalizeNarrativeText(
     firstSentence(summaryText) ||
-    `Diese Referenz zeigt bereits messbare Nutzungssignale (${n('reference_helped')}x als hilfreich markiert).`
+      `Diese Referenz zeigt bereits messbare Nutzungssignale (${n('reference_helped')}x als hilfreich markiert).`
+  )
   const isApprovalGranted =
     String(ref.customer_approval_status ?? '').toLowerCase() === 'approved' ||
     normalizedStatus === 'approved' ||
@@ -420,7 +429,7 @@ export default async function EvidenceDetailPage({
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
+                      <p className="text-sm leading-relaxed text-muted-foreground">
                         <ReferenceContextHighlighted text={challengeText} phrases={highlightPhrases} />
                       </p>
                     </CardContent>
@@ -435,7 +444,7 @@ export default async function EvidenceDetailPage({
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
+                      <p className="text-sm leading-relaxed text-muted-foreground">
                         <ReferenceContextHighlighted text={solutionText} phrases={highlightPhrases} />
                       </p>
                     </CardContent>
@@ -449,7 +458,7 @@ export default async function EvidenceDetailPage({
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
+                    <p className="text-sm leading-relaxed text-muted-foreground">
                       <ReferenceContextHighlighted text={outcomeText} phrases={highlightPhrases} />
                     </p>
                   </CardContent>

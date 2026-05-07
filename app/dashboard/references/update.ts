@@ -6,19 +6,14 @@ import { ROUTES } from '@/lib/routes'
 
 import type { ReferenceRow } from '@/app/dashboard/actions'
 import { narrativeFieldLengthError } from '@/lib/references/reference-narrative-limits'
-
-function normalizeWrappedText(input: string | null | undefined): string | null {
-  const raw = String(input ?? '').replace(/\r\n/g, '\n').trim()
-  if (!raw) return null
-  return raw.replace(/\n+/g, ' ').replace(/\s{2,}/g, ' ').trim()
-}
+import { normalizeNarrativeText } from '@/lib/references/narrative-normalize'
 
 export async function updateReferenceImpl(id: string, formData: FormData) {
   const supabase = await createServerSupabaseClient()
 
   const companyName = formData.get('company_name')?.toString()?.trim()
   const title = formData.get('title')?.toString()?.trim()
-  const summary = normalizeWrappedText(formData.get('summary')?.toString())
+  const summary = normalizeNarrativeText(formData.get('summary')?.toString())
   const industry = formData.get('industry')?.toString()?.trim() ?? null
   const country = formData.get('country')?.toString()?.trim() ?? null
   const contactIdRaw = formData.get('contactId')?.toString()?.trim() ?? null
@@ -43,8 +38,8 @@ export async function updateReferenceImpl(id: string, formData: FormData) {
   const contract_type = formData.get('contract_type')?.toString()?.trim() ?? null
   const incumbent_provider = formData.get('incumbent_provider')?.toString()?.trim() ?? null
   const competitors = formData.get('competitors')?.toString()?.trim() ?? null
-  const customer_challenge = normalizeWrappedText(formData.get('customer_challenge')?.toString())
-  const our_solution = normalizeWrappedText(formData.get('our_solution')?.toString())
+  const customer_challenge = normalizeNarrativeText(formData.get('customer_challenge')?.toString())
+  const our_solution = normalizeNarrativeText(formData.get('our_solution')?.toString())
   const customer_contact = formData.get('customer_contact')?.toString()?.trim() ?? null
   const customer_contact_id_raw = formData.get('customer_contact_id')?.toString()?.trim() ?? null
   const customer_contact_id =

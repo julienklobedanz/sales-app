@@ -631,3 +631,127 @@ export async function requestReferenceApprovalForSignal(args: {
 
   return { success: true }
 }
+
+async function getAuthedOrgContext() {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { supabase, user: null, orgId: null as string | null }
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .maybeSingle()
+  return {
+    supabase,
+    user,
+    orgId: (profile as { organization_id?: string | null } | null)?.organization_id ?? null,
+  }
+}
+
+export async function setMarketSignalPriority(args: {
+  signalKey: string
+  priority: 'today' | 'none'
+}): Promise<{ success: true } | { success: false; error: string }> {
+  const { supabase, user } = await getAuthedOrgContext()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+  const signalKey = String(args.signalKey ?? '').trim()
+  if (!signalKey) return { success: false, error: 'Ungültiges Signal.' }
+  const key = `market_priority:today:${signalKey}`
+  if (args.priority === 'none') {
+    const { error } = await supabase
+      .from('notification_inbox_reads')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('notification_key', key)
+    if (error) return { success: false, error: error.message }
+  } else {
+    const result = await upsertNotificationKeys([key])
+    if (!result.success) return { success: false, error: result.error }
+  }
+  revalidatePath(ROUTES.marketSignals)
+  return { success: true }
+}
+
+export async function snoozeMarketSignal(args: {
+  signalKey: string
+  untilIso: string
+}): Promise<{ success: true } | { success: false; error: string }> {
+  const { supabase, user } = await getAuthedOrgContext()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+  const signalKey = String(args.signalKey ?? '').trim()
+  const untilIso = String(args.untilIso ?? '').trim()
+  if (!signalKey || !untilIso) return { success: false, error: 'Ungültige Anfrage.' }
+  const { error: clearError } = await supabase
+    .from('notification_inbox_reads')
+    .delete()
+    .eq('user_id', user.id)
+    .like('notification_key', `market_snooze_until:%:${signalKey}`)
+  if (clearError) return { success: false, error: clearError.message }
+  const result = await upsertNotificationKeys([`market_snooze_until:${untilIso}:${signalKey}`])
+  if (!result.success) return { success: false, error: result.error }
+  revalidatePath(ROUTES.marketSignals)
+  return { success: true }
+}
+
+export async function submitMarketSignalDraftFeedback(args: {
+  signalKey: string
+  helpful: boolean
+  reason?: string
+}): Promise<{ success: true } | { success: false; error: string }> {
+  const { user, orgId } = await getAuthedOrgContext()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+  if (!orgId) return { success: false, error: 'Keine Organisation gefunden.' }
+  void writeAuditLog({
+    orgId,
+    action: 'market_signal_intro_feedback',
+    entityId: args.signalKey,
+    actionDetails: {
+      helpful: args.helpful,
+      reason: String(args.reason ?? '').trim() || null,
+      userId: user.id,
+    },
+  })
+  return { success: true }
+}
+
+export async function markMarketSignalOutcome(args: {
+  signalKey: string
+  stage: 'outreach' | 'meeting' | 'opportunity'
+}): Promise<{ success: true } | { success: false; error: string }> {
+  const { supabase, user } = await getAuthedOrgContext()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+  const signalKey = String(args.signalKey ?? '').trim()
+  if (!signalKey) return { success: false, error: 'Ungültiges Signal.' }
+  const { error: clearError } = await supabase
+    .from('notification_inbox_reads')
+    .delete()
+    .eq('user_id', user.id)
+    .like('notification_key', `market_outcome:%:${signalKey}`)
+  if (clearError) return { success: false, error: clearError.message }
+  const result = await upsertNotificationKeys([`market_outcome:${args.stage}:${signalKey}`])
+  if (!result.success) return { success: false, error: result.error }
+  revalidatePath(ROUTES.marketSignals)
+  return { success: true }
+}
+
+export async function logMarketSignalQuickAction(args: {
+  signalKey: string
+  channel: 'hubspot_email' | 'salesforce_task' | 'slack_mention'
+}): Promise<{ success: true } | { success: false; error: string }> {
+  const { user, orgId } = await getAuthedOrgContext()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+  if (!orgId) return { success: false, error: 'Keine Organisation gefunden.' }
+  void writeAuditLog({
+    orgId,
+    action: 'market_signal_quick_action',
+    entityId: args.signalKey,
+    actionDetails: {
+      channel: args.channel,
+      userId: user.id,
+      at: new Date().toISOString(),
+    },
+  })
+  return { success: true }
+}
