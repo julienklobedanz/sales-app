@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { StickySaveBar } from './sticky-save-bar'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,7 +31,8 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { AppIcon } from '@/lib/icons'
-import { PlugSocketIcon, Shield, ShieldAlert, Trash2 } from '@hugeicons/core-free-icons'
+import { PlugSocketIcon, ShieldAlert, Trash2 } from '@hugeicons/core-free-icons'
+import { ChevronRight, ShieldCheck, Zap, ClipboardList } from 'lucide-react'
 import { SettingsProfileCard } from './settings-profile-card'
 import { SettingsTeamCard } from './settings-team-card'
 import { SettingsWorkspaceCard } from './settings-workspace-card'
@@ -50,6 +52,7 @@ import {
 } from './settings-consolidation-actions'
 
 const CARD_CLASS = 'rounded-xl border border-slate-200 bg-white p-6 shadow-sm'
+const DANGER_ZONE_CLASS = 'rounded-xl border border-red-300 bg-red-50/50 p-6 shadow-sm'
 
 export function SettingsTabs({
   roleSwitcher,
@@ -119,6 +122,7 @@ export function SettingsTabs({
     user_id: string | null
   }>
 }) {
+  const [activeTab, setActiveTab] = useState<'profile' | 'workspace' | 'team' | 'integrations' | 'workflow' | 'admin'>('profile')
   type WorkflowSimulationItem = {
     day: number
     label: string
@@ -209,6 +213,49 @@ export function SettingsTabs({
   const [simAutoAllowDelegation, setSimAutoAllowDelegation] = useState(
     org.workflowSettings.autoAllowDelegation
   )
+  const [profileCardDirty, setProfileCardDirty] = useState(false)
+  const [workspaceCardDirty, setWorkspaceCardDirty] = useState(false)
+  const [profileSaveSignal, setProfileSaveSignal] = useState(0)
+  const [workspaceSaveSignal, setWorkspaceSaveSignal] = useState(0)
+  const [meddpiccRequired, setMeddpiccRequired] = useState({
+    metricsPain: true,
+    economicBuyer: true,
+    decisionCriteria: false,
+    decisionProcess: false,
+    identifyPain: true,
+    champion: true,
+    competition: false,
+  })
+
+  const profileNotificationsDirty =
+    notifyNewMatch !== profile.notificationSettings.emailOnNewMatch ||
+    notifyApproval !== profile.notificationSettings.emailOnApprovalUpdate ||
+    notifyMarketSignalsDigest !== profile.notificationSettings.emailDailyMarketSignalsDigest ||
+    notifyDigestEmptyDay !== profile.notificationSettings.emailDigestEmptyDay ||
+    digestTimezone !== profile.notificationSettings.digestTimezone ||
+    digestLocalTime !== profile.notificationSettings.digestLocalTime ||
+    notifyInstantMarketSignals !== profile.notificationSettings.emailInstantMarketSignals ||
+    browserPushMarketSignals !== profile.notificationSettings.browserPushMarketSignals
+
+  const workspaceSecurityDirty =
+    publicLinkMaxTtl !== String(org.workflowSettings.publicLinkMaxTtlDays) ||
+    publicLinkReqPwNew !== org.workflowSettings.publicLinkRequirePasswordForNew ||
+    auditRetentionDays !== String(org.workflowSettings.auditLogRetentionDays)
+
+  const workflowDirty =
+    linkExpiryDays !== String(org.workflowSettings.linkExpiryDays) ||
+    requireInternalApproval !== org.workflowSettings.requireInternalApproval ||
+    reminder1Days !== String(org.workflowSettings.reminder1Days) ||
+    reminder2Days !== String(org.workflowSettings.reminder2Days) ||
+    escalationAfterDays !== String(org.workflowSettings.escalationAfterDays) ||
+    autoNotifyRequesterOnEscalation !== org.workflowSettings.autoNotifyRequesterOnEscalation ||
+    autoAllowDelegation !== org.workflowSettings.autoAllowDelegation
+
+  const adminDirty =
+    subdomain !== org.subdomain ||
+    apiKeyMask !== org.apiSettings.apiKeyMask ||
+    useWorkspaceBranding !== org.apiSettings.useWorkspaceBranding ||
+    referenceHighlightGlossary !== org.workflowSettings.referenceHighlightGlossary
 
   function saveProfileNotifications() {
     startProfileTransition(async () => {
@@ -470,14 +517,53 @@ export function SettingsTabs({
     toast.success('Sandbox auf Live-Werte zurückgesetzt')
   }
 
+  const stickyVisible =
+    (activeTab === 'profile' && (profileNotificationsDirty || profileCardDirty)) ||
+    (activeTab === 'workspace' && (workspaceSecurityDirty || workspaceCardDirty)) ||
+    (activeTab === 'workflow' && workflowDirty) ||
+    (activeTab === 'admin' && adminDirty)
+
+  const stickyPending =
+    profilePending || workspacePending || workflowPending || securityPending || glossaryPending
+
+  function saveActiveTabChanges() {
+    if (activeTab === 'profile' && profileNotificationsDirty) {
+      saveProfileNotifications()
+    }
+    if (activeTab === 'profile' && profileCardDirty) {
+      setProfileSaveSignal((prev) => prev + 1)
+      return
+    }
+    if (activeTab === 'workspace' && workspaceSecurityDirty) {
+      saveSecurityCompliance()
+    }
+    if (activeTab === 'workspace' && workspaceCardDirty) {
+      setWorkspaceSaveSignal((prev) => prev + 1)
+      return
+    }
+    if (activeTab === 'workflow' && workflowDirty) {
+      saveWorkflow()
+      return
+    }
+    if (activeTab === 'admin' && adminDirty) {
+      if (subdomain !== org.subdomain || apiKeyMask !== org.apiSettings.apiKeyMask || useWorkspaceBranding !== org.apiSettings.useWorkspaceBranding) {
+        saveWorkspaceAdmin()
+      }
+      if (referenceHighlightGlossary !== org.workflowSettings.referenceHighlightGlossary) {
+        saveReferenceHighlightGlossary()
+      }
+    }
+  }
+
   return (
-    <Tabs defaultValue="profile" className="gap-6">
+    <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="gap-6 pb-20">
       <TabsList variant="line" className="w-full justify-start">
         <TabsTrigger value="profile">Profil</TabsTrigger>
         <TabsTrigger value="workspace">Workspace</TabsTrigger>
         <TabsTrigger value="team">Team</TabsTrigger>
         <TabsTrigger value="integrations">Integrationen</TabsTrigger>
         <TabsTrigger value="workflow">Workflow</TabsTrigger>
+        <TabsTrigger value="admin">Admin</TabsTrigger>
       </TabsList>
 
       <TabsContent value="profile">
@@ -491,6 +577,9 @@ export function SettingsTabs({
               bookingUrl={profile.bookingUrl}
               phone={profile.phone}
               profileRole={profile.profileRole}
+              hideSubmitButton
+              saveSignal={profileSaveSignal}
+              onDirtyChange={setProfileCardDirty}
             />
           </div>
           <div className={CARD_CLASS}>
@@ -501,43 +590,55 @@ export function SettingsTabs({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 px-0 pb-0 pt-2">
-              <div className="flex items-center justify-between rounded-lg border border-slate-200 p-3">
-                <div>
-                  <p className="text-sm font-medium">E-Mail bei neuem Match</p>
-                  <p className="text-xs text-slate-500">Erhalte Hinweise bei neuen Referenztreffern.</p>
-                </div>
-                <Switch checked={notifyNewMatch} onCheckedChange={setNotifyNewMatch} />
-              </div>
-              <div className="flex items-center justify-between rounded-lg border border-slate-200 p-3">
-                <div>
-                  <p className="text-sm font-medium">E-Mail bei Freigaben</p>
-                  <p className="text-xs text-slate-500">Statusupdates zu Kundenfreigaben direkt per Mail.</p>
-                </div>
-                <Switch checked={notifyApproval} onCheckedChange={setNotifyApproval} />
-              </div>
-              <div className="flex items-center justify-between rounded-lg border border-slate-200 p-3">
-                <div>
-                  <p className="text-sm font-medium">Täglicher Markt-Signale-Überblick</p>
-                  <p className="text-xs text-slate-500">
-                    Einmal pro Tag per E-Mail (24h-Fenster): neue Account-News und Executive-Signale für deine
-                    Favoriten (Admin und Account-Manager zusätzlich Accounts mit aktivem Deal). Versandzeit unten
-                    in deiner Zeitzone.
-                  </p>
-                </div>
-                <Switch
-                  checked={notifyMarketSignalsDigest}
-                  onCheckedChange={setNotifyMarketSignalsDigest}
-                />
-              </div>
-              <div className="flex items-center justify-between rounded-lg border border-slate-200 p-3">
-                <div>
-                  <p className="text-sm font-medium">Auch bei leerem Tag benachrichtigen</p>
-                  <p className="text-xs text-slate-500">
-                    Kurze E-Mail, wenn im 24h-Fenster keine neuen Signale vorliegen (nur zusammen mit
-                    Tagesüberblick).
-                  </p>
-                </div>
-                <Switch checked={notifyDigestEmptyDay} onCheckedChange={setNotifyDigestEmptyDay} />
+              <div className="overflow-x-auto rounded-lg border border-slate-200">
+                <table className="w-full min-w-[560px] text-sm">
+                  <thead className="bg-slate-50 text-slate-600">
+                    <tr>
+                      <th className="px-3 py-2 text-left font-medium">Ereignis</th>
+                      <th className="px-3 py-2 text-center font-medium">E-Mail</th>
+                      <th className="px-3 py-2 text-center font-medium">In-App</th>
+                      <th className="px-3 py-2 text-center font-medium">Web-Push</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-t">
+                      <td className="px-3 py-2">Neue Marktsignale</td>
+                      <td className="px-3 py-2 text-center">
+                        <Switch checked={notifyInstantMarketSignals} onCheckedChange={setNotifyInstantMarketSignals} />
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                        <Switch checked={notifyMarketSignalsDigest} onCheckedChange={setNotifyMarketSignalsDigest} />
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                        <Switch checked={browserPushMarketSignals} onCheckedChange={setBrowserPushMarketSignals} />
+                      </td>
+                    </tr>
+                    <tr className="border-t">
+                      <td className="px-3 py-2">Referenz-Anfragen</td>
+                      <td className="px-3 py-2 text-center">
+                        <Switch checked={notifyApproval} onCheckedChange={setNotifyApproval} />
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                        <Switch checked={notifyNewMatch} onCheckedChange={setNotifyNewMatch} />
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                        <Switch checked={false} onCheckedChange={() => {}} disabled />
+                      </td>
+                    </tr>
+                    <tr className="border-t">
+                      <td className="px-3 py-2">System-Updates</td>
+                      <td className="px-3 py-2 text-center">
+                        <Switch checked={notifyDigestEmptyDay} onCheckedChange={setNotifyDigestEmptyDay} />
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                        <Switch checked={notifyDigestEmptyDay} onCheckedChange={setNotifyDigestEmptyDay} />
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                        <Switch checked={false} onCheckedChange={() => {}} disabled />
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-2">
@@ -576,38 +677,7 @@ export function SettingsTabs({
                   </p>
                 </div>
               </div>
-              <div className="flex items-center justify-between rounded-lg border border-slate-200 p-3">
-                <div>
-                  <p className="text-sm font-medium">Sofort per E-Mail bei neuen Signalen</p>
-                  <p className="text-xs text-slate-500">
-                    Nach jedem Abruf (Cron oder „Signale abrufen“): eine gebündelte Mail, wenn für dich relevante
-                    Einträge dazukamen.
-                  </p>
-                </div>
-                <Switch
-                  checked={notifyInstantMarketSignals}
-                  onCheckedChange={setNotifyInstantMarketSignals}
-                />
-              </div>
-              <div className="flex items-center justify-between rounded-lg border border-slate-200 p-3">
-                <div>
-                  <p className="text-sm font-medium">Web Push für Markt-Signale</p>
-                  <p className="text-xs text-slate-500">
-                    Hinweis im Browser nach neuen Signalen (wie E-Mail-Sofortbenachrichtigung). Zuerst unten
-                    „Push erlauben“ ausführen.
-                  </p>
-                </div>
-                <Switch
-                  checked={browserPushMarketSignals}
-                  onCheckedChange={setBrowserPushMarketSignals}
-                />
-              </div>
               <MarketSignalsPushCard />
-              <div className="flex justify-end">
-                <Button type="button" size="sm" onClick={saveProfileNotifications} disabled={profilePending}>
-                  Benachrichtigungen speichern
-                </Button>
-              </div>
             </CardContent>
           </div>
           <div className={CARD_CLASS}>
@@ -642,7 +712,29 @@ export function SettingsTabs({
               </form>
             </CardContent>
           </div>
-          <div className="rounded-xl border border-red-300 bg-red-50/50 p-6 shadow-sm">
+          <div className={CARD_CLASS}>
+            <CardHeader className="px-0 pt-0">
+              <CardTitle className="text-base">Sicherheit (2FA)</CardTitle>
+              <CardDescription className="text-slate-500">
+                Enterprise-Option für verpflichtende Zwei-Faktor-Authentifizierung.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="px-0 pb-0">
+              <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-900">Zwei-Faktor-Authentifizierung</p>
+                  <p className="mt-1 text-xs text-slate-600">
+                    Platzhalter für TOTP/Authenticator-Setup (Rollout in Vorbereitung).
+                  </p>
+                </div>
+                <Button type="button" variant="outline" size="sm" disabled>
+                  <ShieldCheck className="mr-2 h-4 w-4" />
+                  Bald verfuegbar
+                </Button>
+              </div>
+            </CardContent>
+          </div>
+          <div className={DANGER_ZONE_CLASS}>
             <p className="text-sm font-semibold text-red-700">Danger Zone</p>
             <p className="mt-1 text-xs text-red-600/90">Konto dauerhaft entfernen. Dieser Vorgang ist irreversibel.</p>
             <Button
@@ -661,248 +753,18 @@ export function SettingsTabs({
 
       <TabsContent value="workspace">
         <div className="space-y-6">
-          <div className="grid gap-6 lg:grid-cols-2">
-            <div className={CARD_CLASS}>
-              <SettingsWorkspaceCard
-                organizationId={org.id}
-                organizationName={org.name}
-                logoUrl={org.logoUrl}
-                primaryColor={org.primaryColor}
-                secondaryColor={org.secondaryColor}
-              />
-            </div>
-            <div className={CARD_CLASS}>
-              <SettingsBillingCard
-                subscriptionStatus={org.subscriptionStatus}
-                subscriptionId={org.subscriptionId}
-              />
-            </div>
-          </div>
           <div className={CARD_CLASS}>
-            <CardHeader className="space-y-2 px-0 pt-0">
-              <CardTitle className="text-base">Security & Compliance</CardTitle>
-              <CardDescription className="text-slate-500">
-                Globale Regeln für öffentliche Kundenlinks (DSGVO: Speicherbegrenzung, Zugriffskontrolle). Nur
-                Administratoren.
-              </CardDescription>
-              <p className="pt-1 text-xs text-slate-500">
-                Security Alerts werden ausschließlich per Admin-E-Mail versendet (Resend), nicht über die Notification-Bell.
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-5 px-0 pb-0 pt-1">
-              <div className="max-w-md space-y-2">
-                <Label htmlFor="public-link-max-ttl">Maximale Link-Gültigkeit (Tage)</Label>
-                <Input
-                  id="public-link-max-ttl"
-                  value={publicLinkMaxTtl}
-                  onChange={(e) => setPublicLinkMaxTtl(e.target.value)}
-                  inputMode="numeric"
-                  disabled={roleSwitcher.serverRole !== 'admin'}
-                  className={roleSwitcher.serverRole !== 'admin' ? 'bg-slate-50' : ''}
-                />
-                <p className="text-xs text-slate-500">
-                  Obergrenze für Ablaufdatum pro Link (7–3650 Tage). Einzelne Links können kürzer sein; längere
-                  Werte werden beim Speichern begrenzt.
-                </p>
-              </div>
-              <div className="max-w-md space-y-2">
-                <Label htmlFor="audit-retention-days">Audit-Retention (Tage)</Label>
-                <Input
-                  id="audit-retention-days"
-                  value={auditRetentionDays}
-                  onChange={(e) => setAuditRetentionDays(e.target.value)}
-                  inputMode="numeric"
-                  disabled={roleSwitcher.serverRole !== 'admin'}
-                  className={roleSwitcher.serverRole !== 'admin' ? 'bg-slate-50' : ''}
-                />
-                <p className="text-xs text-slate-500">
-                  Best-Practice für Enterprise: 365 Tage. Konfigurierbar zwischen 30 und 3650 Tagen.
-                </p>
-              </div>
-              <div className="flex items-center justify-between rounded-lg border border-slate-200 p-4">
-                <div>
-                  <p className="text-sm font-medium">Passwort für neue Links erzwingen</p>
-                  <p className="mt-1.5 text-xs text-slate-500">
-                    Jeder neu erstellte Kundenlink erhält automatisch ein Passwort und ein Ablaufdatum gemäß
-                    Workflow-Standard (Tage).
-                  </p>
-                </div>
-                <Switch
-                  checked={publicLinkReqPwNew}
-                  onCheckedChange={setPublicLinkReqPwNew}
-                  disabled={roleSwitcher.serverRole !== 'admin'}
-                />
-              </div>
-              <div className="flex justify-end">
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={saveSecurityCompliance}
-                  disabled={!org.id || securityPending || roleSwitcher.serverRole !== 'admin'}
-                >
-                  <AppIcon icon={Shield} size={16} />
-                  Sicherheit speichern
-                </Button>
-              </div>
-            </CardContent>
+            <SettingsWorkspaceCard
+              organizationId={org.id}
+              organizationName={org.name}
+              logoUrl={org.logoUrl}
+              primaryColor={org.primaryColor}
+              secondaryColor={org.secondaryColor}
+              hideSubmitButton
+              saveSignal={workspaceSaveSignal}
+              onDirtyChange={setWorkspaceCardDirty}
+            />
           </div>
-          {roleSwitcher.serverRole === 'admin' ? (
-            <div className={CARD_CLASS}>
-              <CardHeader className="space-y-2 px-0 pt-0">
-                <CardTitle className="text-base">Referenztext-Hervorhebungen</CardTitle>
-                <CardDescription className="text-slate-500">
-                  Zusätzlich zu Tags, Branche sowie Dienstleister/Wettbewerber je Referenz werden diese Begriffe in
-                  Herausforderung, Lösung und Ergebnis <span className="font-medium">fett</span> gesetzt (ganzes Wort,
-                  nicht Teilstrings). Eine Zeile oder Komma pro Begriff.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3 px-0 pb-0 pt-1">
-                <div className="space-y-2">
-                  <Label htmlFor="ref-highlight-glossary">Workspace-Glossar (optional)</Label>
-                  <Textarea
-                    id="ref-highlight-glossary"
-                    value={referenceHighlightGlossary}
-                    onChange={(e) => setReferenceHighlightGlossary(e.target.value)}
-                    placeholder={'z. B. Lakehouse\nGovernance\nProcess Mining'}
-                    rows={5}
-                    className="font-mono text-sm"
-                  />
-                  <p className="text-xs text-slate-500">
-                    Generische Kurzformen wie „IT“ werden ignoriert; sehr kurze Begriffe nur bei KI, AI, BI.
-                  </p>
-                </div>
-                <div className="flex justify-end">
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={saveReferenceHighlightGlossary}
-                    disabled={glossaryPending || !org.id}
-                  >
-                    Glossar speichern
-                  </Button>
-                </div>
-              </CardContent>
-            </div>
-          ) : null}
-          {roleSwitcher.serverRole === 'admin' ? (
-            <div className={CARD_CLASS}>
-              <CardHeader className="space-y-2 px-0 pt-0">
-                <CardTitle className="text-base">Audit Log</CardTitle>
-                <CardDescription className="text-slate-500">
-                  Nachweisbare Security- und Compliance-Ereignisse (PII-minimiert, IDs only).
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4 px-0 pb-0 pt-1">
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <div className="flex items-center gap-1 rounded-md border border-slate-200 p-1">
-                    {([
-                      ['all', 'Alle'],
-                      ['security', 'Security'],
-                      ['policy', 'Policy'],
-                    ] as const).map(([value, label]) => (
-                      <Button
-                        key={value}
-                        type="button"
-                        size="sm"
-                        variant={auditQuickView === value ? 'secondary' : 'ghost'}
-                        className="h-7 px-2 text-xs"
-                        onClick={() => setAuditQuickView(value)}
-                      >
-                        {label}
-                      </Button>
-                    ))}
-                  </div>
-                  <Input
-                    value={auditSearch}
-                    onChange={(e) => setAuditSearch(e.target.value)}
-                    placeholder="Suche in action/entity/user/details"
-                    className="h-9 max-w-sm"
-                  />
-                  <select
-                    value={auditTimeFilter}
-                    onChange={(e) => setAuditTimeFilter(e.target.value as '24h' | '7d' | '30d' | 'all')}
-                    className="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm"
-                  >
-                    <option value="24h">Letzte 24h</option>
-                    <option value="7d">Letzte 7 Tage</option>
-                    <option value="30d">Letzte 30 Tage</option>
-                    <option value="all">Alle Zeiträume</option>
-                  </select>
-                  <select
-                    value={auditActionFilter}
-                    onChange={(e) => setAuditActionFilter(e.target.value)}
-                    className="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm"
-                  >
-                    <option value="all">Alle Actions</option>
-                    {Array.from(new Set(auditLogs.map((r) => r.action))).sort().map((action) => (
-                      <option key={action} value={action}>
-                        {action}
-                      </option>
-                    ))}
-                  </select>
-                  <Button type="button" variant="outline" size="sm" onClick={exportAuditCsv}>
-                    CSV Export
-                  </Button>
-                </div>
-                <div className="mt-1 max-h-[360px] overflow-auto rounded-lg border border-slate-200">
-                  <table className="w-full text-xs">
-                    <thead className="sticky top-0 bg-slate-50 text-slate-600">
-                      <tr>
-                        <th className="px-3 py-2 text-left font-medium">Zeit</th>
-                        <th className="px-3 py-2 text-left font-medium">Action</th>
-                        <th className="px-3 py-2 text-left font-medium">Severity</th>
-                        <th className="px-3 py-2 text-left font-medium">Entity</th>
-                        <th className="px-3 py-2 text-left font-medium">User</th>
-                        <th className="px-3 py-2 text-left font-medium">Details</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredAuditLogs.length === 0 ? (
-                        <tr>
-                          <td className="px-3 py-3 text-slate-500" colSpan={6}>
-                            Keine Einträge für den gewählten Filter.
-                          </td>
-                        </tr>
-                      ) : (
-                        filteredAuditLogs.map((row) => (
-                          <tr key={row.id} className="border-t border-slate-100 align-top">
-                            <td className="whitespace-nowrap px-3 py-2 text-slate-600">
-                              {new Date(row.timestamp).toLocaleString('de-DE')}
-                            </td>
-                            <td className="px-3 py-2 font-medium text-slate-900">{row.action}</td>
-                            <td className="px-3 py-2">
-                              <span
-                                className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                                  actionSeverity(row.action) === 'high'
-                                    ? 'bg-red-100 text-red-700'
-                                    : actionSeverity(row.action) === 'medium'
-                                      ? 'bg-amber-100 text-amber-700'
-                                      : 'bg-slate-100 text-slate-600'
-                                }`}
-                              >
-                                {actionSeverity(row.action) === 'high'
-                                  ? 'HIGH'
-                                  : actionSeverity(row.action) === 'medium'
-                                    ? 'MEDIUM'
-                                    : 'LOW'}
-                              </span>
-                            </td>
-                            <td className="px-3 py-2 font-mono text-slate-700">{row.entity_id ?? '—'}</td>
-                            <td className="px-3 py-2 font-mono text-slate-700">{row.user_id ?? '—'}</td>
-                            <td className="max-w-[360px] px-3 py-2 font-mono text-slate-600">
-                              <pre className="whitespace-pre-wrap break-all">
-                                {JSON.stringify(row.action_details ?? {}, null, 0)}
-                              </pre>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </div>
-          ) : null}
           <div className={CARD_CLASS}>
             <CardHeader className="space-y-2 px-0 pt-0">
               <CardTitle className="text-base">Subdomain</CardTitle>
@@ -923,55 +785,7 @@ export function SettingsTabs({
               </div>
             </CardContent>
           </div>
-          <div className={CARD_CLASS}>
-            <CardHeader className="space-y-2 px-0 pt-0">
-              <CardTitle className="text-base">Entwicklung / API Keys</CardTitle>
-              <CardDescription className="text-slate-500">
-                Verwalte technische Schlüssel für Integrationen und Systemzugriffe.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 px-0 pb-0 pt-1">
-              <div className="flex items-center justify-between rounded-lg border border-slate-200 p-4">
-                <div>
-                  <p className="text-sm font-medium">Workspace Branding (opt-in)</p>
-                  <p className="mt-1.5 text-xs text-slate-500">
-                    Nutzt Primär-/Sekundärfarbe für Links, Badges und Akzente. RefStack-Design bleibt Standard.
-                  </p>
-                </div>
-                <Switch
-                  checked={useWorkspaceBranding}
-                  onCheckedChange={setUseWorkspaceBranding}
-                  disabled={roleSwitcher.serverRole !== 'admin'}
-                />
-              </div>
-              <div className="rounded-lg border border-slate-200 p-4">
-                <p className="text-sm font-medium">Workspace API Key</p>
-                <p className="mt-2 text-xs text-slate-500">Aus Sicherheitsgründen maskiert. Rotation über sicheren Backend-Flow.</p>
-                <Input
-                  value={apiKeyMask}
-                  onChange={(e) => setApiKeyMask(e.target.value)}
-                  className="mt-3 bg-slate-50"
-                />
-              </div>
-              <div className={CARD_CLASS}>
-                <SettingsDevRoleCard
-                  serverRole={roleSwitcher.serverRole}
-                  previewRole={roleSwitcher.previewRole}
-                />
-              </div>
-              <div className="flex justify-end">
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={saveWorkspaceAdmin}
-                  disabled={!org.id || workspacePending}
-                >
-                  Workspace speichern
-                </Button>
-              </div>
-            </CardContent>
-          </div>
-          <div className="rounded-xl border border-red-300 bg-red-50/50 p-6 shadow-sm">
+          <div className={DANGER_ZONE_CLASS}>
             <p className="text-sm font-semibold text-red-700">Danger Zone</p>
             <p className="mt-1 text-xs text-red-600/90">Workspace inkl. Daten dauerhaft löschen. Nicht rückgängig zu machen.</p>
             <AlertDialog
@@ -1035,6 +849,190 @@ export function SettingsTabs({
               </AlertDialogContent>
             </AlertDialog>
           </div>
+        </div>
+      </TabsContent>
+
+      <TabsContent value="admin">
+        <div className="space-y-6">
+          <div className={CARD_CLASS}>
+            <SettingsBillingCard
+              subscriptionStatus={org.subscriptionStatus}
+              subscriptionId={org.subscriptionId}
+            />
+          </div>
+
+          <div className={CARD_CLASS}>
+            <CardHeader className="space-y-2 px-0 pt-0">
+              <CardTitle className="text-base">Entwicklung / API-Keys</CardTitle>
+              <CardDescription className="text-slate-500">
+                Technische Konfiguration für Workspace-Integrationen.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 px-0 pb-0 pt-1">
+              <div className="flex items-center justify-between rounded-lg border border-slate-200 p-4">
+                <div>
+                  <p className="text-sm font-medium">Workspace Branding (opt-in)</p>
+                  <p className="mt-1.5 text-xs text-slate-500">
+                    Nutzt Primär-/Sekundärfarbe für Links, Badges und Akzente.
+                  </p>
+                </div>
+                <Switch
+                  checked={useWorkspaceBranding}
+                  onCheckedChange={setUseWorkspaceBranding}
+                  disabled={roleSwitcher.serverRole !== 'admin'}
+                />
+              </div>
+              <div className="rounded-lg border border-slate-200 p-4">
+                <p className="text-sm font-medium">Workspace API Key</p>
+                <p className="mt-2 text-xs text-slate-500">
+                  Aus Sicherheitsgründen maskiert. Rotation über sicheren Backend-Flow.
+                </p>
+                <Input
+                  value={apiKeyMask}
+                  onChange={(e) => setApiKeyMask(e.target.value)}
+                  className="mt-3 bg-slate-50"
+                />
+              </div>
+              <div className={CARD_CLASS}>
+                <SettingsDevRoleCard
+                  serverRole={roleSwitcher.serverRole}
+                  previewRole={roleSwitcher.previewRole}
+                />
+              </div>
+            </CardContent>
+          </div>
+
+          <div className={CARD_CLASS}>
+            <CardHeader className="space-y-2 px-0 pt-0">
+              <CardTitle className="text-base">Security & Compliance</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-5 px-0 pb-0 pt-1">
+              <div className="max-w-md space-y-2">
+                <Label htmlFor="public-link-max-ttl">Maximale Link-Gültigkeit (Tage)</Label>
+                <Input
+                  id="public-link-max-ttl"
+                  value={publicLinkMaxTtl}
+                  onChange={(e) => setPublicLinkMaxTtl(e.target.value)}
+                  inputMode="numeric"
+                  disabled={roleSwitcher.serverRole !== 'admin'}
+                  className={roleSwitcher.serverRole !== 'admin' ? 'bg-slate-50' : ''}
+                />
+              </div>
+              <div className="max-w-md space-y-2">
+                <Label htmlFor="audit-retention-days">Audit-Retention (Tage)</Label>
+                <Input
+                  id="audit-retention-days"
+                  value={auditRetentionDays}
+                  onChange={(e) => setAuditRetentionDays(e.target.value)}
+                  inputMode="numeric"
+                  disabled={roleSwitcher.serverRole !== 'admin'}
+                  className={roleSwitcher.serverRole !== 'admin' ? 'bg-slate-50' : ''}
+                />
+              </div>
+              <div className="flex items-center justify-between rounded-lg border border-slate-200 p-4">
+                <div>
+                  <p className="text-sm font-medium">Passwort für neue Links erzwingen</p>
+                </div>
+                <Switch
+                  checked={publicLinkReqPwNew}
+                  onCheckedChange={setPublicLinkReqPwNew}
+                  disabled={roleSwitcher.serverRole !== 'admin'}
+                />
+              </div>
+            </CardContent>
+          </div>
+
+          {roleSwitcher.serverRole === 'admin' ? (
+            <div className={CARD_CLASS}>
+              <CardHeader className="space-y-2 px-0 pt-0">
+                <CardTitle className="text-base">Referenztext-Hervorhebungen</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 px-0 pb-0 pt-1">
+                <div className="space-y-2">
+                  <Label htmlFor="ref-highlight-glossary">Workspace-Glossar (optional)</Label>
+                  <Textarea
+                    id="ref-highlight-glossary"
+                    value={referenceHighlightGlossary}
+                    onChange={(e) => setReferenceHighlightGlossary(e.target.value)}
+                    placeholder={'z. B. Lakehouse\nGovernance\nProcess Mining'}
+                    rows={5}
+                    className="font-mono text-sm"
+                  />
+                </div>
+              </CardContent>
+            </div>
+          ) : null}
+
+          {roleSwitcher.serverRole === 'admin' ? (
+            <div className={CARD_CLASS}>
+              <CardHeader className="space-y-2 px-0 pt-0">
+                <CardTitle className="text-base">Audit Log</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 px-0 pb-0 pt-1">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <div className="flex items-center gap-1 rounded-md border border-slate-200 p-1">
+                    {([
+                      ['all', 'Alle'],
+                      ['security', 'Security'],
+                      ['policy', 'Policy'],
+                    ] as const).map(([value, label]) => (
+                      <Button
+                        key={value}
+                        type="button"
+                        size="sm"
+                        variant={auditQuickView === value ? 'secondary' : 'ghost'}
+                        className="h-7 px-2 text-xs"
+                        onClick={() => setAuditQuickView(value)}
+                      >
+                        {label}
+                      </Button>
+                    ))}
+                  </div>
+                  <Input
+                    value={auditSearch}
+                    onChange={(e) => setAuditSearch(e.target.value)}
+                    placeholder="Suche in action/entity/user/details"
+                    className="h-9 max-w-sm"
+                  />
+                  <Button type="button" variant="outline" size="sm" onClick={exportAuditCsv}>
+                    CSV Export
+                  </Button>
+                </div>
+                <div className="mt-1 max-h-[360px] overflow-auto rounded-lg border border-slate-200">
+                  <table className="w-full text-xs">
+                    <thead className="sticky top-0 bg-slate-50 text-slate-600">
+                      <tr>
+                        <th className="px-3 py-2 text-left font-medium">Zeit</th>
+                        <th className="px-3 py-2 text-left font-medium">Action</th>
+                        <th className="px-3 py-2 text-left font-medium">Entity</th>
+                        <th className="px-3 py-2 text-left font-medium">User</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredAuditLogs.length === 0 ? (
+                        <tr>
+                          <td className="px-3 py-3 text-slate-500" colSpan={4}>
+                            Keine Einträge für den gewählten Filter.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredAuditLogs.map((row) => (
+                          <tr key={row.id} className="border-t border-slate-100 align-top">
+                            <td className="whitespace-nowrap px-3 py-2 text-slate-600">
+                              {new Date(row.timestamp).toLocaleString('de-DE')}
+                            </td>
+                            <td className="px-3 py-2 font-medium text-slate-900">{row.action}</td>
+                            <td className="px-3 py-2 font-mono text-slate-700">{row.entity_id ?? '—'}</td>
+                            <td className="px-3 py-2 font-mono text-slate-700">{row.user_id ?? '—'}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </div>
+          ) : null}
         </div>
       </TabsContent>
 
@@ -1113,6 +1111,71 @@ export function SettingsTabs({
 
       <TabsContent value="workflow">
         <div className="space-y-6">
+          <div className={CARD_CLASS}>
+            <CardHeader className="px-0 pt-0">
+              <CardTitle className="text-base">Approval Process</CardTitle>
+            </CardHeader>
+            <CardContent className="px-0 pb-0">
+              <div className="flex flex-col items-start gap-2 rounded-lg border border-slate-200 p-4 text-sm sm:flex-row sm:items-center">
+                <span className="inline-flex items-center gap-2 rounded-md bg-slate-100 px-3 py-1.5 font-medium">
+                  <ClipboardList className="h-4 w-4" /> Entwurf
+                </span>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                <span className="inline-flex items-center gap-2 rounded-md bg-slate-100 px-3 py-1.5 font-medium">
+                  <ShieldCheck className="h-4 w-4" /> Interner Review
+                </span>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                <span className="inline-flex items-center gap-2 rounded-md bg-slate-100 px-3 py-1.5 font-medium">
+                  <Zap className="h-4 w-4" /> Kundenfreigabe
+                </span>
+              </div>
+            </CardContent>
+          </div>
+          <div className={CARD_CLASS}>
+            <CardHeader className="px-0 pt-0">
+              <CardTitle className="text-base">Automation</CardTitle>
+              <CardDescription className="text-slate-500">
+                Trigger-Regeln für operative Benachrichtigungen.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2 px-0 pb-0">
+              <div className="rounded-md border border-slate-200 p-3 text-sm">
+                Marktsignal Kategorie X → Push-Nachricht an Owner
+              </div>
+              <div className="rounded-md border border-slate-200 p-3 text-sm">
+                Approval überfällig → Eskalation an Requester
+              </div>
+            </CardContent>
+          </div>
+          <div className={CARD_CLASS}>
+            <CardHeader className="px-0 pt-0">
+              <CardTitle className="text-base">MEDDPICC</CardTitle>
+              <CardDescription className="text-slate-500">
+                Pflichtfelder für „Ready“ im Strategie-Tab.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-2 px-0 pb-0 sm:grid-cols-2">
+              {([
+                ['metricsPain', 'Metrics & Pain'],
+                ['economicBuyer', 'Economic Buyer'],
+                ['decisionCriteria', 'Decision Criteria'],
+                ['decisionProcess', 'Decision Process'],
+                ['identifyPain', 'Identify Pain'],
+                ['champion', 'Champion'],
+                ['competition', 'Competition'],
+              ] as const).map(([key, label]) => (
+                <label key={key} className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2 text-sm">
+                  {label}
+                  <Switch
+                    checked={meddpiccRequired[key]}
+                    onCheckedChange={(checked) =>
+                      setMeddpiccRequired((prev) => ({ ...prev, [key]: checked }))
+                    }
+                  />
+                </label>
+              ))}
+            </CardContent>
+          </div>
           <div className={CARD_CLASS}>
             <SettingsExportTemplatesCard
               organizationId={org.id}
@@ -1383,21 +1446,15 @@ export function SettingsTabs({
                   </p>
                 )}
               </div>
-              <div className="flex justify-end">
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={saveWorkflow}
-                  disabled={!org.id || workflowPending}
-                >
-                  <AppIcon icon={Shield} size={16} />
-                  Workflow speichern
-                </Button>
-              </div>
             </CardContent>
           </div>
         </div>
       </TabsContent>
+      <StickySaveBar
+        visible={stickyVisible}
+        pending={stickyPending}
+        onSave={saveActiveTabChanges}
+      />
     </Tabs>
   )
 }

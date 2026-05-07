@@ -7,6 +7,8 @@ import { runCompanyNewsIngest } from '@/lib/market-signals/ingest-company-news'
 import { runExecutiveIntelIngest } from '@/lib/market-signals/ingest-executive-intel'
 import { notifyInstantMarketSignalsAfterIngest } from '@/lib/market-signals/market-signals-instant-alerts'
 import { ROUTES } from '@/lib/routes'
+import { writeAuditLog } from '@/lib/audit/log-audit'
+import { Resend } from 'resend'
 
 function normalizeChampionKey(raw: string) {
   return raw.trim().toLowerCase().replace(/\s+/g, ' ')
@@ -557,4 +559,75 @@ export async function triggerMarketSignalsIngestForMyOrg(): Promise<TriggerMarke
 /** @deprecated Alias – nutze triggerMarketSignalsIngestForMyOrg */
 export async function triggerCompanyNewsIngestForMyOrg() {
   return triggerMarketSignalsIngestForMyOrg()
+}
+
+export async function requestReferenceApprovalForSignal(args: {
+  referenceId: string
+  referenceTitle: string
+  companyName: string
+}): Promise<{ success: true } | { success: false; error: string }> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+
+  const referenceId = String(args.referenceId ?? '').trim()
+  if (!referenceId) return { success: false, error: 'Ungültige Referenz.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id, role')
+    .eq('id', user.id)
+    .maybeSingle()
+  const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
+  if (!orgId) return { success: false, error: 'Keine Organisation gefunden.' }
+
+  void writeAuditLog({
+    orgId,
+    action: 'market_signal_reference_approval_requested',
+    entityId: referenceId,
+    actionDetails: {
+      referenceTitle: args.referenceTitle,
+      companyName: args.companyName,
+      requestedBy: user.id,
+    },
+  })
+
+  const resendKey = process.env.RESEND_API_KEY?.trim()
+  const resendFrom = process.env.RESEND_FROM?.trim()
+  const admin = createServiceRoleSupabaseClient()
+  if (!resendKey || !resendFrom || !admin) return { success: true }
+
+  try {
+    const { data: recipients } = await supabase
+      .from('profiles')
+      .select('id, role')
+      .eq('organization_id', orgId)
+      .in('role', ['admin', 'account_manager'])
+
+    const ids = (recipients ?? [])
+      .map((r) => String((r as { id?: string | null }).id ?? ''))
+      .filter(Boolean)
+    if (!ids.length) return { success: true }
+
+    const usersRes = await admin.auth.admin.listUsers({ page: 1, perPage: 200 })
+    const emails = (usersRes.data.users ?? [])
+      .filter((u) => ids.includes(u.id))
+      .map((u) => u.email?.trim() ?? '')
+      .filter(Boolean)
+    if (!emails.length) return { success: true }
+
+    const resend = new Resend(resendKey)
+    await resend.emails.send({
+      from: resendFrom,
+      to: emails,
+      subject: `Freigabe angefragt: ${args.referenceTitle}`,
+      html: `<p>Für die Referenz <strong>${args.referenceTitle}</strong> (${args.companyName}) wurde aus den Market Signals eine Freigabe angefragt.</p>`,
+    })
+  } catch (e) {
+    console.error('[requestReferenceApprovalForSignal]', e)
+  }
+
+  return { success: true }
 }

@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,12 +18,18 @@ export function SettingsWorkspaceCard({
   logoUrl,
   primaryColor = '#0f172a',
   secondaryColor = '#334155',
+  hideSubmitButton = false,
+  saveSignal = 0,
+  onDirtyChange,
 }: {
   organizationId: string | null
   organizationName: string
   logoUrl?: string | null
   primaryColor?: string | null
   secondaryColor?: string | null
+  hideSubmitButton?: boolean
+  saveSignal?: number
+  onDirtyChange?: (dirty: boolean) => void
 }) {
   const [name, setName] = useState(organizationName)
   const [pending, setPending] = useState(false)
@@ -32,6 +38,25 @@ export function SettingsWorkspaceCard({
   const [secondary, setSecondary] = useState(secondaryColor ?? '#334155')
   const [logoLoading, setLogoLoading] = useState(false)
   const [dragActive, setDragActive] = useState(false)
+  const [lastHandledSaveSignal, setLastHandledSaveSignal] = useState(0)
+  const isDirty =
+    name !== organizationName ||
+    primary !== (primaryColor ?? '#0f172a') ||
+    secondary !== (secondaryColor ?? '#334155') ||
+    (logoPreview ?? '') !== (logoUrl ?? '')
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty)
+  }, [isDirty, onDirtyChange])
+
+  useEffect(() => {
+    if (saveSignal <= 0 || saveSignal === lastHandledSaveSignal || !isDirty) return
+    const form = document.getElementById('settings-workspace-form') as HTMLFormElement | null
+    if (form) {
+      form.requestSubmit()
+      setLastHandledSaveSignal(saveSignal)
+    }
+  }, [isDirty, lastHandledSaveSignal, saveSignal])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -100,7 +125,7 @@ export function SettingsWorkspaceCard({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form id="settings-workspace-form" onSubmit={handleSubmit} className="space-y-5">
       <div className="flex items-center gap-3 text-muted-foreground">
         <AppIcon icon={Building2} size={20} />
         <span className="text-sm font-medium uppercase tracking-wider">
@@ -199,9 +224,11 @@ export function SettingsWorkspaceCard({
           />
         </div>
       </div>
-      <Button type="submit" size="sm" disabled={pending || !organizationId}>
-        Speichern
-      </Button>
+      {!hideSubmitButton ? (
+        <Button type="submit" size="sm" disabled={pending || !organizationId}>
+          Speichern
+        </Button>
+      ) : null}
     </form>
   )
 }

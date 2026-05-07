@@ -19,6 +19,7 @@ function urlBase64ToUint8Array(base64String: string) {
 
 export function MarketSignalsPushCard() {
   const [pending, setPending] = useState(false)
+  const [status, setStatus] = useState<'connected' | 'disconnected'>('disconnected')
 
   async function enablePush() {
     if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
@@ -69,6 +70,7 @@ export function MarketSignalsPushCard() {
         return
       }
 
+      setStatus('connected')
       toast.success('Browser-Benachrichtigungen sind eingerichtet. Aktiviere dazu die Option „Web Push“ und speichere die Benachrichtigungen.')
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Push-Registrierung fehlgeschlagen.')
@@ -82,17 +84,22 @@ export function MarketSignalsPushCard() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-medium">Browser registrieren (Web Push)</p>
-          <p className="text-xs text-slate-500">
-            Einmalig erlauben – danach „Web Push für Markt-Signale“ aktivieren und speichern. Erfordert{' '}
-            <code className="text-[11px]">NEXT_PUBLIC_VAPID_PUBLIC_KEY</code> /{' '}
-            <code className="text-[11px]">VAPID_PRIVATE_KEY</code> in der Umgebung.
-          </p>
+          <p className="text-xs text-slate-500">Status: {status === 'connected' ? 'Verbunden' : 'Nicht verbunden'}</p>
         </div>
         <Button type="button" size="sm" variant="secondary" onClick={() => void enablePush()} disabled={pending}>
           <AppIcon icon={Notification01Icon} size={16} className="mr-2" />
           {pending ? 'Wird eingerichtet …' : 'Push erlauben & registrieren'}
         </Button>
       </div>
+      <details className="mt-3 rounded-md border border-slate-200 p-2">
+        <summary className="cursor-pointer text-xs text-slate-600">Details einblenden</summary>
+        <p className="mt-2 text-xs text-slate-500">
+          Einmalig erlauben – danach „Web Push für Markt-Signale“ aktivieren. Erfordert{' '}
+          <code className="text-[11px]">NEXT_PUBLIC_VAPID_PUBLIC_KEY</code>,{' '}
+          <code className="text-[11px]">VAPID_PRIVATE_KEY</code> und optional{' '}
+          <code className="text-[11px]">VAPID_SUBJECT</code>.
+        </p>
+      </details>
     </div>
   )
 }

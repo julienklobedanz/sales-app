@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -20,6 +20,9 @@ export function SettingsProfileCard({
   bookingUrl,
   phone,
   profileRole,
+  hideSubmitButton = false,
+  saveSignal = 0,
+  onDirtyChange,
 }: {
   userEmail: string
   firstName: string
@@ -28,12 +31,40 @@ export function SettingsProfileCard({
   bookingUrl?: string | null
   phone?: string | null
   profileRole: 'admin' | 'sales' | 'account_manager'
+  hideSubmitButton?: boolean
+  saveSignal?: number
+  onDirtyChange?: (dirty: boolean) => void
 }) {
   const salesRequired = profileRole === 'sales'
   const router = useRouter()
   const [pending, setPending] = useState(false)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(avatarUrl ?? null)
   const [avatarLoading, setAvatarLoading] = useState(false)
+  const [firstNameValue, setFirstNameValue] = useState(firstName)
+  const [lastNameValue, setLastNameValue] = useState(lastName)
+  const [phoneValue, setPhoneValue] = useState(phone ?? '')
+  const [bookingUrlValue, setBookingUrlValue] = useState(bookingUrl ?? '')
+  const [lastHandledSaveSignal, setLastHandledSaveSignal] = useState(0)
+
+  const isDirty =
+    firstNameValue !== firstName ||
+    lastNameValue !== lastName ||
+    phoneValue !== (phone ?? '') ||
+    bookingUrlValue !== (bookingUrl ?? '') ||
+    (avatarPreview ?? '') !== (avatarUrl ?? '')
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty)
+  }, [isDirty, onDirtyChange])
+
+  useEffect(() => {
+    if (saveSignal <= 0 || saveSignal === lastHandledSaveSignal || !isDirty) return
+    const form = document.getElementById('settings-profile-form') as HTMLFormElement | null
+    if (form) {
+      form.requestSubmit()
+      setLastHandledSaveSignal(saveSignal)
+    }
+  }, [isDirty, lastHandledSaveSignal, saveSignal])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -90,7 +121,7 @@ export function SettingsProfileCard({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form id="settings-profile-form" onSubmit={handleSubmit} className="space-y-6">
       <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
         <div className="flex flex-col items-center gap-2">
           <button
@@ -160,7 +191,8 @@ export function SettingsProfileCard({
               <Input
                 id="firstName"
                 name="firstName"
-                defaultValue={firstName}
+                value={firstNameValue}
+                onChange={(e) => setFirstNameValue(e.target.value)}
                 placeholder="Max"
                 className="bg-background"
               />
@@ -170,7 +202,8 @@ export function SettingsProfileCard({
               <Input
                 id="lastName"
                 name="lastName"
-                defaultValue={lastName}
+                value={lastNameValue}
+                onChange={(e) => setLastNameValue(e.target.value)}
                 placeholder="Mustermann"
                 className="bg-background"
               />
@@ -204,7 +237,8 @@ export function SettingsProfileCard({
               name="phone"
               type="tel"
               inputMode="tel"
-              defaultValue={phone ?? ''}
+              value={phoneValue}
+              onChange={(e) => setPhoneValue(e.target.value)}
               placeholder="+49 …"
               className="bg-background"
               autoComplete="tel"
@@ -224,7 +258,8 @@ export function SettingsProfileCard({
               type="url"
               inputMode="url"
               placeholder="https://calendly.com/…"
-              defaultValue={bookingUrl ?? ''}
+              value={bookingUrlValue}
+              onChange={(e) => setBookingUrlValue(e.target.value)}
               className="bg-background"
               autoComplete="off"
             />
@@ -240,12 +275,14 @@ export function SettingsProfileCard({
         name="avatarDataUrl"
         value={avatarPreview ?? ''}
       />
-      <div className="flex justify-end">
-        <Button type="submit" size="sm" disabled={pending}>
-          <AppIcon icon={Save} size={16} className="mr-2" />
-          Speichern
-        </Button>
-      </div>
+      {!hideSubmitButton ? (
+        <div className="flex justify-end">
+          <Button type="submit" size="sm" disabled={pending}>
+            <AppIcon icon={Save} size={16} className="mr-2" />
+            Speichern
+          </Button>
+        </div>
+      ) : null}
     </form>
   )
 }

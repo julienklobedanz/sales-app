@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import type { ReactNode } from 'react'
 import {
   getPublicPortfolio,
   getPublicPortfolioBranding,
@@ -12,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ShareOwnerContactCard } from './share-owner-contact-card'
 import { PortfolioUnlockGate } from './portfolio-unlock-gate'
 import { PublicPortfolioFooter } from './public-portfolio-footer'
+import { Lock } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -48,6 +50,19 @@ function releaseVolume(volumeEur: string | null): string {
 function releaseEmployees(n: number | null): string {
   if (n == null) return RELEASE_NOT_INCLUDED
   return n.toLocaleString('de-DE')
+}
+
+function releaseDisplay(value: string): ReactNode {
+  if (value !== RELEASE_NOT_INCLUDED) return value
+  return (
+    <span
+      title={RELEASE_NOT_INCLUDED}
+      aria-label={RELEASE_NOT_INCLUDED}
+      className="inline-flex items-center text-muted-foreground"
+    >
+      <Lock className="h-4 w-4" />
+    </span>
+  )
 }
 
 function buildHeaderSubtitle(
@@ -299,49 +314,49 @@ export default async function PublicPortfolioPage({
                           <div className="flex justify-between gap-3">
                             <span className="text-muted-foreground">Account</span>
                             <span className="text-right font-medium">
-                              {releaseText(ref.company_name)}
+                              {releaseDisplay(releaseText(ref.company_name))}
                             </span>
                           </div>
                           <div className="flex justify-between gap-3">
                             <span className="text-muted-foreground">Volumen</span>
                             <span className="text-right font-medium tabular-nums">
-                              {releaseVolume(ref.volume_eur)}
+                              {releaseDisplay(releaseVolume(ref.volume_eur))}
                             </span>
                           </div>
                           <div className="flex justify-between gap-3">
                             <span className="text-muted-foreground">Vertragsart</span>
                             <span className="text-right font-medium">
-                              {releaseText(ref.contract_type)}
+                              {releaseDisplay(releaseText(ref.contract_type))}
                             </span>
                           </div>
                           <div className="flex justify-between gap-3">
                             <span className="text-muted-foreground">Projektstatus</span>
                             <span className="text-right font-medium">
-                              {releaseText(ref.project_status)}
+                              {releaseDisplay(releaseText(ref.project_status))}
                             </span>
                           </div>
                           <div className="flex justify-between gap-3">
                             <span className="text-muted-foreground">Projektstart</span>
                             <span className="text-right font-medium">
-                              {formatDateMaybe(ref.project_start) || RELEASE_NOT_INCLUDED}
+                              {releaseDisplay(formatDateMaybe(ref.project_start) || RELEASE_NOT_INCLUDED)}
                             </span>
                           </div>
                           <div className="flex justify-between gap-3">
                             <span className="text-muted-foreground">Projektende</span>
                             <span className="text-right font-medium">
-                              {formatDateMaybe(ref.project_end) || RELEASE_NOT_INCLUDED}
+                              {releaseDisplay(formatDateMaybe(ref.project_end) || RELEASE_NOT_INCLUDED)}
                             </span>
                           </div>
                           <div className="flex justify-between gap-3">
                             <span className="text-muted-foreground">Website</span>
                             <span className="text-right font-medium break-all">
-                              {releaseText(ref.website)}
+                              {releaseDisplay(releaseText(ref.website))}
                             </span>
                           </div>
                           <div className="flex justify-between gap-3">
                             <span className="text-muted-foreground">Mitarbeiter</span>
                             <span className="text-right font-medium tabular-nums">
-                              {releaseEmployees(ref.employee_count)}
+                              {releaseDisplay(releaseEmployees(ref.employee_count))}
                             </span>
                           </div>
                         </CardContent>
