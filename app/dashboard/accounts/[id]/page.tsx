@@ -46,6 +46,7 @@ export default async function CompanyDetailPage({
 
   async function getExternalContactsSafe() {
     const orgId = profile.organization_id
+    if (!orgId) return []
     try {
       const { data, error } = await supabase
         .from('external_contacts')
@@ -60,7 +61,10 @@ export default async function CompanyDetailPage({
       const msg = e instanceof Error ? e.message : String(e)
       const disableLastInteraction = msg.toLowerCase().includes('last_interaction_at')
       const disablePhone = msg.toLowerCase().includes('phone') && msg.toLowerCase().includes('column')
-      if (!disableLastInteraction && !disablePhone) throw e
+      if (!disableLastInteraction && !disablePhone) {
+        console.error('[accounts/[id]] external_contacts query failed:', e)
+        return []
+      }
 
       // Schema-Cache-Fallback: Wenn (nach Migration) Spalten noch nicht im PostgREST-Cache bekannt sind.
       const selectBase = 'id, company_id, first_name, last_name, email, role'
@@ -75,7 +79,10 @@ export default async function CompanyDetailPage({
         .eq('organization_id', orgId)
         .order('created_at', { ascending: true })
 
-      if (error) throw error
+      if (error) {
+        console.error('[accounts/[id]] external_contacts fallback query failed:', error)
+        return []
+      }
 
       // Damit unsere TS-Typen konsistent bleiben: fehlende Spalten auf Default mappen.
       const rows = (data ?? []) as unknown as Record<string, unknown>[]
