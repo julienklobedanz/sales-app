@@ -11,7 +11,7 @@ import type { AdminDashboardModel } from '@/app/dashboard/dashboard-home-data'
 import { formatDateUtcDe } from '@/lib/format'
 
 export function AdminDashboard({ data }: { data: AdminDashboardModel }) {
-  const { blockers, contentRoi, systemUsage, auditFeed } = data
+  const { blockers, contentRoi, systemUsage, newsIngestHealth, auditFeed } = data
 
   const usagePercent = useMemo(() => {
     if (systemUsage.activeSeats <= 0) return 0
@@ -169,6 +169,16 @@ export function AdminDashboard({ data }: { data: AdminDashboardModel }) {
                   </span>
                 </div>
               ))}
+            </div>
+
+            <div className="rounded-md border border-border/70 px-2.5 py-2 text-xs">
+              <p className="text-muted-foreground">News Ingest</p>
+              <p className="mt-1 font-medium">
+                last run: {newsIngestHealth.lastRunAt ? relative(newsIngestHealth.lastRunAt) : 'n/a'}
+              </p>
+              <p className="mt-0.5 text-muted-foreground">
+                mode: {newsIngestHealth.mode} · scanned: {newsIngestHealth.scannedCompanies ?? 'n/a'} · errors: {newsIngestHealth.errors}
+              </p>
             </div>
           </CardContent>
         </Card>

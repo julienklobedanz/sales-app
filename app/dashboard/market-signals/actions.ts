@@ -491,7 +491,9 @@ export type TriggerMarketSignalsIngestResult =
   | { success: false; error: string }
 
 /** Company News + Executive-Presse-Signale (Google News RSS, kein Scraping). */
-export async function triggerMarketSignalsIngestForMyOrg(): Promise<TriggerMarketSignalsIngestResult> {
+export async function triggerMarketSignalsIngestForMyOrg(args?: {
+  ingestMode?: 'all_accounts' | 'focus_only'
+}): Promise<TriggerMarketSignalsIngestResult> {
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
@@ -510,6 +512,8 @@ export async function triggerMarketSignalsIngestForMyOrg(): Promise<TriggerMarke
   if (role !== 'admin' && role !== 'account_manager') {
     return { success: false, error: 'Nur Admin oder Account Manager können Signale abrufen.' }
   }
+  const ingestMode: 'all_accounts' | 'focus_only' =
+    args?.ingestMode ?? (role === 'admin' ? 'all_accounts' : 'focus_only')
 
   const admin = createServiceRoleSupabaseClient()
   if (!admin) {
@@ -524,6 +528,7 @@ export async function triggerMarketSignalsIngestForMyOrg(): Promise<TriggerMarke
 
   const news = await runCompanyNewsIngest(admin, {
     organizationId: orgId,
+    ingestMode,
     maxCompanies: 40,
     perCompanyMaxArticles: 8,
   })
@@ -536,6 +541,22 @@ export async function triggerMarketSignalsIngestForMyOrg(): Promise<TriggerMarke
   if (process.env.MARKET_SIGNALS_INSTANT_ALERTS_DISABLED !== '1') {
     await notifyInstantMarketSignalsAfterIngest(admin, { sinceIso: ingestSince, organizationId: orgId })
   }
+
+  void writeAuditLog({
+    orgId,
+    action: 'market_signals_ingest_run',
+    entityId: orgId,
+    actionDetails: {
+      mode: ingestMode,
+      newsCompaniesScanned: news.companiesScanned,
+      newsInserted: news.articlesInserted,
+      newsErrors: news.errors.length,
+      execPeopleScanned: executives.peopleScanned,
+      execInserted: executives.signalsInserted,
+      execErrors: executives.errors.length,
+      at: new Date().toISOString(),
+    },
+  })
 
   revalidatePath(ROUTES.marketSignals)
   revalidatePath(ROUTES.marketSignalsManage)

@@ -15,6 +15,7 @@ import {
   News01Icon,
   Paperclip,
   Sparkles,
+  StarIcon,
   UploadIcon,
   UserMultipleIcon,
 } from '@hugeicons/core-free-icons'
@@ -1067,8 +1068,8 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                 : 'border-transparent bg-transparent text-muted-foreground hover:bg-muted/70'
             }`}
           >
-            <AppIcon icon={FilterHorizontalIcon} size={14} />
-            Nur Fokus-Accounts
+            <AppIcon icon={StarIcon} size={14} />
+            Focus only
           </Button>
           <Button variant="ghost" size="toolbar" className="h-8 px-3 text-muted-foreground hover:bg-muted/70" asChild>
             <Link href={`${ROUTES.marketSignalsManage}?view=champions`}>

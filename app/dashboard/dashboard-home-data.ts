@@ -178,6 +178,12 @@ export type AdminDashboardModel = {
     apiHealth: 'stable' | 'warning' | 'critical'
     integrations: Array<{ name: string; status: 'healthy' | 'warning' | 'down' }>
   }
+  newsIngestHealth: {
+    lastRunAt: string | null
+    mode: 'all_accounts' | 'focus_only' | 'unknown'
+    scannedCompanies: number | null
+    errors: number
+  }
   auditFeed: Array<{
     id: string
     text: string
@@ -842,6 +848,12 @@ export async function loadAdminDashboardData(
       { name: 'Salesforce', status: 'warning' },
     ],
   }
+  let newsIngestHealth: AdminDashboardModel['newsIngestHealth'] = {
+    lastRunAt: null,
+    mode: 'unknown',
+    scannedCompanies: null,
+    errors: 0,
+  }
 
   if (orgId) {
     const [
@@ -911,6 +923,23 @@ export async function loadAdminDashboardData(
       user_id: string | null
       action_details: Record<string, unknown> | null
     }>
+    const latestIngest = auditRows.find((row) => row.action === 'market_signals_ingest_run')
+    if (latestIngest) {
+      const details = latestIngest.action_details ?? {}
+      const modeRaw = String(details.mode ?? 'unknown')
+      const mode =
+        modeRaw === 'all_accounts' || modeRaw === 'focus_only'
+          ? (modeRaw as 'all_accounts' | 'focus_only')
+          : 'unknown'
+      const scannedRaw = Number(details.newsCompaniesScanned ?? NaN)
+      const errorsRaw = Number(details.newsErrors ?? NaN)
+      newsIngestHealth = {
+        lastRunAt: latestIngest.timestamp,
+        mode,
+        scannedCompanies: Number.isFinite(scannedRaw) ? scannedRaw : null,
+        errors: Number.isFinite(errorsRaw) ? Math.max(0, Math.trunc(errorsRaw)) : 0,
+      }
+    }
     const syncErrors = auditRows.filter((row) => /sync|integration|ingest_error/i.test(String(row.action))).length
     if (syncErrors > 0) {
       blockers.push({
@@ -1229,6 +1258,7 @@ export async function loadAdminDashboardData(
     blockers,
     contentRoi,
     systemUsage,
+    newsIngestHealth,
     auditFeed,
   }
 }
