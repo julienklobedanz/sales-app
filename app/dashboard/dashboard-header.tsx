@@ -407,36 +407,38 @@ export function DashboardHeader({
           )}
         >
           <div className="text-2xl font-semibold tracking-tight truncate">{headerMeta.title}</div>
-          <div className="mt-1.5 min-h-5">
-            {dynamicCrumbs.length ? (
-              <Breadcrumb>
-                <BreadcrumbList>
-                  {dynamicCrumbs.map((crumb, idx) => (
-                    <Fragment key={`${crumb.label}-${idx}`}>
-                      <BreadcrumbItem>
-                        {idx === dynamicCrumbs.length - 1 ? (
-                          <BreadcrumbPage className="text-slate-900 dark:text-slate-100 font-medium">
-                            {crumb.label}
-                          </BreadcrumbPage>
-                        ) : (
-                          <BreadcrumbLink asChild className="text-slate-400 hover:text-slate-500">
-                            <Link href={crumb.href ?? ROUTES.home}>{crumb.label}</Link>
-                          </BreadcrumbLink>
-                        )}
-                      </BreadcrumbItem>
-                      {idx < dynamicCrumbs.length - 1 ? (
-                        <BreadcrumbSeparator className="text-slate-300" />
-                      ) : null}
-                    </Fragment>
-                  ))}
-                </BreadcrumbList>
-              </Breadcrumb>
-            ) : headerMeta.subtitle ? (
-              <div className="text-sm text-muted-foreground truncate">
-                {headerMeta.subtitle}
-              </div>
-            ) : null}
-          </div>
+          {hasHeaderSecondaryLine ? (
+            <div className="mt-1.5 min-h-5">
+              {dynamicCrumbs.length ? (
+                <Breadcrumb>
+                  <BreadcrumbList>
+                    {dynamicCrumbs.map((crumb, idx) => (
+                      <Fragment key={`${crumb.label}-${idx}`}>
+                        <BreadcrumbItem>
+                          {idx === dynamicCrumbs.length - 1 ? (
+                            <BreadcrumbPage className="text-slate-900 dark:text-slate-100 font-medium">
+                              {crumb.label}
+                            </BreadcrumbPage>
+                          ) : (
+                            <BreadcrumbLink asChild className="text-slate-400 hover:text-slate-500">
+                              <Link href={crumb.href ?? ROUTES.home}>{crumb.label}</Link>
+                            </BreadcrumbLink>
+                          )}
+                        </BreadcrumbItem>
+                        {idx < dynamicCrumbs.length - 1 ? (
+                          <BreadcrumbSeparator className="text-slate-300" />
+                        ) : null}
+                      </Fragment>
+                    ))}
+                  </BreadcrumbList>
+                </Breadcrumb>
+              ) : headerMeta.subtitle ? (
+                <div className="text-sm text-muted-foreground truncate">
+                  {headerMeta.subtitle}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </div>
 

@@ -1,246 +1,204 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
-import { useMemo, useState, useTransition } from 'react'
-import { toast } from 'sonner'
-import { Cancel01Icon, UploadIcon } from '@hugeicons/core-free-icons'
+import { useMemo } from 'react'
+import { AlertTriangle, CheckCircle2, Database, Gauge, RefreshCw, ServerCog, ShieldAlert, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { CheckIcon } from '@/components/ui/check-icon'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { reviewRequest } from '@/app/dashboard/actions'
-import { AppIcon } from '@/lib/icons'
 import { ROUTES } from '@/lib/routes'
 import type { AdminDashboardModel } from '@/app/dashboard/dashboard-home-data'
 import { formatDateUtcDe } from '@/lib/format'
 
-function TrendHint({ delta }: { delta: number }) {
-  const sign = delta > 0 ? '+' : ''
-  const tone =
-    delta > 0
-      ? 'text-emerald-600 dark:text-emerald-400'
-      : delta < 0
-        ? 'text-rose-600 dark:text-rose-400'
-        : 'text-muted-foreground'
-  return <p className={`text-xs font-medium ${tone}`}>{`${sign}${delta} diese Woche`}</p>
-}
-
 export function AdminDashboard({ data }: { data: AdminDashboardModel }) {
-  const { kpis, topReferences, openRequests, teamActivity } = data
-  const [isPending, startTransition] = useTransition()
-  const [visibleTeamActivityCount, setVisibleTeamActivityCount] = useState(5)
-  const staleThreshold = useMemo(() => {
-    const d = new Date()
-    d.setMonth(d.getMonth() - 12)
-    return d.getTime()
-  }, [])
+  const { blockers, contentRoi, systemUsage, auditFeed } = data
 
-  function requestDecision(approvalId: string, decision: 'approve_external' | 'reject') {
-    startTransition(async () => {
-      try {
-        await reviewRequest(approvalId, decision)
-      } catch {
-        toast.error('Aktion fehlgeschlagen.')
-        return
-      }
-      toast.success(decision === 'approve_external' ? 'Anfrage freigegeben.' : 'Anfrage abgelehnt.')
-    })
+  const usagePercent = useMemo(() => {
+    if (systemUsage.activeSeats <= 0) return 0
+    return Math.max(0, Math.min(100, Math.round((systemUsage.activeUsers / systemUsage.activeSeats) * 100)))
+  }, [systemUsage.activeUsers, systemUsage.activeSeats])
+
+  function relative(iso: string) {
+    const ts = new Date(iso).getTime()
+    if (!Number.isFinite(ts)) return formatDateUtcDe(iso)
+    const diffMin = Math.max(1, Math.round((Date.now() - ts) / 60000))
+    if (diffMin < 60) return `vor ${diffMin}m`
+    const diffH = Math.round(diffMin / 60)
+    if (diffH < 24) return `vor ${diffH}h`
+    return formatDateUtcDe(iso)
   }
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="h-[62px]" aria-hidden />
-
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-card border-border shadow-sm">
-          <CardHeader className="pb-1">
-            <CardDescription>Referenzen gesamt</CardDescription>
-            <CardTitle className="text-2xl tabular-nums">{kpis.referencesTotal}</CardTitle>
-            <TrendHint delta={data.kpiTrends.referencesTotal} />
+      {blockers.length > 0 ? (
+        <Card className="border-red-300/70 bg-red-500/5 shadow-sm">
+          <CardHeader className="pb-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-red-700">1. Critical Blockers · Action Required</p>
           </CardHeader>
+          <CardContent className="space-y-1.5 pt-1">
+            {blockers.map((b) => (
+              <div key={b.id} className="flex items-center justify-between gap-3 rounded-md border border-red-200/70 bg-background px-3 py-2">
+                <div className="min-w-0 inline-flex items-center gap-2">
+                  <AlertTriangle className={`h-4 w-4 shrink-0 ${b.severity === 'high' ? 'text-red-600' : 'text-amber-600'}`} />
+                  <p className="truncate text-sm text-foreground">
+                    <span className="font-medium">{b.title}</span>
+                    <span className="text-muted-foreground"> · {b.detail}</span>
+                  </p>
+                </div>
+                <Button asChild size="sm" variant={b.severity === 'high' ? 'default' : 'outline'} className="h-7 px-2.5 text-xs">
+                  <Link href={b.href}>{b.ctaLabel}</Link>
+                </Button>
+              </div>
+            ))}
+          </CardContent>
         </Card>
-        <Card className="bg-card border-border shadow-sm">
-          <CardHeader className="pb-1">
-            <CardDescription>Matches (7 Tage)</CardDescription>
-            <CardTitle className="text-2xl tabular-nums">{kpis.matches7d}</CardTitle>
-            <TrendHint delta={data.kpiTrends.matches7d} />
-          </CardHeader>
-        </Card>
-        <Card className="bg-card border-border shadow-sm">
-          <CardHeader className="pb-1">
-            <CardDescription>Shares &amp; Link-Views (7 Tage)</CardDescription>
-            <CardTitle className="text-2xl tabular-nums">{kpis.shares7d}</CardTitle>
-            <TrendHint delta={data.kpiTrends.shares7d} />
-          </CardHeader>
-        </Card>
-        <Card className="bg-card border-border shadow-sm">
-          <CardHeader className="pb-1">
-            <CardDescription>Aktive Nutzer (Events, 7 Tage)</CardDescription>
-            <CardTitle className="text-2xl tabular-nums">{kpis.wau7d}</CardTitle>
-            <TrendHint delta={data.kpiTrends.wau7d} />
-          </CardHeader>
-        </Card>
-      </div>
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="bg-card border-border shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-base">Top-Referenzen (Nutzung, 7 Tage)</CardTitle>
-            <CardDescription>Nach Anzahl relevanter Events mit Referenz-ID.</CardDescription>
+        <Card className="border-border shadow-sm">
+          <CardHeader className="pb-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">2. Strategic Content ROI</p>
+            <CardTitle className="text-lg">Content ROI & Gaps</CardTitle>
           </CardHeader>
-          <CardContent>
-            {topReferences.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Noch keine ausreichenden Daten.</p>
-            ) : (
-              <ul className="space-y-2 text-sm">
-                {topReferences.slice(0, 5).map((r) => (
-                  <li key={r.id} className="flex items-center justify-between gap-2 rounded-lg border border-border/70 bg-card px-2.5 py-2">
-                    <Link
-                      href={ROUTES.evidence.detail(r.id)}
-                      className="min-w-0 inline-flex items-center gap-2.5 font-medium truncate hover:underline"
-                    >
-                      <span className="relative flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted/35">
-                        {r.companyLogoUrl ? (
-                          <Image src={r.companyLogoUrl} alt="" fill sizes="28px" className="object-contain p-1" />
-                        ) : (
-                          <span className="text-[10px] text-muted-foreground">{r.companyName.slice(0, 2).toUpperCase()}</span>
-                        )}
-                      </span>
-                      <span className="truncate">{r.title}</span>
-                    </Link>
-                    <div className="flex shrink-0 items-center gap-1.5">
-                      {r.updatedAt && new Date(r.updatedAt).getTime() < staleThreshold ? (
-                        <span className="inline-flex items-center text-amber-600 dark:text-amber-400" title="Update needed">
-                          <AppIcon icon={UploadIcon} size={13} />
-                        </span>
-                      ) : null}
-                      <Badge variant="secondary" className="bg-muted text-foreground border-0">
-                        {r.eventCount}
-                      </Badge>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
+          <CardContent className="space-y-3">
+            <div className="rounded-lg border border-border/70 px-3 py-3">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Top Story</p>
+              {contentRoi.topStory ? (
+                <p className="mt-1 text-sm font-medium">
+                  {contentRoi.topStory.title}{' '}
+                  <span className="text-emerald-600">({contentRoi.topStory.impactLabel})</span>
+                </p>
+              ) : (
+                <p className="mt-1 text-sm text-muted-foreground">Noch keine belastbare Top-Story.</p>
+              )}
+            </div>
+            <div className="rounded-lg border border-amber-300/60 bg-amber-50/50 px-3 py-3">
+              <p className="text-xs uppercase tracking-wide text-amber-800">Gap Alert</p>
+              {contentRoi.gapAlert ? (
+                <p className="mt-1 text-sm text-amber-900">
+                  <span className="font-semibold">"{contentRoi.gapAlert.term}"</span> ({contentRoi.gapAlert.searches} Suchen, 0 Referenzen)
+                </p>
+              ) : (
+                <p className="mt-1 text-sm text-muted-foreground">Keine Zero-Result Gaps erkannt.</p>
+              )}
+            </div>
+            <div className="pt-1">
+              <Button asChild size="sm" variant="outline">
+                <Link href={ROUTES.evidence.root}>Referenzbibliothek prüfen</Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-card border-border shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-base">Offene Referenz-Anfragen</CardTitle>
-            <CardDescription>Interne Freigabe-Anfragen (pending).</CardDescription>
+        <Card className="border-border shadow-sm">
+          <CardHeader className="pb-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">3. System & Usage</p>
+            <CardTitle className="text-lg">Health Metrics</CardTitle>
           </CardHeader>
-          <CardContent>
-            {openRequests.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Keine offenen Anfragen.</p>
-            ) : (
-              <ul className="space-y-2 text-sm">
-                {openRequests.slice(0, 4).map((r) => (
-                  <li key={r.id} className="group/request flex items-center justify-between gap-3 rounded-lg border border-border/70 bg-card px-3 py-2">
-                    <div className="min-w-0">
-                      <Link href={ROUTES.evidence.detail(r.reference_id)} className="font-medium hover:underline">
-                        {r.reference_title}
-                      </Link>
-                      <span className="block text-xs text-muted-foreground">
-                        {r.company_name} · {formatDateUtcDe(r.created_at)}
-                      </span>
-                    </div>
-                    <div className="hidden items-center gap-1 group-hover/request:flex">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 w-7 p-0 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-600 dark:text-emerald-400 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-300"
-                        disabled={isPending}
-                        onClick={() => requestDecision(r.id, 'approve_external')}
-                        aria-label="Approve"
-                      >
-                        <CheckIcon className="size-3.5" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 w-7 p-0 text-rose-600 hover:bg-rose-50 hover:text-rose-600 dark:text-rose-400 dark:hover:bg-rose-500/10 dark:hover:text-rose-300"
-                        disabled={isPending}
-                        onClick={() => requestDecision(r.id, 'reject')}
-                        aria-label="Deny"
-                      >
-                        <AppIcon icon={Cancel01Icon} size={14} />
-                      </Button>
-                    </div>
-                  </li>
-                ))}
-                <li className="flex items-center justify-center rounded-lg border border-border/70 bg-card px-3 py-2.5">
-                  <Button asChild variant="ghost" size="sm" className="h-8">
-                    <Link href={ROUTES.request}>Alle Anfragen</Link>
-                  </Button>
-                </li>
-              </ul>
-            )}
+          <CardContent className="space-y-4">
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-sm">
+                <span className="inline-flex items-center gap-1.5">
+                  <Users className="h-4 w-4 text-blue-600" />
+                  Active Users
+                </span>
+                <span className="tabular-nums text-muted-foreground">
+                  {systemUsage.activeUsers}/{systemUsage.activeSeats || Math.max(systemUsage.activeUsers, 1)}
+                </span>
+              </div>
+              <div className="h-2 rounded-full bg-muted">
+                <div className="h-full rounded-full bg-blue-600" style={{ width: `${usagePercent}%` }} />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-sm">
+                <span className="inline-flex items-center gap-1.5">
+                  <Gauge className="h-4 w-4 text-amber-600" />
+                  API Credits
+                </span>
+                <span className="tabular-nums text-muted-foreground">
+                  {systemUsage.apiCreditUsedPercent != null ? `${systemUsage.apiCreditUsedPercent}%` : 'n/a'}
+                </span>
+              </div>
+              <div className="h-2 rounded-full bg-muted">
+                <div
+                  className={`h-full rounded-full ${systemUsage.apiCreditUsedPercent != null && systemUsage.apiCreditUsedPercent >= 85 ? 'bg-red-600' : 'bg-amber-500'}`}
+                  style={{ width: `${systemUsage.apiCreditUsedPercent ?? 0}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-md border border-border/70 px-2.5 py-2 text-xs">
+                <p className="text-muted-foreground">Data Freshness</p>
+                <p className="mt-1 font-medium">
+                  {systemUsage.dataFreshnessMinutes != null ? `${systemUsage.dataFreshnessMinutes}m ago` : 'n/a'}
+                </p>
+              </div>
+              <div className="rounded-md border border-border/70 px-2.5 py-2 text-xs">
+                <p className="text-muted-foreground">API Health</p>
+                <p className="mt-1 font-medium inline-flex items-center gap-1.5">
+                  {systemUsage.apiHealth === 'stable' ? (
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                  ) : systemUsage.apiHealth === 'warning' ? (
+                    <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+                  ) : (
+                    <ShieldAlert className="h-3.5 w-3.5 text-red-600" />
+                  )}
+                  {systemUsage.apiHealth}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              {systemUsage.integrations.map((integration) => (
+                <div key={integration.name} className="flex items-center justify-between rounded-md border border-border/70 px-2.5 py-2 text-xs">
+                  <span>{integration.name}</span>
+                  <span
+                    className={`inline-flex items-center gap-1 ${
+                      integration.status === 'healthy'
+                        ? 'text-emerald-700'
+                        : integration.status === 'warning'
+                          ? 'text-amber-700'
+                          : 'text-red-700'
+                    }`}
+                  >
+                    <ServerCog className="h-3.5 w-3.5" />
+                    {integration.status}
+                  </span>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      <Card className="bg-card border-border shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-base">Team-Aktivität (7 Tage)</CardTitle>
-          <CardDescription>Lesbarer Feed aus den letzten Team-Events.</CardDescription>
+      <Card className="border-border shadow-sm">
+        <CardHeader className="pb-3">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">4. Recent System & Team Activity</p>
+          <CardTitle className="text-lg">Audit Feed</CardTitle>
         </CardHeader>
         <CardContent>
-          {teamActivity.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Keine Team-Aktivität in diesem Fenster.</p>
+          {auditFeed.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Keine Audit-Events verfügbar.</p>
           ) : (
-            <>
-              <ul className="space-y-2">
-                {teamActivity.slice(0, visibleTeamActivityCount).map((row) => (
-                  <li key={row.id} className="flex items-center gap-3 rounded-lg border border-border/70 bg-card px-3 py-2.5">
-                    <Avatar size="sm">
-                      <AvatarFallback>{row.displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <p className="min-w-0 flex-1 text-sm text-foreground">
-                      <span className="font-medium">{row.displayName}</span> {row.actionLabel}
-                      {row.companyName ? (
-                        <>
-                          {' '}für{' '}
-                          <span className="inline-flex items-center gap-1.5">
-                            <span className="relative flex size-4 shrink-0 items-center justify-center overflow-hidden rounded-sm bg-muted/35">
-                              {row.companyLogoUrl ? (
-                                <Image src={row.companyLogoUrl} alt="" fill sizes="16px" className="object-contain p-0.5" />
-                              ) : null}
-                            </span>
-                            <span className="font-medium">{row.companyName}</span>
-                          </span>
-                        </>
-                      ) : null}
-                    </p>
-                    <span className="shrink-0 text-xs text-muted-foreground">{formatDateUtcDe(row.timestamp)}</span>
-                  </li>
-                ))}
-              </ul>
-              {teamActivity.length > visibleTeamActivityCount ? (
-                <div className="flex justify-center pt-3">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 text-muted-foreground hover:bg-muted/70"
-                    onClick={() => setVisibleTeamActivityCount((prev) => prev + 5)}
-                  >
-                    5 weitere anzeigen
-                  </Button>
-                </div>
-              ) : null}
-            </>
+            <ul className="space-y-2">
+              {auditFeed.slice(0, 12).map((row) => (
+                <li key={row.id} className="rounded-lg border border-border/70 px-3 py-2.5 text-sm">
+                  <span className="text-muted-foreground">{relative(row.timestamp)}:</span>{' '}
+                  <span className="text-foreground">{row.text}</span>
+                </li>
+              ))}
+            </ul>
           )}
         </CardContent>
       </Card>
 
-      <p className="text-xs text-muted-foreground">
-        Win-Rate, Revenue und Branchen-Abdeckung sind für eine spätere Ausbaustufe vorgesehen.
-      </p>
+      <div className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
+        <Database className="h-3.5 w-3.5" />
+        Admin-Ansicht fokussiert auf Skalierung, Blocker und System-Gesundheit.
+      </div>
     </div>
   )
 }

@@ -864,6 +864,85 @@ function readStringField(obj: Record<string, unknown> | null | undefined, keys: 
   return null
 }
 
+function parseHeadquartersFromUnknown(input: unknown): string | null {
+  if (!input) return null
+  if (typeof input === 'string') {
+    const s = input.trim()
+    return s || null
+  }
+  if (typeof input !== 'object') return null
+  const obj = input as Record<string, unknown>
+  const city = readStringField(obj, ['city', 'town', 'locality'])
+  const region = readStringField(obj, ['region', 'state', 'province'])
+  const countryName = readStringField(obj, ['country', 'country_name'])
+  const countryCode = readStringField(obj, ['countryCode', 'country_code', 'countryISO', 'country_iso'])
+  const country = countryName || countryFromCode(countryCode)
+  return [city || region, country].filter(Boolean).join(', ') || country || city || region || null
+}
+
+function pickHeadquartersFromBrandfetchJson(
+  json: {
+    company?: {
+      location?: unknown
+      headquarters?: unknown
+      locations?: unknown
+    } | null
+    headquarters?: unknown
+    location?: unknown
+    locations?: unknown
+  },
+  domain: string
+): string | null {
+  const candidates: Array<string | null> = []
+  candidates.push(parseHeadquartersFromUnknown(json.company?.location))
+  candidates.push(parseHeadquartersFromUnknown(json.company?.headquarters))
+  candidates.push(parseHeadquartersFromUnknown(json.headquarters))
+  candidates.push(parseHeadquartersFromUnknown(json.location))
+
+  const companyLocations = Array.isArray(json.company?.locations) ? json.company?.locations : []
+  for (const loc of companyLocations) candidates.push(parseHeadquartersFromUnknown(loc))
+  const rootLocations = Array.isArray(json.locations) ? json.locations : []
+  for (const loc of rootLocations) candidates.push(parseHeadquartersFromUnknown(loc))
+
+  for (const c of candidates) {
+    const s = String(c ?? '').trim()
+    if (s) return s
+  }
+  return countryFromDomainTld(domain)
+}
+
+async function fetchHeadquartersFallbackByName(
+  companyName: string,
+  domain: string
+): Promise<string | null> {
+  const cleanedName = String(companyName ?? '').trim()
+  if (!cleanedName) return null
+  const country = countryFromDomainTld(domain)
+  const q = `${cleanedName} headquarters${country ? ` ${country}` : ''}`
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&limit=1&addressdetails=1&q=${encodeURIComponent(q)}`,
+      {
+        headers: {
+          'User-Agent': 'RefStack/1.0 (sales dashboard enrichment)',
+          Accept: 'application/json',
+        },
+        next: { revalidate: 0 },
+      }
+    )
+    if (!res.ok) return null
+    const json = (await res.json()) as Array<{ address?: Record<string, unknown> }>
+    const first = json[0]
+    const address = first?.address ?? null
+    const city = readStringField(address, ['city', 'town', 'village', 'municipality'])
+    const countryName = readStringField(address, ['country'])
+    const out = [city, countryName].filter(Boolean).join(', ') || countryName || city || null
+    return out ? String(out).trim() : null
+  } catch {
+    return null
+  }
+}
+
 async function fetchBrandfetchCompany(domain: string): Promise<{ success: true; data: BrandfetchPayload } | { success: false }> {
   const apiKey = process.env.BRANDFETCH_API_KEY
   if (!apiKey) return { success: false }
@@ -887,13 +966,13 @@ async function fetchBrandfetchCompany(domain: string): Promise<{ success: true; 
     company?: {
       employees?: number | null
       industries?: { name?: string | null }[]
-      location?: {
-        city?: string | null
-        country?: string | null
-        countryCode?: string | null
-        region?: string | null
-      }
+      location?: unknown
+      headquarters?: unknown
+      locations?: unknown
     }
+    headquarters?: unknown
+    location?: unknown
+    locations?: unknown
     logos?: { formats?: { src?: string | null }[] }[]
   }
   try {
@@ -903,18 +982,7 @@ async function fetchBrandfetchCompany(domain: string): Promise<{ success: true; 
   }
 
   const rawName = String(json.name ?? json.brand ?? '').trim()
-  const locationRaw = (json.company?.location ?? null) as Record<string, unknown> | null
-  const countryNameRaw = readStringField(locationRaw, ['country', 'country_name'])
-  const countryCodeRaw = readStringField(locationRaw, ['countryCode', 'country_code', 'countryISO', 'country_iso'])
-  const cityLabel = readStringField(locationRaw, ['city', 'town', 'locality'])
-  const regionLabel = readStringField(locationRaw, ['region', 'state', 'province'])
-  const countryLabel = countryNameRaw || countryFromCode(countryCodeRaw) || countryFromDomainTld(domain)
-  const headquarters =
-    [cityLabel, countryLabel].filter(Boolean).join(', ') ||
-    [regionLabel, countryLabel].filter(Boolean).join(', ') ||
-    countryLabel ||
-    regionLabel ||
-    null
+  const headquarters = pickHeadquartersFromBrandfetchJson(json, domain)
   const logoUrl =
     json.logos?.[0]?.formats?.[0]?.src ??
     json.logos?.find((logo) => logo.formats?.length)?.formats?.[0]?.src ??
@@ -966,14 +1034,14 @@ export async function refreshAccountsFromBrandfetch(): Promise<RefreshAccountsRe
     const domain = inputToDomain(website)
     if (!domain) {
       skippedCount += 1
-      skippedNames.push(String(company.name ?? 'Unbekannt'))
+      skippedNames.push(`${String(company.name ?? 'Unbekannt')} — keine valide Website/Domain`)
       continue
     }
 
     const fetched = await fetchBrandfetchCompany(domain)
     if (!fetched.success) {
       failedCount += 1
-      failedNames.push(String(company.name ?? 'Unbekannt'))
+      failedNames.push(`${String(company.name ?? 'Unbekannt')} — Brandfetch nicht verfügbar`)
       continue
     }
 
@@ -993,7 +1061,11 @@ export async function refreshAccountsFromBrandfetch(): Promise<RefreshAccountsRe
       (industryLooksGeneric || !currentIndustry)
 
     const currentHeadquarters = normalizeTextValue(company.headquarters)
-    const fetchedHeadquarters = String(fetched.data.headquarters ?? '').trim()
+    let fetchedHeadquarters = String(fetched.data.headquarters ?? '').trim()
+    if (!fetchedHeadquarters && !currentHeadquarters) {
+      const fallbackHq = await fetchHeadquartersFallbackByName(String(company.name ?? ''), domain)
+      if (fallbackHq) fetchedHeadquarters = fallbackHq
+    }
     const fetchedHeadquartersNorm = normalizeTextValue(fetchedHeadquarters)
     // HQ: fehlende Einträge füllen und bei geändertem Brandfetch-Standort aktualisieren (kein Löschen, wenn API leer bleibt)
     const headquartersNeedsUpdate =
@@ -1012,7 +1084,7 @@ export async function refreshAccountsFromBrandfetch(): Promise<RefreshAccountsRe
       !company.description
     if (!hasRefreshableData) {
       skippedCount += 1
-      skippedNames.push(String(company.name ?? 'Unbekannt'))
+      skippedNames.push(`${String(company.name ?? 'Unbekannt')} — keine neuen Daten von Quellen`)
       continue
     }
 
@@ -1029,11 +1101,20 @@ export async function refreshAccountsFromBrandfetch(): Promise<RefreshAccountsRe
     const { error: updateError } = await supabase.from('companies').update(payload).eq('id', company.id)
     if (updateError) {
       failedCount += 1
-      failedNames.push(String(company.name ?? 'Unbekannt'))
+      failedNames.push(`${String(company.name ?? 'Unbekannt')} — DB Update fehlgeschlagen`)
       continue
     }
+    const changedFields: string[] = []
+    if (logoNeedsUpdate) changedFields.push('Logo')
+    if (industryNeedsUpdate) changedFields.push('Branche')
+    if (headquartersNeedsUpdate) changedFields.push('HQ')
+    if (company.employee_count == null && fetched.data.employeeCount != null) changedFields.push('Mitarbeiter')
+    if (!company.description && fetched.data.description) changedFields.push('Beschreibung')
+    if (!website && fetched.data.websiteUrl) changedFields.push('Website')
     updatedCount += 1
-    updatedNames.push(payload.name)
+    updatedNames.push(
+      `${payload.name}${changedFields.length ? ` — ${changedFields.join(', ')}` : ''}`
+    )
   }
 
   revalidatePath(ROUTES.accounts)

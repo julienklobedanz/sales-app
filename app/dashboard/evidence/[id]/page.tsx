@@ -22,7 +22,6 @@ import { ApprovalPendingActions } from './approval-pending-actions'
 import { getReferenceDetailActivities } from './reference-detail-activities'
 import { ReferenceActivitiesTimeline } from './reference-activities-timeline'
 import { ReferenceContextHighlighted } from '@/components/reference-context-highlighted'
-import { buildSalesforceOpportunityUrl } from '@/lib/crm/salesforce'
 import {
   buildReferenceHighlightPhrases,
   extractWorkflowHighlightGlossary,
@@ -177,50 +176,6 @@ export default async function EvidenceDetailPage({
   }
 
   const ref = row as unknown as ReferenceDetailRow
-
-  const [{ data: linkedDealsRaw }, { data: orgForCrm }] = await Promise.all([
-    supabase
-      .from('deal_references')
-      .select('deals(id, title, salesforce_opportunity_id, organization_id)')
-      .eq('reference_id', id)
-      .limit(5),
-    organizationId
-      ? supabase.from('organizations').select('workflow_settings').eq('id', organizationId).maybeSingle()
-      : Promise.resolve({ data: null }),
-  ])
-
-  const linkedDeals = (linkedDealsRaw ?? [])
-    .map((row) => {
-      const dealRaw = (row as { deals?: unknown }).deals
-      const deal = Array.isArray(dealRaw) ? dealRaw[0] : dealRaw
-      return deal as {
-        id?: string
-        title?: string | null
-        salesforce_opportunity_id?: string | null
-        organization_id?: string | null
-      } | null
-    })
-    .filter(
-      (
-        d
-      ): d is {
-        id: string
-        title: string | null
-        salesforce_opportunity_id: string | null
-        organization_id: string | null
-      } => Boolean(d?.id) && (!organizationId || d?.organization_id === organizationId)
-    )
-
-  const primaryLinkedDeal = linkedDeals[0] ?? null
-  const workflowSettings = (orgForCrm as { workflow_settings?: unknown } | null)?.workflow_settings
-  const crmBaseUrl =
-    workflowSettings && typeof workflowSettings === 'object'
-      ? ((workflowSettings as Record<string, unknown>).crm_base_url as string | undefined)
-      : undefined
-  const salesforceDealUrl = buildSalesforceOpportunityUrl({
-    opportunityId: primaryLinkedDeal?.salesforce_opportunity_id ?? null,
-    baseUrl: crmBaseUrl ?? process.env.SALESFORCE_BASE_URL ?? null,
-  })
 
   const normalizedStatus = String(ref.status ?? '').toLowerCase()
   if (
@@ -467,23 +422,23 @@ export default async function EvidenceDetailPage({
             </div>
           ) : null}
 
-          <Card className={role === 'sales' ? 'order-3' : 'order-2'}>
-            <CardHeader>
-              <CardTitle className="text-base">Letzte Aktivitäten</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-xs text-muted-foreground">
-                {role === 'sales'
-                  ? 'Nur Teilen- und Export-Ereignisse.'
-                  : 'Aus dem Aktivitätsprotokoll (evidence_events), bis zu fünf neueste Einträge.'}
-              </p>
-              <ReferenceActivitiesTimeline items={referenceActivities} />
-            </CardContent>
-          </Card>
+          {role === 'sales' ? null : (
+            <Card className="order-2">
+              <CardHeader>
+                <CardTitle className="text-base">Letzte Aktivitäten</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-xs text-muted-foreground">
+                  Aus dem Aktivitätsprotokoll (evidence_events), bis zu fünf neueste Einträge.
+                </p>
+                <ReferenceActivitiesTimeline items={referenceActivities} />
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         <div className="lg:sticky lg:top-6 space-y-4 h-fit">
-          <Card className={role === 'sales' ? 'order-2' : 'order-1'}>
+          <Card className={role === 'sales' ? 'order-1' : 'order-1'}>
             <CardHeader>
               <CardTitle className="text-base">Projektdetails</CardTitle>
             </CardHeader>
@@ -521,7 +476,7 @@ export default async function EvidenceDetailPage({
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className={role === 'sales' ? 'order-2' : undefined}>
             <CardHeader>
               <CardTitle className="text-base">Reference Readiness</CardTitle>
             </CardHeader>
@@ -718,39 +673,7 @@ export default async function EvidenceDetailPage({
           </Card>
           )}
 
-          {role === 'sales' ? (
-            <Card className="order-4">
-              <CardHeader>
-                <CardTitle className="text-base">CRM-Sync</CardTitle>
-                <p className="text-xs text-muted-foreground">
-                  Direkter Sprung in den Deal-Kontext.
-                </p>
-              </CardHeader>
-              <CardContent className="grid gap-2">
-                {salesforceDealUrl ? (
-                  <Button asChild variant="outline" className="w-full gap-2">
-                    <a href={salesforceDealUrl} target="_blank" rel="noreferrer">
-                      <AppIcon icon={LinkIcon} size={16} />
-                      Salesforce Deal öffnen
-                    </a>
-                  </Button>
-                ) : primaryLinkedDeal ? (
-                  <Button asChild variant="outline" className="w-full gap-2">
-                    <Link href={ROUTES.deals.detail(primaryLinkedDeal.id)}>
-                      <AppIcon icon={LinkIcon} size={16} />
-                      Deal in RefStack öffnen
-                    </Link>
-                  </Button>
-                ) : (
-                  <p className="text-xs text-muted-foreground">
-                    Kein verknüpfter Deal mit CRM-ID vorhanden.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          ) : null}
-
-          <Card className={role === 'sales' ? 'order-1' : 'order-4'}>
+          <Card className={role === 'sales' ? 'order-3' : 'order-4'}>
             <CardHeader>
               <CardTitle className="text-base">Aktionen</CardTitle>
             </CardHeader>
