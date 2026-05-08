@@ -28,20 +28,21 @@ export default async function AccountsPage() {
         website_url: string | null
         headquarters: string | null
         industry: string | null
+        employee_count: number | null
         is_favorite?: boolean | null
       }[]
     | null = null
 
   const withFav = await supabase
     .from('companies')
-    .select('id, name, logo_url, website_url, headquarters, industry, is_favorite')
+    .select('id, name, logo_url, website_url, headquarters, industry, employee_count, is_favorite')
     .eq('organization_id', profile.organization_id)
     .order('name')
 
   if (withFav.error && (withFav.error.message ?? '').includes('is_favorite')) {
     const withoutFav = await supabase
       .from('companies')
-      .select('id, name, logo_url, website_url, headquarters, industry')
+      .select('id, name, logo_url, website_url, headquarters, industry, employee_count')
       .eq('organization_id', profile.organization_id)
       .order('name')
     companies = (withoutFav.data ?? []).map((c) => ({ ...c, is_favorite: false }))

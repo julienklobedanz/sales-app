@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Building2, Globe, MapPinIcon } from '@hugeicons/core-free-icons'
+import { Building2, Globe, MapPinIcon, Users } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import type { CompanyDetailCompany } from './company-detail-types'
 import { ROUTES } from '@/lib/routes'
@@ -17,6 +17,11 @@ export function CompanyDetailHeader({
   canEdit?: boolean
   onEditClick?: () => void
 }) {
+  const employeeLabel =
+    typeof company.employee_count === 'number' && Number.isFinite(company.employee_count)
+      ? new Intl.NumberFormat('de-DE').format(company.employee_count)
+      : null
+
   return (
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
       <div className="flex items-start gap-4">
@@ -32,6 +37,12 @@ export function CompanyDetailHeader({
               <span className="inline-flex items-center gap-1">
                 <AppIcon icon={Building2} size={14} />
                 {company.industry}
+              </span>
+            )}
+            {employeeLabel && (
+              <span className="inline-flex items-center gap-1">
+                <AppIcon icon={Users} size={14} />
+                {employeeLabel} Mitarbeiter
               </span>
             )}
             {company.headquarters && (

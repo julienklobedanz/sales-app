@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation'
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
@@ -32,6 +31,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   Cancel01Icon,
+  Building2,
   Briefcase,
   Globe,
   Loader,
@@ -59,6 +59,7 @@ export type CompanyCard = {
   website_url: string | null
   headquarters: string | null
   industry: string | null
+  employee_count?: number | null
   is_favorite?: boolean | null
   open_deals_count?: number | null
   contacts_count?: number | null
@@ -94,6 +95,11 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
   const { isAdmin, isAccountManager } = useRole()
   const canManage = isAdmin || isAccountManager
   const importInputRef = useRef<HTMLInputElement | null>(null)
+
+  function employeeLabel(value: number | null | undefined): string | null {
+    if (typeof value !== 'number' || !Number.isFinite(value)) return null
+    return `${new Intl.NumberFormat('de-DE').format(value)} Mitarbeiter`
+  }
 
   const companiesWithFavoriteState = useMemo(
     () =>
@@ -472,11 +478,6 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                                 {company.name}
                               </CardTitle>
                             </div>
-                            {company.industry && (
-                              <CardDescription className="mt-0.5 truncate text-xs text-muted-foreground">
-                                {company.industry}
-                              </CardDescription>
-                            )}
                             {(company.signal_count ?? 0) >= 3 ? (
                               <span className="inline-flex items-center gap-1 rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-semibold text-white">
                                 <span className="text-[11px]">▲</span>
@@ -489,6 +490,18 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                     </CardHeader>
                     <CardContent className="pt-1 text-xs text-muted-foreground">
                       <div className="flex flex-wrap items-center gap-3">
+                        {company.industry && (
+                          <div className="flex items-center gap-1.5">
+                            <AppIcon icon={Building2} size={14} className="shrink-0" />
+                            <span className="max-w-[150px] truncate">{company.industry}</span>
+                          </div>
+                        )}
+                        {employeeLabel(company.employee_count) && (
+                          <div className="flex items-center gap-1.5">
+                            <AppIcon icon={Users} size={14} className="shrink-0" />
+                            <span className="max-w-[160px] truncate">{employeeLabel(company.employee_count)}</span>
+                          </div>
+                        )}
                         {company.headquarters && (
                           <div className="flex items-center gap-1.5">
                             <AppIcon icon={MapPinIcon} size={14} className="shrink-0" />

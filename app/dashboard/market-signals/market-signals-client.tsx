@@ -32,7 +32,6 @@ import {
   logMarketSignalQuickAction,
   markMarketSignalNotificationsRead,
   markMarketSignalsIrrelevant,
-  markMarketSignalOutcome,
   requestReferenceApprovalForSignal,
   setMarketSignalPriority,
   snoozeMarketSignal,
@@ -46,7 +45,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { toast } from 'sonner'
 import { useRole } from '@/hooks/useRole'
-import { CheckCircle2, Copy, CopyCheck, Info, Lock, Users, CalendarClock, ThumbsDown, ThumbsUp } from 'lucide-react'
+import { CheckCircle2, CalendarDays, Copy, CopyCheck, Info, Lock, Users, ThumbsDown, ThumbsUp } from 'lucide-react'
 
 function formatLinkedInActivityLine(iso: string | null | undefined): string | null {
   if (!iso) return null
@@ -200,8 +199,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
 
   function signalTypeLabel(badge: InboxItem['categoryBadge']) {
     if (badge === 'people') return { short: 'Executive', full: 'Executive Tracking' }
-    if (badge === 'finance') return { short: 'Finanz', full: 'Account News · Finanz' }
-    return { short: 'Strategie', full: 'Account News · Strategie' }
+    return { short: 'Company', full: 'Company News' }
   }
 
   /** Erklärt die Farbe am Kartenrand und im Aktions-Stack (Grün ≠ Gelb). */
@@ -213,16 +211,6 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
       return 'Grün · Finanz: Budget, Kennzahlen, Finanzierungen, IT-Kosten / CFO-relevante News.'
     }
     return 'Gelb · Strategie: Programme, Digitalisierung, CRM- & Tool-Rollouts, Unternehmens- und IT-Strategie.'
-  }
-
-  function mergeGroupCompany(list: GroupCompany[], item: InboxItem) {
-    if (!list.some((c) => c.id === item.companyId)) {
-      list.push({
-        id: item.companyId,
-        name: item.companyName,
-        logoUrl: item.companyLogoUrl,
-      })
-    }
   }
 
   function relativeTime(iso: string) {
@@ -282,15 +270,6 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
       .join(' ')
   }
 
-  function normalizeGroupingToken(input: string) {
-    return String(input ?? '')
-      .toLowerCase()
-      .replace(/\([^)]*\)/g, '')
-      .replace(/[^\p{L}\p{N}\s]/gu, ' ')
-      .replace(/\s+/g, ' ')
-      .trim()
-  }
-
   function buildCompanyNewsHeadline(companyName: string, body: string) {
     const compact = String(body ?? '').replace(/\s+/g, ' ').trim()
     if (!compact) return `${companyName} • Neues Signal`
@@ -331,6 +310,22 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
     return `${companyName} • ${trigger} (${context})`
   }
 
+  function signalTypeTag(kind: InboxItem['kind']) {
+    return kind === 'exec' ? 'Executive' : 'Company'
+  }
+
+  function signalImpactLabel(item: InboxItem) {
+    if (item.kind === 'exec') return 'High Impact'
+    if (item.categoryBadge === 'finance') return 'Medium Impact'
+    return 'High Impact'
+  }
+
+  function recommendedLine(item: InboxItem) {
+    if (item.kind === 'exec') return 'Leadership transition outreach'
+    if (item.categoryBadge === 'finance') return 'Budget-based value pitch'
+    return 'Strategic initiative follow-up'
+  }
+
   const restrictedSet = useMemo(
     () => (restrictedCompanyIds?.length ? new Set(restrictedCompanyIds) : null),
     [restrictedCompanyIds]
@@ -353,19 +348,6 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
       const until = new Date(parts[2]).getTime()
       const signalKey = parts.slice(3).join(':')
       if (Number.isFinite(until)) m.set(signalKey, until)
-    }
-    return m
-  })
-  const [outcomeByKey, setOutcomeByKey] = useState(() => {
-    const m = new Map<string, 'outreach' | 'meeting' | 'opportunity'>()
-    for (const k of model.signalReadKeys) {
-      if (!k.startsWith('market_outcome:')) continue
-      const parts = k.split(':')
-      if (parts.length < 4) continue
-      const stage = parts[1]
-      if (stage !== 'outreach' && stage !== 'meeting' && stage !== 'opportunity') continue
-      const signalKey = parts.slice(2).join(':')
-      m.set(signalKey, stage)
     }
     return m
   })
@@ -483,80 +465,27 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
     )
   }, [inboxCategory, items, signalFilter])
 
-  const groupedVisibleItems = useMemo(() => {
-    const byKey = new Map<string, InboxGroup>()
-    for (const item of visibleItems) {
-      const ts = item.kind === 'exec' ? item.detectedAt : item.publishedOn
-      if (item.kind === 'exec') {
-        const topicToken = normalizeGroupingToken(
-          `${item.companyName} ${item.personName ?? ''} ${item.listTitleRest}`
-        )
-        const groupKey = `exec:${item.companyId}:${topicToken}`
-        const existing = byKey.get(groupKey)
-        if (!existing) {
-          const companies: GroupCompany[] = []
-          mergeGroupCompany(companies, item)
-          byKey.set(groupKey, {
-            key: groupKey,
-            representative: item,
-            items: [item],
-            personNames: item.personName ? [item.personName] : [],
-            companies,
-            sourceLabels: [item.sourceLabel],
-            latestTs: ts,
-          })
-          continue
+  const groupedVisibleItems = useMemo(
+    () =>
+      visibleItems.map((item) => {
+        const ts = item.kind === 'exec' ? item.detectedAt : item.publishedOn
+        const company: GroupCompany = {
+          id: item.companyId,
+          name: item.companyName,
+          logoUrl: item.companyLogoUrl,
         }
-        existing.items.push(item)
-        mergeGroupCompany(existing.companies, item)
-        if (item.personName && !existing.personNames.includes(item.personName)) {
-          existing.personNames.push(item.personName)
-        }
-        if (!existing.sourceLabels.includes(item.sourceLabel)) {
-          existing.sourceLabels.push(item.sourceLabel)
-        }
-        if (new Date(ts).getTime() > new Date(existing.latestTs).getTime()) {
-          existing.latestTs = ts
-          existing.representative = item
-        }
-        byKey.set(groupKey, existing)
-        continue
-      }
-
-      const topicToken = normalizeGroupingToken(
-        `${item.listTitleRest} ${String(item.body ?? '').slice(0, 200)}`
-      )
-      const groupKey = `news:cluster:${topicToken}`
-      const existing = byKey.get(groupKey)
-      if (!existing) {
-        const companies: GroupCompany[] = []
-        mergeGroupCompany(companies, item)
-        byKey.set(groupKey, {
-          key: groupKey,
+        return {
+          key: signalKeyOf(item),
           representative: item,
           items: [item],
-          personNames: [],
-          companies,
+          personNames: item.personName ? [item.personName] : [],
+          companies: [company],
           sourceLabels: [item.sourceLabel],
           latestTs: ts,
-        })
-        continue
-      }
-      existing.items.push(item)
-      mergeGroupCompany(existing.companies, item)
-      if (!existing.sourceLabels.includes(item.sourceLabel)) {
-        existing.sourceLabels.push(item.sourceLabel)
-      }
-      if (new Date(ts).getTime() > new Date(existing.latestTs).getTime()) {
-        existing.latestTs = ts
-        existing.representative = item
-      }
-      byKey.set(groupKey, existing)
-    }
-    return Array.from(byKey.values()).sort(
-      (a, b) => new Date(b.latestTs).getTime() - new Date(a.latestTs).getTime()
-    )
-  }, [visibleItems])
+        } satisfies InboxGroup
+      }),
+    [visibleItems]
+  )
 
   const trendingAccounts = useMemo(() => {
     const stats = new Map<
@@ -751,13 +680,16 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
     toast.success(days === 1 ? 'Auf morgen verschoben' : 'Auf nächste Woche verschoben')
   }
 
-  async function setOutcome(stage: 'outreach' | 'meeting' | 'opportunity') {
+  async function submitDraftFeedback(helpful: boolean) {
     if (!selected) return
-    const key = signalKeyOf(selected)
-    const res = await markMarketSignalOutcome({ signalKey: key, stage })
+    const reason = helpful ? '' : window.prompt('Warum war der Draft nicht hilfreich? (optional)') ?? ''
+    const res = await submitMarketSignalDraftFeedback({
+      signalKey: signalKeyOf(selected),
+      helpful,
+      reason,
+    })
     if (!res.success) return toast.error(res.error)
-    setOutcomeByKey((prev) => new Map(prev).set(key, stage))
-    toast.success('Outcome aktualisiert')
+    toast.success('Feedback gespeichert')
   }
 
   const quickRefs = useMemo(() => {
@@ -1107,7 +1039,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
   }, [selected, introTone, quickRefs, introDraftRequested, introDraftRunId])
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 overflow-x-hidden">
       <div className="flex flex-wrap items-center justify-end gap-3 rounded-xl border border-border/70 bg-card px-4 py-3 shadow-sm shadow-slate-900/5">
         <div className="inline-flex items-center rounded-lg border border-border/70 bg-background/70 p-1">
           <Button
@@ -1187,18 +1119,15 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
         </div>
       </div>
 
-      <div className="h-[calc(100vh-220px)] min-h-[540px] overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm">
+      <div className="h-[calc(100vh-220px)] min-h-[540px] max-w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm">
         <ResizablePanelGroup direction="horizontal">
-          <ResizablePanel defaultSize={35} minSize={28} className="min-w-[280px]">
+          <ResizablePanel defaultSize={35} minSize={28} className="min-w-0">
             <div className="h-full overflow-hidden">
               <div className="flex h-12 items-center justify-between border-b border-slate-200 bg-white px-3">
                 <p className="text-sm font-semibold text-slate-900">Inbox</p>
                 <div className="flex items-center gap-1.5">
                   <p className="text-xs text-slate-500">
-                    {groupedVisibleItems.length} Gruppen
-                    {groupedVisibleItems.length !== visibleItems.length
-                      ? ` · ${visibleItems.length} Signale`
-                      : ''}
+                    {groupedVisibleItems.length} Signale
                   </p>
                   <Button
                     type="button"
@@ -1253,7 +1182,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                   />
                 </div>
               </div>
-              <div className="h-[calc(100%-6.25rem)] overflow-y-auto p-2 [scrollbar-gutter:stable] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar]:w-2">
+              <div className="h-[calc(100%-6.25rem)] overflow-x-hidden overflow-y-auto p-2 [scrollbar-gutter:stable] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar]:w-2">
                 {groupedVisibleItems.length === 0 ? (
                   <div className="flex h-full items-center justify-center px-6 text-center">
                     <div className="max-w-sm">
@@ -1358,30 +1287,30 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                       ) : null}
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                      <div className="flex min-w-0 items-center gap-1.5">
-                                        <span
-                                          className="shrink-0 rounded border border-slate-200 bg-slate-50 px-1 py-px text-[9px] font-semibold uppercase tracking-wide text-slate-700"
-                                          title={typeMeta.full}
-                                        >
-                                          {typeMeta.short}
-                                        </span>
-                                        {rep.categoryBadge === 'people' ? (
-                                          <Badge className="h-4 px-1.5 text-[9px]">High Priority</Badge>
-                                        ) : null}
-                                        {isTodayPriority ? (
-                                          <Badge variant="secondary" className="h-4 px-1.5 text-[9px]">
-                                            Heute zuerst
-                                          </Badge>
-                                        ) : null}
+                                      <div className="flex min-w-0 items-center justify-between gap-2">
                                         <p className="min-w-0 truncate text-xs text-slate-900">
-                                          <span className="font-semibold">{displayPrefix}</span>
-                                          <span className="text-slate-700"> • {rep.listTitleRest}</span>
+                                          <span className="mr-1.5 rounded border border-slate-200 bg-slate-50 px-1.5 py-px text-[9px] font-semibold uppercase tracking-wide text-slate-700">
+                                            {signalTypeTag(rep.kind)}
+                                          </span>
+                                          <span className="font-semibold">{rep.companyName}</span>
                                         </p>
+                                        <span className="shrink-0 text-xs font-semibold text-slate-800">
+                                          ICP {maxStakeholderConfidence}%
+                                        </span>
                                       </div>
+                                      <p className="mt-1 line-clamp-2 text-xs leading-snug text-slate-900">
+                                        {rep.headline}
+                                      </p>
                                       <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-slate-500">
                                         {rep.sourceSummary}
                                       </p>
-                                      <p className="mt-0.5 text-[11px] text-slate-500">{relativeTime(ts)}</p>
+                                      <p className="mt-1 text-[11px] text-slate-600">
+                                        {relativeTime(ts)} • {typeMeta.full.replace('Tracking', 'Change')} • {signalImpactLabel(rep)}
+                                      </p>
+                                      <p className="mt-1 text-[11px] text-slate-700">
+                                        Recommended: {recommendedLine(rep)}
+                                        {isTodayPriority ? ' · Heute zuerst' : ''}
+                                      </p>
                                       {groupItem.personNames.length > 1 ? (
                                         <div className="mt-1 flex items-center gap-1">
                                           {groupItem.personNames.slice(0, 4).map((person) => (
@@ -1410,7 +1339,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                       {!allRead ? (
                                         <span className="absolute -left-2 top-1/2 size-2 -translate-y-1/2 rounded-full bg-blue-500" />
                                       ) : null}
-                                      <div className="absolute right-0 top-1/2 flex -translate-y-1/2 items-center gap-1 rounded-md border border-slate-200 bg-white/95 px-1 py-0.5 opacity-60 shadow-sm transition-opacity duration-200 group-hover:opacity-100 dark:border-slate-700 dark:bg-slate-900/95">
+                                      <div className="pointer-events-none absolute right-0 top-1/2 flex -translate-y-1/2 items-center gap-1 rounded-md border border-slate-200 bg-white/95 px-1 py-0.5 opacity-0 shadow-sm transition-opacity duration-200 group-hover:pointer-events-auto group-hover:opacity-100 dark:border-slate-700 dark:bg-slate-900/95">
                                         <Tooltip>
                                           <TooltipTrigger asChild>
                                             <button
@@ -1575,7 +1504,17 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                 )}
                           </div>
                           <div className="min-w-0">
-                            <p className="text-sm font-semibold text-slate-900">{selected.headline}</p>
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="truncate text-sm font-semibold text-slate-900">{selected.headline}</p>
+                              <div className="flex items-center gap-1">
+                                <Button type="button" variant="ghost" size="icon" className="size-7" onClick={() => void submitDraftFeedback(true)} aria-label="Nützlich">
+                                  <ThumbsUp className="h-4 w-4" />
+                                </Button>
+                                <Button type="button" variant="ghost" size="icon" className="size-7" onClick={() => void submitDraftFeedback(false)} aria-label="Nicht nützlich">
+                                  <ThumbsDown className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
                             <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
                               <span>
                                 {selectedGroup && selectedGroup.companies.length > 1
@@ -1612,7 +1551,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                       </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto px-6 py-5">
+                    <div className="flex-1 overflow-x-hidden overflow-y-auto px-6 py-5">
                       <div className="grid gap-4 lg:grid-cols-2 lg:items-stretch">
                         <motion.div
                           initial={{ opacity: 0, y: 8 }}
@@ -1622,7 +1561,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                         >
                           <div className="flex flex-wrap items-start justify-between gap-3">
                             <div>
-                              <p className="text-sm font-semibold text-slate-900">1. Signal</p>
+                              <p className="text-sm font-semibold text-slate-900">1. Summary</p>
                               <p className="mt-1 text-xs leading-snug text-slate-500">Warum jetzt anrufen?</p>
                             </div>
                             {signalIcpScore !== null ? (
@@ -1656,7 +1595,6 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                         <div className="h-full rounded-xl border-2 border-blue-100 bg-gradient-to-b from-slate-50 to-white p-4 shadow-sm shadow-slate-900/5">
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">2. Analyse · Target Stakeholder</p>
-                            <span className="text-[11px] text-slate-500">Account · Rollen · ICP Match</span>
                           </div>
                           {decisionCandidatesLoadingCompanyId === selected.companyId ? (
                             <p className="mt-3 text-sm text-slate-500">Profile werden geladen …</p>
@@ -1709,12 +1647,9 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-center py-1">
-                        <div className="h-4 border-l border-dashed border-slate-300" />
-                      </div>
                       <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50/80 p-4">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Passende Referenzen</p>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">3. Passende Referenzen</p>
                           <Button
                             type="button"
                             size="sm"
@@ -1804,7 +1739,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                       <div className="rounded-lg border border-blue-100 bg-blue-50/70 px-4 py-3 dark:border-blue-900/40 dark:bg-blue-950/25">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <p className="text-[10px] font-semibold uppercase tracking-wide text-blue-900 dark:text-blue-200">
-                            3. Output · Outreach-Draft
+                            4. Handlungsempfehlung
                           </p>
                           <Button type="button" size="sm" variant="ghost" className="h-7 px-3.5 text-xs" onClick={() => void copyStrategySnippet()}>
                             {copySuccess ? <CopyCheck className="mr-1 h-3.5 w-3.5" /> : <Copy className="mr-1 h-3.5 w-3.5" />}
@@ -1852,57 +1787,55 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                         <div className="flex items-center gap-2 justify-end">
                           {selected ? (
                             <>
-                              <Button type="button" variant="outline" size="sm" onClick={() => void toggleTodayPriority(selected)}>
-                                Heute zuerst
-                              </Button>
-                              <Button type="button" variant="outline" size="sm" onClick={() => void snoozeSelected(1)}>
-                                <CalendarClock className="mr-1 h-4 w-4" />
-                                Morgen
-                              </Button>
-                              <Button type="button" variant="outline" size="sm" onClick={() => void snoozeSelected(7)}>
-                                <CalendarClock className="mr-1 h-4 w-4" />
-                                Nächste Woche
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={async () => {
-                                  const key = signalKeyOf(selected)
-                                  await logMarketSignalQuickAction({ signalKey: key, channel: 'hubspot_email' })
-                                  window.open(
-                                    `https://app.hubspot.com/contacts?query=${encodeURIComponent(selected.companyName)}`,
-                                    '_blank',
-                                    'noopener,noreferrer'
-                                  )
-                                }}
-                              >
-                                Email in HubSpot
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={async () => {
-                                  const key = signalKeyOf(selected)
-                                  await logMarketSignalQuickAction({ signalKey: key, channel: 'salesforce_task' })
-                                  window.open('https://login.salesforce.com/', '_blank', 'noopener,noreferrer')
-                                }}
-                              >
-                                Task in Salesforce
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={async () => {
-                                  const key = signalKeyOf(selected)
-                                  await logMarketSignalQuickAction({ signalKey: key, channel: 'slack_mention' })
-                                  window.open('https://slack.com/app_redirect', '_blank', 'noopener,noreferrer')
-                                }}
-                              >
-                                Slack @AE
-                              </Button>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button type="button" variant="outline" size="icon" className="size-8" aria-label="Aktionen">
+                                    <CalendarDays className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onSelect={() => void toggleTodayPriority(selected)}>
+                                    Heute zuerst
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onSelect={() => void snoozeSelected(1)}>
+                                    Morgen
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onSelect={() => void snoozeSelected(7)}>
+                                    Nächste Woche
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onSelect={async () => {
+                                      const key = signalKeyOf(selected)
+                                      await logMarketSignalQuickAction({ signalKey: key, channel: 'hubspot_email' })
+                                      window.open(
+                                        `https://app.hubspot.com/contacts?query=${encodeURIComponent(selected.companyName)}`,
+                                        '_blank',
+                                        'noopener,noreferrer'
+                                      )
+                                    }}
+                                  >
+                                    Email in HubSpot
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onSelect={async () => {
+                                      const key = signalKeyOf(selected)
+                                      await logMarketSignalQuickAction({ signalKey: key, channel: 'salesforce_task' })
+                                      window.open('https://login.salesforce.com/', '_blank', 'noopener,noreferrer')
+                                    }}
+                                  >
+                                    Task in Salesforce
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onSelect={async () => {
+                                      const key = signalKeyOf(selected)
+                                      await logMarketSignalQuickAction({ signalKey: key, channel: 'slack_mention' })
+                                      window.open('https://slack.com/app_redirect', '_blank', 'noopener,noreferrer')
+                                    }}
+                                  >
+                                    Slack @AE
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </>
                           ) : null}
                           {selected.kind === 'exec' ? (
@@ -2021,52 +1954,6 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                             <AppIcon icon={Sparkles} size={16} />
                             {introStrategyLoading ? 'Generiert …' : 'Intro-Draft generieren'}
                           </Button>
-                          {selected ? (
-                            <>
-                              <Button type="button" variant="ghost" size="sm" onClick={async () => {
-                                const res = await submitMarketSignalDraftFeedback({
-                                  signalKey: signalKeyOf(selected),
-                                  helpful: true,
-                                })
-                                if (!res.success) return toast.error(res.error)
-                                toast.success('Feedback gespeichert')
-                              }}>
-                                <ThumbsUp className="mr-1 h-4 w-4" />
-                                Nützlich
-                              </Button>
-                              <Button type="button" variant="ghost" size="sm" onClick={async () => {
-                                const reason = window.prompt('Warum war der Draft nicht hilfreich? (optional)') ?? ''
-                                const res = await submitMarketSignalDraftFeedback({
-                                  signalKey: signalKeyOf(selected),
-                                  helpful: false,
-                                  reason,
-                                })
-                                if (!res.success) return toast.error(res.error)
-                                toast.success('Feedback gespeichert')
-                              }}>
-                                <ThumbsDown className="mr-1 h-4 w-4" />
-                                Nicht nützlich
-                              </Button>
-                              <div className="inline-flex items-center rounded-md border border-slate-200 bg-white p-0.5">
-                                {([
-                                  ['outreach', 'Outreach'],
-                                  ['meeting', 'Meeting'],
-                                  ['opportunity', 'Opportunity'],
-                                ] as const).map(([stage, label]) => (
-                                  <Button
-                                    key={stage}
-                                    type="button"
-                                    variant={outcomeByKey.get(signalKeyOf(selected)) === stage ? 'secondary' : 'ghost'}
-                                    size="sm"
-                                    className="h-7 px-2 text-xs"
-                                    onClick={() => void setOutcome(stage)}
-                                  >
-                                    {label}
-                                  </Button>
-                                ))}
-                              </div>
-                            </>
-                          ) : null}
                         </div>
                       </div>
                     </div>
@@ -2136,7 +2023,19 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                     </div>
                   ) : null}
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-slate-900">{selected?.headline ?? 'Signal'}</p>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="truncate text-sm font-semibold text-slate-900">{selected?.headline ?? 'Signal'}</p>
+                      {selected ? (
+                        <div className="flex items-center gap-1">
+                          <Button type="button" variant="ghost" size="icon" className="size-7" onClick={() => void submitDraftFeedback(true)} aria-label="Nützlich">
+                            <ThumbsUp className="h-4 w-4" />
+                          </Button>
+                          <Button type="button" variant="ghost" size="icon" className="size-7" onClick={() => void submitDraftFeedback(false)} aria-label="Nicht nützlich">
+                            <ThumbsDown className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : null}
+                    </div>
                     <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] text-slate-500">
                       {selected && selectedGroup && selectedGroup.companies.length > 1 ? (
                         <span>{selectedGroup.companies.length} Accounts</span>
@@ -2176,13 +2075,13 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                 <div />
               </div>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+            <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-4">
               {selected ? (
                 <>
                   <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div>
-                        <p className="text-sm font-semibold text-slate-900">1. Signal</p>
+                        <p className="text-sm font-semibold text-slate-900">1. Summary</p>
                         <p className="mt-1 text-[11px] text-slate-500">Kurzfassung · Ton unten wählbar</p>
                       </div>
                       {signalIcpScore !== null ? (
@@ -2250,7 +2149,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                     )}
                   </div>
                   <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50/80 p-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Passende Referenzen</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">3. Passende Referenzen</p>
                     <p className="mt-0.5 text-[10px] text-slate-500">Freigabe vor dem Kundenkontakt prüfen.</p>
                     {visibleQuickRefs.length === 0 ? (
                       <p className="mt-2 text-sm text-slate-500">
@@ -2328,7 +2227,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                 <div className="mb-3 rounded-lg border border-blue-100 bg-blue-50/70 px-4 py-3 dark:border-blue-900/40 dark:bg-blue-950/25">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="text-[10px] font-semibold uppercase tracking-wide text-blue-900 dark:text-blue-200">
-                      3. Output · Outreach-Draft
+                      4. Handlungsempfehlung
                     </p>
                     <Button type="button" size="sm" variant="ghost" className="h-7 px-3 text-xs" onClick={() => void copyStrategySnippet()}>
                       {copySuccess ? <CopyCheck className="mr-1 h-3.5 w-3.5" /> : <Copy className="mr-1 h-3.5 w-3.5" />}
@@ -2374,14 +2273,53 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                 ) : null}
                 <div className="flex flex-wrap items-center justify-end gap-2">
                   {selected ? (
-                    <>
-                      <Button type="button" variant="outline" size="sm" onClick={() => void toggleTodayPriority(selected)}>
-                        Heute zuerst
-                      </Button>
-                      <Button type="button" variant="outline" size="sm" onClick={() => void snoozeSelected(1)}>
-                        Morgen
-                      </Button>
-                    </>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button type="button" variant="outline" size="icon" className="size-8" aria-label="Aktionen">
+                          <CalendarDays className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onSelect={() => void toggleTodayPriority(selected)}>
+                          Heute zuerst
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => void snoozeSelected(1)}>Morgen</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => void snoozeSelected(7)}>
+                          Nächste Woche
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onSelect={async () => {
+                            const key = signalKeyOf(selected)
+                            await logMarketSignalQuickAction({ signalKey: key, channel: 'hubspot_email' })
+                            window.open(
+                              `https://app.hubspot.com/contacts?query=${encodeURIComponent(selected.companyName)}`,
+                              '_blank',
+                              'noopener,noreferrer'
+                            )
+                          }}
+                        >
+                          Email in HubSpot
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onSelect={async () => {
+                            const key = signalKeyOf(selected)
+                            await logMarketSignalQuickAction({ signalKey: key, channel: 'salesforce_task' })
+                            window.open('https://login.salesforce.com/', '_blank', 'noopener,noreferrer')
+                          }}
+                        >
+                          Task in Salesforce
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onSelect={async () => {
+                            const key = signalKeyOf(selected)
+                            await logMarketSignalQuickAction({ signalKey: key, channel: 'slack_mention' })
+                            window.open('https://slack.com/app_redirect', '_blank', 'noopener,noreferrer')
+                          }}
+                        >
+                          Slack @AE
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   ) : null}
                   {selected.kind === 'exec' ? (
                     <Button type="button" variant="ghost" size="icon" asChild>
@@ -2489,26 +2427,6 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                     <AppIcon icon={Sparkles} size={16} />
                     {introStrategyLoading ? 'Generiert …' : 'Intro-Draft generieren'}
                   </Button>
-                  {selected ? (
-                    <div className="inline-flex items-center rounded-md border border-slate-200 bg-white p-0.5">
-                      {([
-                        ['outreach', 'Outreach'],
-                        ['meeting', 'Meeting'],
-                        ['opportunity', 'Opportunity'],
-                      ] as const).map(([stage, label]) => (
-                        <Button
-                          key={stage}
-                          type="button"
-                          variant={outcomeByKey.get(signalKeyOf(selected)) === stage ? 'secondary' : 'ghost'}
-                          size="sm"
-                          className="h-7 px-2 text-xs"
-                          onClick={() => void setOutcome(stage)}
-                        >
-                          {label}
-                        </Button>
-                      ))}
-                    </div>
-                  ) : null}
                 </div>
               </div>
             ) : null}
