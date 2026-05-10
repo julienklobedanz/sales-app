@@ -49,17 +49,16 @@ export function CompanyDetailContactsTab({
               {internalContacts.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Noch keine internen Kontakte.</p>
               ) : (
-                <Table>
+                <Table className="w-full min-w-0">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>E-Mail</TableHead>
-                      <TableHead>Telefon</TableHead>
-                      <TableHead>LinkedIn</TableHead>
-                      <TableHead>Rolle</TableHead>
-                      <TableHead>Position</TableHead>
-                      <TableHead>Letzte Interaktion</TableHead>
-                      <TableHead className="text-right">Aktionen</TableHead>
+                      <TableHead className="min-w-[8rem]">Name</TableHead>
+                      <TableHead className="min-w-[10rem]">E-Mail</TableHead>
+                      <TableHead className="whitespace-nowrap">Telefon</TableHead>
+                      <TableHead className="w-12 text-center">LinkedIn</TableHead>
+                      <TableHead className="min-w-[7rem]">Position</TableHead>
+                      <TableHead className="whitespace-nowrap">Letzte Interaktion</TableHead>
+                      <TableHead className="w-24 text-right">Aktionen</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -78,7 +77,7 @@ export function CompanyDetailContactsTab({
                       })
                       return (
                         <TableRow key={c.id}>
-                          <TableCell className="font-medium">
+                          <TableCell className="min-w-0 font-medium">
                             <span className="inline-flex flex-wrap items-center gap-2">
                               {name}
                               {isRefApproval ? (
@@ -88,9 +87,13 @@ export function CompanyDetailContactsTab({
                               ) : null}
                             </span>
                           </TableCell>
-                          <TableCell className="text-muted-foreground">{c.email ?? '—'}</TableCell>
-                          <TableCell className="text-muted-foreground">{(c.phone ?? '') || '—'}</TableCell>
-                          <TableCell className="text-muted-foreground">
+                          <TableCell className="min-w-0 break-words text-muted-foreground">
+                            {c.email ?? '—'}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-muted-foreground">
+                            {(c.phone ?? '') || '—'}
+                          </TableCell>
+                          <TableCell className="text-center text-muted-foreground">
                             {liHref ? (
                               <a
                                 className="inline-flex items-center justify-center rounded-md p-1.5 text-[#0A66C2] hover:bg-muted"
@@ -106,9 +109,10 @@ export function CompanyDetailContactsTab({
                               '—'
                             )}
                           </TableCell>
-                          <TableCell className="text-muted-foreground">{(c.role ?? '') || '—'}</TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {((c as unknown as { position?: string | null }).position ?? '') || '—'}
+                          <TableCell className="min-w-0 text-muted-foreground">
+                            <span className="line-clamp-2 break-words">
+                              {((c as unknown as { position?: string | null }).position ?? '') || '—'}
+                            </span>
                           </TableCell>
                           <TableCell className="text-muted-foreground">{last}</TableCell>
                           <TableCell className="text-right">

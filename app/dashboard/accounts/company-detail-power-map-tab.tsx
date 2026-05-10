@@ -34,7 +34,7 @@ export function CompanyDetailPowerMapTab({
   onRemoveInternalContact: (id: string) => void
 }) {
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6">
+    <div className="flex w-full min-w-0 flex-col gap-6">
       <CompanyDetailStakeholdersTab
         stakeholders={stakeholders}
         canEdit={canEdit}

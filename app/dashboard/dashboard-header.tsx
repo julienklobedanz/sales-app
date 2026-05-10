@@ -477,8 +477,7 @@ export function DashboardHeader({
           <PopoverContent
             align="end"
             side="bottom"
-            sideOffset={76}
-            alignOffset={-76}
+            sideOffset={4}
             className="w-96 p-0"
           >
             <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
