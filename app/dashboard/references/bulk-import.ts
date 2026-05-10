@@ -3,14 +3,14 @@
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
+import { BULK_IMPORT_MAX_FILES } from '@/lib/references/bulk-import-limits'
 
 type BulkImportReferencesResult =
-  | { success: true; created: number }
+  | { success: true; created: number; referenceIds: string[] }
   | { success: false; error: string }
 
 type BulkImportGroup = { projectName: string; fileCount: number }
 
-const BULK_IMPORT_MAX_FILES = 20
 const BULK_IMPORT_COMPANY_NAME = 'Import (Entwürfe)'
 
 export async function bulkCreateReferencesFromFilesImpl(
@@ -84,6 +84,7 @@ export async function bulkCreateReferencesFromFilesImpl(
 
   let created = 0
   let fileIndex = 0
+  const referenceIds: string[] = []
 
   if (useGroups) {
     for (const group of groups) {
@@ -117,6 +118,7 @@ export async function bulkCreateReferencesFromFilesImpl(
         .single()
       if (insertRefError || !refRow?.id) continue
       const referenceId = refRow.id
+      referenceIds.push(referenceId)
       for (const file of groupFiles) {
         if (!(file instanceof File) || !file.name?.trim()) continue
         let filePath: string | null = null
@@ -175,21 +177,24 @@ export async function bulkCreateReferencesFromFilesImpl(
         })
         .select('id')
         .single()
-      if (!insertRefError && refRow?.id && filePath) {
-        const ext = file.name.includes('.') ? file.name.split('.').pop() ?? '' : ''
-        await supabase.from('reference_assets').insert({
-          reference_id: refRow.id,
-          file_path: filePath,
-          file_name: file.name,
-          file_type: ext || null,
-          category: 'other',
-        })
+      if (!insertRefError && refRow?.id) {
+        referenceIds.push(refRow.id)
+        if (filePath) {
+          const ext = file.name.includes('.') ? file.name.split('.').pop() ?? '' : ''
+          await supabase.from('reference_assets').insert({
+            reference_id: refRow.id,
+            file_path: filePath,
+            file_name: file.name,
+            file_type: ext || null,
+            category: 'other',
+          })
+        }
       }
       if (!insertRefError) created++
     }
   }
 
   revalidatePath(ROUTES.home)
-  return { success: true, created }
+  return { success: true, created, referenceIds }
 }
 

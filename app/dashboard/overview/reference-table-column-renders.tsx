@@ -16,6 +16,7 @@ import {
 import { TableCell } from "@/components/ui/table"
 import { ReferenceStatusBadge } from "@/components/reference-status-badge"
 import { AccountCell } from "@/components/table/account-cell"
+import { FilterMenuCheckboxOption } from "@/components/table/filter-menu-checkbox-option"
 import { DraggableColumnHead } from "@/components/table/draggable-column-head"
 import { ROUTES } from "@/lib/routes"
 import { formatDateUtcDe } from "@/lib/format"
@@ -405,7 +406,7 @@ export function renderReferenceColumnHeader(
                 onChange={(e) => setStatusSearch(e.target.value)}
                 className="h-8 text-xs"
               />
-              <div className="mt-2 max-h-56 space-y-1 overflow-y-auto text-sm">
+              <div className="mt-2 max-h-56 space-y-0.5 overflow-y-auto p-0.5 text-sm">
                 {["all", ...filterOptions.statuses]
                   .filter((value) => {
                     if (!statusSearch.trim()) return true
@@ -420,25 +421,12 @@ export function renderReferenceColumnHeader(
                     const label = isAll ? "Alle" : STATUS_LABELS[value] ?? value
                     const selected = statusFilter === value
                     return (
-                      <button
+                      <FilterMenuCheckboxOption
                         key={value}
-                        type="button"
-                        onClick={() => {
-                          setStatusFilter(value)
-                        }}
-                        className="flex w-full items-center justify-between gap-2 rounded-md px-1.5 py-1 text-left hover:bg-muted"
-                      >
-                        <span className="truncate">{label}</span>
-                        <div
-                          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-input ${
-                            selected ? "bg-primary border-primary" : "bg-muted"
-                          }`}
-                        >
-                          {selected && (
-                            <span className="h-2 w-2 rounded-full bg-primary-foreground" />
-                          )}
-                        </div>
-                      </button>
+                        label={label}
+                        selected={selected}
+                        onSelect={() => setStatusFilter(value)}
+                      />
                     )
                   })}
               </div>
@@ -499,7 +487,7 @@ export function renderReferenceColumnHeader(
                 onChange={(e) => setProjectStatusSearch(e.target.value)}
                 className="h-8 text-xs"
               />
-              <div className="mt-2 max-h-56 space-y-1 overflow-y-auto text-sm">
+              <div className="mt-2 max-h-56 space-y-0.5 overflow-y-auto p-0.5 text-sm">
                 {["all", ...filterOptions.projectStatuses]
                   .filter((value) => {
                     if (!projectStatusSearch.trim()) return true
@@ -523,25 +511,12 @@ export function renderReferenceColumnHeader(
                           : "Abgeschlossen"
                     const selected = projectStatusFilter === value
                     return (
-                      <button
+                      <FilterMenuCheckboxOption
                         key={value}
-                        type="button"
-                        onClick={() => {
-                          setProjectStatusFilter(value)
-                        }}
-                        className="flex w-full items-center justify-between gap-2 rounded-md px-1.5 py-1 text-left hover:bg-muted"
-                      >
-                        <span className="truncate">{label}</span>
-                        <div
-                          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-input ${
-                            selected ? "bg-primary border-primary" : "bg-muted"
-                          }`}
-                        >
-                          {selected && (
-                            <span className="h-2 w-2 rounded-full bg-primary-foreground" />
-                          )}
-                        </div>
-                      </button>
+                        label={label}
+                        selected={selected}
+                        onSelect={() => setProjectStatusFilter(value)}
+                      />
                     )
                   })}
               </div>

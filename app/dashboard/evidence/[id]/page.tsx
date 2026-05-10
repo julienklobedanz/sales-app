@@ -5,7 +5,19 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toggleFavorite } from '@/app/dashboard/actions'
-import { LinkIcon, Mail, Pencil, Sparkles, StarIcon, TrendingUp } from '@hugeicons/core-free-icons'
+import {
+  Building2,
+  Globe,
+  LinkIcon,
+  Mail,
+  MapPinIcon,
+  Pencil,
+  Sparkles,
+  StarIcon,
+  TrendingUp,
+  UploadIcon,
+  Users,
+} from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { formatDateUtcDe, formatReferenceVolume } from '@/lib/format'
 import { deleteReferenceFromDetailPage } from './actions'
@@ -27,6 +39,7 @@ import {
   extractWorkflowHighlightGlossary,
 } from '@/lib/references/reference-context-highlights'
 import { normalizeNarrativeText } from '@/lib/references/narrative-normalize'
+import { getReferenceAssetsImpl } from '@/app/dashboard/references/assets'
 
 export const dynamic = 'force-dynamic'
 
@@ -119,10 +132,14 @@ export default async function EvidenceDetailPage({
       contract_type,
       project_start,
       project_end,
+      project_status,
+      employee_count,
+      is_nda_deal,
+      file_path,
       incumbent_provider,
       competitors,
       website,
-      companies ( id, name )
+      companies ( id, name, headquarters, website_url, employee_count )
     `
     )
     .eq('id', id)
@@ -130,7 +147,13 @@ export default async function EvidenceDetailPage({
 
   if (error || !row) notFound()
 
-  type CompanyRow = { id: string; name: string }
+  type CompanyRow = {
+    id: string
+    name: string
+    headquarters?: string | null
+    website_url?: string | null
+    employee_count?: number | null
+  }
   type ReferenceDetailRow = {
     id: string
     title: string
@@ -169,6 +192,10 @@ export default async function EvidenceDetailPage({
     contract_type: string | null
     project_start: string | null
     project_end: string | null
+    project_status: string | null
+    employee_count: number | null
+    is_nda_deal: boolean | null
+    file_path: string | null
     incumbent_provider: string | null
     competitors: string | null
     website: string | null
@@ -208,6 +235,26 @@ export default async function EvidenceDetailPage({
   const companyName = company?.name ?? null
   const headerCompany = isAnonymizedView ? 'Kunde' : companyName
   const industryLabel = anonymizeText(ref.industry ?? null, companyName)
+  const refEmployeeRaw = ref.employee_count ?? company?.employee_count ?? null
+  const employeeMetaLabel =
+    typeof refEmployeeRaw === 'number' && Number.isFinite(refEmployeeRaw)
+      ? new Intl.NumberFormat('de-DE').format(refEmployeeRaw)
+      : null
+  const hqRaw = (company?.headquarters ?? '').trim()
+  const countryRaw = (ref.country ?? '').trim()
+  const locationLineRaw = hqRaw || countryRaw || null
+  const locationMetaLabel = locationLineRaw
+    ? isAnonymizedView
+      ? anonymizeText(locationLineRaw, companyName)
+      : locationLineRaw
+    : null
+  const websiteRaw = (ref.website ?? '').trim() || (company?.website_url ?? '').trim()
+  const websiteMetaHref =
+    !isAnonymizedView && websiteRaw
+      ? websiteRaw.startsWith('http')
+        ? websiteRaw
+        : `https://${websiteRaw}`
+      : null
   const summaryTextRaw = isAnonymizedView
     ? anonymizeText(ref.summary ?? null, companyName)
     : (ref.summary ?? null)
@@ -264,6 +311,10 @@ export default async function EvidenceDetailPage({
       normalizedStatus === 'internal_only' ||
       normalizedStatus === 'internal')
 
+  /** Referenz-Stufe (Sales-Sicht, Portfolio): unabhängig vom Kunden-Freigabe-Workflow. */
+  const referenceIsInternalOnly =
+    normalizedStatus === 'internal_only' || normalizedStatus === 'internal'
+
   let readinessLabel: string
   let readinessTone: string
 
@@ -274,7 +325,16 @@ export default async function EvidenceDetailPage({
     readinessLabel = 'Anfrage widerrufen'
     readinessTone = 'bg-slate-100 text-slate-600 border-slate-200'
   } else if (approvalStatus === 'approved' || staleInternalPending) {
-    readinessLabel = 'Freigegeben'
+    const customerWorkflowApproved =
+      baseApprovalStatus === 'approved' ||
+      normalizedStatus === 'approved' ||
+      normalizedStatus === 'external'
+    readinessLabel =
+      referenceIsInternalOnly && customerWorkflowApproved
+        ? 'Kundenfreigabe · nur intern nutzbar'
+        : referenceIsInternalOnly && !customerWorkflowApproved
+          ? 'Einsatzbereit · nur intern'
+          : 'Freigegeben'
     readinessTone = 'bg-emerald-50 text-emerald-700 border-emerald-200'
   } else if (approvalStatus === 'pending') {
     readinessLabel = 'Kundenfreigabe läuft'
@@ -320,10 +380,71 @@ export default async function EvidenceDetailPage({
     glossary: glossaryFromWorkflow,
   })
 
-  const referenceActivities = await getReferenceDetailActivities(
-    id,
-    role as 'admin' | 'sales' | 'account_manager'
-  )
+  const [referenceActivities, assetRows] = await Promise.all([
+    getReferenceDetailActivities(id, role as 'admin' | 'sales' | 'account_manager'),
+    getReferenceAssetsImpl(id),
+  ])
+
+  const publicBase = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, '') ?? ''
+  const toReferencesPublicUrl = (path: string) =>
+    `${publicBase}/storage/v1/object/public/references/${path}`
+
+  type DetailFileRow = { key: string; name: string; href: string; category: string | null }
+  const detailFileRows: DetailFileRow[] = assetRows.map((a) => ({
+    key: a.id,
+    name: a.file_name || a.file_path.split('/').pop() || 'Dokument',
+    href: toReferencesPublicUrl(a.file_path),
+    category: a.category,
+  }))
+  const legacyFilePath = (ref.file_path ?? '').trim()
+  if (legacyFilePath && !assetRows.some((x) => x.file_path === legacyFilePath)) {
+    detailFileRows.unshift({
+      key: `legacy-${legacyFilePath}`,
+      name: legacyFilePath.split('/').pop() || 'Dokument',
+      href: toReferencesPublicUrl(legacyFilePath),
+      category: null,
+    })
+  }
+
+  const filesCard =
+    detailFileRows.length > 0 ? (
+      <Card className="border-border/70">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base inline-flex items-center gap-2">
+            <AppIcon icon={UploadIcon} size={16} className="text-muted-foreground" />
+            Dateien
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          <ul className="space-y-2">
+            {detailFileRows.map((f) => (
+              <li key={f.key} className="flex min-w-0 items-center justify-between gap-2">
+                <span className="min-w-0 truncate text-muted-foreground">{f.name}</span>
+                <div className="flex shrink-0 items-center gap-2">
+                  {f.category ? (
+                    <Badge variant="outline" className="text-[10px] font-normal capitalize">
+                      {f.category === 'sales'
+                        ? 'Sales'
+                        : f.category === 'contract'
+                          ? 'Vertrag'
+                          : 'Sonstiges'}
+                    </Badge>
+                  ) : null}
+                  <a
+                    className="text-xs font-medium text-primary hover:underline"
+                    href={f.href}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Öffnen
+                  </a>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
+    ) : null
 
   return (
     <div>
@@ -338,10 +459,40 @@ export default async function EvidenceDetailPage({
               <h1 className={`${DASHBOARD_PAGE_TITLE_CLASS} break-words`}>
                 {ref.title}
               </h1>
-              <p className="text-sm text-muted-foreground">
-                {headerCompany ? `${headerCompany} · ` : ''}
-                {industryLabel ?? ''}
-              </p>
+              {headerCompany ? (
+                <p className="text-sm text-muted-foreground">{headerCompany}</p>
+              ) : null}
+              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                {industryLabel ? (
+                  <span className="inline-flex max-w-[min(100%,280px)] items-center gap-1">
+                    <AppIcon icon={Building2} size={14} className="shrink-0" />
+                    <span className="truncate">{industryLabel}</span>
+                  </span>
+                ) : null}
+                {employeeMetaLabel ? (
+                  <span className="inline-flex shrink-0 items-center gap-1">
+                    <AppIcon icon={Users} size={14} />
+                    {employeeMetaLabel} Mitarbeiter
+                  </span>
+                ) : null}
+                {locationMetaLabel ? (
+                  <span className="inline-flex max-w-[min(100%,260px)] items-center gap-1">
+                    <AppIcon icon={MapPinIcon} size={14} className="shrink-0" />
+                    <span className="truncate">{locationMetaLabel}</span>
+                  </span>
+                ) : null}
+                {websiteMetaHref ? (
+                  <a
+                    className="inline-flex shrink-0 items-center gap-1 hover:underline"
+                    href={websiteMetaHref}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <AppIcon icon={Globe} size={14} />
+                    Website
+                  </a>
+                ) : null}
+              </div>
               <div className="mt-2 flex flex-wrap gap-1">
                 {tags.length ? (
                   tags.map((t) => (
@@ -419,21 +570,27 @@ export default async function EvidenceDetailPage({
                   </CardContent>
                 </Card>
               </div>
+              {role === 'sales' ? filesCard : null}
             </div>
+          ) : role === 'sales' && filesCard ? (
+            <div className="w-full min-w-0">{filesCard}</div>
           ) : null}
 
           {role === 'sales' ? null : (
-            <Card className="order-2">
-              <CardHeader>
-                <CardTitle className="text-base">Letzte Aktivitäten</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <p className="text-xs text-muted-foreground">
-                  Aus dem Aktivitätsprotokoll (evidence_events), bis zu fünf neueste Einträge.
-                </p>
-                <ReferenceActivitiesTimeline items={referenceActivities} />
-              </CardContent>
-            </Card>
+            <>
+              {filesCard}
+              <Card className="order-2">
+                <CardHeader>
+                  <CardTitle className="text-base">Letzte Aktivitäten</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-xs text-muted-foreground">
+                    Aus dem Aktivitätsprotokoll (evidence_events), bis zu fünf neueste Einträge.
+                  </p>
+                  <ReferenceActivitiesTimeline items={referenceActivities} />
+                </CardContent>
+              </Card>
+            </>
           )}
         </div>
 
@@ -484,6 +641,18 @@ export default async function EvidenceDetailPage({
               {role === 'sales' ? (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
+                    <span className="text-muted-foreground">NDA</span>
+                    <span
+                      className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${
+                        Boolean(ref.is_nda_deal)
+                          ? 'border-amber-200 bg-amber-50 text-amber-900'
+                          : 'border-border bg-slate-50 text-slate-700'
+                      }`}
+                    >
+                      {Boolean(ref.is_nda_deal) ? 'Vertraulich (NDA)' : 'Kein NDA'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
                     <span className="text-muted-foreground">Freigabe</span>
                     <span
                       className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${
@@ -517,6 +686,18 @@ export default async function EvidenceDetailPage({
                 </div>
               ) : (
                 <>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-muted-foreground">NDA</span>
+                    <span
+                      className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${
+                        Boolean(ref.is_nda_deal)
+                          ? 'border-amber-200 bg-amber-50 text-amber-900'
+                          : 'border-border bg-slate-50 text-slate-700'
+                      }`}
+                    >
+                      {Boolean(ref.is_nda_deal) ? 'Vertraulich (NDA)' : 'Kein NDA'}
+                    </span>
+                  </div>
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-muted-foreground">Status</span>
                     <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${readinessTone}`}>

@@ -22,9 +22,10 @@ export function NewReferenceDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] min-h-[60vh] overflow-y-auto w-[calc(100vw-2rem)] max-w-[90vw] lg:max-w-7xl gap-0 border-0 px-6 py-6 md:px-12 md:py-10 lg:px-16 lg:py-12">
-        <div className="flex flex-col items-center w-full max-w-full">
+      <DialogContent className="flex h-[min(90vh,920px)] max-h-[90vh] w-[calc(100vw-2rem)] max-w-[90vw] flex-col gap-0 overflow-hidden border-0 p-0 lg:max-w-7xl">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-6 py-6 md:px-12 md:py-8 lg:px-16 lg:py-10">
           <ReferenceForm
+            layout="dialog"
             companies={companies}
             contacts={contacts}
             externalContacts={externalContacts}

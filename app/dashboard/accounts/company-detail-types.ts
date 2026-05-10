@@ -17,10 +17,14 @@ export type CompanyDetailCompany = {
   description: string | null
   employee_count: number | null
   account_status: string | null
+  /** Interner Kontakt für Koordination der Kunden-Referenzfreigabe */
+  internal_reference_approval_contact_id: string | null
 }
 
 export type CompanyDetailClientProps = {
   company: CompanyDetailCompany
+  /** Eigenes Mandanten-Label für LinkedIn-Suche bei internen Kontakten */
+  organizationName: string | null
   strategy: CompanyStrategyRow | null
   stakeholders: StakeholderRow[]
   internalContacts: ContactPersonRow[]

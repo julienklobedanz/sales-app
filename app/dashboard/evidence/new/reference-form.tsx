@@ -265,6 +265,7 @@ export function ReferenceForm({
   initialData,
   onSuccess,
   onClose,
+  layout = 'page',
 }: {
   companies?: Company[]
   contacts?: ContactPerson[]
@@ -275,6 +276,8 @@ export function ReferenceForm({
   onSuccess?: () => void
   /** Bei Modal-Einbettung: wird bei Abbrechen aufgerufen. */
   onClose?: () => void
+  /** `dialog`: Fußzeile am unteren Dialogrand, Inhalt scrollt — `page`: bisheriges Sticky-Verhalten. */
+  layout?: 'page' | 'dialog'
 }) {
   const router = useRouter()
   const [editSubmitting, setEditSubmitting] = useState(false)
@@ -739,6 +742,84 @@ export function ReferenceForm({
       newCompanyName)
 
   function renderFormContent() {
+    const volumeBlock = (
+      <div className="space-y-2">
+        <OptionalLabel htmlFor="volume_eur">Volumen</OptionalLabel>
+        <div className="flex min-w-0 max-w-full items-center gap-2">
+          <Input
+            id="volume_eur"
+            name="volume_eur"
+            type="text"
+            inputMode="numeric"
+            placeholder="z. B. 5.000.000"
+            disabled={submitting}
+            className="min-w-0 flex-1 sm:max-w-none"
+            value={volumeEur}
+            onChange={(e) => {
+              const digits = e.target.value.replace(/\D/g, '')
+              if (!digits) {
+                setVolumeEur('')
+                return
+              }
+              const withSeparators = digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+              setVolumeEur(withSeparators)
+            }}
+          />
+          <Select value={volumeCurrency} onValueChange={setVolumeCurrency} disabled={submitting}>
+            <SelectTrigger
+              className="h-10 w-[104px] shrink-0 rounded-lg border border-input bg-background px-2.5 text-xs font-medium"
+              aria-label="Währung wählen"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {VOLUME_CURRENCY_OPTIONS.map((opt) => (
+                <SelectItem key={opt.code} value={opt.code}>
+                  {opt.symbol} ({opt.code})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+    )
+
+    const contractBlock = (
+      <div className="space-y-2">
+        <OptionalLabel htmlFor="contract_type">Vertragsart</OptionalLabel>
+        <input type="hidden" name="contract_type" value={contractType} />
+        <Select value={contractType || undefined} onValueChange={setContractType} disabled={submitting}>
+          <SelectTrigger id="contract_type" className="w-full">
+            <SelectValue placeholder="Auswählen …" />
+          </SelectTrigger>
+          <SelectContent>
+            {CONTRACT_TYPE_GROUPS.map((group, groupIndex) => (
+              <div key={group.label}>
+                <SelectGroup>
+                  <SelectLabel>{group.label}</SelectLabel>
+                  {group.options.map((opt) => (
+                    <SelectItem key={opt} value={opt}>
+                      {opt}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+                {groupIndex < CONTRACT_TYPE_GROUPS.length - 1 ? <SelectSeparator /> : null}
+              </div>
+            ))}
+            {contractType && !CONTRACT_TYPE_VALUES.includes(contractType) ? (
+              <>
+                <SelectSeparator />
+                <SelectGroup>
+                  <SelectLabel>Bestehender Wert</SelectLabel>
+                  <SelectItem value={contractType}>{contractType}</SelectItem>
+                </SelectGroup>
+              </>
+            ) : null}
+          </SelectContent>
+        </Select>
+      </div>
+    )
+
     return (
       <div className="space-y-6">
         <Card>
@@ -1048,9 +1129,9 @@ export function ReferenceForm({
             {/* Storytelling: Herausforderung & Lösung */}
             <div className="space-y-3">
               <div className="space-y-1">
-                <OptionalLabel htmlFor="customer_challenge">
+                <RequiredLabel htmlFor="customer_challenge">
                   Herausforderung des Kunden
-                </OptionalLabel>
+                </RequiredLabel>
                 <Textarea
                   id="customer_challenge"
                   name="customer_challenge"
@@ -1067,7 +1148,7 @@ export function ReferenceForm({
                 </p>
               </div>
               <div className="space-y-1">
-                <OptionalLabel htmlFor="our_solution">Unsere Lösung</OptionalLabel>
+                <RequiredLabel htmlFor="our_solution">Unsere Lösung</RequiredLabel>
                 <Textarea
                   id="our_solution"
                   name="our_solution"
@@ -1361,109 +1442,41 @@ export function ReferenceForm({
             onChange={(e) => setProjectStart(e.target.value)}
           />
         </div>
-        <div className="space-y-2">
-          <OptionalLabel htmlFor="project_end">Projektende</OptionalLabel>
-          <Input
-            id="project_end"
-            name="project_end"
-            type="date"
-            disabled={submitting || projectStatus === 'active'}
-            value={projectStatus === 'active' ? '' : projectEnd}
-            onChange={(e) => setProjectEnd(e.target.value)}
-            required={projectStatus === 'completed'}
-          />
-          <p className="text-muted-foreground text-[10px] italic">
-            {projectStatus === 'completed'
-              ? 'Bei abgeschlossenen Projekten erforderlich.'
-              : projectStatus === 'active'
-                ? 'Bei aktivem Projekt nicht relevant.'
-                : ''}
-          </p>
-        </div>
+        {projectStatus === 'active' ? (
+          volumeBlock
+        ) : (
+          <div className="space-y-2">
+            {projectStatus === 'completed' ? (
+              <RequiredLabel htmlFor="project_end">Projektende</RequiredLabel>
+            ) : (
+              <OptionalLabel htmlFor="project_end">Projektende</OptionalLabel>
+            )}
+            <Input
+              id="project_end"
+              name="project_end"
+              type="date"
+              disabled={submitting}
+              value={projectEnd}
+              onChange={(e) => setProjectEnd(e.target.value)}
+              required={projectStatus === 'completed'}
+            />
+            {projectStatus === 'completed' ? (
+              <p className="text-muted-foreground text-[10px] italic">
+                Erforderlich bei abgeschlossenem Projekt.
+              </p>
+            ) : null}
+          </div>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <OptionalLabel htmlFor="volume_eur">Volumen</OptionalLabel>
-          <div className="flex items-center gap-2">
-            <Input
-              id="volume_eur"
-              name="volume_eur"
-              type="text"
-              inputMode="numeric"
-              placeholder="z. B. 5.000.000"
-              disabled={submitting}
-              className="max-w-[220px]"
-              value={volumeEur}
-              onChange={(e) => {
-                const digits = e.target.value.replace(/\D/g, '')
-                if (!digits) {
-                  setVolumeEur('')
-                  return
-                }
-                const withSeparators = digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
-                setVolumeEur(withSeparators)
-              }}
-            />
-            <Select
-              value={volumeCurrency}
-              onValueChange={setVolumeCurrency}
-              disabled={submitting}
-            >
-              <SelectTrigger
-                className="h-10 w-[104px] shrink-0 rounded-lg border border-input bg-background px-2.5 text-xs font-medium"
-                aria-label="Währung wählen"
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {VOLUME_CURRENCY_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.code} value={opt.code}>
-                    {opt.symbol} ({opt.code})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+      {projectStatus === 'active' ? (
+        <div className="space-y-2">{contractBlock}</div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {volumeBlock}
+          {contractBlock}
         </div>
-        <div className="space-y-2">
-          <OptionalLabel htmlFor="contract_type">Vertragsart</OptionalLabel>
-          <input type="hidden" name="contract_type" value={contractType} />
-          <Select
-            value={contractType || undefined}
-            onValueChange={setContractType}
-            disabled={submitting}
-          >
-            <SelectTrigger id="contract_type" className="w-full">
-              <SelectValue placeholder="Auswählen …" />
-            </SelectTrigger>
-            <SelectContent>
-              {CONTRACT_TYPE_GROUPS.map((group, groupIndex) => (
-                <div key={group.label}>
-                  <SelectGroup>
-                    <SelectLabel>{group.label}</SelectLabel>
-                    {group.options.map((opt) => (
-                      <SelectItem key={opt} value={opt}>
-                        {opt}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                  {groupIndex < CONTRACT_TYPE_GROUPS.length - 1 ? <SelectSeparator /> : null}
-                </div>
-              ))}
-              {contractType && !CONTRACT_TYPE_VALUES.includes(contractType) ? (
-                <>
-                  <SelectSeparator />
-                  <SelectGroup>
-                    <SelectLabel>Bestehender Wert</SelectLabel>
-                    <SelectItem value={contractType}>{contractType}</SelectItem>
-                  </SelectGroup>
-                </>
-              ) : null}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      )}
           </CardContent>
         </Card>
 
@@ -1745,9 +1758,7 @@ export function ReferenceForm({
         </div>
 
         <div className="space-y-1">
-          <OptionalLabel htmlFor="nda_deal">
-            Vertraulicher NDA Deal?
-          </OptionalLabel>
+          <OptionalLabel htmlFor="nda_deal">Ist dies ein NDA Deal?</OptionalLabel>
           <Switch
             id="nda_deal"
             checked={ndaDeal}
@@ -1770,52 +1781,75 @@ export function ReferenceForm({
     )
   }
 
-  return (
-    <div className="w-full max-w-4xl min-w-0 pb-6">
-      {isEditMode ? (
-        <form
-          id={formId}
-          noValidate
-          onSubmit={handleEditSubmit}
-          className="w-full min-w-0 space-y-6"
+  const actionBar = (
+    <div
+      className={
+        layout === 'dialog'
+          ? 'shrink-0 border-t border-border/80 bg-background px-4 py-3 shadow-[0_-4px_12px_-4px_rgba(15,23,42,0.08)]'
+          : 'sticky bottom-0 z-40 mt-6 border-t bg-background/80 backdrop-blur'
+      }
+    >
+      <div className="flex items-center justify-end gap-3 px-0 sm:px-1">
+        <Button
+          type="button"
+          variant="outline"
+          disabled={submitting}
+          onClick={() => (onClose ? onClose() : router.push(ROUTES.home))}
         >
-          {renderFormContent()}
-        </form>
-      ) : (
-        <form
-          id={formId}
-          noValidate
-          onSubmit={handleCreateSubmit}
-          className="w-full min-w-0 space-y-6"
+          Abbrechen
+        </Button>
+        <Button
+          type="submit"
+          form={formId}
+          disabled={submitting}
+          className="rounded-lg bg-gradient-to-b from-blue-600 to-blue-700 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] hover:from-blue-600 hover:to-blue-700/95"
         >
-          {renderFormContent()}
-        </form>
-      )}
-
-      {/* Sticky Action Bar innerhalb des Formular-Containers */}
-      <div className="sticky bottom-0 z-40 border-t bg-background/80 backdrop-blur mt-6">
-        <div className="flex items-center justify-end gap-3 px-4 py-3">
-          <Button
-            type="button"
-            variant="outline"
-            disabled={submitting}
-            onClick={() =>
-              onClose ? onClose() : router.push(ROUTES.home)
-            }
-          >
-            Abbrechen
-          </Button>
-          <Button
-            type="submit"
-            form={formId}
-            disabled={submitting}
-            className="rounded-lg bg-gradient-to-b from-blue-600 to-blue-700 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] hover:from-blue-600 hover:to-blue-700/95"
-          >
-            <AppIcon icon={CirclePlus} size={16} className="mr-2" />
-            Speichern
-          </Button>
-        </div>
+          <AppIcon icon={CirclePlus} size={16} className="mr-2" />
+          Speichern
+        </Button>
       </div>
+    </div>
+  )
+
+  const formInnerClass = 'w-full min-w-0 space-y-6 pb-2'
+
+  return (
+    <div
+      className={
+        layout === 'dialog'
+          ? 'flex min-h-0 w-full max-w-full flex-1 flex-col overflow-hidden'
+          : 'w-full max-w-4xl min-w-0 pb-6'
+      }
+    >
+      {layout === 'dialog' ? (
+        <>
+          <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-0">
+            {isEditMode ? (
+              <form id={formId} noValidate onSubmit={handleEditSubmit} className={formInnerClass}>
+                {renderFormContent()}
+              </form>
+            ) : (
+              <form id={formId} noValidate onSubmit={handleCreateSubmit} className={formInnerClass}>
+                {renderFormContent()}
+              </form>
+            )}
+          </div>
+          {actionBar}
+        </>
+      ) : (
+        <>
+          {isEditMode ? (
+            <form id={formId} noValidate onSubmit={handleEditSubmit} className={formInnerClass}>
+              {renderFormContent()}
+            </form>
+          ) : (
+            <form id={formId} noValidate onSubmit={handleCreateSubmit} className={formInnerClass}>
+              {renderFormContent()}
+            </form>
+          )}
+          {actionBar}
+        </>
+      )}
     </div>
   )
 }

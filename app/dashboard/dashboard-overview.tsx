@@ -95,7 +95,9 @@ import {
   type ReferenceColumnKey,
 } from './overview/reference-table-column-renders'
 import { ReferenceDetailSheet } from './overview/reference-detail-sheet'
+import { FilterMenuCheckboxOption } from '@/components/table/filter-menu-checkbox-option'
 import { toast } from 'sonner'
+import { BULK_IMPORT_MAX_FILES } from '@/lib/references/bulk-import-limits'
 import { copyTableRowsSelected } from '@/lib/copy'
 // --- Konstanten & Hilfsfunktionen ---
 
@@ -409,7 +411,7 @@ export function DashboardOverview({
   function addBulkImportFiles(newFiles: File[]) {
     setBulkImportGroups((prev) => {
       const currentTotal = prev.reduce((s, g) => s + g.files.length, 0)
-      const capped = newFiles.slice(0, Math.max(0, 20 - currentTotal))
+      const capped = newFiles.slice(0, Math.max(0, BULK_IMPORT_MAX_FILES - currentTotal))
       if (capped.length === 0) return prev
       const newGroups: BulkImportGroupItem[] = capped.map((file) => ({
         id: `g-${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -978,7 +980,7 @@ export function DashboardOverview({
                   onChange={(e) => setStatusSearch(e.target.value)}
                   className="h-8 text-xs"
                 />
-                <div className="mt-2 max-h-56 space-y-1 overflow-y-auto text-sm">
+                <div className="mt-2 max-h-56 space-y-0.5 overflow-y-auto p-0.5 text-sm">
                   {['all', ...filterOptions.statuses]
                     .filter((value) => {
                       if (!statusSearch.trim()) return true
@@ -991,23 +993,12 @@ export function DashboardOverview({
                       const label = isAll ? 'Alle' : STATUS_LABELS[value] ?? value
                       const selected = statusFilter === value
                       return (
-                        <button
+                        <FilterMenuCheckboxOption
                           key={value}
-                          type="button"
-                          onClick={() => {
-                            setStatusFilter(value)
-                          }}
-                          className="flex w-full items-center justify-between gap-2 rounded-md px-1.5 py-1 text-left hover:bg-muted"
-                        >
-                          <span className="truncate">{label}</span>
-                          <div
-                            className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-input ${
-                              selected ? 'bg-primary border-primary' : 'bg-muted'
-                            }`}
-                          >
-                            {selected && <span className="h-2 w-2 rounded-full bg-primary-foreground" />}
-                          </div>
-                        </button>
+                          label={label}
+                          selected={selected}
+                          onSelect={() => setStatusFilter(value)}
+                        />
                       )
                     })}
                 </div>
@@ -1463,11 +1454,11 @@ export function DashboardOverview({
                   setPageIndex(0)
                 }}
               >
-                <SelectTrigger size="sm" className="h-8 w-[84px] rounded-lg border-border/70 bg-background">
+                <SelectTrigger size="sm" className="h-8 w-[88px] rounded-lg border-border/70 bg-background">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent side="top">
-                  {[10, 20, 30, 40, 50].map((size) => (
+                  {[10, 30, 50, 100].map((size) => (
                     <SelectItem key={size} value={String(size)}>
                       {size}
                     </SelectItem>

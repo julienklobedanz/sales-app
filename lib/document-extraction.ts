@@ -148,6 +148,88 @@ Dokumenttext (Ausschnitt):
 
 const MAX_FILE_BYTES = 4.5 * 1024 * 1024 // 4.5MB
 
+/**
+ * Extraktion aus Buffer (z. B. Bulk-Import aus Storage) – gleiche Limits/Formate wie Upload-Formular.
+ */
+export async function extractDataFromBuffer(
+  buffer: Buffer,
+  fileName: string,
+  mimeType?: string | null
+): Promise<ExtractDataFromDocumentResult> {
+  const name = fileName || 'unbenannt'
+  const size = buffer.length
+
+  if (size > MAX_FILE_BYTES) {
+    return {
+      success: false,
+      error: `Datei zu groß für automatische Erkennung (Max 4,5 MB). Aktuell: ${(size / 1024 / 1024).toFixed(1)} MB.`,
+    }
+  }
+
+  const mt = String(mimeType ?? '')
+  const isPdf = mt === 'application/pdf' || /\.pdf$/i.test(name)
+  const isPptx =
+    mt === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
+    /\.pptx$/i.test(name)
+  const isDocx =
+    mt === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+    /\.docx$/i.test(name)
+  const isDoc = mt === 'application/msword' || /\.doc$/i.test(name)
+
+  if (!isPdf && !isPptx && !isDocx && !isDoc) {
+    return {
+      success: false,
+      error: 'Nur Word-, PowerPoint- oder PDF-Dateien werden unterstützt.',
+    }
+  }
+
+  let documentText: string
+  try {
+    if (isPdf) documentText = await extractTextFromPdf(buffer)
+    else if (isPptx) documentText = await extractTextFromPptx(buffer)
+    else if (isDocx) documentText = await extractTextFromDocx(buffer)
+    else if (isDoc) throw new Error('DOC_FORMAT_UNSUPPORTED')
+    else throw new Error('UNSUPPORTED_FORMAT')
+  } catch (e) {
+    const err = e instanceof Error ? e : new Error(String(e))
+    if (err.message === 'DOCX_EXTRACT_FAILED') {
+      return {
+        success: false,
+        error:
+          'Text konnte nicht aus der Word-Datei gelesen werden. Bitte als PDF oder PowerPoint exportieren und erneut versuchen.',
+      }
+    }
+    if (err.message === 'DOC_FORMAT_UNSUPPORTED') {
+      return {
+        success: false,
+        error:
+          'Ältere Word-Dateien (.doc) werden nicht unterstützt. Bitte als DOCX, PDF oder PowerPoint speichern und erneut hochladen.',
+      }
+    }
+    return {
+      success: false,
+      error:
+        'Text konnte nicht aus dem Dokument gelesen werden. Das Dokument könnte bildbasiert oder geschützt sein – bitte die Felder manuell ausfüllen.',
+    }
+  }
+
+  if (!documentText || documentText.trim().length < 50) {
+    return {
+      success: false,
+      error:
+        'Das Dokument enthält zu wenig erkennbaren Text für eine Extraktion (möglicherweise ein Scan/Bild-PDF). Bitte die Felder manuell ausfüllen.',
+    }
+  }
+
+  try {
+    const data = await extractWithLLM(documentText)
+    return { success: true, data }
+  } catch (e) {
+    const err = e instanceof Error ? e : new Error(String(e))
+    return { success: false, error: err.message || 'Extraktion fehlgeschlagen.' }
+  }
+}
+
 export async function extractDataFromDocument(
   formData: FormData
 ): Promise<ExtractDataFromDocumentResult> {
@@ -157,81 +239,8 @@ export async function extractDataFromDocument(
       return { success: false, error: 'Keine Datei übergeben.' }
     }
 
-    const mimeType = file.type
-    const fileName = file.name ?? 'unbenannt'
-    const size = file.size
-
-    if (size > MAX_FILE_BYTES) {
-      return {
-        success: false,
-        error: `Datei zu groß für automatische Erkennung (Max 4,5 MB). Aktuell: ${(size / 1024 / 1024).toFixed(1)} MB.`,
-      }
-    }
-
-    const isPdf = mimeType === 'application/pdf' || /\.pdf$/i.test(fileName)
-    const isPptx =
-      mimeType ===
-        'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
-      /\.pptx$/i.test(fileName)
-    const isDocx =
-      mimeType ===
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-      /\.docx$/i.test(fileName)
-    const isDoc = mimeType === 'application/msword' || /\.doc$/i.test(fileName)
-
-    if (!isPdf && !isPptx && !isDocx && !isDoc) {
-      return {
-        success: false,
-        error: 'Nur Word-, PowerPoint- oder PDF-Dateien werden unterstützt.',
-      }
-    }
-
-    let documentText: string
-    try {
-      const buffer = Buffer.from(await file.arrayBuffer())
-      if (isPdf) documentText = await extractTextFromPdf(buffer)
-      else if (isPptx) documentText = await extractTextFromPptx(buffer)
-      else if (isDocx) documentText = await extractTextFromDocx(buffer)
-      else if (isDoc) throw new Error('DOC_FORMAT_UNSUPPORTED')
-      else throw new Error('UNSUPPORTED_FORMAT')
-    } catch (e) {
-      const err = e instanceof Error ? e : new Error(String(e))
-      if (err.message === 'DOCX_EXTRACT_FAILED') {
-        return {
-          success: false,
-          error:
-            'Text konnte nicht aus der Word-Datei gelesen werden. Bitte als PDF oder PowerPoint exportieren und erneut versuchen.',
-        }
-      }
-      if (err.message === 'DOC_FORMAT_UNSUPPORTED') {
-        return {
-          success: false,
-          error:
-            'Ältere Word-Dateien (.doc) werden nicht unterstützt. Bitte als DOCX, PDF oder PowerPoint speichern und erneut hochladen.',
-        }
-      }
-      return {
-        success: false,
-        error:
-          'Text konnte nicht aus dem Dokument gelesen werden. Das Dokument könnte bildbasiert oder geschützt sein – bitte die Felder manuell ausfüllen.',
-      }
-    }
-
-    if (!documentText || documentText.trim().length < 50) {
-      return {
-        success: false,
-        error:
-          'Das Dokument enthält zu wenig erkennbaren Text für eine Extraktion (möglicherweise ein Scan/Bild-PDF). Bitte die Felder manuell ausfüllen.',
-      }
-    }
-
-    try {
-      const data = await extractWithLLM(documentText)
-      return { success: true, data }
-    } catch (e) {
-      const err = e instanceof Error ? e : new Error(String(e))
-      return { success: false, error: err.message || 'Extraktion fehlgeschlagen.' }
-    }
+    const buffer = Buffer.from(await file.arrayBuffer())
+    return extractDataFromBuffer(buffer, file.name ?? 'unbenannt', file.type)
   } catch (e) {
     const err = e instanceof Error ? e : new Error(String(e))
     return {

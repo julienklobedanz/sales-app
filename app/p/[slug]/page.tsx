@@ -10,6 +10,7 @@ import { formatDateUtcDe, formatReferenceVolume } from '@/lib/format'
 import { kpisForPublicReference } from '@/lib/public-portfolio/kpis-for-reference'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
 import { ShareOwnerContactCard } from './share-owner-contact-card'
 import { PortfolioUnlockGate } from './portfolio-unlock-gate'
 import { PublicPortfolioFooter } from './public-portfolio-footer'
@@ -65,6 +66,14 @@ function releaseDisplay(value: string): ReactNode {
   )
 }
 
+/** KPI-Labels, die bereits als Zeile in „Projektdetails“ vorkommen — keine zweite Kachel. */
+const PUBLIC_PORTFOLIO_KPI_DETAIL_DEDUPE = new Set([
+  'Projektvolumen',
+  'Vertragsart',
+  'Projektstatus',
+  'Account-Größe',
+])
+
 function buildHeaderSubtitle(
   workspaceName: string,
   singleTitle: string | null,
@@ -79,11 +88,17 @@ function buildHeaderSubtitle(
 
 export default async function PublicPortfolioPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const { slug } = await params
-  const result = await getPublicPortfolio(slug)
+  const sp = await searchParams
+  const manageRaw = sp.manage
+  const manageToken =
+    typeof manageRaw === 'string' && manageRaw.length > 0 ? manageRaw : null
+  const result = await getPublicPortfolio(slug, manageToken)
   const branding = await getPublicPortfolioBranding(slug)
   const shareOwner = await getPublicPortfolioShareOwner(slug)
   const workspaceName = branding.found ? branding.name : 'RefStack Workspace'
@@ -163,6 +178,7 @@ export default async function PublicPortfolioPage({
           <div className="space-y-8">
             {result.references.map((ref) => {
               const kpis = kpisForPublicReference(ref, { max: 3 })
+              const kpisInDetails = kpis.filter((k) => !PUBLIC_PORTFOLIO_KPI_DETAIL_DEDUPE.has(k.label))
               const quoteApproved = ref.approval_quote_approved?.trim()
               const quoteGiver = ref.approval_reference_giver_name?.trim()
               return (
@@ -225,14 +241,14 @@ export default async function PublicPortfolioPage({
                       ) : null}
 
                       {ref.summary || ref.customer_challenge || ref.our_solution ? (
-                        <div className="grid gap-4 md:grid-cols-2">
+                        <div className="flex w-full flex-col gap-4">
                           {ref.summary ? (
-                            <Card className="border-border/70 md:col-span-2">
+                            <Card className="border-border/70 flex min-h-[12rem] flex-col sm:min-h-[14rem]">
                               <CardHeader className="pb-2">
                                 <CardTitle className="text-sm font-semibold">Zusammenfassung</CardTitle>
                               </CardHeader>
-                              <CardContent>
-                                <p className="text-sm leading-relaxed text-muted-foreground">
+                              <CardContent className="flex flex-1 flex-col">
+                                <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
                                   {ref.summary}
                                 </p>
                               </CardContent>
@@ -240,11 +256,11 @@ export default async function PublicPortfolioPage({
                           ) : null}
 
                           {ref.customer_challenge ? (
-                            <Card className="border-border/70">
+                            <Card className="border-border/70 flex min-h-[12rem] flex-col sm:min-h-[14rem]">
                               <CardHeader className="pb-2">
                                 <CardTitle className="text-sm font-semibold">Herausforderung</CardTitle>
                               </CardHeader>
-                              <CardContent>
+                              <CardContent className="flex flex-1 flex-col">
                                 <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
                                   {ref.customer_challenge}
                                 </p>
@@ -253,53 +269,16 @@ export default async function PublicPortfolioPage({
                           ) : null}
 
                           {ref.our_solution ? (
-                            <div className="md:col-span-2 grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-stretch">
-                              <Card className="border-border/70 flex flex-col">
-                                <CardHeader className="pb-2">
-                                  <CardTitle className="text-sm font-semibold">Unsere Lösung</CardTitle>
-                                </CardHeader>
-                                <CardContent className="flex-1">
-                                  <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
-                                    {ref.our_solution}
-                                  </p>
-                                </CardContent>
-                              </Card>
-                              <div className="flex flex-col gap-3">
-                                {kpis.length ? (
-                                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
-                                    {kpis.map((kpi) => (
-                                      <Card
-                                        key={kpi.label}
-                                        className="border-border/70 bg-muted/20 shadow-none"
-                                      >
-                                        <CardHeader className="py-3 pb-1">
-                                          <CardTitle className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                                            {kpi.label}
-                                          </CardTitle>
-                                        </CardHeader>
-                                        <CardContent className="pt-0 pb-3">
-                                          <p className="text-base font-semibold tabular-nums text-foreground">
-                                            {kpi.value}
-                                          </p>
-                                        </CardContent>
-                                      </Card>
-                                    ))}
-                                  </div>
-                                ) : null}
-                                <Card className="border-dashed border-border/80 bg-muted/10 shadow-none mt-auto">
-                                  <CardHeader className="pb-2 pt-4">
-                                    <CardTitle className="text-xs font-semibold text-muted-foreground">
-                                      Hinweis
-                                    </CardTitle>
-                                  </CardHeader>
-                                  <CardContent className="pb-4 text-xs leading-relaxed text-muted-foreground">
-                                    Diese Referenz wurde als Kundenansicht freigegeben. Weitere
-                                    Kontaktdaten werden nur angezeigt, wenn sie explizit freigegeben
-                                    sind.
-                                  </CardContent>
-                                </Card>
-                              </div>
-                            </div>
+                            <Card className="border-border/70 flex min-h-[12rem] flex-col sm:min-h-[14rem]">
+                              <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-semibold">Unsere Lösung</CardTitle>
+                              </CardHeader>
+                              <CardContent className="flex flex-1 flex-col">
+                                <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
+                                  {ref.our_solution}
+                                </p>
+                              </CardContent>
+                            </Card>
                           ) : null}
                         </div>
                       ) : null}
@@ -359,22 +338,41 @@ export default async function PublicPortfolioPage({
                               {releaseDisplay(releaseEmployees(ref.employee_count))}
                             </span>
                           </div>
+
+                          {kpisInDetails.length ? (
+                            <>
+                              <Separator className="my-3" />
+                              <div className="grid gap-2">
+                                {kpisInDetails.map((kpi) => (
+                                  <Card
+                                    key={kpi.label}
+                                    className="border-border/70 bg-muted/20 shadow-none"
+                                  >
+                                    <CardHeader className="py-3 pb-1">
+                                      <CardTitle className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                                        {kpi.label}
+                                      </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="pt-0 pb-3">
+                                      <p className="text-base font-semibold tabular-nums text-foreground">
+                                        {kpi.value}
+                                      </p>
+                                    </CardContent>
+                                  </Card>
+                                ))}
+                              </div>
+                            </>
+                          ) : null}
+
+                          <div className="mt-4 rounded-md border border-dashed border-border/80 bg-muted/10 px-3 py-3">
+                            <p className="text-xs font-semibold text-muted-foreground">Hinweis</p>
+                            <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+                              Diese Referenz wurde als Kundenansicht freigegeben. Weitere
+                              Kontaktdaten werden nur angezeigt, wenn sie explizit freigegeben sind.
+                            </p>
+                          </div>
                         </CardContent>
                       </Card>
-
-                      {!ref.our_solution ? (
-                        <Card className="border-dashed border-border/80 bg-muted/10 shadow-none">
-                          <CardHeader className="pb-2">
-                            <CardTitle className="text-xs font-semibold text-muted-foreground">
-                              Hinweis
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent className="text-xs leading-relaxed text-muted-foreground">
-                            Diese Referenz wurde als Kundenansicht freigegeben. Weitere Kontaktdaten
-                            werden nur angezeigt, wenn sie explizit freigegeben sind.
-                          </CardContent>
-                        </Card>
-                      ) : null}
                     </aside>
                   </div>
                 </article>
@@ -393,6 +391,7 @@ export default async function PublicPortfolioPage({
         workspaceName={workspaceName}
         shareOwnerEmail={shareOwnerEmail}
         bookingUrl={shareOwnerBookingUrl}
+        canDeactivate={result.canDeactivate}
       />
     </div>
   )

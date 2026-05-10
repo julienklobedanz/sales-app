@@ -34,7 +34,13 @@ export type PublicReference = {
 }
 
 export type PublicPortfolioResult =
-  | { found: true; slug: string; view_count: number; references: PublicReference[] }
+  | {
+      found: true
+      slug: string
+      view_count: number
+      canDeactivate: boolean
+      references: PublicReference[]
+    }
   | { found: false; reason?: 'not_found' | 'expired' | 'locked'; slug?: string }
 
 export type PublicPortfolioBranding =
@@ -66,12 +72,16 @@ async function getUnlockTokenForSlug(slug: string): Promise<string | null> {
 }
 
 /** Öffentliches Portfolio per Slug laden (RPC; berücksichtigt Passwort-Session-Cookie). */
-export async function getPublicPortfolio(slug: string): Promise<PublicPortfolioResult> {
+export async function getPublicPortfolio(
+  slug: string,
+  manageToken?: string | null
+): Promise<PublicPortfolioResult> {
   const supabase = await createServerSupabaseClient()
   const token = await getUnlockTokenForSlug(slug)
   const { data, error } = await supabase.rpc('get_public_portfolio', {
     p_slug: slug,
     p_unlock_token: token,
+    p_manage_token: manageToken && manageToken.length > 0 ? manageToken : null,
   })
   if (error) return { found: false, reason: 'not_found' }
   const payload = data as
@@ -99,6 +109,7 @@ export async function getPublicPortfolio(slug: string): Promise<PublicPortfolioR
     found: true,
     slug: payload.slug,
     view_count: payload.view_count ?? 0,
+    canDeactivate: Boolean((payload as { can_deactivate?: boolean }).can_deactivate),
     references: Array.isArray(payload.references) ? payload.references : [],
   }
 }
@@ -324,10 +335,16 @@ export async function unlockPublicPortfolio(
   return { success: true }
 }
 
-/** Kunden-Killswitch: Link sofort sperren (anon erlaubt – wer den Link hat, darf sperren) */
-export async function deactivatePortfolio(slug: string): Promise<{ success: boolean }> {
+/** Kunden-Killswitch: nur mit gültigem ?manage=-Token (oder authentifiziert als Org). */
+export async function deactivatePortfolio(
+  slug: string,
+  manageToken?: string | null
+): Promise<{ success: boolean }> {
   const supabase = await createServerSupabaseClient()
-  const { data, error } = await supabase.rpc('deactivate_portfolio', { p_slug: slug })
+  const { data, error } = await supabase.rpc('deactivate_portfolio', {
+    p_slug: slug,
+    p_manage_token: manageToken && manageToken.length > 0 ? manageToken : null,
+  })
   if (error) return { success: false }
   return { success: data === true }
 }

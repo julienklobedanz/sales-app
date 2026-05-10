@@ -57,6 +57,14 @@ export function MatchResultCard({
         typeof window !== 'undefined' ? new URL(res.url, window.location.origin).href : res.url
       await navigator.clipboard.writeText(abs)
       toast.success('Kundenlink in die Zwischenablage kopiert.')
+      if (res.manageToken && typeof window !== 'undefined') {
+        const manage = new URL(res.url, window.location.origin)
+        manage.searchParams.set('manage', res.manageToken)
+        toast.message('Sperr-Link (nur Freigeber)', {
+          description: manage.toString(),
+          duration: 18000,
+        })
+      }
     } finally {
       setShareLoading(false)
     }

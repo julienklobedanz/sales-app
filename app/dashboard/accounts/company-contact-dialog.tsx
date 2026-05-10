@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -27,6 +28,8 @@ type Props = {
   setCRole: (v: string) => void
   cLastInteraction: string
   setCLastInteraction: (v: string) => void
+  cIsRefApprovalContact: boolean
+  setCIsRefApprovalContact: (v: boolean) => void
   onSave: () => void
 }
 
@@ -52,6 +55,8 @@ export function CompanyContactDialog({
   setCRole,
   cLastInteraction,
   setCLastInteraction,
+  cIsRefApprovalContact,
+  setCIsRefApprovalContact,
   onSave,
 }: Props) {
   return (
@@ -112,6 +117,22 @@ export function CompanyContactDialog({
               disabled={saving}
               placeholder="z. B. Economic Buyer (optional)"
             />
+          </div>
+          <div className="flex items-start gap-3 rounded-lg border border-border/80 bg-muted/15 px-3 py-3">
+            <Checkbox
+              id="ref-approval-contact"
+              checked={cIsRefApprovalContact}
+              onCheckedChange={(v) => setCIsRefApprovalContact(v === true)}
+              disabled={saving}
+              className="mt-0.5"
+            />
+            <label htmlFor="ref-approval-contact" className="cursor-pointer text-sm leading-snug">
+              <span className="font-medium">Referenzfreigabe auf diesem Account</span>
+              <span className="mt-1 block text-muted-foreground text-xs">
+                Dieser Kollege gilt als Ansprechpartner für die Koordination der Kunden-Referenzfreigabe.
+                Pro Account ist nur eine Person wählbar (ersetzt die vorherige Zuordnung).
+              </span>
+            </label>
           </div>
           <div className="grid gap-2">
             <Label>Letzte Interaktion</Label>

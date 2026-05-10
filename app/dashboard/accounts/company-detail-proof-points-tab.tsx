@@ -7,6 +7,9 @@ import type { CompanyRefRow } from './actions'
 import { referenceStatusLabel } from './company-detail-constants'
 import { ROUTES } from '@/lib/routes'
 
+/**
+ * Einfache Heuristik (Branche + Region der Referenz vs. Account) — nicht die KI-/Embedding-Suche (`matchReferences`).
+ */
 function matchScore(params: {
   companyIndustry: string | null
   companyHq: string | null
@@ -36,7 +39,14 @@ export function CompanyDetailProofPointsTab({
       <Card>
         <CardHeader>
           <CardTitle>Referenz-Bibliothek</CardTitle>
-          <CardDescription>{references.length} Referenzen (direkt dem Account zugeordnet)</CardDescription>
+          <CardDescription>
+            {references.length} Referenzen (direkt dem Account zugeordnet). Spalte „Fit“: einfache Schätzung aus
+            Branche und Region — für semantische Treffer die Suche unter{' '}
+            <Link className="underline underline-offset-2" href={ROUTES.match}>
+              Match
+            </Link>
+            .
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {references.length === 0 ? (
@@ -47,7 +57,7 @@ export function CompanyDetailProofPointsTab({
                 <TableRow>
                   <TableHead>Titel</TableHead>
                   <TableHead>Readiness</TableHead>
-                  <TableHead>Match</TableHead>
+                  <TableHead>Fit</TableHead>
                   <TableHead>Projektstatus</TableHead>
                 </TableRow>
               </TableHeader>

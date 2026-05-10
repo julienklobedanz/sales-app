@@ -1,5 +1,6 @@
 'use client'
 
+import { Suspense } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Popover,
@@ -18,11 +19,14 @@ export function PublicPortfolioFooter({
   workspaceName,
   shareOwnerEmail,
   bookingUrl,
+  canDeactivate,
 }: {
   slug: string
   workspaceName: string
   shareOwnerEmail: string | null
   bookingUrl: string | null
+  /** Nur true, wenn gültiges ?manage=-Geheimnis in der URL ist */
+  canDeactivate: boolean
 }) {
   const questionSubject = encodeURIComponent('Frage zur Referenz')
   const questionHref =
@@ -108,7 +112,11 @@ export function PublicPortfolioFooter({
           </Button>
         </div>
         <div className="justify-self-end">
-          <PublicPortfolioKillswitch slug={slug} />
+          {canDeactivate ? (
+            <Suspense fallback={null}>
+              <PublicPortfolioKillswitch slug={slug} />
+            </Suspense>
+          ) : null}
         </div>
       </div>
     </footer>

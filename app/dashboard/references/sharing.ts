@@ -1,12 +1,23 @@
 'use server'
 
+import { createHash, randomBytes } from 'crypto'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { generatePortfolioSlug } from '@/lib/slug'
 import { logEvent } from '@/lib/events/log-event'
 import { parseOrgPublicLinkPolicy } from '@/lib/organization-link-policy'
 import { writeAuditLog } from '@/lib/audit/log-audit'
+import { getAppOrigin } from '@/lib/env/app-origin'
 
 import type { ReferenceRow } from '@/app/dashboard/actions'
+
+function generateCustomerManageToken(): string {
+  return randomBytes(32).toString('hex')
+}
+
+function hashCustomerManageToken(plain: string): string {
+  return createHash('sha256').update(plain, 'utf8').digest('hex')
+}
 
 function generateSharePassword(): string {
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
@@ -72,7 +83,10 @@ async function deactivateActiveSharesForReferences(referenceIds: string[]) {
   if (!slugsToDeactivate.length) return
 
   for (const slug of slugsToDeactivate) {
-    const { error: deactivateError } = await supabase.rpc('deactivate_portfolio', { p_slug: slug })
+    const { error: deactivateError } = await supabase.rpc('deactivate_portfolio', {
+      p_slug: slug,
+      p_manage_token: null,
+    })
     if (deactivateError) {
       console.error('[createSharedPortfolio] deactivate existing slug failed:', slug, deactivateError)
     }
@@ -82,7 +96,14 @@ async function deactivateActiveSharesForReferences(referenceIds: string[]) {
 export async function createSharedPortfolioImpl(
   referenceIds: string[]
 ): Promise<
-  | { success: true; url: string; slug: string; initialPassword?: string | null }
+  | {
+      success: true
+      url: string
+      slug: string
+      initialPassword?: string | null
+      /** Klartext nur einmal – für ?manage=… (Sperrrecht). */
+      manageToken?: string
+    }
   | { success: false; error: string }
 > {
   const supabase = await createServerSupabaseClient()
@@ -103,11 +124,14 @@ export async function createSharedPortfolioImpl(
 
   for (let attempt = 0; attempt < 5; attempt++) {
     const slug = generatePortfolioSlug()
+    const manageToken = generateCustomerManageToken()
+    const manageHash = hashCustomerManageToken(manageToken)
     const { error } = await supabase.from('shared_portfolios').insert({
       slug,
       reference_ids: referenceIds,
       is_active: true,
       view_count: 0,
+      customer_manage_token_hash: manageHash,
     })
     if (!error) {
       const url = `/p/${slug}`
@@ -153,7 +177,13 @@ export async function createSharedPortfolioImpl(
           },
         })
       }
-      return { success: true, url, slug, initialPassword: initialPassword ?? undefined }
+      return {
+        success: true,
+        url,
+        slug,
+        initialPassword: initialPassword ?? undefined,
+        manageToken,
+      }
     }
     const code = (error as { code?: string }).code
     if (code === '23505') continue // unique violation, retry
@@ -178,6 +208,58 @@ export async function createSharedPortfolioImpl(
   return { success: false, error: 'Slug-Kollision. Bitte erneut versuchen.' }
 }
 
+/**
+ * Für Freigabe-E-Mails: öffentliche Kunden-URL + frischer ?manage=-Sperrlink.
+ * Bestehendes Portfolio: rotiert nur das Manage-Geheimnis (Slug bleibt).
+ * Keins: legt Kundenlink wie „Teilen“ an (inkl. Org-Workflow-Sicherheit).
+ */
+export async function getPortfolioManageAndPreviewUrlsForApprovalEmail(
+  supabase: SupabaseClient,
+  referenceId: string
+): Promise<{ manageUrl: string; publicPreviewUrl: string } | null> {
+  const id = String(referenceId ?? '').trim()
+  if (!id) return null
+
+  const { data: rows } = await supabase
+    .from('shared_portfolios')
+    .select('slug')
+    .eq('is_active', true)
+    .contains('reference_ids', [id])
+    .limit(1)
+
+  const slug = (rows?.[0] as { slug?: string } | undefined)?.slug
+  const origin = getAppOrigin()
+
+  if (slug) {
+    const { data: rpc, error } = await supabase.rpc('reset_shared_portfolio_manage_token', {
+      p_reference_id: id,
+    })
+    if (error) {
+      console.error('[getPortfolioManageAndPreviewUrlsForApprovalEmail] reset token:', error)
+      return null
+    }
+    const payload = rpc as { success?: boolean; token?: string; error?: string } | null
+    if (!payload?.success || !payload.token) {
+      console.error(
+        '[getPortfolioManageAndPreviewUrlsForApprovalEmail] rpc:',
+        payload?.error ?? 'no token'
+      )
+      return null
+    }
+    const publicPreviewUrl = `${origin}/p/${encodeURIComponent(slug)}`
+    const manageUrl = `${publicPreviewUrl}?manage=${encodeURIComponent(payload.token)}`
+    return { manageUrl, publicPreviewUrl }
+  }
+
+  const created = await createSharedPortfolioImpl([id])
+  if (!created.success || !created.manageToken) return null
+  const path = created.url.startsWith('/') ? created.url : `/${created.url}`
+  const publicPreviewUrl = `${origin}${path}`
+  const u = new URL(publicPreviewUrl)
+  u.searchParams.set('manage', created.manageToken)
+  return { manageUrl: u.toString(), publicPreviewUrl }
+}
+
 export async function getExistingShareForReferenceImpl(
   referenceId: string
 ): Promise<{
@@ -185,11 +267,12 @@ export async function getExistingShareForReferenceImpl(
   url: string
   expiresAt: string | null
   hasPassword: boolean
+  hasCustomerManageToken: boolean
 } | null> {
   const supabase = await createServerSupabaseClient()
   const { data: rows, error } = await supabase
     .from('shared_portfolios')
-    .select('slug, expires_at, password_hash')
+    .select('slug, expires_at, password_hash, customer_manage_token_hash')
     .eq('is_active', true)
     .contains('reference_ids', [referenceId])
     .limit(1)
@@ -206,14 +289,44 @@ export async function getExistingShareForReferenceImpl(
     console.error('[getExistingShareForReference] Fehler beim Laden von shared_portfolios:', error)
     return null
   }
-  const row = rows?.[0] as { slug?: string; expires_at?: string | null; password_hash?: string | null } | undefined
+  const row = rows?.[0] as
+    | {
+        slug?: string
+        expires_at?: string | null
+        password_hash?: string | null
+        customer_manage_token_hash?: string | null
+      }
+    | undefined
   if (!row?.slug) return null
   return {
     slug: row.slug,
     url: `/p/${row.slug}`,
     expiresAt: row.expires_at ?? null,
     hasPassword: Boolean(row.password_hash),
+    hasCustomerManageToken: Boolean(
+      row.customer_manage_token_hash && String(row.customer_manage_token_hash).length > 0
+    ),
   }
+}
+
+export async function resetSharedPortfolioManageTokenImpl(
+  referenceId: string
+): Promise<{ success: true; manageToken: string } | { success: false; error: string }> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+
+  const { data, error } = await supabase.rpc('reset_shared_portfolio_manage_token', {
+    p_reference_id: referenceId,
+  })
+  if (error) return { success: false, error: error.message }
+  const payload = data as { success?: boolean; token?: string; error?: string } | null
+  if (!payload?.success || !payload.token) {
+    return { success: false, error: payload?.error ?? 'Sperr-Link konnte nicht erzeugt werden.' }
+  }
+  return { success: true, manageToken: payload.token }
 }
 
 export async function updateShareLinkSecurityByReferenceImpl(

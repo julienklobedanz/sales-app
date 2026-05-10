@@ -8,11 +8,56 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { SubmitForApprovalOptions } from '@/app/dashboard/references/approval-submit-types'
 import { logEventForCurrentOrg } from '@/lib/events/log-event'
 import { getAppOrigin } from '@/lib/env/app-origin'
+import { getPortfolioManageAndPreviewUrlsForApprovalEmail } from '@/app/dashboard/references/sharing'
 
 function getResend(): Resend | null {
   const key = process.env.RESEND_API_KEY
   if (!key) return null
   return new Resend(key)
+}
+
+function escapeHtml(s: string) {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+function buildClientApprovalEmailHtml(args: {
+  firstName: string
+  requesterBlock: string
+  companyName: string
+  refTitle: string
+  approvalUrl: string
+  portfolio: { manageUrl: string; publicPreviewUrl: string } | null
+}): string {
+  const portfolioSection = args.portfolio
+    ? `
+          <hr style="border:none;border-top:1px solid #e2e8f0;margin:28px 0;" />
+          <h2 style="font-size:16px;margin:0 0 12px;">Kundenansicht & Zugriff beenden</h2>
+          <p style="margin:0 0 12px;line-height:1.5;">Mit dem <strong>ersten Link</strong> prüfen und freigeben Sie die Referenz. Der <strong>zweite Link</strong> zeigt dieselbe Kundenansicht – er ist nur für Sie bestimmt: Dort können Sie den öffentlichen Zugriff bei Bedarf <strong>sofort sperren</strong>. Bitte den zweiten Link nicht an Dritte weiterleiten.</p>
+          <p style="margin:0 0 16px;"><a href="${escapeHtml(args.portfolio.manageUrl)}"
+            style="display:inline-block;background:#b45309;color:#fff;padding:12px 20px;text-decoration:none;border-radius:6px;font-weight:600;">
+            Persönlicher Link (mit Sperrrecht)
+          </a></p>
+          <p style="font-size:13px;color:#64748b;margin:0;line-height:1.5;">Öffentliche Kundenansicht ohne Sperrrecht (zum Weitergeben im Unternehmen):<br/>
+          <a href="${escapeHtml(args.portfolio.publicPreviewUrl)}" style="color:#2563eb;word-break:break-all;">${escapeHtml(args.portfolio.publicPreviewUrl)}</a></p>
+        `
+    : ''
+
+  return `
+          <h1 style="font-size:20px;">Hallo${args.firstName ? ` ${escapeHtml(args.firstName)}` : ''}!</h1>
+          ${args.requesterBlock}
+          <p>Für das Unternehmen <strong>${escapeHtml(args.companyName)}</strong>:</p>
+          <p><em>"${escapeHtml(args.refTitle)}"</em></p>
+          <p>Bitte öffnen Sie den Link, um die Referenz zu prüfen und zu entscheiden:</p>
+          <p style="margin:16px 0;"><a href="${escapeHtml(args.approvalUrl)}"
+            style="display:inline-block;background:#0f172a;color:#fff;padding:12px 20px;text-decoration:none;border-radius:6px;font-weight:600;">
+            Zur Freigabe-Seite
+          </a></p>
+          ${portfolioSection}
+        `
 }
 
 type ReferenceApprovalRow = {
@@ -80,22 +125,26 @@ async function sendClientApprovalEmail(args: {
     const requesterBlock = args.requesterName
       ? `<p><strong>${escapeHtml(args.requesterName)}</strong> bittet Sie um Freigabe dieser Referenz.</p>`
       : '<p>Es liegt eine Freigabe-Anfrage für diese Referenz vor.</p>'
+    let portfolio: { manageUrl: string; publicPreviewUrl: string } | null = null
+    try {
+      portfolio = await getPortfolioManageAndPreviewUrlsForApprovalEmail(args.supabase, args.referenceId)
+    } catch (e) {
+      console.error('[sendClientApprovalEmail] portfolio links:', e)
+    }
+    const approvalUrl = `${getAppOrigin()}/approval/${newToken}`
     try {
       await resend.emails.send({
         from: 'Refstack <onboarding@resend.dev>',
         to: args.contactEmail,
         subject: `Freigabe-Anfrage: ${args.companyName} – ${args.ref.title}`,
-        html: `
-          <h1>Hallo${args.firstName ? ` ${escapeHtml(args.firstName)}` : ''}!</h1>
-          ${requesterBlock}
-          <p>Für das Unternehmen <strong>${escapeHtml(args.companyName)}</strong>:</p>
-          <p><em>"${escapeHtml(args.ref.title)}"</em></p>
-          <p>Bitte öffnen Sie den Link, um die Referenz zu prüfen und zu entscheiden:</p>
-          <a href="${getAppOrigin()}/approval/${newToken}"
-            style="display:inline-block;background:var(--primary,#0f172a);color:#fff;padding:12px 20px;text-decoration:none;border-radius:6px;">
-            Zur Freigabe-Seite
-          </a>
-        `,
+        html: buildClientApprovalEmailHtml({
+          firstName: args.firstName,
+          requesterBlock,
+          companyName: args.companyName,
+          refTitle: args.ref.title,
+          approvalUrl,
+          portfolio,
+        }),
       })
     } catch (e) {
       console.error('E-Mail-Versand fehlgeschlagen:', e)
@@ -211,6 +260,65 @@ async function resolveContactForApproval(
   throw new Error(
     'Kein Empfänger: Bitte im Dialog einen Kontakt mit E-Mail wählen oder in der Referenz einen Kundenkontakt hinterlegen.'
   )
+}
+
+/** Benachrichtigt den am Account hinterlegten internen Referenzfreigabe-Kontakt (Metadaten → konkreter Mail-Hinweis). */
+async function notifyInternalReferenceCoordinatorAboutPendingReview(args: {
+  supabase: SupabaseClient
+  referenceId: string
+  referenceTitle: string
+  accountCompanyId: string
+  accountCompanyName: string
+  requesterName: string
+}): Promise<void> {
+  const resend = getResend()
+  if (!resend) return
+
+  const { data: companyRow } = await args.supabase
+    .from('companies')
+    .select('internal_reference_approval_contact_id')
+    .eq('id', args.accountCompanyId)
+    .maybeSingle()
+
+  const contactId = (companyRow as { internal_reference_approval_contact_id?: string | null } | null)
+    ?.internal_reference_approval_contact_id
+  if (!contactId) return
+
+  const { data: person } = await args.supabase
+    .from('contact_persons')
+    .select('email, first_name')
+    .eq('id', contactId)
+    .eq('company_id', args.accountCompanyId)
+    .maybeSingle()
+
+  const email = String(person?.email ?? '').trim()
+  if (!email.toLowerCase().includes('@')) return
+
+  const detailUrl = `${getAppOrigin()}${ROUTES.evidence.detail(args.referenceId)}`
+  const greeting = person?.first_name
+    ? `Hallo ${escapeHtml(String(person.first_name).trim())},`
+    : 'Hallo,'
+  const who = args.requesterName.trim()
+    ? `<p><strong>${escapeHtml(args.requesterName.trim())}</strong> hat eine Kundenfreigabe zur internen Prüfung eingereicht.</p>`
+    : '<p>Es liegt eine neue Freigabe zur internen Prüfung vor.</p>'
+
+  try {
+    await resend.emails.send({
+      from: 'Refstack <onboarding@resend.dev>',
+      to: email,
+      subject: `Interne Referenzfreigabe: ${args.accountCompanyName} – ${args.referenceTitle}`,
+      html: `
+        ${greeting}
+        ${who}
+        <p>Referenz: <strong>${escapeHtml(args.referenceTitle)}</strong><br/>
+        Account: <strong>${escapeHtml(args.accountCompanyName)}</strong></p>
+        <p>Bitte in RefStack prüfen und bei Bedarf die interne Freigabe erteilen (Vier-Augen), danach Versand an den Kunden:</p>
+        <p><a href="${escapeHtml(detailUrl)}">Zur Referenz</a></p>
+      `,
+    })
+  } catch (e) {
+    console.error('[notifyInternalReferenceCoordinatorAboutPendingReview]', e)
+  }
 }
 
 function computeStatusSnapshot(row: ReferenceApprovalRow): string {
@@ -351,6 +459,14 @@ export async function submitForApprovalImpl(
   }
 
   if (requireInternalApproval) {
+    await notifyInternalReferenceCoordinatorAboutPendingReview({
+      supabase,
+      referenceId: id,
+      referenceTitle: ref.title,
+      accountCompanyId: ref.company_id,
+      accountCompanyName: companyName,
+      requesterName,
+    })
     await logEventForCurrentOrg({
       eventType: 'internal_approval_requested',
       referenceId: id,
@@ -640,21 +756,25 @@ export async function resendClientApprovalEmailImpl(referenceId: string) {
       const requesterBlock = requesterName
         ? `<p><strong>${escapeHtml(requesterName)}</strong> bittet Sie um Freigabe dieser Referenz.</p>`
         : '<p>Es liegt eine Freigabe-Anfrage für diese Referenz vor.</p>'
+      let portfolio: { manageUrl: string; publicPreviewUrl: string } | null = null
+      try {
+        portfolio = await getPortfolioManageAndPreviewUrlsForApprovalEmail(supabase, referenceId)
+      } catch (e) {
+        console.error('[resendClientApprovalEmail] portfolio links:', e)
+      }
+      const approvalUrl = `${getAppOrigin()}/approval/${newToken}`
       await resend.emails.send({
         from: 'Refstack <onboarding@resend.dev>',
         to: contactEmail,
         subject: `Erinnerung: Freigabe ${company_name} – ${ref.title}`,
-        html: `
-          <h1>Hallo${firstName ? ` ${escapeHtml(firstName)}` : ''}!</h1>
-          ${requesterBlock}
-          <p>Für das Unternehmen <strong>${escapeHtml(company_name)}</strong>:</p>
-          <p><em>"${escapeHtml(ref.title)}"</em></p>
-          <p>Bitte öffnen Sie den Link, um die Referenz zu prüfen und zu entscheiden:</p>
-          <a href="${getAppOrigin()}/approval/${newToken}"
-             style="display:inline-block;background:var(--primary,#0f172a);color:#fff;padding:12px 20px;text-decoration:none;border-radius:6px;">
-            Zur Freigabe-Seite
-          </a>
-        `,
+        html: buildClientApprovalEmailHtml({
+          firstName,
+          requesterBlock,
+          companyName: company_name,
+          refTitle: ref.title,
+          approvalUrl,
+          portfolio,
+        }),
       })
     } catch (e) {
       console.error('E-Mail-Versand fehlgeschlagen:', e)
@@ -666,12 +786,4 @@ export async function resendClientApprovalEmailImpl(referenceId: string) {
   revalidatePath(ROUTES.home)
   revalidatePath(ROUTES.evidence.detail(referenceId))
   revalidatePath(ROUTES.evidence.root)
-}
-
-function escapeHtml(s: string) {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
 }

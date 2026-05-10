@@ -34,10 +34,17 @@ export default async function CompanyDetailPage({
     .single()
   if (!profile) redirect(ROUTES.onboarding)
 
+  const orgId = profile.organization_id as string | null | undefined
+  let organizationName: string | null = null
+  if (orgId) {
+    const { data: orgRow } = await supabase.from('organizations').select('name').eq('id', orgId).maybeSingle()
+    organizationName = (orgRow as { name?: string } | null)?.name?.trim() || null
+  }
+
   const { data: company } = await supabase
     .from('companies')
     .select(
-      'id, name, logo_url, website_url, headquarters, industry, description, employee_count, account_status'
+      'id, name, logo_url, website_url, headquarters, industry, description, employee_count, account_status, internal_reference_approval_contact_id'
     )
     .eq('id', id)
     .single()
@@ -155,6 +162,7 @@ export default async function CompanyDetailPage({
       <div className="w-full max-w-6xl mx-auto">
         <CompanyDetailClient
           company={company}
+          organizationName={organizationName}
           strategy={strategy}
           stakeholders={stakeholders}
           internalContacts={internalContacts}

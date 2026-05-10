@@ -70,7 +70,7 @@ export function CompanyDetailStrategyTab({
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(300px,420px)]">
       <div className="min-w-0 space-y-6">
         <Card className="min-w-0">
           <CardHeader className="pb-3">
@@ -144,43 +144,59 @@ export function CompanyDetailStrategyTab({
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Buying Center</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4 pt-6">
+          <CardContent className="space-y-5 pt-4">
             {([
               { role: 'champion', label: 'Champion' },
               { role: 'economic_buyer', label: 'Economic Buyer' },
               { role: 'technical_buyer', label: 'Technical Buyer' },
               { role: 'user_buyer', label: 'User Buyer' },
               { role: 'blocker', label: 'Blocker' },
-            ] as { role: StakeholderRole; label: string }[]).map((row) => (
-              <div key={row.role} className="space-y-1.5">
-                <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{row.label}</div>
-                {canEdit ? (
-                  <Select
-                    value={selectedByRole(row.role)}
-                    onValueChange={(id) => {
-                      void setPrimaryRole(row.role, id)
-                    }}
-                  >
-                    <SelectTrigger className="bg-background">
-                      <SelectValue placeholder={`${row.label} auswählen…`} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">—</SelectItem>
-                      {stakeholders.map((s) => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.name}
-                          {s.title ? ` · ${s.title}` : ''}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <div className="rounded-md border bg-background px-3 py-2 text-sm text-muted-foreground">
-                    {byRole(row.role)[0]?.name ?? '—'}
-                  </div>
-                )}
-              </div>
-            ))}
+            ] as { role: StakeholderRole; label: string }[]).map((row) => {
+              const picked = byRole(row.role)[0]
+              return (
+                <div key={row.role} className="space-y-2">
+                  <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{row.label}</div>
+                  {canEdit ? (
+                    <Select
+                      value={selectedByRole(row.role)}
+                      onValueChange={(id) => {
+                        void setPrimaryRole(row.role, id)
+                      }}
+                    >
+                      <SelectTrigger className="h-11 w-full min-w-0 border-input bg-background px-3 text-left shadow-sm">
+                        <SelectValue
+                          placeholder={`Stakeholder für „${row.label}“ wählen …`}
+                        />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-[min(280px,50vh)]">
+                        <SelectItem value="__none__">Keine Zuordnung</SelectItem>
+                        {stakeholders.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            <span className="font-medium">{s.name}</span>
+                            {s.title ? (
+                              <span className="text-muted-foreground"> · {s.title}</span>
+                            ) : null}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="min-h-11 rounded-lg border border-input bg-background px-3 py-2.5 text-sm">
+                      {picked ? (
+                        <>
+                          <span className="font-medium text-foreground">{picked.name}</span>
+                          {picked.title ? (
+                            <span className="text-muted-foreground"> · {picked.title}</span>
+                          ) : null}
+                        </>
+                      ) : (
+                        <span className="text-muted-foreground">Nicht zugeordnet</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </CardContent>
         </Card>
       </div>

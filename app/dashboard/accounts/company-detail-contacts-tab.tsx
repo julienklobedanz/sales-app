@@ -1,13 +1,18 @@
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Pencil, Plus, Trash2 } from '@hugeicons/core-free-icons'
+import { Linkedin01Icon, Pencil, Plus, Trash2 } from '@hugeicons/core-free-icons'
 import type { ContactPersonRow, ExternalContactRow } from './actions'
 import { AppIcon } from '@/lib/icons'
+import { buildInternalContactLinkedInHref } from '@/lib/linkedin-people-search'
 
 type Props = {
   internalContacts: ContactPersonRow[]
   externalContacts: ExternalContactRow[]
+  organizationName: string | null
+  /** Ein interner Kontakt pro Account als Ansprechpartner für Koordination der Referenzfreigabe */
+  internalReferenceApprovalContactId: string | null
   canEdit: boolean
   onAdd: () => void
   onEdit: (c: ContactPersonRow) => void
@@ -17,34 +22,30 @@ type Props = {
 export function CompanyDetailContactsTab({
   internalContacts,
   externalContacts,
+  organizationName,
+  internalReferenceApprovalContactId,
   canEdit,
   onAdd,
   onEdit,
   onRemove,
 }: Props) {
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold">Kontakte</h2>
-          <p className="text-sm text-muted-foreground">Ansprechpartner in interne und externe Kontakte getrennt.</p>
+    <Card className="overflow-hidden shadow-sm">
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0 pb-4">
+        <div className="space-y-1">
+          <CardTitle className="text-base">Kontakte</CardTitle>
+          <CardDescription className="sr-only">Interne und externe Ansprechpartner</CardDescription>
         </div>
         {canEdit && (
-          <Button type="button" onClick={onAdd}>
+          <Button type="button" size="sm" onClick={onAdd}>
             <AppIcon icon={Plus} size={16} className="mr-2" />
             Internen Kontakt hinzufügen
           </Button>
         )}
-      </div>
-
-      <Card>
-        <CardContent className="pt-6">
-          <div className="space-y-8">
+      </CardHeader>
+      <CardContent className="space-y-8 pt-0">
             <section className="space-y-3">
-              <div>
-                <h3 className="text-sm font-semibold">Interne Kontakte</h3>
-                <p className="text-xs text-muted-foreground">Team-Mitglieder aus eurer Organisation.</p>
-              </div>
+              <h3 className="text-sm font-semibold text-foreground">Interne Kontakte</h3>
               {internalContacts.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Noch keine internen Kontakte.</p>
               ) : (
@@ -67,20 +68,39 @@ export function CompanyDetailContactsTab({
                       const last =
                         ((c as unknown as { last_interaction_at?: string | null }).last_interaction_at ?? '') ||
                         '—'
+                      const isRefApproval = internalReferenceApprovalContactId === c.id
+                      const liHref = buildInternalContactLinkedInHref({
+                        firstName: c.first_name,
+                        lastName: c.last_name,
+                        linkedinUrl: (c as unknown as { linkedin_url?: string | null }).linkedin_url,
+                        organizationName,
+                        email: c.email,
+                      })
                       return (
                         <TableRow key={c.id}>
-                          <TableCell className="font-medium">{name}</TableCell>
+                          <TableCell className="font-medium">
+                            <span className="inline-flex flex-wrap items-center gap-2">
+                              {name}
+                              {isRefApproval ? (
+                                <Badge variant="secondary" className="text-[10px] font-normal">
+                                  Referenzfreigabe
+                                </Badge>
+                              ) : null}
+                            </span>
+                          </TableCell>
                           <TableCell className="text-muted-foreground">{c.email ?? '—'}</TableCell>
                           <TableCell className="text-muted-foreground">{(c.phone ?? '') || '—'}</TableCell>
                           <TableCell className="text-muted-foreground">
-                            {(c as unknown as { linkedin_url?: string | null }).linkedin_url ? (
+                            {liHref ? (
                               <a
-                                className="hover:underline"
-                                href={(c as unknown as { linkedin_url?: string | null }).linkedin_url as string}
+                                className="inline-flex items-center justify-center rounded-md p-1.5 text-[#0A66C2] hover:bg-muted"
+                                href={liHref}
                                 target="_blank"
                                 rel="noreferrer"
+                                aria-label={`${name} bei LinkedIn suchen`}
+                                title="LinkedIn"
                               >
-                                Link
+                                <AppIcon icon={Linkedin01Icon} size={20} />
                               </a>
                             ) : (
                               '—'
@@ -119,10 +139,7 @@ export function CompanyDetailContactsTab({
             </section>
 
             <section className="space-y-3">
-              <div>
-                <h3 className="text-sm font-semibold">Externe Kontakte</h3>
-                <p className="text-xs text-muted-foreground">Kundenseitige Ansprechpartner aus Referenzen.</p>
-              </div>
+              <h3 className="text-sm font-semibold text-foreground">Externe Kontakte</h3>
               {externalContacts.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Noch keine externen Kontakte.</p>
               ) : (
@@ -156,9 +173,7 @@ export function CompanyDetailContactsTab({
                 </Table>
               )}
             </section>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+      </CardContent>
+    </Card>
   )
 }

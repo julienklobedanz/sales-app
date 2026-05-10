@@ -7,6 +7,7 @@ import {
   LinkIcon,
   Loader,
   RefreshCw,
+  Shield,
   SquareLock02Icon,
 } from '@hugeicons/core-free-icons'
 import { toast } from 'sonner'
@@ -30,6 +31,7 @@ import { AppIcon } from '@/lib/icons'
 import {
   createSharedPortfolio,
   getExistingShareForReference,
+  resetSharedPortfolioManageToken,
   updateShareLinkSecurity,
 } from '@/app/dashboard/actions'
 import { CheckIcon } from '@/components/ui/check-icon'
@@ -43,6 +45,12 @@ function toAbsoluteUrl(url: string) {
   if (clean.startsWith('http://') || clean.startsWith('https://')) return clean
   if (typeof window === 'undefined') return clean
   return new URL(clean, window.location.origin).toString()
+}
+
+function buildManageUrl(absolutePublicUrl: string, manageToken: string): string {
+  const u = new URL(absolutePublicUrl)
+  u.searchParams.set('manage', manageToken)
+  return u.toString()
 }
 
 function generateClientPassword(): string {
@@ -98,6 +106,11 @@ export function ShareLinkButton({
   const [secRemovePw, setSecRemovePw] = useState(false)
   const [secSaving, setSecSaving] = useState(false)
 
+  /** Vollständige URL inkl. ?manage=… – nur wenn Klartext-Token gerade bekannt (Erstellung / Reset). */
+  const [manageUrl, setManageUrl] = useState<string | null>(null)
+  const [hasCustomerManageToken, setHasCustomerManageToken] = useState(false)
+  const [issuingManage, setIssuingManage] = useState(false)
+
   useEffect(() => {
     return () => {
       timeoutRefs.current.forEach((timer) => window.clearTimeout(timer))
@@ -127,6 +140,8 @@ export function ShareLinkButton({
           setUrl(toAbsoluteUrl(existing.url))
           setMetaExpiresAt(existing.expiresAt)
           setMetaHasPassword(existing.hasPassword)
+          setHasCustomerManageToken(existing.hasCustomerManageToken)
+          setManageUrl(null)
           return
         }
 
@@ -137,7 +152,20 @@ export function ShareLinkButton({
           setUrl(null)
           return
         }
-        setUrl(toAbsoluteUrl(created.url))
+        const abs = toAbsoluteUrl(created.url)
+        setUrl(abs)
+        if (created.manageToken) {
+          setManageUrl(buildManageUrl(abs, created.manageToken))
+          setHasCustomerManageToken(true)
+          toast.message('Sperr-Link für die freigebende Person', {
+            description:
+              'Separat vom Kundenlink – nur an die Person geben, die den Zugriff nötigenfalls beenden soll.',
+            duration: 14000,
+          })
+        } else {
+          setManageUrl(null)
+          setHasCustomerManageToken(false)
+        }
         if (created.initialPassword) {
           toast.message('Passwort für diesen Link', {
             description: `Einmalig anzeigen: ${created.initialPassword}`,
@@ -151,6 +179,7 @@ export function ShareLinkButton({
         if (again) {
           setMetaExpiresAt(again.expiresAt)
           setMetaHasPassword(again.hasPassword)
+          setHasCustomerManageToken(again.hasCustomerManageToken)
         }
       } finally {
         if (!cancelled) setLoading(false)
@@ -162,6 +191,15 @@ export function ShareLinkButton({
       cancelled = true
     }
   }, [open, referenceId])
+
+  async function copyManageToClipboard(link: string) {
+    try {
+      await navigator.clipboard.writeText(link)
+      toast.success('Sperr-Link kopiert – nur an die freigebende Person senden.')
+    } catch {
+      toast.error('Kopieren fehlgeschlagen')
+    }
+  }
 
   async function copyToClipboard(link: string) {
     try {
@@ -222,6 +260,7 @@ export function ShareLinkButton({
       if (again) {
         setMetaExpiresAt(again.expiresAt)
         setMetaHasPassword(again.hasPassword)
+        setHasCustomerManageToken(again.hasCustomerManageToken)
       }
     } finally {
       setSecSaving(false)
@@ -268,7 +307,14 @@ export function ShareLinkButton({
                       setLoadError(created.error ?? 'Link konnte nicht erstellt werden.')
                       return
                     }
-                    setUrl(toAbsoluteUrl(created.url))
+                    const abs = toAbsoluteUrl(created.url)
+                    setUrl(abs)
+                    if (created.manageToken) {
+                      setManageUrl(buildManageUrl(abs, created.manageToken))
+                      setHasCustomerManageToken(true)
+                    } else {
+                      setManageUrl(null)
+                    }
                     if (created.initialPassword) {
                       toast.message('Passwort für diesen Link', {
                         description: created.initialPassword,
@@ -279,6 +325,7 @@ export function ShareLinkButton({
                     if (again) {
                       setMetaExpiresAt(again.expiresAt)
                       setMetaHasPassword(again.hasPassword)
+                      setHasCustomerManageToken(again.hasCustomerManageToken)
                     }
                   } finally {
                     setLoading(false)
@@ -290,6 +337,7 @@ export function ShareLinkButton({
             </div>
           ) : url ? (
             <div className="space-y-3">
+              <p className="text-xs font-medium text-muted-foreground">Kundenansicht (zum Weitergeben)</p>
               <Input value={url} readOnly className="font-mono text-xs" />
               {(metaExpiresAt || metaHasPassword) && (
                 <p className="text-xs text-slate-500">
@@ -384,6 +432,17 @@ export function ShareLinkButton({
                       }
                       const sharedUrl = toAbsoluteUrl(result.url)
                       setUrl(sharedUrl)
+                      if (result.manageToken) {
+                        setManageUrl(buildManageUrl(sharedUrl, result.manageToken))
+                        setHasCustomerManageToken(true)
+                        toast.message('Neuer Sperr-Link für die freigebende Person', {
+                          description:
+                            'Unten kopieren – getrennt vom Kundenlink halten.',
+                          duration: 12000,
+                        })
+                      } else {
+                        setManageUrl(null)
+                      }
                       if (result.initialPassword) {
                         toast.message('Neues Passwort', {
                           description: result.initialPassword,
@@ -394,6 +453,7 @@ export function ShareLinkButton({
                       if (again) {
                         setMetaExpiresAt(again.expiresAt)
                         setMetaHasPassword(again.hasPassword)
+                        setHasCustomerManageToken(again.hasCustomerManageToken)
                       }
                       await copyToClipboard(sharedUrl)
                     } finally {
@@ -408,6 +468,87 @@ export function ShareLinkButton({
                   )}
                   Neu
                 </Button>
+              </div>
+
+              <div className="space-y-2 rounded-lg border border-amber-200/90 bg-amber-50/60 px-3 py-3 dark:border-amber-500/25 dark:bg-amber-500/10">
+                <div className="flex items-start gap-2">
+                  <AppIcon
+                    icon={Shield}
+                    size={18}
+                    className="mt-0.5 shrink-0 text-amber-800 dark:text-amber-200"
+                  />
+                  <div className="min-w-0 space-y-1">
+                    <p className="text-xs font-semibold text-amber-950 dark:text-amber-100">
+                      Nur für die freigebende Person (Sperrrecht)
+                    </p>
+                    <p className="text-xs leading-relaxed text-amber-900/85 dark:text-amber-100/85">
+                      Dieser zweite Link zeigt dieselbe Kundenansicht, ermöglicht aber das sofortige Sperren.
+                      Nicht an Kolleginnen weitergeben, die nur die Referenz sehen sollen.
+                    </p>
+                  </div>
+                </div>
+                {manageUrl ? (
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      className="gap-1.5"
+                      onClick={() => void copyManageToClipboard(manageUrl)}
+                    >
+                      <AppIcon icon={Shield} size={14} />
+                      Sperr-Link kopieren
+                    </Button>
+                    <Button type="button" size="sm" variant="outline" asChild>
+                      <a href={manageUrl} target="_blank" rel="noopener noreferrer">
+                        <AppIcon icon={ExternalLink} size={14} className="mr-1" />
+                        Sperr-Link öffnen
+                      </a>
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="pt-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      className="gap-1.5"
+                      disabled={issuingManage || !url}
+                      onClick={async () => {
+                        if (!url) return
+                        setIssuingManage(true)
+                        try {
+                          const res = await resetSharedPortfolioManageToken(referenceId)
+                          if (!res.success) {
+                            toast.error(res.error)
+                            return
+                          }
+                          setManageUrl(buildManageUrl(url, res.manageToken))
+                          setHasCustomerManageToken(true)
+                          toast.success(
+                            hasCustomerManageToken
+                              ? 'Neuer Sperr-Link erzeugt (alter ist ungültig).'
+                              : 'Sperr-Link eingerichtet.',
+                          )
+                        } finally {
+                          setIssuingManage(false)
+                        }
+                      }}
+                    >
+                      {issuingManage ? (
+                        <AppIcon icon={Loader} size={14} className="animate-spin" />
+                      ) : (
+                        <AppIcon icon={Shield} size={14} />
+                      )}
+                      {hasCustomerManageToken
+                        ? 'Neuen Sperr-Link erzeugen'
+                        : 'Sperr-Link einrichten / anzeigen'}
+                    </Button>
+                    <p className="mt-2 text-[11px] text-muted-foreground">
+                      Das Geheimnis wird nur hier einmal angezeigt – bitte gleich kopieren oder erneut erzeugen.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           ) : (

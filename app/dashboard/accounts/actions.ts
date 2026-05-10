@@ -540,6 +540,69 @@ export async function getContactsByCompanyId(companyId: string): Promise<Contact
   return (data ?? []) as ContactPersonRow[]
 }
 
+/** Ein interner Kontakt pro Account als Ansprechpartner für Koordination der Referenzfreigabe (Kunde). */
+export async function setCompanyInternalReferenceApprovalContact(
+  companyId: string,
+  contactPersonId: string | null
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id, role')
+    .eq('id', user.id)
+    .single()
+  if (!profile?.organization_id) return { success: false, error: 'Onboarding unvollständig.' }
+  const role = String((profile as { role?: string }).role ?? '')
+  if (role === 'sales') return { success: false, error: 'Keine Berechtigung.' }
+
+  const { data: company, error: cErr } = await supabase
+    .from('companies')
+    .select('id, organization_id')
+    .eq('id', companyId)
+    .single()
+  if (cErr || !company) return { success: false, error: 'Account nicht gefunden.' }
+  if ((company as { organization_id: string }).organization_id !== profile.organization_id) {
+    return { success: false, error: 'Keine Berechtigung.' }
+  }
+
+  if (contactPersonId) {
+    const { data: cp, error: cpErr } = await supabase
+      .from('contact_persons')
+      .select('id, company_id')
+      .eq('id', contactPersonId)
+      .single()
+    if (cpErr || !cp) return { success: false, error: 'Kontakt nicht gefunden.' }
+    if ((cp as { company_id: string }).company_id !== companyId) {
+      return { success: false, error: 'Kontakt gehört nicht zu diesem Account.' }
+    }
+  }
+
+  const { error } = await supabase
+    .from('companies')
+    .update({ internal_reference_approval_contact_id: contactPersonId })
+    .eq('id', companyId)
+    .eq('organization_id', profile.organization_id)
+
+  if (error) {
+    if ((error.message ?? '').toLowerCase().includes('internal_reference_approval')) {
+      return {
+        success: false,
+        error:
+          'Spalte internal_reference_approval_contact_id fehlt. Bitte Migration ausführen und Schema aktualisieren.',
+      }
+    }
+    return { success: false, error: error.message }
+  }
+
+  revalidatePath(ROUTES.accountsDetail(companyId))
+  return { success: true }
+}
+
 export async function createContactPerson(
   companyId: string,
   payload: {
@@ -872,12 +935,43 @@ function parseHeadquartersFromUnknown(input: unknown): string | null {
   }
   if (typeof input !== 'object') return null
   const obj = input as Record<string, unknown>
+  const singleLine = readStringField(obj, [
+    'formattedAddress',
+    'formatted_address',
+    'address',
+    'label',
+    'name',
+  ])
+  if (singleLine) return singleLine
   const city = readStringField(obj, ['city', 'town', 'locality'])
   const region = readStringField(obj, ['region', 'state', 'province'])
   const countryName = readStringField(obj, ['country', 'country_name'])
   const countryCode = readStringField(obj, ['countryCode', 'country_code', 'countryISO', 'country_iso'])
   const country = countryName || countryFromCode(countryCode)
   return [city || region, country].filter(Boolean).join(', ') || country || city || region || null
+}
+
+function locationEntryHeadquartersPriority(loc: unknown): number {
+  if (!loc || typeof loc !== 'object') return 0
+  const t = String((loc as Record<string, unknown>).type ?? (loc as Record<string, unknown>).kind ?? '').toLowerCase()
+  if (t.includes('head') || t.includes('hq') || t.includes('primary') || t.includes('main')) return 3
+  if (t.includes('office')) return 1
+  return 2
+}
+
+/** Mehrere Standorte: zuerst explizites HQ, sonst erster parsbarer Eintrag. */
+function pickHeadquartersFromLocationsArray(locations: unknown[] | undefined): string | null {
+  if (!Array.isArray(locations) || locations.length === 0) return null
+  const parsed = locations.map((loc) => ({
+    text: parseHeadquartersFromUnknown(loc),
+    prio: locationEntryHeadquartersPriority(loc),
+  }))
+  parsed.sort((a, b) => b.prio - a.prio)
+  for (const p of parsed) {
+    const s = String(p.text ?? '').trim()
+    if (s) return s
+  }
+  return null
 }
 
 function pickHeadquartersFromBrandfetchJson(
@@ -900,9 +994,9 @@ function pickHeadquartersFromBrandfetchJson(
   candidates.push(parseHeadquartersFromUnknown(json.location))
 
   const companyLocations = Array.isArray(json.company?.locations) ? json.company?.locations : []
-  for (const loc of companyLocations) candidates.push(parseHeadquartersFromUnknown(loc))
+  candidates.push(pickHeadquartersFromLocationsArray(companyLocations))
   const rootLocations = Array.isArray(json.locations) ? json.locations : []
-  for (const loc of rootLocations) candidates.push(parseHeadquartersFromUnknown(loc))
+  candidates.push(pickHeadquartersFromLocationsArray(rootLocations))
 
   for (const c of candidates) {
     const s = String(c ?? '').trim()
@@ -1091,7 +1185,8 @@ export async function refreshAccountsFromBrandfetch(): Promise<RefreshAccountsRe
     const payload = {
       logo_url: logoNeedsUpdate ? fetched.data.logoUrl : company.logo_url,
       industry: industryNeedsUpdate ? fetched.data.industry : company.industry,
-      headquarters: headquartersNeedsUpdate ? fetched.data.headquarters : company.headquarters,
+      // Wichtig: Nominatim-Fallback landet in fetchedHeadquarters, nicht in fetched.data.headquarters
+      headquarters: headquartersNeedsUpdate ? fetchedHeadquarters.trim() || company.headquarters : company.headquarters,
       employee_count: company.employee_count ?? fetched.data.employeeCount,
       description: company.description || fetched.data.description,
       website_url: website || fetched.data.websiteUrl,

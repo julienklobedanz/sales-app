@@ -117,6 +117,14 @@ export function ShareLinkDialog({
                         if (result.success) {
                           setShareLinkUrl(toAbsoluteUrl(result.url))
                           toast.success('Kundenlink erstellt')
+                          if (result.manageToken) {
+                            const u = new URL(toAbsoluteUrl(result.url))
+                            u.searchParams.set('manage', result.manageToken)
+                            toast.message('Sperr-Link für die freigebende Person', {
+                              description: u.toString(),
+                              duration: 20000,
+                            })
+                          }
                         } else {
                           toast.error(result.error ?? 'Erstellen fehlgeschlagen')
                         }

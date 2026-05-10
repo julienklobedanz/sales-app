@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState, useTransition } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useState, useTransition } from 'react'
 import { Fragment } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
@@ -68,6 +68,9 @@ function formatRoleBadgeLabel(role: AppRole): string {
 
 const INBOX_POLL_MS = 120_000
 
+const useIsomorphicLayoutEffect =
+  typeof window !== 'undefined' ? useLayoutEffect : useEffect
+
 export function DashboardHeader({
   userId,
   userName,
@@ -88,7 +91,8 @@ export function DashboardHeader({
   const router = useRouter()
   const { resolvedTheme, setTheme } = useTheme()
   const { setOpen } = useCommandPalette()
-  const [isMacLike, setIsMacLike] = useState(true)
+  /** Windows: Ctrl+K, macOS/iOS: ⌘K – gleiche Stelle rechts in der Leiste wie bisher */
+  const [searchShortcutLabel, setSearchShortcutLabel] = useState('Ctrl+K')
   const [roleSwitchPending, startRoleSwitch] = useTransition()
   const [notifications, setNotifications] =
     useState<DashboardNotificationItem[]>(initialNotifications)
@@ -123,9 +127,9 @@ export function DashboardHeader({
     }
   }, [userId, userRole])
 
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const ua = navigator.userAgent.toLowerCase()
-    setIsMacLike(/mac|iphone|ipad|ipod/.test(ua))
+    setSearchShortcutLabel(/mac|iphone|ipad|ipod/.test(ua) ? '⌘K' : 'Ctrl+K')
   }, [])
 
   const unreadCount = useMemo(
@@ -134,7 +138,6 @@ export function DashboardHeader({
   )
 
   const [markNotificationsPending, startMarkNotifications] = useTransition()
-  const shortcutLabel = isMacLike ? '⌘K' : 'Ctrl K'
 
   function markAllNotificationsRead() {
     const ids = notifications.filter((n) => !n.read).map((n) => n.id)
@@ -448,12 +451,12 @@ export function DashboardHeader({
           variant="ghost"
           size="sm"
           className="h-9 gap-1.5 px-2"
-          aria-label={`Suche öffnen (${shortcutLabel})`}
-          title={`Suche (${shortcutLabel})`}
+          aria-label={`Suche öffnen (${searchShortcutLabel})`}
+          title={`Suche (${searchShortcutLabel})`}
           onClick={() => setOpen(true)}
         >
           <AppIcon icon={SearchIcon} size={20} />
-          <Kbd className="hidden sm:inline-flex">{shortcutLabel}</Kbd>
+          <Kbd className="hidden sm:inline-flex">{searchShortcutLabel}</Kbd>
         </Button>
 
         <Popover>

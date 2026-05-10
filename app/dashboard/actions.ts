@@ -37,6 +37,7 @@ import {
   createSharedPortfolioImpl,
   getExistingShareForReferenceImpl,
   getReferencesByIdsImpl,
+  resetSharedPortfolioManageTokenImpl,
   updateShareLinkSecurityByReferenceImpl,
 } from '@/app/dashboard/references/sharing'
 import {
@@ -135,7 +136,7 @@ export async function toggleFavorite(referenceId: string) {
 }
 
 export type BulkImportReferencesResult =
-  | { success: true; created: number }
+  | { success: true; created: number; referenceIds: string[] }
   | { success: false; error: string }
 
 export type BulkImportGroup = { projectName: string; fileCount: number }
@@ -188,7 +189,13 @@ export async function updateReferenceDetailFields(
 export async function createSharedPortfolio(
   referenceIds: string[]
 ): Promise<
-  | { success: true; url: string; slug: string; initialPassword?: string | null }
+  | {
+      success: true
+      url: string
+      slug: string
+      initialPassword?: string | null
+      manageToken?: string
+    }
   | { success: false; error: string }
 > {
   return createSharedPortfolioImpl(referenceIds)
@@ -200,8 +207,16 @@ export async function getExistingShareForReference(referenceId: string): Promise
   url: string
   expiresAt: string | null
   hasPassword: boolean
+  hasCustomerManageToken: boolean
 } | null> {
   return getExistingShareForReferenceImpl(referenceId)
+}
+
+/** Neues ?manage=-Geheimnis für bestehenden Kundenlink (macht alten Sperr-Link ungültig). */
+export async function resetSharedPortfolioManageToken(
+  referenceId: string
+): Promise<{ success: true; manageToken: string } | { success: false; error: string }> {
+  return resetSharedPortfolioManageTokenImpl(referenceId)
 }
 
 export async function updateShareLinkSecurity(

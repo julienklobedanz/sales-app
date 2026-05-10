@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -15,6 +15,7 @@ import {
   createStakeholder,
   deleteContactPerson,
   deleteStakeholder,
+  setCompanyInternalReferenceApprovalContact,
   updateContactPerson,
   updateStakeholder,
   upsertCompanyStrategy,
@@ -24,7 +25,6 @@ import type { CompanyDetailClientProps } from './company-detail-types'
 import { CompanyDetailHeader } from './company-detail-header'
 import { CompanyDetailLinksTab } from './company-detail-links-tab'
 import { CompanyDetailContactsTab } from './company-detail-contacts-tab'
-import { CompanyDetailStakeholdersTab } from './company-detail-stakeholders-tab'
 import { CompanyDetailStrategyTab } from './company-detail-strategy-tab'
 import { CompanyStakeholderDialog } from './company-stakeholder-dialog'
 import { EditAccountDialog } from './edit-account-dialog'
@@ -34,6 +34,7 @@ import { CompanyDetailPowerMapTab } from './company-detail-power-map-tab'
 
 export function CompanyDetailClient({
   company,
+  organizationName,
   strategy: initialStrategy,
   stakeholders: initialStakeholders,
   internalContacts: initialInternalContacts,
@@ -86,6 +87,13 @@ export function CompanyDetailClient({
 
   const [stakeholders, setStakeholders] = useState(initialStakeholders)
   const [internalContacts, setInternalContacts] = useState(initialInternalContacts)
+  const [internalRefApprovalContactId, setInternalRefApprovalContactId] = useState<string | null>(
+    company.internal_reference_approval_contact_id ?? null
+  )
+
+  useEffect(() => {
+    setInternalRefApprovalContactId(company.internal_reference_approval_contact_id ?? null)
+  }, [company.internal_reference_approval_contact_id])
 
   const [stakeholderOpen, setStakeholderOpen] = useState(false)
   const [editingStakeholder, setEditingStakeholder] = useState<StakeholderRow | null>(null)
@@ -113,6 +121,7 @@ export function CompanyDetailClient({
   const [cPosition, setCPosition] = useState('')
   const [cLinkedIn, setCLinkedIn] = useState('')
   const [cLastInteraction, setCLastInteraction] = useState('')
+  const [cIsRefApprovalContact, setCIsRefApprovalContact] = useState(false)
 
   const saveStrategy = async (opts?: { silent?: boolean }) => {
     if (!canEditStrategy) return
@@ -239,6 +248,7 @@ export function CompanyDetailClient({
 
   const openContactDialog = (c?: ContactPersonRow) => {
     setEditingContact(c ?? null)
+    setCIsRefApprovalContact(Boolean(c?.id && c.id === internalRefApprovalContactId))
     setCFirst(c?.first_name ?? '')
     setCLast(c?.last_name ?? '')
     setCEmail(c?.email ?? '')
@@ -266,6 +276,21 @@ export function CompanyDetailClient({
           position: cPosition.trim() || null,
         })
         if (!res.success) return toast.error(res.error ?? 'Speichern fehlgeschlagen.')
+        if (cIsRefApprovalContact) {
+          const ar = await setCompanyInternalReferenceApprovalContact(company.id, editingContact.id)
+          if (!ar.success) {
+            toast.error(ar.error ?? 'Referenzfreigabe-Zuordnung fehlgeschlagen.')
+            return
+          }
+          setInternalRefApprovalContactId(editingContact.id)
+        } else if (internalRefApprovalContactId === editingContact.id) {
+          const ar = await setCompanyInternalReferenceApprovalContact(company.id, null)
+          if (!ar.success) {
+            toast.error(ar.error ?? 'Zuordnung konnte nicht entfernt werden.')
+            return
+          }
+          setInternalRefApprovalContactId(null)
+        }
         toast.success('Kontakt aktualisiert.')
         setContactOpen(false)
         setInternalContacts((prev) =>
@@ -296,9 +321,17 @@ export function CompanyDetailClient({
           position: cPosition.trim() || null,
         })
         if (!res.success) return toast.error(res.error ?? 'Speichern fehlgeschlagen.')
+        const created = res.contact
+        if (created && cIsRefApprovalContact) {
+          const ar = await setCompanyInternalReferenceApprovalContact(company.id, created.id)
+          if (!ar.success) {
+            toast.error(ar.error ?? 'Referenzfreigabe-Zuordnung fehlgeschlagen.')
+            return
+          }
+          setInternalRefApprovalContactId(created.id)
+        }
         toast.success('Kontakt hinzugefügt.')
         setContactOpen(false)
-        const created = res.contact
         if (created) setInternalContacts((prev) => [...prev, created])
       }
     } finally {
@@ -310,6 +343,7 @@ export function CompanyDetailClient({
     if (!canEditBuyingCenter) return
     const res = await deleteContactPerson(id)
     if (!res.success) return toast.error(res.error ?? 'Löschen fehlgeschlagen.')
+    if (internalRefApprovalContactId === id) setInternalRefApprovalContactId(null)
     setInternalContacts((prev) => prev.filter((c) => c.id !== id))
     toast.success('Kontakt gelöscht.')
   }
@@ -374,6 +408,8 @@ export function CompanyDetailClient({
             marketSignals={marketSignals}
             internalContacts={internalContacts}
             externalContacts={externalContacts}
+            organizationName={organizationName}
+            internalReferenceApprovalContactId={internalRefApprovalContactId}
             canEdit={canEditBuyingCenter}
             onAddStakeholder={() => openStakeholderDialog()}
             onEditStakeholder={openStakeholderDialog}
@@ -441,8 +477,10 @@ export function CompanyDetailClient({
         setCLinkedIn={setCLinkedIn}
         cRole={cRole}
         setCRole={setCRole}
-          cLastInteraction={cLastInteraction}
-          setCLastInteraction={setCLastInteraction}
+        cLastInteraction={cLastInteraction}
+        setCLastInteraction={setCLastInteraction}
+        cIsRefApprovalContact={cIsRefApprovalContact}
+        setCIsRefApprovalContact={setCIsRefApprovalContact}
         onSave={saveContact}
       />
     </div>

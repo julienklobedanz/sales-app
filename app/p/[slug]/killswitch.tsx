@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,13 +21,15 @@ import { AppIcon } from '@/lib/icons'
 
 export function PublicPortfolioKillswitch({ slug }: { slug: string }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const manageToken = searchParams.get('manage')?.trim() || null
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
 
   async function handleDeactivate() {
     setLoading(true)
     try {
-      const { success } = await deactivatePortfolio(slug)
+      const { success } = await deactivatePortfolio(slug, manageToken)
       if (success) {
         toast.success('Zugriff gesperrt. Dieser Link ist nicht mehr gültig.')
         setOpen(false)

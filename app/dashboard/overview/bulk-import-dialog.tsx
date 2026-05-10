@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { UploadIcon, FileText, Cancel01Icon, Loader } from '@hugeicons/core-free-icons'
@@ -11,6 +11,12 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input'
 
 import { bulkCreateReferencesFromFiles } from '../actions'
+import { runBulkImportExtractionForReference } from '@/app/dashboard/references/bulk-import-post-process'
+import { BULK_IMPORT_MAX_FILES } from '@/lib/references/bulk-import-limits'
+import {
+  BulkImportReviewDialog,
+  type BulkImportReviewItem,
+} from './bulk-import-review-dialog'
 
 export type BulkImportGroupItem = { id: string; projectName: string; files: File[] }
 
@@ -41,14 +47,21 @@ export function BulkImportDialog({
 }) {
   const router = useRouter()
   const totalFiles = groups.reduce((s, g) => s + g.files.length, 0)
+  const [reviewOpen, setReviewOpen] = useState(false)
+  const [reviewItems, setReviewItems] = useState<BulkImportReviewItem[]>([])
+  const [extractionProgress, setExtractionProgress] = useState<{
+    current: number
+    total: number
+  } | null>(null)
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg" showCloseButton={!loading}>
         <DialogHeader>
           <DialogTitle>Referenzen importieren</DialogTitle>
           <DialogDescription>
-            Bis zu 20 Dateien ablegen. Pro Gruppe wird eine Referenz mit mehreren Assets angelegt.
+            Bis zu {BULK_IMPORT_MAX_FILES} Dateien ablegen. Pro Gruppe wird eine Referenz mit mehreren Assets angelegt.
             Ziehe Dateikarten auf eine andere, um sie zu einer Projekt-Gruppe zu bündeln.
           </DialogDescription>
         </DialogHeader>
@@ -86,7 +99,7 @@ export function BulkImportDialog({
             className="flex min-h-[100px] cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-4 text-center text-sm text-muted-foreground transition-colors hover:border-muted-foreground/50 hover:bg-muted/30 disabled:pointer-events-none disabled:opacity-60"
           >
             <AppIcon icon={UploadIcon} size={32} />
-            <span>Dateien hier ablegen oder klicken (max. 20)</span>
+            <span>Dateien hier ablegen oder klicken (max. {BULK_IMPORT_MAX_FILES})</span>
           </div>
 
           {groups.length > 0 && (
@@ -178,17 +191,84 @@ export function BulkImportDialog({
               })
 
               onLoadingChange?.(true)
+              setExtractionProgress(null)
               try {
                 const result = await bulkCreateReferencesFromFiles(formData)
-                if (result.success) {
-                  toast.success(
-                    `${result.created} Referenz${result.created !== 1 ? 'en' : ''} (Entwürfe) erfolgreich erstellt.`,
+                if (!result.success) {
+                  toast.error(result.error)
+                  return
+                }
+
+                const ids = result.referenceIds
+                if (ids.length === 0) {
+                  toast.error(
+                    result.created === 0
+                      ? 'Es wurde keine Referenz angelegt. Bitte Dateien prüfen.'
+                      : 'Nach dem Import fehlten Referenz-IDs für die Extraktion.',
                   )
                   onOpenChange(false)
                   setGroups([])
                   router.refresh()
+                  return
+                }
+                let completeCount = 0
+                const pendingReview: BulkImportReviewItem[] = []
+
+                for (let i = 0; i < ids.length; i++) {
+                  setExtractionProgress({ current: i + 1, total: ids.length })
+                  const id = ids[i]
+                  const r = await runBulkImportExtractionForReference(id)
+                  if (!r.success) {
+                    pendingReview.push({
+                      referenceId: id,
+                      title: 'Referenz',
+                      needsInput: true,
+                      extractionOk: false,
+                      extractionError: r.error,
+                      suggestions: {},
+                    })
+                    continue
+                  }
+                  if (!r.needsInput) completeCount++
+                  const showReview =
+                    r.needsInput ||
+                    !r.extractionOk ||
+                    Boolean(String(r.extractionError ?? '').trim())
+                  if (showReview) {
+                    pendingReview.push({
+                      referenceId: r.referenceId,
+                      title: r.title,
+                      needsInput: r.needsInput,
+                      extractionOk: r.extractionOk,
+                      extractionError: r.extractionError,
+                      suggestions: r.suggestions,
+                    })
+                  }
+                }
+
+                const needsMoreCount = ids.length - completeCount
+                if (needsMoreCount > 0) {
+                  toast.success(
+                    `${completeCount} Referenzen erfolgreich importiert, ${needsMoreCount} Referenzen benötigen weiteren Input.`,
+                    { duration: 6500 },
+                  )
                 } else {
-                  toast.error(result.error)
+                  toast.success(
+                    `${completeCount} Referenz${completeCount !== 1 ? 'en' : ''} erfolgreich importiert.`,
+                    { duration: 5000 },
+                  )
+                }
+
+                onOpenChange(false)
+                setGroups([])
+                router.refresh()
+                setExtractionProgress(null)
+
+                if (pendingReview.length > 0) {
+                  setReviewItems(pendingReview)
+                  window.setTimeout(() => setReviewOpen(true), 400)
+                } else {
+                  setReviewItems([])
                 }
               } catch (e) {
                 toast.error(e instanceof Error ? e.message : 'Import fehlgeschlagen.')
@@ -200,7 +280,9 @@ export function BulkImportDialog({
             {loading ? (
               <>
                 <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />
-                Import läuft…
+                {extractionProgress
+                  ? `Extrahiere ${extractionProgress.current}/${extractionProgress.total}…`
+                  : 'Import läuft…'}
               </>
             ) : (
               `Import starten (${groups.length} Gruppe${groups.length !== 1 ? 'n' : ''}, ${totalFiles} Dateien)`
@@ -209,6 +291,12 @@ export function BulkImportDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    <BulkImportReviewDialog
+      open={reviewOpen}
+      onOpenChange={setReviewOpen}
+      items={reviewItems}
+    />
+    </>
   )
 }
 
