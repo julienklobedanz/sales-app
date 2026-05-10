@@ -83,7 +83,7 @@ export function SupportTicketModal({
           priority
         )}\n\nBeschreibung:\n${message.trim()}\n\n${attachmentLine}\n\n(Anhänge werden aktuell nicht serverseitig verarbeitet.)`
 
-      const result = await submitTicket(type, fullSubject, fullMessage)
+      const result = await submitTicket(type, fullSubject, fullMessage, { replyToEmail: safeEmail })
       if (result.success) {
         toast.success('Nachricht gesendet! Wir melden uns.')
         setSubject('')
@@ -293,6 +293,8 @@ export function SupportTicketModal({
                   <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />
                   Wird gesendet…
                 </>
+              ) : type === 'feedback' ? (
+                'Feedback senden'
               ) : (
                 'Ticket einreichen'
               )}

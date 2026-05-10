@@ -5,6 +5,7 @@ import { DEV_ROLE_COOKIE, parseAppRoleCookie } from '@/lib/dev-role-preview'
 import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
 import { DashboardShell } from './dashboard-shell'
+import { DashboardMfaGate } from '@/components/dashboard/DashboardMfaGate'
 import { getInboxNotificationsForLayout } from './actions'
 
 function sanitizeHexColor(raw: unknown) {
@@ -73,7 +74,7 @@ export default async function DashboardLayout({
       initialNotifications={initialNotifications}
       workspaceBranding={workspaceBranding}
     >
-      {children}
+      <DashboardMfaGate>{children}</DashboardMfaGate>
     </DashboardShell>
   )
 }

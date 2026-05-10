@@ -12,12 +12,10 @@ import {
   Linkedin01Icon,
   LinkIcon,
   Loader,
-  News01Icon,
   Paperclip,
   Sparkles,
   StarIcon,
   UploadIcon,
-  UserMultipleIcon,
 } from '@hugeicons/core-free-icons'
 
 import { AppIcon } from '@/lib/icons'
@@ -40,13 +38,36 @@ import {
   triggerMarketSignalsIngestForMyOrg,
 } from '@/app/dashboard/market-signals/actions'
 import type { DecisionMakerCandidate } from '@/app/dashboard/market-signals/actions'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { toast } from 'sonner'
 import { useRole } from '@/hooks/useRole'
-import { CheckCircle2, CalendarDays, Copy, CopyCheck, Info, Lock, Users, ThumbsDown, ThumbsUp } from 'lucide-react'
+import {
+  CalendarClock,
+  CalendarDays,
+  CheckCircle2,
+  Copy,
+  CopyCheck,
+  Info,
+  Lock,
+  MessageCircle,
+  Pin,
+  RefreshCw,
+  Settings,
+  ThumbsDown,
+  ThumbsUp,
+  Users,
+} from 'lucide-react'
 
 function formatLinkedInActivityLine(iso: string | null | undefined): string | null {
   if (!iso) return null
@@ -59,6 +80,24 @@ function formatLinkedInActivityLine(iso: string | null | undefined): string | nu
   if (days < 7) return `Vor ${days} Tagen aktiv (geschätzt)`
   if (days < 30) return `Vor ${Math.floor(days / 7)} Wochen aktiv (geschätzt)`
   return `Vor ${Math.floor(days / 30)} Monat(en) aktiv (geschätzt)`
+}
+
+/** Parsed „Dein Kollege X kennt Y – …“ bridge copy from decision-maker mocks / providers. */
+function parseMutualBridgeLine(line: string): { colleague: string; contact: string } | null {
+  const m = String(line ?? '')
+    .trim()
+    .match(/^Dein Kollege (.+?) kennt (.+?) – starker Einstieg für ein Warm-Intro\.?$/)
+  if (!m) return null
+  return { colleague: m[1].trim(), contact: m[2].trim() }
+}
+
+function personInitials(name: string): string {
+  const parts = String(name ?? '')
+    .split(/\s+/)
+    .filter(Boolean)
+  if (!parts.length) return '?'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 }
 
 function firstChunkSentences(text: string, maxSentences: number, maxLen: number): string {
@@ -199,19 +238,15 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
   }
 
   function signalTypeLabel(badge: InboxItem['categoryBadge']) {
-    if (badge === 'people') return { short: 'Executive', full: 'Executive Tracking' }
-    return { short: 'Company', full: 'Company News' }
+    if (badge === 'people') return { short: 'Executive Update', full: 'Executive Update' }
+    return { short: 'Company News', full: 'Company News' }
   }
 
-  /** Erklärt die Farbe am Kartenrand und im Aktions-Stack (Grün ≠ Gelb). */
-  function signalCategoryColorHint(badge: InboxItem['categoryBadge']): string {
-    if (badge === 'people') {
-      return 'Blau · Personen: Executive-Tracking, Führungswechsel, Presse zu Führungskräften.'
-    }
-    if (badge === 'finance') {
-      return 'Grün · Finanz: Budget, Kennzahlen, Finanzierungen, IT-Kosten / CFO-relevante News.'
-    }
-    return 'Gelb · Strategie: Programme, Digitalisierung, CRM- & Tool-Rollouts, Unternehmens- und IT-Strategie.'
+  /** Linker Akzentbalken für die ausgewählte Inbox-Zeile (Kategorie-Farbe). */
+  function inboxRowAccentClass(item: InboxItem): string {
+    if (item.kind === 'exec' || item.categoryBadge === 'people') return 'border-l-blue-600'
+    if (item.categoryBadge === 'finance') return 'border-l-emerald-500'
+    return 'border-l-amber-400'
   }
 
   function relativeTime(iso: string) {
@@ -311,11 +346,10 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
     return `${companyName} • ${trigger} (${context})`
   }
 
-  /** Kompakte Inbox-Zeile: Signal-Art (z. B. Personalwechsel). */
+  /** Kompakte Inbox-Zeile: Signal-Art. */
   function inboxRowSignalTypeLabel(item: InboxItem): string {
-    if (item.kind === 'exec') return 'Personalwechsel'
-    if (item.categoryBadge === 'finance') return 'Finanzsignal'
-    return 'Unternehmensnews'
+    if (item.kind === 'exec') return 'Executive Update'
+    return 'Company News'
   }
 
   const restrictedSet = useMemo(
@@ -686,7 +720,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
       reason,
     })
     if (!res.success) return toast.error(res.error)
-    toast.success('Feedback gespeichert')
+    toast.success('Danke – Feedback wurde protokolliert (internes Audit-Log).')
   }
 
   const quickRefs = useMemo(() => {
@@ -981,9 +1015,9 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
   function explainIngestError(message: string) {
     const raw = String(message ?? '')
     if (/SUPABASE_SERVICE_ROLE_KEY/i.test(raw)) {
-      return 'Signale können aktuell nicht synchronisiert werden: Salesforce/Supabase Service-Verbindung ist nicht vollständig konfiguriert.'
+      return raw
     }
-    if (/nur admin/i.test(raw)) {
+    if (/nur admin|Account Manager/i.test(raw)) {
       return 'Nur Admins oder Account Manager können den Ingest starten.'
     }
     return raw || 'Synchronisierung konnte nicht gestartet werden.'
@@ -1050,97 +1084,68 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
     return () => ac.abort()
   }, [selected, introTone, quickRefs, introDraftRequested, introDraftRunId])
 
-  return (
-    <div className="space-y-5 overflow-x-hidden">
-      <div className="flex flex-wrap items-center justify-end gap-3 rounded-xl border border-border/70 bg-card px-4 py-3 shadow-sm shadow-slate-900/5">
-        <div className="inline-flex items-center rounded-lg border border-border/70 bg-background/70 p-1">
-          <Button
-            type="button"
-            variant="ghost"
-            size="toolbar"
-            onClick={() => setOnlyActiveDeals((prev) => !prev)}
-            className={`inline-flex h-8 items-center gap-1.5 rounded-md border px-3 text-xs font-medium ${
-              onlyActiveDeals
-                ? 'border-blue-500/40 bg-blue-500/10 text-blue-700 hover:bg-blue-500/15 dark:text-blue-300'
-                : 'border-transparent bg-transparent text-muted-foreground hover:bg-muted/70'
-            }`}
-          >
-            <AppIcon icon={FilterHorizontalIcon} size={14} />
-            Nur aktive Deals
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="toolbar"
-            onClick={() => setOnlyFocusAccounts((prev) => !prev)}
-            className={`inline-flex h-8 items-center gap-1.5 rounded-md border px-3 text-xs font-medium ${
-              onlyFocusAccounts
-                ? 'border-blue-500/40 bg-blue-500/10 text-blue-700 hover:bg-blue-500/15 dark:text-blue-300'
-                : 'border-transparent bg-transparent text-muted-foreground hover:bg-muted/70'
-            }`}
-          >
-            <AppIcon icon={StarIcon} size={14} />
-            Focus only
-          </Button>
-          <Button variant="ghost" size="toolbar" className="h-8 px-3 text-muted-foreground hover:bg-muted/70" asChild>
-            <Link href={`${ROUTES.marketSignalsManage}?view=champions`}>
-              <AppIcon icon={Sparkles} size={14} />
-              Executives verwalten
-            </Link>
-          </Button>
-          <Button variant="ghost" size="toolbar" className="h-8 px-3 text-muted-foreground hover:bg-muted/70" asChild>
-            <Link href={ROUTES.marketSignalsManage}>Watchlist verwalten</Link>
-          </Button>
-          {canRunNewsIngest ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="toolbar"
-              className="h-8 gap-1.5 text-xs"
-              disabled={newsIngestPending}
-              title="Company News + Executive-Presse (Google News RSS, inkl. Fachmedien-Suche)"
-              onClick={() => {
-                startNewsIngest(async () => {
-                  const result = await triggerMarketSignalsIngestForMyOrg()
-                  if (!result.success) {
-                    toast.error(explainIngestError(result.error))
-                    return
-                  }
-                  const ne = result.news.errors.length
-                  const ee = result.executives.errors.length
-                  if (ne > 0) console.warn('[market-signals ingest / news]', result.news.errors)
-                  if (ee > 0) console.warn('[market-signals ingest / executives]', result.executives.errors)
-                  toast.success(
-                    `Signale: ${result.news.articlesInserted} News · ${result.executives.signalsInserted} Executive` +
-                      (result.executives.skippedNoCompany > 0
-                        ? ` (${result.executives.skippedNoCompany} Exec. ohne Account-Zuordnung übersprungen)`
-                        : '')
-                  )
-                  router.refresh()
-                })
-              }}
-            >
-              {newsIngestPending ? (
-                <AppIcon icon={Loader} size={14} className="animate-spin" />
-              ) : (
-                <AppIcon icon={News01Icon} size={14} />
-              )}
-              Signale abrufen
-            </Button>
-          ) : null}
-        </div>
-      </div>
+  function runManualNewsIngest() {
+    startNewsIngest(async () => {
+      const result = await triggerMarketSignalsIngestForMyOrg()
+      if (!result.success) {
+        toast.error(explainIngestError(result.error))
+        return
+      }
+      const ne = result.news.errors.length
+      const ee = result.executives.errors.length
+      if (ne > 0) console.warn('[market-signals ingest / news]', result.news.errors)
+      if (ee > 0) console.warn('[market-signals ingest / executives]', result.executives.errors)
+      toast.success(
+        `Signale: ${result.news.articlesInserted} News · ${result.executives.signalsInserted} Executive` +
+          (result.executives.skippedNoCompany > 0
+            ? ` (${result.executives.skippedNoCompany} Exec. ohne Account-Zuordnung übersprungen)`
+            : '')
+      )
+      router.refresh()
+    })
+  }
 
-      <div className="h-[calc(100vh-220px)] min-h-[540px] max-w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm">
+  return (
+    <div className="overflow-x-hidden">
+      <div className="h-[calc(100vh-140px)] min-h-[540px] max-w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm">
         <ResizablePanelGroup direction="horizontal">
           <ResizablePanel defaultSize={30} minSize={22} className="min-w-0">
             <div className="flex h-full min-h-0 flex-col overflow-hidden">
-              <div className="flex h-12 items-center justify-between border-b border-slate-200 bg-white px-3">
+              <div className="flex h-12 items-center justify-between bg-white px-2 pb-1">
                 <p className="text-sm font-semibold text-slate-900">Inbox</p>
-                <div className="flex items-center gap-1.5">
-                  <p className="text-xs text-slate-500">
-                    {groupedVisibleItems.length} Signale
-                  </p>
+                <div className="flex items-center gap-0.5">
+                  <p className="mr-1 text-xs tabular-nums text-slate-500">{groupedVisibleItems.length} Signale</p>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-7 text-slate-500 hover:text-slate-800"
+                        aria-label="Watchlist und Executives verwalten"
+                        title="Watchlist und Executives verwalten"
+                      >
+                        <Settings className="size-4" aria-hidden />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                        Marktsignale verwalten
+                      </DropdownMenuLabel>
+                      <DropdownMenuItem asChild className="cursor-pointer">
+                        <Link href={`${ROUTES.marketSignalsManage}?view=champions`} className="flex items-center gap-2">
+                          <AppIcon icon={Sparkles} size={14} className="text-slate-600" />
+                          Executives verwalten
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild className="cursor-pointer">
+                        <Link href={ROUTES.marketSignalsManage} className="flex items-center gap-2">
+                          <AppIcon icon={StarIcon} size={14} className="text-slate-600" />
+                          Watchlist verwalten
+                        </Link>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   <Button
                     type="button"
                     variant="ghost"
@@ -1185,13 +1190,84 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                     Account
                   </Button>
                 </div>
-                <div className="mt-2">
+                <div className="mt-2 flex items-center gap-1.5">
+                  <TooltipProvider delayDuration={300}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant={onlyActiveDeals ? 'secondary' : 'outline'}
+                          size="icon"
+                          className="size-8 shrink-0 border-slate-200 bg-white"
+                          aria-pressed={onlyActiveDeals}
+                          aria-label="Nur aktive Deals"
+                          onClick={() => setOnlyActiveDeals((prev) => !prev)}
+                        >
+                          <AppIcon icon={FilterHorizontalIcon} size={14} className="text-slate-700" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="max-w-[220px] text-xs">
+                        Nur Accounts mit aktivem Deal in der Inbox
+                        {onlyActiveDeals ? ' (ein)' : ' (aus)'}.
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant={onlyFocusAccounts ? 'secondary' : 'outline'}
+                          size="icon"
+                          className="size-8 shrink-0 border-slate-200 bg-white"
+                          aria-pressed={onlyFocusAccounts}
+                          aria-label="Nur Focus-Accounts"
+                          onClick={() => setOnlyFocusAccounts((prev) => !prev)}
+                        >
+                          <AppIcon icon={StarIcon} size={14} className="text-slate-700" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="max-w-[220px] text-xs">
+                        Nur Accounts aus deiner Watchlist (Focus)
+                        {onlyFocusAccounts ? ' (ein)' : ' (alle Accounts)'}.
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                   <Input
                     value={signalFilter}
                     onChange={(e) => setSignalFilter(e.target.value)}
                     placeholder="Signale filtern..."
-                    className="h-8 bg-white text-xs"
+                    className="h-8 min-w-0 flex-1 bg-white text-xs"
+                    aria-label="Signale filtern"
                   />
+                  {canRunNewsIngest ? (
+                    <TooltipProvider delayDuration={300}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="size-8 shrink-0 border-slate-200 bg-white"
+                            disabled={newsIngestPending}
+                            aria-label="Neue Signale aus Feeds laden"
+                            onClick={() => runManualNewsIngest()}
+                          >
+                            {newsIngestPending ? (
+                              <AppIcon icon={Loader} size={14} className="animate-spin text-slate-600" />
+                            ) : (
+                              <RefreshCw className="size-3.5 text-slate-600" aria-hidden />
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="max-w-[240px] text-xs leading-snug">
+                          <span className="font-medium text-slate-900">Feeds jetzt abrufen</span>
+                          <span className="mt-1 block text-muted-foreground">
+                            Lädt neue Company-News und Executive-Signale (RSS). Die Liste aktualisiert sich zusätzlich
+                            etwa alle 2 Minuten automatisch vom Server.
+                          </span>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  ) : null}
                 </div>
               </div>
               <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-2 [scrollbar-gutter:stable] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar]:w-2">
@@ -1234,8 +1310,10 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                       if (isMobile) setMobileOpen(true)
                                       void markReadForGroup(groupItem.items)
                                     }}
-                                    className={`group relative flex w-full items-center gap-2.5 rounded-lg py-2 pl-2 pr-1 text-left transition-colors ${
-                                      isActive ? 'bg-blue-50/90' : 'hover:bg-slate-50/90'
+                                    className={`group relative flex w-full items-center gap-2.5 rounded-lg border-l-[3px] py-2 pl-2 pr-1 text-left transition-colors ${
+                                      isActive
+                                        ? `bg-blue-50/90 ${inboxRowAccentClass(rep)}`
+                                        : `border-l-transparent hover:bg-slate-50/90`
                                     }`}
                                   >
                                     <div className="relative flex shrink-0 -space-x-1.5">
@@ -1348,27 +1426,6 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                           </TooltipTrigger>
                                           <TooltipContent side="left" className="max-w-[220px] text-xs">
                                             KI-Intro-Snippet in die Zwischenablage kopieren.
-                                          </TooltipContent>
-                                        </Tooltip>
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <span
-                                              role="img"
-                                              aria-label={signalCategoryColorHint(rep.categoryBadge)}
-                                              className="inline-flex size-6 cursor-help items-center justify-center rounded border border-slate-200 bg-white text-slate-600"
-                                              tabIndex={-1}
-                                            >
-                                              {rep.categoryBadge === 'people' ? (
-                                                <AppIcon icon={UserMultipleIcon} size={13} className="text-blue-600" />
-                                              ) : rep.categoryBadge === 'finance' ? (
-                                                <span className="inline-flex size-3 rounded-sm bg-emerald-500" />
-                                              ) : (
-                                                <span className="inline-flex size-2.5 rotate-45 rounded-[1px] bg-amber-400" />
-                                              )}
-                                            </span>
-                                          </TooltipTrigger>
-                                          <TooltipContent side="left" className="max-w-[240px] text-xs leading-snug">
-                                            Signal-Kategorie: {signalCategoryColorHint(rep.categoryBadge)}
                                           </TooltipContent>
                                         </Tooltip>
                                       </div>
@@ -1521,24 +1578,76 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                         <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button type="button" variant="outline" size="icon" className="size-8" aria-label="Aktionen">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                className="size-8"
+                                title="Wiedervorlage, Priorität und Slack"
+                                aria-label="Wiedervorlage, Priorität und Slack"
+                              >
                                 <CalendarDays className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onSelect={() => void toggleTodayPriority(selected)}>
-                                Heute zuerst
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onSelect={() => void snoozeSelected(1)}>Morgen</DropdownMenuItem>
-                              <DropdownMenuItem onSelect={() => void snoozeSelected(7)}>Nächste Woche</DropdownMenuItem>
+                            <DropdownMenuContent align="end" className="min-w-[14rem]">
+                              <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                                Inbox &amp; Erinnerung
+                              </DropdownMenuLabel>
                               <DropdownMenuItem
+                                className="cursor-pointer flex-col items-start gap-0.5 py-2"
+                                onSelect={() => void toggleTodayPriority(selected)}
+                              >
+                                <span className="flex w-full items-center gap-2 text-sm font-medium">
+                                  <Pin className="size-3.5 shrink-0 text-amber-600" aria-hidden />
+                                  Heute zuerst
+                                </span>
+                                <span className="text-muted-foreground pl-5 text-xs font-normal leading-snug">
+                                  Signal oben in der Liste priorisieren (oder Priorität wieder entfernen).
+                                </span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="cursor-pointer flex-col items-start gap-0.5 py-2"
+                                onSelect={() => void snoozeSelected(1)}
+                              >
+                                <span className="flex w-full items-center gap-2 text-sm font-medium">
+                                  <CalendarClock className="size-3.5 shrink-0 text-slate-600" aria-hidden />
+                                  Morgen
+                                </span>
+                                <span className="text-muted-foreground pl-5 text-xs font-normal leading-snug">
+                                  Signal vorübergehend ausblenden und morgen wieder anzeigen.
+                                </span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="cursor-pointer flex-col items-start gap-0.5 py-2"
+                                onSelect={() => void snoozeSelected(7)}
+                              >
+                                <span className="flex w-full items-center gap-2 text-sm font-medium">
+                                  <CalendarDays className="size-3.5 shrink-0 text-slate-600" aria-hidden />
+                                  Nächste Woche
+                                </span>
+                                <span className="text-muted-foreground pl-5 text-xs font-normal leading-snug">
+                                  Eine Woche zurückstellen – weniger Lärm, später wieder dran.
+                                </span>
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                                Team
+                              </DropdownMenuLabel>
+                              <DropdownMenuItem
+                                className="cursor-pointer flex-col items-start gap-0.5 py-2"
                                 onSelect={async () => {
                                   const key = signalKeyOf(selected)
                                   await logMarketSignalQuickAction({ signalKey: key, channel: 'slack_mention' })
                                   window.open('https://slack.com/app_redirect', '_blank', 'noopener,noreferrer')
                                 }}
                               >
-                                Slack @AE
+                                <span className="flex w-full items-center gap-2 text-sm font-medium">
+                                  <MessageCircle className="size-3.5 shrink-0 text-violet-600" aria-hidden />
+                                  Slack öffnen
+                                </span>
+                                <span className="text-muted-foreground pl-5 text-xs font-normal leading-snug">
+                                  Schnellweg in Slack – z. B. Account Executive oder Team pingen (kein Auto-Post).
+                                </span>
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -1549,42 +1658,90 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                               </Link>
                             </Button>
                           ) : null}
-                          <TooltipProvider delayDuration={200}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <button
-                                  type="button"
-                                  className="inline-flex size-8 items-center justify-center rounded-md text-xs text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800"
-                                  aria-label="Gemeinsame Kontakte und Warm-Intro-Pfade"
-                                >
-                                  <Users className="h-4 w-4 text-slate-600" aria-hidden />
-                                  {mutualConnectionsPreview.count > 0 ? (
-                                    <span className="ml-0.5 font-medium tabular-nums text-slate-800 dark:text-slate-100">
-                                      {mutualConnectionsPreview.count}
-                                    </span>
-                                  ) : null}
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent
-                                side="top"
-                                className="max-w-xs border-slate-200 bg-white px-3 py-2 text-left text-xs text-slate-800 shadow-lg dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                          <HoverCard openDelay={200} closeDelay={150}>
+                            <HoverCardTrigger asChild>
+                              <button
+                                type="button"
+                                className="inline-flex size-8 items-center justify-center rounded-md text-xs text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800"
+                                aria-label="Gemeinsame Kontakte und Warm-Intro-Pfade"
                               >
-                                <p className="mb-1.5 font-semibold text-slate-900 dark:text-slate-100">Gemeinsame Kontakte</p>
+                                <Users className="h-4 w-4 text-slate-600" aria-hidden />
+                                {mutualConnectionsPreview.count > 0 ? (
+                                  <span className="ml-0.5 font-medium tabular-nums text-slate-800 dark:text-slate-100">
+                                    {mutualConnectionsPreview.count}
+                                  </span>
+                                ) : null}
+                              </button>
+                            </HoverCardTrigger>
+                            <HoverCardContent
+                              side="top"
+                              align="end"
+                              className="w-[min(22rem,calc(100vw-1.5rem))] overflow-hidden border-slate-200 p-0 shadow-lg dark:border-slate-700"
+                            >
+                              <div className="border-b border-slate-100 bg-slate-50/90 px-3 py-2.5 dark:border-slate-800 dark:bg-slate-900/80">
+                                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Gemeinsame Kontakte</p>
+                                <p className="mt-0.5 text-[11px] leading-snug text-slate-600 dark:text-slate-400">
+                                  Kolleg:innen mit direkter Verbindung zum Ansprechpartner – guter Hebel für ein Warm-Intro.
+                                </p>
+                              </div>
+                              <div className="max-h-[min(18rem,55vh)] space-y-2 overflow-y-auto p-2">
                                 {mutualConnectionsPreview.bridges.length ? (
-                                  <ul className="list-inside list-disc space-y-1 leading-snug text-slate-700 dark:text-slate-300">
-                                    {mutualConnectionsPreview.bridges.map((line, i) => (
-                                      <li key={i}>{line}</li>
-                                    ))}
-                                  </ul>
+                                  mutualConnectionsPreview.bridges.map((line, i) => {
+                                    const parsed = parseMutualBridgeLine(line)
+                                    if (!parsed) {
+                                      return (
+                                        <div
+                                          key={i}
+                                          className="rounded-lg border border-slate-200/80 bg-white px-3 py-2 text-xs leading-snug text-slate-700 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-300"
+                                        >
+                                          {line}
+                                        </div>
+                                      )
+                                    }
+                                    return (
+                                      <div
+                                        key={i}
+                                        className="flex gap-2.5 rounded-lg border border-slate-200/80 bg-white p-2.5 shadow-sm dark:border-slate-700 dark:bg-slate-950/50"
+                                      >
+                                        <div className="flex shrink-0 items-center gap-1.5">
+                                          <span
+                                            className="flex size-9 items-center justify-center rounded-full bg-blue-100 text-[10px] font-bold text-blue-800 dark:bg-blue-950/80 dark:text-blue-200"
+                                            title={parsed.colleague}
+                                          >
+                                            {personInitials(parsed.colleague)}
+                                          </span>
+                                          <span className="text-[10px] font-medium text-slate-400" aria-hidden>
+                                            ↔
+                                          </span>
+                                          <span
+                                            className="flex size-9 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold text-emerald-900 dark:bg-emerald-950/80 dark:text-emerald-200"
+                                            title={parsed.contact}
+                                          >
+                                            {personInitials(parsed.contact)}
+                                          </span>
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                          <p className="text-xs font-medium text-slate-900 dark:text-slate-100">
+                                            <span className="text-blue-700 dark:text-blue-300">{parsed.colleague}</span>
+                                            <span className="font-normal text-slate-500 dark:text-slate-400"> kennt </span>
+                                            <span className="text-emerald-800 dark:text-emerald-200">{parsed.contact}</span>
+                                          </p>
+                                          <p className="mt-0.5 text-[11px] leading-snug text-slate-600 dark:text-slate-400">
+                                            Starkes Warm-Intro: gemeinsame Verbindung nutzen.
+                                          </p>
+                                        </div>
+                                      </div>
+                                    )
+                                  })
                                 ) : (
-                                  <p className="leading-snug text-slate-600 dark:text-slate-400">
+                                  <p className="px-1 py-2 text-xs leading-snug text-slate-600 dark:text-slate-400">
                                     Noch keine gematchten Pfade. Mit LinkedIn/Sales Navigator erscheinen hier konkrete
                                     Warm-Intro-Ideen (z. B. welcher Kollege wen kennt).
                                   </p>
                                 )}
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
+                              </div>
+                            </HoverCardContent>
+                          </HoverCard>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
@@ -2151,22 +2308,76 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                 <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button type="button" variant="outline" size="icon" className="size-8" aria-label="Aktionen">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="size-8"
+                        title="Wiedervorlage, Priorität und Slack"
+                        aria-label="Wiedervorlage, Priorität und Slack"
+                      >
                         <CalendarDays className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onSelect={() => void toggleTodayPriority(selected)}>Heute zuerst</DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => void snoozeSelected(1)}>Morgen</DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => void snoozeSelected(7)}>Nächste Woche</DropdownMenuItem>
+                    <DropdownMenuContent align="end" className="min-w-[14rem]">
+                      <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                        Inbox &amp; Erinnerung
+                      </DropdownMenuLabel>
                       <DropdownMenuItem
+                        className="cursor-pointer flex-col items-start gap-0.5 py-2"
+                        onSelect={() => void toggleTodayPriority(selected)}
+                      >
+                        <span className="flex w-full items-center gap-2 text-sm font-medium">
+                          <Pin className="size-3.5 shrink-0 text-amber-600" aria-hidden />
+                          Heute zuerst
+                        </span>
+                        <span className="text-muted-foreground pl-5 text-xs font-normal leading-snug">
+                          Signal oben in der Liste priorisieren (oder Priorität wieder entfernen).
+                        </span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="cursor-pointer flex-col items-start gap-0.5 py-2"
+                        onSelect={() => void snoozeSelected(1)}
+                      >
+                        <span className="flex w-full items-center gap-2 text-sm font-medium">
+                          <CalendarClock className="size-3.5 shrink-0 text-slate-600" aria-hidden />
+                          Morgen
+                        </span>
+                        <span className="text-muted-foreground pl-5 text-xs font-normal leading-snug">
+                          Signal vorübergehend ausblenden und morgen wieder anzeigen.
+                        </span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="cursor-pointer flex-col items-start gap-0.5 py-2"
+                        onSelect={() => void snoozeSelected(7)}
+                      >
+                        <span className="flex w-full items-center gap-2 text-sm font-medium">
+                          <CalendarDays className="size-3.5 shrink-0 text-slate-600" aria-hidden />
+                          Nächste Woche
+                        </span>
+                        <span className="text-muted-foreground pl-5 text-xs font-normal leading-snug">
+                          Eine Woche zurückstellen – weniger Lärm, später wieder dran.
+                        </span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                        Team
+                      </DropdownMenuLabel>
+                      <DropdownMenuItem
+                        className="cursor-pointer flex-col items-start gap-0.5 py-2"
                         onSelect={async () => {
                           const key = signalKeyOf(selected)
                           await logMarketSignalQuickAction({ signalKey: key, channel: 'slack_mention' })
                           window.open('https://slack.com/app_redirect', '_blank', 'noopener,noreferrer')
                         }}
                       >
-                        Slack @AE
+                        <span className="flex w-full items-center gap-2 text-sm font-medium">
+                          <MessageCircle className="size-3.5 shrink-0 text-violet-600" aria-hidden />
+                          Slack öffnen
+                        </span>
+                        <span className="text-muted-foreground pl-5 text-xs font-normal leading-snug">
+                          Schnellweg in Slack – z. B. Account Executive oder Team pingen (kein Auto-Post).
+                        </span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

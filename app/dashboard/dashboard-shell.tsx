@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/sidebar'
 import { DashboardHeader } from './dashboard-header'
 import { SupportTicketModal } from '@/components/dashboard/SupportTicketModal'
+import { SupportChannelsDialog } from '@/components/dashboard/SupportChannelsDialog'
 import { type User } from '@supabase/supabase-js'
 import { RoleProvider, type AppRole } from '@/hooks/useRole'
 import { CommandPalette } from '@/components/ui/command-palette'
@@ -65,6 +66,7 @@ export function DashboardShell({
 
   const [ticketModalOpen, setTicketModalOpen] = useState(false)
   const [ticketModalType, setTicketModalType] = useState<'support' | 'feedback'>('support')
+  const [supportChannelsOpen, setSupportChannelsOpen] = useState(false)
 
   const [forceCollapsed, setForceCollapsed] = useState(() => {
     if (typeof window === 'undefined') return false
@@ -268,10 +270,7 @@ export function DashboardShell({
                   >
                     <button
                       type="button"
-                      onClick={() => {
-                        setTicketModalType('support')
-                        setTicketModalOpen(true)
-                      }}
+                      onClick={() => setSupportChannelsOpen(true)}
                       className="w-full"
                     >
                       <AppIcon icon={LifeBuoy} size={16} />
@@ -343,6 +342,7 @@ export function DashboardShell({
         </div>
       </SidebarInset>
       <CommandPalette />
+      <SupportChannelsDialog open={supportChannelsOpen} onOpenChange={setSupportChannelsOpen} />
       <SupportTicketModal
         isOpen={ticketModalOpen}
         onOpenChange={setTicketModalOpen}

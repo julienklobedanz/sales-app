@@ -262,9 +262,10 @@ export async function updateReferenceAssetCategory(
 export async function submitTicket(
   type: 'support' | 'feedback',
   subject: string,
-  message: string
+  message: string,
+  options?: { replyToEmail?: string }
 ): Promise<SubmitTicketResult> {
-  return submitTicketImpl(type, subject, message)
+  return submitTicketImpl(type, subject, message, options)
 }
 
 export async function getIncumbentSuggestions(query: string): Promise<string[]> {

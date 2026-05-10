@@ -39,6 +39,7 @@ import { SettingsWorkspaceCard } from './settings-workspace-card'
 import { SettingsBillingCard } from './settings-billing-card'
 import { SettingsExportTemplatesCard } from './settings-export-templates-card'
 import { SettingsDevRoleCard } from './settings-dev-role-card'
+import { SettingsTotpMfaCard } from '@/components/dashboard/SettingsTotpMfaCard'
 import type { ExportSettings } from './settings-export-templates-actions'
 import { DIGEST_TIMEZONE_OPTIONS } from '@/lib/market-signals/digest-schedule'
 import { changeOwnPassword } from './actions'
@@ -716,22 +717,11 @@ export function SettingsTabs({
             <CardHeader className="px-0 pt-0">
               <CardTitle className="text-base">Sicherheit (2FA)</CardTitle>
               <CardDescription className="text-slate-500">
-                Enterprise-Option für verpflichtende Zwei-Faktor-Authentifizierung.
+                Authenticator-App (TOTP) über Supabase Auth. Nach Aktivierung wird beim Login ein Code abgefragt.
               </CardDescription>
             </CardHeader>
             <CardContent className="px-0 pb-0">
-              <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-900">Zwei-Faktor-Authentifizierung</p>
-                  <p className="mt-1 text-xs text-slate-600">
-                    Platzhalter für TOTP/Authenticator-Setup (Rollout in Vorbereitung).
-                  </p>
-                </div>
-                <Button type="button" variant="outline" size="sm" disabled>
-                  <ShieldCheck className="mr-2 h-4 w-4" />
-                  Bald verfuegbar
-                </Button>
-              </div>
+              <SettingsTotpMfaCard />
             </CardContent>
           </div>
           <div className={DANGER_ZONE_CLASS}>
