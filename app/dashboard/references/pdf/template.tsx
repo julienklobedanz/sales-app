@@ -59,7 +59,6 @@ function footerStatusLine(reference: PdfReference, template: PdfTemplate): strin
 function keyFacts(reference: PdfReference) {
   const v = (s: string | null | undefined, fallback = '—') => normalizeTextForPdfFlow(s) || s?.trim() || fallback
   return [
-    { label: 'Account', value: v(reference.company_name) },
     { label: 'Branche', value: v(reference.industry) },
     { label: 'Land', value: v(reference.country) },
     { label: 'Volumen', value: formatReferenceVolume(reference.volume_eur) || '—' },

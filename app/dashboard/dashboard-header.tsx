@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useLayoutEffect, useMemo, useState, useTransition } from 'react'
+import { useEffect, useMemo, useState, useTransition } from 'react'
 import { Fragment } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
@@ -19,7 +19,6 @@ import {
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
-import { Kbd } from '@/components/ui/kbd'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   DropdownMenu,
@@ -68,9 +67,6 @@ function formatRoleBadgeLabel(role: AppRole): string {
 
 const INBOX_POLL_MS = 120_000
 
-const useIsomorphicLayoutEffect =
-  typeof window !== 'undefined' ? useLayoutEffect : useEffect
-
 export function DashboardHeader({
   userId,
   userName,
@@ -91,8 +87,6 @@ export function DashboardHeader({
   const router = useRouter()
   const { resolvedTheme, setTheme } = useTheme()
   const { setOpen } = useCommandPalette()
-  /** Windows: Ctrl+K, macOS/iOS: ⌘K – gleiche Stelle rechts in der Leiste wie bisher */
-  const [searchShortcutLabel, setSearchShortcutLabel] = useState('Ctrl+K')
   const [roleSwitchPending, startRoleSwitch] = useTransition()
   const [notifications, setNotifications] =
     useState<DashboardNotificationItem[]>(initialNotifications)
@@ -126,11 +120,6 @@ export function DashboardHeader({
       document.removeEventListener('visibilitychange', onVis)
     }
   }, [userId, userRole])
-
-  useIsomorphicLayoutEffect(() => {
-    const ua = navigator.userAgent.toLowerCase()
-    setSearchShortcutLabel(/mac|iphone|ipad|ipod/.test(ua) ? '⌘K' : 'Ctrl+K')
-  }, [])
 
   const unreadCount = useMemo(
     () => notifications.filter((n) => !n.read).length,
@@ -446,18 +435,15 @@ export function DashboardHeader({
       </div>
 
       <div className="flex items-center gap-2 shrink-0 ml-auto">
-        <Button
+        <button
           type="button"
-          variant="ghost"
-          size="sm"
-          className="h-9 gap-1.5 px-2"
-          aria-label={`Suche öffnen (${searchShortcutLabel})`}
-          title={`Suche (${searchShortcutLabel})`}
+          className="relative inline-flex size-9 shrink-0 items-center justify-center rounded-md outline-none transition-colors hover:bg-muted/60 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          aria-label="Globale Suche öffnen"
+          title="Globale Suche"
           onClick={() => setOpen(true)}
         >
           <AppIcon icon={SearchIcon} size={20} />
-          <Kbd className="hidden sm:inline-flex">{searchShortcutLabel}</Kbd>
-        </Button>
+        </button>
 
         <Popover>
           <PopoverTrigger asChild>

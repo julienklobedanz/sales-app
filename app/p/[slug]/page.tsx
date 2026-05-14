@@ -7,7 +7,8 @@ import {
   incrementPortfolioViews,
 } from '../actions'
 import { formatDateUtcDe, formatReferenceVolume } from '@/lib/format'
-import { kpisForPublicReference } from '@/lib/public-portfolio/kpis-for-reference'
+import { formatProjectEndWithDurationDe } from '@/lib/references/reference-duration-months'
+import { kpisForPublicReference, formatProjectStatusDe } from '@/lib/public-portfolio/kpis-for-reference'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
@@ -104,10 +105,11 @@ export default async function PublicPortfolioPage({
   const workspaceName = branding.found ? branding.name : 'RefStack Workspace'
   const singleReferenceTitle =
     result.found && result.references.length === 1 ? result.references[0]?.title ?? null : null
-  const headerCountry =
-    result.found && result.references.length === 1
-      ? (result.references[0]?.country?.trim() ? result.references[0].country.trim() : null)
-      : null
+  let headerCountry: string | null = null
+  if (result.found && result.references.length === 1) {
+    const c = String(result.references[0]?.country ?? '').trim()
+    headerCountry = c || null
+  }
   const headerSubtitle = buildHeaderSubtitle(workspaceName, singleReferenceTitle, headerCountry)
 
   if (!result.found) {
@@ -240,21 +242,8 @@ export default async function PublicPortfolioPage({
                         </Card>
                       ) : null}
 
-                      {ref.summary || ref.customer_challenge || ref.our_solution ? (
+                      {ref.customer_challenge || ref.our_solution ? (
                         <div className="flex w-full flex-col gap-4">
-                          {ref.summary ? (
-                            <Card className="border-border/70 flex min-h-[12rem] flex-col sm:min-h-[14rem]">
-                              <CardHeader className="pb-2">
-                                <CardTitle className="text-sm font-semibold">Zusammenfassung</CardTitle>
-                              </CardHeader>
-                              <CardContent className="flex flex-1 flex-col">
-                                <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
-                                  {ref.summary}
-                                </p>
-                              </CardContent>
-                            </Card>
-                          ) : null}
-
                           {ref.customer_challenge ? (
                             <Card className="border-border/70 flex min-h-[12rem] flex-col sm:min-h-[14rem]">
                               <CardHeader className="pb-2">
@@ -291,12 +280,6 @@ export default async function PublicPortfolioPage({
                         </CardHeader>
                         <CardContent className="space-y-2 text-sm">
                           <div className="flex justify-between gap-3">
-                            <span className="text-muted-foreground">Account</span>
-                            <span className="text-right font-medium">
-                              {releaseDisplay(releaseText(ref.company_name))}
-                            </span>
-                          </div>
-                          <div className="flex justify-between gap-3">
                             <span className="text-muted-foreground">Volumen</span>
                             <span className="text-right font-medium tabular-nums">
                               {releaseDisplay(releaseVolume(ref.volume_eur))}
@@ -311,7 +294,9 @@ export default async function PublicPortfolioPage({
                           <div className="flex justify-between gap-3">
                             <span className="text-muted-foreground">Projektstatus</span>
                             <span className="text-right font-medium">
-                              {releaseDisplay(releaseText(ref.project_status))}
+                              {releaseDisplay(
+                                releaseText(formatProjectStatusDe(ref.project_status) || ref.project_status)
+                              )}
                             </span>
                           </div>
                           <div className="flex justify-between gap-3">
@@ -323,7 +308,28 @@ export default async function PublicPortfolioPage({
                           <div className="flex justify-between gap-3">
                             <span className="text-muted-foreground">Projektende</span>
                             <span className="text-right font-medium">
-                              {releaseDisplay(formatDateMaybe(ref.project_end) || RELEASE_NOT_INCLUDED)}
+                              {releaseDisplay(
+                                String(ref.project_end ?? '').trim()
+                                  ? formatProjectEndWithDurationDe({
+                                      project_start: ref.project_start,
+                                      project_end: ref.project_end,
+                                      project_status: ref.project_status,
+                                      formatEndDate: (iso) => formatDateMaybe(iso) || '',
+                                    }) || RELEASE_NOT_INCLUDED
+                                  : formatDateMaybe(ref.project_end) || RELEASE_NOT_INCLUDED
+                              )}
+                            </span>
+                          </div>
+                          <div className="flex justify-between gap-3">
+                            <span className="text-muted-foreground">Akt. Dienstleister</span>
+                            <span className="text-right font-medium">
+                              {releaseDisplay(releaseText(ref.incumbent_provider))}
+                            </span>
+                          </div>
+                          <div className="flex justify-between gap-3">
+                            <span className="text-muted-foreground">Wettbewerber</span>
+                            <span className="text-right font-medium">
+                              {releaseDisplay(releaseText(ref.competitors))}
                             </span>
                           </div>
                           <div className="flex justify-between gap-3">

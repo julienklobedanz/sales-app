@@ -9,6 +9,7 @@ import type { SubmitForApprovalOptions } from '@/app/dashboard/references/approv
 import { logEventForCurrentOrg } from '@/lib/events/log-event'
 import { getAppOrigin } from '@/lib/env/app-origin'
 import { getPortfolioManageAndPreviewUrlsForApprovalEmail } from '@/app/dashboard/references/sharing'
+import { parseOrgPublicLinkPolicy } from '@/lib/organization-link-policy'
 
 function getResend(): Resend | null {
   const key = process.env.RESEND_API_KEY
@@ -79,6 +80,10 @@ type ReferenceApprovalRow = {
   approval_scope_reference_call?: boolean | null
   approval_scope_logo_use?: boolean | null
   approval_scope_press_release?: boolean | null
+  approval_reference_giver_name?: string | null
+  approval_reference_giver_title?: string | null
+  approval_competitor_blacklist?: string[] | null
+  approval_quote_proposed?: string | null
   companies: { name?: string } | { name?: string }[] | null
 }
 
@@ -99,6 +104,10 @@ async function sendClientApprovalEmail(args: {
   companyName: string
   /** Gleiches Update wie Token/Freigabe: interne Freigabe inkl. Prüfer (ohne zweites Roundtrip). */
   internalReviewerId?: string | null
+  /**
+   * Wenn false (Standard): kein Resend an den Kunden — Account Manager stellt den Kontakt her und sendet den Link manuell.
+   */
+  sendResendToCustomer?: boolean
 }): Promise<{ success: boolean; token: string }> {
   const newToken = crypto.randomUUID()
   const reviewedAt = new Date().toISOString()
@@ -121,7 +130,8 @@ async function sendClientApprovalEmail(args: {
   if (updateError) throw new Error(updateError.message)
 
   const resend = getResend()
-  if (args.contactEmail && resend) {
+  const sendMail = args.sendResendToCustomer === true
+  if (args.contactEmail && resend && sendMail) {
     const requesterBlock = args.requesterName
       ? `<p><strong>${escapeHtml(args.requesterName)}</strong> bittet Sie um Freigabe dieser Referenz.</p>`
       : '<p>Es liegt eine Freigabe-Anfrage für diese Referenz vor.</p>'
@@ -157,8 +167,10 @@ async function resolveContactForApproval(
   supabase: SupabaseClient,
   row: ReferenceApprovalRow,
   companyId: string,
-  options?: SubmitForApprovalOptions
+  options?: SubmitForApprovalOptions,
+  resolveOpts?: { requireRecipientEmail?: boolean }
 ): Promise<ResolvedApprovalRecipient> {
+  const requireEmail = resolveOpts?.requireRecipientEmail !== false
   const fromPerson = (c: { id: string; email?: string | null; first_name?: string | null } | null) => {
     const email = typeof c?.email === 'string' && c.email.includes('@') ? c.email : ''
     const firstName = typeof c?.first_name === 'string' ? c.first_name : ''
@@ -190,7 +202,7 @@ async function resolveContactForApproval(
       .single()
     if (error || !c) throw new Error('Ungültiger Kundenkontakt für dieses Unternehmen')
     const r = fromExternal(c)
-    if (!r.email) throw new Error('Der gewählte Kundenkontakt hat keine gültige E-Mail-Adresse')
+    if (requireEmail && !r.email) throw new Error('Der gewählte Kundenkontakt hat keine gültige E-Mail-Adresse')
     return r
   }
 
@@ -203,7 +215,7 @@ async function resolveContactForApproval(
       .single()
     if (error || !c) throw new Error('Ungültiger Kontakt für dieses Unternehmen')
     const r = fromPerson(c)
-    if (!r.email) throw new Error('Der gewählte Kontakt hat keine gültige E-Mail-Adresse')
+    if (requireEmail && !r.email) throw new Error('Der gewählte Kontakt hat keine gültige E-Mail-Adresse')
     return r
   }
 
@@ -258,7 +270,7 @@ async function resolveContactForApproval(
   }
 
   throw new Error(
-    'Kein Empfänger: Bitte im Dialog einen Kontakt mit E-Mail wählen oder in der Referenz einen Kundenkontakt hinterlegen.'
+    'Kein Empfänger: Bitte in der Referenz einen Kundenkontakt mit gültiger E-Mail hinterlegen (oder im Account pflegen).'
   )
 }
 
@@ -354,9 +366,19 @@ export async function submitForApprovalImpl(
       contact_id,
       customer_contact_id,
       approval_contact_id,
+      approval_external_contact_id,
       customer_approval_status,
       approval_reference_status_snapshot,
       approval_requested_by,
+      approval_reference_giver_name,
+      approval_reference_giver_title,
+      approval_scope_named_mention,
+      approval_scope_anonymous_mention,
+      approval_scope_reference_call,
+      approval_scope_logo_use,
+      approval_scope_press_release,
+      approval_competitor_blacklist,
+      approval_quote_proposed,
       companies ( name )
     `
     )
@@ -381,24 +403,28 @@ export async function submitForApprovalImpl(
       ? (profile as { full_name: string }).full_name.trim()
       : ''
 
-  let requireInternalApproval = true
+  let workflowSettingsUnknown: unknown = null
   if (organizationId) {
     const { data: org } = await supabase
       .from('organizations')
       .select('workflow_settings')
       .eq('id', organizationId)
       .maybeSingle()
-    const workflow =
-      org?.workflow_settings && typeof org.workflow_settings === 'object'
-        ? (org.workflow_settings as Record<string, unknown>)
-        : {}
-    if (workflow.require_internal_approval === false) {
-      requireInternalApproval = false
-    }
+    workflowSettingsUnknown = org?.workflow_settings ?? null
   }
 
+  const linkPolicy = parseOrgPublicLinkPolicy(workflowSettingsUnknown, 14)
+  const defaultApprovalLinkDays = Math.max(1, Math.min(365, linkPolicy.defaultTtlDays))
+  const explicitExpiryDays =
+    options?.approvalExpiresInDays != null && Number.isFinite(options.approvalExpiresInDays)
+      ? Math.max(1, Math.min(365, Math.trunc(Number(options.approvalExpiresInDays))))
+      : null
+  const expiryDays = explicitExpiryDays ?? defaultApprovalLinkDays
+  const expiresAtMs = Date.now() + expiryDays * 24 * 60 * 60 * 1000
+  const expiresAtIso = new Date(expiresAtMs).toISOString()
+  const graceUntilIso = new Date(expiresAtMs + 30 * 24 * 60 * 60 * 1000).toISOString()
+
   const resolvedRecipient = await resolveContactForApproval(supabase, ref, ref.company_id, options)
-  const { email: contactEmail, firstName } = resolvedRecipient
   const company =
     Array.isArray(ref.companies) && ref.companies.length > 0
       ? (ref.companies[0] as { name?: string })
@@ -407,37 +433,58 @@ export async function submitForApprovalImpl(
 
   const snapshot = computeStatusSnapshot(ref)
 
+  const scope = options?.scope
+  const ownerResolved =
+    (options?.ownerName?.trim() ? options.ownerName.trim() : null) ??
+    (requesterName.trim() ? requesterName.trim() : null)
+
   const { error: updateError } = await supabase
     .from('references')
     .update({
       approval_token: null,
       customer_approval_status: null,
-      approval_internal_status: requireInternalApproval ? 'pending_internal' : 'approved_internal',
+      approval_internal_status: 'pending_internal',
       approval_message: options?.message?.trim() ? options.message.trim() : null,
       approval_contact_id: resolvedRecipient.approvalContactId,
       approval_external_contact_id: resolvedRecipient.approvalExternalContactId,
       approval_requested_at: new Date().toISOString(),
       approval_requested_by: user.id,
       approval_requester_name: requesterName || null,
-      approval_internal_reviewer_id: requireInternalApproval ? null : user.id,
-      approval_internal_reviewed_at: requireInternalApproval ? null : new Date().toISOString(),
+      approval_internal_reviewer_id: null,
+      approval_internal_reviewed_at: null,
       approval_reference_status_snapshot: snapshot,
-      approval_owner_name: options?.ownerName?.trim() ? options.ownerName.trim() : null,
-      approval_expires_at: options?.approvalExpiresInDays
-        ? new Date(Date.now() + Math.max(1, Math.min(365, options.approvalExpiresInDays)) * 24 * 60 * 60 * 1000).toISOString()
-        : null,
-      approval_grace_until: options?.approvalExpiresInDays
-        ? new Date(Date.now() + (Math.max(1, Math.min(365, options.approvalExpiresInDays)) + 30) * 24 * 60 * 60 * 1000).toISOString()
-        : null,
-      approval_scope_named_mention: options?.scope?.namedMention ?? true,
-      approval_scope_anonymous_mention: options?.scope?.anonymousMention ?? true,
-      approval_scope_reference_call: options?.scope?.referenceCall ?? false,
-      approval_scope_logo_use: options?.scope?.logoUse ?? false,
-      approval_scope_press_release: options?.scope?.pressRelease ?? false,
-      approval_reference_giver_name: options?.referenceGiverName?.trim() ? options.referenceGiverName.trim() : null,
-      approval_reference_giver_title: options?.referenceGiverTitle?.trim() ? options.referenceGiverTitle.trim() : null,
-      approval_competitor_blacklist: options?.competitorBlacklist ?? [],
-      approval_quote_proposed: options?.proposedQuote?.trim() ? options.proposedQuote.trim() : null,
+      approval_owner_name: ownerResolved,
+      approval_expires_at: expiresAtIso,
+      approval_grace_until: graceUntilIso,
+      approval_scope_named_mention: scope
+        ? scope.namedMention
+        : (ref.approval_scope_named_mention ?? true),
+      approval_scope_anonymous_mention: scope
+        ? scope.anonymousMention
+        : (ref.approval_scope_anonymous_mention ?? true),
+      approval_scope_reference_call: scope
+        ? scope.referenceCall
+        : (ref.approval_scope_reference_call ?? false),
+      approval_scope_logo_use: scope ? scope.logoUse : (ref.approval_scope_logo_use ?? false),
+      approval_scope_press_release: scope
+        ? scope.pressRelease
+        : (ref.approval_scope_press_release ?? false),
+      approval_reference_giver_name:
+        options?.referenceGiverName !== undefined
+          ? options.referenceGiverName.trim() || null
+          : (ref.approval_reference_giver_name ?? null),
+      approval_reference_giver_title:
+        options?.referenceGiverTitle !== undefined
+          ? options.referenceGiverTitle.trim() || null
+          : (ref.approval_reference_giver_title ?? null),
+      approval_competitor_blacklist:
+        options?.competitorBlacklist !== undefined
+          ? options.competitorBlacklist
+          : (ref.approval_competitor_blacklist ?? []),
+      approval_quote_proposed:
+        options?.proposedQuote !== undefined
+          ? options.proposedQuote.trim() || null
+          : (ref.approval_quote_proposed ?? null),
     })
     .eq('id', id)
 
@@ -458,45 +505,26 @@ export async function submitForApprovalImpl(
     })
   }
 
-  if (requireInternalApproval) {
-    await notifyInternalReferenceCoordinatorAboutPendingReview({
-      supabase,
-      referenceId: id,
-      referenceTitle: ref.title,
-      accountCompanyId: ref.company_id,
-      accountCompanyName: companyName,
-      requesterName,
-    })
-    await logEventForCurrentOrg({
-      eventType: 'internal_approval_requested',
-      referenceId: id,
-      payload: {},
-    })
-  } else {
-    await sendClientApprovalEmail({
-      supabase,
-      referenceId: id,
-      ref,
-      requesterName,
-      contactEmail,
-      firstName,
-      companyName,
-    })
-    await logEventForCurrentOrg({
-      eventType: 'customer_approval_requested',
-      referenceId: id,
-      payload: {},
-    })
-  }
+  await notifyInternalReferenceCoordinatorAboutPendingReview({
+    supabase,
+    referenceId: id,
+    referenceTitle: ref.title,
+    accountCompanyId: ref.company_id,
+    accountCompanyName: companyName,
+    requesterName,
+  })
+  await logEventForCurrentOrg({
+    eventType: 'internal_approval_requested',
+    referenceId: id,
+    payload: {},
+  })
 
   revalidatePath(ROUTES.home)
   revalidatePath(ROUTES.evidence.detail(id))
   revalidatePath(ROUTES.evidence.root)
   return {
     success: true as const,
-    stage: requireInternalApproval
-      ? ('internal_review_pending' as const)
-      : ('customer_review_pending' as const),
+    stage: 'internal_review_pending' as const,
     requesterRole: (profile as { role?: string } | null)?.role ?? null,
   }
 }
@@ -548,10 +576,16 @@ export async function approveInternalAndSendImpl(
   let contactEmail: string
   let firstName: string
   try {
-    const resolved = await resolveContactForApproval(supabase, ref, ref.company_id, {
-      contactId: recipient?.contactId,
-      externalContactId: recipient?.externalContactId,
-    })
+    const resolved = await resolveContactForApproval(
+      supabase,
+      ref,
+      ref.company_id,
+      {
+        contactId: recipient?.contactId,
+        externalContactId: recipient?.externalContactId,
+      },
+      { requireRecipientEmail: false }
+    )
     contactEmail = resolved.email
     firstName = resolved.firstName
 
@@ -583,6 +617,7 @@ export async function approveInternalAndSendImpl(
       firstName,
       companyName: company_name,
       internalReviewerId: user.id,
+      sendResendToCustomer: false,
     })
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Freigabe konnte nicht gespeichert werden.'
@@ -669,7 +704,7 @@ export async function delegateClientApprovalImpl(params: {
   return { success: true }
 }
 
-/** Erneuter Versand der Freigabe-E-Mail (gleicher Flow, neuer Token-Link). */
+/** Neuen Freigabe-Token setzen (kein Resend — AM sendet den Link manuell). */
 export async function resendClientApprovalEmailImpl(referenceId: string) {
   const supabase = await createServerSupabaseClient()
   const {
@@ -717,7 +752,7 @@ export async function resendClientApprovalEmailImpl(referenceId: string) {
     role === 'account_manager' ||
     ref.approval_requested_by === user.id
   if (!canResend) {
-    throw new Error('Keine Berechtigung, eine Erinnerung zu senden.')
+    throw new Error('Keine Berechtigung, den Freigabe-Link zu erneuern.')
   }
 
   const newToken = crypto.randomUUID()
@@ -731,57 +766,6 @@ export async function resendClientApprovalEmailImpl(referenceId: string) {
     .eq('id', referenceId)
 
   if (updateError) throw new Error(updateError.message)
-
-  const company =
-    Array.isArray(ref.companies) && ref.companies.length > 0
-      ? (ref.companies[0] as { name?: string })
-      : (ref.companies as { name?: string } | null)
-  const company_name = company?.name ?? 'Referenz'
-
-  const { data: requesterProfile } = await supabase
-    .from('profiles')
-    .select('full_name')
-    .eq('id', ref.approval_requested_by ?? user.id)
-    .maybeSingle()
-  const requesterName =
-    typeof (requesterProfile as { full_name?: string } | null)?.full_name === 'string'
-      ? (requesterProfile as { full_name: string }).full_name.trim()
-      : ''
-
-  const { email: contactEmail, firstName } = await resolveContactForApproval(supabase, ref, ref.company_id)
-
-  const resend = getResend()
-  if (contactEmail && resend) {
-    try {
-      const requesterBlock = requesterName
-        ? `<p><strong>${escapeHtml(requesterName)}</strong> bittet Sie um Freigabe dieser Referenz.</p>`
-        : '<p>Es liegt eine Freigabe-Anfrage für diese Referenz vor.</p>'
-      let portfolio: { manageUrl: string; publicPreviewUrl: string } | null = null
-      try {
-        portfolio = await getPortfolioManageAndPreviewUrlsForApprovalEmail(supabase, referenceId)
-      } catch (e) {
-        console.error('[resendClientApprovalEmail] portfolio links:', e)
-      }
-      const approvalUrl = `${getAppOrigin()}/approval/${newToken}`
-      await resend.emails.send({
-        from: 'Refstack <onboarding@resend.dev>',
-        to: contactEmail,
-        subject: `Erinnerung: Freigabe ${company_name} – ${ref.title}`,
-        html: buildClientApprovalEmailHtml({
-          firstName,
-          requesterBlock,
-          companyName: company_name,
-          refTitle: ref.title,
-          approvalUrl,
-          portfolio,
-        }),
-      })
-    } catch (e) {
-      console.error('E-Mail-Versand fehlgeschlagen:', e)
-    }
-  } else if (!contactEmail) {
-    throw new Error('Kein Empfänger mit E-Mail für diese Freigabe hinterlegt.')
-  }
 
   revalidatePath(ROUTES.home)
   revalidatePath(ROUTES.evidence.detail(referenceId))

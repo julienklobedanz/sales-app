@@ -7,10 +7,18 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Building2, Cancel01Icon, Loader, Upload } from '@hugeicons/core-free-icons'
 import { updateOrganization } from './settings-workspace-actions'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
+import { normalizeOrgDateDisplayFormat, type OrgDateDisplayFormat } from '@/lib/format'
 
 export function SettingsWorkspaceCard({
   organizationId,
@@ -18,6 +26,7 @@ export function SettingsWorkspaceCard({
   logoUrl,
   primaryColor = '#0f172a',
   secondaryColor = '#334155',
+  dateDisplayFormat = 'de-DE',
   hideSubmitButton = false,
   saveSignal = 0,
   onDirtyChange,
@@ -27,6 +36,7 @@ export function SettingsWorkspaceCard({
   logoUrl?: string | null
   primaryColor?: string | null
   secondaryColor?: string | null
+  dateDisplayFormat?: OrgDateDisplayFormat | string | null
   hideSubmitButton?: boolean
   saveSignal?: number
   onDirtyChange?: (dirty: boolean) => void
@@ -36,6 +46,9 @@ export function SettingsWorkspaceCard({
   const [logoPreview, setLogoPreview] = useState<string | null>(logoUrl ?? null)
   const [primary, setPrimary] = useState(primaryColor ?? '#0f172a')
   const [secondary, setSecondary] = useState(secondaryColor ?? '#334155')
+  const [dateFormat, setDateFormat] = useState<OrgDateDisplayFormat>(() =>
+    normalizeOrgDateDisplayFormat(dateDisplayFormat)
+  )
   const [logoLoading, setLogoLoading] = useState(false)
   const [dragActive, setDragActive] = useState(false)
   const [lastHandledSaveSignal, setLastHandledSaveSignal] = useState(0)
@@ -43,7 +56,12 @@ export function SettingsWorkspaceCard({
     name !== organizationName ||
     primary !== (primaryColor ?? '#0f172a') ||
     secondary !== (secondaryColor ?? '#334155') ||
+    dateFormat !== normalizeOrgDateDisplayFormat(dateDisplayFormat) ||
     (logoPreview ?? '') !== (logoUrl ?? '')
+
+  useEffect(() => {
+    setDateFormat(normalizeOrgDateDisplayFormat(dateDisplayFormat))
+  }, [dateDisplayFormat])
 
   useEffect(() => {
     onDirtyChange?.(isDirty)
@@ -67,7 +85,8 @@ export function SettingsWorkspaceCard({
       name.trim(),
       logoPreview,
       primary.trim() || '#0f172a',
-      secondary.trim() || '#334155'
+      secondary.trim() || '#334155',
+      dateFormat
     )
     setPending(false)
     if (result.success) {
@@ -201,6 +220,24 @@ export function SettingsWorkspaceCard({
             }}
           />
         </div>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="date-display-format">Datumsformat (Referenzen &amp; Übersicht)</Label>
+        <Select
+          value={dateFormat}
+          onValueChange={(v) => setDateFormat(normalizeOrgDateDisplayFormat(v))}
+          disabled={!organizationId}
+        >
+          <SelectTrigger id="date-display-format" className="max-w-md">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="de-DE">Deutsch (TT.MM.JJJJ)</SelectItem>
+            <SelectItem value="en-GB">UK (TT/MM/JJJJ)</SelectItem>
+            <SelectItem value="en-US">US (MM/TT/JJJJ)</SelectItem>
+            <SelectItem value="iso">ISO (JJJJ-MM-TT)</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">

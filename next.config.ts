@@ -2,6 +2,12 @@ import type { NextConfig } from 'next'
 import { LEGACY_REDIRECTS } from './lib/routes'
 
 const nextConfig: NextConfig = {
+  // Referenz-KI-Import (PDF/DOCX/PPTX) per Server Action + FormData; Standard-Limit ist 1 MB.
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '5mb',
+    },
+  },
   async redirects() {
     return [...LEGACY_REDIRECTS]
   },

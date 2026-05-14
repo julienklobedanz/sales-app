@@ -69,10 +69,10 @@ import {
   ChevronsRight,
   CirclePlus,
   CopyIcon,
-  Eye,
   FileDownIcon,
   FileText,
   Filter,
+  LayoutTwoColumnIcon,
   LinkIcon,
   MoreHorizontal,
   Pencil,
@@ -85,9 +85,9 @@ import {
 import { AppIcon } from '@/lib/icons'
 import { BulkImportDialog, type BulkImportGroupItem } from './overview/bulk-import-dialog'
 import { NewReferenceDialog } from './overview/new-reference-dialog'
-import { ReferencePreviewDialog } from './overview/reference-preview-dialog'
 import { ShareLinkDialog } from './overview/share-link-dialog'
 import { BulkDeleteReferencesDialog } from './overview/bulk-delete-references-dialog'
+import { InboxReferencesConceptClient } from '@/app/dashboard/concepts/inbox-references/client'
 import { TrashDialog } from './overview/trash-dialog'
 import {
   renderReferenceColumnCell,
@@ -99,6 +99,7 @@ import { FilterMenuCheckboxOption } from '@/components/table/filter-menu-checkbo
 import { toast } from 'sonner'
 import { BULK_IMPORT_MAX_FILES } from '@/lib/references/bulk-import-limits'
 import { copyTableRowsSelected } from '@/lib/copy'
+import type { OrgDateDisplayFormat } from '@/lib/format'
 // --- Konstanten & Hilfsfunktionen ---
 
 const STATUS_LABELS: Record<string, string> = {
@@ -246,6 +247,7 @@ export function DashboardOverview({
   contacts = [],
   externalContacts = [],
   deals = [],
+  orgDateDisplayFormat = 'de-DE',
 }: {
   references: ReferenceRow[]
   totalCount: number
@@ -257,6 +259,7 @@ export function DashboardOverview({
   contacts?: ContactOption[]
   externalContacts?: { id: string; company_id: string; first_name: string | null; last_name: string | null; email: string | null; role: string | null; phone?: string | null }[]
   deals?: DealOption[]
+  orgDateDisplayFormat?: OrgDateDisplayFormat | string
 }) {
   const router = useRouter()
   const [search, setSearch] = useState('')
@@ -266,7 +269,6 @@ export function DashboardOverview({
   const [industryFilter, setIndustryFilter] = useState<string>('all')
   const [countryFilter, setCountryFilter] = useState<string>('all')
   const [projectStatusFilter, setProjectStatusFilter] = useState<string>('all')
-  const [statusSearch, setStatusSearch] = useState('')
   const [companySearch, setCompanySearch] = useState('')
   const [tagsSearch, setTagsSearch] = useState('')
   const [industrySearch, setIndustrySearch] = useState('')
@@ -275,6 +277,7 @@ export function DashboardOverview({
   const [sortKey, setSortKey] = useState<(typeof COLUMN_KEYS)[number] | null>(null)
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [favoritesOnly, setFavoritesOnly] = useState(initialFavoritesOnly)
+  const [referenceLayout, setReferenceLayout] = useState<'inbox' | 'table'>('table')
   const [rowMenuOpenId, setRowMenuOpenId] = useState<string | null>(null)
   const [selectedRef, setSelectedRef] = useState<ReferenceRow | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -484,7 +487,6 @@ export function DashboardOverview({
   const [selectedRefIds, setSelectedRefIds] = useState<Set<string>>(() => new Set())
   const [pageSize, setPageSize] = useState(30)
   const [pageIndex, setPageIndex] = useState(0)
-  const [previewRefs, setPreviewRefs] = useState<ReferenceRow[] | null>(null)
   const [shareLinkPopoverRef, setShareLinkPopoverRef] = useState<ReferenceRow | null>(null)
   const selectAllCheckboxRef = useRef<HTMLInputElement | null>(null)
   const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
@@ -791,16 +793,6 @@ export function DashboardOverview({
       selectedRefIds.size < filteredReferences.length
   }, [selectedRefIds.size, filteredReferences.length])
 
-  const previewOpen = previewRefs !== null && previewRefs.length > 0
-  useEffect(() => {
-    if (!previewOpen) return
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = prev
-    }
-  }, [previewOpen])
-
   const handleDelete = async (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation()
 
@@ -825,7 +817,9 @@ export function DashboardOverview({
   const handleSubmitForApproval = async (id: string) => {
     try {
       await submitForApproval(id)
-      toast.success('Freigabe angefordert. E-Mail wurde versendet.')
+      toast.success(
+        'Freigabe angefordert. Es geht kein automatischer Kundenversand — der Account Manager übernimmt den Kontakt.'
+      )
       router.refresh()
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Fehler beim Anfordern der Freigabe.')
@@ -854,7 +848,9 @@ export function DashboardOverview({
   const handleRequestSpecificApproval = async (id: string) => {
     try {
       await submitForApproval(id)
-      toast.success('Einzelfreigabe angefordert. E-Mail wurde versendet.')
+      toast.success(
+        'Einzelfreigabe angefordert. Kein automatischer Kundenversand — der Account Manager übernimmt den Kontakt.'
+      )
       router.refresh()
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Fehler beim Anfordern.')
@@ -958,6 +954,26 @@ export function DashboardOverview({
               <span className="hidden lg:inline">Favoriten</span>
             </Button>
 
+            <Button
+              type="button"
+              variant="ghost"
+              className={cn(
+                toolbarSegmentClass,
+                referenceLayout === 'inbox' && 'bg-primary/10 text-primary'
+              )}
+              aria-pressed={referenceLayout === 'inbox'}
+              aria-label={
+                referenceLayout === 'table'
+                  ? 'Inbox-Ansicht mit Detailbereich aktivieren'
+                  : 'Tabellenansicht aktivieren'
+              }
+              title="Zwischen klassischer Tabelle und Inbox-Layout (Liste + Detail) wechseln"
+              onClick={() => setReferenceLayout((v) => (v === 'table' ? 'inbox' : 'table'))}
+            >
+              <AppIcon icon={LayoutTwoColumnIcon} size={16} className="shrink-0 text-muted-foreground" />
+              <span className="hidden lg:inline">Inbox</span>
+            </Button>
+
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -973,22 +989,13 @@ export function DashboardOverview({
                   <span className="hidden lg:inline">Status</span>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent align="end" className="w-56" onOpenAutoFocus={(e) => e.preventDefault()}>
-                <Input
-                  placeholder="Status suchen…"
-                  value={statusSearch}
-                  onChange={(e) => setStatusSearch(e.target.value)}
-                  className="h-8 text-xs"
-                />
-                <div className="mt-2 max-h-56 space-y-0.5 overflow-y-auto p-0.5 text-sm">
-                  {['all', ...filterOptions.statuses]
-                    .filter((value) => {
-                      if (!statusSearch.trim()) return true
-                      const label =
-                        value === 'all' ? 'Alle' : STATUS_LABELS[value] ?? value
-                      return label.toLowerCase().includes(statusSearch.trim().toLowerCase())
-                    })
-                    .map((value) => {
+              <PopoverContent
+                align="end"
+                className="w-56 p-1"
+                onOpenAutoFocus={(e) => e.preventDefault()}
+              >
+                <div className="max-h-56 space-y-0 overflow-y-auto text-sm">
+                  {['all', ...filterOptions.statuses].map((value) => {
                       const isAll = value === 'all'
                       const label = isAll ? 'Alle' : STATUS_LABELS[value] ?? value
                       const selected = statusFilter === value
@@ -1018,8 +1025,6 @@ export function DashboardOverview({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-[min(100vw-2rem,16rem)]">
-                <DropdownMenuLabel>{COPY.dashboard.columnVisibility}</DropdownMenuLabel>
-                <DropdownMenuSeparator />
                 {columnOrder.map((column) => (
                   <DropdownMenuCheckboxItem
                     key={column}
@@ -1039,7 +1044,7 @@ export function DashboardOverview({
             </DropdownMenu>
           </div>
 
-          {/* Admin: Importieren -> Vorschau (X) -> Erstellen -> Warenkorb */}
+          {/* Admin: Importieren -> Erstellen */}
           {profile.role === 'admin' && (
             <>
               <Button
@@ -1055,32 +1060,6 @@ export function DashboardOverview({
                 <AppIcon icon={UploadIcon} size={16} className="shrink-0" />
                 <span className="hidden lg:inline">Importieren</span>
               </Button>
-              {selectedRefIds.size > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn(TABLE_TOOLBAR.dashboard.toolbarButtonGap, "hover:bg-muted/70")}
-                  onClick={() => setPreviewRefs(selectedRefs)}
-                  aria-label={`Vorschau (${selectedRefIds.size} Referenz${selectedRefIds.size !== 1 ? 'en' : ''})`}
-                >
-                  <AppIcon icon={Eye} size={16} className="shrink-0" />
-                  <span className="hidden lg:inline">Vorschau ({selectedRefIds.size})</span>
-                </Button>
-              )}
-              <Button
-                variant="ghost"
-                size="sm"
-                className={cn(
-                  TABLE_TOOLBAR.dashboard.toolbarButton,
-                  'hover:bg-muted/70',
-                  statusFilter === 'draft' ? 'bg-primary/10 text-primary' : '',
-                )}
-                onClick={() => setStatusFilter(statusFilter === 'draft' ? 'all' : 'draft')}
-                aria-label={statusFilter === 'draft' ? 'Alle Referenzen anzeigen' : 'Nur Entwürfe'}
-              >
-                <AppIcon icon={FileText} size={16} className="shrink-0" />
-                <span className="hidden lg:inline">Entwürfe</span>
-              </Button>
               <Button
                 size="sm"
                 className={cn(
@@ -1094,20 +1073,6 @@ export function DashboardOverview({
                 <span className="hidden lg:inline">Referenz erstellen</span>
               </Button>
             </>
-          )}
-
-          {/* Sales: Vorschau-Button wenn Auswahl, dann Warenkorb */}
-          {profile.role === 'sales' && selectedRefIds.size > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className={cn(TABLE_TOOLBAR.dashboard.toolbarButtonGap, "hover:bg-muted/70")}
-              onClick={() => setPreviewRefs(selectedRefs)}
-              aria-label={`Vorschau (${selectedRefIds.size} Referenz${selectedRefIds.size !== 1 ? 'en' : ''})`}
-            >
-              <AppIcon icon={Eye} size={16} className="shrink-0" />
-              <span className="hidden lg:inline">Vorschau ({selectedRefIds.size})</span>
-            </Button>
           )}
 
           {selectedRefIds.size > 0 ? (
@@ -1125,10 +1090,6 @@ export function DashboardOverview({
                   <DropdownMenuContent align="end" className="w-[260px]">
                     <DropdownMenuLabel>Bulk-Aktionen</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setPreviewRefs(selectedRefs)}>
-                      <AppIcon icon={Eye} size={16} className="mr-2" />
-                      Vorschau
-                    </DropdownMenuItem>
                     {profile.role === 'sales' && (
                       <>
                         <DropdownMenuItem
@@ -1218,6 +1179,8 @@ export function DashboardOverview({
           )}
         </div>
 
+        {referenceLayout === 'table' ? (
+          <>
         <div className="min-w-0 overflow-x-auto rounded-xl border border-border/70 bg-card shadow-sm shadow-slate-900/5">
           <Table className="min-w-[800px]">
             <TableHeader>
@@ -1272,8 +1235,6 @@ export function DashboardOverview({
                       setCountrySearch,
                       statusFilter,
                       setStatusFilter,
-                      statusSearch,
-                      setStatusSearch,
                       projectStatusFilter,
                       setProjectStatusFilter,
                       projectStatusSearch,
@@ -1344,6 +1305,7 @@ export function DashboardOverview({
                         {renderReferenceColumnCell(column, ref, {
                           PROJECT_STATUS_LABELS,
                           companyLogoById,
+                          orgDateDisplayFormat,
                         })}
                       </React.Fragment>
                     ))}
@@ -1513,6 +1475,15 @@ export function DashboardOverview({
             </div>
           </div>
         </div>
+          </>
+        ) : (
+          <InboxReferencesConceptClient
+            references={filteredReferences}
+            profileRole={profile.role}
+            externalContacts={externalContacts}
+            variant="embedded"
+          />
+        )}
       </div>
 
       <TrashDialog
@@ -1548,16 +1519,12 @@ export function DashboardOverview({
         onSubmitForApproval={handleSubmitForApproval}
         onRequestSpecificApproval={handleRequestSpecificApproval}
         onDelete={handleDelete}
+        orgDateDisplayFormat={orgDateDisplayFormat}
       />
 
       <ShareLinkDialog
         reference={shareLinkPopoverRef}
         onClose={() => setShareLinkPopoverRef(null)}
-      />
-
-      <ReferencePreviewDialog
-        previewRefs={previewRefs}
-        onClose={() => setPreviewRefs(null)}
       />
 
       <Dialog open={rfpModalOpen} onOpenChange={setRfpModalOpen}>

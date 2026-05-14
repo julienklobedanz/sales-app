@@ -158,7 +158,7 @@ function computeSignalIcpScore(input: {
 export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }) {
   type IntroTone = 'challenging' | 'advisory' | 'concise'
   type InboxCategory = 'all' | 'people' | 'company'
-  const { isAdmin, isAccountManager } = useRole()
+  const { isAdmin, isAccountManager, isSales } = useRole()
   const router = useRouter()
   const [newsIngestPending, startNewsIngest] = useTransition()
 
@@ -178,7 +178,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
       document.removeEventListener('visibilitychange', onVis)
     }
   }, [router])
-  const canRunNewsIngest = isAdmin || isAccountManager
+  const canRunNewsIngest = isAdmin || isAccountManager || isSales
   const [nowTs] = useState(() => new Date().getTime())
   const [onlyActiveDeals, setOnlyActiveDeals] = useState(false)
   const [onlyFocusAccounts, setOnlyFocusAccounts] = useState(true)
@@ -885,8 +885,8 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
     return {
       legalBadgeLabel: 'Freigabe ausstehend',
       legalBadgeClassName:
-        'border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200',
-      dotClass: 'bg-slate-400',
+        'border-border bg-muted text-foreground/85 dark:border-border dark:bg-muted/50 dark:text-foreground',
+      dotClass: 'bg-muted-foreground',
       detailHint: 'Intern nutzbar – vor externem Einsatz Freigabe anfragen.',
     }
   }
@@ -985,10 +985,10 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
 
   function renderDraftText(text: string | null): ReactNode {
     const content = String(text ?? '').trim()
-    if (!content) return <p className="text-sm leading-relaxed text-slate-600">Keine Empfehlung verfügbar.</p>
+    if (!content) return <p className="text-sm leading-relaxed text-muted-foreground">Keine Empfehlung verfügbar.</p>
     const paragraphs = content.split(/\n+/).filter(Boolean)
     return (
-      <div className="space-y-3 font-serif text-[15px] leading-relaxed text-slate-800 dark:text-slate-100">
+      <div className="space-y-3 font-serif text-[15px] leading-relaxed text-foreground">
         {paragraphs.map((para, pi) => {
           const parts = para.split(/(\[[^\]]+\])/g)
           return (
@@ -997,7 +997,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                 /^\[[^\]]+\]$/.test(part) ? (
                   <span
                     key={idx}
-                    className="rounded px-1 font-sans text-sm font-medium text-yellow-900 dark:text-yellow-950 bg-yellow-100 dark:bg-yellow-200/90"
+                    className="rounded px-1 font-sans text-sm font-medium bg-yellow-100 text-yellow-950 dark:bg-yellow-500/20 dark:text-yellow-50"
                   >
                     {part}
                   </span>
@@ -1016,9 +1016,6 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
     const raw = String(message ?? '')
     if (/SUPABASE_SERVICE_ROLE_KEY/i.test(raw)) {
       return raw
-    }
-    if (/nur admin|Account Manager/i.test(raw)) {
-      return 'Nur Admins oder Account Manager können den Ingest starten.'
     }
     return raw || 'Synchronisierung konnte nicht gestartet werden.'
   }
@@ -1107,21 +1104,21 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
 
   return (
     <div className="overflow-x-hidden">
-      <div className="h-[calc(100vh-140px)] min-h-[540px] max-w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm">
+      <div className="h-[calc(100vh-140px)] min-h-[540px] max-w-full overflow-hidden rounded-xl border border-border bg-card shadow-sm">
         <ResizablePanelGroup direction="horizontal">
           <ResizablePanel defaultSize={30} minSize={22} className="min-w-0">
-            <div className="flex h-full min-h-0 flex-col overflow-hidden">
-              <div className="flex h-12 items-center justify-between bg-white px-2 pb-1">
-                <p className="text-sm font-semibold text-slate-900">Inbox</p>
+            <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/30">
+              <div className="flex h-12 items-center justify-between bg-card px-2 pb-1">
+                <p className="text-sm font-semibold text-foreground">Inbox</p>
                 <div className="flex items-center gap-0.5">
-                  <p className="mr-1 text-xs tabular-nums text-slate-500">{groupedVisibleItems.length} Signale</p>
+                  <p className="mr-1 text-xs tabular-nums text-muted-foreground">{groupedVisibleItems.length} Signale</p>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="size-7 text-slate-500 hover:text-slate-800"
+                        className="size-7 text-muted-foreground hover:text-foreground"
                         aria-label="Watchlist und Executives verwalten"
                         title="Watchlist und Executives verwalten"
                       >
@@ -1134,13 +1131,13 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                       </DropdownMenuLabel>
                       <DropdownMenuItem asChild className="cursor-pointer">
                         <Link href={`${ROUTES.marketSignalsManage}?view=champions`} className="flex items-center gap-2">
-                          <AppIcon icon={Sparkles} size={14} className="text-slate-600" />
+                          <AppIcon icon={Sparkles} size={14} className="text-muted-foreground" />
                           Executives verwalten
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild className="cursor-pointer">
                         <Link href={ROUTES.marketSignalsManage} className="flex items-center gap-2">
-                          <AppIcon icon={StarIcon} size={14} className="text-slate-600" />
+                          <AppIcon icon={StarIcon} size={14} className="text-muted-foreground" />
                           Watchlist verwalten
                         </Link>
                       </DropdownMenuItem>
@@ -1150,7 +1147,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="size-7 text-slate-500 hover:text-slate-700"
+                    className="size-7 text-muted-foreground hover:text-foreground/85"
                     onClick={() => void dismissAllVisible()}
                     disabled={groupedVisibleItems.length === 0}
                     aria-label="Alle sichtbaren Signale archivieren"
@@ -1160,8 +1157,8 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                   </Button>
                 </div>
               </div>
-              <div className="border-b border-slate-200 bg-white px-2 py-1.5">
-                <div className="inline-flex w-full items-center rounded-lg border border-slate-200 bg-slate-50 p-1">
+              <div className="border-b border-border bg-card px-2 py-1.5">
+                <div className="inline-flex w-full items-center rounded-lg border border-border bg-muted/50 p-1">
                   <Button
                     type="button"
                     size="sm"
@@ -1198,12 +1195,12 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                           type="button"
                           variant={onlyActiveDeals ? 'secondary' : 'outline'}
                           size="icon"
-                          className="size-8 shrink-0 border-slate-200 bg-white"
+                          className="size-8 shrink-0 border-border bg-card"
                           aria-pressed={onlyActiveDeals}
                           aria-label="Nur aktive Deals"
                           onClick={() => setOnlyActiveDeals((prev) => !prev)}
                         >
-                          <AppIcon icon={FilterHorizontalIcon} size={14} className="text-slate-700" />
+                          <AppIcon icon={FilterHorizontalIcon} size={14} className="text-foreground/85" />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent side="bottom" className="max-w-[220px] text-xs">
@@ -1217,12 +1214,12 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                           type="button"
                           variant={onlyFocusAccounts ? 'secondary' : 'outline'}
                           size="icon"
-                          className="size-8 shrink-0 border-slate-200 bg-white"
+                          className="size-8 shrink-0 border-border bg-card"
                           aria-pressed={onlyFocusAccounts}
                           aria-label="Nur Focus-Accounts"
                           onClick={() => setOnlyFocusAccounts((prev) => !prev)}
                         >
-                          <AppIcon icon={StarIcon} size={14} className="text-slate-700" />
+                          <AppIcon icon={StarIcon} size={14} className="text-foreground/85" />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent side="bottom" className="max-w-[220px] text-xs">
@@ -1235,7 +1232,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                     value={signalFilter}
                     onChange={(e) => setSignalFilter(e.target.value)}
                     placeholder="Signale filtern..."
-                    className="h-8 min-w-0 flex-1 bg-white text-xs"
+                    className="h-8 min-w-0 flex-1 bg-card text-xs"
                     aria-label="Signale filtern"
                   />
                   {canRunNewsIngest ? (
@@ -1246,20 +1243,20 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                             type="button"
                             variant="outline"
                             size="icon"
-                            className="size-8 shrink-0 border-slate-200 bg-white"
+                            className="size-8 shrink-0 border-border bg-card"
                             disabled={newsIngestPending}
                             aria-label="Neue Signale aus Feeds laden"
                             onClick={() => runManualNewsIngest()}
                           >
                             {newsIngestPending ? (
-                              <AppIcon icon={Loader} size={14} className="animate-spin text-slate-600" />
+                              <AppIcon icon={Loader} size={14} className="animate-spin text-muted-foreground" />
                             ) : (
-                              <RefreshCw className="size-3.5 text-slate-600" aria-hidden />
+                              <RefreshCw className="size-3.5 text-muted-foreground" aria-hidden />
                             )}
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent side="bottom" className="max-w-[240px] text-xs leading-snug">
-                          <span className="font-medium text-slate-900">Feeds jetzt abrufen</span>
+                          <span className="font-medium text-foreground">Feeds jetzt abrufen</span>
                           <span className="mt-1 block text-muted-foreground">
                             Lädt neue Company-News und Executive-Signale (RSS). Die Liste aktualisiert sich zusätzlich
                             etwa alle 2 Minuten automatisch vom Server.
@@ -1270,12 +1267,12 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                   ) : null}
                 </div>
               </div>
-              <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-2 [scrollbar-gutter:stable] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar]:w-2">
+              <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-2 [scrollbar-gutter:stable] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-muted-foreground/35 [&::-webkit-scrollbar]:w-2">
                 {groupedVisibleItems.length === 0 ? (
                   <div className="flex h-full items-center justify-center px-6 text-center">
                     <div className="max-w-sm">
-                      <p className="text-sm font-semibold text-slate-900">You&apos;re all caught up</p>
-                      <p className="mt-1 text-xs text-slate-500">Keine neuen Signale in deiner Watchlist.</p>
+                      <p className="text-sm font-semibold text-foreground">You&apos;re all caught up</p>
+                      <p className="mt-1 text-xs text-muted-foreground">Keine neuen Signale in deiner Watchlist.</p>
                     </div>
                   </div>
                 ) : (
@@ -1284,7 +1281,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                     {(['Heute', 'Gestern', 'Ältere'] as const).map((label) =>
                       (grouped[label] ?? []).length ? (
                         <div key={label} className="space-y-2">
-                          <p className="px-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                          <p className="px-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                             {label}
                           </p>
                           <ul className="space-y-1">
@@ -1312,8 +1309,8 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                     }}
                                     className={`group relative flex w-full items-center gap-2.5 rounded-lg border-l-[3px] py-2 pl-2 pr-1 text-left transition-colors ${
                                       isActive
-                                        ? `bg-blue-50/90 ${inboxRowAccentClass(rep)}`
-                                        : `border-l-transparent hover:bg-slate-50/90`
+                                        ? `bg-primary/10 ${inboxRowAccentClass(rep)} dark:bg-primary/15`
+                                        : `border-l-transparent hover:bg-muted/70`
                                     }`}
                                   >
                                     <div className="relative flex shrink-0 -space-x-1.5">
@@ -1321,7 +1318,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                         ? groupItem.companies.slice(0, 3).map((co) => (
                                             <div
                                               key={co.id}
-                                              className="relative z-10 size-8 overflow-hidden rounded-md border border-white bg-white ring-1 ring-slate-200/80"
+                                              className="relative z-10 size-8 overflow-hidden rounded-md border border-background bg-card ring-1 ring-border/80"
                                             >
                                               {co.logoUrl ? (
                                                 <Image
@@ -1335,7 +1332,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                             </div>
                                           ))
                                         : rep.companyLogoUrl ? (
-                                            <div className="relative size-8 overflow-hidden rounded-md bg-white ring-1 ring-slate-200/80">
+                                            <div className="relative size-8 overflow-hidden rounded-md border border-border bg-card ring-1 ring-border/80">
                                               <Image
                                                 src={rep.companyLogoUrl}
                                                 alt=""
@@ -1345,21 +1342,21 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                               />
                                             </div>
                                           ) : (
-                                            <div className="size-8 rounded-md bg-slate-100 ring-1 ring-slate-200/80" />
+                                            <div className="size-8 rounded-md bg-muted ring-1 ring-border/80" />
                                           )}
                                       {groupItem.companies.length > 3 ? (
-                                        <span className="z-20 inline-flex size-8 items-center justify-center rounded-md border border-slate-200 bg-slate-100 text-[9px] font-semibold text-slate-600">
+                                        <span className="z-20 inline-flex size-8 items-center justify-center rounded-md border border-border bg-muted text-[9px] font-semibold text-muted-foreground">
                                           +{groupItem.companies.length - 3}
                                         </span>
                                       ) : null}
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                      <p className="line-clamp-1 text-xs font-semibold text-slate-900">
+                                      <p className="line-clamp-1 text-xs font-semibold text-foreground">
                                         {groupItem.companies.length > 1
                                           ? `${groupItem.companies.length} Accounts`
                                           : rep.companyName}
                                       </p>
-                                      <p className="mt-0.5 line-clamp-1 text-[11px] text-slate-500">
+                                      <p className="mt-0.5 line-clamp-1 text-[11px] text-muted-foreground">
                                         {inboxRowSignalTypeLabel(rep)}
                                       </p>
                                     </div>
@@ -1368,7 +1365,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                         <TooltipTrigger asChild>
                                           <span
                                             className={`size-2.5 shrink-0 rounded-full ${
-                                              isTodayPriority ? 'bg-amber-500' : 'bg-slate-300/80'
+                                              isTodayPriority ? 'bg-amber-500' : 'bg-muted-foreground/40'
                                             }`}
                                             aria-label={isTodayPriority ? 'Priorität: Heute zuerst' : 'Standard-Priorität'}
                                           />
@@ -1388,12 +1385,12 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                       ) : null}
                                     </div>
                                     <div className="relative shrink-0">
-                                      <div className="pointer-events-none absolute right-0 top-1/2 flex -translate-y-1/2 items-center gap-1 rounded-md bg-white/95 px-0.5 py-0.5 opacity-0 shadow-sm ring-1 ring-slate-200/60 transition-opacity duration-200 group-hover:pointer-events-auto group-hover:opacity-100 dark:bg-slate-900/95 dark:ring-slate-700">
+                                      <div className="pointer-events-none absolute right-0 top-1/2 flex -translate-y-1/2 items-center gap-1 rounded-md border border-border/60 bg-background/95 px-0.5 py-0.5 opacity-0 shadow-sm ring-1 ring-border/60 backdrop-blur-sm transition-opacity duration-200 group-hover:pointer-events-auto group-hover:opacity-100 dark:bg-popover/95">
                                         <Tooltip>
                                           <TooltipTrigger asChild>
                                             <button
                                               type="button"
-                                              className="inline-flex size-6 items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                                              className="inline-flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
                                               aria-label="Aus Inbox ausblenden"
                                               onClick={(e) => {
                                                 e.preventDefault()
@@ -1412,7 +1409,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                           <TooltipTrigger asChild>
                                             <button
                                               type="button"
-                                              className="inline-flex size-6 items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                                              className="inline-flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
                                               aria-label="KI-Intro-Snippet kopieren"
                                               onClick={(e) => {
                                                 e.preventDefault()
@@ -1448,8 +1445,8 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
           <ResizableHandle withHandle />
 
           <ResizablePanel defaultSize={70} minSize={45} className="hidden lg:block">
-            <div className="relative h-full overflow-hidden bg-white">
-              <div className="h-full border-l border-slate-200">
+            <div className="relative h-full overflow-hidden bg-background">
+              <div className="h-full border-l border-border">
                 {!selected ? (
                   <div className="flex h-full items-center justify-center px-6 text-center">
                     <div className="max-w-sm">
@@ -1458,13 +1455,13 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                           <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
                             <CheckIcon className="size-5" />
                           </div>
-                          <p className="mt-3 text-sm font-semibold text-slate-900">Inbox Zero erreicht</p>
-                          <p className="mt-1 text-sm text-slate-500">
+                          <p className="mt-3 text-sm font-semibold text-foreground">Inbox Zero erreicht</p>
+                          <p className="mt-1 text-sm text-muted-foreground">
                             Stark! Keine offenen Signale mehr. Hier sind die Top Trending Accounts als nächster Fokus.
                           </p>
                           <div className="mt-4 space-y-2 text-left">
                             {trendingAccounts.length === 0 ? (
-                              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                              <div className="rounded-lg border border-border bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
                                 Aktuell keine Trending Accounts verfügbar.
                               </div>
                             ) : (
@@ -1472,10 +1469,10 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                 <Link
                                   key={account.companyId}
                                   href={ROUTES.accountsDetail(account.companyId)}
-                                  className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700 hover:bg-slate-100"
+                                  className="flex items-center justify-between gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2 text-xs text-foreground/85 hover:bg-muted"
                                 >
-                                  <span className="truncate font-medium text-slate-900">{account.companyName}</span>
-                                  <span className="shrink-0 text-slate-500">{account.count} Signale</span>
+                                  <span className="truncate font-medium text-foreground">{account.companyName}</span>
+                                  <span className="shrink-0 text-muted-foreground">{account.count} Signale</span>
                                 </Link>
                               ))
                             )}
@@ -1483,11 +1480,11 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                         </>
                       ) : (
                         <>
-                          <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+                          <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-muted text-foreground/85">
                             <AppIcon icon={Sparkles} size={18} />
                           </div>
-                          <p className="mt-3 text-sm font-semibold text-slate-900">Kein Signal ausgewählt</p>
-                          <p className="mt-1 text-sm text-slate-500">
+                          <p className="mt-3 text-sm font-semibold text-foreground">Kein Signal ausgewählt</p>
+                          <p className="mt-1 text-sm text-muted-foreground">
                             Wähle ein Signal aus, um Details und passende Referenzen zu sehen.
                           </p>
                         </>
@@ -1496,7 +1493,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                   </div>
                 ) : (
                   <div className="flex h-full min-h-0 flex-col">
-                    <div className="shrink-0 border-b border-slate-200 px-6 py-4">
+                    <div className="shrink-0 border-b border-border px-6 py-4">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex min-w-0 items-start gap-3">
                           <div className="relative mt-0.5 flex shrink-0 -space-x-2">
@@ -1504,7 +1501,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                               ? selectedGroup.companies.slice(0, 4).map((co) => (
                                   <div
                                     key={co.id}
-                                    className="relative z-10 size-10 overflow-hidden rounded-xl border-2 border-white bg-white shadow-sm ring-1 ring-slate-200"
+                                    className="relative z-10 size-10 overflow-hidden rounded-xl border-2 border-background bg-card shadow-sm ring-1 ring-border"
                                   >
                                     {co.logoUrl ? (
                                       <Image
@@ -1518,7 +1515,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                   </div>
                                 ))
                               : selected.companyLogoUrl ? (
-                                  <div className="relative size-10 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white">
+                                  <div className="relative size-10 shrink-0 overflow-hidden rounded-xl border border-border bg-card">
                                     <Image
                                       src={selected.companyLogoUrl}
                                       alt=""
@@ -1528,12 +1525,12 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                     />
                                   </div>
                                 ) : (
-                                  <div className="size-10 shrink-0 rounded-xl border border-slate-200 bg-white" />
+                                  <div className="size-10 shrink-0 rounded-xl border border-border bg-card" />
                                 )}
                           </div>
                           <div className="min-w-0">
                             <div className="flex items-center justify-between gap-2">
-                              <p className="truncate text-sm font-semibold text-slate-900">{selected.headline}</p>
+                              <p className="truncate text-sm font-semibold text-foreground">{selected.headline}</p>
                               <div className="flex items-center gap-1">
                                 <Button type="button" variant="ghost" size="icon" className="size-7" onClick={() => void submitDraftFeedback(true)} aria-label="Nützlich">
                                   <ThumbsUp className="h-4 w-4" />
@@ -1543,7 +1540,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                 </Button>
                               </div>
                             </div>
-                            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
+                            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                               <span>
                                 {selectedGroup && selectedGroup.companies.length > 1
                                   ? `${selectedGroup.companies.length} Accounts`
@@ -1551,7 +1548,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                               </span>
                               <span aria-hidden>•</span>
                               <span
-                                className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-700"
+                                className="rounded border border-border bg-muted/50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground/85"
                                 title={signalTypeLabel(selected.categoryBadge).full}
                               >
                                 {signalTypeLabel(selected.categoryBadge).short}
@@ -1561,7 +1558,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                 href={selected.sourceHref}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="inline-flex max-w-[min(14rem,42vw)] shrink-0 items-center gap-1 text-[11px] font-medium text-blue-700 hover:underline"
+                                className="inline-flex max-w-[min(14rem,42vw)] shrink-0 items-center gap-1 text-[11px] font-medium text-blue-700 hover:underline dark:text-blue-400"
                                 title={
                                   sourcePreview?.hostname
                                     ? `${selected.sourceLabel} · ${sourcePreview.hostname}`
@@ -1610,7 +1607,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                 onSelect={() => void snoozeSelected(1)}
                               >
                                 <span className="flex w-full items-center gap-2 text-sm font-medium">
-                                  <CalendarClock className="size-3.5 shrink-0 text-slate-600" aria-hidden />
+                                  <CalendarClock className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
                                   Morgen
                                 </span>
                                 <span className="text-muted-foreground pl-5 text-xs font-normal leading-snug">
@@ -1622,7 +1619,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                 onSelect={() => void snoozeSelected(7)}
                               >
                                 <span className="flex w-full items-center gap-2 text-sm font-medium">
-                                  <CalendarDays className="size-3.5 shrink-0 text-slate-600" aria-hidden />
+                                  <CalendarDays className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
                                   Nächste Woche
                                 </span>
                                 <span className="text-muted-foreground pl-5 text-xs font-normal leading-snug">
@@ -1662,12 +1659,12 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                             <HoverCardTrigger asChild>
                               <button
                                 type="button"
-                                className="inline-flex size-8 items-center justify-center rounded-md text-xs text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800"
+                                className="inline-flex size-8 items-center justify-center rounded-md text-xs text-muted-foreground hover:bg-muted hover:text-foreground dark:hover:bg-muted"
                                 aria-label="Gemeinsame Kontakte und Warm-Intro-Pfade"
                               >
-                                <Users className="h-4 w-4 text-slate-600" aria-hidden />
+                                <Users className="h-4 w-4 text-muted-foreground" aria-hidden />
                                 {mutualConnectionsPreview.count > 0 ? (
-                                  <span className="ml-0.5 font-medium tabular-nums text-slate-800 dark:text-slate-100">
+                                  <span className="ml-0.5 font-medium tabular-nums text-foreground">
                                     {mutualConnectionsPreview.count}
                                   </span>
                                 ) : null}
@@ -1676,11 +1673,11 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                             <HoverCardContent
                               side="top"
                               align="end"
-                              className="w-[min(22rem,calc(100vw-1.5rem))] overflow-hidden border-slate-200 p-0 shadow-lg dark:border-slate-700"
+                              className="w-[min(22rem,calc(100vw-1.5rem))] overflow-hidden border-border p-0 shadow-lg dark:border-border"
                             >
-                              <div className="border-b border-slate-100 bg-slate-50/90 px-3 py-2.5 dark:border-slate-800 dark:bg-slate-900/80">
-                                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Gemeinsame Kontakte</p>
-                                <p className="mt-0.5 text-[11px] leading-snug text-slate-600 dark:text-slate-400">
+                              <div className="border-b border-border bg-muted/55 px-3 py-2.5 dark:border-border dark:bg-muted/40">
+                                <p className="text-sm font-semibold text-foreground">Gemeinsame Kontakte</p>
+                                <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
                                   Kolleg:innen mit direkter Verbindung zum Ansprechpartner – guter Hebel für ein Warm-Intro.
                                 </p>
                               </div>
@@ -1692,7 +1689,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                       return (
                                         <div
                                           key={i}
-                                          className="rounded-lg border border-slate-200/80 bg-white px-3 py-2 text-xs leading-snug text-slate-700 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-300"
+                                          className="rounded-lg border border-border/80 bg-card px-3 py-2 text-xs leading-snug text-foreground/85 dark:border-border dark:bg-card/80 dark:text-foreground/90"
                                         >
                                           {line}
                                         </div>
@@ -1701,7 +1698,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                     return (
                                       <div
                                         key={i}
-                                        className="flex gap-2.5 rounded-lg border border-slate-200/80 bg-white p-2.5 shadow-sm dark:border-slate-700 dark:bg-slate-950/50"
+                                        className="flex gap-2.5 rounded-lg border border-border/80 bg-card p-2.5 shadow-sm dark:border-border dark:bg-card/80"
                                       >
                                         <div className="flex shrink-0 items-center gap-1.5">
                                           <span
@@ -1710,7 +1707,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                           >
                                             {personInitials(parsed.colleague)}
                                           </span>
-                                          <span className="text-[10px] font-medium text-slate-400" aria-hidden>
+                                          <span className="text-[10px] font-medium text-muted-foreground" aria-hidden>
                                             ↔
                                           </span>
                                           <span
@@ -1721,12 +1718,12 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                           </span>
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                          <p className="text-xs font-medium text-slate-900 dark:text-slate-100">
+                                          <p className="text-xs font-medium text-foreground">
                                             <span className="text-blue-700 dark:text-blue-300">{parsed.colleague}</span>
-                                            <span className="font-normal text-slate-500 dark:text-slate-400"> kennt </span>
+                                            <span className="font-normal text-muted-foreground"> kennt </span>
                                             <span className="text-emerald-800 dark:text-emerald-200">{parsed.contact}</span>
                                           </p>
-                                          <p className="mt-0.5 text-[11px] leading-snug text-slate-600 dark:text-slate-400">
+                                          <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
                                             Starkes Warm-Intro: gemeinsame Verbindung nutzen.
                                           </p>
                                         </div>
@@ -1734,7 +1731,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                     )
                                   })
                                 ) : (
-                                  <p className="px-1 py-2 text-xs leading-snug text-slate-600 dark:text-slate-400">
+                                  <p className="px-1 py-2 text-xs leading-snug text-muted-foreground">
                                     Noch keine gematchten Pfade. Mit LinkedIn/Sales Navigator erscheinen hier konkrete
                                     Warm-Intro-Ideen (z. B. welcher Kollege wen kennt).
                                   </p>
@@ -1750,8 +1747,8 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                 variant="outline"
                                 className={
                                   isSelectedInPipeline
-                                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-50'
-                                    : 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'
+                                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200 dark:hover:bg-emerald-950/60'
+                                    : 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-100 dark:hover:bg-blue-950/65'
                                 }
                                 disabled={isSelectedInPipeline}
                               >
@@ -1811,36 +1808,36 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
 
                     <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-6 py-6">
                       <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(260px,1fr)] lg:items-start lg:gap-10">
-                        <div className="min-w-0 space-y-12 border-l border-dashed border-slate-200 pl-6 dark:border-slate-700">
+                        <div className="min-w-0 space-y-12 border-l border-dashed border-border pl-6 dark:border-border">
                           <motion.section
                             initial={{ opacity: 0, y: 6 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.2 }}
-                            className="relative rounded-r-lg border-l-4 border-blue-500 bg-blue-50/50 py-4 pl-5 pr-4 dark:border-blue-400 dark:bg-blue-950/20"
+                            className="relative rounded-r-lg border-l-4 border-blue-500 bg-blue-50/60 py-4 pl-5 pr-4 dark:border-blue-400 dark:bg-blue-950/40"
                           >
                             <p className="text-[10px] font-semibold uppercase tracking-wider text-blue-800/80 dark:text-blue-200/90">
                               Why call now?
                             </p>
                             <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
-                              <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">The Insight</h2>
+                              <h2 className="text-sm font-semibold text-foreground">The Insight</h2>
                               {signalIcpScore !== null ? (
                                 <div className="flex shrink-0 items-center gap-1">
-                                  <span className="text-xs font-medium text-slate-600 dark:text-slate-400">ICP</span>
-                                  <span className="text-lg font-bold tabular-nums text-slate-900 dark:text-slate-100">{signalIcpScore}%</span>
+                                  <span className="text-xs font-medium text-muted-foreground">ICP</span>
+                                  <span className="text-lg font-bold tabular-nums text-foreground">{signalIcpScore}%</span>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
-                                      <button type="button" className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                                      <button type="button" className="text-muted-foreground hover:text-foreground dark:hover:text-foreground">
                                         <Info className="h-3.5 w-3.5" />
                                       </button>
                                     </TooltipTrigger>
-                                    <TooltipContent className="max-w-[260px] text-xs dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+                                    <TooltipContent className="max-w-[260px] border-border bg-popover text-popover-foreground text-xs">
                                       Basierend auf Branche, Unternehmensgröße, Signal-Typ, Aktualität und Referenz-Readiness.
                                     </TooltipContent>
                                   </Tooltip>
                                 </div>
                               ) : null}
                             </div>
-                            <ul className="mt-3 list-inside list-disc space-y-2 text-sm leading-relaxed text-slate-700 marker:text-blue-400 dark:text-slate-300">
+                            <ul className="mt-3 list-inside list-disc space-y-2 text-sm leading-relaxed text-foreground/85 marker:text-blue-500 dark:text-blue-50/95 dark:marker:text-blue-400">
                               {executiveSummaryBullets.map((line, i) => (
                                 <li key={i}>{line}</li>
                               ))}
@@ -1848,10 +1845,10 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                           </motion.section>
 
                           <section>
-                            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Evidence</p>
-                            <h2 className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">The Signal</h2>
-                            <p className="mt-0.5 line-clamp-2 text-xs font-medium text-slate-600 dark:text-slate-400">{selected.headline}</p>
-                            <p className="mt-1 text-[11px] text-slate-500">
+                            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Evidence</p>
+                            <h2 className="mt-1 text-sm font-semibold text-foreground">The Signal</h2>
+                            <p className="mt-0.5 line-clamp-2 text-xs font-medium text-muted-foreground">{selected.headline}</p>
+                            <p className="mt-1 text-[11px] text-muted-foreground">
                               Quelle{' '}
                               <Link
                                 href={selected.sourceHref}
@@ -1865,7 +1862,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                             {signalEvidenceText ? (
                               <>
                                 <div
-                                  className={`mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-700 dark:text-slate-300 ${
+                                  className={`mt-3 whitespace-pre-wrap text-sm leading-relaxed text-foreground/90 ${
                                     signalEvidenceExpanded ? '' : 'line-clamp-3'
                                   }`}
                                 >
@@ -1883,14 +1880,14 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                 ) : null}
                               </>
                             ) : (
-                              <p className="mt-3 text-sm text-slate-500">Kein Signaltext hinterlegt.</p>
+                              <p className="mt-3 text-sm text-muted-foreground">Kein Signaltext hinterlegt.</p>
                             )}
                           </section>
 
                           <section>
-                            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Outreach</p>
-                            <h2 className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">The Output</h2>
-                            <p className="mt-1 text-xs text-slate-500">E-Mail-Entwurf — Platzhalter markieren offene Personalisierung.</p>
+                            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Outreach</p>
+                            <h2 className="mt-1 text-sm font-semibold text-foreground">The Output</h2>
+                            <p className="mt-1 text-xs text-muted-foreground">E-Mail-Entwurf — Platzhalter markieren offene Personalisierung.</p>
 
                             {!introStrategyText && !introStrategyLoading ? (
                               <div className="mt-8 flex flex-col items-center justify-center py-6">
@@ -1907,7 +1904,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                             ) : null}
 
                             {introStrategyLoading ? (
-                              <div className="mt-6 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                              <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
                                 <AppIcon icon={Loader} size={16} className="animate-spin" />
                                 Entwurf wird generiert …
                               </div>
@@ -1915,7 +1912,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
 
                             {introStrategyText ? (
                               <>
-                                <div className="mt-6 rounded-lg bg-slate-50/90 px-5 py-6 shadow-inner dark:bg-slate-900/40">
+                                <div className="mt-6 rounded-lg bg-muted/55 px-5 py-6 shadow-inner dark:bg-muted/55">
                                   <div className="mb-3 flex flex-wrap items-center gap-2">
                                     {introStrategySource === 'openai' ? (
                                       <Badge className="h-5 px-1.5 text-[10px]">KI</Badge>
@@ -1928,7 +1925,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                       type="button"
                                       variant="ghost"
                                       size="sm"
-                                      className="h-7 px-2 text-xs text-slate-600"
+                                      className="h-7 px-2 text-xs text-muted-foreground"
                                       onClick={() => void copyStrategySnippet()}
                                     >
                                       {copySuccess ? <CopyCheck className="mr-1 h-3.5 w-3.5" /> : <Copy className="mr-1 h-3.5 w-3.5" />}
@@ -1938,7 +1935,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                       type="button"
                                       variant="ghost"
                                       size="sm"
-                                      className="h-7 px-2 text-xs text-slate-600"
+                                      className="h-7 px-2 text-xs text-muted-foreground"
                                       onClick={triggerIntroDraftGeneration}
                                       disabled={introStrategyLoading}
                                     >
@@ -1967,10 +1964,10 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                   ))}
                                 </div>
 
-                                <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-slate-100 pt-4 text-[11px] dark:border-slate-800">
+                                <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border pt-4 text-[11px] dark:border-border">
                                   <button
                                     type="button"
-                                    className="text-slate-500 underline-offset-2 hover:text-slate-800 hover:underline dark:text-slate-400 dark:hover:text-slate-200"
+                                    className="text-muted-foreground underline-offset-2 hover:text-foreground hover:underline dark:text-muted-foreground dark:hover:text-foreground"
                                     onClick={async () => {
                                       const key = signalKeyOf(selected)
                                       await logMarketSignalQuickAction({ signalKey: key, channel: 'hubspot_email' })
@@ -1983,12 +1980,12 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                   >
                                     In HubSpot öffnen
                                   </button>
-                                  <span className="text-slate-300 dark:text-slate-600" aria-hidden>
+                                  <span className="text-border dark:text-muted-foreground/50" aria-hidden>
                                     ·
                                   </span>
                                   <button
                                     type="button"
-                                    className="text-slate-500 underline-offset-2 hover:text-slate-800 hover:underline dark:text-slate-400 dark:hover:text-slate-200"
+                                    className="text-muted-foreground underline-offset-2 hover:text-foreground hover:underline dark:text-muted-foreground dark:hover:text-foreground"
                                     onClick={async () => {
                                       const key = signalKeyOf(selected)
                                       await logMarketSignalQuickAction({ signalKey: key, channel: 'salesforce_task' })
@@ -2002,7 +1999,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                             ) : null}
 
                             {!introStrategyLoading && introDraftRequested && !introStrategyText ? (
-                              <p className="mt-4 text-sm text-slate-500">Kein Entwurf verfügbar. Bitte erneut versuchen.</p>
+                              <p className="mt-4 text-sm text-muted-foreground">Kein Entwurf verfügbar. Bitte erneut versuchen.</p>
                             ) : null}
                           </section>
                         </div>
@@ -2010,8 +2007,8 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                         <aside className="min-w-0 space-y-4 lg:sticky lg:top-8 lg:self-start">
                           <div className="flex items-center justify-between gap-2">
                             <div>
-                              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Sidekick</p>
-                              <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Stakeholder & Referenzen</h2>
+                              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Sidekick</p>
+                              <h2 className="text-sm font-semibold text-foreground">Stakeholder & Referenzen</h2>
                             </div>
                             <Button
                               type="button"
@@ -2025,9 +2022,9 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                           </div>
 
                           {decisionCandidatesLoadingCompanyId === selected.companyId ? (
-                            <p className="text-sm text-slate-500">Profile werden geladen …</p>
+                            <p className="text-sm text-muted-foreground">Profile werden geladen …</p>
                           ) : decisionCandidates.length === 0 && visibleQuickRefs.length === 0 ? (
-                            <p className="text-sm text-slate-500">
+                            <p className="text-sm text-muted-foreground">
                               Noch keine Stakeholder-Vorschläge. Verbinde The Org, CIO.de oder LinkedIn/Sales Navigator.
                             </p>
                           ) : (
@@ -2044,19 +2041,19 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                 return (
                                   <div
                                     key={candidate.id}
-                                    className="rounded-lg bg-slate-50/90 px-3 py-3 dark:bg-slate-900/35"
+                                    className="rounded-lg bg-muted/55 px-3 py-3 dark:bg-muted/50"
                                   >
                                     <div className="flex items-start gap-2.5">
                                       <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-900 dark:bg-blue-950 dark:text-blue-100">
                                         {initials || '—'}
                                       </div>
                                       <div className="min-w-0 flex-1">
-                                        <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                        <p className="truncate text-sm font-semibold text-foreground">
                                           {candidate.fullName}
                                         </p>
-                                        <p className="truncate text-xs text-slate-600 dark:text-slate-400">{candidate.title}</p>
+                                        <p className="truncate text-xs text-muted-foreground">{candidate.title}</p>
                                         <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                                          <span className="inline-flex rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-blue-800 ring-1 ring-blue-100 dark:bg-slate-800 dark:text-blue-200 dark:ring-blue-900/50">
+                                          <span className="inline-flex rounded-full bg-card px-2 py-0.5 text-[10px] font-semibold text-blue-800 ring-1 ring-blue-100 dark:bg-blue-950/70 dark:text-blue-100 dark:ring-blue-800/60">
                                             Match {candidate.confidence}%
                                           </span>
                                           {candidate.profileUrl ? (
@@ -2068,14 +2065,14 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                           ) : null}
                                         </div>
                                         {activity ? (
-                                          <p className="mt-1 text-[10px] text-slate-500">
+                                          <p className="mt-1 text-[10px] text-muted-foreground">
                                             LinkedIn · {activity}
                                           </p>
                                         ) : null}
                                       </div>
                                     </div>
                                     {pairedRef ? (
-                                      <div className="mt-3 border-t border-slate-200/80 pt-3 dark:border-slate-700">
+                                      <div className="mt-3 border-t border-border/80 pt-3 dark:border-border">
                                         {(() => {
                                           const readiness = readinessForReference(pairedRef.status)
                                           const attached = attachedRefIds.has(pairedRef.id)
@@ -2083,15 +2080,15 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                           return (
                                             <>
                                               <div className="flex flex-wrap items-center gap-1.5">
-                                                {requestable ? <Lock className="h-3 w-3 text-slate-500" /> : null}
+                                                {requestable ? <Lock className="h-3 w-3 text-muted-foreground" /> : null}
                                                 <Badge variant="outline" className={`text-[10px] font-semibold ${readiness.legalBadgeClassName}`}>
                                                   {readiness.legalBadgeLabel}
                                                 </Badge>
                                               </div>
-                                              <p className="mt-1 line-clamp-2 text-xs font-medium text-slate-800 dark:text-slate-200">
+                                              <p className="mt-1 line-clamp-2 text-xs font-medium text-foreground">
                                                 {pairedRef.title}
                                               </p>
-                                              <p className="mt-0.5 line-clamp-2 text-[10px] leading-snug text-slate-500">
+                                              <p className="mt-0.5 line-clamp-2 text-[10px] leading-snug text-muted-foreground">
                                                 {referenceMatchReason(pairedRef)}
                                               </p>
                                               <div className="mt-2 flex flex-wrap gap-1">
@@ -2134,7 +2131,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                         })()}
                                       </div>
                                     ) : (
-                                      <p className="mt-3 border-t border-slate-200/80 pt-3 text-[10px] text-slate-500 dark:border-slate-700">
+                                      <p className="mt-3 border-t border-border/80 pt-3 text-[10px] text-muted-foreground dark:border-border">
                                         Keine Referenz für diesen Slot gematcht.
                                       </p>
                                     )}
@@ -2148,12 +2145,12 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                     const attached = attachedRefIds.has(r.id)
                                     const requestable = String(r.status ?? '').toLowerCase() !== 'approved'
                                     return (
-                                      <div key={r.id} className="rounded-lg bg-slate-50/90 px-3 py-3 dark:bg-slate-900/35">
+                                      <div key={r.id} className="rounded-lg bg-muted/55 px-3 py-3 dark:bg-muted/50">
                                         <Badge variant="outline" className={`text-[10px] font-semibold ${readiness.legalBadgeClassName}`}>
                                           {readiness.legalBadgeLabel}
                                         </Badge>
-                                        <p className="mt-1 line-clamp-2 text-xs font-medium text-slate-800 dark:text-slate-200">{r.title}</p>
-                                        <p className="mt-1 line-clamp-2 text-[10px] text-slate-500">{referenceMatchReason(r)}</p>
+                                        <p className="mt-1 line-clamp-2 text-xs font-medium text-foreground">{r.title}</p>
+                                        <p className="mt-1 line-clamp-2 text-[10px] text-muted-foreground">{referenceMatchReason(r)}</p>
                                         <div className="mt-2 flex flex-wrap gap-1">
                                           {requestable ? (
                                             <Button
@@ -2196,9 +2193,9 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                   ? visibleQuickRefs.slice(decisionCandidates.length).map((r) => {
                                       const readiness = readinessForReference(r.status)
                                       return (
-                                        <div key={r.id} className="rounded-lg bg-slate-50/60 px-3 py-2 dark:bg-slate-900/25">
-                                          <p className="text-[10px] font-semibold uppercase text-slate-400">Weitere Referenz</p>
-                                          <p className="mt-0.5 line-clamp-2 text-xs text-slate-700 dark:text-slate-300">{r.title}</p>
+                                        <div key={r.id} className="rounded-lg bg-muted/40 px-3 py-2 dark:bg-muted/40">
+                                          <p className="text-[10px] font-semibold uppercase text-muted-foreground">Weitere Referenz</p>
+                                          <p className="mt-0.5 line-clamp-2 text-xs text-foreground/90">{r.title}</p>
                                           <Badge variant="outline" className={`mt-1 text-[9px] font-semibold ${readiness.legalBadgeClassName}`}>
                                             {readiness.legalBadgeLabel}
                                           </Badge>
@@ -2226,8 +2223,8 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
       >
         <DialogContent className="max-w-none h-[100dvh] w-[100vw] rounded-none p-0 sm:max-w-none">
           <DialogTitle className="sr-only">Signal Details</DialogTitle>
-          <div className="flex h-full min-h-0 flex-col overflow-hidden bg-white">
-            <div className="shrink-0 border-b border-slate-200 px-4 py-3">
+          <div className="flex h-full min-h-0 flex-col overflow-hidden bg-card">
+            <div className="shrink-0 border-b border-border px-4 py-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex min-w-0 items-start gap-2">
                   {selected && selectedGroup && selectedGroup.companies.length > 1 ? (
@@ -2235,7 +2232,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                       {selectedGroup.companies.slice(0, 4).map((co) => (
                         <div
                           key={co.id}
-                          className="relative z-10 size-8 overflow-hidden rounded-lg border-2 border-white bg-white shadow-sm ring-1 ring-slate-200"
+                          className="relative z-10 size-8 overflow-hidden rounded-lg border-2 border-background bg-card shadow-sm ring-1 ring-border"
                         >
                           {co.logoUrl ? (
                             <Image
@@ -2250,13 +2247,13 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                       ))}
                     </div>
                   ) : selected?.companyLogoUrl ? (
-                    <div className="relative mt-0.5 size-8 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-white">
+                    <div className="relative mt-0.5 size-8 shrink-0 overflow-hidden rounded-lg border border-border bg-card">
                       <Image src={selected.companyLogoUrl} alt="" fill sizes="32px" className="object-contain p-1" />
                     </div>
                   ) : null}
                   <div className="min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                      <p className="truncate text-sm font-semibold text-slate-900">{selected?.headline ?? 'Signal'}</p>
+                      <p className="truncate text-sm font-semibold text-foreground">{selected?.headline ?? 'Signal'}</p>
                       {selected ? (
                         <div className="flex items-center gap-1">
                           <Button type="button" variant="ghost" size="icon" className="size-7" onClick={() => void submitDraftFeedback(true)} aria-label="Nützlich">
@@ -2268,7 +2265,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                         </div>
                       ) : null}
                     </div>
-                    <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] text-slate-500">
+                    <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] text-muted-foreground">
                       {selected && selectedGroup && selectedGroup.companies.length > 1 ? (
                         <span>{selectedGroup.companies.length} Accounts</span>
                       ) : (
@@ -2278,7 +2275,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                         <>
                           <span aria-hidden>•</span>
                           <span
-                            className="rounded border border-slate-200 bg-slate-50 px-1 py-px text-[10px] font-semibold uppercase tracking-wide text-slate-700"
+                            className="rounded border border-border bg-muted/50 px-1 py-px text-[10px] font-semibold uppercase tracking-wide text-foreground/85"
                             title={signalTypeLabel(selected.categoryBadge).full}
                           >
                             {signalTypeLabel(selected.categoryBadge).short}
@@ -2288,7 +2285,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                             href={selected.sourceHref}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex max-w-[min(11rem,55vw)] items-center gap-0.5 font-medium text-blue-700 hover:underline"
+                            className="inline-flex max-w-[min(11rem,55vw)] items-center gap-0.5 font-medium text-blue-700 hover:underline dark:text-blue-400"
                             title={
                               sourcePreview?.hostname
                                 ? `${selected.sourceLabel} · ${sourcePreview.hostname}`
@@ -2340,7 +2337,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                         onSelect={() => void snoozeSelected(1)}
                       >
                         <span className="flex w-full items-center gap-2 text-sm font-medium">
-                          <CalendarClock className="size-3.5 shrink-0 text-slate-600" aria-hidden />
+                          <CalendarClock className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
                           Morgen
                         </span>
                         <span className="text-muted-foreground pl-5 text-xs font-normal leading-snug">
@@ -2352,7 +2349,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                         onSelect={() => void snoozeSelected(7)}
                       >
                         <span className="flex w-full items-center gap-2 text-sm font-medium">
-                          <CalendarDays className="size-3.5 shrink-0 text-slate-600" aria-hidden />
+                          <CalendarDays className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
                           Nächste Woche
                         </span>
                         <span className="text-muted-foreground pl-5 text-xs font-normal leading-snug">
@@ -2394,7 +2391,11 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                         type="button"
                         variant="outline"
                         size="sm"
-                        className={`h-8 px-2 text-xs ${isSelectedInPipeline ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-blue-200 bg-blue-50 text-blue-700'}`}
+                        className={`h-8 px-2 text-xs ${
+                          isSelectedInPipeline
+                            ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200'
+                            : 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-100'
+                        }`}
                         disabled={isSelectedInPipeline}
                       >
                         {isSelectedInPipeline ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AppIcon icon={UploadIcon} size={14} />}
@@ -2453,31 +2454,31 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
             </div>
             <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-4">
               {selected ? (
-                <div className="space-y-10 border-l border-dashed border-slate-200 pl-4 dark:border-slate-700">
+                <div className="space-y-10 border-l border-dashed border-border pl-4 dark:border-border">
                   <motion.section
                     initial={{ opacity: 0, y: 4 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.18 }}
-                    className="rounded-r-lg border-l-4 border-blue-500 bg-blue-50/50 py-3 pl-4 pr-3 dark:border-blue-400 dark:bg-blue-950/20"
+                    className="rounded-r-lg border-l-4 border-blue-500 bg-blue-50/60 py-3 pl-4 pr-3 dark:border-blue-400 dark:bg-blue-950/40"
                   >
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-blue-800/80 dark:text-blue-200/90">Why call now?</p>
                     <div className="mt-2 flex items-start justify-between gap-2">
-                      <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">The Insight</h2>
+                      <h2 className="text-sm font-semibold text-foreground">The Insight</h2>
                       {signalIcpScore !== null ? (
-                        <span className="text-base font-bold tabular-nums text-slate-900 dark:text-slate-100">{signalIcpScore}%</span>
+                        <span className="text-base font-bold tabular-nums text-foreground">{signalIcpScore}%</span>
                       ) : null}
                     </div>
-                    <ul className="mt-2 list-inside list-disc space-y-1.5 text-[13px] leading-snug text-slate-700 marker:text-blue-400 dark:text-slate-300">
+                    <ul className="mt-2 list-inside list-disc space-y-1.5 text-[13px] leading-snug text-foreground/85 marker:text-blue-500 dark:text-blue-50/95 dark:marker:text-blue-400">
                       {executiveSummaryBullets.map((line, i) => (
                         <li key={i}>{line}</li>
                       ))}
                     </ul>
                   </motion.section>
                   <section>
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Evidence</p>
-                    <h2 className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">The Signal</h2>
-                    <p className="mt-0.5 line-clamp-2 text-xs font-medium text-slate-600 dark:text-slate-400">{selected.headline}</p>
-                    <p className="mt-1 text-[11px] text-slate-500">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Evidence</p>
+                    <h2 className="mt-1 text-sm font-semibold text-foreground">The Signal</h2>
+                    <p className="mt-0.5 line-clamp-2 text-xs font-medium text-muted-foreground">{selected.headline}</p>
+                    <p className="mt-1 text-[11px] text-muted-foreground">
                       Quelle{' '}
                       <Link href={selected.sourceHref} target="_blank" rel="noreferrer" className="font-medium text-blue-700 hover:underline dark:text-blue-400">
                         {selected.sourceLabel}
@@ -2486,7 +2487,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                     {signalEvidenceText ? (
                       <>
                         <div
-                          className={`mt-3 whitespace-pre-wrap text-[13px] leading-relaxed text-slate-700 dark:text-slate-300 ${
+                          className={`mt-3 whitespace-pre-wrap text-[13px] leading-relaxed text-foreground/90 ${
                             signalEvidenceExpanded ? '' : 'line-clamp-3'
                           }`}
                         >
@@ -2504,14 +2505,14 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                         ) : null}
                       </>
                     ) : (
-                      <p className="mt-3 text-sm text-slate-500">Kein Signaltext hinterlegt.</p>
+                      <p className="mt-3 text-sm text-muted-foreground">Kein Signaltext hinterlegt.</p>
                     )}
                   </section>
                   <section className="space-y-3">
                     <div className="flex items-center justify-between gap-2">
                       <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Sidekick</p>
-                        <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Stakeholder & Referenzen</h2>
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Sidekick</p>
+                        <h2 className="text-sm font-semibold text-foreground">Stakeholder & Referenzen</h2>
                       </div>
                       <Button
                         type="button"
@@ -2524,9 +2525,9 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                       </Button>
                     </div>
                     {decisionCandidatesLoadingCompanyId === selected.companyId ? (
-                      <p className="text-sm text-slate-500">Profile werden geladen …</p>
+                      <p className="text-sm text-muted-foreground">Profile werden geladen …</p>
                     ) : decisionCandidates.length === 0 && visibleQuickRefs.length === 0 ? (
-                      <p className="text-sm text-slate-500">
+                      <p className="text-sm text-muted-foreground">
                         Noch keine Stakeholder-Vorschläge. Verbinde The Org, CIO.de oder LinkedIn/Sales Navigator.
                       </p>
                     ) : (
@@ -2541,22 +2542,22 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                             .map((n) => n[0]?.toUpperCase() ?? '')
                             .join('')
                           return (
-                            <div key={candidate.id} className="rounded-lg bg-slate-50/90 px-3 py-3 dark:bg-slate-900/35">
+                            <div key={candidate.id} className="rounded-lg bg-muted/55 px-3 py-3 dark:bg-muted/50">
                               <div className="flex items-start gap-2">
                                 <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-900 dark:bg-blue-950 dark:text-blue-100">
                                   {initials || '—'}
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                  <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{candidate.fullName}</p>
-                                  <p className="truncate text-xs text-slate-600 dark:text-slate-400">{candidate.title}</p>
-                                  <span className="mt-1 inline-flex rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-blue-800 ring-1 ring-blue-100 dark:bg-slate-800 dark:text-blue-200">
+                                  <p className="truncate text-sm font-semibold text-foreground">{candidate.fullName}</p>
+                                  <p className="truncate text-xs text-muted-foreground">{candidate.title}</p>
+                                  <span className="mt-1 inline-flex rounded-full bg-card px-2 py-0.5 text-[10px] font-semibold text-blue-800 ring-1 ring-blue-100 dark:bg-blue-950/70 dark:text-blue-100 dark:ring-blue-800/60">
                                     Match {candidate.confidence}%
                                   </span>
-                                  {activity ? <p className="mt-1 text-[10px] text-slate-500">LinkedIn · {activity}</p> : null}
+                                  {activity ? <p className="mt-1 text-[10px] text-muted-foreground">LinkedIn · {activity}</p> : null}
                                 </div>
                               </div>
                               {pairedRef ? (
-                                <div className="mt-3 border-t border-slate-200/80 pt-3 dark:border-slate-700">
+                                <div className="mt-3 border-t border-border/80 pt-3 dark:border-border">
                                   {(() => {
                                     const readiness = readinessForReference(pairedRef.status)
                                     const attached = attachedRefIds.has(pairedRef.id)
@@ -2564,12 +2565,12 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                     return (
                                       <>
                                         <div className="flex flex-wrap items-center gap-1">
-                                          {requestable ? <Lock className="h-3 w-3 text-slate-500" /> : null}
+                                          {requestable ? <Lock className="h-3 w-3 text-muted-foreground" /> : null}
                                           <Badge variant="outline" className={`text-[10px] font-semibold ${readiness.legalBadgeClassName}`}>
                                             {readiness.legalBadgeLabel}
                                           </Badge>
                                         </div>
-                                        <p className="mt-1 line-clamp-2 text-xs font-medium text-slate-800 dark:text-slate-200">{pairedRef.title}</p>
+                                        <p className="mt-1 line-clamp-2 text-xs font-medium text-foreground">{pairedRef.title}</p>
                                         <div className="mt-2 flex flex-wrap gap-1">
                                           {requestable ? (
                                             <Button
@@ -2616,11 +2617,11 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                               const attached = attachedRefIds.has(r.id)
                               const requestable = String(r.status ?? '').toLowerCase() !== 'approved'
                               return (
-                                <div key={r.id} className="rounded-lg bg-slate-50/90 px-3 py-3 dark:bg-slate-900/35">
+                                <div key={r.id} className="rounded-lg bg-muted/55 px-3 py-3 dark:bg-muted/50">
                                   <Badge variant="outline" className={`text-[10px] font-semibold ${readiness.legalBadgeClassName}`}>
                                     {readiness.legalBadgeLabel}
                                   </Badge>
-                                  <p className="mt-1 text-xs font-medium text-slate-800 dark:text-slate-200">{r.title}</p>
+                                  <p className="mt-1 text-xs font-medium text-foreground">{r.title}</p>
                                   <div className="mt-2 flex flex-wrap gap-1">
                                     {requestable ? (
                                       <Button
@@ -2661,8 +2662,8 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                     )}
                   </section>
                   <section>
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Outreach</p>
-                    <h2 className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">The Output</h2>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Outreach</p>
+                    <h2 className="mt-1 text-sm font-semibold text-foreground">The Output</h2>
                     {!introStrategyText && !introStrategyLoading ? (
                       <div className="mt-6 flex justify-center py-4">
                         <Button type="button" size="lg" className="gap-2 px-6 shadow-md" onClick={triggerIntroDraftGeneration}>
@@ -2672,14 +2673,14 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                       </div>
                     ) : null}
                     {introStrategyLoading ? (
-                      <div className="mt-4 flex items-center gap-2 text-sm text-slate-600">
+                      <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
                         <AppIcon icon={Loader} size={16} className="animate-spin" />
                         Entwurf wird generiert …
                       </div>
                     ) : null}
                     {introStrategyText ? (
                       <>
-                        <div className="mt-4 rounded-lg bg-slate-50/90 px-4 py-5 dark:bg-slate-900/40">
+                        <div className="mt-4 rounded-lg bg-muted/55 px-4 py-5 dark:bg-muted/55">
                           <div className="mb-2 flex flex-wrap items-center gap-2">
                             {introStrategySource === 'openai' ? (
                               <Badge className="h-5 px-1.5 text-[10px]">KI</Badge>
@@ -2716,10 +2717,10 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                             </Button>
                           ))}
                         </div>
-                        <div className="mt-4 flex flex-wrap gap-x-3 gap-y-1 border-t border-slate-100 pt-3 text-[11px] dark:border-slate-800">
+                        <div className="mt-4 flex flex-wrap gap-x-3 gap-y-1 border-t border-border pt-3 text-[11px] dark:border-border">
                           <button
                             type="button"
-                            className="text-slate-500 underline-offset-2 hover:text-slate-800 hover:underline dark:text-slate-400"
+                            className="text-muted-foreground underline-offset-2 hover:text-foreground hover:underline dark:text-muted-foreground"
                             onClick={async () => {
                               const key = signalKeyOf(selected)
                               await logMarketSignalQuickAction({ signalKey: key, channel: 'hubspot_email' })
@@ -2734,7 +2735,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                           </button>
                           <button
                             type="button"
-                            className="text-slate-500 underline-offset-2 hover:text-slate-800 hover:underline dark:text-slate-400"
+                            className="text-muted-foreground underline-offset-2 hover:text-foreground hover:underline dark:text-muted-foreground"
                             onClick={async () => {
                               const key = signalKeyOf(selected)
                               await logMarketSignalQuickAction({ signalKey: key, channel: 'salesforce_task' })
@@ -2747,7 +2748,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                       </>
                     ) : null}
                     {!introStrategyLoading && introDraftRequested && !introStrategyText ? (
-                      <p className="mt-3 text-sm text-slate-500">Kein Entwurf verfügbar. Bitte erneut versuchen.</p>
+                      <p className="mt-3 text-sm text-muted-foreground">Kein Entwurf verfügbar. Bitte erneut versuchen.</p>
                     ) : null}
                   </section>
                 </div>

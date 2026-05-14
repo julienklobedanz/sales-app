@@ -131,15 +131,15 @@ export function AccountManagerDashboard({ data }: { data: AccountManagerDashboar
                         setRemindingId(p.referenceId)
                         void toast
                           .promise(resendClientApprovalEmail(p.referenceId), {
-                            loading: 'Erinnerung wird gesendet …',
-                            success: 'Erinnerung gesendet.',
-                            error: (e) => (e instanceof Error ? e.message : 'Konnte Erinnerung nicht senden.'),
+                            loading: 'Neuer Link wird erzeugt …',
+                            success: 'Neuer Freigabe-Link aktiv — bitte manuell an den Kunden senden.',
+                            error: (e) => (e instanceof Error ? e.message : 'Konnte Link nicht erneuern.'),
                           })
                           .unwrap()
                           .finally(() => setRemindingId(null))
                       }}
                     >
-                      Erinnerung senden
+                      Neuen Link
                     </Button>
                     <Button asChild variant="outline" size="sm">
                       <Link href={ROUTES.evidence.detail(p.referenceId)}>Details</Link>

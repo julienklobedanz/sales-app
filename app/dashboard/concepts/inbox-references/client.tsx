@@ -42,7 +42,12 @@ import { splitTags } from "./types"
 import { ReferenceDetailPane } from "./reference-detail-pane"
 
 type SortKey = "created_at" | "title" | "company_name"
-type StatusFilter = "all" | ConceptReferenceRow["status"]
+type StatusFilter = "all" | ConceptReferenceRow["status"] | "approval_pending"
+
+function referenceRowShowsApprovalPending(ref: ConceptReferenceRow): boolean {
+  if (String(ref.customer_approval_status ?? "").toLowerCase() === "pending") return true
+  return String(ref.status ?? "").toLowerCase() === "pending"
+}
 
 function useSelectedId() {
   const params = useSearchParams()
@@ -134,9 +139,11 @@ export function InboxReferencesConceptClient({
   references,
   profileRole,
   externalContacts,
+  variant = "standalone",
 }: {
   references: ConceptReferenceRow[]
   profileRole: Profile["role"]
+  variant?: "standalone" | "embedded"
   externalContacts: {
     id: string
     company_id: string
@@ -162,7 +169,16 @@ export function InboxReferencesConceptClient({
     () => [
       { id: "title", accessorKey: "title" },
       { id: "company_name", accessorKey: "company_name" },
-      { id: "status", accessorKey: "status" },
+      {
+        id: "status",
+        accessorKey: "status",
+        filterFn: (row, _columnId, filterValue) => {
+          if (filterValue === undefined || filterValue === null || filterValue === "all") return true
+          if (filterValue === "approval_pending") return referenceRowShowsApprovalPending(row.original)
+          if (referenceRowShowsApprovalPending(row.original)) return false
+          return row.original.status === filterValue
+        },
+      },
       { id: "created_at", accessorKey: "created_at" },
       {
         id: "tags",
@@ -265,9 +281,14 @@ export function InboxReferencesConceptClient({
   const sortKey = (sorting[0]?.id as SortKey | undefined) ?? "created_at"
   const sortDir = sorting[0]?.desc ? "desc" : "asc"
 
+  const rootClass =
+    variant === "embedded"
+      ? "flex min-h-[480px] h-[min(calc(100svh-11rem),56rem)] flex-col gap-2"
+      : "flex h-[calc(100svh-7rem)] flex-col gap-4 p-4"
+
   return (
-    <div className="flex h-[calc(100svh-7rem)] flex-col gap-4 p-4">
-      <ResizablePanelGroup orientation="horizontal" className="flex-1 rounded-lg border bg-background">
+    <div className={rootClass}>
+      <ResizablePanelGroup direction="horizontal" className="min-h-0 flex-1 rounded-lg border bg-background">
         <ResizablePanel defaultSize="42%" minSize={28}>
           <div className="flex h-full flex-col">
             <div className="border-b p-4">
@@ -278,26 +299,6 @@ export function InboxReferencesConceptClient({
                   placeholder="Suchen…"
                   className="h-9 min-w-[220px] flex-1"
                 />
-
-                <Select
-                  value={statusValue}
-                  onValueChange={(v) => {
-                    const col = table.getColumn("status")
-                    if (!col) return
-                    col.setFilterValue(v === "all" ? undefined : v)
-                  }}
-                >
-                  <SelectTrigger className="h-9" aria-label="Status Filter">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Alle Status</SelectItem>
-                    <SelectItem value="draft">draft</SelectItem>
-                    <SelectItem value="internal_only">internal_only</SelectItem>
-                    <SelectItem value="approved">approved</SelectItem>
-                    <SelectItem value="anonymized">anonymized</SelectItem>
-                  </SelectContent>
-                </Select>
 
                 <Select
                   value={`${sortKey}:${sortDir}`}
@@ -318,6 +319,29 @@ export function InboxReferencesConceptClient({
                     <SelectItem value="company_name:desc">Account Z→A</SelectItem>
                   </SelectContent>
                 </Select>
+
+                {variant === "standalone" ? (
+                  <Select
+                    value={statusValue}
+                    onValueChange={(v) => {
+                      const col = table.getColumn("status")
+                      if (!col) return
+                      col.setFilterValue(v === "all" ? undefined : v)
+                    }}
+                  >
+                    <SelectTrigger className="h-9" aria-label="Status Filter">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Alle Status</SelectItem>
+                      <SelectItem value="draft">Entwurf</SelectItem>
+                      <SelectItem value="internal_only">Intern</SelectItem>
+                      <SelectItem value="approval_pending">Freigabe ausstehend</SelectItem>
+                      <SelectItem value="approved">Freigegeben</SelectItem>
+                      <SelectItem value="anonymized">Anonymisiert</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : null}
               </div>
 
               <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">

@@ -4,17 +4,12 @@
  */
 import 'server-only'
 
+import { extractPdfPlainText } from '@/lib/pdf-text-extract'
+
 const MAX_BYTES = 4.5 * 1024 * 1024
 
 async function extractTextFromPdf(buffer: Buffer): Promise<string> {
-  const pdfModule = await import('pdf-parse')
-  const fn =
-    (pdfModule as unknown as {
-      default?: (b: Buffer) => Promise<{ text?: string }>
-    }).default ??
-    (pdfModule as unknown as (b: Buffer) => Promise<{ text?: string }>)
-  const data = await fn(buffer)
-  return typeof data?.text === 'string' ? data.text : ''
+  return extractPdfPlainText(buffer)
 }
 
 async function extractTextFromDocx(buffer: Buffer): Promise<string> {

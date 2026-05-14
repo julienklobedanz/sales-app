@@ -6,6 +6,7 @@ import {
   useState,
   useRef,
   useEffect,
+  useCallback,
   type ComponentProps,
   type FormEvent,
   type ReactNode,
@@ -39,7 +40,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
-import { attachOriginalDocumentToReference, createReference, enrichAndSaveCompany } from './actions'
+import { attachOriginalDocumentToReference, createReference, fetchCompanyEnrichment, extractReferenceDocumentFromUpload } from './actions'
 import { createClient } from '@/lib/supabase/client'
 import {
   updateReference,
@@ -47,7 +48,6 @@ import {
   getIncumbentSuggestions,
   getCompetitorSuggestions,
 } from '../../actions'
-import { extractDataFromDocument } from '@/lib/document-extraction'
 import { REFERENCE_NARRATIVE_MAX_CHARS } from '@/lib/references/reference-narrative-limits'
 import { CreateContactDialog, type CreatedContact } from './create-contact-dialog'
 import type { ExternalContact } from './actions'
@@ -59,7 +59,11 @@ import {
 } from './reference-form-fields'
 import { AppIcon } from '@/lib/icons'
 import { ROUTES } from '@/lib/routes'
-import { parseReferenceVolume } from '@/lib/format'
+import {
+  formatEmployeeCountDeDisplay,
+  parseGermanEmployeeCountInput,
+  parseReferenceVolume,
+} from '@/lib/format'
 
 function normalizeWrappedParagraphs(input: string): string {
   const raw = input.replace(/\r\n/g, '\n').trim()
@@ -86,6 +90,26 @@ function formatThousandsDots(raw: string | null | undefined): string {
   const digits = String(raw ?? '').replace(/\D/g, '')
   if (!digits) return ''
   return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+}
+
+/** Client-seitige Server-Action / Fetch-Fehler, die oft auf Proxy, Timeout oder Größenlimits hindeuten. */
+function looksLikeProxyOrNetworkFailure(message: string): boolean {
+  const m = message.toLowerCase()
+  return (
+    m.includes('unexpected') ||
+    m.includes('failed to fetch') ||
+    m.includes('fetch failed') ||
+    m.includes('networkerror') ||
+    m.includes('load failed') ||
+    m.includes('aborted') ||
+    m.includes('econnreset') ||
+    m.includes('socket hang up') ||
+    m.includes('504') ||
+    m.includes('502') ||
+    m.includes('503') ||
+    m.includes('413') ||
+    (m.includes('body') && (m.includes('large') || m.includes('limit')))
+  )
 }
 
 const INDUSTRIES = [
@@ -288,11 +312,13 @@ export function ReferenceForm({
   const [summary, setSummary] = useState(initialData?.summary ?? '')
   const [industry, setIndustry] = useState(initialData?.industry ?? '')
   const [country, setCountry] = useState(initialData?.country ?? '')
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [_headquarters, setHeadquarters] = useState('')
+  const [headquarters, setHeadquarters] = useState('')
+  const [brandfetchLogoUrl, setBrandfetchLogoUrl] = useState('')
   const [website, setWebsite] = useState(initialData?.website ?? '')
   const [employeeCount, setEmployeeCount] = useState(
-    initialData?.employee_count != null ? formatThousandsDots(`${initialData.employee_count}`) : ''
+    initialData?.employee_count != null
+      ? formatEmployeeCountDeDisplay(initialData.employee_count)
+      : ''
   )
   const initialVolumeParsed = parseReferenceVolume(initialData?.volume_eur ?? null)
   const [volumeEur, setVolumeEur] = useState(() => formatThousandsDots(initialVolumeParsed?.amountDigits ?? ''))
@@ -383,13 +409,10 @@ export function ReferenceForm({
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_logoFile, _setLogoFile] = useState<File | null>(null)
-  const [enrichedLogoUrl, setEnrichedLogoUrl] = useState<string | null>(initialData?.company_logo_url ?? null)
   const [createSubmitting, setCreateSubmitting] = useState(false)
   const [newCompanyName, setNewCompanyName] = useState('')
   const [enrichLoading, setEnrichLoading] = useState(false)
   const [enrichedCompany, setEnrichedCompany] = useState<Company | null>(null)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _enrichDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [editCompanyName, setEditCompanyName] = useState(initialData?.company_name ?? '')
   const [magicImportLoading, setMagicImportLoading] = useState(false)
   const [summaryLoading, setSummaryLoading] = useState(false)
@@ -424,6 +447,38 @@ export function ReferenceForm({
     seenCustomerIds.add(c.id)
     return true
   })
+
+  const applyBrandfetchPreview = useCallback((query: string, opts?: { silent?: boolean }) => {
+    const q = query.trim()
+    if (q.length < 2) return
+    setEnrichLoading(true)
+    fetchCompanyEnrichment(q)
+      .then((result) => {
+        if (!result.success) {
+          if (!opts?.silent) {
+            toast.error(result.error)
+          }
+          return
+        }
+        setCompanyId('')
+        setEnrichedCompany(null)
+        setNewCompanyName(result.company_name)
+        setWebsite(result.website_url ?? '')
+        setIndustry(result.industry ?? '')
+        setCountry(result.country ?? '')
+        setHeadquarters(result.headquarters ?? '')
+        setEmployeeCount(
+          result.employee_count != null
+            ? formatEmployeeCountDeDisplay(result.employee_count)
+            : ''
+        )
+        setBrandfetchLogoUrl(result.logo_url ?? '')
+        if (!opts?.silent) {
+          toast.success('Markendaten geladen — bitte prüfen und Referenz speichern.')
+        }
+      })
+      .finally(() => setEnrichLoading(false))
+  }, [])
 
   const handleContactCreated = (contact: CreatedContact) => {
     const person: ContactPerson = {
@@ -461,8 +516,11 @@ export function ReferenceForm({
     fd.set('summary', summary.trim())
     fd.set('industry', industry)
     fd.set('country', country)
-    fd.set('employee_count', employeeCount.replace(/\./g, ''))
+    const ec = parseGermanEmployeeCountInput(employeeCount)
+    fd.set('employee_count', ec != null ? String(ec) : '')
     fd.set('website', website.trim())
+    fd.set('company_headquarters', headquarters.trim())
+    fd.set('company_logo_url', brandfetchLogoUrl.trim())
     fd.set('customer_challenge', customerChallenge)
     fd.set('our_solution', ourSolution)
     fd.set('contactId', contactId === '__none__' ? '' : contactId)
@@ -672,11 +730,11 @@ export function ReferenceForm({
     setMagicImportLoading(true)
     const requestId = ++magicImportRequestIdRef.current
     try {
-      const timeoutMs = 10_000
+      const timeoutMs = 120_000
       const timeout = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('EXTRACT_TIMEOUT')), timeoutMs)
       )
-      const result = await Promise.race([extractDataFromDocument(formData), timeout])
+      const result = await Promise.race([extractReferenceDocumentFromUpload(formData), timeout])
       // Falls ein späteres Ergebnis eintrifft (z. B. Retry), ignorieren
       if (requestId !== magicImportRequestIdRef.current) return
       if (result.success) {
@@ -693,7 +751,7 @@ export function ReferenceForm({
             setVolumeEur(formatThousandsDots(d.volume_eur))
           }
         }
-        if (d.employee_count != null) setEmployeeCount(formatThousandsDots(String(d.employee_count)))
+        if (d.employee_count != null) setEmployeeCount(formatEmployeeCountDeDisplay(d.employee_count))
         if (Array.isArray(d.tags) && d.tags.length > 0) {
           setTags(d.tags)
           setTagInputValue('')
@@ -711,11 +769,10 @@ export function ReferenceForm({
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Extraktion fehlgeschlagen.'
       if (message === 'EXTRACT_TIMEOUT') {
-        toast.error('KI-Extraktion dauert länger als 10 Sekunden. Bitte erneut versuchen.')
+        toast.error('KI-Extraktion dauert länger als 2 Minuten. Bitte erneut versuchen oder Datei verkleinern.')
         return
       }
-      // Vercel / Next.js gibt bei Proxy-/Timeout-Fehlern oft nur "Unexpected Server Response" zurück
-      if (typeof message === 'string' && message.toLowerCase().includes('unexpected')) {
+      if (typeof message === 'string' && looksLikeProxyOrNetworkFailure(message)) {
         toast.error(
           'Die Datei konnte nicht verarbeitet werden (Proxy/Timeout). Bitte kleinere Datei verwenden (max. 4,5 MB) oder später erneut versuchen.'
         )
@@ -731,9 +788,6 @@ export function ReferenceForm({
   }
 
   const formId = 'refstack-main-form'
-
-  const mainCompanyLogoUrl =
-    isAnonymized ? null : enrichedLogoUrl ?? initialData?.company_logo_url ?? null
 
   const currentCompanyNameForAvatar = isEditMode
     ? editCompanyName
@@ -834,7 +888,7 @@ export function ReferenceForm({
                 <Separator className="mt-2" />
               </div>
             )}
-            {/* Unternehmen + Logo */}
+            {/* Unternehmen */}
             <div className="grid grid-cols-1 gap-4 items-start">
               <div className="space-y-2">
                 <RequiredLabel htmlFor={isEditMode ? 'company_name' : 'companyId'}>
@@ -842,21 +896,6 @@ export function ReferenceForm({
                 </RequiredLabel>
                 {isEditMode ? (
                   <div className="relative">
-                    {!isAnonymized && (mainCompanyLogoUrl || editCompanyName.trim()) && (
-                      <span className="absolute left-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center overflow-hidden rounded-full bg-muted">
-                        {mainCompanyLogoUrl ? (
-                          <img
-                            src={mainCompanyLogoUrl}
-                            alt=""
-                            className="h-8 w-8 object-contain"
-                          />
-                        ) : (
-                          <span className="text-xs font-medium text-muted-foreground">
-                            {editCompanyName.trim().charAt(0).toUpperCase()}
-                          </span>
-                        )}
-                      </span>
-                    )}
                     <Input
                       id="company_name"
                       name="company_name"
@@ -865,11 +904,6 @@ export function ReferenceForm({
                       disabled={submitting}
                       value={editCompanyName}
                       onChange={(e) => setEditCompanyName(e.target.value)}
-                      className={
-                        !isAnonymized && (mainCompanyLogoUrl || editCompanyName.trim())
-                          ? 'pl-12'
-                          : undefined
-                      }
                     />
                     {enrichLoading && (
                       <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
@@ -880,22 +914,6 @@ export function ReferenceForm({
                 ) : (
                   <>
                     <div className="relative">
-                      {!isAnonymized &&
-                        (mainCompanyLogoUrl || currentCompanyNameForAvatar.trim()) && (
-                          <span className="absolute left-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center overflow-hidden rounded-full bg-muted">
-                            {mainCompanyLogoUrl ? (
-                              <img
-                                src={mainCompanyLogoUrl}
-                                alt=""
-                                className="h-8 w-8 object-contain"
-                              />
-                            ) : (
-                              <span className="text-xs font-medium text-muted-foreground">
-                                {currentCompanyNameForAvatar.trim().charAt(0).toUpperCase()}
-                              </span>
-                            )}
-                          </span>
-                        )}
                       <CompanyCombobox
                         companies={displayCompanies}
                         value={currentCompanyNameForAvatar}
@@ -906,72 +924,25 @@ export function ReferenceForm({
                         onConfirmValue={(val) => {
                           setNewCompanyName(val)
                           setCompanyId('')
-                          setEnrichLoading(true)
-                          enrichAndSaveCompany(val)
-                            .then((result) => {
-                              if (result.success) {
-                                setCompanyId(result.company_id)
-                                setEnrichedCompany({
-                                  id: result.company_id,
-                                  name: result.company_name,
-                                  logo_url: result.logo_url ?? null,
-                                })
-                                setWebsite(result.website_url ?? '')
-                                setIndustry(result.industry ?? '')
-                                setCountry(result.country ?? '')
-                                setHeadquarters(result.headquarters ?? '')
-                                setEmployeeCount(
-                                  result.employee_count != null
-                                    ? formatThousandsDots(String(result.employee_count))
-                                    : ''
-                                )
-                                setEnrichedLogoUrl(result.logo_url ?? null)
-                                setNewCompanyName(result.company_name)
-                                toast.success('Unternehmensdaten wurden geladen.')
-                              } else {
-                                toast.error(result.error)
-                              }
-                            })
-                            .finally(() => setEnrichLoading(false))
+                          applyBrandfetchPreview(val)
                         }}
+                        onAutoRemotePreview={(q) => applyBrandfetchPreview(q, { silent: true })}
+                        previewLoading={enrichLoading}
                         onSelectCompany={(company) => {
+                          if (company.id.startsWith('brandfetch:')) {
+                            setCompanyId('')
+                            setNewCompanyName(company.name)
+                            applyBrandfetchPreview(company.name, { silent: true })
+                            return
+                          }
                           setCompanyId(company.id)
                           setNewCompanyName(company.name)
-                          setEnrichedLogoUrl(company.logo_url ?? null)
-                          setEnrichLoading(true)
-                          enrichAndSaveCompany(company.name)
-                            .then((result) => {
-                              if (result.success) {
-                                setCompanyId(result.company_id)
-                                setEnrichedCompany({
-                                  id: result.company_id,
-                                  name: result.company_name,
-                                  logo_url: result.logo_url ?? null,
-                                })
-                                setWebsite(result.website_url ?? '')
-                                setIndustry(result.industry ?? '')
-                                setCountry(result.country ?? '')
-                                setHeadquarters(result.headquarters ?? '')
-                                setEmployeeCount(
-                                  result.employee_count != null
-                                    ? formatThousandsDots(String(result.employee_count))
-                                    : ''
-                                )
-                                setEnrichedLogoUrl(result.logo_url ?? null)
-                                setNewCompanyName(result.company_name)
-                                toast.success('Unternehmensdaten wurden geladen.')
-                              }
-                            })
-                            .finally(() => setEnrichLoading(false))
+                          setEnrichedCompany(null)
+                          setBrandfetchLogoUrl('')
                         }}
                         loading={enrichLoading}
                         disabled={submitting}
-                        inputClassName={
-                          !isAnonymized &&
-                          (mainCompanyLogoUrl || currentCompanyNameForAvatar.trim())
-                            ? 'pl-12'
-                            : undefined
-                        }
+                        companyId={companyId}
                       />
                     </div>
                     <input type="hidden" name="companyId" value={companyId} />
@@ -1169,7 +1140,7 @@ export function ReferenceForm({
             <div className="space-y-2">
               <OptionalLabel htmlFor="tags-input">Tags</OptionalLabel>
               <input type="hidden" name="tags" value={tags.join(' ')} />
-              <div className="flex min-h-9 flex-wrap items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+              <div className="flex min-h-9 flex-wrap items-center gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground shadow-xs ring-offset-background transition-[color,box-shadow] outline-none focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50 dark:bg-input/30 disabled:cursor-not-allowed disabled:opacity-50">
                 {tags.map((tag) => (
                   <span
                     key={tag}
@@ -1192,14 +1163,14 @@ export function ReferenceForm({
                   type="text"
                   placeholder={
                     tags.length === 0
-                      ? 'z.B. Cloud, Cybersecurity, SAP (mehrere Themen durch Komma trennen)'
-                      : 'Weiterer Tag…'
+                      ? 'z. B. Cloud — Enter drücken, um einen Tag zu übernehmen'
+                      : 'Weiterer Tag… (Enter)'
                   }
                   disabled={submitting}
                   value={tagInputValue}
                   onChange={(e) => setTagInputValue(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === ',') {
+                    if (e.key === 'Enter') {
                       e.preventDefault()
                       const value = normalizeTag(tagInputValue)
                       if (value) {
@@ -1213,7 +1184,7 @@ export function ReferenceForm({
                       }
                     }
                   }}
-                  className="min-w-[120px] flex-1 border-0 bg-transparent p-0 text-sm outline-none placeholder:text-muted-foreground"
+                  className="min-w-[120px] flex-1 border-0 bg-transparent p-0 text-sm text-foreground outline-none placeholder:text-muted-foreground"
                 />
               </div>
             </div>
@@ -1361,7 +1332,9 @@ export function ReferenceForm({
           })()}
           {!currentCompanyId && (
             <p className="text-muted-foreground text-[10px] italic">
-              Feld wird aktiviert, sobald oben ein Unternehmen ausgewählt wurde.
+              {newCompanyName.trim()
+                ? 'Kundenkontakt: Nach dem Speichern der Referenz ergänzen (neues Unternehmen wird mit angelegt).'
+                : 'Feld wird aktiviert, sobald oben ein Unternehmen ausgewählt wurde.'}
             </p>
           )}
         </div>
@@ -1489,7 +1462,7 @@ export function ReferenceForm({
           </OptionalLabel>
           <input type="hidden" name="incumbent_provider" value={incumbentProvider} />
           <div className="relative">
-            <div className="flex min-h-9 flex-wrap items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm">
+            <div className="flex min-h-9 flex-wrap items-center gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground shadow-xs transition-[color,box-shadow] outline-none focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50 dark:bg-input/30">
               {incumbentProvider
                 .split(/[;,]+/)
                 .map((s) => s.trim())
@@ -1563,7 +1536,7 @@ export function ReferenceForm({
                     setIncumbentSuggestions([])
                   }
                 }}
-                className="min-w-[120px] flex-1 border-0 bg-transparent p-0 text-sm outline-none placeholder:text-muted-foreground"
+                className="min-w-[120px] flex-1 border-0 bg-transparent p-0 text-sm text-foreground outline-none placeholder:text-muted-foreground"
               />
             </div>
             {incumbentSuggestions.length > 0 && incumbentInputValue.trim() && (
@@ -1601,7 +1574,7 @@ export function ReferenceForm({
           </OptionalLabel>
           <div className="relative">
             <input type="hidden" name="competitors" value={competitors} />
-            <div className="flex min-h-9 flex-wrap items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm">
+            <div className="flex min-h-9 flex-wrap items-center gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground shadow-xs transition-[color,box-shadow] outline-none focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50 dark:bg-input/30">
               {competitors
                 .split(/[;,]+/)
                 .map((s) => s.trim())
@@ -1676,7 +1649,7 @@ export function ReferenceForm({
                       setCompetitorSuggestions([])
                     }
                   }}
-                  className="w-full border-0 bg-transparent p-0 text-sm outline-none placeholder:text-muted-foreground"
+                  className="w-full border-0 bg-transparent p-0 text-sm text-foreground outline-none placeholder:text-muted-foreground"
                 />
                 {competitorSuggestions.length > 0 && competitorInputValue.trim() && (
                   <div className="absolute z-20 mt-1 w-full rounded-md border bg-popover text-sm shadow-md">

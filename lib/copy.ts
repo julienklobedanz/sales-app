@@ -104,7 +104,6 @@ export const COPY = {
   },
   dashboard: {
     searchReferencesPlaceholder: 'Referenzen suchen...',
-    columnVisibility: 'Sichtbarkeit',
     columnsToggleAria: 'Spalten ein-/ausblenden',
   },
   marketSignals: {

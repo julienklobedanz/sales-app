@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import { FileDownIcon } from '@hugeicons/core-free-icons'
 import { Button } from '@/components/ui/button'
@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dialog'
 import { AppIcon } from '@/lib/icons'
 
-type PdfTemplate = 'one_pager' | 'detail' | 'anonymized'
+type PdfTemplate = 'one_pager' | 'anonymized'
 
 function parseFilenameFromContentDisposition(header: string | null): string | null {
   if (!header) return null
@@ -36,12 +36,6 @@ const TEMPLATE_OPTIONS: Array<{
     title: 'One-Pager',
     description: 'Kompakte 1-Seiten-Übersicht für schnelle Sales-Calls.',
     mini: { pages: 1 },
-  },
-  {
-    key: 'detail',
-    title: 'Detail',
-    description: 'Mehrseitig mit Herausforderung, Lösung und Projektdetails.',
-    mini: { pages: 2 },
   },
   {
     key: 'anonymized',
@@ -75,11 +69,6 @@ export function PdfExportDialog({
   const showButton = showTriggerButton && controlledOpen === undefined
   const [loading, setLoading] = useState(false)
   const [template, setTemplate] = useState<PdfTemplate>('one_pager')
-
-  const currentTemplate = useMemo(
-    () => TEMPLATE_OPTIONS.find((opt) => opt.key === template),
-    [template]
-  )
 
   async function downloadPdf() {
     setLoading(true)
@@ -168,9 +157,6 @@ export function PdfExportDialog({
                 </div>
               </button>
             ))}
-          </div>
-          <div className="rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
-            Vorschau-Miniatur: <span className="font-medium text-foreground">{currentTemplate?.title}</span>
           </div>
           <DialogFooter>
             <Button variant="outline" disabled={loading} onClick={() => setOpen(false)}>

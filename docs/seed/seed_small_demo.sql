@@ -199,7 +199,13 @@ refs as (
     customer_approval_status,
     approval_requested_at,
     approval_requested_by,
-    customer_contact_id
+    customer_contact_id,
+    project_status,
+    project_start,
+    project_end,
+    contract_type,
+    incumbent_provider,
+    competitors
   )
   select
     cfg2.org_id,
@@ -219,13 +225,53 @@ refs as (
     r.customer_approval_status,
     case when r.customer_approval_status = 'pending' then now() - interval '3 days' else null end,
     case when r.customer_approval_status = 'pending' then cfg2.am_user_id else null end,
-    case when r.customer_approval_status = 'pending' then (select id from external_contacts ec where ec.company_id = co.id limit 1) else null end
+    case when r.customer_approval_status = 'pending' then (select id from external_contacts ec where ec.company_id = co.id limit 1) else null end,
+    r.project_status,
+    r.project_start,
+    r.project_end,
+    r.contract_type,
+    r.incumbent_provider,
+    r.competitors
   from cfg2
   join generate_series(1, 15) gs(n) on true
   join companies_ranked co
     on co.rn = (((gs.n - 1) % co.cnt) + 1)
   join lateral (
     select
+      (case when gs.n % 3 = 0 then 'completed' else 'active' end) as project_status,
+      (current_date - ((360 + (gs.n * 27)))::int)::date as project_start,
+      (case
+        when gs.n % 3 = 0
+        then ((current_date - ((360 + (gs.n * 27)))::int) + interval '14 months')::date
+        else null::date
+      end) as project_end,
+      (array[
+        'Festpreis',
+        'Time & Material',
+        'Rahmenvertrag',
+        'Subscription (Per User/Tiered)',
+        'Usage-Based',
+        'SLA-Servicevertrag',
+        'Full Managed',
+        'Stundenkontingent',
+        'Andere'
+      ])[1 + (gs.n % 9)] as contract_type,
+      (array[
+        'Accenture',
+        'Capgemini',
+        'IBM Consulting',
+        'Deloitte Digital',
+        'Infosys',
+        'T-Systems MMS'
+      ])[1 + (gs.n % 6)] as incumbent_provider,
+      (array[
+        'Atos, BearingPoint',
+        'McKinsey Digital, BCG Platinion',
+        'Publicis Sapient, EY',
+        'PwC, KPMG Advisory',
+        'NTT Data, Fujitsu',
+        'Cognizant, HCLTech'
+      ])[1 + (gs.n % 6)] as competitors,
       ('Referenz: ' || co.name || ' – ' ||
         (array['Cloud-Migration','Security-Hardening','Data Platform','CRM-Konsolidierung','IoT Rollout','SAP-Modernisierung'])[1 + (gs.n % 6)]
       ) as title,

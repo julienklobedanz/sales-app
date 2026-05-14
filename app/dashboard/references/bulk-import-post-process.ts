@@ -11,8 +11,6 @@ import type {
   BulkImportReviewSuggestions,
 } from '@/lib/references/bulk-import-review-types'
 
-export type { BulkImportExtractionResult, BulkImportReviewSuggestions }
-
 function pushSuggestion(
   out: BulkImportReviewSuggestions,
   key: keyof BulkImportReviewSuggestions,

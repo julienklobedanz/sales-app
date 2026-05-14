@@ -3,6 +3,7 @@
 -- 1) Titel-Prefixe "Deal:" / "Referenz:" entfernen
 -- 2) Accounts "Import (Entwürfe)" + "Führendes Sonstige-Unternehmen" entfernen inkl. abhängiger Daten
 -- 3) customer_challenge + our_solution für Referenzen deutlich verlängern (aus vorhandenen Stichworten wird Langtext)
+-- 4) Projektfelder (Vertragsart, Zeitraum, Incumbent, Wettbewerber) für Referenzen mit Lücken
 --
 -- Ausführung: Supabase SQL Editor (Service Role empfohlen)
 
@@ -275,6 +276,96 @@ upd_ref_longtext as (
 select
   'longtexts_ok' as step,
   (select count(*) from upd_ref_longtext) as updated_reference_longtexts;
+
+-- ---------------------------------------------------------------------------
+-- 4) Projektfelder (Vertragsart, Zeitraum, Incumbent, Wettbewerber) nachtragen
+--    Nur Zeilen mit Lücken; idempotent für bestehende Demo-Workspaces.
+-- ---------------------------------------------------------------------------
+with cfg as (
+  select '0d21d70a-9fb3-42b4-840c-3d0d4834b98b'::uuid as admin_user_id
+),
+cfg2 as (
+  select coalesce(
+    (select p.organization_id from public.profiles p where p.id = cfg.admin_user_id),
+    '11111111-1111-1111-1111-111111111111'::uuid
+  ) as org_id
+  from cfg
+),
+numbered as (
+  select
+    r.id,
+    row_number() over (order by r.created_at, r.id) as n
+  from public.references r
+  where r.organization_id = (select org_id from cfg2)
+    and r.deleted_at is null
+),
+upd_ref_project as (
+  update public.references r
+  set
+    project_status = coalesce(r.project_status, case when mod(n.n, 3) = 0 then 'completed' else 'active' end),
+    project_start = coalesce(r.project_start, current_date - (360 + n.n * 27)),
+    project_end = case
+      when r.project_end is not null then r.project_end
+      when coalesce(r.project_status, case when mod(n.n, 3) = 0 then 'completed' else 'active' end) = 'completed'
+      then (coalesce(r.project_start, current_date - (360 + n.n * 27)) + interval '14 months')::date
+      else r.project_end
+    end,
+    contract_type = coalesce(
+      nullif(btrim(r.contract_type), ''),
+      (array[
+        'Festpreis',
+        'Time & Material',
+        'Rahmenvertrag',
+        'Subscription (Per User/Tiered)',
+        'Usage-Based',
+        'SLA-Servicevertrag',
+        'Full Managed',
+        'Stundenkontingent',
+        'Andere'
+      ])[1 + mod(n.n, 9)]
+    ),
+    incumbent_provider = coalesce(
+      nullif(btrim(r.incumbent_provider), ''),
+      (array[
+        'Accenture',
+        'Capgemini',
+        'IBM Consulting',
+        'Deloitte Digital',
+        'Infosys',
+        'T-Systems MMS',
+        'NTT Data',
+        'Cognizant',
+        'HCLTech'
+      ])[1 + mod(n.n, 9)]
+    ),
+    competitors = coalesce(
+      nullif(btrim(r.competitors), ''),
+      (array[
+        'Atos, BearingPoint',
+        'McKinsey Digital, BCG Platinion',
+        'Publicis Sapient, EY',
+        'PwC, KPMG Advisory',
+        'NTT Data, Fujitsu',
+        'Cognizant, HCLTech',
+        'Wipro',
+        'LTIMindtree',
+        'Infosys, Tech Mahindra'
+      ])[1 + mod(n.n, 9)]
+    ),
+    updated_at = now()
+  from numbered n
+  where r.id = n.id
+    and (
+      r.project_start is null
+      or nullif(btrim(r.contract_type), '') is null
+      or nullif(btrim(r.incumbent_provider), '') is null
+      or nullif(btrim(r.competitors), '') is null
+    )
+  returning r.id
+)
+select
+  'project_fields_ok' as step,
+  (select count(*) from upd_ref_project) as updated_reference_project_fields;
 
 commit;
 

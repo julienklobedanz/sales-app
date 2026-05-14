@@ -59,16 +59,16 @@ export async function GET(req: NextRequest) {
     website: null,
     employee_count: 1200,
     volume_eur: '500k-1M EUR',
-    contract_type: 'Projekt',
-    incumbent_provider: null,
-    competitors: null,
+    contract_type: 'Projektvertrag',
+    incumbent_provider: 'Accenture',
+    competitors: 'Atos, BearingPoint',
     customer_challenge: 'Komplexe Ausschreibung mit vielen Stakeholdern und engen Timelines.',
     our_solution: 'Strukturierter Prozess, klare Storyline und skalierbare Referenzbausteine.',
     customer_contact: null,
-    project_status: 'active',
-    project_start: null,
-    project_end: null,
-    duration_months: 6,
+    project_status: 'completed',
+    project_start: '2023-04-01',
+    project_end: '2025-01-31',
+    duration_months: 22,
   }
 
   const exportedAtLabel = new Date().toLocaleDateString('de-DE', { dateStyle: 'long' })

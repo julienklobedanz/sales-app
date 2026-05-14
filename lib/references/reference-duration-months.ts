@@ -7,8 +7,8 @@ export function computeReferenceDurationMonths(params: {
   project_end: string | null
   project_status: string | null
 }): number | null {
-  const start = params.project_start
-  const end = params.project_end
+  const start = params.project_start != null ? String(params.project_start).trim() : ''
+  const end = params.project_end != null ? String(params.project_end).trim() : ''
   const status = (params.project_status as 'active' | 'completed' | null) ?? null
 
   if (start && end) {
@@ -31,4 +31,25 @@ export function computeReferenceDurationMonths(params: {
     }
   }
   return null
+}
+
+/** Projektende mit Laufzeit in Monaten (Sales), z. B. „31.12.2023 (14 Monate)“. Nur wenn `project_end` gesetzt ist. */
+export function formatProjectEndWithDurationDe(params: {
+  project_start: string | null
+  project_end: string | null
+  project_status: string | null
+  formatEndDate: (endIso: string) => string
+}): string {
+  const end =
+    params.project_end != null ? String(params.project_end).trim() : ''
+  if (!end) return ''
+  const formatted = params.formatEndDate(end)
+  const months = computeReferenceDurationMonths({
+    project_start: params.project_start,
+    project_end: params.project_end,
+    project_status: params.project_status,
+  })
+  if (months == null || months < 1) return formatted
+  const unit = months === 1 ? 'Monat' : 'Monate'
+  return `${formatted} (${months} ${unit})`
 }

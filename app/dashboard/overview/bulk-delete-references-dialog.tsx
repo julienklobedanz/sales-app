@@ -14,6 +14,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { AppIcon } from '@/lib/icons'
 
 import { deleteReference } from '../actions'
@@ -54,7 +56,7 @@ export function BulkDeleteReferencesDialog({
         <AlertDialogFooter>
           <AlertDialogCancel disabled={loading}>Abbrechen</AlertDialogCancel>
           <AlertDialogAction
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            className={cn(buttonVariants({ variant: 'destructive' }))}
             disabled={loading}
             onClick={async (e: React.MouseEvent) => {
               e.preventDefault()

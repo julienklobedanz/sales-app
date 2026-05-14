@@ -9,6 +9,8 @@ import { ReferenceForm } from '../../new/reference-form'
 import type { ReferenceFormInitialData } from '../../new/reference-form'
 import { DASHBOARD_PAGE_SUBTITLE_CLASS, DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 
+export const maxDuration = 180
+
 export default async function EditReferencePage({
   params,
 }: {

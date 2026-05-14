@@ -7,7 +7,19 @@ export type ReferenceActivityItem = {
   detail: string | null
 }
 
-const SALES_ONLY_EVENT_TYPES = ['reference_shared', 'reference_exported'] as const
+/** Nur Außenwirkung / Freigabeprozess / Teilen & Exporte / Deal‑Bezug — kein „geöffnet“, Match, KI-Entwurf. */
+const TIMELINE_EVENT_TYPES = [
+  'reference_shared',
+  'reference_exported',
+  'reference_approval_responded',
+  'customer_approval_requested',
+  'internal_approval_decided',
+  'internal_approval_requested',
+  'deal_won',
+  'deal_lost',
+  'deal_withdrawn',
+  'reference_helped',
+] as const
 
 function mapRowToActivity(row: {
   id: string
@@ -47,40 +59,12 @@ function mapRowToActivity(row: {
         detail: template ? `Vorlage: ${template}` : 'PDF wurde exportiert.',
       }
     }
-    case 'reference_viewed':
-      return {
-        id: row.id,
-        at: row.created_at,
-        title: 'Referenz angesehen',
-        detail: 'Detailansicht in der App geöffnet.',
-      }
-    case 'reference_matched':
-      return {
-        id: row.id,
-        at: row.created_at,
-        title: 'In Match-Ergebnissen',
-        detail: 'Referenz erschien in einer Kunden- oder Deal-Suche.',
-      }
-    case 'share_link_viewed':
-      return {
-        id: row.id,
-        at: row.created_at,
-        title: 'Öffentlicher Link aufgerufen',
-        detail: 'Jemand hat den geteilten Link geöffnet.',
-      }
     case 'reference_helped':
       return {
         id: row.id,
         at: row.created_at,
         title: 'Als hilfreich markiert',
         detail: 'Im Deal-Kontext als hilfreich gewertet.',
-      }
-    case 'ki_entwurf_generated':
-      return {
-        id: row.id,
-        at: row.created_at,
-        title: 'KI-Entwurf erzeugt',
-        detail: 'Assistent hat Inhalte vorgeschlagen.',
       }
     case 'reference_approval_responded':
       return {
@@ -142,32 +126,24 @@ function mapRowToActivity(row: {
 }
 
 /**
- * Letzte Aktivitäten aus evidence_events (max. 5). Sales: nur Link + Exporte.
+ * Kompakte Historie aus evidence_events (max. 5): Freigaben, Teilen, Exporte, Deal‑Outcomes.
+ * Keine Detailaufrufe, Match‑Treffer, Link‑Klicks oder KI‑Entwürfe.
  */
-export async function getReferenceDetailActivities(
-  referenceId: string,
-  role: 'admin' | 'sales' | 'account_manager'
-): Promise<ReferenceActivityItem[]> {
+export async function getReferenceDetailActivities(referenceId: string): Promise<ReferenceActivityItem[]> {
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return []
 
-  const salesOnly = role === 'sales'
-
-  let q = supabase
+  const { data, error } = await supabase
     .from('evidence_events')
     .select('id, created_at, event_type, payload')
     .eq('reference_id', referenceId)
+    .in('event_type', [...TIMELINE_EVENT_TYPES])
     .order('created_at', { ascending: false })
     .limit(5)
 
-  if (salesOnly) {
-    q = q.in('event_type', [...SALES_ONLY_EVENT_TYPES])
-  }
-
-  const { data, error } = await q
   if (error) {
     console.error('[getReferenceDetailActivities]', error.message)
     return []

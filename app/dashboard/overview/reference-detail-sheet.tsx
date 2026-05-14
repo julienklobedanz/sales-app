@@ -24,8 +24,7 @@ import {
   Users,
 } from '@hugeicons/core-free-icons'
 
-import { ReferenceStatusBadge } from '@/components/reference-status-badge'
-import { Badge } from '@/components/ui/badge'
+import { ReferenceStatusWithHint } from '@/components/reference-status-with-hint'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import {
@@ -49,7 +48,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { diffMonthsUtc, formatDateUtcDe, formatNumberDe, formatReferenceVolume } from '@/lib/format'
+import { diffMonthsUtc, formatReferenceDate, formatNumberDe, formatReferenceVolume, normalizeOrgDateDisplayFormat, type OrgDateDisplayFormat } from '@/lib/format'
 import { AppIcon } from '@/lib/icons'
 import { ROUTES } from '@/lib/routes'
 
@@ -72,6 +71,7 @@ export function ReferenceDetailSheet({
   onSubmitForApproval,
   onRequestSpecificApproval,
   onDelete,
+  orgDateDisplayFormat = 'de-DE',
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -95,14 +95,16 @@ export function ReferenceDetailSheet({
   onSubmitForApproval: (id: string) => void | Promise<void>
   onRequestSpecificApproval: (id: string) => void | Promise<void>
   onDelete: (id: string, e?: MouseEvent) => void
+  orgDateDisplayFormat?: OrgDateDisplayFormat | string
 }) {
   const router = useRouter()
+  const dateFmt = normalizeOrgDateDisplayFormat(orgDateDisplayFormat)
 
   return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="flex max-h-[85vh] flex-col gap-0 overflow-hidden p-6 sm:max-w-3xl lg:max-w-[61rem] xl:max-w-[68rem]" onOpenAutoFocus={(e) => e.preventDefault()}>
           {selectedRef && (
-            <TooltipProvider delayDuration={150}>
+            <TooltipProvider delayDuration={0}>
               {/* Fixierter Header */}
               <DialogHeader className="z-10 shrink-0 border-b bg-background px-0 pb-4 pt-0">
                 <div className="flex items-start justify-between gap-3">
@@ -134,30 +136,15 @@ export function ReferenceDetailSheet({
                       </Button>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                      {selectedRef.is_nda_deal && (
-                        <Badge variant="secondary" className="text-xs cursor-default">
+                      {selectedRef.is_nda_deal ? (
+                        <span className="inline-flex shrink-0 items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-900 dark:border-amber-800/60 dark:bg-amber-950/35 dark:text-amber-100">
                           NDA-geschützt
-                        </Badge>
-                      )}
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <ReferenceStatusBadge
-                            status={selectedRef.status}
-                            customerApprovalStatus={selectedRef.customer_approval_status}
-                            className="text-xs cursor-default"
-                          />
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs text-xs leading-snug">
-                          {selectedRef.status === 'draft' &&
-                            'Entwurf: In Arbeit, nur für den Ersteller sichtbar.'}
-                          {selectedRef.status === 'internal_only' &&
-                            'Nur Intern: Verifiziert, aber sensible Daten (Preise/Namen) dürfen das Haus nicht verlassen.'}
-                          {selectedRef.status === 'approved' &&
-                            'Extern freigegeben: Offiziell vom Kunden und Marketing freigegeben für Sales-Pitches.'}
-                          {selectedRef.status === 'anonymized' &&
-                            'Anonymisiert: Name und Logo entfernt (z. B. „Großbank“), bereit für öffentliche Case Studies.'}
-                        </TooltipContent>
-                      </Tooltip>
+                        </span>
+                      ) : null}
+                      <ReferenceStatusWithHint
+                        status={selectedRef.status}
+                        customerApprovalStatus={selectedRef.customer_approval_status}
+                      />
                     </div>
                   </div>
                 </div>
@@ -260,7 +247,7 @@ export function ReferenceDetailSheet({
                           <AppIcon icon={Calendar} size={12} /> Projektstart
                         </span>
                         <p className={`pl-4 text-xs font-medium ${selectedRef.project_start ? 'text-foreground' : 'text-muted-foreground'}`}>
-                          {selectedRef.project_start ? formatDateUtcDe(selectedRef.project_start) : '—'}
+                          {selectedRef.project_start ? formatReferenceDate(selectedRef.project_start, dateFmt) : '—'}
                         </p>
                       </div>
                       <div className="space-y-0.5">
@@ -275,7 +262,7 @@ export function ReferenceDetailSheet({
                             status === 'active'
                               ? 'Aktiv'
                               : end
-                                ? formatDateUtcDe(end)
+                                ? formatReferenceDate(end, dateFmt)
                                 : '—'
                           const nowIso = new Date().toISOString()
                           const duration =
@@ -565,7 +552,7 @@ export function ReferenceDetailSheet({
                             <span className="bg-primary ring-background absolute -left-[17px] top-0.5 h-2 w-2 rounded-full ring-2" />
                             <p className="text-xs font-medium">Referenz erstellt</p>
                             <p className="text-muted-foreground mt-1 text-[10px]">
-                              {formatDateUtcDe(selectedRef.created_at)}
+                              {formatReferenceDate(selectedRef.created_at, dateFmt)}
                             </p>
                           </div>
                           {selectedRef.updated_at && selectedRef.updated_at !== selectedRef.created_at && (
@@ -573,7 +560,7 @@ export function ReferenceDetailSheet({
                               <span className="bg-muted-foreground/50 ring-background absolute -left-[17px] top-0.5 h-2 w-2 rounded-full ring-2" />
                               <p className="text-xs font-medium">Letzte Änderung</p>
                               <p className="text-muted-foreground mt-1 text-[10px]">
-                                {formatDateUtcDe(selectedRef.updated_at)}
+                                {formatReferenceDate(selectedRef.updated_at, dateFmt)}
                               </p>
                             </div>
                           )}

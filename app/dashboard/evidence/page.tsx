@@ -6,6 +6,7 @@ import { getDashboardData } from '@/app/dashboard/actions'
 import { DashboardOverview } from '@/app/dashboard/dashboard-overview'
 import { DEV_ROLE_COOKIE, parseAppRoleCookie } from '@/lib/dev-role-preview'
 import type { AppRole } from '@/hooks/useRole'
+import { normalizeOrgDateDisplayFormat } from '@/lib/format'
 
 export const dynamic = 'force-dynamic'
 
@@ -38,7 +39,8 @@ export default async function EvidenceHubPage() {
 
   const orgId = (profile as { organization_id?: string | null }).organization_id ?? ''
 
-  const [companiesResult, contactsResult, externalContactsResult, dealsResult] = await Promise.all([
+  const [companiesResult, contactsResult, externalContactsResult, dealsResult, orgFmtResult] =
+    await Promise.all([
     supabase.from('companies').select('id, name, logo_url').order('name'),
     supabase.from('contact_persons').select('*').order('last_name'),
     supabase
@@ -51,7 +53,14 @@ export default async function EvidenceHubPage() {
       .select('id, title')
       .eq('organization_id', orgId)
       .order('created_at', { ascending: false }),
+    orgId
+      ? supabase.from('organizations').select('date_display_format').eq('id', orgId).maybeSingle()
+      : Promise.resolve({ data: null }),
   ])
+
+  const orgDateDisplayFormat = normalizeOrgDateDisplayFormat(
+    (orgFmtResult.data as { date_display_format?: string | null } | null)?.date_display_format
+  )
 
   return (
     <DashboardOverview
@@ -63,6 +72,7 @@ export default async function EvidenceHubPage() {
       contacts={contactsResult.data ?? []}
       externalContacts={externalContactsResult.data ?? []}
       deals={dealsResult.data ?? []}
+      orgDateDisplayFormat={orgDateDisplayFormat}
     />
   )
 }

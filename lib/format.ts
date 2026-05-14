@@ -1,10 +1,61 @@
-/** Deterministisches Datumsformat (Server = Client), vermeidet Hydration-Fehler durch toLocaleDateString. */
+/** Workspace-Einstellung: Anzeige von Referenz-/Projektdaten. */
+export type OrgDateDisplayFormat = 'de-DE' | 'en-US' | 'en-GB' | 'iso'
+
+const ORG_DATE_FORMATS: readonly OrgDateDisplayFormat[] = ['de-DE', 'en-US', 'en-GB', 'iso']
+
+export function normalizeOrgDateDisplayFormat(
+  raw: string | null | undefined
+): OrgDateDisplayFormat {
+  const s = String(raw ?? '').trim()
+  return ORG_DATE_FORMATS.includes(s as OrgDateDisplayFormat) ? (s as OrgDateDisplayFormat) : 'de-DE'
+}
+
+function calendarPartsFromValue(value: string): { y: number; m: number; d: number } | null {
+  const raw = value.trim()
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw)
+  if (dateOnly) {
+    const y = Number(dateOnly[1])
+    const m = Number(dateOnly[2])
+    const d = Number(dateOnly[3])
+    if (!y || m < 1 || m > 12 || d < 1 || d > 31) return null
+    return { y, m, d }
+  }
+  const dt = new Date(raw)
+  if (Number.isNaN(dt.getTime())) return null
+  return { y: dt.getUTCFullYear(), m: dt.getUTCMonth() + 1, d: dt.getUTCDate() }
+}
+
+/**
+ * Formatiert ein Kalenderdatum (ISO-Datum oder Timestamp) für die UI — ohne toLocaleDateString (SSR-sicher).
+ */
+export function formatReferenceDate(
+  value: string | null | undefined,
+  preset: OrgDateDisplayFormat | null | undefined = 'de-DE'
+): string {
+  if (value == null || String(value).trim() === '') return ''
+  const parts = calendarPartsFromValue(String(value))
+  if (!parts) return String(value).trim()
+  const { y, m, d } = parts
+  const dd = String(d).padStart(2, '0')
+  const mm = String(m).padStart(2, '0')
+  const yyyy = String(y)
+  const p = normalizeOrgDateDisplayFormat(preset ?? undefined)
+  switch (p) {
+    case 'iso':
+      return `${yyyy}-${mm}-${dd}`
+    case 'en-US':
+      return `${mm}/${dd}/${yyyy}`
+    case 'en-GB':
+      return `${dd}/${mm}/${yyyy}`
+    case 'de-DE':
+    default:
+      return `${dd}.${mm}.${yyyy}`
+  }
+}
+
+/** @deprecated Nutze formatReferenceDate(value, 'de-DE') — bleibt für bestehende Aufrufe. */
 export function formatDateUtcDe(iso: string) {
-  const d = new Date(iso)
-  const day = d.getUTCDate().toString().padStart(2, '0')
-  const month = (d.getUTCMonth() + 1).toString().padStart(2, '0')
-  const year = d.getUTCFullYear()
-  return `${day}.${month}.${year}`
+  return formatReferenceDate(iso, 'de-DE')
 }
 
 /** Tausender-Trennzeichen (de-DE: 5.000.000) */
@@ -20,6 +71,24 @@ export function formatThousandsDots(raw: string | null | undefined): string {
   const digits = String(raw ?? '').replace(/\D/g, '')
   if (!digits) return ''
   return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+}
+
+/** Brandfetch liefert bei der höchsten Mitarbeiter-Kategorie oft 10.001 als Deckel — Anzeige als „10.001+“. */
+export const BRANDFETCH_EMPLOYEE_CAP = 10_001
+
+export function formatEmployeeCountDeDisplay(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) return ''
+  const n = Math.trunc(Number(value))
+  if (n === BRANDFETCH_EMPLOYEE_CAP) return '10.001+'
+  return formatThousandsDots(String(n))
+}
+
+/** Formular: „10.001+“ → gespeichert als 10.001 (Brandfetch-Obergrenze). */
+export function parseGermanEmployeeCountInput(raw: string | null | undefined): number | null {
+  const t = String(raw ?? '').trim()
+  if (!t) return null
+  if (/\+/.test(t)) return BRANDFETCH_EMPLOYEE_CAP
+  return parseThousandsDotsToInt(t)
 }
 
 /** Aus Eingabe mit Tausenderpunkten eine ganze Zahl (oder null). */

@@ -29,25 +29,33 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   Cancel01Icon,
   Building2,
-  Briefcase,
+  Filter,
   Globe,
   Loader,
   MapPinIcon,
   Pencil,
   Plus,
-  RefreshCw,
   StarIcon,
   UploadIcon,
   Users,
 } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { CompanyLogo } from '@/components/ui/company-logo'
-import { bulkCreateCompaniesFromSheet, deleteCompanyWithData, refreshAccountsFromBrandfetch, toggleCompanyFavorite } from './actions'
+import { bulkCreateCompaniesFromSheet, deleteCompanyWithData, toggleCompanyFavorite } from './actions'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
+import { formatEmployeeCountDeDisplay } from '@/lib/format'
 import { useRole } from '@/hooks/useRole'
 import { CreateAccountDialog } from './create-account-dialog'
 import { toast } from 'sonner'
@@ -76,29 +84,23 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
   const [deleting, setDeleting] = useState(false)
   const [favoritesOnly, setFavoritesOnly] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
-  const [compactView, setCompactView] = useState(false)
   const [importingAccounts, setImportingAccounts] = useState(false)
-  const [refreshingAccounts, setRefreshingAccounts] = useState(false)
-  const [refreshPopoverOpen, setRefreshPopoverOpen] = useState(false)
-  const [refreshResultTab, setRefreshResultTab] = useState<'updated' | 'skipped' | 'failed'>('updated')
   const [sortMode, setSortMode] = useState<'activity' | 'az'>('activity')
+  const [filterOpen, setFilterOpen] = useState(false)
+  const [filterIndustry, setFilterIndustry] = useState<string>('__all__')
+  const [filterEmployeeBand, setFilterEmployeeBand] = useState<
+    'any' | 'unknown' | 's_50' | 'm_200' | 'l_1000' | 'xl'
+  >('any')
+  const [filterReferences, setFilterReferences] = useState<'any' | 'with' | 'without'>('any')
   const [favoriteOverrides, setFavoriteOverrides] = useState<Record<string, boolean>>({})
   const [favoriteSaving, setFavoriteSaving] = useState<Record<string, boolean>>({})
-  const [refreshSummary, setRefreshSummary] = useState<{
-    updatedCount: number
-    skippedCount: number
-    failedCount: number
-    updatedNames: string[]
-    skippedNames: string[]
-    failedNames: string[]
-  } | null>(null)
   const { isAdmin, isAccountManager } = useRole()
   const canManage = isAdmin || isAccountManager
   const importInputRef = useRef<HTMLInputElement | null>(null)
 
   function employeeLabel(value: number | null | undefined): string | null {
     if (typeof value !== 'number' || !Number.isFinite(value)) return null
-    return `${new Intl.NumberFormat('de-DE').format(value)} Mitarbeiter`
+    return `${formatEmployeeCountDeDisplay(value)} Mitarbeiter`
   }
 
   const companiesWithFavoriteState = useMemo(
@@ -146,11 +148,45 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
     }
   }
 
+  const uniqueIndustries = useMemo(() => {
+    const set = new Set<string>()
+    for (const c of companies) {
+      const v = String(c.industry ?? '').trim()
+      if (v) set.add(v)
+    }
+    return [...set].sort((a, b) => a.localeCompare(b, 'de'))
+  }, [companies])
+
+  const filtersActive =
+    filterIndustry !== '__all__' || filterEmployeeBand !== 'any' || filterReferences !== 'any'
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     let list = companiesWithFavoriteState
     if (favoritesOnly) {
       list = list.filter((c) => c.is_favorite)
+    }
+    if (filterIndustry !== '__all__') {
+      const want = filterIndustry.trim().toLowerCase()
+      list = list.filter((c) => String(c.industry ?? '').trim().toLowerCase() === want)
+    }
+    if (filterEmployeeBand !== 'any') {
+      const band = filterEmployeeBand
+      list = list.filter((c) => {
+        const count = c.employee_count
+        if (band === 'unknown') return count == null || !Number.isFinite(count)
+        if (count == null || !Number.isFinite(count)) return false
+        const n = count
+        if (band === 's_50') return n >= 1 && n <= 50
+        if (band === 'm_200') return n >= 51 && n <= 200
+        if (band === 'l_1000') return n >= 201 && n <= 1000
+        return n >= 1001
+      })
+    }
+    if (filterReferences === 'with') {
+      list = list.filter((c) => (c.reference_count ?? 0) > 0)
+    } else if (filterReferences === 'without') {
+      list = list.filter((c) => (c.reference_count ?? 0) === 0)
     }
     const searched = !q
       ? list
@@ -166,7 +202,15 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
       if (scoreA !== scoreB) return scoreB - scoreA
       return String(a.name ?? '').localeCompare(String(b.name ?? ''), 'de')
     })
-  }, [companiesWithFavoriteState, search, favoritesOnly, sortMode])
+  }, [
+    companiesWithFavoriteState,
+    search,
+    favoritesOnly,
+    sortMode,
+    filterIndustry,
+    filterEmployeeBand,
+    filterReferences,
+  ])
 
   return (
     <div className="space-y-5 rounded-3xl bg-muted/10 p-4 md:p-6">
@@ -181,7 +225,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
             onChange={setSearch}
             aria-label="Firmen durchsuchen"
           />
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5">
             <Button
               type="button"
               variant="ghost"
@@ -214,115 +258,6 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                     e.target.value = ''
                   }}
                 />
-                <Popover open={refreshPopoverOpen} onOpenChange={setRefreshPopoverOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="toolbar"
-                      className="shrink-0 px-2.5 hover:bg-muted/70"
-                      disabled={refreshingAccounts}
-                      onClick={async () => {
-                        setRefreshingAccounts(true)
-                        try {
-                          const result = await refreshAccountsFromBrandfetch()
-                          if (!result.success) {
-                            toast.error(result.error ?? 'Account-Refresh fehlgeschlagen.')
-                            return
-                          }
-                          setRefreshSummary({
-                            updatedCount: result.updatedCount,
-                            skippedCount: result.skippedCount,
-                            failedCount: result.failedCount,
-                            updatedNames: result.updatedNames,
-                            skippedNames: result.skippedNames,
-                            failedNames: result.failedNames,
-                          })
-                          if (result.failedCount > 0) setRefreshResultTab('failed')
-                          else if (result.updatedCount > 0) setRefreshResultTab('updated')
-                          else setRefreshResultTab('skipped')
-                          setRefreshPopoverOpen(true)
-                          toast.success(
-                            `${result.updatedCount} Accounts aktualisiert (${result.skippedCount} übersprungen, ${result.failedCount} fehlgeschlagen).`
-                          )
-                          router.refresh()
-                        } finally {
-                          setRefreshingAccounts(false)
-                        }
-                      }}
-                      aria-label="Accounts via Brandfetch aktualisieren"
-                      title="Accounts via Brandfetch aktualisieren"
-                    >
-                      <AppIcon
-                        icon={refreshingAccounts ? Loader : RefreshCw}
-                        size={16}
-                        className={refreshingAccounts ? 'animate-spin text-muted-foreground' : 'text-muted-foreground'}
-                      />
-                    </Button>
-                  </PopoverTrigger>
-                  {refreshSummary ? (
-                    <PopoverContent align="end" className="w-[min(420px,calc(100vw-2rem))] space-y-3 p-3">
-                      <div className="space-y-1">
-                        <p className="text-sm font-semibold text-foreground">Refresh-Ergebnis</p>
-                        <p className="text-xs text-muted-foreground">
-                          Brandfetch-Abgleich für bestehende Accounts.
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant={refreshResultTab === 'updated' ? 'secondary' : 'ghost'}
-                          className="h-7 px-2 text-xs"
-                          onClick={() => setRefreshResultTab('updated')}
-                        >
-                          Aktualisiert ({refreshSummary.updatedCount})
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant={refreshResultTab === 'skipped' ? 'secondary' : 'ghost'}
-                          className="h-7 px-2 text-xs"
-                          onClick={() => setRefreshResultTab('skipped')}
-                        >
-                          Übersprungen ({refreshSummary.skippedCount})
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant={refreshResultTab === 'failed' ? 'secondary' : 'ghost'}
-                          className="h-7 px-2 text-xs"
-                          onClick={() => setRefreshResultTab('failed')}
-                        >
-                          Fehlgeschlagen ({refreshSummary.failedCount})
-                        </Button>
-                      </div>
-                      <div className="max-h-[45vh] overflow-auto rounded-md border border-border/60 bg-muted/15">
-                        {(refreshResultTab === 'updated'
-                          ? refreshSummary.updatedNames
-                          : refreshResultTab === 'skipped'
-                            ? refreshSummary.skippedNames
-                            : refreshSummary.failedNames
-                        ).length === 0 ? (
-                          <p className="px-3 py-2 text-xs text-muted-foreground">Keine Einträge in dieser Kategorie.</p>
-                        ) : (
-                          <ul className="divide-y divide-border/50">
-                            {(refreshResultTab === 'updated'
-                              ? refreshSummary.updatedNames
-                              : refreshResultTab === 'skipped'
-                                ? refreshSummary.skippedNames
-                                : refreshSummary.failedNames
-                            ).map((name) => (
-                              <li key={`${refreshResultTab}-${name}`} className="px-3 py-2 text-xs text-foreground">
-                                {name}
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    </PopoverContent>
-                  ) : null}
-                </Popover>
                 <Button
                   type="button"
                   variant="ghost"
@@ -343,35 +278,126 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                   <AppIcon icon={importingAccounts ? Loader : UploadIcon} size={16} className={importingAccounts ? 'animate-spin' : ''} />
                   Bulk Upload
                 </Button>
-                <div className="inline-flex items-center rounded-lg border border-border/70 bg-background/70 p-1">
-                  <Button
-                    type="button"
-                    size="toolbar"
-                    variant={sortMode === 'az' ? 'secondary' : 'ghost'}
-                    className="h-8 px-3 text-xs"
-                    onClick={() => setSortMode('az')}
-                  >
-                    A-Z
-                  </Button>
-                  <Button
-                    type="button"
-                    size="toolbar"
-                    variant={sortMode === 'activity' ? 'secondary' : 'ghost'}
-                    className="h-8 px-3 text-xs"
-                    onClick={() => setSortMode('activity')}
-                  >
-                    Letzte Aktivität
-                  </Button>
-                </div>
+              </>
+            )}
+            <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+              <PopoverTrigger asChild>
                 <Button
                   type="button"
                   variant="ghost"
                   size="toolbar"
-                  className="hover:bg-muted/70"
-                  onClick={() => setCompactView((v) => !v)}
+                  className={`relative shrink-0 px-2.5 hover:bg-muted/70 ${filtersActive ? 'text-primary' : ''}`}
+                  aria-expanded={filterOpen}
+                  aria-label="Accounts filtern"
+                  title="Nach Branche, Mitarbeiterzahl und Referenzen filtern"
                 >
-                  {compactView ? 'Kartenansicht' : 'Listenansicht'}
+                  <AppIcon
+                    icon={Filter}
+                    size={16}
+                    className={filtersActive ? 'text-primary' : 'text-muted-foreground'}
+                  />
+                  {filtersActive ? (
+                    <span className="absolute right-1 top-1 size-1.5 rounded-full bg-primary" aria-hidden />
+                  ) : null}
                 </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[min(100vw-2rem,20rem)] space-y-4" align="end">
+                <div className="space-y-1.5">
+                  <Label htmlFor="account-filter-industry" className="text-xs font-medium text-muted-foreground">
+                    Branche
+                  </Label>
+                  <Select value={filterIndustry} onValueChange={setFilterIndustry}>
+                    <SelectTrigger id="account-filter-industry" className="h-9">
+                      <SelectValue placeholder="Alle Branchen" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__all__">Alle Branchen</SelectItem>
+                      {uniqueIndustries.map((ind) => (
+                        <SelectItem key={ind} value={ind}>
+                          {ind}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="account-filter-employees" className="text-xs font-medium text-muted-foreground">
+                    Mitarbeiterzahl
+                  </Label>
+                  <Select
+                    value={filterEmployeeBand}
+                    onValueChange={(v) =>
+                      setFilterEmployeeBand(v as typeof filterEmployeeBand)
+                    }
+                  >
+                    <SelectTrigger id="account-filter-employees" className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Alle Größen</SelectItem>
+                      <SelectItem value="unknown">Unbekannt</SelectItem>
+                      <SelectItem value="s_50">1–50</SelectItem>
+                      <SelectItem value="m_200">51–200</SelectItem>
+                      <SelectItem value="l_1000">201–1.000</SelectItem>
+                      <SelectItem value="xl">1.001+</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="account-filter-refs" className="text-xs font-medium text-muted-foreground">
+                    Referenzen
+                  </Label>
+                  <Select
+                    value={filterReferences}
+                    onValueChange={(v) => setFilterReferences(v as typeof filterReferences)}
+                  >
+                    <SelectTrigger id="account-filter-refs" className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Alle</SelectItem>
+                      <SelectItem value="with">Mit Referenzen</SelectItem>
+                      <SelectItem value="without">Ohne Referenzen</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => {
+                    setFilterIndustry('__all__')
+                    setFilterEmployeeBand('any')
+                    setFilterReferences('any')
+                  }}
+                >
+                  Filter zurücksetzen
+                </Button>
+              </PopoverContent>
+            </Popover>
+            <div className="inline-flex items-center rounded-lg border border-border/70 bg-background/70 p-1">
+              <Button
+                type="button"
+                size="toolbar"
+                variant={sortMode === 'az' ? 'secondary' : 'ghost'}
+                className="h-8 px-3 text-xs"
+                onClick={() => setSortMode('az')}
+              >
+                A-Z
+              </Button>
+              <Button
+                type="button"
+                size="toolbar"
+                variant={sortMode === 'activity' ? 'secondary' : 'ghost'}
+                className="h-8 px-3 text-xs"
+                onClick={() => setSortMode('activity')}
+              >
+                Letzte Aktivität
+              </Button>
+            </div>
+            {canManage ? (
+              <>
                 <Button
                   type="button"
                   size="toolbar"
@@ -383,7 +409,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                 </Button>
                 <CreateAccountDialog open={createOpen} onOpenChange={setCreateOpen} />
               </>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
@@ -392,14 +418,18 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
         <p className="py-12 text-center text-sm text-muted-foreground">
           {companies.length === 0
             ? 'Noch keine Firmen angelegt.'
-            : 'Keine Firma unter diesem Namen gefunden.'}
+            : favoritesOnly && !search.trim() && !filtersActive
+              ? 'Keine Favoriten in dieser Ansicht.'
+              : search.trim() || filtersActive || favoritesOnly
+                ? 'Keine Accounts für diese Suche oder Filter.'
+                : 'Keine Firma unter diesem Namen gefunden.'}
         </p>
       ) : (
-        <div className={compactView ? 'grid grid-cols-1 gap-3' : 'grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'}>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filtered.map((company) => (
             <ContextMenu key={company.id}>
               <ContextMenuTrigger asChild>
-                <Card className={`group relative h-full overflow-hidden rounded-3xl border border-border/60 bg-card/95 shadow-sm transition-all duration-200 hover:border-primary/20 hover:shadow-md ${compactView ? 'rounded-xl' : ''}`}>
+                <Card className="group relative h-full overflow-hidden rounded-3xl border border-border/60 bg-card/95 shadow-sm transition-all duration-200 hover:border-primary/20 hover:shadow-md">
                   {canManage ? (
                     <div className="absolute right-3 top-3 z-10 flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
                       <button
@@ -531,19 +561,12 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                       </div>
                     </CardContent>
                     <CardContent className="pt-2 pb-3 text-[11px] text-muted-foreground">
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-1.5">
-                          <AppIcon icon={Briefcase} size={14} />
-                          <span>
-                            {company.open_deals_count ?? 0} Deals
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <AppIcon icon={Users} size={14} />
-                          <span>
-                            {company.reference_count ?? 0} Referenzen
-                          </span>
-                        </div>
+                      <div className="flex items-center gap-1.5">
+                        <AppIcon icon={Users} size={14} />
+                        <span>
+                          {company.reference_count ?? 0}{' '}
+                          {(company.reference_count ?? 0) === 1 ? 'Referenz' : 'Referenzen'}
+                        </span>
                       </div>
                     </CardContent>
                   </div>

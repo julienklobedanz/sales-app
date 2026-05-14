@@ -1,10 +1,41 @@
 import { describe, expect, it } from 'vitest'
-import { diffMonthsUtc, formatDateUtcDe, formatNumberDe } from './format'
+import {
+  diffMonthsUtc,
+  formatDateUtcDe,
+  formatEmployeeCountDeDisplay,
+  formatNumberDe,
+  formatReferenceDate,
+  parseGermanEmployeeCountInput,
+} from './format'
 
 describe('formatDateUtcDe', () => {
   it('formatiert ISO-Date deterministisch in DD.MM.YYYY (UTC)', () => {
     expect(formatDateUtcDe('2026-04-01T23:59:59.000Z')).toBe('01.04.2026')
     expect(formatDateUtcDe('2026-01-09T00:00:00.000Z')).toBe('09.01.2026')
+  })
+})
+
+describe('formatReferenceDate', () => {
+  it('formatiert reines Kalenderdatum YYYY-MM-DD ohne Zeitzonenverschiebung', () => {
+    expect(formatReferenceDate('2026-04-02', 'de-DE')).toBe('02.04.2026')
+    expect(formatReferenceDate('2026-04-02', 'iso')).toBe('2026-04-02')
+    expect(formatReferenceDate('2026-04-02', 'en-US')).toBe('04/02/2026')
+    expect(formatReferenceDate('2026-04-02', 'en-GB')).toBe('02/04/2026')
+  })
+})
+
+describe('formatEmployeeCountDeDisplay', () => {
+  it('zeigt Brandfetch-Obergrenze als 10.001+', () => {
+    expect(formatEmployeeCountDeDisplay(10_001)).toBe('10.001+')
+    expect(formatEmployeeCountDeDisplay(12_000)).toBe('12.000')
+    expect(formatEmployeeCountDeDisplay(500)).toBe('500')
+  })
+})
+
+describe('parseGermanEmployeeCountInput', () => {
+  it('mappt 10.001+ auf gespeicherten Cap-Wert', () => {
+    expect(parseGermanEmployeeCountInput('10.001+')).toBe(10_001)
+    expect(parseGermanEmployeeCountInput('1.500')).toBe(1500)
   })
 })
 

@@ -11,7 +11,7 @@ export function ReferenceActivitiesTimeline({ items }: { items: ReferenceActivit
   const visible = open ? items : items.slice(0, 1)
 
   if (!items.length) {
-    return <p className="text-sm text-muted-foreground">Noch keine Aktivitäten.</p>
+    return <p className="text-sm text-muted-foreground">Noch keine Ereignisse.</p>
   }
 
   return (
@@ -23,12 +23,10 @@ export function ReferenceActivitiesTimeline({ items }: { items: ReferenceActivit
             <div className="flex items-center justify-between gap-3">
               <div className="text-sm font-medium">{a.title}</div>
               <div className="shrink-0 text-xs text-muted-foreground tabular-nums">
-                {new Date(a.at).toLocaleString('de-DE', {
+                {new Date(a.at).toLocaleDateString('de-DE', {
                   day: '2-digit',
                   month: '2-digit',
                   year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
                 })}
               </div>
             </div>

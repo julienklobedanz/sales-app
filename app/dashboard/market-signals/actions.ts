@@ -509,8 +509,8 @@ export async function triggerMarketSignalsIngestForMyOrg(args?: {
   const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
   const role = String((profile as { role?: string | null } | null)?.role ?? '')
   if (!orgId) return { success: false, error: 'Keine Organisation gefunden.' }
-  if (role !== 'admin' && role !== 'account_manager') {
-    return { success: false, error: 'Nur Admin oder Account Manager können Signale abrufen.' }
+  if (role !== 'admin' && role !== 'account_manager' && role !== 'sales') {
+    return { success: false, error: 'Signale abrufen ist für Admin, Account Manager und Sales verfügbar.' }
   }
   const ingestMode: 'all_accounts' | 'focus_only' =
     args?.ingestMode ?? (role === 'admin' ? 'all_accounts' : 'focus_only')

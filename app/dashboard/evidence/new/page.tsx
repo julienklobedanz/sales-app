@@ -8,7 +8,7 @@ import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 
-export const maxDuration = 60
+export const maxDuration = 180
 
 export default async function NewReferencePage() {
   const supabase = await createServerSupabaseClient()

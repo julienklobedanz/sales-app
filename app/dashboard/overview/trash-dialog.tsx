@@ -5,7 +5,8 @@ import { Loader, RefreshCw, Trash2 } from '@hugeicons/core-free-icons'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -156,7 +157,7 @@ export function TrashDialog({
                 <AlertDialogFooter>
                   <AlertDialogCancel disabled={emptyingTrash}>Abbrechen</AlertDialogCancel>
                   <AlertDialogAction
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    className={cn(buttonVariants({ variant: 'destructive' }))}
                     disabled={emptyingTrash}
                     onClick={async (e) => {
                       e.preventDefault()

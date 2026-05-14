@@ -6,6 +6,9 @@ import { REVALIDATE, ROUTES } from '@/lib/routes'
 import { narrativeFieldLengthError } from '@/lib/references/reference-narrative-limits'
 import { mapBrandfetchIndustriesArrayToGermanCategory } from '@/lib/brandfetch/map-brandfetch-industry-to-de'
 import { normalizeNarrativeText } from '@/lib/references/narrative-normalize'
+import { extractDataFromDocument } from '@/lib/document-extraction'
+import { parseGermanEmployeeCountInput } from '@/lib/format'
+import type { ExtractDataFromDocumentResult } from './types'
 
 const COUNTRY_MAP: Record<string, string> = {
   germany: 'Deutschland', deutschland: 'Deutschland',
@@ -178,23 +181,27 @@ export async function searchCompanySuggestions(input: string): Promise<CompanySe
     return { success: false, error: 'Dein Profil ist keiner Organisation zugeordnet.' }
   }
 
-  const pattern = `${query}%`
+  const safeForLike = query.replace(/%/g, '').replace(/_/g, '').trim()
 
-  // 1. Schnelle Suche in bestehenden Companies der Organisation
-  const { data: companies, error } = await supabase
-    .from('companies')
-    .select('id, name, logo_url')
-    .eq('organization_id', organizationId)
-    .ilike('name', pattern)
-    .order('name')
-    .limit(10)
-
-  if (error) {
-    console.error('searchCompanySuggestions companies error:', error)
-    return { success: false, error: error.message }
+  // 1. Suche in bestehenden Companies der Organisation (Teilstring, case-insensitive)
+  let companies: { id: string; name: string; logo_url?: string | null }[] = []
+  if (safeForLike) {
+    const pattern = `%${safeForLike}%`
+    const { data, error } = await supabase
+      .from('companies')
+      .select('id, name, logo_url')
+      .eq('organization_id', organizationId)
+      .ilike('name', pattern)
+      .order('name')
+      .limit(10)
+    if (error) {
+      console.error('searchCompanySuggestions companies error:', error)
+      return { success: false, error: error.message }
+    }
+    companies = data ?? []
   }
 
-  const suggestions: CompanySearchSuggestion[] = (companies ?? []).map((c) => ({
+  const suggestions: CompanySearchSuggestion[] = companies.map((c) => ({
     id: c.id,
     name: c.name,
     logo_url: (c as { logo_url?: string | null }).logo_url ?? null,
@@ -213,6 +220,13 @@ export async function searchCompanySuggestions(input: string): Promise<CompanySe
   return { success: true, suggestions }
 }
 
+/** Server Action: KI-Import aus PDF/DOCX/PPTX (für das Referenz-Formular im Client). */
+export async function extractReferenceDocumentFromUpload(
+  formData: FormData
+): Promise<ExtractDataFromDocumentResult> {
+  return extractDataFromDocument(formData)
+}
+
 export async function enrichAndSaveCompany(domain: string): Promise<EnrichCompanyResult> {
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -224,9 +238,27 @@ export async function enrichAndSaveCompany(domain: string): Promise<EnrichCompan
     return { success: false, error: 'Dein Profil ist keiner Organisation zugeordnet.' }
   }
 
-  const normalizedDomain = inputToDomain(domain) ?? normalizeDomain(domain)
+  const trimmed = domain.trim()
+  let normalizedDomain: string | null = null
+
+  if (looksLikeDomain(trimmed)) {
+    normalizedDomain = normalizeDomain(trimmed)
+  } else {
+    const resolved = await resolveDomainForEnrichmentInput(trimmed)
+    if (resolved) {
+      normalizedDomain = resolved
+    } else {
+      const guessed = inputToDomain(trimmed) ?? normalizeDomain(trimmed)
+      if (guessed && guessed.includes('.')) normalizedDomain = guessed
+    }
+  }
+
   if (!normalizedDomain || !normalizedDomain.includes('.')) {
-    return { success: false, error: 'Bitte eine Domain (z. B. bmw.de) oder einen Firmennamen (z. B. BMW) eingeben.' }
+    return {
+      success: false,
+      error:
+        'Bitte eine Domain (z. B. bmw.de) eingeben — oder BRANDFETCH_CLIENT_ID in den Umgebungsvariablen setzen, damit Firmennamen per Brandfetch-Suche zugeordnet werden können.',
+    }
   }
 
   const fetched = await fetchBrandfetchData(normalizedDomain)
@@ -432,10 +464,10 @@ export async function createReference(
   const tags = formData.get('tags')?.toString()?.trim() || null
   const website = formData.get('website')?.toString()?.trim() || null
   const employeeCountRaw = formData.get('employee_count')?.toString()?.trim() || null
-  const employee_count =
-    employeeCountRaw && !Number.isNaN(Number(employeeCountRaw))
-      ? Math.max(0, Math.trunc(Number(employeeCountRaw)))
-      : null
+  const employee_count = parseGermanEmployeeCountInput(employeeCountRaw)
+  const companyHeadquarters = formData.get('company_headquarters')?.toString()?.trim() || null
+  const companyLogoUrlRaw = formData.get('company_logo_url')?.toString()?.trim() || null
+  const company_logo_url = companyLogoUrlRaw || null
   const volume_eur = formData.get('volume_eur')?.toString()?.trim() || null
   const contract_type = formData.get('contract_type')?.toString()?.trim() || null
   const incumbent_provider = formData.get('incumbent_provider')?.toString()?.trim() || null
@@ -561,6 +593,10 @@ export async function createReference(
           name: displayName,
           industry: industry ?? undefined,
           organization_id: organizationId,
+          website_url: website || null,
+          employee_count: employee_count,
+          headquarters: companyHeadquarters,
+          logo_url: company_logo_url,
         })
         .select('id')
         .single()

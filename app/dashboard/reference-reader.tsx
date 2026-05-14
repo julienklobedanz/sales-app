@@ -45,14 +45,6 @@ export function ReferenceReader({ reference }: { reference: ReferenceRow }) {
         </div>
       </div>
 
-      {reference.summary && (
-        <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <p className="text-sm leading-relaxed text-slate-700">
-            {reference.summary}
-          </p>
-        </div>
-      )}
-
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <div className="rounded-xl border border-slate-200 bg-white p-4">
           <p className="mb-2 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">

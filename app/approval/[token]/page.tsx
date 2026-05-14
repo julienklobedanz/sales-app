@@ -9,6 +9,7 @@ import {
 import { Building2, Globe } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { formatDateUtcDe, formatReferenceVolume } from '@/lib/format'
+import { formatProjectEndWithDurationDe } from '@/lib/references/reference-duration-months'
 import { ApprovalDecisionForm } from './approval-decision-form'
 
 function InvalidLink() {
@@ -50,6 +51,7 @@ export default async function ApprovalPage({
       our_solution,
       volume_eur,
       contract_type,
+      project_status,
       project_start,
       project_end,
       approval_message,
@@ -134,7 +136,12 @@ export default async function ApprovalPage({
       : '—'
   const end =
     row.project_end && String(row.project_end) !== ''
-      ? formatDateUtcDe(String(row.project_end))
+      ? formatProjectEndWithDurationDe({
+          project_start: (row.project_start as string | null) ?? null,
+          project_end: (row.project_end as string | null) ?? null,
+          project_status: (row.project_status as string | null) ?? null,
+          formatEndDate: (iso) => formatDateUtcDe(iso),
+        })
       : '—'
 
   return (

@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { formatDateUtcDe, formatReferenceVolume } from "@/lib/format"
+import { formatProjectEndWithDurationDe } from "@/lib/references/reference-duration-months"
 
 import type { ReferenceAssetRow } from "@/app/dashboard/actions"
 import type { Profile } from "@/app/dashboard/dashboard-shell"
@@ -190,7 +191,14 @@ export function ReferenceDetailPane({
               <div className="rounded-lg border bg-background p-3">
                 <div className="text-xs text-muted-foreground">Projektende</div>
                 <div className="mt-1 font-medium">
-                  {selectedRef.project_end ? formatDateUtcDe(selectedRef.project_end) : "—"}
+                  {selectedRef.project_end
+                    ? formatProjectEndWithDurationDe({
+                        project_start: selectedRef.project_start,
+                        project_end: selectedRef.project_end,
+                        project_status: selectedRef.project_status,
+                        formatEndDate: formatDateUtcDe,
+                      })
+                    : "—"}
                 </div>
               </div>
               <div className="rounded-lg border bg-background p-3">

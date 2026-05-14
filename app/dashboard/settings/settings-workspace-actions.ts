@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
+import { normalizeOrgDateDisplayFormat } from '@/lib/format'
 
 export type UpdateOrganizationResult =
   | { success: true }
@@ -13,7 +14,8 @@ export async function updateOrganization(
   name: string,
   logoDataUrl?: string | null,
   primaryColor?: string | null,
-  secondaryColor?: string | null
+  secondaryColor?: string | null,
+  dateDisplayFormat?: string | null
 ): Promise<UpdateOrganizationResult> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -48,6 +50,9 @@ export async function updateOrganization(
   if (secondaryColor !== undefined) {
     updates.secondary_color = secondaryColor || '#1D4ED8'
   }
+  if (dateDisplayFormat !== undefined) {
+    updates.date_display_format = normalizeOrgDateDisplayFormat(dateDisplayFormat)
+  }
 
   const { error } = await supabase
     .from('organizations')
@@ -56,5 +61,6 @@ export async function updateOrganization(
 
   if (error) return { success: false, error: error.message }
   revalidatePath(ROUTES.settings)
+  revalidatePath(ROUTES.evidence.root)
   return { success: true }
 }

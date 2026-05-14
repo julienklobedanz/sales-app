@@ -43,8 +43,6 @@ export const ROUTES = {
     `/dashboard/match?deal=${encodeURIComponent(dealId)}`,
   settings: '/dashboard/settings',
   request: '/dashboard/request',
-  /** Konzept: Inbox-Style Referenztabelle (Demo-Daten) */
-  conceptsInboxReferences: '/dashboard/concepts/inbox-references',
 } as const
 
 /**
@@ -60,4 +58,5 @@ export const LEGACY_REDIRECTS = [
   { source: '/dashboard/companies/:path*', destination: '/dashboard/accounts/:path*', permanent: true },
   { source: '/dashboard/new', destination: ROUTES.evidence.new, permanent: true },
   { source: '/dashboard/edit/:id', destination: '/dashboard/evidence/:id/edit', permanent: true },
+  { source: '/dashboard/concepts/inbox-references', destination: ROUTES.evidence.root, permanent: true },
 ] as const

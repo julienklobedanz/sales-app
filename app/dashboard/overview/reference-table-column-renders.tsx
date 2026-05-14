@@ -19,41 +19,22 @@ import { AccountCell } from "@/components/table/account-cell"
 import { FilterMenuCheckboxOption } from "@/components/table/filter-menu-checkbox-option"
 import { DraggableColumnHead } from "@/components/table/draggable-column-head"
 import { ROUTES } from "@/lib/routes"
-import { formatDateUtcDe } from "@/lib/format"
+import {
+  formatReferenceDate,
+  normalizeOrgDateDisplayFormat,
+  type OrgDateDisplayFormat,
+} from "@/lib/format"
 import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
   Filter,
-  InformationCircleIcon,
-  Sparkles,
 } from "@hugeicons/core-free-icons"
 import { AppIcon } from "@/lib/icons"
 import Link from "next/link"
+import { Eye } from "lucide-react"
 
 import type { ReferenceRow } from "../actions"
-
-function firstSentence(value: string | null | undefined): string | null {
-  const text = String(value ?? "").trim().replace(/\s+/g, " ")
-  if (!text) return null
-  const match = text.match(/.+?[.!?](?:\s|$)/)
-  return (match ? match[0] : text).trim()
-}
-
-function quickBullets(value: string | null | undefined, limit = 3): string[] {
-  const text = String(value ?? "").trim().replace(/\s+/g, " ")
-  if (!text) return []
-  const sentences = text
-    .split(/(?<=[.!?])\s+/)
-    .map((s) => s.trim())
-    .filter(Boolean)
-  if (sentences.length) return sentences.slice(0, limit)
-  return text
-    .split(/[;,]/)
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .slice(0, limit)
-}
 
 /** Muss mit COLUMN_KEYS in dashboard-overview übereinstimmen */
 export type ReferenceColumnKey =
@@ -102,8 +83,6 @@ export type ReferenceTableHeaderRenderContext = {
   setCountrySearch: (v: string) => void
   statusFilter: string
   setStatusFilter: (v: string) => void
-  statusSearch: string
-  setStatusSearch: (v: string) => void
   projectStatusFilter: string
   setProjectStatusFilter: (v: string) => void
   projectStatusSearch: string
@@ -142,8 +121,6 @@ export function renderReferenceColumnHeader(
     setCountrySearch,
     statusFilter,
     setStatusFilter,
-    statusSearch,
-    setStatusSearch,
     projectStatusFilter,
     setProjectStatusFilter,
     projectStatusSearch,
@@ -394,29 +371,13 @@ export function renderReferenceColumnHeader(
               </button>
             </PopoverTrigger>
             <PopoverContent
-              className="w-56"
+              className="w-56 p-1"
               align="start"
               onClick={(e) => e.stopPropagation()}
               onOpenAutoFocus={(e) => e.preventDefault()}
             >
-              <Input
-                autoFocus
-                placeholder="Status suchen…"
-                value={statusSearch}
-                onChange={(e) => setStatusSearch(e.target.value)}
-                className="h-8 text-xs"
-              />
-              <div className="mt-2 max-h-56 space-y-0.5 overflow-y-auto p-0.5 text-sm">
-                {["all", ...filterOptions.statuses]
-                  .filter((value) => {
-                    if (!statusSearch.trim()) return true
-                    const label =
-                      value === "all" ? "Alle" : STATUS_LABELS[value] ?? value
-                    return label
-                      .toLowerCase()
-                      .includes(statusSearch.trim().toLowerCase())
-                  })
-                  .map((value) => {
+              <div className="max-h-56 space-y-0 overflow-y-auto text-sm">
+                {["all", ...filterOptions.statuses].map((value) => {
                     const isAll = value === "all"
                     const label = isAll ? "Alle" : STATUS_LABELS[value] ?? value
                     const selected = statusFilter === value
@@ -882,6 +843,7 @@ export function renderReferenceColumnHeader(
 export type ReferenceTableCellRenderContext = {
   PROJECT_STATUS_LABELS: Record<string, string>
   companyLogoById: Map<string, string>
+  orgDateDisplayFormat?: OrgDateDisplayFormat | string
 }
 
 export function renderReferenceColumnCell(
@@ -890,6 +852,7 @@ export function renderReferenceColumnCell(
   ctx: ReferenceTableCellRenderContext
 ): React.ReactNode {
   const { PROJECT_STATUS_LABELS, companyLogoById } = ctx
+  const dateFmt = normalizeOrgDateDisplayFormat(ctx.orgDateDisplayFormat)
   switch (column) {
     case "company":
       return (
@@ -907,90 +870,41 @@ export function renderReferenceColumnCell(
           </Link>
         </TableCell>
       )
-    case "title":
-      const challengeBullets = quickBullets(ref.customer_challenge, 3)
-      const solutionBullets = quickBullets(ref.our_solution, 3)
-      const tldr =
-        firstSentence(ref.summary) ||
-        [firstSentence(ref.customer_challenge), firstSentence(ref.our_solution)]
-          .filter(Boolean)
-          .join(" ")
-          .trim() ||
-        "Zusammenfassung folgt aus der Detailansicht."
-      const tags = String(ref.tags ?? "")
-        .split(/[\s,]+/)
-        .map((t) => t.trim())
-        .filter(Boolean)
-        .slice(0, 3)
+    case "title": {
+      const summaryText = String(ref.summary ?? "").trim()
       return (
-        <TableCell className="max-w-[200px] truncate text-foreground">
-          <HoverCard openDelay={2000} closeDelay={120}>
-            <HoverCardTrigger asChild>
-              <span className="cursor-default border-b border-dotted border-transparent transition-colors hover:border-slate-300">
-                {ref.title}
-              </span>
-            </HoverCardTrigger>
-            <HoverCardContent align="start" className="w-[420px] space-y-3">
-              <div className="space-y-1">
-                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Quick Look</p>
-                <p className="truncate text-sm font-medium text-foreground">{ref.title}</p>
-              </div>
-              {tags.length ? (
-                <div className="flex flex-wrap gap-1.5 rounded-md border bg-slate-50 px-3 py-2">
-                  {tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              ) : null}
-              <div className="rounded-md border bg-slate-50 px-3 py-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Zusammenfassung</p>
-                <p className="mt-1 text-xs leading-relaxed text-slate-700">{tldr}</p>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="rounded-md border bg-white px-2.5 py-2">
-                  <p className="mb-1 inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600">
-                    <AppIcon icon={InformationCircleIcon} size={12} />
-                    Herausforderung
+        <TableCell className="max-w-[200px] text-foreground">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <HoverCard openDelay={0} closeDelay={100}>
+              <HoverCardTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex shrink-0 rounded-sm p-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label="Zusammenfassung anzeigen"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Eye className="size-3.5" strokeWidth={2} aria-hidden />
+                </button>
+              </HoverCardTrigger>
+              <HoverCardContent
+                align="start"
+                className="w-[min(100vw-2rem,380px)] max-h-[260px] overflow-y-auto"
+              >
+                {summaryText ? (
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{summaryText}</p>
+                ) : (
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    Noch keine Kurz-Zusammenfassung hinterlegt. Sie wird beim Anlegen der Referenz automatisch
+                    ergänzt, sobald ausreichend Kontext vorliegt — oder kann in der Referenz bearbeitet werden.
                   </p>
-                  {challengeBullets.length ? (
-                    <ul className="space-y-1 text-[11px] text-slate-700">
-                      {challengeBullets.map((item, idx) => (
-                        <li key={`${idx}-${item}`} className="line-clamp-2">
-                          • {item}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-[11px] text-slate-500">Keine Daten</p>
-                  )}
-                </div>
-                <div className="rounded-md border bg-white px-2.5 py-2">
-                  <p className="mb-1 inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600">
-                    <AppIcon icon={Sparkles} size={12} />
-                    Lösung
-                  </p>
-                  {solutionBullets.length ? (
-                    <ul className="space-y-1 text-[11px] text-slate-700">
-                      {solutionBullets.map((item, idx) => (
-                        <li key={`${idx}-${item}`} className="line-clamp-2">
-                          • {item}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-[11px] text-slate-500">Keine Daten</p>
-                  )}
-                  </div>
-              </div>
-            </HoverCardContent>
-          </HoverCard>
+                )}
+              </HoverCardContent>
+            </HoverCard>
+            <span className="min-w-0 truncate">{ref.title}</span>
+          </div>
         </TableCell>
       )
+    }
     case "industry":
       return <TableCell className="text-muted-foreground">{ref.industry ?? ""}</TableCell>
     case "status":
@@ -1013,7 +927,7 @@ export function renderReferenceColumnCell(
     case "updated_at":
       return (
         <TableCell className="text-right text-muted-foreground text-sm">
-          {ref.updated_at ? formatDateUtcDe(ref.updated_at) : ""}
+          {ref.updated_at ? formatReferenceDate(ref.updated_at, dateFmt) : ""}
         </TableCell>
       )
     case "tags":
@@ -1043,13 +957,13 @@ export function renderReferenceColumnCell(
     case "project_start":
       return (
         <TableCell className="text-right text-muted-foreground text-sm">
-          {ref.project_start ? formatDateUtcDe(ref.project_start) : ""}
+          {ref.project_start ? formatReferenceDate(ref.project_start, dateFmt) : ""}
         </TableCell>
       )
     case "project_end":
       return (
         <TableCell className="text-right text-muted-foreground text-sm">
-          {ref.project_end ? formatDateUtcDe(ref.project_end) : ""}
+          {ref.project_end ? formatReferenceDate(ref.project_end, dateFmt) : ""}
         </TableCell>
       )
     case "duration_months":
@@ -1061,7 +975,7 @@ export function renderReferenceColumnCell(
     case "created_at":
       return (
         <TableCell className="text-right text-muted-foreground text-sm">
-          {formatDateUtcDe(ref.created_at)}
+          {formatReferenceDate(ref.created_at, dateFmt)}
         </TableCell>
       )
     default:

@@ -12,16 +12,15 @@ import {
   Mail,
   MapPinIcon,
   Pencil,
-  Sparkles,
   StarIcon,
   TrendingUp,
   UploadIcon,
   Users,
 } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
-import { formatDateUtcDe, formatReferenceVolume } from '@/lib/format'
+import { formatEmployeeCountDeDisplay, formatReferenceDate, formatReferenceVolume, normalizeOrgDateDisplayFormat } from '@/lib/format'
 import { deleteReferenceFromDetailPage } from './actions'
-import { ReferenceStatusBadge } from '@/components/reference-status-badge'
+import { ReferenceStatusWithHint } from '@/components/reference-status-with-hint'
 import { ROUTES } from '@/lib/routes'
 import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 import { PdfExportDialog } from './pdf-export-dialog'
@@ -29,7 +28,6 @@ import { PptxOnepagerExportButton } from './pptx-onepager-export-button'
 import { ShareLinkButton } from './share-link-button'
 import { RequestApprovalDialog } from './request-approval-dialog'
 import { ReferenceViewedTracker } from './reference-viewed-tracker'
-import { getReferenceUsageStats } from '@/app/dashboard/references/reference-usage-stats'
 import { ApprovalPendingActions } from './approval-pending-actions'
 import { getReferenceDetailActivities } from './reference-detail-activities'
 import { ReferenceActivitiesTimeline } from './reference-activities-timeline'
@@ -40,6 +38,7 @@ import {
 } from '@/lib/references/reference-context-highlights'
 import { normalizeNarrativeText } from '@/lib/references/narrative-normalize'
 import { getReferenceAssetsImpl } from '@/app/dashboard/references/assets'
+import { formatProjectEndWithDurationDe } from '@/lib/references/reference-duration-months'
 
 export const dynamic = 'force-dynamic'
 
@@ -57,13 +56,6 @@ function anonymizeText(value: string | null | undefined, companyName: string | n
   if (!normalizedCompany) return text
   const escaped = normalizedCompany.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   return text.replace(new RegExp(escaped, 'gi'), 'Kunde')
-}
-
-function firstSentence(value: string | null | undefined) {
-  const text = String(value ?? '').trim().replace(/\s+/g, ' ')
-  if (!text) return null
-  const match = text.match(/.+?[.!?](?:\s|$)/)
-  return (match ? match[0] : text).trim()
 }
 
 export default async function EvidenceDetailPage({
@@ -84,13 +76,29 @@ export default async function EvidenceDetailPage({
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, organization_id')
+    .select('role, organization_id, full_name')
     .eq('id', user.id)
     .single()
   if (!profile) redirect(ROUTES.onboarding)
 
   const role = (profile as { role?: 'admin' | 'sales' | 'account_manager' }).role ?? 'sales'
   const organizationId = (profile as { organization_id?: string | null }).organization_id ?? null
+  const requesterDisplayName =
+    typeof (profile as { full_name?: string | null }).full_name === 'string'
+      ? (profile as { full_name: string }).full_name.trim()
+      : ''
+
+  let orgDateFmt = normalizeOrgDateDisplayFormat('de-DE')
+  if (organizationId) {
+    const { data: orgRow } = await supabase
+      .from('organizations')
+      .select('date_display_format')
+      .eq('id', organizationId)
+      .maybeSingle()
+    orgDateFmt = normalizeOrgDateDisplayFormat(
+      (orgRow as { date_display_format?: string | null } | null)?.date_display_format
+    )
+  }
 
   const { data: row, error } = await supabase
     .from('references')
@@ -98,7 +106,6 @@ export default async function EvidenceDetailPage({
       `
       id,
       title,
-      summary,
       industry,
       country,
       status,
@@ -108,10 +115,6 @@ export default async function EvidenceDetailPage({
       approval_owner_name,
       approval_expires_at,
       approval_scope_named_mention,
-      approval_scope_anonymous_mention,
-      approval_scope_reference_call,
-      approval_scope_logo_use,
-      approval_scope_press_release,
       approval_grace_until,
       approval_internal_status,
       approval_contact_id,
@@ -157,7 +160,6 @@ export default async function EvidenceDetailPage({
   type ReferenceDetailRow = {
     id: string
     title: string
-    summary: string | null
     industry: string | null
     country: string | null
     status: string
@@ -167,10 +169,6 @@ export default async function EvidenceDetailPage({
     approval_owner_name: string | null
     approval_expires_at: string | null
     approval_scope_named_mention: boolean | null
-    approval_scope_anonymous_mention: boolean | null
-    approval_scope_reference_call: boolean | null
-    approval_scope_logo_use: boolean | null
-    approval_scope_press_release: boolean | null
     approval_grace_until: string | null
     approval_internal_status: string | null
     approval_contact_id: string | null
@@ -226,9 +224,6 @@ export default async function EvidenceDetailPage({
     .maybeSingle()
 
   const isFavorited = Boolean(favorite?.id)
-  const usageStats = await getReferenceUsageStats(id)
-  const ev = usageStats?.events ?? {}
-  const n = (key: string) => ev[key] ?? 0
   const tags = splitTags(ref.tags ?? null)
   const company = Array.isArray(ref.companies) ? ref.companies[0] : ref.companies
   const isAnonymizedView = qs?.view === 'anonymized'
@@ -238,7 +233,7 @@ export default async function EvidenceDetailPage({
   const refEmployeeRaw = ref.employee_count ?? company?.employee_count ?? null
   const employeeMetaLabel =
     typeof refEmployeeRaw === 'number' && Number.isFinite(refEmployeeRaw)
-      ? new Intl.NumberFormat('de-DE').format(refEmployeeRaw)
+      ? formatEmployeeCountDeDisplay(refEmployeeRaw)
       : null
   const hqRaw = (company?.headquarters ?? '').trim()
   const countryRaw = (ref.country ?? '').trim()
@@ -255,39 +250,18 @@ export default async function EvidenceDetailPage({
         ? websiteRaw
         : `https://${websiteRaw}`
       : null
-  const summaryTextRaw = isAnonymizedView
-    ? anonymizeText(ref.summary ?? null, companyName)
-    : (ref.summary ?? null)
   const challengeTextRaw = isAnonymizedView
     ? anonymizeText(ref.customer_challenge ?? null, companyName)
     : (ref.customer_challenge ?? null)
   const solutionTextRaw = isAnonymizedView
     ? anonymizeText(ref.our_solution ?? null, companyName)
     : (ref.our_solution ?? null)
-  const summaryText = normalizeNarrativeText(summaryTextRaw)
   const challengeText = normalizeNarrativeText(challengeTextRaw)
   const solutionText = normalizeNarrativeText(solutionTextRaw)
-  const hasSummary = Boolean(summaryText?.trim())
   const hasChallenge = Boolean(challengeText?.trim())
   const hasSolution = Boolean(solutionText?.trim())
-  /** 40 % Herausforderung / 60 % Lösung – nur wenn beide Karten da sind (sonst volle Breite). */
-  const challengeSolutionGridClass =
-    hasChallenge && hasSolution
-      ? 'grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]'
-      : 'grid gap-4 md:grid-cols-1'
-  const tldrBullets = Array.from(
-    new Set([
-    firstSentence(summaryText) || firstSentence(challengeText) || 'Kernaussage ist in der Referenz hinterlegt.',
-    firstSentence(challengeText) || 'Die zentrale Herausforderung ist dokumentiert.',
-    firstSentence(solutionText) || firstSentence(summaryText) || 'Die umgesetzte Lösung ist dokumentiert.',
-    ])
-  )
-    .filter(Boolean)
-    .slice(0, 3)
-  const outcomeText = normalizeNarrativeText(
-    firstSentence(summaryText) ||
-      `Diese Referenz zeigt bereits messbare Nutzungssignale (${n('reference_helped')}x als hilfreich markiert).`
-  )
+  /** Herausforderung und Lösung untereinander (ruhiger Lesefluss). */
+  const challengeSolutionGridClass = 'grid gap-4 grid-cols-1'
   const isApprovalGranted =
     String(ref.customer_approval_status ?? '').toLowerCase() === 'approved' ||
     normalizedStatus === 'approved' ||
@@ -349,13 +323,6 @@ export default async function EvidenceDetailPage({
     readinessLabel = 'Nicht angefragt'
     readinessTone = 'bg-slate-100 text-slate-600 border-slate-200'
   }
-  const scopeBadges = [
-    (ref.approval_scope_named_mention ?? true) ? 'Namentlich' : null,
-    (ref.approval_scope_anonymous_mention ?? true) ? 'Anonym' : null,
-    (ref.approval_scope_reference_call ?? false) ? 'Referenz-Call' : null,
-    (ref.approval_scope_logo_use ?? false) ? 'Logo-Nutzung' : null,
-    (ref.approval_scope_press_release ?? false) ? 'Pressemeldung' : null,
-  ].filter(Boolean) as string[]
   const competitorBlacklist = Array.isArray(ref.approval_competitor_blacklist)
     ? ref.approval_competitor_blacklist
     : []
@@ -381,7 +348,7 @@ export default async function EvidenceDetailPage({
   })
 
   const [referenceActivities, assetRows] = await Promise.all([
-    getReferenceDetailActivities(id, role as 'admin' | 'sales' | 'account_manager'),
+    getReferenceDetailActivities(id),
     getReferenceAssetsImpl(id),
   ])
 
@@ -454,15 +421,28 @@ export default async function EvidenceDetailPage({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="space-y-2 min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <ReferenceStatusBadge status={ref.status} customerApprovalStatus={ref.customer_approval_status} />
+                <ReferenceStatusWithHint status={ref.status} customerApprovalStatus={ref.customer_approval_status} />
               </div>
               <h1 className={`${DASHBOARD_PAGE_TITLE_CLASS} break-words`}>
                 {ref.title}
               </h1>
-              {headerCompany ? (
-                <p className="text-sm text-muted-foreground">{headerCompany}</p>
-              ) : null}
               <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                {headerCompany ? (
+                  isAnonymizedView || !company?.id ? (
+                    <span className="inline-flex max-w-[min(100%,240px)] shrink-0 items-center font-medium text-foreground/90">
+                      {headerCompany}
+                    </span>
+                  ) : (
+                    <span className="inline-flex max-w-[min(100%,240px)] shrink-0 items-center font-medium text-foreground/90">
+                      <Link
+                        href={ROUTES.accountsDetail(company.id)}
+                        className="truncate transition-colors hover:text-foreground hover:underline"
+                      >
+                        {headerCompany}
+                      </Link>
+                    </span>
+                  )
+                ) : null}
                 {industryLabel ? (
                   <span className="inline-flex max-w-[min(100%,280px)] items-center gap-1">
                     <AppIcon icon={Building2} size={14} className="shrink-0" />
@@ -493,38 +473,20 @@ export default async function EvidenceDetailPage({
                   </a>
                 ) : null}
               </div>
-              <div className="mt-2 flex flex-wrap gap-1">
-                {tags.length ? (
-                  tags.map((t) => (
+              {tags.length > 0 ? (
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {tags.map((t) => (
                     <Badge key={t} variant="secondary">
                       {t}
                     </Badge>
-                  ))
-                ) : (
-                  <span className="text-sm text-muted-foreground">—</span>
-                )}
-              </div>
+                  ))}
+                </div>
+              ) : null}
             </div>
           </div>
 
-          {hasSummary || hasChallenge || hasSolution ? (
+          {hasChallenge || hasSolution ? (
             <div className="w-full min-w-0 space-y-6">
-              <Card className="border-blue-200/70 bg-blue-50/50 dark:border-blue-500/30 dark:bg-blue-500/10">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm text-slate-950 dark:text-slate-100 inline-flex items-center gap-2">
-                    <AppIcon icon={Sparkles} size={15} className="text-blue-600 dark:text-blue-300" />
-                    Zusammenfassung
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-muted-foreground">
-                    {tldrBullets.map((bullet, idx) => (
-                      <li key={`${bullet}-${idx}`}>{bullet}</li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-
               <div className={challengeSolutionGridClass}>
                 {hasChallenge ? (
                   <Card className="border-border/70">
@@ -556,19 +518,6 @@ export default async function EvidenceDetailPage({
                     </CardContent>
                   </Card>
                 ) : null}
-                <Card className="border-border/70 col-span-full">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-xs uppercase tracking-wider text-slate-950 dark:text-slate-100 inline-flex items-center gap-1.5">
-                      <AppIcon icon={Sparkles} size={14} className="text-muted-foreground" />
-                      Ergebnis
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm leading-relaxed text-muted-foreground">
-                      <ReferenceContextHighlighted text={outcomeText} phrases={highlightPhrases} />
-                    </p>
-                  </CardContent>
-                </Card>
               </div>
               {role === 'sales' ? filesCard : null}
             </div>
@@ -576,16 +525,30 @@ export default async function EvidenceDetailPage({
             <div className="w-full min-w-0">{filesCard}</div>
           ) : null}
 
-          {role === 'sales' ? null : (
+          {role === 'sales' ? (
+            <Card className="border-border/70">
+              <CardHeader>
+                <CardTitle className="text-base">Letzte Ereignisse</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-xs text-muted-foreground">
+                  Nur Freigaben, Kundenlinks, Exporte, interne Prüfung und Deal‑Ergebnisse — keine
+                  Seitenaufrufe, Such‑Matches oder KI‑Entwürfe.
+                </p>
+                <ReferenceActivitiesTimeline items={referenceActivities} />
+              </CardContent>
+            </Card>
+          ) : (
             <>
               {filesCard}
-              <Card className="order-2">
+              <Card className="border-border/70">
                 <CardHeader>
-                  <CardTitle className="text-base">Letzte Aktivitäten</CardTitle>
+                  <CardTitle className="text-base">Letzte Ereignisse</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <p className="text-xs text-muted-foreground">
-                    Aus dem Aktivitätsprotokoll (evidence_events), bis zu fünf neueste Einträge.
+                    Nur Freigaben, Kundenlinks, Exporte, interne Prüfung und Deal‑Ergebnisse — keine
+                    Seitenaufrufe, Such‑Matches oder KI‑Entwürfe.
                   </p>
                   <ReferenceActivitiesTimeline items={referenceActivities} />
                 </CardContent>
@@ -601,10 +564,6 @@ export default async function EvidenceDetailPage({
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <div className="flex justify-between gap-2">
-                <span className="text-muted-foreground">Account</span>
-                <span className="font-medium truncate max-w-[220px]">{headerCompany ?? ''}</span>
-              </div>
-              <div className="flex justify-between gap-2">
                 <span className="text-muted-foreground">Volumen</span>
                 <span className="font-medium tabular-nums">
                   {formatReferenceVolume(ref.volume_eur)}
@@ -616,11 +575,20 @@ export default async function EvidenceDetailPage({
               </div>
               <div className="flex justify-between gap-2">
                 <span className="text-muted-foreground">Projektstart</span>
-                <span className="font-medium">{ref.project_start ?? ''}</span>
+                <span className="font-medium">{ref.project_start ? formatReferenceDate(ref.project_start, orgDateFmt) : ''}</span>
               </div>
               <div className="flex justify-between gap-2">
                 <span className="text-muted-foreground">Projektende</span>
-                <span className="font-medium">{ref.project_end ?? ''}</span>
+                <span className="font-medium text-right">
+                  {ref.project_end
+                    ? formatProjectEndWithDurationDe({
+                        project_start: ref.project_start,
+                        project_end: ref.project_end,
+                        project_status: ref.project_status,
+                        formatEndDate: (iso) => formatReferenceDate(iso, orgDateFmt),
+                      })
+                    : ''}
+                </span>
               </div>
               <div className="flex justify-between gap-2">
                 <span className="text-muted-foreground">Akt. Dienstleister</span>
@@ -711,22 +679,8 @@ export default async function EvidenceDetailPage({
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-muted-foreground">Gültig bis</span>
                     <span className="font-medium">
-                      {ref.approval_expires_at ? formatDateUtcDe(ref.approval_expires_at) : '—'}
+                      {ref.approval_expires_at ? formatReferenceDate(ref.approval_expires_at, orgDateFmt) : '—'}
                     </span>
-                  </div>
-                  <div className="space-y-1.5">
-                    <p className="text-muted-foreground">Erlaubte Nutzung</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {scopeBadges.length ? (
-                        scopeBadges.map((item) => (
-                          <Badge key={item} variant="secondary">
-                            {item}
-                          </Badge>
-                        ))
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </div>
                   </div>
                   {competitorBlacklist.length ? (
                     <div className="space-y-1.5">
@@ -783,78 +737,7 @@ export default async function EvidenceDetailPage({
             </CardContent>
           </Card>
 
-          {role === 'sales' ? null : (
           <Card className="order-3">
-            <CardHeader>
-              <CardTitle className="text-base">Nutzung & Impact</CardTitle>
-              <p className="text-xs text-muted-foreground">
-                Aus dem Audit-Log (evidence_events). Gilt für alle Rollen mit Zugriff auf diese
-                Referenz.
-              </p>
-            </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-2 text-sm">
-              <div className="rounded-md border bg-muted/25 p-2">
-                <div className="text-xs text-muted-foreground inline-flex items-center gap-1">
-                  <AppIcon icon={TrendingUp} size={12} />
-                  Detail-Ansichten (App)
-                </div>
-                <div className="font-semibold tabular-nums text-slate-950 dark:text-slate-100">{n('reference_viewed')}</div>
-              </div>
-              <div className="rounded-md border bg-muted/25 p-2">
-                <div className="text-xs text-muted-foreground inline-flex items-center gap-1">
-                  <AppIcon icon={LinkIcon} size={12} />
-                  Öffentliche Link-Aufrufe
-                </div>
-                <div className="font-semibold tabular-nums text-slate-950 dark:text-slate-100">{n('share_link_viewed')}</div>
-              </div>
-              <div className="rounded-md border bg-muted/25 p-2">
-                <div className="text-xs text-muted-foreground inline-flex items-center gap-1">
-                  <AppIcon icon={Sparkles} size={12} />
-                  PDF-Exports
-                </div>
-                <div className="font-semibold tabular-nums text-slate-950 dark:text-slate-100">{n('reference_exported')}</div>
-              </div>
-              <div className="rounded-md border bg-muted/25 p-2">
-                <div className="text-xs text-muted-foreground">Kundenlinks erstellt</div>
-                <div className="font-semibold tabular-nums text-slate-950 dark:text-slate-100">{n('reference_shared')}</div>
-              </div>
-              <div className="rounded-md border bg-muted/25 p-2">
-                <div className="text-xs text-muted-foreground">In Suchergebnissen</div>
-                <div className="font-semibold tabular-nums text-slate-950 dark:text-slate-100">{n('reference_matched')}</div>
-              </div>
-              <div className="rounded-md border bg-muted/25 p-2">
-                <div className="text-xs text-muted-foreground inline-flex items-center gap-1">
-                  <AppIcon icon={TrendingUp} size={12} />
-                  „Hat geholfen“ (Deal)
-                </div>
-                <div className="font-semibold tabular-nums text-slate-950 dark:text-slate-100">{n('reference_helped')}</div>
-              </div>
-              <div className="rounded-md border bg-muted/25 p-2">
-                <div className="text-xs text-muted-foreground inline-flex items-center gap-1">
-                  <AppIcon icon={LinkIcon} size={12} />
-                  Deals verknüpft
-                </div>
-                <div className="font-semibold tabular-nums text-slate-950 dark:text-slate-100">{usageStats?.dealsLinked ?? 0}</div>
-              </div>
-              <div className="rounded-md border bg-muted/25 p-2">
-                <div className="text-xs text-muted-foreground inline-flex items-center gap-1">
-                  <AppIcon icon={Sparkles} size={12} />
-                  Deal-Ergebnisse
-                </div>
-                <div className="font-semibold tabular-nums text-slate-950 dark:text-slate-100">
-                  {usageStats
-                    ? `${usageStats.dealsWon} / ${usageStats.dealsLost} / ${usageStats.dealsWithdrawn}`
-                    : '—'}
-                </div>
-                <div className="text-[10px] text-muted-foreground leading-tight mt-0.5">
-                  Gewonnen / Verloren / Abgebrochen
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          )}
-
-          <Card className={role === 'sales' ? 'order-3' : 'order-4'}>
             <CardHeader>
               <CardTitle className="text-base">Aktionen</CardTitle>
             </CardHeader>
@@ -868,7 +751,9 @@ export default async function EvidenceDetailPage({
                   {!isApprovalGranted ? (
                     <RequestApprovalDialog
                       referenceId={id}
-                      defaultContactId={ref.customer_contact_id ?? ref.contact_id}
+                      defaultInternalOwnerName={
+                        (ref.approval_owner_name ?? '').trim() || requesterDisplayName || ''
+                      }
                       triggerIcon={<AppIcon icon={Mail} size={16} />}
                     />
                   ) : null}

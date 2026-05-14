@@ -114,9 +114,8 @@ export function ApprovalPendingActions({
       setContacts([])
       return
     }
-    const withEmail = res.contacts.filter((c) => typeof c.email === 'string' && c.email.includes('@'))
-    setContacts(withEmail)
-    const opts = withEmail
+    setContacts(res.contacts)
+    const opts = res.contacts
     const pick = (id: string | null, kind: ApprovalContactOption['kind']) => {
       if (!id) return false
       return opts.some((o) => o.id === id && o.kind === kind)
@@ -139,7 +138,7 @@ export function ApprovalPendingActions({
   function onResend() {
     startTransition(async () => {
       await resendClientApprovalEmail(referenceId)
-      toast.success('Erinnerung versendet.')
+      toast.success('Neuer Freigabe-Link ist aktiv. Bitte manuell an den Kunden senden.')
     })
   }
 
@@ -173,10 +172,6 @@ export function ApprovalPendingActions({
       toast.error('Bitte einen Empfänger mit E-Mail wählen.')
       return
     }
-    if (!picked.email?.includes('@')) {
-      toast.error('Der gewählte Kontakt hat keine gültige E-Mail-Adresse.')
-      return
-    }
     startTransition(async () => {
       const recipient =
         picked.kind === 'external_contact'
@@ -188,7 +183,7 @@ export function ApprovalPendingActions({
         return
       }
       setDialogOpen(false)
-      toast.success('Interne Freigabe erteilt, E-Mail an Kunden versendet.')
+      toast.success('Kunden-Freigabe ist vorbereitet. Link unter „Link kopieren“ — kein automatischer Versand.')
       router.refresh()
     })
   }
@@ -206,12 +201,12 @@ export function ApprovalPendingActions({
           onClick={openInternalApproveDialog}
           disabled={disableInternalApprove}
         >
-          Interne Freigabe erteilen & Versand
+          Interne Freigabe & Kundenlink vorbereiten
         </Button>
       ) : null}
       <div className="grid grid-cols-2 gap-2">
         <Button type="button" variant="outline" onClick={onResend} disabled={disableResend} title={isClientPending ? undefined : 'Nur bei laufender Kundenanfrage verfügbar'}>
-          Erinnerung senden
+          Neuen Link erzeugen
         </Button>
         <Button type="button" variant="outline" onClick={onCopyLink} disabled={disableCopy} title={isClientPending ? undefined : 'Nur bei laufender Kundenanfrage verfügbar'}>
           Link kopieren
@@ -224,10 +219,11 @@ export function ApprovalPendingActions({
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Empfänger für Kunden-Freigabe</DialogTitle>
+            <DialogTitle>Kundenkontakt für die Freigabe</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Die Freigabe-E-Mail geht an den gewählten Kontakt. Ohne gültige E-Mail-Adresse kann kein Versand erfolgen — bitte Kontakt im Account pflegen oder hier auswählen.
+            Es wird kein automatischer E-Mail-Versand ausgelöst. Der gewählte Kontakt wird gespeichert; den
+            Freigabe-Link kopieren Sie anschließend und senden ihn manuell (z. B. per E-Mail aus dem Account).
           </p>
           <div className="grid gap-2 py-2">
             <Label htmlFor="internal-approve-contact">Kontakt</Label>
@@ -254,7 +250,7 @@ export function ApprovalPendingActions({
               Abbrechen
             </Button>
             <Button type="button" onClick={onConfirmInternalApprove} disabled={pending || !contactId || loadingContacts}>
-              Freigabe erteilen & senden
+              Freigabe vorbereiten
             </Button>
           </DialogFooter>
         </DialogContent>

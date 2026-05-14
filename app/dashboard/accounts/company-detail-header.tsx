@@ -3,8 +3,9 @@ import { Button } from '@/components/ui/button'
 import { Building2, Globe, MapPinIcon, Users } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import type { CompanyDetailCompany } from './company-detail-types'
-import { ROUTES } from '@/lib/routes'
+import { formatEmployeeCountDeDisplay } from '@/lib/format'
 import { COPY } from '@/lib/copy'
+import { ROUTES } from '@/lib/routes'
 import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 import { CompanyLogo } from '@/components/ui/company-logo'
 
@@ -19,7 +20,7 @@ export function CompanyDetailHeader({
 }) {
   const employeeLabel =
     typeof company.employee_count === 'number' && Number.isFinite(company.employee_count)
-      ? new Intl.NumberFormat('de-DE').format(company.employee_count)
+      ? formatEmployeeCountDeDisplay(company.employee_count)
       : null
 
   return (

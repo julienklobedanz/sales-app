@@ -112,6 +112,7 @@ export function SettingsTabs({
       auditLogRetentionDays: number
       referenceHighlightGlossary: string
     }
+    dateDisplayFormat: string
   }
   teamMembers: Parameters<typeof SettingsTeamCard>[0]['initialMembers']
   auditLogs: Array<{
@@ -750,6 +751,7 @@ export function SettingsTabs({
               logoUrl={org.logoUrl}
               primaryColor={org.primaryColor}
               secondaryColor={org.secondaryColor}
+              dateDisplayFormat={org.dateDisplayFormat}
               hideSubmitButton
               saveSignal={workspaceSaveSignal}
               onDirtyChange={setWorkspaceCardDirty}

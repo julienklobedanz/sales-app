@@ -13,7 +13,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { ShieldAlert } from '@hugeicons/core-free-icons'
 import { deactivatePortfolio } from '../actions'
 import { toast } from 'sonner'
@@ -63,12 +64,12 @@ export function PublicPortfolioKillswitch({ slug }: { slug: string }) {
         <AlertDialogFooter>
           <AlertDialogCancel disabled={loading}>Abbrechen</AlertDialogCancel>
           <AlertDialogAction
+            className={cn(buttonVariants({ variant: 'destructive' }))}
             onClick={(e) => {
               e.preventDefault()
               handleDeactivate()
             }}
             disabled={loading}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
             {loading ? 'Wird gesperrt…' : 'Ja, Zugriff sperren'}
           </AlertDialogAction>

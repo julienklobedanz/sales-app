@@ -332,7 +332,7 @@ export function MagicImportDropzone({
               className="text-muted-foreground animate-spin"
             />
             <span className="text-muted-foreground text-sm font-medium">
-              KI analysiert Dokument… Bitte warten (bis zu 30 Sek.)
+              KI analysiert Dokument… Bitte warten (kann bis zu etwa 2 Minuten dauern)
             </span>
           </>
         ) : (
@@ -357,23 +357,36 @@ export function CompanyCombobox({
   onValueChange,
   onSelectCompany,
   onConfirmValue,
+  onAutoRemotePreview,
+  previewLoading = false,
   loading,
   disabled,
   inputClassName,
+  /** Wenn gesetzt, kein automatisches Brandfetch/Anlegen — Firma ist bereits gewählt. */
+  companyId,
 }: {
   companies: ReferenceFormCompany[]
   value: string
   onValueChange: (value: string) => void
   onSelectCompany: (company: ReferenceFormCompany) => void
   onConfirmValue?: (value: string) => void
+  /** Wenn Suche + lokale Liste leer: sofort Markendaten-Vorschlag (ohne DB). */
+  onAutoRemotePreview?: (query: string) => void
+  previewLoading?: boolean
   loading: boolean
   disabled: boolean
   inputClassName?: string
+  companyId?: string
 }) {
   const [open, setOpen] = useState(false)
   const [remoteSuggestions, setRemoteSuggestions] = useState<ReferenceFormCompany[]>([])
   const [searching, setSearching] = useState(false)
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const valueRef = useRef(value)
+  const companiesRef = useRef(companies)
+  companiesRef.current = companies
+
+  valueRef.current = value
 
   const trimmed = value.trim().toLowerCase()
   const localFiltered = companies.filter((c) =>
@@ -403,6 +416,20 @@ export function CompanyCombobox({
               logo_url: s.logo_url ?? null,
             }))
             setRemoteSuggestions(suggestions)
+            const latestQ = valueRef.current.trim()
+            const t = latestQ.toLowerCase()
+            const loc = companiesRef.current.filter((c) =>
+              t ? c.name.toLowerCase().includes(t) : true,
+            )
+            const remoteCount = (result.suggestions ?? []).length
+            if (
+              onAutoRemotePreview &&
+              latestQ.length >= 4 &&
+              loc.length === 0 &&
+              remoteCount === 0
+            ) {
+              onAutoRemotePreview(latestQ)
+            }
           } else {
             console.error('Unternehmenssuche fehlgeschlagen:', result.error)
             setRemoteSuggestions([])
@@ -411,8 +438,8 @@ export function CompanyCombobox({
         .finally(() => {
           setSearching(false)
         })
-    }, 300)
-  }, [value])
+    }, 180)
+  }, [value, onAutoRemotePreview])
 
   useEffect(() => {
     return () => {
@@ -479,15 +506,18 @@ export function CompanyCombobox({
               <span className="truncate">{company.name}</span>
             </button>
           ))}
-          {mergedSuggestions.length === 0 && !searching && !loading && (
-            <div className="px-3 py-2 text-xs text-muted-foreground">
-              Keine Treffer. Neuer Name wird verwendet.
-            </div>
-          )}
-          {(searching || loading) && (
+          {(searching || loading || previewLoading) && (
             <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
               <AppIcon icon={Loader} size={12} className="animate-spin" />
-              Suche nach Unternehmen …
+              {previewLoading && !searching
+                ? 'Markendaten werden geladen …'
+                : 'Suche nach Unternehmen …'}
+            </div>
+          )}
+          {mergedSuggestions.length === 0 && !searching && !loading && !previewLoading && (
+            <div className="px-3 py-2 text-xs text-muted-foreground">
+              Keine Treffer in euren Accounts. Markendaten werden bei passender Eingabe automatisch
+              geladen — oder Domain nutzen (z. B. merck.de) und Enter drücken.
             </div>
           )}
         </div>

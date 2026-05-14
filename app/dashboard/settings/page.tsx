@@ -182,7 +182,9 @@ export default async function SettingsPage() {
     organizationId &&
     (await supabase
       .from('organizations')
-      .select('id, name, logo_url, primary_color, secondary_color, export_settings, stripe_subscription_id, subscription_status, subdomain, api_settings, workflow_settings')
+      .select(
+        'id, name, logo_url, primary_color, secondary_color, date_display_format, export_settings, stripe_subscription_id, subscription_status, subdomain, api_settings, workflow_settings'
+      )
       .eq('id', organizationId)
       .single())
 
@@ -238,6 +240,9 @@ export default async function SettingsPage() {
           secondaryColor:
             (orgRow as { secondary_color?: string | null } | null)
               ?.secondary_color ?? '#1D4ED8',
+          dateDisplayFormat:
+            (orgRow as { date_display_format?: string | null } | null)?.date_display_format ??
+            'de-DE',
           exportSettings: parseExportSettings(
             (orgRow as { export_settings?: unknown } | null)?.export_settings
           ),

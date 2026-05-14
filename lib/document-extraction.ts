@@ -5,19 +5,13 @@ import type {
   ExtractDataFromDocumentResult,
 } from '@/app/dashboard/evidence/new/types'
 import { clampNarrativeTextNullable } from '@/lib/references/reference-narrative-limits'
+import { extractPdfPlainText } from '@/lib/pdf-text-extract'
 
 const INDUSTRIES_LIST =
   'Financial Services & Insurance, Retail & Consumer Goods (CPG), Manufacturing & Automotive, Technology, Media & Telecom (TMT), Energy, Resources & Utilities, Healthcare & Life Sciences, Public Sector & Education, Professional Services & Logistics, Travel, Transport & Hospitality, Sonstige'
 
 async function extractTextFromPdf(buffer: Buffer): Promise<string> {
-  const pdfModule = await import('pdf-parse')
-  const fn =
-    (pdfModule as unknown as {
-      default?: (b: Buffer) => Promise<{ text?: string }>
-    }).default ??
-    (pdfModule as unknown as (b: Buffer) => Promise<{ text?: string }>)
-  const data = await fn(buffer)
-  return typeof data?.text === 'string' ? data.text : ''
+  return extractPdfPlainText(buffer)
 }
 
 /** Extrahiert Text aus PPTX (ZIP mit ppt/slides/slideN.xml; Text in <a:t>-Elementen). */
@@ -64,7 +58,9 @@ async function extractTextFromDocx(buffer: Buffer): Promise<string> {
 async function extractWithLLM(documentText: string): Promise<ExtractedReferenceData> {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) {
-    throw new Error('OPENAI_API_KEY ist nicht gesetzt.')
+    throw new Error(
+      'Automatisches Ausfüllen ist nicht konfiguriert (fehlender API-Schlüssel). Bitte die Felder manuell ausfüllen oder einen Administrator informieren.'
+    )
   }
 
   const prompt = `Extrahiere aus dem folgenden Referenzdokument-Text strukturierte Daten. Antworte NUR mit einem gültigen JSON-Objekt, ohne zusätzlichen Text.
@@ -113,8 +109,31 @@ Dokumenttext (Ausschnitt):
   })
 
   if (!response.ok) {
-    const err = await response.text()
-    throw new Error(`OpenAI API: ${response.status} ${err}`)
+    const bodyText = await response.text()
+    const lower = bodyText.toLowerCase()
+    if (
+      response.status === 429 ||
+      lower.includes('insufficient_quota') ||
+      lower.includes('rate_limit') ||
+      lower.includes('billing')
+    ) {
+      throw new Error(
+        'Automatisches Ausfüllen ist gerade nicht möglich: beim KI-Anbieter ist das Kontingent aufgebraucht oder ein Rate-Limit greift. Bitte Abrechnung/API-Plan prüfen oder die Felder manuell ausfüllen.'
+      )
+    }
+    if (response.status === 401) {
+      throw new Error(
+        'Automatisches Ausfüllen ist nicht möglich: der API-Schlüssel für die KI-Extraktion ist ungültig. Bitte die Konfiguration prüfen.'
+      )
+    }
+    if (response.status === 503 || response.status === 502) {
+      throw new Error(
+        'Der KI-Dienst ist vorübergehend nicht erreichbar. Bitte später erneut versuchen oder die Felder manuell ausfüllen.'
+      )
+    }
+    throw new Error(
+      'Die KI-Antwort konnte nicht verarbeitet werden. Bitte später erneut versuchen oder die Felder manuell ausfüllen.'
+    )
   }
 
   const json = await response.json()
@@ -204,6 +223,21 @@ export async function extractDataFromBuffer(
         success: false,
         error:
           'Ältere Word-Dateien (.doc) werden nicht unterstützt. Bitte als DOCX, PDF oder PowerPoint speichern und erneut hochladen.',
+      }
+    }
+    const msg = err.message || ''
+    if (/password|passwort|encrypted|verschlüsselt/i.test(msg)) {
+      return {
+        success: false,
+        error:
+          'PDF ist passwortgeschützt oder verschlüsselt. Bitte ohne Kennwort exportieren oder die Felder manuell ausfüllen.',
+      }
+    }
+    if (/invalid pdf|invalidpdf|not a pdf|pdf header/i.test(msg)) {
+      return {
+        success: false,
+        error:
+          'Die PDF-Datei ist beschädigt oder kein gültiges PDF. Bitte erneut exportieren oder die Felder manuell ausfüllen.',
       }
     }
     return {
