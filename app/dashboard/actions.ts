@@ -136,7 +136,7 @@ export async function toggleFavorite(referenceId: string) {
 }
 
 export type BulkImportReferencesResult =
-  | { success: true; created: number; referenceIds: string[] }
+  | { success: true; created: number; referenceIds: string[]; organizationId: string }
   | { success: false; error: string }
 
 export type BulkImportGroup = { projectName: string; fileCount: number }

@@ -1,7 +1,7 @@
 /**
  * Einheitliches Limit für Zusammenfassung, Herausforderung und Lösung (Formular + Server).
- * Abgestimmt mit dem RefStack-PPTX-One-Pager (`reference-onepager-pptx`): dort begrenzen wir
- * Fließtext-Spalten mit demselben Hardcap, damit typischerweise kein „…“ nötig ist und nichts in den Footer rutscht.
+ * Der PPTX-One-Pager (`reference-onepager-pptx`) skaliert die Schriftgröße, damit der
+ * vollständige Text auf eine Folie passt — dieses Limit gilt für Formular/Import.
  */
 export const REFERENCE_NARRATIVE_MAX_CHARS = 620
 

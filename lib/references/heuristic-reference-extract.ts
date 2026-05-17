@@ -5,9 +5,14 @@ const COMPANY_SUFFIX =
   /\b(AG|GmbH|SE|KG|Inc\.?|Ltd\.?|LLC|Corp\.?|Group|Gruppe|Holding|plc)\b/i
 
 const SECTION_CHALLENGE =
-  /^(herausforderung|ausgangssituation|ausgangslage|challenge|problemstellung|situation)\b/i
+  /^(herausforderung|herausforderung\s+des\s+kunden|kundenherausforderung|ausgangssituation|ausgangslage|challenge|problemstellung|situation|ausgangspunkt)\b/i
 const SECTION_SOLUTION =
-  /^(lösung|unsere\s+lösung|solution|vorgehen|umsetzung|ergebnis|nutzen)\b/i
+  /^(lösung|unsere\s+lösung|unsere\s+leistung|leistung|solution|vorgehen|umsetzung|projektumsetzung|ergebnis|nutzen|mehrwert)\b/i
+
+const INLINE_CHALLENGE =
+  /^(?:herausforderung|kundenherausforderung|ausgangssituation)(?:\s+des\s+kunden)?\s*[:–-]?\s*(.+)/i
+const INLINE_SOLUTION =
+  /^(?:unsere\s+lösung|lösung|unsere\s+leistung|vorgehen|umsetzung)(?:\s+von\s+controlware)?\s*[:–-]?\s*(.+)/i
 
 function normalizeLines(text: string): string[] {
   return text
@@ -26,17 +31,77 @@ function looksLikeCompanyName(line: string): boolean {
   return false
 }
 
-function looksLikeTitle(line: string, companyName: string | null): boolean {
+function isBoilerplateCompanyDescription(line: string, companyName: string | null): boolean {
   const t = line.trim()
-  if (t.length < 8 || t.length > 160) return false
-  if (/^referenz$/i.test(t)) return false
-  if (companyName && t.toLowerCase() === companyName.toLowerCase()) return false
-  if (looksLikeCompanyName(t) && !/\b(case study|projekt|konsolidierung|migration|digitalisierung)\b/i.test(t)) {
-    return false
+  if (t.length > 130) return true
+  if (/^Die\s+.+\s+ist\s+(ein|eine|der|die)\s+/i.test(t)) return true
+  if (/\b(ist ein weltweit|ist eine der|ist einer der|ist ein führender|führender anbieter)\b/i.test(t)) {
+    return true
   }
-  if (/^(seite|page)\s+\d+$/i.test(t)) return false
-  if (/^www\./i.test(t) || /^https?:\/\//i.test(t)) return false
-  return true
+  if (companyName) {
+    const short = companyName.replace(/\s+(AG|GmbH|SE)$/i, '').trim()
+    if (short.length > 3 && t.includes(short) && /\bist\s+(ein|eine)\b/i.test(t)) return true
+  }
+  return false
+}
+
+function scoreProjectTitle(line: string, companyName: string | null): number {
+  const t = line.trim()
+  if (t.length < 10 || t.length > 150) return -100
+  if (/^referenz$/i.test(t)) return -100
+  if (companyName && t.toLowerCase() === companyName.toLowerCase()) return -100
+  if (looksLikeCompanyName(t) && !/\b(service|infrastructure|cloud|migration)\b/i.test(t)) {
+    return -80
+  }
+  if (isBoilerplateCompanyDescription(t, companyName)) return -100
+  if (/^(seite|page)\s+\d+$/i.test(t)) return -100
+  if (/^www\./i.test(t) || /^https?:\/\//i.test(t)) return -100
+
+  let score = 0
+  if (/[–—]/.test(t)) score += 35
+  if (/\s[-–]\s/.test(t)) score += 25
+  if (
+    /\b(service|infrastructure|cloud|migration|konsolidierung|digitalisierung|rollout|modernisierung|plattform|transformation)\b/i.test(
+      t
+    )
+  ) {
+    score += 28
+  }
+  const words = t.split(/\s+/).length
+  if (words >= 3 && words <= 14) score += 20
+  if (words > 18) score -= 30
+  if (/^[A-ZÄÖÜ0-9]/.test(t) && !/[.!?]\s*$/.test(t)) score += 8
+  if (/\b(der|die|das)\s+\w+\s+ist\b/i.test(t)) score -= 60
+  if (/\b(verarbeitet|produziert|bietet|entwickelt)\b/i.test(t) && words > 8) score -= 25
+  return score
+}
+
+function pickBestProjectTitle(lines: string[], companyName: string | null): string | null {
+  let best: string | null = null
+  let bestScore = 15
+  for (const line of lines.slice(0, 50)) {
+    const score = scoreProjectTitle(line, companyName)
+    if (score > bestScore) {
+      bestScore = score
+      best = line.trim()
+    }
+  }
+  return best
+}
+
+function extractSectionInline(
+  lines: string[],
+  inlinePattern: RegExp,
+  startPattern: RegExp,
+  stopPatterns: RegExp[]
+): string | null {
+  for (const line of lines) {
+    const m = line.match(inlinePattern)
+    if (m?.[1] && m[1].trim().length >= 20) {
+      return clampNarrativeTextNullable(m[1].trim())
+    }
+  }
+  return extractSection(lines, startPattern, stopPatterns)
 }
 
 function extractSection(lines: string[], startPattern: RegExp, stopPatterns: RegExp[]): string | null {
@@ -47,16 +112,37 @@ function extractSection(lines: string[], startPattern: RegExp, stopPatterns: Reg
       break
     }
   }
-  if (start < 0) return null
+  if (start < 0) {
+    return extractSectionFromFullText(lines.join('\n'), startPattern, stopPatterns)
+  }
   const parts: string[] = []
-  for (let i = start; i < Math.min(lines.length, start + 24); i++) {
+  for (let i = start; i < Math.min(lines.length, start + 30); i++) {
     const line = lines[i]!
     if (stopPatterns.some((p) => p.test(line))) break
-    if (line.length >= 20) parts.push(line)
-    if (parts.join(' ').length > 400) break
+    if (line.length >= 15 && !startPattern.test(line)) parts.push(line)
+    if (parts.join(' ').length > 500) break
   }
   const joined = parts.join(' ').trim()
   return joined.length >= 20 ? clampNarrativeTextNullable(joined) : null
+}
+
+function extractSectionFromFullText(
+  text: string,
+  startPattern: RegExp,
+  stopPatterns: RegExp[]
+): string | null {
+  const normalized = text.replace(/\r\n/g, '\n')
+  const label = startPattern.source.replace(/^\^/, '').replace(/\\b/g, '')
+  const stopLabel = stopPatterns
+    .map((p) => p.source.replace(/^\^/, '').replace(/\\b/g, ''))
+    .join('|')
+  const startRe = new RegExp(
+    `(?:${label})(?:\\s+des\\s+kunden)?\\s*[:–-]?\\s*\\n?([\\s\\S]{30,1400}?)(?=(?:\\n\\s*(?:${stopLabel}))|$)`,
+    'i'
+  )
+  const match = normalized.match(startRe)
+  const body = match?.[1]?.replace(/\s+/g, ' ').trim()
+  return body && body.length >= 20 ? clampNarrativeTextNullable(body) : null
 }
 
 function titleFromFileName(fileName: string | undefined): string | null {
@@ -69,7 +155,7 @@ function titleFromFileName(fileName: string | undefined): string | null {
     .replace(/\s+/g, ' ')
     .trim()
   if (cleaned.length < 5) return null
-  if (/^(tuvsud|csp|bmw)/i.test(cleaned) && cleaned.split(/\s+/).length <= 4) {
+  if (/^(tuvsud|csp|bmw|controlware)/i.test(cleaned) && cleaned.split(/\s+/).length <= 4) {
     return null
   }
   return cleaned
@@ -87,8 +173,9 @@ export function parseReferenceHeuristicsFromText(
   let title: string | null = null
 
   const pdfTitle = String(options?.pdfTitle ?? '').trim()
-  if (pdfTitle.length >= 8 && !/^untitled$/i.test(pdfTitle)) {
-    title = pdfTitle
+  if (pdfTitle.length >= 8 && !/^untitled$/i.test(pdfTitle) && !isBoilerplateCompanyDescription(pdfTitle, null)) {
+    const pdfScore = scoreProjectTitle(pdfTitle, null)
+    if (pdfScore > 10) title = pdfTitle
   }
 
   for (let i = 0; i < Math.min(lines.length, 40); i++) {
@@ -97,10 +184,6 @@ export function parseReferenceHeuristicsFromText(
       const next = lines[i + 1]
       if (next && looksLikeCompanyName(next)) {
         company_name = next.trim()
-        const after = lines[i + 2]
-        if (after && looksLikeTitle(after, company_name) && !title) {
-          title = after.trim()
-        }
       }
       continue
     }
@@ -119,39 +202,35 @@ export function parseReferenceHeuristicsFromText(
     }
   }
 
-  if (!title) {
-    for (const line of lines.slice(0, 25)) {
-      if (looksLikeTitle(line, company_name)) {
-        title = line.trim()
-        break
-      }
-    }
+  const scoredTitle = pickBestProjectTitle(lines, company_name)
+  if (scoredTitle) {
+    title = scoredTitle
   }
 
   if (!title) {
     title = titleFromFileName(options?.fileName) ?? null
   }
 
-  const customer_challenge = extractSection(lines, SECTION_CHALLENGE, [
-    SECTION_SOLUTION,
-    /^ergebnis\b/i,
-    /^nutzen\b/i,
-  ])
-  const our_solution = extractSection(lines, SECTION_SOLUTION, [
+  const customer_challenge = extractSectionInline(
+    lines,
+    INLINE_CHALLENGE,
     SECTION_CHALLENGE,
-    /^über\s+/i,
-    /^kontakt\b/i,
-  ])
+    [SECTION_SOLUTION, /^ergebnis\b/i, /^nutzen\b/i, /^referenz\b/i, /^mehrwert\b/i]
+  )
+  const our_solution = extractSectionInline(
+    lines,
+    INLINE_SOLUTION,
+    SECTION_SOLUTION,
+    [SECTION_CHALLENGE, /^über\s+/i, /^kontakt\b/i, /^referenz\b/i, /^kunde\b/i]
+  )
 
   let summary: string | null = null
-  if (company_name) {
-    const idx = lines.findIndex(
-      (l) => l.toLowerCase().startsWith(company_name!.toLowerCase().slice(0, 12))
-    )
-    if (idx >= 0) {
-      const para = lines.slice(idx, idx + 4).join(' ')
-      if (para.length >= 40) summary = clampNarrativeTextNullable(para)
-    }
+  if (customer_challenge) {
+    summary = clampNarrativeTextNullable(customer_challenge)
+  } else if (our_solution) {
+    summary = clampNarrativeTextNullable(our_solution)
+  } else if (title) {
+    summary = clampNarrativeTextNullable(`Referenzprojekt: ${title}`)
   }
 
   return {

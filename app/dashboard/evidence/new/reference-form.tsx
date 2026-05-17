@@ -50,6 +50,7 @@ import {
   getCompetitorSuggestions,
 } from '../../actions'
 import { REFERENCE_NARRATIVE_MAX_CHARS } from '@/lib/references/reference-narrative-limits'
+import { syncCompanyBrandfetchForEdit } from '@/app/dashboard/references/sync-company-brandfetch'
 import { CreateContactDialog, type CreatedContact } from './create-contact-dialog'
 import type { ExternalContact } from './actions'
 import {
@@ -415,10 +416,38 @@ export function ReferenceForm({
   const [enrichLoading, setEnrichLoading] = useState(false)
   const [enrichedCompany, setEnrichedCompany] = useState<Company | null>(null)
   const [editCompanyName, setEditCompanyName] = useState(initialData?.company_name ?? '')
+  const didAutoBrandfetchRef = useRef(false)
   const [magicImportLoading, setMagicImportLoading] = useState(false)
   const [summaryLoading, setSummaryLoading] = useState(false)
 
   const isEditMode = !!initialData
+
+  useEffect(() => {
+    if (!isEditMode || !initialData?.company_id || didAutoBrandfetchRef.current) return
+    const needsBrandfetch =
+      !String(initialData.industry ?? '').trim() ||
+      !String(initialData.website ?? '').trim() ||
+      !String(initialData.company_logo_url ?? '').trim()
+    if (!needsBrandfetch) return
+
+    didAutoBrandfetchRef.current = true
+    void syncCompanyBrandfetchForEdit(initialData.company_id).then((result) => {
+      if (!result.success) return
+      const co = result.company
+      setEditCompanyName(co.companyName)
+      if (co.industry) setIndustry(co.industry)
+      if (co.website_url) setWebsite(co.website_url)
+      if (co.headquarters) {
+        setCountry(co.headquarters)
+        setHeadquarters(co.headquarters)
+      }
+      if (co.employee_count != null) {
+        setEmployeeCount(formatEmployeeCountDeDisplay(co.employee_count))
+      }
+      if (co.logo_url) setBrandfetchLogoUrl(co.logo_url)
+    })
+  }, [isEditMode, initialData])
+
   const displayCompanies = enrichedCompany && !companies.some((c) => c.id === enrichedCompany.id)
     ? [...companies, enrichedCompany]
     : companies

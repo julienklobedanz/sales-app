@@ -265,18 +265,32 @@ export async function extractDataFromBuffer(
   if (!plain.ok) return { success: false, error: plain.error }
 
   const documentText = plain.text
-  const heuristic = () =>
-    parseReferenceHeuristicsFromText(documentText, {
-      fileName,
-      pdfTitle: options?.pdfTitle ?? null,
-    })
+  const heuristicData = parseReferenceHeuristicsFromText(documentText, {
+    fileName,
+    pdfTitle: options?.pdfTitle ?? null,
+  })
+
+  const mergeHeuristic = (data: ExtractedReferenceData): ExtractedReferenceData => ({
+    title: data.title?.trim() || heuristicData.title,
+    summary: data.summary?.trim() || heuristicData.summary,
+    industry: data.industry?.trim() || heuristicData.industry,
+    volume_eur: data.volume_eur?.trim() || heuristicData.volume_eur,
+    employee_count: data.employee_count ?? heuristicData.employee_count,
+    tags: data.tags?.length ? data.tags : heuristicData.tags,
+    company_name: data.company_name?.trim() || heuristicData.company_name,
+    customer_challenge: data.customer_challenge?.trim() || heuristicData.customer_challenge,
+    our_solution: data.our_solution?.trim() || heuristicData.our_solution,
+  })
 
   try {
     const data = await extractWithLLM(documentText)
+    if (options?.allowHeuristicFallback) {
+      return { success: true, data: mergeHeuristic(data) }
+    }
     return { success: true, data }
   } catch (e) {
     if (options?.allowHeuristicFallback) {
-      return { success: true, data: heuristic() }
+      return { success: true, data: heuristicData }
     }
     const err = e instanceof Error ? e : new Error(String(e))
     return { success: false, error: err.message || 'Extraktion fehlgeschlagen.' }

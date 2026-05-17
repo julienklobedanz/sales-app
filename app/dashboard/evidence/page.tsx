@@ -4,6 +4,7 @@ import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
 import { getDashboardData } from '@/app/dashboard/actions'
 import { DashboardOverview } from '@/app/dashboard/dashboard-overview'
+import { enrichReferencedCompaniesMissingBrandfetch } from '@/app/dashboard/references/sync-company-brandfetch'
 import { DEV_ROLE_COOKIE, parseAppRoleCookie } from '@/lib/dev-role-preview'
 import type { AppRole } from '@/hooks/useRole'
 import { normalizeOrgDateDisplayFormat } from '@/lib/format'
@@ -32,16 +33,38 @@ export default async function EvidenceHubPage() {
 
   const dashboard = await getDashboardData(false)
 
-  const references =
+  let references =
     effectiveRole === 'sales'
       ? dashboard.references.filter((r) => r.status === 'approved' || r.status === 'internal_only')
       : dashboard.references
+
+  const companyIdsNeedingEnrich = [
+    ...new Set(
+      references
+        .filter(
+          (r) =>
+            r.company_id &&
+            (!String(r.company_logo_url ?? '').trim() || !String(r.industry ?? '').trim())
+        )
+        .map((r) => r.company_id as string)
+    ),
+  ]
+  if (companyIdsNeedingEnrich.length > 0) {
+    await enrichReferencedCompaniesMissingBrandfetch(companyIdsNeedingEnrich)
+    const refreshed = await getDashboardData(false)
+    references =
+      effectiveRole === 'sales'
+        ? refreshed.references.filter(
+            (r) => r.status === 'approved' || r.status === 'internal_only'
+          )
+        : refreshed.references
+  }
 
   const orgId = (profile as { organization_id?: string | null }).organization_id ?? ''
 
   const [companiesResult, contactsResult, externalContactsResult, dealsResult, orgFmtResult] =
     await Promise.all([
-    supabase.from('companies').select('id, name, logo_url').order('name'),
+    supabase.from('companies').select('id, name, logo_url, industry').order('name'),
     supabase.from('contact_persons').select('*').order('last_name'),
     supabase
       .from('external_contacts')

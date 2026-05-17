@@ -1,9 +1,9 @@
 'use client'
 
-import Image from 'next/image'
 import { Building2, InformationCircleIcon, Sparkles } from '@hugeicons/core-free-icons'
 import type { ReferenceRow } from './actions'
 import { AppIcon } from '@/lib/icons'
+import { CompanyLogo } from '@/components/ui/company-logo'
 
 export function ReferenceReader({ reference }: { reference: ReferenceRow }) {
   const isAnonymized = reference.status === 'anonymized'
@@ -22,20 +22,15 @@ export function ReferenceReader({ reference }: { reference: ReferenceRow }) {
           <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-dashed border-muted-foreground/40 bg-muted/50">
             <AppIcon icon={Building2} size={24} className="text-muted-foreground" />
           </div>
-        ) : reference.company_logo_url ? (
-          <div className="relative h-12 w-12 overflow-hidden rounded-xl border border-border bg-muted">
-            <Image
-              src={reference.company_logo_url}
-              alt=""
-              fill
-              className="object-contain p-1"
-              sizes="48px"
-            />
-          </div>
         ) : (
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl border bg-muted/50">
-            <AppIcon icon={Building2} size={24} className="text-muted-foreground" />
-          </div>
+          <CompanyLogo
+            src={reference.company_logo_url}
+            companyId={reference.company_id}
+            fallbackText={reference.company_name}
+            containerClassName="h-12 w-12 rounded-xl"
+            fallbackIconSize={24}
+            imageClassName="p-1"
+          />
         )}
         <div className="min-w-0">
           <p className="text-xs font-medium uppercase tracking-wider text-slate-500">{companyDisplay}</p>

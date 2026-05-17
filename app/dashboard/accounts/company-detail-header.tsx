@@ -28,6 +28,8 @@ export function CompanyDetailHeader({
       <div className="flex items-start gap-4">
         <CompanyLogo
           src={company.logo_url}
+          companyId={company.id}
+          fallbackText={company.name}
           containerClassName="size-14 rounded-2xl"
           fallbackIconSize={28}
         />

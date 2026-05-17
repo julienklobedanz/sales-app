@@ -370,13 +370,6 @@ export default async function PublicPortfolioPage({
                             </>
                           ) : null}
 
-                          <div className="mt-4 rounded-md border border-dashed border-border/80 bg-muted/10 px-3 py-3">
-                            <p className="text-xs font-semibold text-muted-foreground">Hinweis</p>
-                            <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
-                              Diese Referenz wurde als Kundenansicht freigegeben. Weitere
-                              Kontaktdaten werden nur angezeigt, wenn sie explizit freigegeben sind.
-                            </p>
-                          </div>
                         </CardContent>
                       </Card>
                     </aside>

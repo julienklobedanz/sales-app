@@ -95,6 +95,7 @@ import {
   type ReferenceColumnKey,
 } from './overview/reference-table-column-renders'
 import { ReferenceDetailSheet } from './overview/reference-detail-sheet'
+import { ReferencesOverviewBrandfetchSync } from './overview/references-overview-brandfetch-sync'
 import { FilterMenuCheckboxOption } from '@/components/table/filter-menu-checkbox-option'
 import { toast } from 'sonner'
 import { BULK_IMPORT_MAX_FILES } from '@/lib/references/bulk-import-limits'
@@ -206,7 +207,12 @@ const toolbarSegmentClass = `${TABLE_TOOLBAR.dashboard.toolbarButton} justify-ce
 
 // --- Hauptkomponente ---
 
-type CompanyOption = { id: string; name: string; logo_url?: string | null }
+type CompanyOption = {
+  id: string
+  name: string
+  logo_url?: string | null
+  industry?: string | null
+}
 type ContactOption = { id: string; first_name: string | null; last_name: string | null; email: string | null }
 type DealOption = { id: string; title: string }
 
@@ -633,10 +639,40 @@ export function DashboardOverview({
   const companyLogoById = useMemo(() => {
     const map = new Map<string, string>()
     for (const company of companies) {
-      if (company.logo_url) map.set(company.id, company.logo_url)
+      const url = String(company.logo_url ?? '').trim()
+      if (url) map.set(company.id, url)
+    }
+    for (const ref of initialReferences) {
+      if (!ref.company_id) continue
+      const url = String(ref.company_logo_url ?? '').trim()
+      if (url && !map.has(ref.company_id)) map.set(ref.company_id, url)
+    }
+    return map
+  }, [companies, initialReferences])
+
+  const companyIndustryById = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const company of companies) {
+      const industry = String(company.industry ?? '').trim()
+      if (industry) map.set(company.id, industry)
     }
     return map
   }, [companies])
+
+  const companyIdsNeedingBrandfetch = useMemo(() => {
+    const ids = new Set<string>()
+    for (const ref of initialReferences) {
+      if (!ref.company_id) continue
+      const hasLogo =
+        Boolean(String(ref.company_logo_url ?? '').trim()) ||
+        Boolean(String(companies.find((c) => c.id === ref.company_id)?.logo_url ?? '').trim())
+      const hasIndustry =
+        Boolean(String(ref.industry ?? '').trim()) ||
+        companyIndustryById.has(ref.company_id)
+      if (!hasLogo || !hasIndustry) ids.add(ref.company_id)
+    }
+    return [...ids]
+  }, [initialReferences, companies, companyIndustryById])
 
   const filterOptions = useMemo(() => {
     const industries = new Set<string>()
@@ -645,7 +681,11 @@ export function DashboardOverview({
     const companies = new Set<string>()
     const tags = new Set<string>()
     for (const r of initialReferences) {
-      if (r.industry) industries.add(r.industry)
+      const refIndustry =
+        String(r.industry ?? '').trim() ||
+        (r.company_id ? companyIndustryById.get(r.company_id) : '') ||
+        ''
+      if (refIndustry) industries.add(refIndustry)
       if (r.country) countries.add(r.country)
       if (r.project_status) projectStatuses.add(r.project_status)
       if (r.company_name) companies.add(r.company_name)
@@ -665,7 +705,7 @@ export function DashboardOverview({
       companies: Array.from(companies).sort((a, b) => a.localeCompare(b, 'de')),
       tags: Array.from(tags).sort((a, b) => a.localeCompare(b, 'de')),
     }
-  }, [initialReferences])
+  }, [initialReferences, companyIndustryById])
 
   // Sortier-Hilfe: Vergleichswerte pro Spalte
   const getSortValue = (ref: ReferenceRow, key: (typeof COLUMN_KEYS)[number]): string | number => {
@@ -919,6 +959,7 @@ export function DashboardOverview({
 
   return (
     <div className="flex flex-col space-y-5">
+      <ReferencesOverviewBrandfetchSync companyIds={companyIdsNeedingBrandfetch} />
       {/* Toolbar & Tabelle */}
       <div className="space-y-3.5">
         {/* Toolbar: Suche bis zu den Buttons; rechts Favoriten → Status → Spalten → … */}
@@ -1365,6 +1406,7 @@ export function DashboardOverview({
                         {renderReferenceColumnCell(column, ref, {
                           PROJECT_STATUS_LABELS,
                           companyLogoById,
+                          companyIndustryById,
                           orgDateDisplayFormat,
                         })}
                       </React.Fragment>

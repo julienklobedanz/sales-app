@@ -497,6 +497,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                         <div className="flex items-start gap-3">
                           <CompanyLogo
                             src={company.logo_url}
+                            companyId={company.id}
                             alt={company.name}
                             containerClassName="size-12 shrink-0 rounded-2xl"
                             fallbackIconSize={24}

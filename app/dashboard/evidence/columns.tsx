@@ -91,6 +91,7 @@ export function evidenceColumns(): ColumnDef<ReferenceRow>[] {
       cell: ({ row }) => (
         <AccountCell
           companyName={row.original.company_name}
+          companyId={row.original.company_id}
           companyLogoUrl={row.original.company_logo_url}
         />
       ),

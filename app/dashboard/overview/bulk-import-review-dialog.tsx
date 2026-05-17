@@ -108,7 +108,7 @@ export function BulkImportReviewDialog({
                   },
                 )}
                 <Button asChild size="sm" className="w-full sm:w-auto">
-                  <Link href={ROUTES.evidence.edit(item.referenceId)}>Im Editor bearbeiten</Link>
+                  <Link href={ROUTES.evidence.edit(item.referenceId)}>Vervollständigen</Link>
                 </Button>
               </CardContent>
             </Card>

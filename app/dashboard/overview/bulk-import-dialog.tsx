@@ -12,6 +12,10 @@ import { Input } from '@/components/ui/input'
 
 import { bulkCreateReferencesFromFiles } from '../actions'
 import { runBulkImportExtractionForReference } from '@/app/dashboard/references/bulk-import-post-process'
+import { extractBulkImportReferenceFromFile } from '@/lib/references/bulk-import-extract-client'
+import { uploadBulkImportFilesForReference } from '@/lib/references/bulk-import-upload'
+import { createClient } from '@/lib/supabase/client'
+import type { BulkImportExtractionResult } from '@/lib/references/bulk-import-review-types'
 import { BULK_IMPORT_MAX_FILES } from '@/lib/references/bulk-import-limits'
 import {
   BulkImportReviewDialog,
@@ -215,6 +219,53 @@ export function BulkImportDialog({
                 }
 
                 const ids = result.referenceIds
+                let organizationId =
+                  'organizationId' in result ? String(result.organizationId ?? '') : ''
+                if (!organizationId) {
+                  const supabase = createClient()
+                  const {
+                    data: { user },
+                  } = await supabase.auth.getUser()
+                  if (user) {
+                    const { data: profile } = await supabase
+                      .from('profiles')
+                      .select('organization_id')
+                      .eq('id', user.id)
+                      .single()
+                    organizationId = String(profile?.organization_id ?? '')
+                  }
+                }
+
+                let uploadFailed = false
+                if (ids.length > 0 && organizationId) {
+                  let refIdx = 0
+                  for (const group of groups) {
+                    const refId = ids[refIdx]
+                    if (refId && group.files.length > 0) {
+                      const upload = await uploadBulkImportFilesForReference(
+                        organizationId,
+                        refId,
+                        group.files
+                      )
+                      if (!upload.ok) {
+                        uploadFailed = true
+                        toast.error(
+                          upload.error ??
+                            `Datei für „${group.projectName}“ konnte nicht gespeichert werden.`,
+                          { duration: 8000 }
+                        )
+                      }
+                    }
+                    refIdx += 1
+                  }
+                }
+                if (uploadFailed) {
+                  onLoadingChange?.(false)
+                  setExtractionProgress(null)
+                  router.refresh()
+                  return
+                }
+
                 if (ids.length === 0) {
                   toast.error(
                     result.created === 0
@@ -231,8 +282,14 @@ export function BulkImportDialog({
 
                 for (let i = 0; i < ids.length; i++) {
                   setExtractionProgress({ current: i + 1, total: ids.length })
-                  const id = ids[i]
-                  const r = await runBulkImportExtractionForReference(id)
+                  const id = ids[i]!
+                  const primaryFile = groups[i]?.files[0]
+                  let r: BulkImportExtractionResult
+                  if (primaryFile && primaryFile.size > 0) {
+                    r = await extractBulkImportReferenceFromFile(id, primaryFile)
+                  } else {
+                    r = await runBulkImportExtractionForReference(id)
+                  }
                   if (!r.success) {
                     pendingReview.push({
                       referenceId: id,

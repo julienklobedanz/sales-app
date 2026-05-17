@@ -203,9 +203,53 @@ async function fetchHeadquartersFallbackByName(companyName: string, domain: stri
   }
 }
 
+type BrandfetchLogoJson = {
+  theme?: string | null
+  type?: string | null
+  formats?: { src?: string | null; format?: string | null; width?: number | null }[]
+}
+
+/** Alle Logo-URLs aus Brandfetch (svg/png bevorzugt, Reihenfolge = Priorität). */
+export function listLogoUrlsFromBrandfetchJson(json: {
+  logos?: BrandfetchLogoJson[] | null
+}): string[] {
+  const candidates: string[] = []
+  for (const logo of json.logos ?? []) {
+    const formats = [...(logo.formats ?? [])].sort((a, b) => {
+      const score = (f: typeof a) => {
+        const fmt = String(f?.format ?? '').toLowerCase()
+        if (fmt === 'svg') return 0
+        if (fmt === 'png') return 1
+        return 2
+      }
+      return score(a) - score(b)
+    })
+    for (const fmt of formats) {
+      const src = String(fmt?.src ?? '').trim()
+      if (src.startsWith('http')) candidates.push(src)
+    }
+  }
+  return candidates
+}
+
+/** Bestes Logo; optional defekte URL überspringen und nächstes Format wählen. */
+export function pickBestLogoUrlFromBrandfetchJson(
+  json: { logos?: BrandfetchLogoJson[] | null },
+  excludeUrl?: string | null
+): string | null {
+  const candidates = listLogoUrlsFromBrandfetchJson(json)
+  const exclude = String(excludeUrl ?? '').trim()
+  if (exclude) {
+    const alt = candidates.find((url) => url !== exclude)
+    if (alt) return alt
+  }
+  return candidates[0] ?? null
+}
+
 /** Brandfetch-Domain-Lookup (z. B. Bulk-Import, Cron). */
 export async function fetchBrandfetchCompany(
-  domain: string
+  domain: string,
+  options?: { excludeLogoUrl?: string | null }
 ): Promise<{ success: true; data: BrandfetchCompanyPayload } | { success: false }> {
   const apiKey = process.env.BRANDFETCH_API_KEY
   if (!apiKey) return { success: false }
@@ -237,6 +281,7 @@ export async function fetchBrandfetchCompany(
     location?: unknown
     locations?: unknown
     logos?: { formats?: { src?: string | null }[] }[]
+    industries?: { name?: string | null }[]
   }
   try {
     json = await res.json()
@@ -246,16 +291,15 @@ export async function fetchBrandfetchCompany(
 
   const rawName = String(json.name ?? json.brand ?? '').trim()
   const headquarters = pickHeadquartersFromBrandfetchJson(json, domain)
-  const logoUrl =
-    json.logos?.[0]?.formats?.[0]?.src ??
-    json.logos?.find((logo) => logo.formats?.length)?.formats?.[0]?.src ??
-    null
+  const logoUrl = pickBestLogoUrlFromBrandfetchJson(json, options?.excludeLogoUrl)
   const websiteDomain = String(json.domain ?? domain).trim()
+  const industries =
+    json.company?.industries?.length ? json.company.industries : json.industries
   const data: BrandfetchCompanyPayload = {
     companyName: rawName || null,
     websiteUrl: websiteDomain ? `https://${normalizeDomain(websiteDomain)}` : `https://${domain}`,
     logoUrl: logoUrl || null,
-    industry: mapBrandfetchIndustriesArrayToGermanCategory(json.company?.industries),
+    industry: mapBrandfetchIndustriesArrayToGermanCategory(industries),
     headquarters,
     employeeCount: typeof json.company?.employees === 'number' ? json.company.employees : null,
     description: String(json.description ?? '').trim() || null,

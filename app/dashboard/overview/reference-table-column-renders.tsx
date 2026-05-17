@@ -843,6 +843,7 @@ export function renderReferenceColumnHeader(
 export type ReferenceTableCellRenderContext = {
   PROJECT_STATUS_LABELS: Record<string, string>
   companyLogoById: Map<string, string>
+  companyIndustryById: Map<string, string>
   orgDateDisplayFormat?: OrgDateDisplayFormat | string
 }
 
@@ -851,7 +852,7 @@ export function renderReferenceColumnCell(
   ref: ReferenceRow,
   ctx: ReferenceTableCellRenderContext
 ): React.ReactNode {
-  const { PROJECT_STATUS_LABELS, companyLogoById } = ctx
+  const { PROJECT_STATUS_LABELS, companyLogoById, companyIndustryById } = ctx
   const dateFmt = normalizeOrgDateDisplayFormat(ctx.orgDateDisplayFormat)
   switch (column) {
     case "company":
@@ -865,7 +866,10 @@ export function renderReferenceColumnCell(
           >
             <AccountCell
               companyName={ref.company_name}
-              companyLogoUrl={companyLogoById.get(ref.company_id) ?? null}
+              companyId={ref.company_id}
+              companyLogoUrl={
+                companyLogoById.get(ref.company_id) ?? ref.company_logo_url ?? null
+              }
             />
           </Link>
         </TableCell>
@@ -905,8 +909,13 @@ export function renderReferenceColumnCell(
         </TableCell>
       )
     }
-    case "industry":
-      return <TableCell className="text-muted-foreground">{ref.industry ?? ""}</TableCell>
+    case "industry": {
+      const industry =
+        String(ref.industry ?? '').trim() ||
+        companyIndustryById.get(ref.company_id) ||
+        ''
+      return <TableCell className="text-muted-foreground">{industry}</TableCell>
+    }
     case "status":
       return (
         <TableCell>

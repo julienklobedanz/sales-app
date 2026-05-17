@@ -1,36 +1,27 @@
 "use client"
 
-import Image from "next/image"
-import { Building2 } from "@hugeicons/core-free-icons"
-
-import { AppIcon } from "@/lib/icons"
+import { CompanyLogo } from "@/components/ui/company-logo"
 
 export function AccountCell({
   companyName,
   companyLogoUrl,
+  companyId,
 }: {
   companyName: string | null | undefined
   companyLogoUrl: string | null | undefined
+  companyId?: string | null
 }) {
   return (
     <div className="flex min-w-0 max-w-[260px] items-center gap-2.5">
-      {companyLogoUrl ? (
-        <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md bg-muted/30">
-          <Image
-            src={companyLogoUrl}
-            alt=""
-            fill
-            className="object-contain"
-            sizes="36px"
-          />
-        </div>
-      ) : (
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted/30">
-          <AppIcon icon={Building2} size={18} className="text-muted-foreground" />
-        </div>
-      )}
+      <CompanyLogo
+        src={companyLogoUrl}
+        companyId={companyId}
+        fallbackText={companyName}
+        containerClassName="h-9 w-9 shrink-0 rounded-md"
+        fallbackIconSize={18}
+        imageClassName="p-0.5"
+      />
       <span className="truncate font-semibold text-foreground">{companyName ?? "Kein Account"}</span>
     </div>
   )
 }
-

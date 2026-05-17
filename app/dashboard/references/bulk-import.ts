@@ -11,7 +11,7 @@ import { normalizeNarrativeText } from '@/lib/references/narrative-normalize'
 import { mapBrandfetchIndustriesArrayToGermanCategory } from '@/lib/brandfetch/map-brandfetch-industry-to-de'
 
 type BulkImportReferencesResult =
-  | { success: true; created: number; referenceIds: string[] }
+  | { success: true; created: number; referenceIds: string[]; organizationId: string }
   | { success: false; error: string }
 
 type BulkImportGroup = {
@@ -26,22 +26,6 @@ async function extractMetadataFromFile(file: File) {
   const plain = await extractPlainTextFromBuffer(buffer, file.name, file.type)
   if (!plain.ok) return null
   return parseReferenceHeuristicsFromText(plain.text, { fileName: file.name })
-}
-
-async function uploadReferenceFile(
-  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
-  organizationId: string,
-  referenceId: string,
-  file: File
-): Promise<string | null> {
-  if (!(file instanceof File) || !file.name?.trim() || file.size === 0) return null
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
-  const storagePath = `${organizationId}/${referenceId}/${Date.now()}-${safeName}`
-  const { data: uploadData, error: uploadError } = await supabase.storage
-    .from('references')
-    .upload(storagePath, file, { upsert: false })
-  if (uploadError || !uploadData?.path) return null
-  return uploadData.path
 }
 
 export async function bulkCreateReferencesFromFilesImpl(
@@ -92,44 +76,49 @@ export async function bulkCreateReferencesFromFilesImpl(
     const primaryFile = groupFiles[0]
     const parsed = primaryFile ? await extractMetadataFromFile(primaryFile) : null
 
+    const manualTitle = groupMeta?.projectName?.trim()
+    const parsedTitle = parsed?.title?.trim()
+    const manualLooksLikeBoilerplate =
+      manualTitle &&
+      manualTitle.length > 100 &&
+      /^Die\s+.+\s+ist\s+/i.test(manualTitle)
+
     const title =
-      (groupMeta?.projectName?.trim() ||
-        parsed?.title?.trim() ||
-        primaryFile?.name.replace(/\.[^.]+$/, '').trim()) ||
+      (manualTitle && !manualLooksLikeBoilerplate ? manualTitle : null) ||
+      parsedTitle ||
+      primaryFile?.name.replace(/\.[^.]+$/, '').trim() ||
       'Referenz'
 
     const companyHint =
       groupMeta?.companyName?.trim() || parsed?.company_name?.trim() || null
 
-    let companyId: string
+    let companyResolved
     if (companyHint) {
-      const resolved = await resolveOrCreateCompanyForImport(supabase, organizationId, companyHint)
-      if (!resolved.success) {
-        return
-      }
-      companyId = resolved.companyId
+      companyResolved = await resolveOrCreateCompanyForImport(supabase, organizationId, companyHint)
     } else {
-      const fallback = await resolveOrCreateCompanyForImport(
+      companyResolved = await resolveOrCreateCompanyForImport(
         supabase,
         organizationId,
         'Unbekannter Kunde'
       )
-      if (!fallback.success) return
-      companyId = fallback.companyId
     }
+    if (!companyResolved.success) return
 
-    const industryMapped = parsed?.industry
-      ? mapBrandfetchIndustriesArrayToGermanCategory([{ name: parsed.industry }]) ?? parsed.industry
-      : null
+    const co = companyResolved.company
+    const industryMapped =
+      co.industry ??
+      (parsed?.industry
+        ? mapBrandfetchIndustriesArrayToGermanCategory([{ name: parsed.industry }]) ?? parsed.industry
+        : null)
 
     const { data: refRow, error: insertRefError } = await supabase
       .from('references')
       .insert({
-        company_id: companyId,
+        company_id: co.companyId,
         title,
         summary: parsed?.summary ? normalizeNarrativeText(parsed.summary) : null,
         industry: industryMapped,
-        country: null,
+        country: co.headquarters,
         status: 'draft',
         contact_id: null,
         file_path: null,
@@ -137,8 +126,8 @@ export async function bulkCreateReferencesFromFilesImpl(
         project_status: null,
         project_start: null,
         project_end: null,
-        website: null,
-        employee_count: parsed?.employee_count ?? null,
+        website: co.website_url,
+        employee_count: co.employee_count ?? parsed?.employee_count ?? null,
         volume_eur: parsed?.volume_eur?.trim() || null,
         contract_type: null,
         customer_contact: null,
@@ -152,35 +141,7 @@ export async function bulkCreateReferencesFromFilesImpl(
 
     if (insertRefError || !refRow?.id) return
 
-    const referenceId = refRow.id
-    referenceIds.push(referenceId)
-
-    let firstPath: string | null = null
-    for (const file of groupFiles) {
-      const filePath = await uploadReferenceFile(supabase, organizationId, referenceId, file)
-      if (!filePath) continue
-      if (!firstPath) firstPath = filePath
-      const ext = file.name.includes('.') ? (file.name.split('.').pop() ?? '') : ''
-      await supabase.from('reference_assets').insert({
-        reference_id: referenceId,
-        file_path: filePath,
-        file_name: file.name,
-        file_type: ext || null,
-        category: 'other',
-      })
-    }
-
-    if (firstPath) {
-      const { data: publicUrlData } = supabase.storage.from('references').getPublicUrl(firstPath)
-      await supabase
-        .from('references')
-        .update({
-          file_path: firstPath,
-          original_document_url: publicUrlData?.publicUrl ?? null,
-        })
-        .eq('id', referenceId)
-    }
-
+    referenceIds.push(refRow.id)
     created++
   }
 
@@ -198,5 +159,5 @@ export async function bulkCreateReferencesFromFilesImpl(
 
   revalidatePath(ROUTES.home)
   revalidatePath(ROUTES.evidence.root)
-  return { success: true, created, referenceIds }
+  return { success: true, created, referenceIds, organizationId }
 }
