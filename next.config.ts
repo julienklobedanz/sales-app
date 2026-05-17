@@ -2,6 +2,8 @@ import type { NextConfig } from 'next'
 import { LEGACY_REDIRECTS } from './lib/routes'
 
 const nextConfig: NextConfig = {
+  // pdf-parse/pdfjs nativ laden — verhindert fehlgeschlagene Textextraktion nach Webpack-Bundle.
+  serverExternalPackages: ['pdf-parse', 'pdfjs-dist', '@napi-rs/canvas'],
   // Referenz-KI-Import (PDF/DOCX/PPTX) per Server Action + FormData; Standard-Limit ist 1 MB.
   experimental: {
     serverActions: {

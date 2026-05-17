@@ -18,7 +18,15 @@ import {
   type BulkImportReviewItem,
 } from './bulk-import-review-dialog'
 
-export type BulkImportGroupItem = { id: string; projectName: string; files: File[] }
+export type BulkImportGroupItem = {
+  id: string
+  projectName: string
+  companyName?: string
+  files: File[]
+}
+
+const BULK_IMPORT_DIALOG_CLASS =
+  'flex max-h-[min(90vh,920px)] w-[calc(100vw-2rem)] max-w-[90vw] flex-col gap-0 overflow-hidden border-0 p-0 sm:max-w-[90vw] lg:max-w-7xl'
 
 export function BulkImportDialog({
   open,
@@ -57,8 +65,9 @@ export function BulkImportDialog({
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg" showCloseButton={!loading}>
-        <DialogHeader>
+      <DialogContent className={BULK_IMPORT_DIALOG_CLASS} showCloseButton={!loading}>
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-6 py-6 md:px-10 md:py-8">
+        <DialogHeader className="shrink-0 text-left">
           <DialogTitle>Referenzen importieren</DialogTitle>
           <DialogDescription>
             Bis zu {BULK_IMPORT_MAX_FILES} Dateien ablegen. Pro Gruppe wird eine Referenz mit mehreren Assets angelegt.
@@ -66,7 +75,7 @@ export function BulkImportDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto">
           <input
             ref={dropRef as React.RefObject<HTMLInputElement>}
             type="file"
@@ -103,9 +112,14 @@ export function BulkImportDialog({
           </div>
 
           {groups.length > 0 && (
-            <div className="max-h-[280px] space-y-3 overflow-y-auto">
+            <div className="max-h-[min(50vh,420px)] space-y-3 overflow-y-auto">
               {groups.map((group, groupIndex) => (
                 <div key={group.id} className="rounded-lg border border-border bg-muted/10 p-3">
+                  {group.companyName ? (
+                    <p className="mb-2 text-xs text-muted-foreground">
+                      Kunde: <span className="font-medium text-foreground">{group.companyName}</span>
+                    </p>
+                  ) : null}
                   <label className="mb-2 block text-xs font-medium text-muted-foreground">
                     Projektname
                   </label>
@@ -168,7 +182,7 @@ export function BulkImportDialog({
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="shrink-0 border-t border-border px-6 py-4 md:px-10">
           <Button variant="outline" disabled={loading} onClick={() => onOpenChange(false)}>
             Abbrechen
           </Button>
@@ -182,6 +196,7 @@ export function BulkImportDialog({
                 JSON.stringify(
                   groups.map((g) => ({
                     projectName: g.projectName,
+                    companyName: g.companyName ?? '',
                     fileCount: g.files.length,
                   })),
                 ),
@@ -289,6 +304,7 @@ export function BulkImportDialog({
             )}
           </Button>
         </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
     <BulkImportReviewDialog

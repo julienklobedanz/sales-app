@@ -40,7 +40,8 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
-import { attachOriginalDocumentToReference, createReference, fetchCompanyEnrichment, extractReferenceDocumentFromUpload } from './actions'
+import { attachOriginalDocumentToReference, createReference, fetchCompanyEnrichment } from './actions'
+import type { ExtractDataFromDocumentResult } from './types'
 import { createClient } from '@/lib/supabase/client'
 import {
   updateReference,
@@ -734,7 +735,23 @@ export function ReferenceForm({
       const timeout = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('EXTRACT_TIMEOUT')), timeoutMs)
       )
-      const result = await Promise.race([extractReferenceDocumentFromUpload(formData), timeout])
+      const extractPromise = fetch('/api/reference-extract', {
+        method: 'POST',
+        body: formData,
+      }).then(async (res) => {
+        const json = (await res.json()) as ExtractDataFromDocumentResult
+        if (!res.ok && !json.success) {
+          return json
+        }
+        if (!res.ok) {
+          return {
+            success: false,
+            error: 'Upload fehlgeschlagen. Bitte erneut versuchen.',
+          } satisfies ExtractDataFromDocumentResult
+        }
+        return json
+      })
+      const result = await Promise.race([extractPromise, timeout])
       // Falls ein späteres Ergebnis eintrifft (z. B. Retry), ignorieren
       if (requestId !== magicImportRequestIdRef.current) return
       if (result.success) {

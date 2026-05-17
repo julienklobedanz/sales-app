@@ -4,14 +4,45 @@ import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { BULK_IMPORT_MAX_FILES } from '@/lib/references/bulk-import-limits'
+import { resolveOrCreateCompanyForImport } from '@/lib/accounts/resolve-company-for-import'
+import { extractPlainTextFromBuffer } from '@/lib/document-extraction'
+import { parseReferenceHeuristicsFromText } from '@/lib/references/heuristic-reference-extract'
+import { normalizeNarrativeText } from '@/lib/references/narrative-normalize'
+import { mapBrandfetchIndustriesArrayToGermanCategory } from '@/lib/brandfetch/map-brandfetch-industry-to-de'
 
 type BulkImportReferencesResult =
   | { success: true; created: number; referenceIds: string[] }
   | { success: false; error: string }
 
-type BulkImportGroup = { projectName: string; fileCount: number }
+type BulkImportGroup = {
+  projectName: string
+  fileCount: number
+  companyName?: string
+}
 
-const BULK_IMPORT_COMPANY_NAME = 'Import (Entwürfe)'
+async function extractMetadataFromFile(file: File) {
+  if (!(file instanceof File) || file.size === 0) return null
+  const buffer = Buffer.from(await file.arrayBuffer())
+  const plain = await extractPlainTextFromBuffer(buffer, file.name, file.type)
+  if (!plain.ok) return null
+  return parseReferenceHeuristicsFromText(plain.text, { fileName: file.name })
+}
+
+async function uploadReferenceFile(
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+  organizationId: string,
+  referenceId: string,
+  file: File
+): Promise<string | null> {
+  if (!(file instanceof File) || !file.name?.trim() || file.size === 0) return null
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+  const storagePath = `${organizationId}/${referenceId}/${Date.now()}-${safeName}`
+  const { data: uploadData, error: uploadError } = await supabase.storage
+    .from('references')
+    .upload(storagePath, file, { upsert: false })
+  if (uploadError || !uploadData?.path) return null
+  return uploadData.path
+}
 
 export async function bulkCreateReferencesFromFilesImpl(
   formData: FormData
@@ -47,154 +78,125 @@ export async function bulkCreateReferencesFromFilesImpl(
     return { success: false, error: `Maximal ${BULK_IMPORT_MAX_FILES} Dateien erlaubt.` }
   }
 
-  // Ohne Gruppen: eine Referenz pro Datei (Legacy), mit Gruppen: eine Referenz pro Gruppe + Assets
   const useGroups = Array.isArray(groups) && groups.length > 0
   const expectedCount = useGroups ? groups.reduce((s, g) => s + g.fileCount, 0) : totalFiles
   if (useGroups && expectedCount !== totalFiles) {
     return { success: false, error: 'Anzahl der Dateien stimmt nicht mit den Gruppen überein.' }
   }
 
-  let companyId: string
-  const { data: existingCompany } = await supabase
-    .from('companies')
-    .select('id')
-    .eq('organization_id', organizationId)
-    .ilike('name', BULK_IMPORT_COMPANY_NAME)
-    .maybeSingle()
-
-  if (existingCompany?.id) {
-    companyId = existingCompany.id
-  } else {
-    const { data: newCompany, error: companyError } = await supabase
-      .from('companies')
-      .insert({
-        name: BULK_IMPORT_COMPANY_NAME,
-        organization_id: organizationId,
-      })
-      .select('id')
-      .single()
-    if (companyError || !newCompany?.id) {
-      return {
-        success: false,
-        error: companyError?.message ?? 'Unternehmen für Import konnte nicht angelegt werden.',
-      }
-    }
-    companyId = newCompany.id
-  }
-
   let created = 0
   let fileIndex = 0
   const referenceIds: string[] = []
+
+  const processGroup = async (groupFiles: File[], groupMeta?: BulkImportGroup) => {
+    const primaryFile = groupFiles[0]
+    const parsed = primaryFile ? await extractMetadataFromFile(primaryFile) : null
+
+    const title =
+      (groupMeta?.projectName?.trim() ||
+        parsed?.title?.trim() ||
+        primaryFile?.name.replace(/\.[^.]+$/, '').trim()) ||
+      'Referenz'
+
+    const companyHint =
+      groupMeta?.companyName?.trim() || parsed?.company_name?.trim() || null
+
+    let companyId: string
+    if (companyHint) {
+      const resolved = await resolveOrCreateCompanyForImport(supabase, organizationId, companyHint)
+      if (!resolved.success) {
+        return
+      }
+      companyId = resolved.companyId
+    } else {
+      const fallback = await resolveOrCreateCompanyForImport(
+        supabase,
+        organizationId,
+        'Unbekannter Kunde'
+      )
+      if (!fallback.success) return
+      companyId = fallback.companyId
+    }
+
+    const industryMapped = parsed?.industry
+      ? mapBrandfetchIndustriesArrayToGermanCategory([{ name: parsed.industry }]) ?? parsed.industry
+      : null
+
+    const { data: refRow, error: insertRefError } = await supabase
+      .from('references')
+      .insert({
+        company_id: companyId,
+        title,
+        summary: parsed?.summary ? normalizeNarrativeText(parsed.summary) : null,
+        industry: industryMapped,
+        country: null,
+        status: 'draft',
+        contact_id: null,
+        file_path: null,
+        tags: parsed?.tags?.length ? parsed.tags.join(', ') : null,
+        project_status: null,
+        project_start: null,
+        project_end: null,
+        website: null,
+        employee_count: parsed?.employee_count ?? null,
+        volume_eur: parsed?.volume_eur?.trim() || null,
+        contract_type: null,
+        customer_contact: null,
+        customer_challenge: parsed?.customer_challenge
+          ? normalizeNarrativeText(parsed.customer_challenge)
+          : null,
+        our_solution: parsed?.our_solution ? normalizeNarrativeText(parsed.our_solution) : null,
+      })
+      .select('id')
+      .single()
+
+    if (insertRefError || !refRow?.id) return
+
+    const referenceId = refRow.id
+    referenceIds.push(referenceId)
+
+    let firstPath: string | null = null
+    for (const file of groupFiles) {
+      const filePath = await uploadReferenceFile(supabase, organizationId, referenceId, file)
+      if (!filePath) continue
+      if (!firstPath) firstPath = filePath
+      const ext = file.name.includes('.') ? (file.name.split('.').pop() ?? '') : ''
+      await supabase.from('reference_assets').insert({
+        reference_id: referenceId,
+        file_path: filePath,
+        file_name: file.name,
+        file_type: ext || null,
+        category: 'other',
+      })
+    }
+
+    if (firstPath) {
+      const { data: publicUrlData } = supabase.storage.from('references').getPublicUrl(firstPath)
+      await supabase
+        .from('references')
+        .update({
+          file_path: firstPath,
+          original_document_url: publicUrlData?.publicUrl ?? null,
+        })
+        .eq('id', referenceId)
+    }
+
+    created++
+  }
 
   if (useGroups) {
     for (const group of groups) {
       const groupFiles = files.slice(fileIndex, fileIndex + group.fileCount)
       fileIndex += group.fileCount
-      const title =
-        (group.projectName?.trim() || groupFiles[0]?.name?.replace(/\.[^.]+$/, '').trim()) ||
-        'Referenz'
-      const { data: refRow, error: insertRefError } = await supabase
-        .from('references')
-        .insert({
-          company_id: companyId,
-          title,
-          summary: null,
-          industry: null,
-          country: null,
-          status: 'draft',
-          contact_id: null,
-          file_path: null,
-          tags: null,
-          project_status: null,
-          project_start: null,
-          project_end: null,
-          website: null,
-          employee_count: null,
-          volume_eur: null,
-          contract_type: null,
-          customer_contact: null,
-        })
-        .select('id')
-        .single()
-      if (insertRefError || !refRow?.id) continue
-      const referenceId = refRow.id
-      referenceIds.push(referenceId)
-      for (const file of groupFiles) {
-        if (!(file instanceof File) || !file.name?.trim()) continue
-        let filePath: string | null = null
-        if (file.size > 0) {
-          const safeName = `${Date.now()}-${referenceId.slice(0, 8)}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('references')
-            .upload(safeName, file)
-          if (!uploadError && uploadData?.path) filePath = uploadData.path
-        }
-        if (filePath) {
-          const ext = file.name.includes('.') ? file.name.split('.').pop() ?? '' : ''
-          await supabase.from('reference_assets').insert({
-            reference_id: referenceId,
-            file_path: filePath,
-            file_name: file.name,
-            file_type: ext || null,
-            category: 'other',
-          })
-        }
-      }
-      created++
+      await processGroup(groupFiles, group)
     }
   } else {
     for (const file of files) {
-      if (!(file instanceof File) || !file.name?.trim()) continue
-      let filePath: string | null = null
-      if (file.size > 0) {
-        const fileName = `${Date.now()}-${created}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('references')
-          .upload(fileName, file)
-        if (!uploadError && uploadData?.path) filePath = uploadData.path
-      }
-      const title = file.name.replace(/\.[^.]+$/, '').trim() || file.name
-      const { data: refRow, error: insertRefError } = await supabase
-        .from('references')
-        .insert({
-          company_id: companyId,
-          title,
-          summary: null,
-          industry: null,
-          country: null,
-          status: 'draft',
-          contact_id: null,
-          file_path: filePath,
-          tags: null,
-          project_status: null,
-          project_start: null,
-          project_end: null,
-          website: null,
-          employee_count: null,
-          volume_eur: null,
-          contract_type: null,
-          customer_contact: null,
-        })
-        .select('id')
-        .single()
-      if (!insertRefError && refRow?.id) {
-        referenceIds.push(refRow.id)
-        if (filePath) {
-          const ext = file.name.includes('.') ? file.name.split('.').pop() ?? '' : ''
-          await supabase.from('reference_assets').insert({
-            reference_id: refRow.id,
-            file_path: filePath,
-            file_name: file.name,
-            file_type: ext || null,
-            category: 'other',
-          })
-        }
-      }
-      if (!insertRefError) created++
+      await processGroup([file])
     }
   }
 
   revalidatePath(ROUTES.home)
+  revalidatePath(ROUTES.evidence.root)
   return { success: true, created, referenceIds }
 }
-

@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { extractDataFromBuffer } from '@/lib/document-extraction'
+import { resolveOrCreateCompanyForImport } from '@/lib/accounts/resolve-company-for-import'
 import { mapBrandfetchIndustriesArrayToGermanCategory } from '@/lib/brandfetch/map-brandfetch-industry-to-de'
 import { normalizeNarrativeText } from '@/lib/references/narrative-normalize'
 import type {
@@ -23,8 +24,7 @@ function pushSuggestion(
 }
 
 /**
- * Eine importierte Referenz: erstes Asset aus Storage laden, Text+LLM-Extraktion, Merge in DB.
- * Wird vom Client nacheinander aufgerufen (kein Parallel-Sturm auf OpenAI).
+ * Eine importierte Referenz: erstes Asset aus Storage laden, Text+LLM/Heuristik, Merge in DB.
  */
 export async function runBulkImportExtractionForReference(
   referenceId: string
@@ -62,7 +62,7 @@ export async function runBulkImportExtractionForReference(
 
   const { data: company } = await supabase
     .from('companies')
-    .select('organization_id')
+    .select('id, name, organization_id')
     .eq('id', ref.company_id)
     .maybeSingle()
 
@@ -83,6 +83,7 @@ export async function runBulkImportExtractionForReference(
   const suggestions: BulkImportReviewSuggestions = {}
   let extractionOk = false
   let extractionError: string | undefined
+  let llmSkipped = false
 
   if (!path) {
     extractionError = 'Keine Datei am Import gefunden.'
@@ -114,7 +115,9 @@ export async function runBulkImportExtractionForReference(
   }
 
   const buffer = Buffer.from(await blob.arrayBuffer())
-  const extracted = await extractDataFromBuffer(buffer, fileName, null)
+  const extracted = await extractDataFromBuffer(buffer, fileName, null, {
+    allowHeuristicFallback: true,
+  })
 
   if (!extracted.success) {
     extractionError = extracted.error
@@ -132,13 +135,39 @@ export async function runBulkImportExtractionForReference(
 
   extractionOk = true
   const d = extracted.data
+  if (!process.env.OPENAI_API_KEY) {
+    llmSkipped = true
+  }
 
   const patch: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
   }
 
+  let companyId = ref.company_id as string
+
+  if (d.company_name?.trim()) {
+    const currentName = String(company.name ?? '').trim()
+    const unknown =
+      /^unbekannter kunde$/i.test(currentName) || /^import\s*\(/i.test(currentName)
+    if (unknown || currentName.toLowerCase() !== d.company_name.trim().toLowerCase()) {
+      const resolved = await resolveOrCreateCompanyForImport(
+        supabase,
+        organizationId,
+        d.company_name.trim()
+      )
+      if (resolved.success) {
+        companyId = resolved.companyId
+        patch.company_id = companyId
+      }
+    }
+  }
+
   const titleNow = String(ref.title ?? '').trim()
-  if (d.title?.trim() && (!titleNow || titleNow === 'Referenz')) {
+  const fileStem = fileName.replace(/\.[^.]+$/, '').trim()
+  const titleLooksLikeFilename =
+    titleNow.toLowerCase() === fileStem.toLowerCase() || /^projekt\s*[-–]/i.test(titleNow)
+
+  if (d.title?.trim() && (!titleNow || titleNow === 'Referenz' || titleLooksLikeFilename)) {
     patch.title = d.title.trim()
   } else if (d.title?.trim() && d.title.trim() !== titleNow) {
     pushSuggestion(suggestions, 'title', d.title)
@@ -187,7 +216,11 @@ export async function runBulkImportExtractionForReference(
   }
 
   if (Object.keys(patch).length > 1) {
-    await supabase.from('references').update(patch).eq('id', id).eq('organization_id', organizationId)
+    const { error: updateErr } = await supabase.from('references').update(patch).eq('id', id)
+    if (updateErr) {
+      extractionError = updateErr.message
+      extractionOk = false
+    }
   }
 
   const { data: after } = await supabase
@@ -200,15 +233,22 @@ export async function runBulkImportExtractionForReference(
   const needsInput =
     !String(after?.customer_challenge ?? '').trim() || !String(after?.our_solution ?? '').trim()
 
+  if (needsInput && llmSkipped && !extractionError) {
+    extractionError =
+      'Herausforderung und/oder Lösung fehlen noch — bitte im Editor ergänzen oder OpenAI-Credits aktivieren.'
+  }
+
   revalidatePath(ROUTES.evidence.root)
   revalidatePath(ROUTES.home)
+  revalidatePath(ROUTES.evidence.edit(id))
 
   return {
     success: true,
     referenceId: id,
     title,
     needsInput,
-    extractionOk: true,
+    extractionOk,
+    extractionError,
     suggestions,
   }
 }

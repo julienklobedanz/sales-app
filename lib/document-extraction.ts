@@ -1,17 +1,39 @@
-'use server'
-
 import type {
   ExtractedReferenceData,
   ExtractDataFromDocumentResult,
 } from '@/app/dashboard/evidence/new/types'
+import { parseReferenceHeuristicsFromText } from '@/lib/references/heuristic-reference-extract'
 import { clampNarrativeTextNullable } from '@/lib/references/reference-narrative-limits'
-import { extractPdfPlainText } from '@/lib/pdf-text-extract'
 
 const INDUSTRIES_LIST =
   'Financial Services & Insurance, Retail & Consumer Goods (CPG), Manufacturing & Automotive, Technology, Media & Telecom (TMT), Energy, Resources & Utilities, Healthcare & Life Sciences, Public Sector & Education, Professional Services & Logistics, Travel, Transport & Hospitality, Sonstige'
 
 async function extractTextFromPdf(buffer: Buffer): Promise<string> {
+  const { extractPdfPlainText } = await import('@/lib/pdf-text-extract')
   return extractPdfPlainText(buffer)
+}
+
+function mapDocumentExtractError(err: Error, format: 'pdf' | 'pptx' | 'docx' | 'doc'): string {
+  const msg = err.message || ''
+  if (err.message === 'DOCX_EXTRACT_FAILED') {
+    return 'Text konnte nicht aus der Word-Datei gelesen werden. Bitte als PDF oder PowerPoint exportieren und erneut versuchen.'
+  }
+  if (err.message === 'DOC_FORMAT_UNSUPPORTED') {
+    return 'Ältere Word-Dateien (.doc) werden nicht unterstützt. Bitte als DOCX, PDF oder PowerPoint speichern und erneut hochladen.'
+  }
+  if (/password|passwort|encrypted|verschlüsselt/i.test(msg)) {
+    return 'PDF ist passwortgeschützt oder verschlüsselt. Bitte ohne Kennwort exportieren oder die Felder manuell ausfüllen.'
+  }
+  if (/invalid pdf|invalidpdf|not a pdf|pdf header/i.test(msg)) {
+    return 'Die PDF-Datei ist beschädigt oder kein gültiges PDF. Bitte erneut exportieren oder die Felder manuell ausfüllen.'
+  }
+  if (process.env.NODE_ENV === 'development' && msg) {
+    console.error(`[document-extraction] ${format} parse failed:`, err)
+  }
+  if (format === 'pdf') {
+    return 'PDF-Text konnte nicht gelesen werden. Bitte erneut hochladen oder die Felder manuell ausfüllen.'
+  }
+  return 'Text konnte nicht aus dem Dokument gelesen werden. Bitte die Felder manuell ausfüllen.'
 }
 
 /** Extrahiert Text aus PPTX (ZIP mit ppt/slides/slideN.xml; Text in <a:t>-Elementen). */
@@ -167,21 +189,24 @@ Dokumenttext (Ausschnitt):
 
 const MAX_FILE_BYTES = 4.5 * 1024 * 1024 // 4.5MB
 
-/**
- * Extraktion aus Buffer (z. B. Bulk-Import aus Storage) – gleiche Limits/Formate wie Upload-Formular.
- */
-export async function extractDataFromBuffer(
+export type ExtractFromBufferOptions = {
+  /** Bei LLM-Fehler/Quota: Heuristik aus Klartext (kein OpenAI). */
+  allowHeuristicFallback?: boolean
+  pdfTitle?: string | null
+}
+
+/** Nur Klartext — für Bulk-Import-Vorschau und Heuristik. */
+export async function extractPlainTextFromBuffer(
   buffer: Buffer,
   fileName: string,
   mimeType?: string | null
-): Promise<ExtractDataFromDocumentResult> {
+): Promise<{ ok: true; text: string } | { ok: false; error: string }> {
   const name = fileName || 'unbenannt'
   const size = buffer.length
-
   if (size > MAX_FILE_BYTES) {
     return {
-      success: false,
-      error: `Datei zu groß für automatische Erkennung (Max 4,5 MB). Aktuell: ${(size / 1024 / 1024).toFixed(1)} MB.`,
+      ok: false,
+      error: `Datei zu groß (max. 4,5 MB). Aktuell: ${(size / 1024 / 1024).toFixed(1)} MB.`,
     }
   }
 
@@ -196,69 +221,63 @@ export async function extractDataFromBuffer(
   const isDoc = mt === 'application/msword' || /\.doc$/i.test(name)
 
   if (!isPdf && !isPptx && !isDocx && !isDoc) {
-    return {
-      success: false,
-      error: 'Nur Word-, PowerPoint- oder PDF-Dateien werden unterstützt.',
-    }
+    return { ok: false, error: 'Nur Word-, PowerPoint- oder PDF-Dateien werden unterstützt.' }
   }
 
-  let documentText: string
+  const format: 'pdf' | 'pptx' | 'docx' | 'doc' = isPdf
+    ? 'pdf'
+    : isPptx
+      ? 'pptx'
+      : isDocx
+        ? 'docx'
+        : 'doc'
+
   try {
+    let documentText: string
     if (isPdf) documentText = await extractTextFromPdf(buffer)
     else if (isPptx) documentText = await extractTextFromPptx(buffer)
     else if (isDocx) documentText = await extractTextFromDocx(buffer)
-    else if (isDoc) throw new Error('DOC_FORMAT_UNSUPPORTED')
-    else throw new Error('UNSUPPORTED_FORMAT')
+    else throw new Error('DOC_FORMAT_UNSUPPORTED')
+    if (!documentText?.trim() || documentText.trim().length < 50) {
+      return {
+        ok: false,
+        error:
+          'Zu wenig erkennbarer Text (evtl. Scan-PDF). Bitte Felder manuell ausfüllen.',
+      }
+    }
+    return { ok: true, text: documentText }
   } catch (e) {
     const err = e instanceof Error ? e : new Error(String(e))
-    if (err.message === 'DOCX_EXTRACT_FAILED') {
-      return {
-        success: false,
-        error:
-          'Text konnte nicht aus der Word-Datei gelesen werden. Bitte als PDF oder PowerPoint exportieren und erneut versuchen.',
-      }
-    }
-    if (err.message === 'DOC_FORMAT_UNSUPPORTED') {
-      return {
-        success: false,
-        error:
-          'Ältere Word-Dateien (.doc) werden nicht unterstützt. Bitte als DOCX, PDF oder PowerPoint speichern und erneut hochladen.',
-      }
-    }
-    const msg = err.message || ''
-    if (/password|passwort|encrypted|verschlüsselt/i.test(msg)) {
-      return {
-        success: false,
-        error:
-          'PDF ist passwortgeschützt oder verschlüsselt. Bitte ohne Kennwort exportieren oder die Felder manuell ausfüllen.',
-      }
-    }
-    if (/invalid pdf|invalidpdf|not a pdf|pdf header/i.test(msg)) {
-      return {
-        success: false,
-        error:
-          'Die PDF-Datei ist beschädigt oder kein gültiges PDF. Bitte erneut exportieren oder die Felder manuell ausfüllen.',
-      }
-    }
-    return {
-      success: false,
-      error:
-        'Text konnte nicht aus dem Dokument gelesen werden. Das Dokument könnte bildbasiert oder geschützt sein – bitte die Felder manuell ausfüllen.',
-    }
+    return { ok: false, error: mapDocumentExtractError(err, format) }
   }
+}
 
-  if (!documentText || documentText.trim().length < 50) {
-    return {
-      success: false,
-      error:
-        'Das Dokument enthält zu wenig erkennbaren Text für eine Extraktion (möglicherweise ein Scan/Bild-PDF). Bitte die Felder manuell ausfüllen.',
-    }
-  }
+/**
+ * Extraktion aus Buffer (z. B. Bulk-Import aus Storage) – gleiche Limits/Formate wie Upload-Formular.
+ */
+export async function extractDataFromBuffer(
+  buffer: Buffer,
+  fileName: string,
+  mimeType?: string | null,
+  options?: ExtractFromBufferOptions
+): Promise<ExtractDataFromDocumentResult> {
+  const plain = await extractPlainTextFromBuffer(buffer, fileName, mimeType)
+  if (!plain.ok) return { success: false, error: plain.error }
+
+  const documentText = plain.text
+  const heuristic = () =>
+    parseReferenceHeuristicsFromText(documentText, {
+      fileName,
+      pdfTitle: options?.pdfTitle ?? null,
+    })
 
   try {
     const data = await extractWithLLM(documentText)
     return { success: true, data }
   } catch (e) {
+    if (options?.allowHeuristicFallback) {
+      return { success: true, data: heuristic() }
+    }
     const err = e instanceof Error ? e : new Error(String(e))
     return { success: false, error: err.message || 'Extraktion fehlgeschlagen.' }
   }

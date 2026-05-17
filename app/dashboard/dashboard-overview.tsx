@@ -411,6 +411,31 @@ export function DashboardOverview({
     }
   }, [])
 
+  async function previewBulkImportFile(file: File) {
+    const formData = new FormData()
+    formData.append('file', file)
+    try {
+      const res = await fetch('/api/bulk-import/preview', { method: 'POST', body: formData })
+      const json = (await res.json()) as {
+        success?: boolean
+        projectName?: string
+        companyName?: string | null
+      }
+      if (json.success && json.projectName?.trim()) {
+        return {
+          projectName: json.projectName.trim(),
+          companyName: json.companyName?.trim() || undefined,
+        }
+      }
+    } catch {
+      // Vorschau optional — Dateiname als Fallback
+    }
+    return {
+      projectName: file.name.replace(/\.[^.]+$/, '').trim() || file.name,
+      companyName: undefined as string | undefined,
+    }
+  }
+
   function addBulkImportFiles(newFiles: File[]) {
     setBulkImportGroups((prev) => {
       const currentTotal = prev.reduce((s, g) => s + g.files.length, 0)
@@ -421,12 +446,38 @@ export function DashboardOverview({
         projectName: file.name.replace(/\.[^.]+$/, '').trim() || file.name,
         files: [file],
       }))
-      const next = [...prev, ...newGroups]
-      return autoGroupByPrefix(next)
+      const next = autoGroupByPrefix([...prev, ...newGroups])
+
+      for (const file of capped) {
+        void previewBulkImportFile(file).then((meta) => {
+          setBulkImportGroups((current) =>
+            current.map((g) => {
+              if (!g.files.includes(file)) return g
+              return {
+                ...g,
+                projectName: meta.projectName || g.projectName,
+                companyName: meta.companyName ?? g.companyName,
+              }
+            })
+          )
+        })
+      }
+
+      return next
     })
   }
 
   function autoGroupByPrefix(groups: BulkImportGroupItem[]): BulkImportGroupItem[] {
+    const metaByFile = new Map<File, { projectName: string; companyName?: string }>()
+    for (const group of groups) {
+      for (const file of group.files) {
+        metaByFile.set(file, {
+          projectName: group.projectName,
+          companyName: group.companyName,
+        })
+      }
+    }
+
     const byPrefix = new Map<string, File[]>()
     for (const group of groups) {
       for (const file of group.files) {
@@ -437,11 +488,20 @@ export function DashboardOverview({
       }
     }
     const result: BulkImportGroupItem[] = Array.from(byPrefix.entries()).map(
-      ([prefix, files]) => ({
-        id: `g-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        projectName: files[0]?.name.replace(/\.[^.]+$/, '').trim() ?? prefix ?? 'Referenz',
-        files,
-      })
+      ([prefix, files]) => {
+        const first = files[0]
+        const meta = first ? metaByFile.get(first) : undefined
+        return {
+          id: `g-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          projectName:
+            meta?.projectName ??
+            first?.name.replace(/\.[^.]+$/, '').trim() ??
+            prefix ??
+            'Referenz',
+          companyName: meta?.companyName,
+          files,
+        }
+      }
     )
     const autoGroupedCount = result.filter((g) => g.files.length > 1).reduce((s, g) => s + g.files.length, 0)
     if (autoGroupedCount > 0) {

@@ -52,8 +52,9 @@ export function BulkImportReviewDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[min(90vh,720px)] flex-col gap-0 sm:max-w-lg">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[min(90vh,920px)] w-[calc(100vw-2rem)] max-w-[90vw] flex-col gap-0 overflow-hidden border-0 p-0 sm:max-w-[90vw] lg:max-w-7xl">
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-6 py-6 md:px-10 md:py-8">
+        <DialogHeader className="shrink-0 text-left">
           <DialogTitle>Import prüfen</DialogTitle>
           <DialogDescription>
             Für die folgenden Referenzen fehlen noch verlässliche Angaben oder es gab Hinweise beim
@@ -114,11 +115,12 @@ export function BulkImportReviewDialog({
           ))}
         </div>
 
-        <DialogFooter className="border-t border-border pt-4 sm:justify-end">
+        <DialogFooter className="shrink-0 border-t border-border pt-4 sm:justify-end">
           <Button type="button" onClick={() => onOpenChange(false)}>
             Schließen
           </Button>
         </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   )
