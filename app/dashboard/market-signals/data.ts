@@ -46,7 +46,16 @@ export type MarketSignalsPageModel = {
   championWatchlist: string[]
   referenceSnippetsByCompanyId: Record<
     string,
-    Array<{ id: string; title: string; industry: string | null; status: string; updatedAt: string }>
+    Array<{
+      id: string
+      title: string
+      industry: string | null
+      status: string
+      updatedAt: string
+      companyId: string
+      companyName: string
+      companyLogoUrl: string | null
+    }>
   >
   activeDeals: Array<{ id: string; title: string; companyId: string }>
 }
@@ -296,7 +305,7 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
   if (relevantCompanyIds.length) {
     const { data: refRows, error: refErr } = await supabase
       .from('references')
-      .select('id,title,industry,status,company_id,updated_at')
+      .select('id,title,industry,status,company_id,updated_at, companies ( name, logo_url )')
       .in('company_id', relevantCompanyIds)
       .order('updated_at', { ascending: false })
       .limit(250)
@@ -313,9 +322,13 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
         status?: string | null
         company_id?: string | null
         updated_at?: string | null
+        companies?: { name?: string | null; logo_url?: string | null } | { name?: string | null; logo_url?: string | null }[] | null
       }
       const companyId = String(row.company_id ?? '')
       if (!companyId) continue
+      const co = Array.isArray(row.companies) ? row.companies[0] : row.companies
+      const companyName = String(co?.name ?? '—').trim() || '—'
+      const companyLogoUrl = (co?.logo_url as string | null) ?? null
       const arr = referenceSnippetsByCompanyId[companyId] ?? []
       if (arr.length >= 2) continue
       arr.push({
@@ -324,6 +337,9 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
         industry: (row.industry as string | null) ?? null,
         status: String(row.status ?? ''),
         updatedAt: String(row.updated_at ?? ''),
+        companyId,
+        companyName,
+        companyLogoUrl,
       })
       referenceSnippetsByCompanyId[companyId] = arr
     }

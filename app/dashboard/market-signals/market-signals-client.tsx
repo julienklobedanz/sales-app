@@ -19,6 +19,7 @@ import {
 } from '@hugeicons/core-free-icons'
 
 import { AppIcon } from '@/lib/icons'
+import { cn } from '@/lib/utils'
 import { CheckIcon } from '@/components/ui/check-icon'
 import type { MarketSignalsPageModel } from '@/app/dashboard/market-signals/data'
 import { Button } from '@/components/ui/button'
@@ -58,12 +59,14 @@ import {
   CheckCircle2,
   Copy,
   CopyCheck,
+  ExternalLink,
   Info,
   Lock,
   MessageCircle,
   Pin,
   RefreshCw,
   Settings,
+  Sparkles as LucideSparkles,
   ThumbsDown,
   ThumbsUp,
   Users,
@@ -732,6 +735,9 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
       industry: string | null
       status: string
       updatedAt: string
+      companyId: string
+      companyName: string
+      companyLogoUrl: string | null
     }> = []
     for (const it of selectedGroup.items) {
       const snips = model.referenceSnippetsByCompanyId[it.companyId] ?? []
@@ -997,7 +1003,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                 /^\[[^\]]+\]$/.test(part) ? (
                   <span
                     key={idx}
-                    className="rounded px-1 font-sans text-sm font-medium bg-yellow-100 text-yellow-950 dark:bg-yellow-500/20 dark:text-yellow-50"
+                    className="rounded px-1 font-sans text-sm font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-500/25 dark:text-yellow-100"
                   >
                     {part}
                   </span>
@@ -1193,9 +1199,9 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                       <TooltipTrigger asChild>
                         <Button
                           type="button"
-                          variant={onlyActiveDeals ? 'secondary' : 'outline'}
+                          variant="outline"
                           size="icon"
-                          className="size-8 shrink-0 border-border bg-card"
+                          className={cn('size-8 shrink-0 border-border bg-card', onlyActiveDeals && 'bg-muted')}
                           aria-pressed={onlyActiveDeals}
                           aria-label="Nur aktive Deals"
                           onClick={() => setOnlyActiveDeals((prev) => !prev)}
@@ -1212,9 +1218,9 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                       <TooltipTrigger asChild>
                         <Button
                           type="button"
-                          variant={onlyFocusAccounts ? 'secondary' : 'outline'}
+                          variant="outline"
                           size="icon"
-                          className="size-8 shrink-0 border-border bg-card"
+                          className={cn('size-8 shrink-0 border-border bg-card', onlyFocusAccounts && 'bg-muted')}
                           aria-pressed={onlyFocusAccounts}
                           aria-label="Nur Focus-Accounts"
                           onClick={() => setOnlyFocusAccounts((prev) => !prev)}
@@ -1446,7 +1452,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
 
           <ResizablePanel defaultSize={70} minSize={45} className="hidden lg:block">
             <div className="relative h-full overflow-hidden bg-background">
-              <div className="h-full border-l border-border">
+              <div className="h-full">
                 {!selected ? (
                   <div className="flex h-full items-center justify-center px-6 text-center">
                     <div className="max-w-sm">
@@ -1495,7 +1501,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                   <div className="flex h-full min-h-0 flex-col">
                     <div className="shrink-0 border-b border-border px-6 py-4">
                       <div className="flex items-start justify-between gap-4">
-                        <div className="flex min-w-0 items-start gap-3">
+                        <div className="flex min-w-0 flex-1 items-start gap-3">
                           <div className="relative mt-0.5 flex shrink-0 -space-x-2">
                             {selectedGroup && selectedGroup.companies.length > 1
                               ? selectedGroup.companies.slice(0, 4).map((co) => (
@@ -1528,10 +1534,12 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                   <div className="size-10 shrink-0 rounded-xl border border-border bg-card" />
                                 )}
                           </div>
-                          <div className="min-w-0">
-                            <div className="flex items-center justify-between gap-2">
-                              <p className="truncate text-sm font-semibold text-foreground">{selected.headline}</p>
-                              <div className="flex items-center gap-1">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <p className="min-w-0 flex-1 truncate text-lg font-semibold leading-none tracking-tight text-foreground md:text-xl">
+                                {selected.headline}
+                              </p>
+                              <div className="flex shrink-0 items-center gap-1">
                                 <Button type="button" variant="ghost" size="icon" className="size-7" onClick={() => void submitDraftFeedback(true)} aria-label="Nützlich">
                                   <ThumbsUp className="h-4 w-4" />
                                 </Button>
@@ -1540,35 +1548,41 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                 </Button>
                               </div>
                             </div>
-                            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                              <span>
+                            <div className="mt-1.5 flex min-w-0 flex-nowrap items-center gap-x-2 overflow-hidden text-xs text-muted-foreground">
+                              <span className="shrink-0">
                                 {selectedGroup && selectedGroup.companies.length > 1
                                   ? `${selectedGroup.companies.length} Accounts`
                                   : selected.companyName}
                               </span>
-                              <span aria-hidden>•</span>
+                              <span className="shrink-0" aria-hidden>
+                                •
+                              </span>
                               <span
-                                className="rounded border border-border bg-muted/50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground/85"
+                                className="shrink-0 rounded border border-border bg-muted/50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground/85"
                                 title={signalTypeLabel(selected.categoryBadge).full}
                               >
                                 {signalTypeLabel(selected.categoryBadge).short}
                               </span>
-                              <span aria-hidden>•</span>
-                              <Link
-                                href={selected.sourceHref}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex max-w-[min(14rem,42vw)] shrink-0 items-center gap-1 text-[11px] font-medium text-blue-700 hover:underline dark:text-blue-400"
-                                title={
-                                  sourcePreview?.hostname
-                                    ? `${selected.sourceLabel} · ${sourcePreview.hostname}`
-                                    : selected.sourceLabel
-                                }
-                                aria-label={`Quelle öffnen: ${selected.sourceLabel}`}
-                              >
-                                <AppIcon icon={LinkIcon} size={12} className="shrink-0" />
-                                <span className="truncate">via {selected.sourceLabel}</span>
-                              </Link>
+                              <span className="shrink-0" aria-hidden>
+                                •
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                <Link
+                                  href={selected.sourceHref}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex min-w-0 max-w-full items-center gap-1 text-[11px] font-medium text-blue-700 hover:underline dark:text-blue-400"
+                                  title={
+                                    sourcePreview?.hostname
+                                      ? `${selected.sourceLabel} · ${sourcePreview.hostname}`
+                                      : selected.sourceLabel
+                                  }
+                                  aria-label={`Quelle öffnen: ${selected.sourceLabel}`}
+                                >
+                                  <AppIcon icon={LinkIcon} size={12} className="shrink-0" />
+                                  <span className="truncate">via {selected.sourceLabel}</span>
+                                </Link>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -1649,7 +1663,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                             </DropdownMenuContent>
                           </DropdownMenu>
                           {selected.kind === 'exec' ? (
-                            <Button type="button" variant="ghost" size="icon" asChild>
+                            <Button type="button" variant="outline" size="icon" className="size-8 shrink-0" asChild>
                               <Link href={selected.sourceHref} target="_blank" rel="noreferrer" aria-label="Auf LinkedIn öffnen">
                                 <AppIcon icon={Linkedin01Icon} size={16} />
                               </Link>
@@ -1659,15 +1673,27 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                             <HoverCardTrigger asChild>
                               <button
                                 type="button"
-                                className="inline-flex size-8 items-center justify-center rounded-md text-xs text-muted-foreground hover:bg-muted hover:text-foreground dark:hover:bg-muted"
-                                aria-label="Gemeinsame Kontakte und Warm-Intro-Pfade"
+                                className={`inline-flex size-8 shrink-0 items-center justify-center rounded-md border transition-colors ${
+                                  mutualConnectionsPreview.count > 0
+                                    ? 'border-violet-200 bg-violet-50/90 text-violet-900 shadow-sm hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-950/50 dark:text-violet-100 dark:hover:bg-violet-950/70'
+                                    : 'border-transparent text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground'
+                                }`}
+                                title={
+                                  mutualConnectionsPreview.count > 0
+                                    ? `${mutualConnectionsPreview.count} ${
+                                        mutualConnectionsPreview.count === 1 ? 'gemeinsamer Kontakt' : 'gemeinsame Kontakte'
+                                      }`
+                                    : 'Gemeinsame Kontakte'
+                                }
+                                aria-label={
+                                  mutualConnectionsPreview.count > 0
+                                    ? `${mutualConnectionsPreview.count} ${
+                                        mutualConnectionsPreview.count === 1 ? 'gemeinsamer Kontakt' : 'gemeinsame Kontakte'
+                                      }, Details anzeigen`
+                                    : 'Gemeinsame Kontakte und Warm-Intro-Pfade'
+                                }
                               >
-                                <Users className="h-4 w-4 text-muted-foreground" aria-hidden />
-                                {mutualConnectionsPreview.count > 0 ? (
-                                  <span className="ml-0.5 font-medium tabular-nums text-foreground">
-                                    {mutualConnectionsPreview.count}
-                                  </span>
-                                ) : null}
+                                <Users className="size-4 shrink-0 opacity-90" aria-hidden />
                               </button>
                             </HoverCardTrigger>
                             <HoverCardContent
@@ -1806,23 +1832,22 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                       </div>
                     </div>
 
-                    <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-6 py-6">
-                      <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(260px,1fr)] lg:items-start lg:gap-10">
-                        <div className="min-w-0 space-y-12 border-l border-dashed border-border pl-6 dark:border-border">
+                    <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-8 sm:px-6">
+                      <div className="mx-auto w-full max-w-5xl space-y-12 border-l border-dashed border-slate-200 pl-5 sm:pl-7 dark:border-slate-700">
                           <motion.section
                             initial={{ opacity: 0, y: 6 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.2 }}
-                            className="relative rounded-r-lg border-l-4 border-blue-500 bg-blue-50/60 py-4 pl-5 pr-4 dark:border-blue-400 dark:bg-blue-950/40"
+                            className="relative rounded-r-xl border-l-4 border-blue-500 bg-blue-50/50 py-5 pl-5 pr-4 dark:border-blue-400 dark:bg-blue-950/35"
                           >
                             <p className="text-[10px] font-semibold uppercase tracking-wider text-blue-800/80 dark:text-blue-200/90">
-                              Why call now?
+                              Warum jetzt?
                             </p>
                             <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
-                              <h2 className="text-sm font-semibold text-foreground">The Insight</h2>
+                              <h2 className="text-sm font-semibold text-foreground">Insight — Kurz-Begründung</h2>
                               {signalIcpScore !== null ? (
-                                <div className="flex shrink-0 items-center gap-1">
-                                  <span className="text-xs font-medium text-muted-foreground">ICP</span>
+                                <div className="flex shrink-0 items-center gap-1.5 rounded-md bg-white/70 px-2 py-1 dark:bg-slate-950/40">
+                                  <span className="text-xs font-medium text-muted-foreground">ICP-Match</span>
                                   <span className="text-lg font-bold tabular-nums text-foreground">{signalIcpScore}%</span>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
@@ -1844,10 +1869,11 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                             </ul>
                           </motion.section>
 
-                          <section>
-                            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Evidence</p>
-                            <h2 className="mt-1 text-sm font-semibold text-foreground">The Signal</h2>
-                            <p className="mt-0.5 line-clamp-2 text-xs font-medium text-muted-foreground">{selected.headline}</p>
+                          <section className="space-y-3">
+                            <div>
+                              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Das Signal</p>
+                              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{selected.headline}</p>
+                            </div>
                             <p className="mt-1 text-[11px] text-muted-foreground">
                               Quelle{' '}
                               <Link
@@ -1884,21 +1910,209 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                             )}
                           </section>
 
-                          <section>
-                            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Outreach</p>
-                            <h2 className="mt-1 text-sm font-semibold text-foreground">The Output</h2>
-                            <p className="mt-1 text-xs text-muted-foreground">E-Mail-Entwurf — Platzhalter markieren offene Personalisierung.</p>
+                          <section className="space-y-4">
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                              <div>
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                  Wer kontaktieren?
+                                </p>
+                                <h2 className="mt-1 text-base font-semibold text-foreground">Passende Ansprechpartner</h2>
+                              </div>
+                            </div>
+                            {decisionCandidatesLoadingCompanyId === selected.companyId ? (
+                              <p className="text-sm text-muted-foreground">Profile werden geladen …</p>
+                            ) : decisionCandidates.length === 0 ? (
+                              <p className="text-sm text-muted-foreground">
+                                Noch keine Stakeholder-Vorschläge. Verbinde The Org, CIO.de oder LinkedIn/Sales Navigator.
+                              </p>
+                            ) : (
+                              <>
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                  {decisionCandidates.map((candidate) => {
+                                    const activity = formatLinkedInActivityLine(candidate.lastSeenAt)
+                                    const initials = candidate.fullName
+                                      .split(/\s+/)
+                                      .filter(Boolean)
+                                      .slice(0, 2)
+                                      .map((n) => n[0]?.toUpperCase() ?? '')
+                                      .join('')
+                                    const mutual = candidate.mutualConnections ?? 0
+                                    return (
+                                      <div
+                                        key={candidate.id}
+                                        className="rounded-2xl bg-slate-50/90 p-4 shadow-sm dark:bg-slate-900/50"
+                                      >
+                                        <div className="flex items-start gap-3">
+                                          <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-900 dark:bg-blue-950 dark:text-blue-100">
+                                            {initials || '—'}
+                                          </div>
+                                          <div className="min-w-0 flex-1 space-y-2">
+                                            <div>
+                                              <p className="font-semibold leading-snug text-foreground">{candidate.fullName}</p>
+                                              <p className="text-xs text-muted-foreground">{candidate.title}</p>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground">
+                                              <span className="font-semibold text-foreground">{candidate.confidence}%</span>
+                                              {mutual > 0 ? (
+                                                <>
+                                                  {' '}
+                                                  · {mutual}{' '}
+                                                  {mutual === 1 ? 'gemeinsamer LinkedIn-Kontakt' : 'gemeinsame LinkedIn-Kontakte'}
+                                                </>
+                                              ) : null}
+                                            </p>
+                                            {activity ? (
+                                              <p className="text-[11px] text-muted-foreground">LinkedIn · {activity}</p>
+                                            ) : null}
+                                            {candidate.profileUrl ? (
+                                              <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" asChild>
+                                                <Link href={candidate.profileUrl} target="_blank" rel="noreferrer">
+                                                  <ExternalLink className="size-3.5" />
+                                                  LinkedIn öffnen
+                                                </Link>
+                                              </Button>
+                                            ) : null}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                                {mutualConnectionsPreview.bridges[0] ? (
+                                  <div className="rounded-xl border border-amber-200/70 bg-amber-50/65 px-4 py-3 text-sm leading-relaxed text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/25 dark:text-amber-50">
+                                    <span className="font-semibold">Pro-Tipp: </span>
+                                    {mutualConnectionsPreview.bridges[0]}
+                                  </div>
+                                ) : null}
+                              </>
+                            )}
+                          </section>
+
+                          <section className="space-y-4">
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                              <div>
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                  Referenzen
+                                </p>
+                                <h2 className="mt-1 text-base font-semibold text-foreground">Welche Story passt am besten?</h2>
+                              </div>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant={onlyApprovedReferences ? 'secondary' : 'outline'}
+                                className="h-8 shrink-0 text-xs"
+                                onClick={() => setOnlyApprovedReferences((prev) => !prev)}
+                              >
+                                Nur freigegeben
+                              </Button>
+                            </div>
+                            {visibleQuickRefs.length === 0 ? (
+                              <p className="text-sm text-muted-foreground">
+                                Keine Referenzen im Pool für dieses Signal-Konto.
+                              </p>
+                            ) : (
+                              <div className="space-y-4">
+                                {visibleQuickRefs.map((r) => {
+                                  const readiness = readinessForReference(r.status)
+                                  const attached = attachedRefIds.has(r.id)
+                                  const requestable = String(r.status ?? '').toLowerCase() !== 'approved'
+                                  return (
+                                    <div
+                                      key={r.id}
+                                      className="rounded-2xl bg-slate-50/80 p-5 dark:bg-slate-900/45"
+                                    >
+                                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                                        <div className="relative size-14 shrink-0 overflow-hidden rounded-xl border border-border bg-background">
+                                          {r.companyLogoUrl ? (
+                                            <Image
+                                              src={r.companyLogoUrl}
+                                              alt=""
+                                              fill
+                                              sizes="56px"
+                                              className="object-contain p-2"
+                                            />
+                                          ) : (
+                                            <div className="flex size-full items-center justify-center text-xs font-medium text-muted-foreground">
+                                              {(r.companyName ?? '?').slice(0, 2).toUpperCase()}
+                                            </div>
+                                          )}
+                                        </div>
+                                        <div className="min-w-0 flex-1 space-y-2">
+                                          <div className="flex flex-wrap items-center gap-2">
+                                            <Badge variant="outline" className={`text-[10px] font-semibold ${readiness.legalBadgeClassName}`}>
+                                              {readiness.legalBadgeLabel}
+                                            </Badge>
+                                            {requestable ? <Lock className="size-3 text-muted-foreground" /> : null}
+                                          </div>
+                                          <p className="text-sm font-semibold text-foreground">{r.title}</p>
+                                          <p className="text-sm leading-relaxed text-muted-foreground">
+                                            <span className="font-medium text-foreground">Warum diese Story zieht:</span>{' '}
+                                            {referenceMatchReason(r)}
+                                          </p>
+                                          <div className="flex flex-wrap gap-2 pt-1">
+                                            {requestable ? (
+                                              <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="h-8 text-xs"
+                                                onClick={async () => {
+                                                  const res = await requestReferenceApprovalForSignal({
+                                                    referenceId: r.id,
+                                                    referenceTitle: r.title,
+                                                    companyName: selected?.companyName ?? '',
+                                                  })
+                                                  if (!res.success) {
+                                                    toast.error(res.error)
+                                                    return
+                                                  }
+                                                  toast.success('Freigabe angefragt')
+                                                }}
+                                              >
+                                                Freigabe
+                                              </Button>
+                                            ) : null}
+                                            <Button
+                                              size="icon"
+                                              variant={attached ? 'default' : 'outline'}
+                                              className={`size-8 ${attached ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+                                              onClick={() => toggleAttachedReference(r.id)}
+                                              aria-label={attached ? 'Aus Intro entfernen' : 'An Intro anhängen'}
+                                            >
+                                              <AppIcon icon={Paperclip} size={12} />
+                                            </Button>
+                                            <Button size="sm" variant="outline" className="h-8 text-xs" asChild>
+                                              <Link href={ROUTES.evidence.detail(r.id)}>Referenz öffnen</Link>
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            )}
+                          </section>
+
+                          <section className="space-y-4 pb-4">
+                            <div>
+                              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Outreach</p>
+                              <h2 className="mt-1 text-base font-semibold text-foreground">KI-Entwurf</h2>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                Platzhalter wie <span className="rounded bg-yellow-100 px-1 text-yellow-800 dark:bg-yellow-500/25 dark:text-yellow-100">[Name]</span> markieren offene Personalisierung.
+                              </p>
+                            </div>
 
                             {!introStrategyText && !introStrategyLoading ? (
                               <div className="mt-8 flex flex-col items-center justify-center py-6">
                                 <Button
                                   type="button"
                                   size="lg"
-                                  className="gap-2 px-8 shadow-md"
+                                  className="mx-auto gap-2 px-8 shadow-md"
                                   onClick={triggerIntroDraftGeneration}
                                 >
-                                  <span aria-hidden>🪄</span>
-                                  Outreach-Draft generieren
+                                  <LucideSparkles className="size-4" aria-hidden />
+                                  Outreach-Draft für{' '}
+                                  {decisionCandidates[0]?.fullName?.split(/\s+/)[0] ?? 'Kontakt'} generieren
                                 </Button>
                               </div>
                             ) : null}
@@ -2002,210 +2216,6 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                               <p className="mt-4 text-sm text-muted-foreground">Kein Entwurf verfügbar. Bitte erneut versuchen.</p>
                             ) : null}
                           </section>
-                        </div>
-
-                        <aside className="min-w-0 space-y-4 lg:sticky lg:top-8 lg:self-start">
-                          <div className="flex items-center justify-between gap-2">
-                            <div>
-                              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Sidekick</p>
-                              <h2 className="text-sm font-semibold text-foreground">Stakeholder & Referenzen</h2>
-                            </div>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant={onlyApprovedReferences ? 'secondary' : 'ghost'}
-                              className="h-7 shrink-0 text-[10px]"
-                              onClick={() => setOnlyApprovedReferences((prev) => !prev)}
-                            >
-                              Nur freigegeben
-                            </Button>
-                          </div>
-
-                          {decisionCandidatesLoadingCompanyId === selected.companyId ? (
-                            <p className="text-sm text-muted-foreground">Profile werden geladen …</p>
-                          ) : decisionCandidates.length === 0 && visibleQuickRefs.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">
-                              Noch keine Stakeholder-Vorschläge. Verbinde The Org, CIO.de oder LinkedIn/Sales Navigator.
-                            </p>
-                          ) : (
-                            <div className="space-y-3">
-                              {decisionCandidates.map((candidate, idx) => {
-                                const pairedRef = visibleQuickRefs[idx]
-                                const activity = formatLinkedInActivityLine(candidate.lastSeenAt)
-                                const initials = candidate.fullName
-                                  .split(/\s+/)
-                                  .filter(Boolean)
-                                  .slice(0, 2)
-                                  .map((n) => n[0]?.toUpperCase() ?? '')
-                                  .join('')
-                                return (
-                                  <div
-                                    key={candidate.id}
-                                    className="rounded-lg bg-muted/55 px-3 py-3 dark:bg-muted/50"
-                                  >
-                                    <div className="flex items-start gap-2.5">
-                                      <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-900 dark:bg-blue-950 dark:text-blue-100">
-                                        {initials || '—'}
-                                      </div>
-                                      <div className="min-w-0 flex-1">
-                                        <p className="truncate text-sm font-semibold text-foreground">
-                                          {candidate.fullName}
-                                        </p>
-                                        <p className="truncate text-xs text-muted-foreground">{candidate.title}</p>
-                                        <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                                          <span className="inline-flex rounded-full bg-card px-2 py-0.5 text-[10px] font-semibold text-blue-800 ring-1 ring-blue-100 dark:bg-blue-950/70 dark:text-blue-100 dark:ring-blue-800/60">
-                                            Match {candidate.confidence}%
-                                          </span>
-                                          {candidate.profileUrl ? (
-                                            <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px]" asChild>
-                                              <Link href={candidate.profileUrl} target="_blank" rel="noreferrer">
-                                                Profil
-                                              </Link>
-                                            </Button>
-                                          ) : null}
-                                        </div>
-                                        {activity ? (
-                                          <p className="mt-1 text-[10px] text-muted-foreground">
-                                            LinkedIn · {activity}
-                                          </p>
-                                        ) : null}
-                                      </div>
-                                    </div>
-                                    {pairedRef ? (
-                                      <div className="mt-3 border-t border-border/80 pt-3 dark:border-border">
-                                        {(() => {
-                                          const readiness = readinessForReference(pairedRef.status)
-                                          const attached = attachedRefIds.has(pairedRef.id)
-                                          const requestable = String(pairedRef.status ?? '').toLowerCase() !== 'approved'
-                                          return (
-                                            <>
-                                              <div className="flex flex-wrap items-center gap-1.5">
-                                                {requestable ? <Lock className="h-3 w-3 text-muted-foreground" /> : null}
-                                                <Badge variant="outline" className={`text-[10px] font-semibold ${readiness.legalBadgeClassName}`}>
-                                                  {readiness.legalBadgeLabel}
-                                                </Badge>
-                                              </div>
-                                              <p className="mt-1 line-clamp-2 text-xs font-medium text-foreground">
-                                                {pairedRef.title}
-                                              </p>
-                                              <p className="mt-0.5 line-clamp-2 text-[10px] leading-snug text-muted-foreground">
-                                                {referenceMatchReason(pairedRef)}
-                                              </p>
-                                              <div className="mt-2 flex flex-wrap gap-1">
-                                                {requestable ? (
-                                                  <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    className="h-7 text-[10px]"
-                                                    onClick={async () => {
-                                                      const res = await requestReferenceApprovalForSignal({
-                                                        referenceId: pairedRef.id,
-                                                        referenceTitle: pairedRef.title,
-                                                        companyName: selected?.companyName ?? '',
-                                                      })
-                                                      if (!res.success) {
-                                                        toast.error(res.error)
-                                                        return
-                                                      }
-                                                      toast.success('Freigabe angefragt')
-                                                    }}
-                                                  >
-                                                    Freigabe
-                                                  </Button>
-                                                ) : null}
-                                                <Button
-                                                  size="icon"
-                                                  variant={attached ? 'default' : 'outline'}
-                                                  className={`size-7 ${attached ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
-                                                  onClick={() => toggleAttachedReference(pairedRef.id)}
-                                                  aria-label={attached ? 'Aus Intro entfernen' : 'An Intro anhängen'}
-                                                >
-                                                  <AppIcon icon={Paperclip} size={12} />
-                                                </Button>
-                                                <Button size="sm" variant="outline" className="h-7 text-[10px]" asChild>
-                                                  <Link href={ROUTES.evidence.detail(pairedRef.id)}>Öffnen</Link>
-                                                </Button>
-                                              </div>
-                                            </>
-                                          )
-                                        })()}
-                                      </div>
-                                    ) : (
-                                      <p className="mt-3 border-t border-border/80 pt-3 text-[10px] text-muted-foreground dark:border-border">
-                                        Keine Referenz für diesen Slot gematcht.
-                                      </p>
-                                    )}
-                                  </div>
-                                )
-                              })}
-
-                              {decisionCandidates.length === 0 && visibleQuickRefs.length > 0
-                                ? visibleQuickRefs.map((r) => {
-                                    const readiness = readinessForReference(r.status)
-                                    const attached = attachedRefIds.has(r.id)
-                                    const requestable = String(r.status ?? '').toLowerCase() !== 'approved'
-                                    return (
-                                      <div key={r.id} className="rounded-lg bg-muted/55 px-3 py-3 dark:bg-muted/50">
-                                        <Badge variant="outline" className={`text-[10px] font-semibold ${readiness.legalBadgeClassName}`}>
-                                          {readiness.legalBadgeLabel}
-                                        </Badge>
-                                        <p className="mt-1 line-clamp-2 text-xs font-medium text-foreground">{r.title}</p>
-                                        <p className="mt-1 line-clamp-2 text-[10px] text-muted-foreground">{referenceMatchReason(r)}</p>
-                                        <div className="mt-2 flex flex-wrap gap-1">
-                                          {requestable ? (
-                                            <Button
-                                              size="sm"
-                                              variant="outline"
-                                              className="h-7 text-[10px]"
-                                              onClick={async () => {
-                                                const res = await requestReferenceApprovalForSignal({
-                                                  referenceId: r.id,
-                                                  referenceTitle: r.title,
-                                                  companyName: selected?.companyName ?? '',
-                                                })
-                                                if (!res.success) {
-                                                  toast.error(res.error)
-                                                  return
-                                                }
-                                                toast.success('Freigabe angefragt')
-                                              }}
-                                            >
-                                              Freigabe
-                                            </Button>
-                                          ) : null}
-                                          <Button
-                                            size="icon"
-                                            variant={attached ? 'default' : 'outline'}
-                                            className={`size-7 ${attached ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
-                                            onClick={() => toggleAttachedReference(r.id)}
-                                            aria-label={attached ? 'Aus Intro entfernen' : 'An Intro anhängen'}
-                                          >
-                                            <AppIcon icon={Paperclip} size={12} />
-                                          </Button>
-                                          <Button size="sm" variant="outline" className="h-7 text-[10px]" asChild>
-                                            <Link href={ROUTES.evidence.detail(r.id)}>Öffnen</Link>
-                                          </Button>
-                                        </div>
-                                      </div>
-                                    )
-                                  })
-                                : visibleQuickRefs.length > decisionCandidates.length
-                                  ? visibleQuickRefs.slice(decisionCandidates.length).map((r) => {
-                                      const readiness = readinessForReference(r.status)
-                                      return (
-                                        <div key={r.id} className="rounded-lg bg-muted/40 px-3 py-2 dark:bg-muted/40">
-                                          <p className="text-[10px] font-semibold uppercase text-muted-foreground">Weitere Referenz</p>
-                                          <p className="mt-0.5 line-clamp-2 text-xs text-foreground/90">{r.title}</p>
-                                          <Badge variant="outline" className={`mt-1 text-[9px] font-semibold ${readiness.legalBadgeClassName}`}>
-                                            {readiness.legalBadgeLabel}
-                                          </Badge>
-                                        </div>
-                                      )
-                                    })
-                                  : null}
-                            </div>
-                          )}
-                        </aside>
                       </div>
                     </div>
                   </div>
@@ -2226,7 +2236,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
           <div className="flex h-full min-h-0 flex-col overflow-hidden bg-card">
             <div className="shrink-0 border-b border-border px-4 py-3">
               <div className="flex items-start justify-between gap-3">
-                <div className="flex min-w-0 items-start gap-2">
+                <div className="flex min-w-0 flex-1 items-start gap-2">
                   {selected && selectedGroup && selectedGroup.companies.length > 1 ? (
                     <div className="relative mt-0.5 flex shrink-0 -space-x-1.5">
                       {selectedGroup.companies.slice(0, 4).map((co) => (
@@ -2251,11 +2261,13 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                       <Image src={selected.companyLogoUrl} alt="" fill sizes="32px" className="object-contain p-1" />
                     </div>
                   ) : null}
-                  <div className="min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="truncate text-sm font-semibold text-foreground">{selected?.headline ?? 'Signal'}</p>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <p className="min-w-0 flex-1 truncate text-sm font-semibold leading-none text-foreground">
+                        {selected?.headline ?? 'Signal'}
+                      </p>
                       {selected ? (
-                        <div className="flex items-center gap-1">
+                        <div className="flex shrink-0 items-center gap-1">
                           <Button type="button" variant="ghost" size="icon" className="size-7" onClick={() => void submitDraftFeedback(true)} aria-label="Nützlich">
                             <ThumbsUp className="h-4 w-4" />
                           </Button>
@@ -2265,37 +2277,43 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                         </div>
                       ) : null}
                     </div>
-                    <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] text-muted-foreground">
+                    <div className="mt-1.5 flex min-w-0 flex-nowrap items-center gap-x-1.5 overflow-hidden text-[11px] text-muted-foreground">
                       {selected && selectedGroup && selectedGroup.companies.length > 1 ? (
-                        <span>{selectedGroup.companies.length} Accounts</span>
+                        <span className="shrink-0">{selectedGroup.companies.length} Accounts</span>
                       ) : (
-                        <span>{selected?.companyName ?? ''}</span>
+                        <span className="shrink-0">{selected?.companyName ?? ''}</span>
                       )}
                       {selected ? (
                         <>
-                          <span aria-hidden>•</span>
+                          <span className="shrink-0" aria-hidden>
+                            •
+                          </span>
                           <span
-                            className="rounded border border-border bg-muted/50 px-1 py-px text-[10px] font-semibold uppercase tracking-wide text-foreground/85"
+                            className="shrink-0 rounded border border-border bg-muted/50 px-1 py-px text-[10px] font-semibold uppercase tracking-wide text-foreground/85"
                             title={signalTypeLabel(selected.categoryBadge).full}
                           >
                             {signalTypeLabel(selected.categoryBadge).short}
                           </span>
-                          <span aria-hidden>•</span>
-                          <Link
-                            href={selected.sourceHref}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex max-w-[min(11rem,55vw)] items-center gap-0.5 font-medium text-blue-700 hover:underline dark:text-blue-400"
-                            title={
-                              sourcePreview?.hostname
-                                ? `${selected.sourceLabel} · ${sourcePreview.hostname}`
-                                : selected.sourceLabel
-                            }
-                            aria-label={`Quelle öffnen: ${selected.sourceLabel}`}
-                          >
-                            <AppIcon icon={LinkIcon} size={12} className="shrink-0" />
-                            <span className="truncate">via {selected.sourceLabel}</span>
-                          </Link>
+                          <span className="shrink-0" aria-hidden>
+                            •
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <Link
+                              href={selected.sourceHref}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex min-w-0 max-w-full items-center gap-0.5 font-medium text-blue-700 hover:underline dark:text-blue-400"
+                              title={
+                                sourcePreview?.hostname
+                                  ? `${selected.sourceLabel} · ${sourcePreview.hostname}`
+                                  : selected.sourceLabel
+                              }
+                              aria-label={`Quelle öffnen: ${selected.sourceLabel}`}
+                            >
+                              <AppIcon icon={LinkIcon} size={12} className="shrink-0" />
+                              <span className="truncate">via {selected.sourceLabel}</span>
+                            </Link>
+                          </div>
                         </>
                       ) : null}
                     </div>
@@ -2379,7 +2397,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                     </DropdownMenuContent>
                   </DropdownMenu>
                   {selected.kind === 'exec' ? (
-                    <Button type="button" variant="ghost" size="icon" asChild>
+                    <Button type="button" variant="outline" size="icon" className="size-8 shrink-0" asChild>
                       <Link href={selected.sourceHref} target="_blank" rel="noreferrer" aria-label="Auf LinkedIn öffnen">
                         <AppIcon icon={Linkedin01Icon} size={16} />
                       </Link>
@@ -2454,18 +2472,31 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
             </div>
             <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-4">
               {selected ? (
-                <div className="space-y-10 border-l border-dashed border-border pl-4 dark:border-border">
+                <div className="space-y-12 border-l border-dashed border-slate-200 pl-4 dark:border-slate-700">
                   <motion.section
                     initial={{ opacity: 0, y: 4 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.18 }}
-                    className="rounded-r-lg border-l-4 border-blue-500 bg-blue-50/60 py-3 pl-4 pr-3 dark:border-blue-400 dark:bg-blue-950/40"
+                    className="rounded-r-xl border-l-4 border-blue-500 bg-blue-50/50 py-3 pl-4 pr-3 dark:border-blue-400 dark:bg-blue-950/35"
                   >
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-blue-800/80 dark:text-blue-200/90">Why call now?</p>
-                    <div className="mt-2 flex items-start justify-between gap-2">
-                      <h2 className="text-sm font-semibold text-foreground">The Insight</h2>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-blue-800/80 dark:text-blue-200/90">Warum jetzt?</p>
+                    <div className="mt-2 flex flex-wrap items-start justify-between gap-2">
+                      <h2 className="text-sm font-semibold text-foreground">Insight — Kurz-Begründung</h2>
                       {signalIcpScore !== null ? (
-                        <span className="text-base font-bold tabular-nums text-foreground">{signalIcpScore}%</span>
+                        <div className="flex shrink-0 items-center gap-1.5 rounded-md bg-white/70 px-2 py-1 dark:bg-slate-950/40">
+                          <span className="text-xs font-medium text-muted-foreground">ICP-Match</span>
+                          <span className="text-base font-bold tabular-nums text-foreground">{signalIcpScore}%</span>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button type="button" className="text-muted-foreground hover:text-foreground dark:hover:text-foreground">
+                                <Info className="h-3.5 w-3.5" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-[260px] border-border bg-popover text-popover-foreground text-xs">
+                              Basierend auf Branche, Unternehmensgröße, Signal-Typ, Aktualität und Referenz-Readiness.
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
                       ) : null}
                     </div>
                     <ul className="mt-2 list-inside list-disc space-y-1.5 text-[13px] leading-snug text-foreground/85 marker:text-blue-500 dark:text-blue-50/95 dark:marker:text-blue-400">
@@ -2475,9 +2506,8 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                     </ul>
                   </motion.section>
                   <section>
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Evidence</p>
-                    <h2 className="mt-1 text-sm font-semibold text-foreground">The Signal</h2>
-                    <p className="mt-0.5 line-clamp-2 text-xs font-medium text-muted-foreground">{selected.headline}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Das Signal</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{selected.headline}</p>
                     <p className="mt-1 text-[11px] text-muted-foreground">
                       Quelle{' '}
                       <Link href={selected.sourceHref} target="_blank" rel="noreferrer" className="font-medium text-blue-700 hover:underline dark:text-blue-400">
@@ -2508,133 +2538,159 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                       <p className="mt-3 text-sm text-muted-foreground">Kein Signaltext hinterlegt.</p>
                     )}
                   </section>
-                  <section className="space-y-3">
-                    <div className="flex items-center justify-between gap-2">
+                  <section className="space-y-4">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Wer kontaktieren?
+                      </p>
+                      <h2 className="mt-1 text-sm font-semibold text-foreground">Passende Ansprechpartner</h2>
+                    </div>
+                    {decisionCandidatesLoadingCompanyId === selected.companyId ? (
+                      <p className="text-sm text-muted-foreground">Profile werden geladen …</p>
+                    ) : decisionCandidates.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        Noch keine Stakeholder-Vorschläge. Verbinde The Org, CIO.de oder LinkedIn/Sales Navigator.
+                      </p>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-1 gap-4">
+                          {decisionCandidates.map((candidate) => {
+                            const activity = formatLinkedInActivityLine(candidate.lastSeenAt)
+                            const initials = candidate.fullName
+                              .split(/\s+/)
+                              .filter(Boolean)
+                              .slice(0, 2)
+                              .map((n) => n[0]?.toUpperCase() ?? '')
+                              .join('')
+                            const mutual = candidate.mutualConnections ?? 0
+                            return (
+                              <div
+                                key={candidate.id}
+                                className="rounded-2xl bg-slate-50/90 p-4 shadow-sm dark:bg-slate-900/50"
+                              >
+                                <div className="flex items-start gap-3">
+                                  <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-900 dark:bg-blue-950 dark:text-blue-100">
+                                    {initials || '—'}
+                                  </div>
+                                  <div className="min-w-0 flex-1 space-y-2">
+                                    <div>
+                                      <p className="font-semibold leading-snug text-foreground">{candidate.fullName}</p>
+                                      <p className="text-xs text-muted-foreground">{candidate.title}</p>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                      <span className="font-semibold text-foreground">{candidate.confidence}%</span>
+                                      {mutual > 0 ? (
+                                        <>
+                                          {' '}
+                                          · {mutual}{' '}
+                                          {mutual === 1 ? 'gemeinsamer LinkedIn-Kontakt' : 'gemeinsame LinkedIn-Kontakte'}
+                                        </>
+                                      ) : null}
+                                    </p>
+                                    {activity ? (
+                                      <p className="text-[11px] text-muted-foreground">LinkedIn · {activity}</p>
+                                    ) : null}
+                                    {candidate.profileUrl ? (
+                                      <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" asChild>
+                                        <Link href={candidate.profileUrl} target="_blank" rel="noreferrer">
+                                          <ExternalLink className="size-3.5" />
+                                          LinkedIn öffnen
+                                        </Link>
+                                      </Button>
+                                    ) : null}
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                        {mutualConnectionsPreview.bridges[0] ? (
+                          <div className="rounded-xl border border-amber-200/70 bg-amber-50/65 px-4 py-3 text-sm leading-relaxed text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/25 dark:text-amber-50">
+                            <span className="font-semibold">Pro-Tipp: </span>
+                            {mutualConnectionsPreview.bridges[0]}
+                          </div>
+                        ) : null}
+                      </>
+                    )}
+                  </section>
+
+                  <section className="space-y-4">
+                    <div className="flex flex-col gap-2">
                       <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Sidekick</p>
-                        <h2 className="text-sm font-semibold text-foreground">Stakeholder & Referenzen</h2>
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          Referenzen
+                        </p>
+                        <h2 className="mt-1 text-sm font-semibold text-foreground">Welche Story passt am besten?</h2>
                       </div>
                       <Button
                         type="button"
                         size="sm"
-                        variant={onlyApprovedReferences ? 'secondary' : 'ghost'}
-                        className="h-7 text-[10px]"
+                        variant={onlyApprovedReferences ? 'secondary' : 'outline'}
+                        className="h-8 w-full shrink-0 text-xs sm:w-auto"
                         onClick={() => setOnlyApprovedReferences((prev) => !prev)}
                       >
                         Nur freigegeben
                       </Button>
                     </div>
-                    {decisionCandidatesLoadingCompanyId === selected.companyId ? (
-                      <p className="text-sm text-muted-foreground">Profile werden geladen …</p>
-                    ) : decisionCandidates.length === 0 && visibleQuickRefs.length === 0 ? (
+                    {visibleQuickRefs.length === 0 ? (
                       <p className="text-sm text-muted-foreground">
-                        Noch keine Stakeholder-Vorschläge. Verbinde The Org, CIO.de oder LinkedIn/Sales Navigator.
+                        Keine Referenzen im Pool für dieses Signal-Konto.
                       </p>
                     ) : (
-                      <div className="space-y-3">
-                        {decisionCandidates.map((candidate, idx) => {
-                          const pairedRef = visibleQuickRefs[idx]
-                          const activity = formatLinkedInActivityLine(candidate.lastSeenAt)
-                          const initials = candidate.fullName
-                            .split(/\s+/)
-                            .filter(Boolean)
-                            .slice(0, 2)
-                            .map((n) => n[0]?.toUpperCase() ?? '')
-                            .join('')
+                      <div className="space-y-4">
+                        {visibleQuickRefs.map((r) => {
+                          const readiness = readinessForReference(r.status)
+                          const attached = attachedRefIds.has(r.id)
+                          const requestable = String(r.status ?? '').toLowerCase() !== 'approved'
                           return (
-                            <div key={candidate.id} className="rounded-lg bg-muted/55 px-3 py-3 dark:bg-muted/50">
-                              <div className="flex items-start gap-2">
-                                <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-900 dark:bg-blue-950 dark:text-blue-100">
-                                  {initials || '—'}
+                            <div
+                              key={r.id}
+                              className="rounded-2xl bg-slate-50/80 p-4 dark:bg-slate-900/45"
+                            >
+                              <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+                                <div className="relative size-12 shrink-0 overflow-hidden rounded-xl border border-border bg-background">
+                                  {r.companyLogoUrl ? (
+                                    <Image
+                                      src={r.companyLogoUrl}
+                                      alt=""
+                                      fill
+                                      sizes="48px"
+                                      className="object-contain p-2"
+                                    />
+                                  ) : (
+                                    <div className="flex size-full items-center justify-center text-xs font-medium text-muted-foreground">
+                                      {(r.companyName ?? '?').slice(0, 2).toUpperCase()}
+                                    </div>
+                                  )}
                                 </div>
-                                <div className="min-w-0 flex-1">
-                                  <p className="truncate text-sm font-semibold text-foreground">{candidate.fullName}</p>
-                                  <p className="truncate text-xs text-muted-foreground">{candidate.title}</p>
-                                  <span className="mt-1 inline-flex rounded-full bg-card px-2 py-0.5 text-[10px] font-semibold text-blue-800 ring-1 ring-blue-100 dark:bg-blue-950/70 dark:text-blue-100 dark:ring-blue-800/60">
-                                    Match {candidate.confidence}%
-                                  </span>
-                                  {activity ? <p className="mt-1 text-[10px] text-muted-foreground">LinkedIn · {activity}</p> : null}
-                                </div>
-                              </div>
-                              {pairedRef ? (
-                                <div className="mt-3 border-t border-border/80 pt-3 dark:border-border">
-                                  {(() => {
-                                    const readiness = readinessForReference(pairedRef.status)
-                                    const attached = attachedRefIds.has(pairedRef.id)
-                                    const requestable = String(pairedRef.status ?? '').toLowerCase() !== 'approved'
-                                    return (
-                                      <>
-                                        <div className="flex flex-wrap items-center gap-1">
-                                          {requestable ? <Lock className="h-3 w-3 text-muted-foreground" /> : null}
-                                          <Badge variant="outline" className={`text-[10px] font-semibold ${readiness.legalBadgeClassName}`}>
-                                            {readiness.legalBadgeLabel}
-                                          </Badge>
-                                        </div>
-                                        <p className="mt-1 line-clamp-2 text-xs font-medium text-foreground">{pairedRef.title}</p>
-                                        <div className="mt-2 flex flex-wrap gap-1">
-                                          {requestable ? (
-                                            <Button
-                                              size="sm"
-                                              variant="outline"
-                                              className="h-7 text-[10px]"
-                                              onClick={async () => {
-                                                const res = await requestReferenceApprovalForSignal({
-                                                  referenceId: pairedRef.id,
-                                                  referenceTitle: pairedRef.title,
-                                                  companyName: selected?.companyName ?? '',
-                                                })
-                                                if (!res.success) return toast.error(res.error)
-                                                toast.success('Freigabe angefragt')
-                                              }}
-                                            >
-                                              Freigabe
-                                            </Button>
-                                          ) : null}
-                                          <Button
-                                            size="icon"
-                                            variant={attached ? 'default' : 'outline'}
-                                            className={`size-7 ${attached ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
-                                            onClick={() => toggleAttachedReference(pairedRef.id)}
-                                            aria-label={attached ? 'Aus Intro entfernen' : 'An Intro anhängen'}
-                                          >
-                                            <AppIcon icon={Paperclip} size={12} />
-                                          </Button>
-                                          <Button size="sm" variant="outline" className="h-7 text-[10px]" asChild>
-                                            <Link href={ROUTES.evidence.detail(pairedRef.id)}>Öffnen</Link>
-                                          </Button>
-                                        </div>
-                                      </>
-                                    )
-                                  })()}
-                                </div>
-                              ) : null}
-                            </div>
-                          )
-                        })}
-                        {decisionCandidates.length === 0
-                          ? visibleQuickRefs.map((r) => {
-                              const readiness = readinessForReference(r.status)
-                              const attached = attachedRefIds.has(r.id)
-                              const requestable = String(r.status ?? '').toLowerCase() !== 'approved'
-                              return (
-                                <div key={r.id} className="rounded-lg bg-muted/55 px-3 py-3 dark:bg-muted/50">
-                                  <Badge variant="outline" className={`text-[10px] font-semibold ${readiness.legalBadgeClassName}`}>
-                                    {readiness.legalBadgeLabel}
-                                  </Badge>
-                                  <p className="mt-1 text-xs font-medium text-foreground">{r.title}</p>
-                                  <div className="mt-2 flex flex-wrap gap-1">
+                                <div className="min-w-0 flex-1 space-y-2">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <Badge variant="outline" className={`text-[10px] font-semibold ${readiness.legalBadgeClassName}`}>
+                                      {readiness.legalBadgeLabel}
+                                    </Badge>
+                                    {requestable ? <Lock className="size-3 text-muted-foreground" /> : null}
+                                  </div>
+                                  <p className="text-sm font-semibold text-foreground">{r.title}</p>
+                                  <p className="text-sm leading-relaxed text-muted-foreground">
+                                    <span className="font-medium text-foreground">Warum diese Story zieht:</span>{' '}
+                                    {referenceMatchReason(r)}
+                                  </p>
+                                  <div className="flex flex-wrap gap-2 pt-1">
                                     {requestable ? (
                                       <Button
                                         size="sm"
                                         variant="outline"
-                                        className="h-7 text-[10px]"
+                                        className="h-8 text-xs"
                                         onClick={async () => {
                                           const res = await requestReferenceApprovalForSignal({
                                             referenceId: r.id,
                                             referenceTitle: r.title,
                                             companyName: selected?.companyName ?? '',
                                           })
-                                          if (!res.success) return toast.error(res.error)
+                                          if (!res.success) {
+                                            toast.error(res.error)
+                                            return
+                                          }
                                           toast.success('Freigabe angefragt')
                                         }}
                                       >
@@ -2644,31 +2700,39 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                     <Button
                                       size="icon"
                                       variant={attached ? 'default' : 'outline'}
-                                      className={`size-7 ${attached ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+                                      className={`size-8 ${attached ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
                                       onClick={() => toggleAttachedReference(r.id)}
                                       aria-label={attached ? 'Aus Intro entfernen' : 'An Intro anhängen'}
                                     >
                                       <AppIcon icon={Paperclip} size={12} />
                                     </Button>
-                                    <Button size="sm" variant="outline" className="h-7 text-[10px]" asChild>
-                                      <Link href={ROUTES.evidence.detail(r.id)}>Öffnen</Link>
+                                    <Button size="sm" variant="outline" className="h-8 text-xs" asChild>
+                                      <Link href={ROUTES.evidence.detail(r.id)}>Referenz öffnen</Link>
                                     </Button>
                                   </div>
                                 </div>
-                              )
-                            })
-                          : null}
+                              </div>
+                            </div>
+                          )
+                        })}
                       </div>
                     )}
                   </section>
                   <section>
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Outreach</p>
-                    <h2 className="mt-1 text-sm font-semibold text-foreground">The Output</h2>
+                    <h2 className="mt-1 text-sm font-semibold text-foreground">KI-Entwurf</h2>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Platzhalter wie{' '}
+                      <span className="rounded bg-yellow-100 px-1 text-yellow-800 dark:bg-yellow-500/25 dark:text-yellow-100">
+                        [Name]
+                      </span>{' '}
+                      markieren offene Personalisierung.
+                    </p>
                     {!introStrategyText && !introStrategyLoading ? (
                       <div className="mt-6 flex justify-center py-4">
                         <Button type="button" size="lg" className="gap-2 px-6 shadow-md" onClick={triggerIntroDraftGeneration}>
-                          <span aria-hidden>🪄</span>
-                          Outreach-Draft generieren
+                          <LucideSparkles className="size-4" aria-hidden />
+                          Outreach für {decisionCandidates[0]?.fullName?.split(/\s+/)[0] ?? 'Kontakt'}
                         </Button>
                       </div>
                     ) : null}
