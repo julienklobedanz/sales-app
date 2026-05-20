@@ -408,7 +408,7 @@ exec_events as (
   join (select * from companies order by name limit 3) co on true
   join lateral (
     values
-      ('Thomas Müller','CPO','CTO','wurde CEO → jetzt CTO gewechselt', 2),
+      ('Thomas Müller','CPO','CTO','Thomas Müller wechselt von CPO auf den CTO-Posten', 2),
       ('Sarah K.','CFO',null,'neu eingestellt als VP Finance', 5)
   ) as e(person,before,after,summary,age_days) on true
   returning id

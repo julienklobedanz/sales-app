@@ -24,6 +24,7 @@ import { COPY } from '@/lib/copy'
 import { AppIcon } from '@/lib/icons'
 import { ROUTES } from '@/lib/routes'
 import type { ExecutiveTrackingRow, MarketSignalsCompanyOption } from '@/app/dashboard/market-signals/data'
+import { formatRoleChangeFact } from '@/lib/market-signals/signal-intelligence'
 
 const PAGE_SIZE = 10
 
@@ -62,24 +63,13 @@ function buildMovementSentence(input: {
   currentCompanyName: string
   changeSummary: string
 }) {
-  const summary = input.changeSummary.trim()
-  const germanPattern = /von\s+(.+?)\s+bei\s+(.+?)\s+zu\s+(.+?)\s+bei\s+(.+)/i
-  const englishPattern = /from\s+(.+?)\s+at\s+(.+?)\s+to\s+(.+?)\s+at\s+(.+)/i
-  const matched = summary.match(germanPattern) ?? summary.match(englishPattern)
-  if (matched) {
-    const [, oldRole, oldCompany, newRole, newCompany] = matched
-    return `${input.personName} wechselte von ${oldRole} bei ${oldCompany} zu ${newRole} bei ${newCompany}.`
-  }
-
-  const oldRole = input.personTitleBefore?.trim()
-  const newRole = input.personTitleAfter?.trim()
-  if (oldRole && newRole) {
-    return `${input.personName} wechselte von ${oldRole} zu ${newRole} bei ${input.currentCompanyName}.`
-  }
-  if (newRole) {
-    return `${input.personName} ist jetzt ${newRole} bei ${input.currentCompanyName}.`
-  }
-  return `${input.personName} wechselte zu ${input.currentCompanyName}.`
+  return formatRoleChangeFact({
+    personName: input.personName,
+    personTitleBefore: input.personTitleBefore,
+    personTitleAfter: input.personTitleAfter,
+    companyName: input.currentCompanyName,
+    changeSummary: input.changeSummary,
+  })
 }
 
 export function ExecutiveTrackingList({

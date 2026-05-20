@@ -28,7 +28,8 @@ function heuristicStrategy(body: z.infer<typeof BodySchema>): string {
   } else if (/expansion|wachstum|m&a|übernahme|neue märkte|expansion/.test(low)) {
     angle = 'Wachstum und Expansion prägen das Umfeld'
   } else if (signalKind === 'exec') {
-    angle = 'Ein Executive-Wechsel verschiebt Prioritäten und öffnet neue Initiativen'
+    angle =
+      'Neuer Entscheider: 90-Tage-Fenster für IT-Infrastruktur und Anbieterwechsel vor Budget-Freeze'
   } else {
     angle = 'Operativer Veränderungsbedarf beim Account ist das Leitmotiv'
   }
@@ -82,7 +83,7 @@ export async function POST(req: NextRequest) {
           {
             role: 'system',
             content:
-              'Du bist Senior Sales Strategist (B2B IT/SaaS). Antworte auf Deutsch mit GENAU einem oder zwei kurzen Sätzen (max. 320 Zeichen), konkret und ohne Floskeln. Nutze die Basis-Empfehlung als Anker; verbessere sie nur, wenn es echten Mehrwert bringt.',
+              'Du bist Senior Sales Strategist (B2B IT/SaaS). Antworte auf Deutsch mit GENAU einem oder zwei kurzen Sätzen (max. 320 Zeichen). Keine Floskeln (kein „Momentum“, „lösungsorientiert“, „natürlicher Einstieg“). Fokus: Budget-Fenster, 90-Tage-Phase neuer Entscheider, Anbieterwechsel. Nutze die Basis-Empfehlung als Anker.',
           },
           {
             role: 'user',

@@ -20,6 +20,11 @@ import {
 
 import { AppIcon } from '@/lib/icons'
 import { cn } from '@/lib/utils'
+import {
+  buildMarketSignalIntelligence,
+  formatRoleChangeFact,
+  parseWarmIntroBridge,
+} from '@/lib/market-signals/signal-intelligence'
 import { CheckIcon } from '@/components/ui/check-icon'
 import type { MarketSignalsPageModel } from '@/app/dashboard/market-signals/data'
 import { Button } from '@/components/ui/button'
@@ -83,15 +88,6 @@ function formatLinkedInActivityLine(iso: string | null | undefined): string | nu
   if (days < 7) return `Vor ${days} Tagen aktiv (geschätzt)`
   if (days < 30) return `Vor ${Math.floor(days / 7)} Wochen aktiv (geschätzt)`
   return `Vor ${Math.floor(days / 30)} Monat(en) aktiv (geschätzt)`
-}
-
-/** Parsed „Dein Kollege X kennt Y – …“ bridge copy from decision-maker mocks / providers. */
-function parseMutualBridgeLine(line: string): { colleague: string; contact: string } | null {
-  const m = String(line ?? '')
-    .trim()
-    .match(/^Dein Kollege (.+?) kennt (.+?) – starker Einstieg für ein Warm-Intro\.?$/)
-  if (!m) return null
-  return { colleague: m[1].trim(), contact: m[2].trim() }
 }
 
 function personInitials(name: string): string {
@@ -206,6 +202,9 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
         listTitleRest: string
         categoryBadge: 'people' | 'finance' | 'strategy'
         personName?: string
+        personTitleBefore?: string | null
+        personTitleAfter?: string | null
+        changeSummaryRaw?: string
       }
     | {
         kind: 'news'
@@ -405,6 +404,13 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
       const href =
         isPress && pressUrl && /^https?:\/\//i.test(pressUrl) ? pressUrl : linkedInHref
       const headline = `${row.personName} · ${row.companyName}`
+      const roleFact = formatRoleChangeFact({
+        personName: row.personName,
+        personTitleBefore: row.personTitleBefore,
+        personTitleAfter: row.personTitleAfter,
+        companyName: row.companyName,
+        changeSummary: row.changeSummary,
+      })
       return {
         kind: 'exec',
         id: row.id,
@@ -415,13 +421,14 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
         detectedAt: row.detectedAt,
         sourceLabel: isPress ? 'Presse' : 'LinkedIn',
         sourceHref: href,
-        sourceSummary: summarizeSourceText(
-          row.changeSummary || `${row.personName} in neuer Rolle bei ${row.companyName}`
-        ),
+        sourceSummary: summarizeSourceText(roleFact),
         listTitlePrefix: row.personName || 'Person',
         listTitleRest: isPress ? `${row.companyName} · Executive in den Medien` : `${row.companyName} · Executive Tracking`,
         categoryBadge: 'people',
         personName: row.personName,
+        personTitleBefore: row.personTitleBefore,
+        personTitleAfter: row.personTitleAfter,
+        changeSummaryRaw: row.changeSummary,
       }
     })
     const newsItems: InboxItem[] = model.news.map((row) => {
@@ -793,74 +800,11 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
     return group.companies.map((c) => c.name).join(', ')
   }
 
-  function buildWhyNowOneLiner(item: InboxItem, tone: IntroTone, targetLabel: string) {
-    if (item.kind === 'exec') {
-      if (tone === 'challenging') {
-        return `Executive-Change bei ${targetLabel} – Fenster für Neujustierung von Prioritäten und Tooling.`
-      }
-      if (tone === 'concise') {
-        return `Executive-Wechsel bei ${targetLabel}: hohes Timing für neue Initiativen.`
-      }
-      return `Neue Führung bei ${targetLabel} – Momentum für lösungsorientiertes Outreach.`
+  function buildIntroSnippet(item: InboxItem, intelligence: ReturnType<typeof buildMarketSignalIntelligence> | null) {
+    if (intelligence) {
+      return `${intelligence.insight.signal_fact} ${intelligence.insight.why_now}`
     }
-    if (tone === 'challenging') {
-      return `Veränderungsdruck bei ${targetLabel} – guter Zeitpunkt für klare Positionierung.`
-    }
-    if (tone === 'concise') {
-      return `Frisches Account-Signal bei ${targetLabel} – direkter Hook fürs Outreach.`
-    }
-    return `Account-News bei ${targetLabel} – natürlicher Einstieg ins Gespräch.`
-  }
-
-  function buildTriggerBullets(item: InboxItem, tone: IntroTone, group: InboxGroup | null) {
-    const target = outreachTargetLabel(item, group)
-    const bullets: string[] = []
-    const fromSource = firstChunkSentences(item.sourceSummary, 2, 260)
-    if (fromSource) bullets.push(fromSource)
-    bullets.push(buildWhyNowOneLiner(item, tone, target))
-    if (quickRefs.length) {
-      const approved = quickRefs.filter((r) => String(r.status ?? '').toLowerCase() === 'approved').length
-      bullets.push(
-        approved > 0
-          ? `${quickRefs.length} Referenz(en) im Pool, davon ${approved} öffentlich nutzbar.`
-          : `${quickRefs.length} Referenz(en) – Freigabe vor externer Nutzung prüfen.`
-      )
-    }
-    return bullets.slice(0, 3)
-  }
-
-  function buildWhyNowMessage(item: InboxItem, tone: IntroTone, targetLabel: string) {
-    const refs = quickRefs.slice(0, 2).map((r) => r.title)
-    const refPart = refs.length
-      ? ` Mit ${refs.join(refs.length > 1 ? ' und ' : '')} haben wir belastbare Referenzen für einen schnellen Transfer bei ${targetLabel}.`
-      : ` Wir sollten schnell passende Referenzen für ${targetLabel} ergänzen, um den Trigger im Outreach direkt zu kapitalisieren.`
-    if (item.kind === 'exec') {
-      if (tone === 'challenging') {
-        return `Das Leadership-Signal öffnet ein Reframing-Fenster bei ${targetLabel}: Prioritäten werden neu gesetzt und bestehende Tools hinterfragt.${refPart}`
-      }
-      if (tone === 'concise') {
-        return `Executive-Wechsel bei ${targetLabel} = hohes Timing-Signal für neue Initiativen.${refPart}`
-      }
-      return `Der Executive-Change bei ${targetLabel} schafft ein starkes Momentum für beratungsgetriebenes Outreach mit klarem Business Case.${refPart}`
-    }
-    if (tone === 'challenging') {
-      return `Das News-Signal zeigt aktiven Veränderungsdruck bei ${targetLabel}. Jetzt ist der richtige Zeitpunkt, die Zielarchitektur und Time-to-Value offensiv zu challengen.${refPart}`
-    }
-    if (tone === 'concise') {
-      return `Frisches Account-Signal bei ${targetLabel} mit hoher Outreach-Relevanz.${refPart}`
-    }
-    return `Das aktuelle Account-Signal bei ${targetLabel} bietet einen idealen Gesprächseinstieg für einen beratenden, lösungsorientierten Erstkontakt.${refPart}`
-  }
-
-  function buildIntroSnippet(item: InboxItem, group: InboxGroup | null = selectedGroup) {
-    const target = outreachTargetLabel(item, group)
-    const opener =
-      item.kind === 'exec'
-        ? `${item.listTitlePrefix} ist bei ${item.companyName} in einer neuen Rolle.`
-        : group && group.companies.length > 1
-          ? `Mehrere Accounts (${group.companies.length}) mit gleichem Signal: ${item.listTitleRest}.`
-          : `${item.companyName} sendet ein relevantes Signal: ${item.listTitleRest}.`
-    return `${opener} ${buildWhyNowMessage(item, 'concise', target)}`
+    return item.sourceSummary
   }
 
   function readinessForReference(status: string): {
@@ -935,6 +879,9 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
     [decisionCandidatesByCompany, selected]
   )
 
+  /** Max. drei Top-Kontakte — horizontal statt vertikal gestapelt. */
+  const displayStakeholders = useMemo(() => decisionCandidates.slice(0, 3), [decisionCandidates])
+
   const mutualConnectionsPreview = useMemo(() => {
     if (!decisionCandidates.length) return { count: 0, bridges: [] as string[] }
     let max = 0
@@ -971,16 +918,44 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
     model.championWatchlist,
   ])
 
-  const triggerBullets = useMemo(() => {
-    if (!selected) return []
-    return buildTriggerBullets(selected, introTone, selectedGroup)
-  }, [selected, introTone, selectedGroup, quickRefs])
-  const executiveSummaryBullets = useMemo(() => triggerBullets.slice(0, 3), [triggerBullets])
+  const signalIntelligence = useMemo(() => {
+    if (!selected) return null
+    const primary = decisionCandidates[0]
+    const bridgeLine = primary?.mutualConnectionBridges?.[0]
+    const bridge = bridgeLine ? parseWarmIntroBridge(bridgeLine) : null
+    return buildMarketSignalIntelligence({
+      signalKind: selected.kind,
+      personName: selected.kind === 'exec' ? selected.personName : undefined,
+      companyName: selected.companyName,
+      personTitleBefore: selected.kind === 'exec' ? selected.personTitleBefore : undefined,
+      personTitleAfter: selected.kind === 'exec' ? selected.personTitleAfter : undefined,
+      changeSummary: selected.kind === 'exec' ? selected.changeSummaryRaw : undefined,
+      newsBody: selected.kind === 'news' ? selected.body : undefined,
+      references: quickRefs.map((r) => ({ id: r.id, title: r.title, status: r.status })),
+      onlyApprovedReferences,
+      primaryStakeholder: primary
+        ? { fullName: primary.fullName, title: primary.title }
+        : null,
+      warmIntro: bridge
+        ? { colleagueName: bridge.colleague, stakeholderName: bridge.stakeholder }
+        : null,
+    })
+  }, [decisionCandidates, onlyApprovedReferences, quickRefs, selected])
+
+  const executiveSummaryBullets = useMemo(
+    () => signalIntelligence?.bullets ?? [],
+    [signalIntelligence]
+  )
+
   const signalEvidenceText = useMemo(() => {
     if (!selected) return ''
     if (selected.kind === 'news') return String(selected.body || selected.sourceSummary || '').trim()
-    return String(selected.sourceSummary || '').trim()
-  }, [selected])
+    return (
+      signalIntelligence?.insight.signal_fact ||
+      (selected.kind === 'exec' ? selected.changeSummaryRaw : '') ||
+      String(selected.sourceSummary || '')
+    ).trim()
+  }, [selected, signalIntelligence])
   const isSelectedInPipeline = useMemo(() => {
     if (!selected) return false
     const ids = selectedGroup?.companies?.length
@@ -1028,7 +1003,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
 
   async function copyStrategySnippet() {
     if (!selected) return
-    const text = introStrategyText?.trim() || buildIntroSnippet(selected, selectedGroup)
+    const text = introStrategyText?.trim() || buildIntroSnippet(selected, signalIntelligence)
     await navigator.clipboard.writeText(text)
     setCopySuccess(true)
     window.setTimeout(() => setCopySuccess(false), 1200)
@@ -1038,6 +1013,14 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
   function triggerIntroDraftGeneration() {
     setIntroDraftRequested(true)
     setIntroDraftRunId((prev) => prev + 1)
+  }
+
+  async function handleWarmIntroRequest(colleagueName: string, stakeholderName: string) {
+    if (!selected) return
+    const key = signalKeyOf(selected)
+    await logMarketSignalQuickAction({ signalKey: key, channel: 'slack_mention' })
+    toast.success(`Warm-Intro über ${colleagueName} an ${stakeholderName} – Team in Slack informieren.`)
+    window.open('https://slack.com/app_redirect', '_blank', 'noopener,noreferrer')
   }
 
   useEffect(() => {
@@ -1066,8 +1049,8 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
             signalKind: selected.kind,
             companyName: selected.companyName,
             introTone,
-            summarySnippet: selected.sourceSummary.slice(0, 1200),
-            referenceTitles: quickRefs.map((r) => r.title),
+            summarySnippet: (signalIntelligence?.insight.why_now ?? selected.sourceSummary).slice(0, 1200),
+            referenceTitles: visibleQuickRefs.map((r) => r.title),
           }),
           signal: ac.signal,
         })
@@ -1085,7 +1068,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
       }
     })()
     return () => ac.abort()
-  }, [selected, introTone, quickRefs, introDraftRequested, introDraftRunId])
+  }, [selected, introTone, visibleQuickRefs, signalIntelligence, introDraftRequested, introDraftRunId])
 
   function runManualNewsIngest() {
     startNewsIngest(async () => {
@@ -1106,6 +1089,63 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
       )
       router.refresh()
     })
+  }
+
+  const outreachDraftTargetName =
+    decisionCandidates[0]?.fullName?.split(/\s+/)[0] ?? 'Kontakt'
+
+  const INTRO_TONE_OPTIONS = [
+    ['challenging', 'Herausfordernd'],
+    ['advisory', 'Beratend'],
+    ['concise', 'Kurz & Knapp'],
+  ] as const
+
+  function renderIntroTonePicker() {
+    return (
+      <div className="space-y-2">
+        <p className="text-xs font-medium text-foreground">Tonalität des Entwurfs</p>
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Tonalität des Outreach-Entwurfs">
+          {INTRO_TONE_OPTIONS.map(([value, label]) => (
+            <Button
+              key={value}
+              type="button"
+              size="sm"
+              variant={introTone === value ? 'secondary' : 'outline'}
+              className="h-8 px-3 text-xs"
+              aria-pressed={introTone === value}
+              onClick={() => setIntroTone(value)}
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  function renderOutreachDraftComposer() {
+    return (
+      <div className="w-full max-w-lg rounded-xl border border-border bg-card p-4 shadow-sm">
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          Platzhalter wie{' '}
+          <span className="rounded bg-yellow-100 px-1 text-yellow-800 dark:bg-yellow-500/25 dark:text-yellow-100">
+            [Name]
+          </span>{' '}
+          markieren offene Personalisierung im generierten Text.
+        </p>
+        <div className="mt-4">{renderIntroTonePicker()}</div>
+        <Button
+          type="button"
+          size="lg"
+          variant="outline"
+          className="mt-4 w-full gap-2 shadow-sm"
+          onClick={triggerIntroDraftGeneration}
+        >
+          <LucideSparkles className="size-4" aria-hidden />
+          Outreach-Draft für {outreachDraftTargetName} generieren
+        </Button>
+      </div>
+    )
   }
 
   return (
@@ -1420,7 +1460,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                               onClick={(e) => {
                                                 e.preventDefault()
                                                 e.stopPropagation()
-                                                void navigator.clipboard.writeText(buildIntroSnippet(rep, groupItem))
+                                                void navigator.clipboard.writeText(buildIntroSnippet(rep, null))
                                                 toast.success('AI-Intro-Snippet kopiert.')
                                               }}
                                             >
@@ -1500,7 +1540,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                 ) : (
                   <div className="flex h-full min-h-0 flex-col">
                     <div className="shrink-0 border-b border-border px-6 py-4">
-                      <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-center justify-between gap-4">
                         <div className="flex min-w-0 flex-1 items-start gap-3">
                           <div className="relative mt-0.5 flex shrink-0 -space-x-2">
                             {selectedGroup && selectedGroup.companies.length > 1
@@ -1535,19 +1575,9 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                 )}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <div className="flex min-w-0 items-center gap-2">
-                              <p className="min-w-0 flex-1 truncate text-lg font-semibold leading-none tracking-tight text-foreground md:text-xl">
-                                {selected.headline}
-                              </p>
-                              <div className="flex shrink-0 items-center gap-1">
-                                <Button type="button" variant="ghost" size="icon" className="size-7" onClick={() => void submitDraftFeedback(true)} aria-label="Nützlich">
-                                  <ThumbsUp className="h-4 w-4" />
-                                </Button>
-                                <Button type="button" variant="ghost" size="icon" className="size-7" onClick={() => void submitDraftFeedback(false)} aria-label="Nicht nützlich">
-                                  <ThumbsDown className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
+                            <p className="min-w-0 truncate text-lg font-semibold leading-none tracking-tight text-foreground md:text-xl">
+                              {selected.headline}
+                            </p>
                             <div className="mt-1.5 flex min-w-0 flex-nowrap items-center gap-x-2 overflow-hidden text-xs text-muted-foreground">
                               <span className="shrink-0">
                                 {selectedGroup && selectedGroup.companies.length > 1
@@ -1587,6 +1617,26 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                           </div>
                         </div>
                         <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="size-8"
+                            onClick={() => void submitDraftFeedback(true)}
+                            aria-label="Nützlich"
+                          >
+                            <ThumbsUp className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="size-8"
+                            onClick={() => void submitDraftFeedback(false)}
+                            aria-label="Nicht nützlich"
+                          >
+                            <ThumbsDown className="h-4 w-4" />
+                          </Button>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
@@ -1710,7 +1760,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                               <div className="max-h-[min(18rem,55vh)] space-y-2 overflow-y-auto p-2">
                                 {mutualConnectionsPreview.bridges.length ? (
                                   mutualConnectionsPreview.bridges.map((line, i) => {
-                                    const parsed = parseMutualBridgeLine(line)
+                                    const parsed = parseWarmIntroBridge(line)
                                     if (!parsed) {
                                       return (
                                         <div
@@ -1738,16 +1788,16 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                           </span>
                                           <span
                                             className="flex size-9 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold text-emerald-900 dark:bg-emerald-950/80 dark:text-emerald-200"
-                                            title={parsed.contact}
+                                            title={parsed.stakeholder}
                                           >
-                                            {personInitials(parsed.contact)}
+                                            {personInitials(parsed.stakeholder)}
                                           </span>
                                         </div>
                                         <div className="min-w-0 flex-1">
                                           <p className="text-xs font-medium text-foreground">
                                             <span className="text-blue-700 dark:text-blue-300">{parsed.colleague}</span>
                                             <span className="font-normal text-muted-foreground"> kennt </span>
-                                            <span className="text-emerald-800 dark:text-emerald-200">{parsed.contact}</span>
+                                            <span className="text-emerald-800 dark:text-emerald-200">{parsed.stakeholder}</span>
                                           </p>
                                           <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
                                             Starkes Warm-Intro: gemeinsame Verbindung nutzen.
@@ -1869,46 +1919,32 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                             </ul>
                           </motion.section>
 
-                          <section className="space-y-3">
-                            <div>
-                              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Das Signal</p>
-                              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{selected.headline}</p>
-                            </div>
-                            <p className="mt-1 text-[11px] text-muted-foreground">
-                              Quelle{' '}
-                              <Link
-                                href={selected.sourceHref}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="font-medium text-blue-700 hover:underline dark:text-blue-400"
+                          {signalEvidenceText &&
+                          selected.kind === 'news' &&
+                          !executiveSummaryBullets.some((b) => b === signalEvidenceText) ? (
+                            <section className="space-y-3">
+                              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                Das Signal
+                              </p>
+                              <div
+                                className={`whitespace-pre-wrap text-sm leading-relaxed text-foreground/90 ${
+                                  signalEvidenceExpanded ? '' : 'line-clamp-3'
+                                }`}
                               >
-                                {selected.sourceLabel}
-                              </Link>
-                            </p>
-                            {signalEvidenceText ? (
-                              <>
-                                <div
-                                  className={`mt-3 whitespace-pre-wrap text-sm leading-relaxed text-foreground/90 ${
-                                    signalEvidenceExpanded ? '' : 'line-clamp-3'
-                                  }`}
+                                {signalEvidenceText}
+                              </div>
+                              {signalEvidenceText.length > 140 ? (
+                                <Button
+                                  type="button"
+                                  variant="link"
+                                  className="mt-1 h-auto p-0 text-xs font-medium text-blue-700 dark:text-blue-400"
+                                  onClick={() => setSignalEvidenceExpanded((e) => !e)}
                                 >
-                                  {signalEvidenceText}
-                                </div>
-                                {signalEvidenceText.length > 140 ? (
-                                  <Button
-                                    type="button"
-                                    variant="link"
-                                    className="mt-1 h-auto p-0 text-xs font-medium text-blue-700 dark:text-blue-400"
-                                    onClick={() => setSignalEvidenceExpanded((e) => !e)}
-                                  >
-                                    {signalEvidenceExpanded ? 'Weniger anzeigen' : 'Weiterlesen'}
-                                  </Button>
-                                ) : null}
-                              </>
-                            ) : (
-                              <p className="mt-3 text-sm text-muted-foreground">Kein Signaltext hinterlegt.</p>
-                            )}
-                          </section>
+                                  {signalEvidenceExpanded ? 'Weniger anzeigen' : 'Weiterlesen'}
+                                </Button>
+                              ) : null}
+                            </section>
+                          ) : null}
 
                           <section className="space-y-4">
                             <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -1927,8 +1963,12 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                               </p>
                             ) : (
                               <>
-                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                  {decisionCandidates.map((candidate) => {
+                                <div
+                                  className="-mx-1 flex gap-3 overflow-x-auto overscroll-x-contain px-1 pb-2 snap-x snap-mandatory scroll-smooth [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-muted-foreground/35"
+                                  role="list"
+                                  aria-label="Passende Ansprechpartner"
+                                >
+                                  {displayStakeholders.map((candidate) => {
                                     const activity = formatLinkedInActivityLine(candidate.lastSeenAt)
                                     const initials = candidate.fullName
                                       .split(/\s+/)
@@ -1940,7 +1980,8 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                     return (
                                       <div
                                         key={candidate.id}
-                                        className="rounded-2xl bg-slate-50/90 p-4 shadow-sm dark:bg-slate-900/50"
+                                        role="listitem"
+                                        className="w-[calc(100%-0.5rem)] shrink-0 snap-start rounded-2xl bg-slate-50/90 p-4 shadow-sm dark:bg-slate-900/50 sm:w-[calc((100%-0.75rem)/2)] sm:max-w-[calc((100%-0.75rem)/2)]"
                                       >
                                         <div className="flex items-start gap-3">
                                           <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-900 dark:bg-blue-950 dark:text-blue-100">
@@ -1978,12 +2019,44 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                     )
                                   })}
                                 </div>
-                                {mutualConnectionsPreview.bridges[0] ? (
-                                  <div className="rounded-xl border border-amber-200/70 bg-amber-50/65 px-4 py-3 text-sm leading-relaxed text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/25 dark:text-amber-50">
-                                    <span className="font-semibold">Pro-Tipp: </span>
-                                    {mutualConnectionsPreview.bridges[0]}
-                                  </div>
-                                ) : null}
+                                {(() => {
+                                  const warmTrigger = signalIntelligence?.action_triggers.find(
+                                    (t) => t.type === 'warm_intro'
+                                  )
+                                  const bridgeLine = mutualConnectionsPreview.bridges[0]
+                                  if (!warmTrigger && !bridgeLine) return null
+                                  if (warmTrigger?.internalColleagueName) {
+                                    return (
+                                      <div className="rounded-xl border-2 border-violet-300/80 bg-violet-50/80 px-4 py-4 text-sm leading-relaxed text-violet-950 dark:border-violet-800 dark:bg-violet-950/35 dark:text-violet-50">
+                                        <p>
+                                          <span className="font-semibold">Stärkster Hebel: </span>
+                                          Dein Kollege {warmTrigger.internalColleagueName} kennt{' '}
+                                          {warmTrigger.primaryStakeholderName} – Warm-Intro vor Kaltakquise.
+                                        </p>
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          className="mt-3 gap-1.5 bg-violet-600 hover:bg-violet-700"
+                                          onClick={() =>
+                                            void handleWarmIntroRequest(
+                                              warmTrigger.internalColleagueName!,
+                                              warmTrigger.primaryStakeholderName
+                                            )
+                                          }
+                                        >
+                                          <LucideSparkles className="size-3.5" aria-hidden />
+                                          {warmTrigger.label}
+                                        </Button>
+                                      </div>
+                                    )
+                                  }
+                                  return (
+                                    <div className="rounded-xl border border-amber-200/70 bg-amber-50/65 px-4 py-3 text-sm leading-relaxed text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/25 dark:text-amber-50">
+                                      <span className="font-semibold">Pro-Tipp: </span>
+                                      {bridgeLine}
+                                    </div>
+                                  )
+                                })()}
                               </>
                             )}
                           </section>
@@ -2008,7 +2081,9 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                             </div>
                             {visibleQuickRefs.length === 0 ? (
                               <p className="text-sm text-muted-foreground">
-                                Keine Referenzen im Pool für dieses Signal-Konto.
+                                {quickRefs.length > 0 && signalIntelligence?.insight.reference_line
+                                  ? signalIntelligence.insight.reference_line
+                                  : 'Keine Referenzen im Pool für dieses Signal-Konto.'}
                               </p>
                             ) : (
                               <div className="space-y-4">
@@ -2094,26 +2169,28 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                           </section>
 
                           <section className="space-y-4 pb-4">
-                            <div>
-                              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Outreach</p>
-                              <h2 className="mt-1 text-base font-semibold text-foreground">KI-Entwurf</h2>
-                              <p className="mt-1 text-xs text-muted-foreground">
-                                Platzhalter wie <span className="rounded bg-yellow-100 px-1 text-yellow-800 dark:bg-yellow-500/25 dark:text-yellow-100">[Name]</span> markieren offene Personalisierung.
-                              </p>
-                            </div>
-
                             {!introStrategyText && !introStrategyLoading ? (
-                              <div className="mt-8 flex flex-col items-center justify-center py-6">
-                                <Button
-                                  type="button"
-                                  size="lg"
-                                  className="mx-auto gap-2 px-8 shadow-md"
-                                  onClick={triggerIntroDraftGeneration}
-                                >
-                                  <LucideSparkles className="size-4" aria-hidden />
-                                  Outreach-Draft für{' '}
-                                  {decisionCandidates[0]?.fullName?.split(/\s+/)[0] ?? 'Kontakt'} generieren
-                                </Button>
+                              <div className="flex flex-col items-center gap-3 py-4">
+                                {signalIntelligence?.action_triggers
+                                  .filter((t) => t.type === 'warm_intro')
+                                  .map((t) => (
+                                    <Button
+                                      key={`warm-${t.label}`}
+                                      type="button"
+                                      size="lg"
+                                      className="w-full max-w-lg gap-2 bg-violet-600 shadow-md hover:bg-violet-700"
+                                      onClick={() =>
+                                        void handleWarmIntroRequest(
+                                          t.internalColleagueName ?? 'Kollege',
+                                          t.primaryStakeholderName
+                                        )
+                                      }
+                                    >
+                                      <LucideSparkles className="size-4" aria-hidden />
+                                      {t.label}
+                                    </Button>
+                                  ))}
+                                {renderOutreachDraftComposer()}
                               </div>
                             ) : null}
 
@@ -2159,23 +2236,11 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                   {renderDraftText(introStrategyText)}
                                 </div>
 
-                                <div className="mt-4 flex flex-wrap items-center gap-2">
-                                  {([
-                                    ['challenging', 'Herausfordernd'],
-                                    ['advisory', 'Beratend'],
-                                    ['concise', 'Kurz & Knapp'],
-                                  ] as const).map(([value, label]) => (
-                                    <Button
-                                      key={value}
-                                      type="button"
-                                      size="sm"
-                                      variant={introTone === value ? 'secondary' : 'outline'}
-                                      className="h-8 px-3 text-xs"
-                                      onClick={() => setIntroTone(value)}
-                                    >
-                                      {label}
-                                    </Button>
-                                  ))}
+                                <div className="mt-4 max-w-lg rounded-xl border border-border bg-card p-4">
+                                  <p className="mb-2 text-xs text-muted-foreground">
+                                    Andere Tonalität? Wähle unten und generiere neu.
+                                  </p>
+                                  {renderIntroTonePicker()}
                                 </div>
 
                                 <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border pt-4 text-[11px] dark:border-border">
@@ -2235,7 +2300,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
           <DialogTitle className="sr-only">Signal Details</DialogTitle>
           <div className="flex h-full min-h-0 flex-col overflow-hidden bg-card">
             <div className="shrink-0 border-b border-border px-4 py-3">
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center justify-between gap-3">
                 <div className="flex min-w-0 flex-1 items-start gap-2">
                   {selected && selectedGroup && selectedGroup.companies.length > 1 ? (
                     <div className="relative mt-0.5 flex shrink-0 -space-x-1.5">
@@ -2262,21 +2327,9 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                     </div>
                   ) : null}
                   <div className="min-w-0 flex-1">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <p className="min-w-0 flex-1 truncate text-sm font-semibold leading-none text-foreground">
-                        {selected?.headline ?? 'Signal'}
-                      </p>
-                      {selected ? (
-                        <div className="flex shrink-0 items-center gap-1">
-                          <Button type="button" variant="ghost" size="icon" className="size-7" onClick={() => void submitDraftFeedback(true)} aria-label="Nützlich">
-                            <ThumbsUp className="h-4 w-4" />
-                          </Button>
-                          <Button type="button" variant="ghost" size="icon" className="size-7" onClick={() => void submitDraftFeedback(false)} aria-label="Nicht nützlich">
-                            <ThumbsDown className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ) : null}
-                    </div>
+                    <p className="min-w-0 truncate text-sm font-semibold leading-none text-foreground">
+                      {selected?.headline ?? 'Signal'}
+                    </p>
                     <div className="mt-1.5 flex min-w-0 flex-nowrap items-center gap-x-1.5 overflow-hidden text-[11px] text-muted-foreground">
                       {selected && selectedGroup && selectedGroup.companies.length > 1 ? (
                         <span className="shrink-0">{selectedGroup.companies.length} Accounts</span>
@@ -2321,6 +2374,26 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                 </div>
                 {selected ? (
                 <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-8"
+                    onClick={() => void submitDraftFeedback(true)}
+                    aria-label="Nützlich"
+                  >
+                    <ThumbsUp className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-8"
+                    onClick={() => void submitDraftFeedback(false)}
+                    aria-label="Nicht nützlich"
+                  >
+                    <ThumbsDown className="h-4 w-4" />
+                  </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
@@ -2505,39 +2578,32 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                       ))}
                     </ul>
                   </motion.section>
-                  <section>
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Das Signal</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{selected.headline}</p>
-                    <p className="mt-1 text-[11px] text-muted-foreground">
-                      Quelle{' '}
-                      <Link href={selected.sourceHref} target="_blank" rel="noreferrer" className="font-medium text-blue-700 hover:underline dark:text-blue-400">
-                        {selected.sourceLabel}
-                      </Link>
-                    </p>
-                    {signalEvidenceText ? (
-                      <>
-                        <div
-                          className={`mt-3 whitespace-pre-wrap text-[13px] leading-relaxed text-foreground/90 ${
-                            signalEvidenceExpanded ? '' : 'line-clamp-3'
-                          }`}
+                  {signalEvidenceText &&
+                  selected.kind === 'news' &&
+                  !executiveSummaryBullets.some((b) => b === signalEvidenceText) ? (
+                    <section>
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Das Signal
+                      </p>
+                      <div
+                        className={`mt-2 whitespace-pre-wrap text-[13px] leading-relaxed text-foreground/90 ${
+                          signalEvidenceExpanded ? '' : 'line-clamp-3'
+                        }`}
+                      >
+                        {signalEvidenceText}
+                      </div>
+                      {signalEvidenceText.length > 140 ? (
+                        <Button
+                          type="button"
+                          variant="link"
+                          className="mt-1 h-auto p-0 text-xs"
+                          onClick={() => setSignalEvidenceExpanded((e) => !e)}
                         >
-                          {signalEvidenceText}
-                        </div>
-                        {signalEvidenceText.length > 140 ? (
-                          <Button
-                            type="button"
-                            variant="link"
-                            className="mt-1 h-auto p-0 text-xs"
-                            onClick={() => setSignalEvidenceExpanded((e) => !e)}
-                          >
-                            {signalEvidenceExpanded ? 'Weniger anzeigen' : 'Weiterlesen'}
-                          </Button>
-                        ) : null}
-                      </>
-                    ) : (
-                      <p className="mt-3 text-sm text-muted-foreground">Kein Signaltext hinterlegt.</p>
-                    )}
-                  </section>
+                          {signalEvidenceExpanded ? 'Weniger anzeigen' : 'Weiterlesen'}
+                        </Button>
+                      ) : null}
+                    </section>
+                  ) : null}
                   <section className="space-y-4">
                     <div>
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -2553,8 +2619,12 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                       </p>
                     ) : (
                       <>
-                        <div className="grid grid-cols-1 gap-4">
-                          {decisionCandidates.map((candidate) => {
+                        <div
+                          className="-mx-1 flex gap-3 overflow-x-auto overscroll-x-contain px-1 pb-2 snap-x snap-mandatory scroll-smooth [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-muted-foreground/35"
+                          role="list"
+                          aria-label="Passende Ansprechpartner"
+                        >
+                          {displayStakeholders.map((candidate) => {
                             const activity = formatLinkedInActivityLine(candidate.lastSeenAt)
                             const initials = candidate.fullName
                               .split(/\s+/)
@@ -2566,7 +2636,8 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                             return (
                               <div
                                 key={candidate.id}
-                                className="rounded-2xl bg-slate-50/90 p-4 shadow-sm dark:bg-slate-900/50"
+                                role="listitem"
+                                className="w-[calc(100%-0.5rem)] shrink-0 snap-start rounded-2xl bg-slate-50/90 p-4 shadow-sm dark:bg-slate-900/50 sm:w-[calc((100%-0.75rem)/2)] sm:max-w-[calc((100%-0.75rem)/2)]"
                               >
                                 <div className="flex items-start gap-3">
                                   <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-900 dark:bg-blue-950 dark:text-blue-100">
@@ -2604,12 +2675,44 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                             )
                           })}
                         </div>
-                        {mutualConnectionsPreview.bridges[0] ? (
-                          <div className="rounded-xl border border-amber-200/70 bg-amber-50/65 px-4 py-3 text-sm leading-relaxed text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/25 dark:text-amber-50">
-                            <span className="font-semibold">Pro-Tipp: </span>
-                            {mutualConnectionsPreview.bridges[0]}
-                          </div>
-                        ) : null}
+                        {(() => {
+                          const warmTrigger = signalIntelligence?.action_triggers.find(
+                            (t) => t.type === 'warm_intro'
+                          )
+                          const bridgeLine = mutualConnectionsPreview.bridges[0]
+                          if (!warmTrigger && !bridgeLine) return null
+                          if (warmTrigger?.internalColleagueName) {
+                            return (
+                              <div className="rounded-xl border-2 border-violet-300/80 bg-violet-50/80 px-4 py-4 text-sm leading-relaxed text-violet-950 dark:border-violet-800 dark:bg-violet-950/35 dark:text-violet-50">
+                                <p>
+                                  <span className="font-semibold">Stärkster Hebel: </span>
+                                  Dein Kollege {warmTrigger.internalColleagueName} kennt{' '}
+                                  {warmTrigger.primaryStakeholderName}.
+                                </p>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  className="mt-3 w-full gap-1.5 bg-violet-600 hover:bg-violet-700"
+                                  onClick={() =>
+                                    void handleWarmIntroRequest(
+                                      warmTrigger.internalColleagueName!,
+                                      warmTrigger.primaryStakeholderName
+                                    )
+                                  }
+                                >
+                                  <LucideSparkles className="size-3.5" aria-hidden />
+                                  {warmTrigger.label}
+                                </Button>
+                              </div>
+                            )
+                          }
+                          return (
+                            <div className="rounded-xl border border-amber-200/70 bg-amber-50/65 px-4 py-3 text-sm leading-relaxed text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/25 dark:text-amber-50">
+                              <span className="font-semibold">Pro-Tipp: </span>
+                              {bridgeLine}
+                            </div>
+                          )
+                        })()}
                       </>
                     )}
                   </section>
@@ -2634,7 +2737,9 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                     </div>
                     {visibleQuickRefs.length === 0 ? (
                       <p className="text-sm text-muted-foreground">
-                        Keine Referenzen im Pool für dieses Signal-Konto.
+                        {quickRefs.length > 0 && signalIntelligence?.insight.reference_line
+                          ? signalIntelligence.insight.reference_line
+                          : 'Keine Referenzen im Pool für dieses Signal-Konto.'}
                       </p>
                     ) : (
                       <div className="space-y-4">
@@ -2719,21 +2824,28 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                     )}
                   </section>
                   <section>
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Outreach</p>
-                    <h2 className="mt-1 text-sm font-semibold text-foreground">KI-Entwurf</h2>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Platzhalter wie{' '}
-                      <span className="rounded bg-yellow-100 px-1 text-yellow-800 dark:bg-yellow-500/25 dark:text-yellow-100">
-                        [Name]
-                      </span>{' '}
-                      markieren offene Personalisierung.
-                    </p>
                     {!introStrategyText && !introStrategyLoading ? (
-                      <div className="mt-6 flex justify-center py-4">
-                        <Button type="button" size="lg" className="gap-2 px-6 shadow-md" onClick={triggerIntroDraftGeneration}>
-                          <LucideSparkles className="size-4" aria-hidden />
-                          Outreach für {decisionCandidates[0]?.fullName?.split(/\s+/)[0] ?? 'Kontakt'}
-                        </Button>
+                      <div className="flex flex-col gap-3 py-2">
+                        {signalIntelligence?.action_triggers
+                          .filter((t) => t.type === 'warm_intro')
+                          .map((t) => (
+                            <Button
+                              key={`m-warm-${t.label}`}
+                              type="button"
+                              size="lg"
+                              className="gap-2 bg-violet-600 shadow-md hover:bg-violet-700"
+                              onClick={() =>
+                                void handleWarmIntroRequest(
+                                  t.internalColleagueName ?? 'Kollege',
+                                  t.primaryStakeholderName
+                                )
+                              }
+                            >
+                              <LucideSparkles className="size-4" aria-hidden />
+                              {t.label}
+                            </Button>
+                          ))}
+                        {renderOutreachDraftComposer()}
                       </div>
                     ) : null}
                     {introStrategyLoading ? (
@@ -2763,23 +2875,11 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                           </div>
                           {renderDraftText(introStrategyText)}
                         </div>
-                        <div className="mt-3 flex flex-wrap gap-1.5">
-                          {([
-                            ['challenging', 'Herausfordernd'],
-                            ['advisory', 'Beratend'],
-                            ['concise', 'Kurz & Knapp'],
-                          ] as const).map(([value, label]) => (
-                            <Button
-                              key={value}
-                              type="button"
-                              size="sm"
-                              variant={introTone === value ? 'secondary' : 'outline'}
-                              className="h-8 px-3 text-xs"
-                              onClick={() => setIntroTone(value)}
-                            >
-                              {label}
-                            </Button>
-                          ))}
+                        <div className="mt-3 rounded-xl border border-border bg-card p-3">
+                          <p className="mb-2 text-xs text-muted-foreground">
+                            Andere Tonalität? Wähle unten und generiere neu.
+                          </p>
+                          {renderIntroTonePicker()}
                         </div>
                         <div className="mt-4 flex flex-wrap gap-x-3 gap-y-1 border-t border-border pt-3 text-[11px] dark:border-border">
                           <button
