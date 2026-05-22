@@ -264,15 +264,15 @@ export function CommandPalette() {
         visible: false,
       },
       {
-        key: "rfp-upload",
-        label: COPY.commandPalette.actionRfpUpload,
-        searchKeywords: "rfp upload hochladen datei",
+        key: "deal-desk",
+        label: "Deal Desk öffnen",
+        searchKeywords: "rfp bid deal desk ausschreibung upload",
         icon: <AppIcon icon={Upload} size={16} />,
         onSelect: () => {
           setOpen(false)
-          router.push(ROUTES.deals.root)
+          router.push(ROUTES.dealDesk)
         },
-        visible: false,
+        visible: true,
       },
       {
         key: "new-reference",

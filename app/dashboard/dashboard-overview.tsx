@@ -29,14 +29,6 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -214,34 +206,6 @@ type CompanyOption = {
   industry?: string | null
 }
 type ContactOption = { id: string; first_name: string | null; last_name: string | null; email: string | null }
-type DealOption = { id: string; title: string }
-
-type RfpAnalyzeResponse =
-  | {
-      success: true
-      analysisId: string
-      coverage: Array<{
-        requirementId: string
-        matches: Array<{ id: string; similarity: number }>
-      }>
-    }
-  | { success: false; error?: string }
-
-const ACCEPTED_RFP_MIME_TYPES = new Set([
-  'application/pdf',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-])
-
-function hasAcceptedDraggedFile(dataTransfer: DataTransfer | null | undefined): boolean {
-  if (!dataTransfer) return false
-  const items = Array.from(dataTransfer.items ?? [])
-  if (items.length === 0) return false
-  return items.some((item) => {
-    if (item.kind !== 'file') return false
-    if (!item.type) return true
-    return ACCEPTED_RFP_MIME_TYPES.has(item.type)
-  })
-}
 
 export function DashboardOverview({
   references: initialReferences,
@@ -252,7 +216,6 @@ export function DashboardOverview({
   companies = [],
   contacts = [],
   externalContacts = [],
-  deals = [],
   orgDateDisplayFormat = 'de-DE',
 }: {
   references: ReferenceRow[]
@@ -264,7 +227,6 @@ export function DashboardOverview({
   companies?: CompanyOption[]
   contacts?: ContactOption[]
   externalContacts?: { id: string; company_id: string; first_name: string | null; last_name: string | null; email: string | null; role: string | null; phone?: string | null }[]
-  deals?: DealOption[]
   orgDateDisplayFormat?: OrgDateDisplayFormat | string
 }) {
   const router = useRouter()
@@ -311,111 +273,6 @@ export function DashboardOverview({
   const [confirmEmptyOpen, setConfirmEmptyOpen] = useState(false)
   const [emptyingTrash, setEmptyingTrash] = useState(false)
   const [newRefModalOpen, setNewRefModalOpen] = useState(false)
-  const rfpInputRef = useRef<HTMLInputElement | null>(null)
-  const [rfpModalOpen, setRfpModalOpen] = useState(false)
-  const [rfpAnalyzing, setRfpAnalyzing] = useState(false)
-  const [rfpFile, setRfpFile] = useState<File | null>(null)
-  const [rfpDealId, setRfpDealId] = useState<string>(deals[0]?.id ?? '')
-  const [rfpMatchedIds, setRfpMatchedIds] = useState<Set<string> | null>(null)
-  const [rfpRequirementCount, setRfpRequirementCount] = useState<number | null>(null)
-  const [rfpWindowDragActive, setRfpWindowDragActive] = useState(false)
-  const rfpWindowDragDepthRef = useRef(0)
-
-  function openRfpFlowWithFile(file: File) {
-    const ext = file.name.split('.').pop()?.toLowerCase()
-    if (ext !== 'pdf' && ext !== 'docx') {
-      toast.error('Bitte eine PDF- oder DOCX-Datei hochladen.')
-      return
-    }
-    if (deals.length === 0) {
-      toast.error('Für den RFP-Abgleich wird mindestens ein Deal benötigt.')
-      return
-    }
-    setRfpFile(file)
-    setRfpDealId((prev) => prev || deals[0]!.id)
-    setRfpModalOpen(true)
-  }
-
-  async function runRfpAnalysis() {
-    if (!rfpFile) {
-      toast.error('Bitte zuerst eine RFP-Datei auswählen.')
-      return
-    }
-    if (!rfpDealId) {
-      toast.error('Bitte einen Deal auswählen.')
-      return
-    }
-
-    setRfpAnalyzing(true)
-    try {
-      const formData = new FormData()
-      formData.set('dealId', rfpDealId)
-      formData.set('file', rfpFile)
-      const res = await fetch('/api/rfp/analyze', { method: 'POST', body: formData })
-      const json = (await res.json()) as RfpAnalyzeResponse
-
-      if (!res.ok || !json.success) {
-        const err = 'error' in json ? json.error : undefined
-        toast.error(err ?? 'RFP-Analyse fehlgeschlagen.')
-        return
-      }
-
-      const matched = new Set<string>()
-      for (const item of json.coverage) {
-        for (const match of item.matches) matched.add(match.id)
-      }
-      setRfpMatchedIds(matched)
-      setRfpRequirementCount(json.coverage.length)
-      setRfpModalOpen(false)
-      toast.success(
-        matched.size > 0
-          ? `${matched.size} passende Referenz${matched.size === 1 ? '' : 'en'} gefunden.`
-          : 'Keine passenden Referenzen gefunden.'
-      )
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'RFP-Analyse fehlgeschlagen.')
-    } finally {
-      setRfpAnalyzing(false)
-      if (rfpInputRef.current) rfpInputRef.current.value = ''
-    }
-  }
-
-  useEffect(() => {
-    const onDragEnter = (event: DragEvent) => {
-      if (!hasAcceptedDraggedFile(event.dataTransfer)) return
-      event.preventDefault()
-      rfpWindowDragDepthRef.current += 1
-      setRfpWindowDragActive(true)
-    }
-    const onDragOver = (event: DragEvent) => {
-      if (!hasAcceptedDraggedFile(event.dataTransfer)) return
-      event.preventDefault()
-      if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy'
-      setRfpWindowDragActive(true)
-    }
-    const onDragLeave = (event: DragEvent) => {
-      if (!hasAcceptedDraggedFile(event.dataTransfer)) return
-      event.preventDefault()
-      rfpWindowDragDepthRef.current = Math.max(0, rfpWindowDragDepthRef.current - 1)
-      if (rfpWindowDragDepthRef.current === 0) {
-        setRfpWindowDragActive(false)
-      }
-    }
-    const onDrop = () => {
-      rfpWindowDragDepthRef.current = 0
-      setRfpWindowDragActive(false)
-    }
-    window.addEventListener('dragenter', onDragEnter)
-    window.addEventListener('dragover', onDragOver)
-    window.addEventListener('dragleave', onDragLeave)
-    window.addEventListener('drop', onDrop)
-    return () => {
-      window.removeEventListener('dragenter', onDragEnter)
-      window.removeEventListener('dragover', onDragOver)
-      window.removeEventListener('dragleave', onDragLeave)
-      window.removeEventListener('drop', onDrop)
-    }
-  }, [])
 
   async function previewBulkImportFile(file: File) {
     const formData = new FormData()
@@ -774,9 +631,6 @@ export function DashboardOverview({
     if (projectStatusFilter !== 'all') {
       list = list.filter((r) => (r.project_status ?? '') === projectStatusFilter)
     }
-    if (rfpMatchedIds) {
-      list = list.filter((r) => rfpMatchedIds.has(r.id))
-    }
     if (sortKey) {
       list = [...list].sort((a, b) => {
         const va = getSortValue(a, sortKey)
@@ -801,7 +655,6 @@ export function DashboardOverview({
     industryFilter,
     countryFilter,
     projectStatusFilter,
-    rfpMatchedIds,
     favoritesOnly,
     sortKey,
     sortDir,
@@ -972,65 +825,6 @@ export function DashboardOverview({
             value={search}
             onChange={setSearch}
           />
-
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className={cn(
-              TABLE_TOOLBAR.dashboard.toolbarButton,
-              'shrink-0 rounded-lg border-0 px-3 text-muted-foreground hover:bg-muted/70',
-              rfpWindowDragActive &&
-                'border-2 border-dashed border-blue-500 bg-blue-50/80 text-blue-700 hover:bg-blue-100/70'
-            )}
-            aria-label="RFP hochladen und Referenzen abgleichen"
-            onClick={() => rfpInputRef.current?.click()}
-            onDragOver={(e) => {
-              e.preventDefault()
-              if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'
-            }}
-            onDrop={(e) => {
-              e.preventDefault()
-              rfpWindowDragDepthRef.current = 0
-              setRfpWindowDragActive(false)
-              const file = e.dataTransfer.files?.[0]
-              if (file) openRfpFlowWithFile(file)
-            }}
-          >
-            <AppIcon icon={UploadIcon} size={16} className="shrink-0" />
-            <span>{rfpWindowDragActive ? 'Hier ablegen' : 'RFP-Abgleich'}</span>
-          </Button>
-          <input
-            ref={rfpInputRef}
-            type="file"
-            accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0]
-              if (file) openRfpFlowWithFile(file)
-            }}
-          />
-
-          {rfpMatchedIds && (
-            <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-2.5 py-2 text-xs">
-              <span className="font-medium text-muted-foreground">
-                RFP aktiv: {rfpMatchedIds.size} Treffer
-                {rfpRequirementCount !== null ? ` / ${rfpRequirementCount} Anforderungen` : ''}
-              </span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-6 px-2 text-xs"
-                onClick={() => {
-                  setRfpMatchedIds(null)
-                  setRfpRequirementCount(null)
-                }}
-              >
-                Zurücksetzen
-              </Button>
-            </div>
-          )}
 
           <div className="flex shrink-0 flex-wrap items-center gap-2.5">
             <Button
@@ -1359,11 +1153,7 @@ export function DashboardOverview({
                     className="h-24 text-center text-muted-foreground"
                   >
                     <div className="flex flex-col items-center justify-center gap-3 py-2">
-                      <p>
-                        {rfpMatchedIds
-                          ? 'Keine Referenzen passen zu dieser Ausschreibung.'
-                          : 'Keine Referenzen gefunden.'}
-                      </p>
+                      <p>Keine Referenzen gefunden.</p>
                       {!search.trim() &&
                         profile.role === 'admin' && (
                           <Button
@@ -1628,56 +1418,6 @@ export function DashboardOverview({
         reference={shareLinkPopoverRef}
         onClose={() => setShareLinkPopoverRef(null)}
       />
-
-      <Dialog open={rfpModalOpen} onOpenChange={setRfpModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>RFP-Abgleich starten</DialogTitle>
-            <DialogDescription>
-              Datei hochladen und sofort passende Referenzen aus deiner Liste anzeigen.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <p className="text-sm font-medium">Datei</p>
-              <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-                {rfpFile ? rfpFile.name : 'Keine Datei ausgewählt'}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm font-medium">Deal</p>
-              <Select value={rfpDealId || '__none__'} onValueChange={(v) => setRfpDealId(v === '__none__' ? '' : v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Deal auswählen …" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">— Auswählen —</SelectItem>
-                  {deals.map((deal) => (
-                    <SelectItem key={deal.id} value={deal.id}>
-                      {deal.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setRfpModalOpen(false)
-                setRfpFile(null)
-              }}
-              disabled={rfpAnalyzing}
-            >
-              Abbrechen
-            </Button>
-            <Button onClick={runRfpAnalysis} disabled={rfpAnalyzing || !rfpFile || !rfpDealId}>
-              {rfpAnalyzing ? 'Analyse läuft …' : 'Abgleich starten'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {profile.role === 'admin' && (
         <NewReferenceDialog

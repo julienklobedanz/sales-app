@@ -219,6 +219,25 @@ export function DashboardShell({
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
+                    isActive={pathname?.startsWith(ROUTES.dealDesk)}
+                    tooltip={COPY.nav.dealDesk}
+                    className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-gradient-to-b data-[active=true]:from-blue-600 data-[active=true]:to-blue-700 data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] data-[active=true]:hover:translate-x-0"
+                  >
+                    <Link href={ROUTES.dealDesk} className="flex items-center gap-2.5">
+                      <span className="relative z-10">
+                        <Briefcase
+                          className="size-4 shrink-0"
+                          strokeWidth={pathname?.startsWith(ROUTES.dealDesk) ? 2.5 : 2}
+                        />
+                      </span>
+                      <span className="relative z-10">{COPY.nav.dealDesk}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
                     isActive={pathname?.startsWith(ROUTES.accounts)}
                     tooltip={COPY.nav.accounts}
                     className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-gradient-to-b data-[active=true]:from-blue-600 data-[active=true]:to-blue-700 data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] data-[active=true]:hover:translate-x-0"
@@ -232,25 +251,6 @@ export function DashboardShell({
                         />
                       </span>
                       <span className="relative z-10">{COPY.nav.accounts}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname?.startsWith(ROUTES.dealDesk)}
-                    tooltip={COPY.nav.dealDesk}
-                    className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-gradient-to-b data-[active=true]:from-blue-600 data-[active=true]:to-blue-700 data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] data-[active=true]:hover:translate-x-0"
-                  >
-                    <Link href={ROUTES.dealDesk} className="flex items-center gap-2.5">
-                      <span className="relative z-10">
-                        <Briefcase
-                          className="size-4 shrink-0"
-                          strokeWidth={pathname?.startsWith(ROUTES.dealDesk) ? 2.5 : 2}
-                        />
-                      </span>
-                      <span className="relative z-10">{COPY.nav.dealDesk}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
