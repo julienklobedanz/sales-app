@@ -4,6 +4,7 @@ export const COPY = {
     deals: 'Deals',
     evidence: 'Referenzen',
     marketSignals: 'Marktsignale',
+    dealDesk: 'Deal Desk',
     match: 'Suche',
     settings: 'Einstellungen',
   },
@@ -11,6 +12,7 @@ export const COPY = {
     dashboard: 'Dashboard',
     evidence: 'Referenzen',
     marketSignals: 'Marktsignale',
+    dealDesk: 'Deal Desk',
     match: 'Suche',
   },
   misc: {

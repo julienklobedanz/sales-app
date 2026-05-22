@@ -210,6 +210,12 @@ export function DashboardHeader({
         subtitle: undefined,
       }
     }
+    if (pathname.startsWith(ROUTES.dealDesk)) {
+      return {
+        title: COPY.pages.dealDesk,
+        subtitle: 'Bid Intelligence — Go/No-Go, Risiken, Entwürfe & SME-Routing',
+      }
+    }
     if (pathname.startsWith(ROUTES.settings)) {
       return {
         title: 'Einstellungen',
