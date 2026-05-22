@@ -3,7 +3,6 @@
 import { useCallback, useRef, useState } from 'react'
 import Image from 'next/image'
 import {
-  Briefcase,
   CheckCircle2,
   Clock,
   FileSpreadsheet,
@@ -11,6 +10,7 @@ import {
   FileType,
   Loader2,
   Sparkles,
+  Sprout,
   Upload,
   X,
   XCircle,
@@ -41,18 +41,20 @@ import { cn } from '@/lib/utils'
 import {
   BID_TEAM_ROLE_DEFS,
   buildMockDealDeskAnalysis,
-  DEFAULT_BID_TEAM,
   SME_ROUTE_OPTIONS,
-  type BidTeamAssignment,
   type BidTeamRoleKey,
-  type DealDeskMockAnalysis,
-  type DealDeskRedFlag,
 } from '@/lib/deal-desk/mock-analysis'
 import { initialBidTeamMembers, type BidTeamMember } from '@/lib/deal-desk/bid-team'
 import { WIN_PROBABILITY_THRESHOLDS } from '@/lib/deal-desk/win-probability'
 import { BidTeamRoleSelect } from './components/bid-team-role-select'
+import { DealDeskProjectHeader } from './components/deal-desk-project-header'
 import { RedFlagsPanel } from './components/red-flags-panel'
+import { ReferenceIncubatorTab } from './components/reference-incubator-tab'
 import { WinProbabilityGauge } from './components/win-probability-gauge'
+import {
+  createDealDeskProject,
+  type DealDeskProject,
+} from '@/lib/deal-desk/deal-desk-project'
 
 const MAX_RFP_FILES = 10
 
@@ -69,7 +71,7 @@ const ACCEPTED_FILE_RE = /\.(pdf|xlsx|xls|docx?|doc)$/i
 const ACCEPT_ATTR =
   '.pdf,.xlsx,.xls,.doc,.docx,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword'
 
-type TabKey = 'decision' | 'draft' | 'sme'
+type TabKey = 'decision' | 'draft' | 'sme' | 'incubator'
 
 const DESK_LAYOUT_CLASS = 'mx-auto w-full max-w-6xl space-y-6'
 const TAB_PANEL_CLASS =
@@ -112,14 +114,23 @@ export function DealDeskClient() {
   const [dragActive, setDragActive] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
-  const [analysis, setAnalysis] = useState<DealDeskMockAnalysis | null>(null)
+  const [projects, setProjects] = useState<DealDeskProject[]>([])
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(null)
+  const [uploadMode, setUploadMode] = useState(false)
   const [activeTab, setActiveTab] = useState<TabKey>('decision')
-  const [bidTeam, setBidTeam] = useState<BidTeamAssignment[]>(DEFAULT_BID_TEAM)
   const [teamMembers, setTeamMembers] = useState<BidTeamMember[]>(initialBidTeamMembers)
   const [bidTeamOpen, setBidTeamOpen] = useState(false)
-  const [redFlags, setRedFlags] = useState<DealDeskRedFlag[]>([])
-  const [smeRoutes, setSmeRoutes] = useState<Record<string, string>>({})
-  const [decision, setDecision] = useState<'go' | 'no-bid' | null>(null)
+
+  const activeProject =
+    projects.find((p) => p.id === activeProjectId) ?? projects[projects.length - 1] ?? null
+  const analysis = activeProject?.analysis ?? null
+
+  const updateProject = useCallback(
+    (id: string, updater: (project: DealDeskProject) => DealDeskProject) => {
+      setProjects((prev) => prev.map((p) => (p.id === id ? updater(p) : p)))
+    },
+    []
+  )
 
   const startAnalysis = useCallback((files: File[]) => {
     if (files.length === 0) {
@@ -133,12 +144,13 @@ export function DealDeskClient() {
     }
     setAnalyzing(true)
     window.setTimeout(() => {
-      const mock = buildMockDealDeskAnalysis(valid.map((f) => f.name))
-      setAnalysis(mock)
+      const fileNames = valid.map((f) => f.name)
+      const mock = buildMockDealDeskAnalysis(fileNames)
+      const project = createDealDeskProject(fileNames, mock)
+      setProjects((prev) => [...prev, project])
+      setActiveProjectId(project.id)
       setPendingFiles([])
-      setRedFlags(mock.redFlags)
-      setSmeRoutes({})
-      setDecision(null)
+      setUploadMode(false)
       setActiveTab('decision')
       setAnalyzing(false)
       toast.success(
@@ -159,19 +171,58 @@ export function DealDeskClient() {
     setPendingFiles((prev) => prev.filter((_, i) => i !== index))
   }
 
-  function resetDesk() {
-    setAnalysis(null)
+  function openNewRfpUpload() {
     setPendingFiles([])
-    setDecision(null)
-    setRedFlags([])
-    setSmeRoutes({})
-    setBidTeam(DEFAULT_BID_TEAM)
-    setTeamMembers(initialBidTeamMembers())
+    setUploadMode(true)
+    if (inputRef.current) inputRef.current.value = ''
+  }
+
+  function selectProject(id: string) {
+    setActiveProjectId(id)
+    setUploadMode(false)
+  }
+
+  function deleteProject(id: string) {
+    setProjects((prev) => {
+      const next = prev.filter((p) => p.id !== id)
+      if (next.length === 0) {
+        setActiveProjectId(null)
+        setUploadMode(false)
+        return []
+      }
+      if (activeProjectId === id) {
+        setActiveProjectId(next[next.length - 1]!.id)
+      }
+      return next
+    })
+    toast.message('Projekt entfernt.')
+  }
+
+  function renameProject(id: string, name: string) {
+    updateProject(id, (p) => ({ ...p, projectName: name }))
+  }
+
+  function removeProjectDocument(projectId: string, fileName: string) {
+    updateProject(projectId, (p) => {
+      const documentNames = p.analysis.documentNames.filter((n) => n !== fileName)
+      if (documentNames.length === 0) return p
+      return {
+        ...p,
+        analysis: {
+          ...p.analysis,
+          documentNames,
+          documentName: documentNames[0]!,
+        },
+      }
+    })
+    toast.success('Dokument aus dem Projekt entfernt.')
   }
 
   function assignBidRole(role: BidTeamRoleKey, member: BidTeamMember) {
-    setBidTeam((prev) =>
-      prev.map((row) =>
+    if (!activeProject) return
+    updateProject(activeProject.id, (p) => ({
+      ...p,
+      bidTeam: p.bidTeam.map((row) =>
         row.role === role
           ? {
               ...row,
@@ -179,13 +230,12 @@ export function DealDeskClient() {
               assigneeName: member.email ?? member.name,
             }
           : row
-      )
-    )
+      ),
+    }))
   }
 
-  if (!analysis) {
-    return (
-      <div className={DESK_LAYOUT_CLASS}>
+  const uploadZone = (
+    <>
         <div
           role="button"
           tabIndex={0}
@@ -336,44 +386,38 @@ export function DealDeskClient() {
         <p className="text-center text-xs text-muted-foreground">
           Demo-Modus: Nach Start werden Beispieldaten aus allen hochgeladenen Dateien geladen.
         </p>
-      </div>
-    )
+    </>
+  )
+
+  if (projects.length === 0) {
+    return <div className={DESK_LAYOUT_CLASS}>{uploadZone}</div>
   }
+
+  if (!activeProject) {
+    return null
+  }
+
+  const redFlags = activeProject.redFlags
+  const smeRoutes = activeProject.smeRoutes
+  const decision = activeProject.decision
+  const bidTeam = activeProject.bidTeam
 
   return (
     <div className={cn(DESK_LAYOUT_CLASS, 'pb-8')}>
-      <div className="flex w-full flex-wrap items-start justify-between gap-4 rounded-xl border border-border bg-card px-4 py-3">
-        <div className="flex min-w-0 items-start gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-100">
-            <Briefcase className="size-5" />
-          </div>
-          <div className="min-w-0">
-            <p className="truncate font-semibold text-foreground">{analysis.documentName}</p>
-            <p className="text-sm text-muted-foreground">
-              {analysis.customerName} · {analysis.documentNames.length} Dokument
-              {analysis.documentNames.length === 1 ? '' : 'e'} · Demo
-            </p>
-            {analysis.documentNames.length > 1 ? (
-              <ul className="mt-2 flex flex-wrap gap-1.5">
-                {analysis.documentNames.map((name) => {
-                  const Icon = fileIcon(name)
-                  return (
-                    <li key={name}>
-                      <Badge variant="outline" className="max-w-[220px] gap-1 truncate font-normal">
-                        <Icon className="size-3 shrink-0" />
-                        <span className="truncate">{name}</span>
-                      </Badge>
-                    </li>
-                  )
-                })}
-              </ul>
-            ) : null}
-          </div>
-        </div>
-        <Button type="button" variant="outline" size="sm" onClick={resetDesk}>
-          Neues RFP
-        </Button>
-      </div>
+      <DealDeskProjectHeader
+        projects={projects}
+        activeProject={activeProject}
+        onSelectProject={selectProject}
+        onDeleteProject={deleteProject}
+        onRenameProject={renameProject}
+        onRemoveDocument={removeProjectDocument}
+        onNewRfp={openNewRfpUpload}
+        fileIcon={fileIcon}
+      />
+
+      {uploadMode ? <div className="space-y-4">{uploadZone}</div> : null}
+
+      {!uploadMode ? (
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabKey)} className="w-full">
         <TabsList className="h-auto w-full flex-wrap justify-start gap-1 bg-muted/50 p-1">
@@ -393,6 +437,10 @@ export function DealDeskClient() {
           <TabsTrigger value="sme" className="gap-1.5">
             <Clock className="size-3.5" />
             SME Routing
+          </TabsTrigger>
+          <TabsTrigger value="incubator" className="gap-1.5">
+            <Sprout className="size-3.5" />
+            Referenz Inkubator
           </TabsTrigger>
         </TabsList>
 
@@ -416,7 +464,13 @@ export function DealDeskClient() {
                 </CardContent>
               </Card>
 
-              <RedFlagsPanel flags={redFlags} onFlagsChange={setRedFlags} className={TAB_CARD_CLASS} />
+              <RedFlagsPanel
+                flags={redFlags}
+                onFlagsChange={(flags) =>
+                  updateProject(activeProject.id, (p) => ({ ...p, redFlags: flags }))
+                }
+                className={TAB_CARD_CLASS}
+              />
 
               <Card className={TAB_CARD_CLASS}>
                 <CardHeader className="pb-3">
@@ -484,7 +538,7 @@ export function DealDeskClient() {
                           className="mt-4 w-full"
                           size="sm"
                           onClick={() => {
-                            setDecision('go')
+                            updateProject(activeProject.id, (p) => ({ ...p, decision: 'go' }))
                             setBidTeamOpen(false)
                             toast.success('Bid-Team gespeichert (Demo).')
                           }}
@@ -499,7 +553,7 @@ export function DealDeskClient() {
                       variant="outline"
                       className="h-12 w-full gap-2 border-red-200 text-red-800 hover:bg-red-50 dark:border-red-900 dark:text-red-200 dark:hover:bg-red-950/40"
                       onClick={() => {
-                        setDecision('no-bid')
+                        updateProject(activeProject.id, (p) => ({ ...p, decision: 'no-bid' }))
                         toast.message('NO-BID dokumentiert (Demo).')
                       }}
                     >
@@ -613,7 +667,12 @@ export function DealDeskClient() {
                     </div>
                     <Select
                       value={smeRoutes[task.id] ?? ''}
-                      onValueChange={(v) => setSmeRoutes((prev) => ({ ...prev, [task.id]: v }))}
+                      onValueChange={(v) =>
+                        updateProject(activeProject.id, (p) => ({
+                          ...p,
+                          smeRoutes: { ...p.smeRoutes, [task.id]: v },
+                        }))
+                      }
                     >
                       <SelectTrigger className="h-9 w-full shrink-0 text-xs md:w-[220px]">
                         <SelectValue placeholder="Weiterleiten …" />
@@ -631,8 +690,13 @@ export function DealDeskClient() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="incubator" forceMount className={TAB_PANEL_CLASS}>
+            <ReferenceIncubatorTab customerName={analysis.customerName} />
+          </TabsContent>
         </div>
       </Tabs>
+      ) : null}
     </div>
   )
 }
