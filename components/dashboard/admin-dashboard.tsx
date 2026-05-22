@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { AlertTriangle, CheckCircle2, Database, Gauge, RefreshCw, ServerCog, ShieldAlert, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -12,6 +12,7 @@ import { formatDateUtcDe } from '@/lib/format'
 
 export function AdminDashboard({ data }: { data: AdminDashboardModel }) {
   const { blockers, contentRoi, systemUsage, newsIngestHealth, auditFeed } = data
+  const [nowMs] = useState(() => Date.now())
 
   const usagePercent = useMemo(() => {
     if (systemUsage.activeSeats <= 0) return 0
@@ -21,7 +22,7 @@ export function AdminDashboard({ data }: { data: AdminDashboardModel }) {
   function relative(iso: string) {
     const ts = new Date(iso).getTime()
     if (!Number.isFinite(ts)) return formatDateUtcDe(iso)
-    const diffMin = Math.max(1, Math.round((Date.now() - ts) / 60000))
+    const diffMin = Math.max(1, Math.round((nowMs - ts) / 60000))
     if (diffMin < 60) return `vor ${diffMin}m`
     const diffH = Math.round(diffMin / 60)
     if (diffH < 24) return `vor ${diffH}h`
@@ -76,7 +77,7 @@ export function AdminDashboard({ data }: { data: AdminDashboardModel }) {
               <p className="text-xs uppercase tracking-wide text-amber-800">Gap Alert</p>
               {contentRoi.gapAlert ? (
                 <p className="mt-1 text-sm text-amber-900">
-                  <span className="font-semibold">"{contentRoi.gapAlert.term}"</span> ({contentRoi.gapAlert.searches} Suchen, 0 Referenzen)
+                  <span className="font-semibold">&quot;{contentRoi.gapAlert.term}&quot;</span> ({contentRoi.gapAlert.searches} Suchen, 0 Referenzen)
                 </p>
               ) : (
                 <p className="mt-1 text-sm text-muted-foreground">Keine Zero-Result Gaps erkannt.</p>

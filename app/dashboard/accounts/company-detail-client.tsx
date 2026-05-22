@@ -23,8 +23,6 @@ import {
 import { CompanyContactDialog } from './company-contact-dialog'
 import type { CompanyDetailClientProps } from './company-detail-types'
 import { CompanyDetailHeader } from './company-detail-header'
-import { CompanyDetailLinksTab } from './company-detail-links-tab'
-import { CompanyDetailContactsTab } from './company-detail-contacts-tab'
 import { CompanyDetailStrategyTab } from './company-detail-strategy-tab'
 import { CompanyStakeholderDialog } from './company-stakeholder-dialog'
 import { EditAccountDialog } from './edit-account-dialog'
@@ -70,7 +68,7 @@ export function CompanyDetailClient({
   const [competition, setCompetition] = useState(initialStrategy?.competition ?? '')
   const [nextSteps, setNextSteps] = useState(initialStrategy?.next_steps ?? '')
   const [metricsPain, setMetricsPain] = useState((initialStrategy as { metrics_pain?: string | null } | null)?.metrics_pain ?? '')
-  const [mhAssessment, setMhAssessment] = useState<Record<string, unknown>>(
+  const [mhAssessment] = useState<Record<string, unknown>>(
     ((initialStrategy as { mh_assessment?: Record<string, unknown> | null } | null)?.mh_assessment as Record<string, unknown> | null) ?? {}
   )
   const [strategySaving, setStrategySaving] = useState(false)

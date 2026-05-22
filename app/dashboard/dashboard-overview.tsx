@@ -4,7 +4,6 @@ import React from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { ToolbarSearchField } from '@/components/ui/toolbar-search-field'
 import {
   Table,
@@ -251,14 +250,28 @@ export function DashboardOverview({
   const [sheetOpen, setSheetOpen] = useState(false)
   const [detailAssets, setDetailAssets] = useState<ReferenceAssetRow[]>([])
   const [detailAssetsLoading, setDetailAssetsLoading] = useState(false)
-  useEffect(() => {
-    if (selectedRef?.id && sheetOpen) {
-      setDetailAssetsLoading(true)
-      getReferenceAssets(selectedRef.id)
-        .then(setDetailAssets)
-        .finally(() => setDetailAssetsLoading(false))
-    } else {
+  const handleReferenceSheetOpenChange = useCallback((open: boolean) => {
+    setSheetOpen(open)
+    if (!open) {
       setDetailAssets([])
+      setDetailAssetsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!selectedRef?.id || !sheetOpen) return
+    let cancelled = false
+    void (async () => {
+      setDetailAssetsLoading(true)
+      try {
+        const assets = await getReferenceAssets(selectedRef.id)
+        if (!cancelled) setDetailAssets(assets)
+      } finally {
+        if (!cancelled) setDetailAssetsLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
     }
   }, [selectedRef?.id, sheetOpen])
   const [bulkImportOpen, setBulkImportOpen] = useState(false)
@@ -562,7 +575,7 @@ export function DashboardOverview({
       companies: Array.from(companies).sort((a, b) => a.localeCompare(b, 'de')),
       tags: Array.from(tags).sort((a, b) => a.localeCompare(b, 'de')),
     }
-  }, [initialReferences, companyIndustryById])
+  }, [initialReferences, companyIndustryById, normalizeTagLabel])
 
   // Sortier-Hilfe: Vergleichswerte pro Spalte
   const getSortValue = (ref: ReferenceRow, key: (typeof COLUMN_KEYS)[number]): string | number => {
@@ -661,13 +674,11 @@ export function DashboardOverview({
   ])
 
   const pageCount = Math.max(1, Math.ceil(filteredReferences.length / pageSize))
-  useEffect(() => {
-    setPageIndex((prev) => Math.min(prev, pageCount - 1))
-  }, [pageCount])
+  const safePageIndex = Math.min(pageIndex, pageCount - 1)
   const paginatedReferences = useMemo(() => {
-    const start = pageIndex * pageSize
+    const start = safePageIndex * pageSize
     return filteredReferences.slice(start, start + pageSize)
-  }, [filteredReferences, pageIndex, pageSize])
+  }, [filteredReferences, safePageIndex, pageSize])
 
   const handleSort = (column: (typeof COLUMN_KEYS)[number]) => {
     if (sortKey === column) {
@@ -1398,7 +1409,7 @@ export function DashboardOverview({
 
       <ReferenceDetailSheet
         open={sheetOpen}
-        onOpenChange={setSheetOpen}
+        onOpenChange={handleReferenceSheetOpenChange}
         selectedRef={selectedRef}
         profile={profile}
         externalContacts={externalContacts}

@@ -362,7 +362,6 @@ export function CompanyCombobox({
   loading,
   disabled,
   inputClassName,
-  /** Wenn gesetzt, kein automatisches Brandfetch/Anlegen — Firma ist bereits gewählt. */
   companyId,
 }: {
   companies: ReferenceFormCompany[]
@@ -376,6 +375,7 @@ export function CompanyCombobox({
   loading: boolean
   disabled: boolean
   inputClassName?: string
+  /** Wenn gesetzt, kein automatisches Brandfetch/Anlegen — Firma ist bereits gewählt. */
   companyId?: string
 }) {
   const [open, setOpen] = useState(false)
@@ -384,9 +384,11 @@ export function CompanyCombobox({
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const valueRef = useRef(value)
   const companiesRef = useRef(companies)
-  companiesRef.current = companies
 
-  valueRef.current = value
+  useEffect(() => {
+    companiesRef.current = companies
+    valueRef.current = value
+  })
 
   const trimmed = value.trim().toLowerCase()
   const localFiltered = companies.filter((c) =>
@@ -400,7 +402,7 @@ export function CompanyCombobox({
 
   useEffect(() => {
     const q = value.trim()
-    if (!q) {
+    if (!q || companyId?.trim()) {
       if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
       return
     }
@@ -439,7 +441,7 @@ export function CompanyCombobox({
           setSearching(false)
         })
     }, 180)
-  }, [value, onAutoRemotePreview])
+  }, [value, onAutoRemotePreview, companyId])
 
   useEffect(() => {
     return () => {

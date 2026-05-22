@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useMemo, useTransition } from 'react'
+import { useMemo, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { BellRing, Building2, CalendarClock, ChevronRight, Flame, Mail, Search, Target, TrendingUp, UserRound } from 'lucide-react'
 import { logMarketSignalQuickAction } from '@/app/dashboard/market-signals/actions'
@@ -23,6 +23,7 @@ export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
     return /mac|iphone|ipad|ipod/.test(ua)
   }, [])
   const shortcutLabel = isMacLike ? 'CMD + K' : 'CTRL + K'
+  const [nowMs] = useState(() => Date.now())
 
   function renderDraftText(input: string) {
     return input.split(/(\[[^\]]+\])/g).map((part, idx) => {
@@ -72,7 +73,7 @@ export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
   function relativeTimeLabel(iso: string) {
     const t = new Date(iso).getTime()
     if (!Number.isFinite(t)) return 'gerade'
-    const diffMin = Math.max(1, Math.round((Date.now() - t) / 60000))
+    const diffMin = Math.max(1, Math.round((nowMs - t) / 60000))
     if (diffMin < 60) return `vor ${diffMin}m`
     const hours = Math.round(diffMin / 60)
     if (hours < 24) return `vor ${hours}h`

@@ -453,7 +453,6 @@ export function ReferenceForm({
     : companies
 
   const submitting = isEditMode ? editSubmitting : createSubmitting
-  const isAnonymized = status === 'anonymized'
   const contactsRaw = [...contacts, ...additionalContacts]
   const seenContactIds = new Set<string>()
   const seenContactIdentities = new Set<string>()

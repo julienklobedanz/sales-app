@@ -16,7 +16,7 @@ const BodySchema = z.object({
 })
 
 function heuristicStrategy(body: z.infer<typeof BodySchema>): string {
-  const { signalKind, companyName, introTone, summarySnippet, referenceTitles } = body
+  const { signalKind, introTone, summarySnippet, referenceTitles } = body
   const low = summarySnippet.toLowerCase()
   let angle = ''
   if (/budget|kost|einspar|effizienz|spar|kosten/.test(low)) {

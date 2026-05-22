@@ -112,9 +112,11 @@ export function CompanyLogo({
 
   useEffect(() => {
     const next = String(srcProp ?? '').trim() || null
-    setLocalSrc(next)
-    setImageFailed(false)
-    mountedRetry.current = false
+    queueMicrotask(() => {
+      setLocalSrc(next)
+      setImageFailed(false)
+      mountedRetry.current = false
+    })
   }, [srcProp, companyId])
 
   const runBrandfetchRetry = useCallback(

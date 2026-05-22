@@ -99,23 +99,6 @@ function personInitials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 }
 
-function firstChunkSentences(text: string, maxSentences: number, maxLen: number): string {
-  const t = text.trim()
-  if (!t) return ''
-  const parts = t.split(/(?<=[.!?])\s+/).filter(Boolean)
-  let out = ''
-  let n = 0
-  for (const p of parts) {
-    if (n >= maxSentences) break
-    const next = out ? `${out} ${p}` : p
-    if (next.length > maxLen && out) break
-    out = next
-    n++
-  }
-  if (!out) return t.length > maxLen ? `${t.slice(0, maxLen - 1)}…` : t
-  return out.length > maxLen ? `${out.slice(0, maxLen - 1)}…` : out
-}
-
 function computeSignalIcpScore(input: {
   item: {
     kind: 'exec' | 'news'
@@ -274,12 +257,6 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
     if (diffDays <= 0) return 'Heute'
     if (diffDays === 1) return 'Gestern'
     return 'Ältere'
-  }
-
-  function extractHeadline(body: string) {
-    const compact = String(body ?? '').replace(/\s+/g, ' ').trim()
-    if (!compact) return 'Neues Signal'
-    return compact.length <= 120 ? compact : `${compact.slice(0, 117)}...`
   }
 
   function summarizeSourceText(raw: string) {
@@ -482,7 +459,18 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
         return bT - aT
       })
     return merged
-  }, [irrelevantKeys, model.executives, model.followingCompanyIds, model.news, onlyFocusAccounts, priorityKeys, restrictedSet, snoozedUntilByKey])
+  }, [
+    buildCompanyNewsHeadline,
+    irrelevantKeys,
+    model.executives,
+    model.followingCompanyIds,
+    model.news,
+    onlyFocusAccounts,
+    priorityKeys,
+    restrictedSet,
+    signalKeyOf,
+    snoozedUntilByKey,
+  ])
 
   const visibleItems = useMemo(() => {
     const categoryFiltered =
