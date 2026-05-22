@@ -213,7 +213,7 @@ export function DashboardHeader({
     if (pathname.startsWith(ROUTES.dealDesk)) {
       return {
         title: COPY.pages.dealDesk,
-        subtitle: 'Bid Intelligence — Go/No-Go, Risiken, Entwürfe & SME-Routing',
+        subtitle: undefined,
       }
     }
     if (pathname.startsWith(ROUTES.settings)) {
