@@ -1,5 +1,10 @@
-/** Nutzer-Hinweis bei Scan-PDFs / zu wenig extrahierbarem Text (Client + Server). */
-export const RFP_SCAN_PDF_HINT =
-  'Scan-PDFs (nur Bilder) liefern oft keinen Text. Bitte ein durchsuchbares PDF oder DOCX verwenden — ggf. zuerst per OCR exportieren (Adobe, Preview, o. Ä.).'
+/** Status während automatischer Scan-OCR (Client). */
+export const RFP_SCAN_OCR_STATUS =
+  'Scan-PDF erkannt — Text wird automatisch ausgelesen (OCR, bis zu 40 Seiten) …'
 
-export const RFP_LOW_TEXT_ERROR = `Zu wenig erkennbarer Text. ${RFP_SCAN_PDF_HINT}`
+/** Info in Upload-Zone: OCR läuft automatisch. */
+export const RFP_SCAN_PDF_HINT =
+  'Scan-PDFs (nur Bilder) werden automatisch per OCR ausgelesen (bis zu 40 Seiten). Durchsuchbare PDFs und Word-Dateien sind schneller.'
+
+export const RFP_LOW_TEXT_ERROR =
+  'Zu wenig Text extrahiert — das PDF ist möglicherweise leer, unleserlich, passwortgeschützt oder hat mehr als 40 Seiten ohne eingebetteten Text.'

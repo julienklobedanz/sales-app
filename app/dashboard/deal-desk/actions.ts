@@ -16,6 +16,7 @@ import {
   type DealDeskProjectRow,
 } from '@/lib/deal-desk/project-mapper'
 import { buildReferencePrefillFromAnalysis } from '@/lib/deal-desk/build-harvest-from-snapshot'
+import { defaultWorkspaceState } from '@/lib/deal-desk/workspace-state'
 import { ROUTES } from '@/lib/routes'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
@@ -169,7 +170,7 @@ export async function createDealDeskProjectAction(input: {
       created_by: user.id,
       project_name: input.projectName.trim() || 'Neues Projekt',
       analysis_status: 'pending',
-      workspace_state: { redFlags: [], smeRoutes: {}, decision: null, bidTeam: [] },
+      workspace_state: defaultWorkspaceState(),
     })
     .select('id')
     .single()

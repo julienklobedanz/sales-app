@@ -71,7 +71,10 @@ import { DealDeskProjectHeader } from './components/deal-desk-project-header'
 import { RedFlagsPanel } from './components/red-flags-panel'
 import { ReferenceIncubatorTab } from './components/reference-incubator-tab'
 import { WinProbabilityGauge } from './components/win-probability-gauge'
-import { RFP_SCAN_PDF_HINT } from '@/lib/deal-desk/rfp-extraction-messages'
+import {
+  RFP_SCAN_OCR_STATUS,
+  RFP_SCAN_PDF_HINT,
+} from '@/lib/deal-desk/rfp-extraction-messages'
 
 const MAX_RFP_FILES = 10
 
@@ -113,10 +116,28 @@ function isLikelyScanExtractionError(message: string | null | undefined): boolea
 
 function showAnalysisErrorToast(error: string, isScanLikely?: boolean) {
   if (isScanLikely || isLikelyScanExtractionError(error)) {
-    toast.error(error, { description: RFP_SCAN_PDF_HINT, duration: 12_000 })
+    toast.error(error, { duration: 12_000 })
   } else {
     toast.error(error)
   }
+}
+
+type AnalyzeApiResult = {
+  success?: boolean
+  error?: string
+  source?: string
+  isScanLikely?: boolean
+  extractionUsedOcr?: boolean
+  quotaExceeded?: boolean
+  warning?: string
+}
+
+function showAnalysisSuccessToast(json: AnalyzeApiResult, fallback: string) {
+  if (json.warning) {
+    toast.warning(json.warning, { duration: 14_000 })
+    return
+  }
+  toast.success(fallback)
 }
 
 function mergePendingFiles(existing: File[], incoming: File[]): File[] {
@@ -252,6 +273,7 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
 
   const startAnalysis = useCallback(
     async (files: File[]) => {
+      if (analyzing) return
       if (files.length === 0) {
         toast.error('Bitte mindestens ein Dokument hochladen.')
         return
@@ -285,18 +307,13 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
 
       setAnalyzeStatus(
         valid.length > 1
-          ? `${valid.length} Dokumente werden analysiert …`
-          : 'RFP wird analysiert …'
+          ? `${valid.length} Dokumente werden ausgelesen und analysiert …`
+          : 'Dokument wird ausgelesen (Scan-PDFs ggf. per OCR) …'
       )
 
       try {
         const res = await fetch('/api/deal-desk/analyze', { method: 'POST', body: formData })
-        const json = (await res.json()) as {
-          success?: boolean
-          error?: string
-          source?: string
-          isScanLikely?: boolean
-        }
+        const json = (await res.json()) as AnalyzeApiResult
 
         if (!res.ok || !json.success) {
           showAnalysisErrorToast(json.error ?? 'Analyse fehlgeschlagen.', json.isScanLikely)
@@ -310,12 +327,17 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
         setPendingFiles([])
         setUploadMode(false)
         setActiveTab('decision')
-        toast.success(
-          json.source === 'mock'
-            ? 'Bid-Analyse bereit (Fallback-Demo).'
-            : valid.length === 1
-              ? 'Bid-Analyse abgeschlossen.'
-              : `Bid-Analyse aus ${valid.length} Dokumenten abgeschlossen.`
+        showAnalysisSuccessToast(
+          json,
+          json.quotaExceeded
+            ? 'Demo-Analyse geladen (OpenAI-Limit).'
+            : json.source === 'mock'
+              ? 'Bid-Analyse bereit (Fallback-Demo).'
+              : json.extractionUsedOcr
+                ? 'Bid-Analyse abgeschlossen (Scan-PDF per OCR ausgelesen).'
+                : valid.length === 1
+                  ? 'Bid-Analyse abgeschlossen.'
+                  : `Bid-Analyse aus ${valid.length} Dokumenten abgeschlossen.`
         )
       } catch (e) {
         toast.error(e instanceof Error ? e.message : 'Netzwerkfehler.')
@@ -324,25 +346,20 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
         setAnalyzeStatus(null)
       }
     },
-    [reloadProject]
+    [analyzing, reloadProject]
   )
 
   const rerunAnalysis = useCallback(
     async (projectId: string) => {
       setAnalyzing(true)
-      setAnalyzeStatus('Gespeicherte Dokumente werden erneut ausgewertet …')
+      setAnalyzeStatus('Gespeicherte Dokumente werden erneut ausgewertet (ggf. OCR) …')
       try {
         const formData = new FormData()
         formData.set('projectId', projectId)
         formData.set('reRun', '1')
 
         const res = await fetch('/api/deal-desk/analyze', { method: 'POST', body: formData })
-        const json = (await res.json()) as {
-          success?: boolean
-          error?: string
-          source?: string
-          isScanLikely?: boolean
-        }
+        const json = (await res.json()) as AnalyzeApiResult
 
         if (!res.ok || !json.success) {
           showAnalysisErrorToast(json.error ?? 'Erneute Analyse fehlgeschlagen.', json.isScanLikely)
@@ -352,10 +369,15 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
 
         await reloadProject(projectId)
         setActiveTab('decision')
-        toast.success(
-          json.source === 'mock'
-            ? 'Analyse aktualisiert (Fallback-Demo).'
-            : 'Analyse erneut abgeschlossen.'
+        showAnalysisSuccessToast(
+          json,
+          json.quotaExceeded
+            ? 'Demo-Analyse geladen (OpenAI-Limit).'
+            : json.source === 'mock'
+              ? 'Analyse aktualisiert (Fallback-Demo).'
+              : json.extractionUsedOcr
+                ? 'Analyse erneut abgeschlossen (Scan-PDF per OCR).'
+                : 'Analyse erneut abgeschlossen.'
         )
       } catch (e) {
         toast.error(e instanceof Error ? e.message : 'Netzwerkfehler.')
@@ -369,8 +391,17 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
 
   function onFilesPick(fileList: FileList | null | undefined) {
     if (!fileList?.length) return
-    setPendingFiles((prev) => mergePendingFiles(prev, Array.from(fileList)))
+    const incoming = Array.from(fileList)
+    const next = mergePendingFiles(pendingFiles, incoming)
+
+    if (next.length === pendingFiles.length) return
+
+    setPendingFiles(next)
     if (inputRef.current) inputRef.current.value = ''
+
+    if (!analyzing) {
+      void startAnalysis(next)
+    }
   }
 
   function removePendingFile(index: number) {
@@ -480,7 +511,11 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
             setDragActive(false)
             onFilesPick(e.dataTransfer.files)
           }}
-          onClick={() => inputRef.current?.click()}
+          onClick={(e) => {
+            if (analyzing) return
+            if ((e.target as HTMLElement).closest('button')) return
+            inputRef.current?.click()
+          }}
           className={cn(
             'flex min-h-[320px] w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-8 py-16 text-center transition-colors',
             dragActive
@@ -494,7 +529,10 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
             multiple
             accept={ACCEPT_ATTR}
             className="sr-only"
-            onChange={(e) => onFilesPick(e.target.files)}
+            onChange={(e) => {
+              onFilesPick(e.target.files)
+              e.target.value = ''
+            }}
             onClick={(e) => e.stopPropagation()}
           />
           {analyzing ? (
@@ -507,7 +545,9 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
                     : 'RFP wird analysiert …')}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Extraktion, Anforderungen und Referenz-Matching
+                {analyzeStatus?.includes('OCR') || analyzeStatus === RFP_SCAN_OCR_STATUS
+                  ? RFP_SCAN_OCR_STATUS
+                  : 'Extraktion, ggf. OCR bei Scan-PDFs, Anforderungen und Referenz-Matching'}
               </p>
             </>
           ) : (
@@ -610,7 +650,8 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
         <div className="flex gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-left text-xs text-muted-foreground">
           <Info className="mt-0.5 size-4 shrink-0 text-blue-600" aria-hidden />
           <p>
-            <span className="font-medium text-foreground">Scan-PDFs:</span> {RFP_SCAN_PDF_HINT}
+            <span className="font-medium text-foreground">Scan-PDFs:</span> {RFP_SCAN_PDF_HINT}{' '}
+            Kein manueller DOCX-Umweg nötig.
           </p>
         </div>
 
@@ -633,8 +674,12 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
     return <div className={DESK_LAYOUT_CLASS}>{uploadZone}</div>
   }
 
-  if (!activeProject?.analysis) {
-    return null
+  if (!activeProject) {
+    return (
+      <div className={cn(DESK_LAYOUT_CLASS, 'flex min-h-[320px] items-center justify-center')}>
+        <Loader2 className="size-8 animate-spin text-muted-foreground" aria-hidden />
+      </div>
+    )
   }
 
   const analysis = activeProject.analysis
@@ -788,7 +833,8 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
                         </div>
                         <div className="mt-4 w-full space-y-3">
                           {BID_TEAM_ROLE_DEFS.map((def) => {
-                            const row = bidTeam.find((b) => b.role === def.key)!
+                            const row = bidTeam.find((b) => b.role === def.key)
+                            if (!row) return null
                             return (
                               <BidTeamRoleSelect
                                 key={def.key}
@@ -861,7 +907,7 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {analysis.draftRows.map((row) => (
+                    {(analysis.draftRows ?? []).map((row) => (
                       <TableRow key={row.id}>
                         <TableCell className="whitespace-normal px-4 py-4 align-top text-sm leading-relaxed text-foreground">
                           {row.requirement}
@@ -920,7 +966,7 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {analysis.smeTasks.map((task) => (
+                {(analysis.smeTasks ?? []).map((task) => (
                   <div
                     key={task.id}
                     className="flex w-full flex-col gap-3 rounded-xl border border-border bg-muted/30 p-4 md:flex-row md:items-center md:justify-between"

@@ -31,7 +31,8 @@ export function parseWorkspaceState(raw: unknown, fallbackRedFlags: DealDeskRedF
       : {}
   const decision =
     o.decision === 'go' || o.decision === 'no-bid' ? o.decision : null
-  const bidTeam = Array.isArray(o.bidTeam) ? (o.bidTeam as BidTeamAssignment[]) : DEFAULT_BID_TEAM
+  const bidTeamRaw = Array.isArray(o.bidTeam) ? (o.bidTeam as BidTeamAssignment[]) : []
+  const bidTeam = bidTeamRaw.length > 0 ? bidTeamRaw : DEFAULT_BID_TEAM
   return {
     redFlags: redFlags.map((f) => ({ ...f })),
     smeRoutes: { ...smeRoutes },

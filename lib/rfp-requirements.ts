@@ -1,5 +1,7 @@
 import 'server-only'
 
+import { formatOpenAiHttpError } from '@/lib/openai-api-errors'
+
 const MODEL = 'gpt-4o-mini'
 const MAX_RFP_CHARS = 100_000
 
@@ -53,7 +55,7 @@ Antworte NUR mit JSON exakt in dieser Form (kein Markdown):
 
     if (!res.ok) {
       const t = await res.text()
-      return { error: `OpenAI (${res.status}): ${t.slice(0, 240)}` }
+      return { error: formatOpenAiHttpError(res.status, t, 'Anforderungs-Analyse') }
     }
 
     const json = (await res.json()) as {

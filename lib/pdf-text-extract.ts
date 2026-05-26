@@ -51,3 +51,45 @@ export async function extractPdfPlainText(buffer: Buffer): Promise<string> {
     await parser.destroy().catch(() => {})
   }
 }
+
+export type PdfPlainTextExtraction = {
+  text: string
+  method: 'native' | 'ocr'
+  pageCount?: number
+  ocrPagesProcessed?: number
+  ocrTruncated?: boolean
+}
+
+const MIN_NATIVE_TEXT_CHARS = 40
+
+/**
+ * Zuerst eingebetteter PDF-Text; bei Scan-PDF automatisch OpenAI Vision OCR (bis max. 40 Seiten).
+ */
+export async function extractPdfPlainTextWithOcrFallback(
+  buffer: Buffer,
+  options?: { maxOcrPages?: number; minNativeChars?: number }
+): Promise<PdfPlainTextExtraction> {
+  const maxOcrPages = options?.maxOcrPages ?? 40
+  const minNativeChars = options?.minNativeChars ?? MIN_NATIVE_TEXT_CHARS
+
+  const native = (await extractPdfPlainText(buffer)).trim()
+  if (native.length >= minNativeChars) {
+    return { text: native, method: 'native' }
+  }
+
+  if (!process.env.OPENAI_API_KEY) {
+    return { text: native, method: 'native' }
+  }
+
+  const { ocrPdfBufferWithOpenAi } = await import('@/lib/pdf-ocr-openai')
+  const ocr = await ocrPdfBufferWithOpenAi(buffer, { maxPages: maxOcrPages })
+  const ocrText = ocr.text.trim()
+
+  return {
+    text: ocrText.length > 0 ? ocrText : native,
+    method: 'ocr',
+    pageCount: ocr.totalPages,
+    ocrPagesProcessed: ocr.processedPages,
+    ocrTruncated: ocr.truncated,
+  }
+}

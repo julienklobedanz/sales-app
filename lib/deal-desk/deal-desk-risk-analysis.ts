@@ -1,6 +1,7 @@
 import 'server-only'
 
 import type { DealDeskRedFlag } from '@/lib/deal-desk/mock-analysis'
+import { formatOpenAiHttpError } from '@/lib/openai-api-errors'
 
 const MODEL = 'gpt-4o-mini'
 const MAX_CHARS = 80_000
@@ -73,7 +74,7 @@ Regeln:
 
     if (!res.ok) {
       const t = await res.text()
-      return { error: `OpenAI (${res.status}): ${t.slice(0, 240)}` }
+      return { error: formatOpenAiHttpError(res.status, t, 'Risiko-Analyse') }
     }
 
     const json = (await res.json()) as {

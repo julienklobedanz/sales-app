@@ -39,7 +39,24 @@ function parseAnalysisSnapshot(
   winProbability: number | null
 ): DealDeskMockAnalysis {
   if (raw && typeof raw === 'object' && 'documentNames' in (raw as object)) {
-    return raw as DealDeskMockAnalysis
+    const partial = raw as Partial<DealDeskMockAnalysis>
+    const fallback = buildMockDealDeskAnalysis(
+      partial.documentNames?.length ? partial.documentNames : documentNames.length > 0 ? documentNames : ['RFP-Paket']
+    )
+    return {
+      ...fallback,
+      ...partial,
+      documentNames:
+        partial.documentNames?.length ? partial.documentNames : fallback.documentNames,
+      draftRows: Array.isArray(partial.draftRows) ? partial.draftRows : fallback.draftRows,
+      smeTasks: Array.isArray(partial.smeTasks) ? partial.smeTasks : fallback.smeTasks,
+      redFlags: Array.isArray(partial.redFlags) ? partial.redFlags : fallback.redFlags,
+      winProbability:
+        typeof partial.winProbability === 'number' ? partial.winProbability : fallback.winProbability,
+      customerName: partial.customerName ?? customerName ?? fallback.customerName,
+      icpFitLabel: partial.icpFitLabel ?? fallback.icpFitLabel,
+      icpSummary: partial.icpSummary ?? fallback.icpSummary,
+    }
   }
   if (documentNames.length > 0) {
     const mock = buildMockDealDeskAnalysis(documentNames)

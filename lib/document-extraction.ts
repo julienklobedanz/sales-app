@@ -9,8 +9,9 @@ const INDUSTRIES_LIST =
   'Financial Services & Insurance, Retail & Consumer Goods (CPG), Manufacturing & Automotive, Technology, Media & Telecom (TMT), Energy, Resources & Utilities, Healthcare & Life Sciences, Public Sector & Education, Professional Services & Logistics, Travel, Transport & Hospitality, Sonstige'
 
 async function extractTextFromPdf(buffer: Buffer): Promise<string> {
-  const { extractPdfPlainText } = await import('@/lib/pdf-text-extract')
-  return extractPdfPlainText(buffer)
+  const { extractPdfPlainTextWithOcrFallback } = await import('@/lib/pdf-text-extract')
+  const result = await extractPdfPlainTextWithOcrFallback(buffer, { maxOcrPages: 40 })
+  return result.text
 }
 
 function mapDocumentExtractError(err: Error, format: 'pdf' | 'pptx' | 'docx' | 'doc'): string {

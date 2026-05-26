@@ -7,7 +7,11 @@ import { buildMockDealDeskAnalysis } from '@/lib/deal-desk/mock-analysis'
 import { extractRfpPlainTextFromFile } from '@/lib/extract-rfp-plain-text'
 import { buildRfpCoverageReport } from '@/lib/rfp-coverage'
 import { extractRequirementsFromRfpText } from '@/lib/rfp-requirements'
+import { isOpenAiQuotaErrorMessage } from '@/lib/openai-api-errors'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+
+const OPENAI_QUOTA_MOCK_WARNING =
+  'OpenAI-Kontingent erschöpft — Demo-Analyse wurde geladen. Bitte Guthaben unter platform.openai.com/account/billing prüfen.'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -104,6 +108,39 @@ export async function POST(req: NextRequest) {
   const fileNames: string[] = []
   const textParts: string[] = []
   let mergedLen = 0
+  let extractionUsedOcr = false
+
+  async function finishWithMockQuotaFallback() {
+    const mock = buildMockDealDeskAnalysis(
+      fileNames.length > 0 ? fileNames : ['RFP-Paket']
+    )
+    const workspace = defaultWorkspaceState(mock.redFlags)
+    await supabase
+      .from('deal_desk_projects')
+      .update({
+        analysis_status: 'completed',
+        analysis_snapshot: mock,
+        analysis_source: 'mock',
+        workspace_state: workspace,
+        win_probability: mock.winProbability,
+        customer_name: mock.customerName,
+        error_message: null,
+      })
+      .eq('id', projectId)
+
+    return NextResponse.json({
+      success: true,
+      projectId,
+      source: 'mock',
+      quotaExceeded: true,
+      warning: OPENAI_QUOTA_MOCK_WARNING,
+      extractionUsedOcr,
+    })
+  }
+
+  function isQuotaError(error: string, extra?: { isQuotaError?: boolean }) {
+    return Boolean(extra?.isQuotaError) || isOpenAiQuotaErrorMessage(error)
+  }
 
   async function extractFromFile(file: File, docId: string | null) {
     if (!apiKey) {
@@ -118,6 +155,9 @@ export async function POST(req: NextRequest) {
 
     const plain = await extractRfpPlainTextFromFile(file, { maxChars: 50_000 })
     if (!plain.ok) {
+      if (isQuotaError(plain.error, { isQuotaError: plain.isQuotaError })) {
+        return finishWithMockQuotaFallback()
+      }
       if (docId) {
         await supabase
           .from('deal_desk_documents')
@@ -127,10 +167,16 @@ export async function POST(req: NextRequest) {
       return fail(plain.error, 400, { isScanLikely: plain.isScanLikely })
     }
 
+    if (plain.extractionMethod === 'ocr') {
+      extractionUsedOcr = true
+    }
+
     if (docId) {
       await supabase
         .from('deal_desk_documents')
-        .update({ extract_status: 'completed' })
+        .update({
+          extract_status: plain.extractionMethod === 'ocr' ? 'ocr' : 'completed',
+        })
         .eq('id', docId)
     }
 
@@ -281,6 +327,7 @@ export async function POST(req: NextRequest) {
       success: true,
       projectId,
       source: 'mock',
+      extractionUsedOcr,
     })
   }
 
@@ -296,6 +343,9 @@ export async function POST(req: NextRequest) {
 
   const extracted = await extractRequirementsFromRfpText(apiKey, mergedText)
   if ('error' in extracted) {
+    if (isQuotaError(extracted.error)) {
+      return finishWithMockQuotaFallback()
+    }
     return fail(extracted.error, 422)
   }
 
@@ -313,6 +363,9 @@ export async function POST(req: NextRequest) {
 
   const riskResult = await analyzeDealDeskRisks(apiKey, mergedText, projectName)
   if ('error' in riskResult) {
+    if (isQuotaError(riskResult.error)) {
+      return finishWithMockQuotaFallback()
+    }
     return fail(riskResult.error, 422)
   }
 
@@ -349,5 +402,6 @@ export async function POST(req: NextRequest) {
     success: true,
     projectId,
     source: 'api',
+    extractionUsedOcr,
   })
 }
