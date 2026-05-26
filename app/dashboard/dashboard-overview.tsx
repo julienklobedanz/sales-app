@@ -261,6 +261,20 @@ export function DashboardOverview({
   const [confirmEmptyOpen, setConfirmEmptyOpen] = useState(false)
   const [emptyingTrash, setEmptyingTrash] = useState(false)
   const [newRefModalOpen, setNewRefModalOpen] = useState(false)
+  const [selectedRefIds, setSelectedRefIds] = useState<Set<string>>(() => new Set())
+  const [pageSize, setPageSize] = useState(30)
+  const [pageIndex, setPageIndex] = useState(0)
+  const [shareLinkPopoverRef, setShareLinkPopoverRef] = useState<ReferenceRow | null>(null)
+  const selectAllCheckboxRef = useRef<HTMLInputElement | null>(null)
+  const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
+  const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false)
+  const [visibleColumns, setVisibleColumns] = useState<
+    Record<(typeof COLUMN_KEYS)[number], boolean>
+  >(DEFAULT_VISIBLE)
+  const [columnOrder, setColumnOrder] = useState<ReferenceColumnKey[]>(() =>
+    loadColumnOrderFromStorage()
+  )
+  const [dragOverColumn, setDragOverColumn] = useState<string | null>(null)
 
   const handleReferenceSheetOpenChange = useCallback((open: boolean) => {
     setSheetOpen(open)
@@ -420,20 +434,6 @@ export function DashboardOverview({
       prev.map((g) => (g.id === groupId ? { ...g, projectName } : g))
     )
   }
-  const [selectedRefIds, setSelectedRefIds] = useState<Set<string>>(() => new Set())
-  const [pageSize, setPageSize] = useState(30)
-  const [pageIndex, setPageIndex] = useState(0)
-  const [shareLinkPopoverRef, setShareLinkPopoverRef] = useState<ReferenceRow | null>(null)
-  const selectAllCheckboxRef = useRef<HTMLInputElement | null>(null)
-  const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
-  const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false)
-  const [visibleColumns, setVisibleColumns] = useState<
-    Record<(typeof COLUMN_KEYS)[number], boolean>
-  >(DEFAULT_VISIBLE)
-  const [columnOrder, setColumnOrder] = useState<ReferenceColumnKey[]>(() =>
-    loadColumnOrderFromStorage()
-  )
-  const [dragOverColumn, setDragOverColumn] = useState<string | null>(null)
 
   useEffect(() => {
     try {

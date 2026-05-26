@@ -2,7 +2,7 @@ import 'server-only'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-import { buildMockDealDeskAnalysis } from '@/lib/deal-desk/mock-analysis'
+import { buildDemoDealDeskAnalysis } from '@/lib/deal-desk/mock-analysis'
 import { defaultWorkspaceState } from '@/lib/deal-desk/workspace-state'
 
 export const DEMO_SEED_PROJECT_NAME = 'Cloud Service Provider RFP India'
@@ -13,7 +13,7 @@ export async function seedDealDeskDemoProject(
   organizationId: string,
   userId: string
 ): Promise<{ projectId: string } | { error: string }> {
-  const analysis = buildMockDealDeskAnalysis(DEMO_SEED_FILE_NAMES)
+  const analysis = buildDemoDealDeskAnalysis(DEMO_SEED_FILE_NAMES)
   analysis.customerName = 'Logistik AG Schweiz'
 
   const workspace = defaultWorkspaceState(analysis.redFlags)

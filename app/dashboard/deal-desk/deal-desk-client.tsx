@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import {
-  CheckCircle2,
   Clock,
   FileSpreadsheet,
   FileText,
   FileType,
   Info,
+  LayoutDashboard,
   Loader2,
   RefreshCw,
   Sparkles,
@@ -16,14 +16,12 @@ import {
   Trash2,
   Upload,
   X,
-  XCircle,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   Select,
   SelectContent,
@@ -41,12 +39,7 @@ import {
 } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
-import {
-  BID_TEAM_ROLE_DEFS,
-  SME_ROUTE_OPTIONS,
-  type BidTeamRoleKey,
-} from '@/lib/deal-desk/mock-analysis'
-import type { BidTeamMember } from '@/lib/deal-desk/bid-team'
+import { SME_ROUTE_OPTIONS } from '@/lib/deal-desk/mock-analysis'
 import { projectToWorkspaceState } from '@/lib/deal-desk/project-mapper'
 import {
   defaultProjectNameFromFiles,
@@ -56,17 +49,13 @@ import {
   createDealDeskProjectAction,
   deleteDealDeskProjectAction,
   getDealDeskProject,
-  listDealDeskBidTeamMembers,
   listDealDeskProjects,
-  logDealDeskGoAction,
-  logDealDeskNoBidAction,
   logDealDeskSmeRouteAction,
   removeDealDeskDocumentAction,
   resetDealDeskDemoForOrg,
   runDealDeskDemoAnalyzeAction,
   updateDealDeskProjectAction,
 } from './actions'
-import { BidTeamRoleSelect } from './components/bid-team-role-select'
 import { DealDeskProjectHeader } from './components/deal-desk-project-header'
 import { RedFlagsPanel } from './components/red-flags-panel'
 import { ReferenceIncubatorTab } from './components/reference-incubator-tab'
@@ -174,8 +163,6 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null)
   const [uploadMode, setUploadMode] = useState(false)
   const [activeTab, setActiveTab] = useState<TabKey>('decision')
-  const [teamMembers, setTeamMembers] = useState<BidTeamMember[]>([])
-  const [bidTeamOpen, setBidTeamOpen] = useState(false)
   const [canResetDemo, setCanResetDemo] = useState(false)
 
   const activeProject =
@@ -223,24 +210,12 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
   useEffect(() => {
     void (async () => {
       setLoadingDesk(true)
-      const [listRes, teamRes] = await Promise.all([
-        listDealDeskProjects(),
-        listDealDeskBidTeamMembers(),
-      ])
+      const listRes = await listDealDeskProjects()
       if (listRes.success) {
         setProjects(listRes.projects)
         if (listRes.projects[0]) setActiveProjectId(listRes.projects[0].id)
       } else {
         toast.error(listRes.error)
-      }
-      if (teamRes.success) {
-        setTeamMembers(
-          teamRes.members.map((m) => ({
-            id: m.id,
-            name: m.name,
-            email: m.email ?? undefined,
-          }))
-        )
       }
       skipPersistRef.current = false
       setLoadingDesk(false)
@@ -470,22 +445,6 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
     toast.success('Deal Desk Demo zurückgesetzt.')
   }
 
-  function assignBidRole(role: BidTeamRoleKey, member: BidTeamMember) {
-    if (!activeProject) return
-    updateProject(activeProject.id, (p) => ({
-      ...p,
-      bidTeam: p.bidTeam.map((row) =>
-        row.role === role
-          ? {
-              ...row,
-              assigneeId: member.id,
-              assigneeName: member.email ?? member.name,
-            }
-          : row
-      ),
-    }))
-  }
-
   const uploadZone = (
     <>
         <div
@@ -685,17 +644,15 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
   const analysis = activeProject.analysis
   const redFlags = activeProject.redFlags
   const smeRoutes = activeProject.smeRoutes
-  const decision = activeProject.decision
-  const bidTeam = activeProject.bidTeam
+  const showDemo =
+    activeProject.showDemoBadge || process.env.NEXT_PUBLIC_DEAL_DESK_DEMO === '1'
 
   return (
     <div className={cn(DESK_LAYOUT_CLASS, 'pb-8')}>
       <DealDeskProjectHeader
         projects={projects}
         activeProject={activeProject}
-        showDemoBadge={
-          activeProject.showDemoBadge || process.env.NEXT_PUBLIC_DEAL_DESK_DEMO === '1'
-        }
+        showDemoBadge={showDemo}
         canResetDemo={canResetDemo}
         onResetDemo={handleResetDemo}
         onSelectProject={selectProject}
@@ -709,31 +666,6 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
         fileIcon={fileIcon}
       />
 
-      {activeProject.analysisStatus === 'failed' && activeProject.errorMessage ? (
-        <div className="rounded-xl border border-destructive/40 bg-destructive/5 px-4 py-3">
-          <p className="text-sm font-medium text-destructive">Letzte Analyse fehlgeschlagen</p>
-          <p className="mt-1 text-sm text-muted-foreground">{activeProject.errorMessage}</p>
-          {isLikelyScanExtractionError(activeProject.errorMessage) ? (
-            <p className="mt-2 text-xs text-muted-foreground">{RFP_SCAN_PDF_HINT}</p>
-          ) : null}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="mt-3 gap-1.5"
-            disabled={analyzing}
-            onClick={() => void rerunAnalysis(activeProject.id)}
-          >
-            {analyzing ? (
-              <Loader2 className="size-3.5 animate-spin" aria-hidden />
-            ) : (
-              <RefreshCw className="size-3.5" aria-hidden />
-            )}
-            Analyse erneut starten
-          </Button>
-        </div>
-      ) : null}
-
       {uploadMode ? <div className="space-y-4">{uploadZone}</div> : null}
 
       {!uploadMode ? (
@@ -741,13 +673,8 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabKey)} className="w-full">
         <TabsList className="h-auto w-full flex-wrap justify-start gap-1 bg-muted/50 p-1">
           <TabsTrigger value="decision" className="gap-1.5">
-            <CheckCircle2 className="size-3.5" />
-            Bid-Entscheidung
-            {redFlags.length > 0 ? (
-              <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">
-                {redFlags.length}
-              </Badge>
-            ) : null}
+            <LayoutDashboard className="size-3.5" />
+            Bid-Übersicht
           </TabsTrigger>
           <TabsTrigger value="draft" className="gap-1.5">
             <Sparkles className="size-3.5" />
@@ -768,7 +695,7 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
             <div className="w-full space-y-6">
               <Card className={cn(TAB_CARD_CLASS, 'overflow-hidden border-blue-200/60 dark:border-blue-900/40')}>
                 <CardContent className="flex w-full flex-col gap-6 p-6 md:flex-row md:items-start">
-                  <WinProbabilityGauge value={analysis.winProbability} size={152} />
+                  <WinProbabilityGauge value={analysis.winProbability ?? 0} size={152} />
                   <div className="min-w-0 flex-1 space-y-3">
                     <Badge className="bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-100">
                       {analysis.icpFitLabel}
@@ -778,8 +705,56 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
                 </CardContent>
               </Card>
 
+              {(() => {
+                const draftRows = analysis.draftRows ?? []
+                const requirementsCount = draftRows.length
+                const missingReferenceCount = draftRows.filter((r) => !r.reference).length
+                const missingAnswerCount = draftRows.filter((r) => Boolean(r.reference) && !r.answer).length
+                const gaps = missingReferenceCount + missingAnswerCount
+
+                const smeTasks = analysis.smeTasks ?? []
+                const smeCount = smeTasks.length
+
+                const flags = redFlags ?? []
+                const flagsCriticalHigh = flags.filter(
+                  (f) => f.severity === 'critical' || f.severity === 'high'
+                ).length
+                const legalMarkedCount = flags.filter((f) => Boolean(f.markedForLegal)).length
+
+                return (
+                  <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="rounded-xl border border-border bg-muted/20 p-4">
+                      <p className="text-xs font-medium text-muted-foreground">Anforderungen</p>
+                      <p className="mt-1 text-2xl font-bold">{requirementsCount}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">aus Unterlagen extrahiert</p>
+                    </div>
+                    <div className="rounded-xl border border-border bg-muted/20 p-4">
+                      <p className="text-xs font-medium text-muted-foreground">Lücken</p>
+                      <p className="mt-1 text-2xl font-bold">{gaps}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {missingReferenceCount > 0 ? `${missingReferenceCount} ohne Referenz` : 'Referenzen ok'}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-border bg-muted/20 p-4">
+                      <p className="text-xs font-medium text-muted-foreground">SME offen</p>
+                      <p className="mt-1 text-2xl font-bold">{smeCount}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">interne Klärungspunkte</p>
+                    </div>
+                    <div className="rounded-xl border border-border bg-muted/20 p-4">
+                      <p className="text-xs font-medium text-muted-foreground">Flags</p>
+                      <p className="mt-1 text-2xl font-bold">{flagsCriticalHigh}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {legalMarkedCount > 0
+                          ? `Legal markiert: ${legalMarkedCount}`
+                          : 'kritisch/hoch im Fokus'}
+                      </p>
+                    </div>
+                  </div>
+                )
+              })()}
+
               <RedFlagsPanel
-                flags={redFlags}
+                flags={redFlags ?? []}
                 projectId={activeProject.id}
                 onFlagsChange={(flags) =>
                   updateProject(activeProject.id, (p) => ({ ...p, redFlags: flags }))
@@ -787,100 +762,186 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
                 className={TAB_CARD_CLASS}
               />
 
-              <Card className={TAB_CARD_CLASS}>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Go oder No-Bid</CardTitle>
-                  <CardDescription>
-                    Entscheidung dokumentieren — bei GO das Bid-Team aktivieren.
-                  </CardDescription>
-                  {decision ? (
-                    <p className="pt-1 text-sm font-medium text-muted-foreground">
-                      Status:{' '}
-                      <span
-                        className={
-                          decision === 'go'
-                            ? 'text-emerald-700 dark:text-emerald-300'
-                            : 'text-red-700 dark:text-red-300'
-                        }
-                      >
-                        {decision === 'go' ? 'GO — Bid-Team aktiviert' : 'NO-BID'}
-                      </span>
-                    </p>
-                  ) : null}
-                </CardHeader>
-                <CardContent>
-                  <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
-                    <Popover open={bidTeamOpen} onOpenChange={setBidTeamOpen}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          type="button"
-                          size="lg"
-                          className="h-12 w-full gap-2 bg-emerald-600 hover:bg-emerald-700"
-                        >
-                          <CheckCircle2 className="size-5" />
-                          GO: Bid-Team aktivieren
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent
-                        className="w-[min(26rem,calc(100vw-2rem))] p-4"
-                        align="center"
-                      >
-                        <div className="w-full">
-                          <p className="text-sm font-semibold text-foreground">Bid-Team definieren</p>
-                          <p className="mt-1 text-xs leading-snug text-muted-foreground">
-                            Rollen zuweisen — Sales Lead kann delegiert werden.
-                          </p>
+              {(() => {
+                const timelineItems = analysis.timelineItems ?? []
+                const sortedItems = [...timelineItems]
+                  .filter((it) => typeof it?.dueDate === 'string' && it.dueDate.length >= 10)
+                  .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+
+                const MS_DAY = 24 * 60 * 60 * 1000
+                const now = new Date()
+                now.setHours(0, 0, 0, 0)
+
+                function formatDateDe(iso: string) {
+                  const d = new Date(iso)
+                  const dd = String(d.getDate()).padStart(2, '0')
+                  const mm = String(d.getMonth() + 1).padStart(2, '0')
+                  const yyyy = d.getFullYear()
+                  return `${dd}.${mm}.${yyyy}`
+                }
+
+                function daysUntil(iso: string) {
+                  const d = new Date(iso)
+                  d.setHours(0, 0, 0, 0)
+                  return Math.round((d.getTime() - now.getTime()) / MS_DAY)
+                }
+
+                return (
+                  <Card className={TAB_CARD_CLASS}>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">Bid-Timeline / Fristen</CardTitle>
+                      <CardDescription>
+                        Aus dem RFP extrahierte Deadlines (Datum + Countdown).
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {sortedItems.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                          Keine konkreten Fristen/Deadlines im Dokument erkannt.
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          {sortedItems.map((it, idx) => (
+                            <div
+                              key={`${it.id}-${idx}`}
+                              className="flex items-start gap-3 rounded-xl border border-border bg-muted/30 px-4 py-3"
+                            >
+                              <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-background">
+                                <Clock className="size-4 text-muted-foreground" aria-hidden />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-medium text-foreground">
+                                  {formatDateDe(it.dueDate)} ({daysUntil(it.dueDate)} Tage): {it.title}
+                                </p>
+                                {it.evidence ? (
+                                  <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                                    Beleg: {it.evidence}
+                                  </p>
+                                ) : null}
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                        <div className="mt-4 w-full space-y-3">
-                          {BID_TEAM_ROLE_DEFS.map((def) => {
-                            const row = bidTeam.find((b) => b.role === def.key)
-                            if (!row) return null
-                            return (
-                              <BidTeamRoleSelect
-                                key={def.key}
-                                role={def.key}
-                                roleLabel={def.label}
-                                roleDescription={def.description}
-                                assigneeId={row.assigneeId}
-                                teamMembers={teamMembers}
-                                onTeamMembersChange={setTeamMembers}
-                                onAssign={assignBidRole}
-                              />
-                            )
-                          })}
+                      )}
+                    </CardContent>
+                  </Card>
+                )
+              })()}
+
+              {(() => {
+                const draftRows = analysis.draftRows ?? []
+                const missingReferenceCount = draftRows.filter((r) => !r.reference).length
+                const missingAnswerCount = draftRows.filter((r) => Boolean(r.reference) && !r.answer).length
+
+                const smeTasks = analysis.smeTasks ?? []
+                const flags = redFlags ?? []
+                const legalMarkedCount = flags.filter((f) => Boolean(f.markedForLegal)).length
+
+                const criticalHigh = flags.filter(
+                  (f) => f.severity === 'critical' || f.severity === 'high'
+                ).length
+
+                const sortedSme = [...smeTasks].sort(
+                  (a, b) => (a.dueInDays ?? 99) - (b.dueInDays ?? 99)
+                )
+
+                const steps: Array<{ title: string; detail?: string; tab?: TabKey }> = []
+
+                if (criticalHigh > 0) {
+                  steps.push({
+                    title:
+                      legalMarkedCount > 0
+                        ? 'Legal Review für markierte Risiken starten'
+                        : 'Kritische/hohe Risiken für Legal markieren',
+                    detail:
+                      legalMarkedCount > 0
+                        ? 'Nächster Schritt: Vertrags-Punkte prüfen und ggf. Ausschlüsse verhandeln.'
+                        : 'Im „Red Flags“-Panel passende Punkte markieren und an Legal senden.',
+                    tab: 'decision',
+                  })
+                }
+
+                if (missingReferenceCount > 0) {
+                  steps.push({
+                    title: `Referenzen für ${missingReferenceCount} Anforderungen nachziehen`,
+                    detail: 'Tab „Antwort-Entwürfe“ öffnen und fehlende Proofs ergänzen.',
+                    tab: 'draft',
+                  })
+                }
+
+                if (missingAnswerCount > 0) {
+                  steps.push({
+                    title: `Antworten für ${missingAnswerCount} passende Anforderungen vervollständigen`,
+                    detail: 'Teilweise fehlen noch KI-Antworten — Referenzen prüfen und dann finalisieren.',
+                    tab: 'draft',
+                  })
+                }
+
+                for (const task of sortedSme.slice(0, 2)) {
+                  steps.push({
+                    title: `SME-Klärung: ${task.category}`,
+                    detail: `${task.question} (Due: in ${task.dueInDays} Tagen)`,
+                    tab: 'sme',
+                  })
+                  if (steps.length >= 5) break
+                }
+
+                if (steps.length < 5 && smeTasks.length > 0) {
+                  steps.push({
+                    title: 'SME-Routing finalisieren',
+                    detail: 'Stelle sicher, dass alle offenen Aufgaben an die richtigen Rollen geleitet sind.',
+                    tab: 'sme',
+                  })
+                }
+
+                const stepsFinal = steps.slice(0, 5)
+
+                return (
+                  <Card className={TAB_CARD_CLASS}>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">Nächste Schritte (max. 5)</CardTitle>
+                      <CardDescription>Aus den Red Flags, Lücken und SME-Aufgaben abgeleitet.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {stepsFinal.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                          Keine offenen To-dos gefunden. (Wenn Inhalte fehlen, prüfe Red Flags / Entwürfe.)
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          {stepsFinal.map((s, idx) => (
+                            <div
+                              key={`${idx}-${s.title}`}
+                              className="flex items-start gap-3 rounded-xl border border-border bg-muted/30 px-4 py-3"
+                            >
+                              <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-background">
+                                <span className="text-sm font-bold text-muted-foreground">{idx + 1}</span>
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-medium text-foreground">{s.title}</p>
+                                {s.detail ? (
+                                  <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{s.detail}</p>
+                                ) : null}
+                              </div>
+                              {s.tab ? (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-8 gap-2"
+                                  onClick={() => setActiveTab(s.tab!)}
+                                >
+                                  Öffnen
+                                </Button>
+                              ) : null}
+                            </div>
+                          ))}
                         </div>
-                        <Button
-                          type="button"
-                          className="mt-4 w-full"
-                          size="sm"
-                          onClick={() => {
-                            updateProject(activeProject.id, (p) => ({ ...p, decision: 'go' }))
-                            void logDealDeskGoAction(activeProject.id)
-                            setBidTeamOpen(false)
-                            toast.success('Bid-Team gespeichert.')
-                          }}
-                        >
-                          Team bestätigen
-                        </Button>
-                      </PopoverContent>
-                    </Popover>
-                    <Button
-                      type="button"
-                      size="lg"
-                      variant="outline"
-                      className="h-12 w-full gap-2 border-red-200 text-red-800 hover:bg-red-50 dark:border-red-900 dark:text-red-200 dark:hover:bg-red-950/40"
-                      onClick={() => {
-                        updateProject(activeProject.id, (p) => ({ ...p, decision: 'no-bid' }))
-                        void logDealDeskNoBidAction(activeProject.id)
-                        toast.message('NO-BID dokumentiert.')
-                      }}
-                    >
-                      <XCircle className="size-5" />
-                      NO-BID: Strategisch ablehnen
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                      )}
+                    </CardContent>
+                  </Card>
+                )
+              })()}
             </div>
           </TabsContent>
 
@@ -929,7 +990,7 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
                                       />
                                     ) : (
                                       <div className="flex size-full items-center justify-center text-[10px] font-bold text-muted-foreground">
-                                        {row.reference.companyName.slice(0, 2).toUpperCase()}
+                                        {(row.reference.companyName ?? '?').slice(0, 2).toUpperCase()}
                                       </div>
                                     )}
                                   </div>

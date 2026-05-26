@@ -2,7 +2,11 @@ import 'server-only'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-import type { DealDeskMockAnalysis, DealDeskSmeTask } from '@/lib/deal-desk/mock-analysis'
+import type {
+  DealDeskMockAnalysis,
+  DealDeskSmeTask,
+  DealDeskTimelineItem,
+} from '@/lib/deal-desk/mock-analysis'
 import type { DealDeskRiskAnalysisResult } from '@/lib/deal-desk/deal-desk-risk-analysis'
 import type { RfpCoverageRow } from '@/lib/rfp-coverage'
 import type { ExtractedRfpRequirement } from '@/lib/rfp-requirements'
@@ -98,9 +102,11 @@ export async function mapRfpAnalysisToDealDeskSnapshot(params: {
   requirements: ExtractedRfpRequirement[]
   coverage: RfpCoverageRow[]
   risk: DealDeskRiskAnalysisResult
+  timelineItems: DealDeskTimelineItem[]
   supabase: SupabaseClient
 }): Promise<DealDeskMockAnalysis> {
-  const { apiKey, projectName, fileNames, requirements, coverage, risk, supabase } = params
+  const { apiKey, projectName, fileNames, requirements, coverage, risk, timelineItems, supabase } =
+    params
   const primary = fileNames[0] ?? 'RFP-Paket'
   const docLabel =
     fileNames.length === 1
@@ -171,5 +177,6 @@ export async function mapRfpAnalysisToDealDeskSnapshot(params: {
     redFlags: risk.redFlags,
     draftRows,
     smeTasks,
+    timelineItems,
   }
 }

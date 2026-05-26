@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { Briefcase } from 'lucide-react'
@@ -321,14 +321,22 @@ export function DashboardShell({
         <SidebarRail />
       </Sidebar>
       <SidebarInset>
-        <DashboardHeader
-          userId={user.id}
-          userName={userName}
-          userEmail={userEmail}
-          userInitials={userInitials}
-          userRole={profile.role}
-          initialNotifications={initialNotifications}
-        />
+        <Suspense
+          fallback={
+            <div className="flex h-14 shrink-0 items-center border-b border-border px-4">
+              <div className="h-6 w-48 animate-pulse rounded bg-muted" />
+            </div>
+          }
+        >
+          <DashboardHeader
+            userId={user.id}
+            userName={userName}
+            userEmail={userEmail}
+            userInitials={userInitials}
+            userRole={profile.role}
+            initialNotifications={initialNotifications}
+          />
+        </Suspense>
         <div
           className={cn(
             routeExcludesDashboardContentPadding(pathname)

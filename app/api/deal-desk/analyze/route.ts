@@ -3,12 +3,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { analyzeDealDeskRisks } from '@/lib/deal-desk/deal-desk-risk-analysis'
 import { mapRfpAnalysisToDealDeskSnapshot } from '@/lib/deal-desk/map-rfp-to-desk'
 import { defaultWorkspaceState } from '@/lib/deal-desk/workspace-state'
-import { buildMockDealDeskAnalysis } from '@/lib/deal-desk/mock-analysis'
+import { buildDemoDealDeskAnalysis } from '@/lib/deal-desk/mock-analysis'
 import { extractRfpPlainTextFromFile } from '@/lib/extract-rfp-plain-text'
 import { buildRfpCoverageReport } from '@/lib/rfp-coverage'
 import { extractRequirementsFromRfpText } from '@/lib/rfp-requirements'
 import { isOpenAiQuotaErrorMessage } from '@/lib/openai-api-errors'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { extractTimelineFromRfpText } from '@/lib/rfp-timeline'
 
 const OPENAI_QUOTA_MOCK_WARNING =
   'OpenAI-Kontingent erschöpft — Demo-Analyse wurde geladen. Bitte Guthaben unter platform.openai.com/account/billing prüfen.'
@@ -111,7 +112,7 @@ export async function POST(req: NextRequest) {
   let extractionUsedOcr = false
 
   async function finishWithMockQuotaFallback() {
-    const mock = buildMockDealDeskAnalysis(
+    const mock = buildDemoDealDeskAnalysis(
       fileNames.length > 0 ? fileNames : ['RFP-Paket']
     )
     const workspace = defaultWorkspaceState(mock.redFlags)
@@ -308,7 +309,7 @@ export async function POST(req: NextRequest) {
   const projectName = (project.project_name as string) || 'RFP-Projekt'
 
   if (!apiKey) {
-    const mock = buildMockDealDeskAnalysis(fileNames)
+    const mock = buildDemoDealDeskAnalysis(fileNames)
     const workspace = defaultWorkspaceState(mock.redFlags)
     await supabase
       .from('deal_desk_projects')
@@ -340,6 +341,14 @@ export async function POST(req: NextRequest) {
   }
 
   const mergedText = textParts.join('\n\n')
+
+  const timelineRes = await extractTimelineFromRfpText(apiKey, mergedText)
+  const timelineItems = 'error' in timelineRes ? [] : timelineRes.timelineItems
+  if ('error' in timelineRes) {
+    if (isQuotaError(timelineRes.error)) {
+      return finishWithMockQuotaFallback()
+    }
+  }
 
   const extracted = await extractRequirementsFromRfpText(apiKey, mergedText)
   if ('error' in extracted) {
@@ -376,6 +385,7 @@ export async function POST(req: NextRequest) {
     requirements: extracted.requirements,
     coverage,
     risk: riskResult,
+    timelineItems,
     supabase,
   })
 

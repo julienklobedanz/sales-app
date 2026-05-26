@@ -42,6 +42,17 @@ export type DealDeskSmeTask = {
   routedTo?: string
 }
 
+export type DealDeskTimelineItem = {
+  id: string
+  title: string
+  /**
+   * ISO-Date aus dem Dokument, Format: YYYY-MM-DD
+   * (Zeitanteil ignoriert für die UI-Countdown-Berechnung)
+   */
+  dueDate: string
+  evidence?: string | null
+}
+
 export type DealDeskMockAnalysis = {
   documentName: string
   documentNames: string[]
@@ -50,6 +61,7 @@ export type DealDeskMockAnalysis = {
   icpFitLabel: string
   icpSummary: string
   redFlags: DealDeskRedFlag[]
+  timelineItems: DealDeskTimelineItem[]
   draftRows: DealDeskDraftRow[]
   smeTasks: DealDeskSmeTask[]
 }
@@ -93,6 +105,41 @@ export const SME_ROUTE_OPTIONS = [
   { value: 'delivery', label: 'An Delivery routen' },
 ] as const
 
+/** Die drei ursprünglichen Demo-Red-Flags (Haftung, SLA-Pönale, Festpreis). */
+export const DEMO_SAMPLE_RED_FLAGS: DealDeskRedFlag[] = [
+  {
+    id: 'rf-1',
+    severity: 'critical',
+    title: 'Unbegrenzte Haftung',
+    excerpt:
+      '„Auftragnehmer haftet unbeschränkt für direkte und indirekte Schäden, einschließlich entgangenem Gewinn."',
+    pageHint: 'Anhang B, § 14.2',
+  },
+  {
+    id: 'rf-2',
+    severity: 'high',
+    title: 'Pönale bei SLA-Bruch',
+    excerpt: 'Vertragsstrafe 0,5 % des Auftragswerts pro Verzugstag, max. 25 % — ohne Ausschluss höherer Schäden.',
+    pageHint: 'Leistungsbeschreibung Kap. 7',
+  },
+  {
+    id: 'rf-3',
+    severity: 'medium',
+    title: 'Festpreis ohne Change-Request-Mechanismus',
+    excerpt: 'Scope als Festpreis definiert; Change Requests nur nach schriftlicher Zustimmung innerhalb von 5 Werktagen.',
+    pageHint: 'Kap. 3.4',
+  },
+]
+
+/** Demo-/Fallback-Analyse mit den drei Beispiel-Red-Flags. */
+export function buildDemoDealDeskAnalysis(fileNames: string[]): DealDeskMockAnalysis {
+  const analysis = buildMockDealDeskAnalysis(fileNames)
+  return {
+    ...analysis,
+    redFlags: DEMO_SAMPLE_RED_FLAGS.map((f) => ({ ...f })),
+  }
+}
+
 export function buildMockDealDeskAnalysis(fileNames: string[]): DealDeskMockAnalysis {
   const primary = fileNames[0] ?? 'RFP-Paket'
   const docLabel =
@@ -112,28 +159,7 @@ export function buildMockDealDeskAnalysis(fileNames: string[]): DealDeskMockAnal
     icpSummary:
       `Die Ausschreibung adressiert Cloud-Migration und SAP-nahe Infrastruktur — exakt euer Kern-ICP (Enterprise IT, DACH, >500 MA). Budgetrahmen und Laufzeit passen zu drei gewonnenen Deals der letzten 18 Monate. Hauptrisiko: aggressive SLA-Pönalen und unbegrenzte Haftungsklausel; ohne Legal-Review kein GO.${multiDocHint}`,
     redFlags: [
-      {
-        id: 'rf-1',
-        severity: 'critical',
-        title: 'Unbegrenzte Haftung',
-        excerpt:
-          '„Auftragnehmer haftet unbeschränkt für direkte und indirekte Schäden, einschließlich entgangenem Gewinn."',
-        pageHint: 'Anhang B, § 14.2',
-      },
-      {
-        id: 'rf-2',
-        severity: 'high',
-        title: 'Pönale bei SLA-Bruch',
-        excerpt: 'Vertragsstrafe 0,5 % des Auftragswerts pro Verzugstag, max. 25 % — ohne Ausschluss höherer Schäden.',
-        pageHint: 'Leistungsbeschreibung Kap. 7',
-      },
-      {
-        id: 'rf-3',
-        severity: 'medium',
-        title: 'Festpreis ohne Change-Request-Mechanismus',
-        excerpt: 'Scope als Festpreis definiert; Change Requests nur nach schriftlicher Zustimmung innerhalb von 5 Werktagen.',
-        pageHint: 'Kap. 3.4',
-      },
+      ...DEMO_SAMPLE_RED_FLAGS.map((f) => ({ ...f })),
       {
         id: 'rf-4',
         severity: 'high',
@@ -156,6 +182,36 @@ export function buildMockDealDeskAnalysis(fileNames: string[]): DealDeskMockAnal
         pageHint: 'Kap. 12.1',
       },
     ],
+    timelineItems: (() => {
+      const now = new Date()
+      now.setHours(0, 0, 0, 0)
+      const iso = (d: Date) => d.toISOString().slice(0, 10)
+      const addDays = (n: number) => {
+        const t = new Date(now)
+        t.setDate(t.getDate() + n)
+        return t
+      }
+      return [
+        {
+          id: 'tl-angebot',
+          title: 'Angebotsabgabe',
+          dueDate: iso(addDays(21)),
+          evidence: null,
+        },
+        {
+          id: 'tl-qa',
+          title: 'Q&A / Rückfragenfrist',
+          dueDate: iso(addDays(14)),
+          evidence: null,
+        },
+        {
+          id: 'tl-vertrag',
+          title: 'Vertrags-/Projektstart',
+          dueDate: iso(addDays(60)),
+          evidence: null,
+        },
+      ]
+    })(),
     draftRows: [
       {
         id: 'd-1',

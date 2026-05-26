@@ -15,7 +15,7 @@ function firstSentence(text: string, max = 320): string {
 export function buildHarvestFromAnalysis(analysis: DealDeskMockAnalysis): ReferenceIncubatorHarvest {
   const customerName = analysis.customerName?.trim() || 'Kunde'
 
-  const challengeFromFlags = analysis.redFlags
+  const challengeFromFlags = (analysis.redFlags ?? [])
     .map((f) => f.excerpt)
     .filter(Boolean)
     .join(' ')

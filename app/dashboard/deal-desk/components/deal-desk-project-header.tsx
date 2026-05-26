@@ -82,44 +82,53 @@ export function DealDeskProjectHeader({
             <Briefcase className="size-5" />
           </div>
           <div className="min-w-0 flex-1 space-y-1">
-            {editingTitle ? (
-              <div className="space-y-1">
-                <Label htmlFor="deal-desk-project-name" className="sr-only">
-                  Projektname
-                </Label>
-                <Input
-                  ref={titleInputRef}
-                  id="deal-desk-project-name"
-                  value={activeProject.projectName}
-                  onChange={(e) => onRenameProject(activeProject.id, e.target.value)}
-                  onBlur={commitTitleEdit}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === 'Escape') {
-                      e.preventDefault()
-                      commitTitleEdit()
-                    }
-                  }}
-                  className="h-10 max-w-lg text-lg font-semibold"
-                  placeholder="Projektname"
-                />
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setEditingProjectId(activeProject.id)}
-                className={cn(
-                  DASHBOARD_PAGE_TITLE_CLASS,
-                  'block max-w-full truncate text-left transition-colors hover:text-foreground/80'
-                )}
-                title="Klicken zum Bearbeiten"
-              >
-                {activeProject.projectName || 'Unbenanntes Projekt'}
-              </button>
-            )}
+            <div className="flex flex-wrap items-center gap-2">
+              {editingTitle ? (
+                <div className="space-y-1">
+                  <Label htmlFor="deal-desk-project-name" className="sr-only">
+                    Projektname
+                  </Label>
+                  <Input
+                    ref={titleInputRef}
+                    id="deal-desk-project-name"
+                    value={activeProject.projectName}
+                    onChange={(e) => onRenameProject(activeProject.id, e.target.value)}
+                    onBlur={commitTitleEdit}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === 'Escape') {
+                        e.preventDefault()
+                        commitTitleEdit()
+                      }
+                    }}
+                    className="h-10 max-w-lg text-lg font-semibold"
+                    placeholder="Projektname"
+                  />
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setEditingProjectId(activeProject.id)}
+                  className={cn(
+                    DASHBOARD_PAGE_TITLE_CLASS,
+                    'block max-w-full truncate text-left transition-colors hover:text-foreground/80'
+                  )}
+                  title="Klicken zum Bearbeiten"
+                >
+                  {activeProject.projectName || 'Unbenanntes Projekt'}
+                </button>
+              )}
+              {showDemoBadge ? (
+                <span
+                  className="inline-flex shrink-0 items-center rounded-full bg-red-600 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white shadow-sm"
+                  title="Beispieldaten — keine echte RFP-Auswertung"
+                >
+                  Demo
+                </span>
+              ) : null}
+            </div>
             <p className="text-sm text-muted-foreground">
               {activeProject.analysis.customerName} · {docCount} Dokument
               {docCount === 1 ? '' : 'e'}
-              {showDemoBadge ? ' · Demo' : null}
               {activeProject.analysisStatus === 'processing' ? ' · Analyse läuft' : null}
             </p>
           </div>

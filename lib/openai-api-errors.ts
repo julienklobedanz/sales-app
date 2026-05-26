@@ -36,6 +36,7 @@ export function isOpenAiQuotaErrorMessage(message: string): boolean {
     lower.includes('insufficient_quota') ||
     lower.includes('exceeded your current quota') ||
     lower.includes('billing_hard_limit') ||
+    (lower.includes('billing') && lower.includes('limit') && lower.includes('erreicht')) ||
     (lower.includes('429') && lower.includes('quota')) ||
     (lower.includes('kontingent') && lower.includes('openai'))
   )

@@ -497,9 +497,9 @@ export async function runDealDeskDemoAnalyzeAction(): Promise<
   })
   if (!created.success) return created
 
-  const { buildMockDealDeskAnalysis } = await import('@/lib/deal-desk/mock-analysis')
+  const { buildDemoDealDeskAnalysis } = await import('@/lib/deal-desk/mock-analysis')
   const { defaultWorkspaceState } = await import('@/lib/deal-desk/workspace-state')
-  const analysis = buildMockDealDeskAnalysis(DEMO_SEED_FILE_NAMES)
+  const analysis = buildDemoDealDeskAnalysis(DEMO_SEED_FILE_NAMES)
   const workspace = defaultWorkspaceState(analysis.redFlags)
 
   await auth.supabase

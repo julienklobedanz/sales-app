@@ -1,5 +1,9 @@
 import type { DealDeskMockAnalysis } from '@/lib/deal-desk/mock-analysis'
-import { buildMockDealDeskAnalysis } from '@/lib/deal-desk/mock-analysis'
+import {
+  buildDemoDealDeskAnalysis,
+  buildMockDealDeskAnalysis,
+  DEMO_SAMPLE_RED_FLAGS,
+} from '@/lib/deal-desk/mock-analysis'
 import type { DealDeskProject } from '@/lib/deal-desk/deal-desk-project'
 import { parseWorkspaceState } from '@/lib/deal-desk/workspace-state'
 
@@ -19,6 +23,26 @@ export type DealDeskProjectRow = {
   deal_id: string | null
   created_at: string
   updated_at: string
+}
+
+/** Keine rohen API-Fehler in der UI (z. B. dauerhaft gespeichertes OpenAI-429). */
+function sanitizeProjectErrorMessage(
+  status: DealDeskAnalysisStatus,
+  message: string | null
+): string | null {
+  if (!message || status !== 'failed') return message
+  const lower = message.toLowerCase()
+  if (
+    lower.includes('openai (429)') ||
+    lower.includes('openai (402)') ||
+    lower.includes('insufficient_quota') ||
+    lower.includes('exceeded your current quota') ||
+    lower.includes('billing') ||
+    lower.startsWith('openai (')
+  ) {
+    return null
+  }
+  return message
 }
 
 export type DealDeskDocumentRow = {
@@ -50,7 +74,14 @@ function parseAnalysisSnapshot(
         partial.documentNames?.length ? partial.documentNames : fallback.documentNames,
       draftRows: Array.isArray(partial.draftRows) ? partial.draftRows : fallback.draftRows,
       smeTasks: Array.isArray(partial.smeTasks) ? partial.smeTasks : fallback.smeTasks,
-      redFlags: Array.isArray(partial.redFlags) ? partial.redFlags : fallback.redFlags,
+      timelineItems:
+        Array.isArray(partial.timelineItems) && partial.timelineItems.length > 0
+          ? partial.timelineItems
+          : fallback.timelineItems,
+      redFlags:
+        Array.isArray(partial.redFlags) && partial.redFlags.length > 0
+          ? partial.redFlags
+          : fallback.redFlags,
       winProbability:
         typeof partial.winProbability === 'number' ? partial.winProbability : fallback.winProbability,
       customerName: partial.customerName ?? customerName ?? fallback.customerName,
@@ -59,12 +90,17 @@ function parseAnalysisSnapshot(
     }
   }
   if (documentNames.length > 0) {
-    const mock = buildMockDealDeskAnalysis(documentNames)
+    const mock = buildDemoDealDeskAnalysis(documentNames)
     if (customerName) mock.customerName = customerName
     if (winProbability != null) mock.winProbability = winProbability
     return mock
   }
-  return buildMockDealDeskAnalysis(['RFP-Paket'])
+  return buildDemoDealDeskAnalysis(['RFP-Paket'])
+}
+
+/** Kein echtes API-Ergebnis → Demo-Daten (Mock, Quota-Fallback, fehlgeschlagene Analyse). */
+function isDealDeskDemoRow(row: DealDeskProjectRow): boolean {
+  return row.analysis_source !== 'api'
 }
 
 export function rowToDealDeskProject(
@@ -88,20 +124,38 @@ export function rowToDealDeskProject(
     analysis.winProbability = row.win_probability
   }
 
-  const workspace = parseWorkspaceState(row.workspace_state, analysis.redFlags)
+  const isDemo = isDealDeskDemoRow(row)
+  const demoFlags = DEMO_SAMPLE_RED_FLAGS.map((f) => ({ ...f }))
+
+  if (isDemo) {
+    analysis.redFlags =
+      analysis.redFlags.length > 0
+        ? analysis.redFlags
+        : demoFlags
+  }
+
+  const workspace = parseWorkspaceState(
+    row.workspace_state,
+    isDemo ? demoFlags : analysis.redFlags
+  )
+
+  let redFlags = workspace.redFlags
+  if (redFlags.length === 0 && isDemo) {
+    redFlags = demoFlags
+  }
 
   return {
     id: row.id,
     projectName: row.project_name,
     analysis,
-    redFlags: workspace.redFlags,
+    redFlags,
     smeRoutes: workspace.smeRoutes,
     decision: workspace.decision,
     bidTeam: workspace.bidTeam,
     analysisStatus: row.analysis_status,
     analysisSource: row.analysis_source,
-    errorMessage: row.error_message,
-    showDemoBadge: row.analysis_status !== 'completed' || row.analysis_source === 'mock',
+    errorMessage: sanitizeProjectErrorMessage(row.analysis_status, row.error_message),
+    showDemoBadge: isDemo,
   }
 }
 

@@ -24,7 +24,8 @@ export function parseWorkspaceState(raw: unknown, fallbackRedFlags: DealDeskRedF
     return defaultWorkspaceState(fallbackRedFlags)
   }
   const o = raw as Record<string, unknown>
-  const redFlags = Array.isArray(o.redFlags) ? (o.redFlags as DealDeskRedFlag[]) : fallbackRedFlags
+  const redFlagsRaw = Array.isArray(o.redFlags) ? (o.redFlags as DealDeskRedFlag[]) : []
+  const redFlags = redFlagsRaw.length > 0 ? redFlagsRaw : fallbackRedFlags
   const smeRoutes =
     o.smeRoutes && typeof o.smeRoutes === 'object' && !Array.isArray(o.smeRoutes)
       ? (o.smeRoutes as Record<string, string>)
