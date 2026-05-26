@@ -22,6 +22,11 @@ export function winProbabilityRecommendationLabel(tone: WinProbabilityTone): str
   return 'Empfehlung: NO-BID'
 }
 
+export function winProbabilityScoreLegend(): string {
+  const { goMin, cautionMin } = WIN_PROBABILITY_THRESHOLDS
+  return `Score: ≥${goMin}% GO · ${cautionMin}–${goMin - 1}% prüfen · <${cautionMin}% NO-BID`
+}
+
 export function winProbabilityRingClass(tone: WinProbabilityTone): string {
   if (tone === 'go') return 'text-emerald-600 dark:text-emerald-400'
   if (tone === 'caution') return 'text-amber-500 dark:text-amber-400'

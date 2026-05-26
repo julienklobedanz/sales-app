@@ -250,6 +250,18 @@ export function DashboardOverview({
   const [sheetOpen, setSheetOpen] = useState(false)
   const [detailAssets, setDetailAssets] = useState<ReferenceAssetRow[]>([])
   const [detailAssetsLoading, setDetailAssetsLoading] = useState(false)
+  const [bulkImportOpen, setBulkImportOpen] = useState(false)
+  const [bulkImportGroups, setBulkImportGroups] = useState<BulkImportGroupItem[]>([])
+  const [bulkImportLoading, setBulkImportLoading] = useState(false)
+  const bulkImportDropRef = useRef<HTMLInputElement>(null)
+  const [trashOpen, setTrashOpen] = useState(false)
+  const [trashItems, setTrashItems] = useState<DeletedReferenceRow[]>([])
+  /** Papierkorb-Laden: aktuell kein Öffnen-Pfad; Dialog bleibt ohne Spinner bis Anbindung. */
+  const trashLoading = false
+  const [confirmEmptyOpen, setConfirmEmptyOpen] = useState(false)
+  const [emptyingTrash, setEmptyingTrash] = useState(false)
+  const [newRefModalOpen, setNewRefModalOpen] = useState(false)
+
   const handleReferenceSheetOpenChange = useCallback((open: boolean) => {
     setSheetOpen(open)
     if (!open) {
@@ -274,18 +286,6 @@ export function DashboardOverview({
       cancelled = true
     }
   }, [selectedRef?.id, sheetOpen])
-  const [bulkImportOpen, setBulkImportOpen] = useState(false)
-  const [bulkImportGroups, setBulkImportGroups] = useState<BulkImportGroupItem[]>([])
-  const [bulkImportLoading, setBulkImportLoading] = useState(false)
-  const bulkImportDropRef = useRef<HTMLInputElement>(null)
-
-  const [trashOpen, setTrashOpen] = useState(false)
-  const [trashItems, setTrashItems] = useState<DeletedReferenceRow[]>([])
-  /** Papierkorb-Laden: aktuell kein Öffnen-Pfad; Dialog bleibt ohne Spinner bis Anbindung. */
-  const trashLoading = false
-  const [confirmEmptyOpen, setConfirmEmptyOpen] = useState(false)
-  const [emptyingTrash, setEmptyingTrash] = useState(false)
-  const [newRefModalOpen, setNewRefModalOpen] = useState(false)
 
   async function previewBulkImportFile(file: File) {
     const formData = new FormData()

@@ -15,12 +15,11 @@ import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { createDraftReferenceFromDeskProject } from '@/app/dashboard/deal-desk/actions'
 import { ROUTES } from '@/lib/routes'
-import {
-  buildReferenceIncubatorHarvest,
-  SUCCESS_STORY_KIT,
-  type ReferenceIncubatorHarvest,
-} from '@/lib/deal-desk/reference-incubator-mock'
+import { buildHarvestFromAnalysis } from '@/lib/deal-desk/build-harvest-from-snapshot'
+import type { DealDeskMockAnalysis } from '@/lib/deal-desk/mock-analysis'
+import { SUCCESS_STORY_KIT, type ReferenceIncubatorHarvest } from '@/lib/deal-desk/reference-incubator-mock'
 import { cn } from '@/lib/utils'
 
 const HARVEST_DELAY_MS = 2000
@@ -37,9 +36,13 @@ function KitKindBadge({ kind }: { kind: 'pdf' | 'template' | 'guide' }) {
 function HarvestPreview({
   harvest,
   onReview,
+  onOpenDraft,
+  draftLoading,
 }: {
   harvest: ReferenceIncubatorHarvest
   onReview: () => void
+  onOpenDraft: () => void
+  draftLoading: boolean
 }) {
   return (
     <div className="space-y-5">
@@ -62,7 +65,9 @@ function HarvestPreview({
       <Card className="border-border/80 shadow-sm">
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Account-Vorschau (Auto-Harvest)</CardTitle>
-          <CardDescription>Metadaten simuliert via Brandfetch — Entwurf aus RFP-Kontext.</CardDescription>
+          <CardDescription>
+            Vorausgefüllt aus der Deal-Desk-Analyse (RFP, Red Flags, Referenz-Matches).
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-muted/30 p-4">
@@ -114,27 +119,58 @@ function HarvestPreview({
             </div>
           </div>
 
-          <Button type="button" className="w-full gap-2 sm:w-auto" asChild>
-            <Link href={ROUTES.evidence.root} onClick={onReview}>
-              Zur Referenz-Datenbank wechseln & Review starten
-            </Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              className="gap-2"
+              disabled={draftLoading}
+              onClick={onOpenDraft}
+            >
+              {draftLoading ? (
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+              ) : null}
+              Referenz-Entwurf öffnen
+            </Button>
+            <Button type="button" variant="outline" className="gap-2" asChild>
+              <Link href={ROUTES.evidence.root} onClick={onReview}>
+                Zur Referenz-Datenbank
+              </Link>
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
   )
 }
 
-export function ReferenceIncubatorTab({ customerName }: { customerName: string }) {
+export function ReferenceIncubatorTab({
+  projectId,
+  analysis,
+}: {
+  projectId: string
+  analysis: DealDeskMockAnalysis
+}) {
   const [phase, setPhase] = useState<'idle' | 'loading' | 'done'>('idle')
   const [harvest, setHarvest] = useState<ReferenceIncubatorHarvest | null>(null)
+  const [draftLoading, setDraftLoading] = useState(false)
+
+  async function openDraftReference() {
+    setDraftLoading(true)
+    const res = await createDraftReferenceFromDeskProject(projectId)
+    setDraftLoading(false)
+    if (!res.success) {
+      toast.error(res.error)
+      return
+    }
+    window.location.href = `${ROUTES.evidence.root}/${res.referenceId}/edit?fromDesk=${projectId}`
+  }
 
   function startHarvest() {
     setPhase('loading')
     window.setTimeout(() => {
-      setHarvest(buildReferenceIncubatorHarvest(customerName))
+      setHarvest(buildHarvestFromAnalysis(analysis))
       setPhase('done')
-      toast.success('Case Study aus RFP-Kontext vorgeschrieben (Demo).')
+      toast.success('Case Study aus der RFP-Analyse erstellt.')
     }, HARVEST_DELAY_MS)
   }
 
@@ -193,7 +229,9 @@ export function ReferenceIncubatorTab({ customerName }: { customerName: string }
         {phase === 'done' && harvest ? (
           <HarvestPreview
             harvest={harvest}
-            onReview={() => toast.success('Review in der Referenz-Datenbank (Demo).')}
+            onReview={() => toast.success('Review in der Referenz-Datenbank.')}
+            onOpenDraft={() => void openDraftReference()}
+            draftLoading={draftLoading}
           />
         ) : null}
       </div>

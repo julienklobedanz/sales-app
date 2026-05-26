@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import {
   CheckCircle2,
@@ -8,9 +8,12 @@ import {
   FileSpreadsheet,
   FileText,
   FileType,
+  Info,
   Loader2,
+  RefreshCw,
   Sparkles,
   Sprout,
+  Trash2,
   Upload,
   X,
   XCircle,
@@ -40,21 +43,35 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 import {
   BID_TEAM_ROLE_DEFS,
-  buildMockDealDeskAnalysis,
   SME_ROUTE_OPTIONS,
   type BidTeamRoleKey,
 } from '@/lib/deal-desk/mock-analysis'
-import { initialBidTeamMembers, type BidTeamMember } from '@/lib/deal-desk/bid-team'
-import { WIN_PROBABILITY_THRESHOLDS } from '@/lib/deal-desk/win-probability'
+import type { BidTeamMember } from '@/lib/deal-desk/bid-team'
+import { projectToWorkspaceState } from '@/lib/deal-desk/project-mapper'
+import {
+  defaultProjectNameFromFiles,
+  type DealDeskProject,
+} from '@/lib/deal-desk/deal-desk-project'
+import {
+  createDealDeskProjectAction,
+  deleteDealDeskProjectAction,
+  getDealDeskProject,
+  listDealDeskBidTeamMembers,
+  listDealDeskProjects,
+  logDealDeskGoAction,
+  logDealDeskNoBidAction,
+  logDealDeskSmeRouteAction,
+  removeDealDeskDocumentAction,
+  resetDealDeskDemoForOrg,
+  runDealDeskDemoAnalyzeAction,
+  updateDealDeskProjectAction,
+} from './actions'
 import { BidTeamRoleSelect } from './components/bid-team-role-select'
 import { DealDeskProjectHeader } from './components/deal-desk-project-header'
 import { RedFlagsPanel } from './components/red-flags-panel'
 import { ReferenceIncubatorTab } from './components/reference-incubator-tab'
 import { WinProbabilityGauge } from './components/win-probability-gauge'
-import {
-  createDealDeskProject,
-  type DealDeskProject,
-} from '@/lib/deal-desk/deal-desk-project'
+import { RFP_SCAN_PDF_HINT } from '@/lib/deal-desk/rfp-extraction-messages'
 
 const MAX_RFP_FILES = 10
 
@@ -89,6 +106,19 @@ function fileIcon(name: string) {
   return FileText
 }
 
+function isLikelyScanExtractionError(message: string | null | undefined): boolean {
+  if (!message) return false
+  return /scan|ocr|zu wenig|extrahierbar|durchsuchbar/i.test(message)
+}
+
+function showAnalysisErrorToast(error: string, isScanLikely?: boolean) {
+  if (isScanLikely || isLikelyScanExtractionError(error)) {
+    toast.error(error, { description: RFP_SCAN_PDF_HINT, duration: 12_000 })
+  } else {
+    toast.error(error)
+  }
+}
+
 function mergePendingFiles(existing: File[], incoming: File[]): File[] {
   const seen = new Set(existing.map((f) => `${f.name}:${f.size}`))
   const next = [...existing]
@@ -109,57 +139,233 @@ function mergePendingFiles(existing: File[], incoming: File[]): File[] {
   return next
 }
 
-export function DealDeskClient() {
+export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: boolean }) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const skipPersistRef = useRef(true)
+  const persistTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
+
   const [dragActive, setDragActive] = useState(false)
+  const [loadingDesk, setLoadingDesk] = useState(true)
   const [analyzing, setAnalyzing] = useState(false)
+  const [analyzeStatus, setAnalyzeStatus] = useState<string | null>(null)
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
   const [projects, setProjects] = useState<DealDeskProject[]>([])
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null)
   const [uploadMode, setUploadMode] = useState(false)
   const [activeTab, setActiveTab] = useState<TabKey>('decision')
-  const [teamMembers, setTeamMembers] = useState<BidTeamMember[]>(initialBidTeamMembers)
+  const [teamMembers, setTeamMembers] = useState<BidTeamMember[]>([])
   const [bidTeamOpen, setBidTeamOpen] = useState(false)
+  const [canResetDemo, setCanResetDemo] = useState(false)
 
   const activeProject =
     projects.find((p) => p.id === activeProjectId) ?? projects[projects.length - 1] ?? null
-  const analysis = activeProject?.analysis ?? null
+
+  const schedulePersist = useCallback((project: DealDeskProject) => {
+    if (skipPersistRef.current) return
+    const existing = persistTimersRef.current.get(project.id)
+    if (existing) clearTimeout(existing)
+    persistTimersRef.current.set(
+      project.id,
+      setTimeout(() => {
+        void updateDealDeskProjectAction(project.id, {
+          projectName: project.projectName,
+          workspaceState: projectToWorkspaceState(project),
+        })
+      }, 450)
+    )
+  }, [])
 
   const updateProject = useCallback(
     (id: string, updater: (project: DealDeskProject) => DealDeskProject) => {
-      setProjects((prev) => prev.map((p) => (p.id === id ? updater(p) : p)))
+      setProjects((prev) => {
+        const next = prev.map((p) => {
+          if (p.id !== id) return p
+          const updated = updater(p)
+          schedulePersist(updated)
+          return updated
+        })
+        return next
+      })
     },
-    []
+    [schedulePersist]
   )
 
-  const startAnalysis = useCallback((files: File[]) => {
-    if (files.length === 0) {
-      toast.error('Bitte mindestens ein Dokument hochladen.')
-      return
-    }
-    const valid = files.filter(isAcceptedRfpFile)
-    if (valid.length === 0) {
-      toast.error('Bitte PDF, Word (DOC/DOCX) oder Excel (XLS/XLSX) hochladen.')
-      return
-    }
-    setAnalyzing(true)
-    window.setTimeout(() => {
-      const fileNames = valid.map((f) => f.name)
-      const mock = buildMockDealDeskAnalysis(fileNames)
-      const project = createDealDeskProject(fileNames, mock)
-      setProjects((prev) => [...prev, project])
-      setActiveProjectId(project.id)
-      setPendingFiles([])
-      setUploadMode(false)
-      setActiveTab('decision')
-      setAnalyzing(false)
-      toast.success(
-        valid.length === 1
-          ? 'Bid-Analyse bereit (Demo-Daten).'
-          : `Bid-Analyse aus ${valid.length} Dokumenten bereit (Demo).`
-      )
-    }, 1400)
+  const reloadProject = useCallback(async (projectId: string) => {
+    const res = await getDealDeskProject(projectId)
+    if (!res.success) return
+    setProjects((prev) => {
+      const rest = prev.filter((p) => p.id !== projectId)
+      return [...rest, res.project]
+    })
   }, [])
+
+  useEffect(() => {
+    void (async () => {
+      setLoadingDesk(true)
+      const [listRes, teamRes] = await Promise.all([
+        listDealDeskProjects(),
+        listDealDeskBidTeamMembers(),
+      ])
+      if (listRes.success) {
+        setProjects(listRes.projects)
+        if (listRes.projects[0]) setActiveProjectId(listRes.projects[0].id)
+      } else {
+        toast.error(listRes.error)
+      }
+      if (teamRes.success) {
+        setTeamMembers(
+          teamRes.members.map((m) => ({
+            id: m.id,
+            name: m.name,
+            email: m.email ?? undefined,
+          }))
+        )
+      }
+      skipPersistRef.current = false
+      setLoadingDesk(false)
+      setCanResetDemo(
+        process.env.NEXT_PUBLIC_DEAL_DESK_DEMO === '1' ||
+          process.env.NEXT_PUBLIC_DEAL_DESK_DEMO_MODE === '1'
+      )
+
+      if (runDemoOnMount && listRes.success && listRes.projects.length === 0) {
+        const demo = await runDealDeskDemoAnalyzeAction()
+        if (demo.success) {
+          await reloadProject(demo.projectId)
+          setActiveProjectId(demo.projectId)
+          toast.success('Demo-Projekt geladen.')
+        }
+      }
+    })()
+  }, [runDemoOnMount, reloadProject])
+
+  useEffect(() => {
+    if (!activeProjectId || !activeProject) return
+    if (activeProject.analysisStatus !== 'processing') return
+
+    const interval = window.setInterval(() => {
+      void reloadProject(activeProjectId)
+    }, 2000)
+
+    return () => window.clearInterval(interval)
+  }, [activeProjectId, activeProject?.analysisStatus, reloadProject])
+
+  const startAnalysis = useCallback(
+    async (files: File[]) => {
+      if (files.length === 0) {
+        toast.error('Bitte mindestens ein Dokument hochladen.')
+        return
+      }
+      const valid = files.filter(isAcceptedRfpFile)
+      if (valid.length === 0) {
+        toast.error('Bitte PDF, Word (DOC/DOCX) oder Excel (XLS/XLSX) hochladen.')
+        return
+      }
+
+      const fileNames = valid.map((f) => f.name)
+      setAnalyzing(true)
+      setAnalyzeStatus('Projekt wird angelegt …')
+
+      const created = await createDealDeskProjectAction({
+        projectName: defaultProjectNameFromFiles(fileNames),
+        fileNames,
+      })
+      if (!created.success) {
+        toast.error(created.error)
+        setAnalyzing(false)
+        setAnalyzeStatus(null)
+        return
+      }
+
+      const formData = new FormData()
+      formData.set('projectId', created.projectId)
+      for (const file of valid) {
+        formData.append('files', file)
+      }
+
+      setAnalyzeStatus(
+        valid.length > 1
+          ? `${valid.length} Dokumente werden analysiert …`
+          : 'RFP wird analysiert …'
+      )
+
+      try {
+        const res = await fetch('/api/deal-desk/analyze', { method: 'POST', body: formData })
+        const json = (await res.json()) as {
+          success?: boolean
+          error?: string
+          source?: string
+          isScanLikely?: boolean
+        }
+
+        if (!res.ok || !json.success) {
+          showAnalysisErrorToast(json.error ?? 'Analyse fehlgeschlagen.', json.isScanLikely)
+          await reloadProject(created.projectId)
+          setActiveProjectId(created.projectId)
+          return
+        }
+
+        await reloadProject(created.projectId)
+        setActiveProjectId(created.projectId)
+        setPendingFiles([])
+        setUploadMode(false)
+        setActiveTab('decision')
+        toast.success(
+          json.source === 'mock'
+            ? 'Bid-Analyse bereit (Fallback-Demo).'
+            : valid.length === 1
+              ? 'Bid-Analyse abgeschlossen.'
+              : `Bid-Analyse aus ${valid.length} Dokumenten abgeschlossen.`
+        )
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Netzwerkfehler.')
+      } finally {
+        setAnalyzing(false)
+        setAnalyzeStatus(null)
+      }
+    },
+    [reloadProject]
+  )
+
+  const rerunAnalysis = useCallback(
+    async (projectId: string) => {
+      setAnalyzing(true)
+      setAnalyzeStatus('Gespeicherte Dokumente werden erneut ausgewertet …')
+      try {
+        const formData = new FormData()
+        formData.set('projectId', projectId)
+        formData.set('reRun', '1')
+
+        const res = await fetch('/api/deal-desk/analyze', { method: 'POST', body: formData })
+        const json = (await res.json()) as {
+          success?: boolean
+          error?: string
+          source?: string
+          isScanLikely?: boolean
+        }
+
+        if (!res.ok || !json.success) {
+          showAnalysisErrorToast(json.error ?? 'Erneute Analyse fehlgeschlagen.', json.isScanLikely)
+          await reloadProject(projectId)
+          return
+        }
+
+        await reloadProject(projectId)
+        setActiveTab('decision')
+        toast.success(
+          json.source === 'mock'
+            ? 'Analyse aktualisiert (Fallback-Demo).'
+            : 'Analyse erneut abgeschlossen.'
+        )
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Netzwerkfehler.')
+      } finally {
+        setAnalyzing(false)
+        setAnalyzeStatus(null)
+      }
+    },
+    [reloadProject]
+  )
 
   function onFilesPick(fileList: FileList | null | undefined) {
     if (!fileList?.length) return
@@ -182,7 +388,12 @@ export function DealDeskClient() {
     setUploadMode(false)
   }
 
-  function deleteProject(id: string) {
+  async function deleteProject(id: string) {
+    const res = await deleteDealDeskProjectAction(id)
+    if (!res.success) {
+      toast.error(res.error)
+      return
+    }
     setProjects((prev) => {
       const next = prev.filter((p) => p.id !== id)
       if (next.length === 0) {
@@ -202,20 +413,30 @@ export function DealDeskClient() {
     updateProject(id, (p) => ({ ...p, projectName: name }))
   }
 
-  function removeProjectDocument(projectId: string, fileName: string) {
-    updateProject(projectId, (p) => {
-      const documentNames = p.analysis.documentNames.filter((n) => n !== fileName)
-      if (documentNames.length === 0) return p
-      return {
-        ...p,
-        analysis: {
-          ...p.analysis,
-          documentNames,
-          documentName: documentNames[0]!,
-        },
-      }
-    })
+  async function removeProjectDocument(projectId: string, fileName: string) {
+    const res = await removeDealDeskDocumentAction(projectId, fileName)
+    if (!res.success) {
+      toast.error(res.error)
+      return
+    }
+    await reloadProject(projectId)
     toast.success('Dokument aus dem Projekt entfernt.')
+  }
+
+  async function handleResetDemo() {
+    const res = await resetDealDeskDemoForOrg()
+    if (!res.success) {
+      toast.error(res.error)
+      return
+    }
+    skipPersistRef.current = true
+    const listRes = await listDealDeskProjects()
+    if (listRes.success) {
+      setProjects(listRes.projects)
+      setActiveProjectId(listRes.projects[0]?.id ?? null)
+    }
+    skipPersistRef.current = false
+    toast.success('Deal Desk Demo zurückgesetzt.')
   }
 
   function assignBidRole(role: BidTeamRoleKey, member: BidTeamMember) {
@@ -280,12 +501,13 @@ export function DealDeskClient() {
             <>
               <Loader2 className="size-10 animate-spin text-blue-600" aria-hidden />
               <p className="mt-4 text-sm font-medium text-foreground">
-                {pendingFiles.length > 1
-                  ? `${pendingFiles.length} Dokumente werden analysiert …`
-                  : 'RFP wird analysiert …'}
+                {analyzeStatus ??
+                  (pendingFiles.length > 1
+                    ? `${pendingFiles.length} Dokumente werden analysiert …`
+                    : 'RFP wird analysiert …')}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Red Flags, Eignungsmatrizen und Referenz-Matches über alle Unterlagen
+                Extraktion, Anforderungen und Referenz-Matching
               </p>
             </>
           ) : (
@@ -356,7 +578,7 @@ export function DealDeskClient() {
                   )
                 })}
               </ul>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap items-center justify-center gap-2">
                 <Button
                   type="button"
                   className="gap-2"
@@ -371,11 +593,13 @@ export function DealDeskClient() {
                 <Button
                   type="button"
                   variant="outline"
+                  className="gap-2"
                   onClick={(e) => {
                     e.stopPropagation()
                     setPendingFiles([])
                   }}
                 >
+                  <Trash2 className="size-4" aria-hidden />
                   Liste leeren
                 </Button>
               </div>
@@ -383,20 +607,37 @@ export function DealDeskClient() {
           </Card>
         ) : null}
 
+        <div className="flex gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-left text-xs text-muted-foreground">
+          <Info className="mt-0.5 size-4 shrink-0 text-blue-600" aria-hidden />
+          <p>
+            <span className="font-medium text-foreground">Scan-PDFs:</span> {RFP_SCAN_PDF_HINT}
+          </p>
+        </div>
+
         <p className="text-center text-xs text-muted-foreground">
-          Demo-Modus: Nach Start werden Beispieldaten aus allen hochgeladenen Dateien geladen.
+          PDF, Word (DOCX) und Excel werden ausgelesen — echte Anforderungen, Red Flags und Referenz-Matches
+          (OPENAI_API_KEY erforderlich).
         </p>
     </>
   )
+
+  if (loadingDesk) {
+    return (
+      <div className={cn(DESK_LAYOUT_CLASS, 'flex min-h-[320px] items-center justify-center')}>
+        <Loader2 className="size-8 animate-spin text-muted-foreground" aria-hidden />
+      </div>
+    )
+  }
 
   if (projects.length === 0) {
     return <div className={DESK_LAYOUT_CLASS}>{uploadZone}</div>
   }
 
-  if (!activeProject) {
+  if (!activeProject?.analysis) {
     return null
   }
 
+  const analysis = activeProject.analysis
   const redFlags = activeProject.redFlags
   const smeRoutes = activeProject.smeRoutes
   const decision = activeProject.decision
@@ -407,13 +648,46 @@ export function DealDeskClient() {
       <DealDeskProjectHeader
         projects={projects}
         activeProject={activeProject}
+        showDemoBadge={
+          activeProject.showDemoBadge || process.env.NEXT_PUBLIC_DEAL_DESK_DEMO === '1'
+        }
+        canResetDemo={canResetDemo}
+        onResetDemo={handleResetDemo}
         onSelectProject={selectProject}
-        onDeleteProject={deleteProject}
+        onDeleteProject={(id) => void deleteProject(id)}
         onRenameProject={renameProject}
-        onRemoveDocument={removeProjectDocument}
+        onRemoveDocument={(projectId, fileName) => void removeProjectDocument(projectId, fileName)}
         onNewRfp={openNewRfpUpload}
+        onReanalyze={() => void rerunAnalysis(activeProject.id)}
+        reanalyzing={analyzing}
+        canReanalyze={activeProject.analysis.documentNames.length > 0}
         fileIcon={fileIcon}
       />
+
+      {activeProject.analysisStatus === 'failed' && activeProject.errorMessage ? (
+        <div className="rounded-xl border border-destructive/40 bg-destructive/5 px-4 py-3">
+          <p className="text-sm font-medium text-destructive">Letzte Analyse fehlgeschlagen</p>
+          <p className="mt-1 text-sm text-muted-foreground">{activeProject.errorMessage}</p>
+          {isLikelyScanExtractionError(activeProject.errorMessage) ? (
+            <p className="mt-2 text-xs text-muted-foreground">{RFP_SCAN_PDF_HINT}</p>
+          ) : null}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="mt-3 gap-1.5"
+            disabled={analyzing}
+            onClick={() => void rerunAnalysis(activeProject.id)}
+          >
+            {analyzing ? (
+              <Loader2 className="size-3.5 animate-spin" aria-hidden />
+            ) : (
+              <RefreshCw className="size-3.5" aria-hidden />
+            )}
+            Analyse erneut starten
+          </Button>
+        </div>
+      ) : null}
 
       {uploadMode ? <div className="space-y-4">{uploadZone}</div> : null}
 
@@ -455,17 +729,13 @@ export function DealDeskClient() {
                       {analysis.icpFitLabel}
                     </Badge>
                     <p className="text-sm leading-relaxed text-foreground/90">{analysis.icpSummary}</p>
-                    <p className="text-[11px] text-muted-foreground">
-                      Score: ≥{WIN_PROBABILITY_THRESHOLDS.goMin}% GO · {WIN_PROBABILITY_THRESHOLDS.cautionMin}–
-                      {WIN_PROBABILITY_THRESHOLDS.goMin - 1}% prüfen · &lt;{WIN_PROBABILITY_THRESHOLDS.cautionMin}%
-                      NO-BID
-                    </p>
                   </div>
                 </CardContent>
               </Card>
 
               <RedFlagsPanel
                 flags={redFlags}
+                projectId={activeProject.id}
                 onFlagsChange={(flags) =>
                   updateProject(activeProject.id, (p) => ({ ...p, redFlags: flags }))
                 }
@@ -539,8 +809,9 @@ export function DealDeskClient() {
                           size="sm"
                           onClick={() => {
                             updateProject(activeProject.id, (p) => ({ ...p, decision: 'go' }))
+                            void logDealDeskGoAction(activeProject.id)
                             setBidTeamOpen(false)
-                            toast.success('Bid-Team gespeichert (Demo).')
+                            toast.success('Bid-Team gespeichert.')
                           }}
                         >
                           Team bestätigen
@@ -554,7 +825,8 @@ export function DealDeskClient() {
                       className="h-12 w-full gap-2 border-red-200 text-red-800 hover:bg-red-50 dark:border-red-900 dark:text-red-200 dark:hover:bg-red-950/40"
                       onClick={() => {
                         updateProject(activeProject.id, (p) => ({ ...p, decision: 'no-bid' }))
-                        toast.message('NO-BID dokumentiert (Demo).')
+                        void logDealDeskNoBidAction(activeProject.id)
+                        toast.message('NO-BID dokumentiert.')
                       }}
                     >
                       <XCircle className="size-5" />
@@ -667,12 +939,16 @@ export function DealDeskClient() {
                     </div>
                     <Select
                       value={smeRoutes[task.id] ?? ''}
-                      onValueChange={(v) =>
+                      onValueChange={(v) => {
                         updateProject(activeProject.id, (p) => ({
                           ...p,
                           smeRoutes: { ...p.smeRoutes, [task.id]: v },
                         }))
-                      }
+                        void logDealDeskSmeRouteAction(activeProject.id, {
+                          taskId: task.id,
+                          route: v,
+                        })
+                      }}
                     >
                       <SelectTrigger className="h-9 w-full shrink-0 text-xs md:w-[220px]">
                         <SelectValue placeholder="Weiterleiten …" />
@@ -692,7 +968,7 @@ export function DealDeskClient() {
           </TabsContent>
 
           <TabsContent value="incubator" forceMount className={TAB_PANEL_CLASS}>
-            <ReferenceIncubatorTab customerName={analysis.customerName} />
+            <ReferenceIncubatorTab projectId={activeProject.id} analysis={analysis} />
           </TabsContent>
         </div>
       </Tabs>

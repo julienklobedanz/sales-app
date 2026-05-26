@@ -1,6 +1,8 @@
 import type { DealDeskMockAnalysis, DealDeskRedFlag } from '@/lib/deal-desk/mock-analysis'
 import { DEFAULT_BID_TEAM, type BidTeamAssignment } from '@/lib/deal-desk/mock-analysis'
 
+export type DealDeskAnalysisStatus = 'pending' | 'processing' | 'completed' | 'failed'
+
 export type DealDeskProject = {
   id: string
   projectName: string
@@ -9,6 +11,10 @@ export type DealDeskProject = {
   smeRoutes: Record<string, string>
   decision: 'go' | 'no-bid' | null
   bidTeam: BidTeamAssignment[]
+  analysisStatus: DealDeskAnalysisStatus
+  analysisSource: string | null
+  errorMessage: string | null
+  showDemoBadge: boolean
 }
 
 export function stripFileExtension(fileName: string): string {
@@ -22,14 +28,22 @@ export function defaultProjectNameFromFiles(fileNames: string[]): string {
   return stripFileExtension(fileNames[0]!)
 }
 
-export function createDealDeskProject(fileNames: string[], analysis: DealDeskMockAnalysis): DealDeskProject {
+export function createDealDeskProject(
+  fileNames: string[],
+  analysis: DealDeskMockAnalysis,
+  opts?: { id?: string; analysisStatus?: DealDeskAnalysisStatus; analysisSource?: string | null }
+): DealDeskProject {
   return {
-    id: crypto.randomUUID(),
+    id: opts?.id ?? crypto.randomUUID(),
     projectName: defaultProjectNameFromFiles(fileNames),
     analysis,
     redFlags: analysis.redFlags.map((f) => ({ ...f })),
     smeRoutes: {},
     decision: null,
     bidTeam: DEFAULT_BID_TEAM.map((b) => ({ ...b })),
+    analysisStatus: opts?.analysisStatus ?? 'completed',
+    analysisSource: opts?.analysisSource ?? 'mock',
+    errorMessage: null,
+    showDemoBadge: opts?.analysisSource !== 'api',
   }
 }

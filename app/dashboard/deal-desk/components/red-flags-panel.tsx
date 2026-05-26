@@ -6,10 +6,11 @@ import { toast } from 'sonner'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { logDealDeskLegalSendAction } from '@/app/dashboard/deal-desk/actions'
 import { isValidBidTeamEmail } from '@/lib/deal-desk/bid-team'
 import type { DealDeskRedFlag } from '@/lib/deal-desk/mock-analysis'
 import { cn } from '@/lib/utils'
@@ -37,11 +38,12 @@ function severityStyles(severity: DealDeskRedFlag['severity']) {
 
 type Props = {
   flags: DealDeskRedFlag[]
+  projectId: string
   onFlagsChange: (flags: DealDeskRedFlag[]) => void
   className?: string
 }
 
-export function RedFlagsPanel({ flags, onFlagsChange, className }: Props) {
+export function RedFlagsPanel({ flags, projectId, onFlagsChange, className }: Props) {
   const [legalSendOpen, setLegalSendOpen] = useState(false)
   const [legalEmail, setLegalEmail] = useState('')
 
@@ -65,15 +67,19 @@ export function RedFlagsPanel({ flags, onFlagsChange, className }: Props) {
       return
     }
     setLegalSendOpen(false)
+    void logDealDeskLegalSendAction(projectId, {
+      flagIds: flags.filter((f) => f.markedForLegal).map((f) => f.id),
+      emailDomain: email,
+    })
     toast.success(
-      `${markedCount} markierte Red Flag${markedCount === 1 ? '' : 's'} an ${email} gesendet (Demo).`
+      `${markedCount} markierte Red Flag${markedCount === 1 ? '' : 's'} an ${email} weitergeleitet.`
     )
   }
 
   return (
     <Card className={cn('w-full shadow-sm', className)}>
       <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 pb-3">
-        <div className="min-w-0 flex-1 space-y-1.5">
+        <div className="min-w-0 flex-1">
           <CardTitle className="flex items-center gap-2 text-base">
             <ShieldAlert className="size-4 shrink-0 text-amber-600" />
             Red Flags
@@ -83,14 +89,6 @@ export function RedFlagsPanel({ flags, onFlagsChange, className }: Props) {
               </Badge>
             ) : null}
           </CardTitle>
-          <CardDescription>
-            Risikopassagen aus allen Unterlagen — Grundlage für Ihre Go/No-Bid-Entscheidung.
-            {scrollable ? (
-              <span className="mt-1 block text-[11px]">
-                Es werden maximal {RED_FLAGS_MAX_VISIBLE} Einträge angezeigt — weiter scrollen.
-              </span>
-            ) : null}
-          </CardDescription>
         </div>
         <Popover open={legalSendOpen} onOpenChange={setLegalSendOpen}>
           <PopoverTrigger asChild>

@@ -1,0 +1,175 @@
+import 'server-only'
+
+import type { SupabaseClient } from '@supabase/supabase-js'
+
+import type { DealDeskMockAnalysis, DealDeskSmeTask } from '@/lib/deal-desk/mock-analysis'
+import type { DealDeskRiskAnalysisResult } from '@/lib/deal-desk/deal-desk-risk-analysis'
+import type { RfpCoverageRow } from '@/lib/rfp-coverage'
+import type { ExtractedRfpRequirement } from '@/lib/rfp-requirements'
+import { generateDealDeskAnswerForRequirement } from '@/lib/deal-desk/generate-desk-answer'
+
+export const DESK_COVER_THRESHOLD = 0.55
+
+const SME_CATEGORIES = new Set(['legal', 'compliance', 'pricing', 'finance', 'security'])
+
+function computeCoverageWinPercent(coverage: RfpCoverageRow[]): number {
+  if (!coverage.length) return 40
+  const covered = coverage.filter((row) => {
+    const best = row.matches[0]
+    return best && best.similarity >= DESK_COVER_THRESHOLD && !row.embedError
+  }).length
+  return Math.round((covered / coverage.length) * 100)
+}
+
+function blendWinProbability(coveragePct: number, riskWin: number): number {
+  return Math.min(100, Math.max(0, Math.round(coveragePct * 0.55 + riskWin * 0.45)))
+}
+
+function buildSmeTasks(
+  coverage: RfpCoverageRow[],
+  requirements: ExtractedRfpRequirement[]
+): DealDeskSmeTask[] {
+  const tasks: DealDeskSmeTask[] = []
+  let n = 0
+  for (const row of coverage) {
+    const best = row.matches[0]
+    const hasMatch = best && best.similarity >= DESK_COVER_THRESHOLD
+    const cat = (row.category ?? '').toLowerCase()
+    if (!hasMatch || SME_CATEGORIES.has(cat)) {
+      tasks.push({
+        id: `sme-${row.requirementId}`,
+        question: hasMatch
+          ? `${row.requirementText.slice(0, 200)} — fachliche Klärung (${row.category ?? 'Allgemein'})`
+          : `Keine interne Referenz: ${row.requirementText.slice(0, 180)}`,
+        category: row.category ?? 'Allgemein',
+        dueInDays: 3 + (n % 5),
+      })
+      n++
+    }
+  }
+  for (const req of requirements) {
+    if (tasks.length >= 8) break
+    if (!coverage.some((c) => c.requirementId === req.id)) {
+      tasks.push({
+        id: `sme-${req.id}`,
+        question: req.text.slice(0, 220),
+        category: req.category ?? 'Allgemein',
+        dueInDays: 5,
+      })
+    }
+  }
+  return tasks.slice(0, 8)
+}
+
+async function enrichLogoUrls(
+  supabase: SupabaseClient,
+  coverage: RfpCoverageRow[]
+): Promise<Map<string, string | null>> {
+  const ids = new Set<string>()
+  for (const row of coverage) {
+    const best = row.matches[0]
+    if (best?.id) ids.add(best.id)
+  }
+  if (ids.size === 0) return new Map()
+
+  const { data } = await supabase
+    .from('references')
+    .select('id, company_id, companies ( logo_url )')
+    .in('id', Array.from(ids))
+
+  const map = new Map<string, string | null>()
+  for (const row of data ?? []) {
+    const companies = row.companies as { logo_url?: string | null } | { logo_url?: string | null }[] | null
+    const logo =
+      companies && !Array.isArray(companies)
+        ? companies.logo_url
+        : Array.isArray(companies)
+          ? companies[0]?.logo_url
+          : null
+    map.set(row.id as string, logo?.trim() ? logo : null)
+  }
+  return map
+}
+
+export async function mapRfpAnalysisToDealDeskSnapshot(params: {
+  apiKey: string | null
+  projectName: string
+  fileNames: string[]
+  requirements: ExtractedRfpRequirement[]
+  coverage: RfpCoverageRow[]
+  risk: DealDeskRiskAnalysisResult
+  supabase: SupabaseClient
+}): Promise<DealDeskMockAnalysis> {
+  const { apiKey, projectName, fileNames, requirements, coverage, risk, supabase } = params
+  const primary = fileNames[0] ?? 'RFP-Paket'
+  const docLabel =
+    fileNames.length === 1
+      ? primary
+      : `${primary} + ${fileNames.length - 1} weitere`
+
+  const logoByRef = await enrichLogoUrls(supabase, coverage)
+  const coveragePct = computeCoverageWinPercent(coverage)
+  const winProbability = blendWinProbability(coveragePct, risk.winProbability)
+
+  const draftRows = await Promise.all(
+    coverage.map(async (row) => {
+      const best = row.matches[0]
+      const hasMatch = best && best.similarity >= DESK_COVER_THRESHOLD && !row.embedError
+
+      if (!hasMatch) {
+        return {
+          id: row.requirementId,
+          requirement: row.requirementText,
+          answer: null as string | null,
+        }
+      }
+
+      let answer: string | null = null
+      if (apiKey) {
+        const generated = await generateDealDeskAnswerForRequirement(apiKey, {
+          projectName,
+          requirementText: row.requirementText,
+          referenceTitle: best.title,
+          companyName: best.companyName,
+          matchPercent: Math.round(best.similarity * 100),
+        })
+        if ('text' in generated) answer = generated.text
+      }
+
+      return {
+        id: row.requirementId,
+        requirement: row.requirementText,
+        answer,
+        reference: {
+          title: best.title,
+          companyName: best.companyName ?? 'Referenz',
+          logoUrl: logoByRef.get(best.id) ?? null,
+          matchPercent: Math.round(best.similarity * 100),
+        },
+      }
+    })
+  )
+
+  const smeTasks = buildSmeTasks(coverage, requirements)
+
+  const matchedRows = draftRows.filter((r) => r.reference).length
+  const icpSummary = [
+    risk.icpSummary,
+    `${requirements.length} Anforderungen aus den Unterlagen extrahiert`,
+    matchedRows > 0
+      ? `, ${matchedRows} mit interner Referenz abgedeckt (≥${Math.round(DESK_COVER_THRESHOLD * 100)} % Match).`
+      : '. Noch keine Referenz-Matches — Antworten und SME-Routing prüfen.',
+  ].join('')
+
+  return {
+    documentName: docLabel,
+    documentNames: fileNames,
+    customerName: risk.customerName,
+    winProbability,
+    icpFitLabel: risk.icpFitLabel,
+    icpSummary,
+    redFlags: risk.redFlags,
+    draftRows,
+    smeTasks,
+  }
+}

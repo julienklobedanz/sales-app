@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ArrowLeftIcon } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
+import { buildReferencePrefillFromAnalysis } from '@/lib/deal-desk/build-harvest-from-snapshot'
+import type { DealDeskMockAnalysis } from '@/lib/deal-desk/mock-analysis'
 import { ReferenceForm } from '../../new/reference-form'
 import type { ReferenceFormInitialData } from '../../new/reference-form'
 import { DASHBOARD_PAGE_SUBTITLE_CLASS, DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
@@ -13,10 +15,14 @@ export const maxDuration = 180
 
 export default async function EditReferencePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ fromDesk?: string }>
 }) {
   const { id } = await params
+  const sp = await searchParams
+  const fromDeskId = typeof sp.fromDesk === 'string' ? sp.fromDesk.trim() : ''
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect(ROUTES.login)
@@ -28,7 +34,7 @@ export default async function EditReferencePage({
     .single()
   if (!me) redirect(ROUTES.onboarding)
   const role = (me as { role?: 'admin' | 'sales' | 'account_manager' }).role ?? 'sales'
-  if (role === 'sales') redirect(ROUTES.evidence.detail(id))
+  if (role === 'sales' && !fromDeskId) redirect(ROUTES.evidence.detail(id))
 
   // 1. Referenz laden (mit contact_id)
   const { data: row, error } = await supabase
@@ -128,6 +134,31 @@ export default async function EditReferencePage({
     project_end: row.project_end ?? null,
   }
 
+  if (fromDeskId && profile?.organization_id) {
+    const { data: deskRow } = await supabase
+      .from('deal_desk_projects')
+      .select('project_name, analysis_snapshot')
+      .eq('id', fromDeskId)
+      .eq('organization_id', profile.organization_id)
+      .maybeSingle()
+
+    if (deskRow?.analysis_snapshot && typeof deskRow.analysis_snapshot === 'object') {
+      const deskAnalysis = deskRow.analysis_snapshot as DealDeskMockAnalysis
+      const deskPrefill = buildReferencePrefillFromAnalysis(
+        deskAnalysis,
+        (deskRow.project_name as string) || 'Deal Desk'
+      )
+      initialData.customer_challenge =
+        initialData.customer_challenge?.trim() || deskPrefill.customer_challenge
+      initialData.our_solution = initialData.our_solution?.trim() || deskPrefill.our_solution
+      initialData.summary = initialData.summary?.trim() || deskPrefill.summary
+      initialData.industry = initialData.industry?.trim() || deskPrefill.industry
+      if (!initialData.title?.trim() || initialData.title.includes('Deal Desk')) {
+        initialData.title = deskPrefill.title
+      }
+    }
+  }
+
   return (
     <div className="min-h-screen bg-muted/10 p-4 md:p-6">
       <div className="mx-auto max-w-3xl space-y-6">
@@ -140,7 +171,9 @@ export default async function EditReferencePage({
         <div className="space-y-1">
           <h1 className={DASHBOARD_PAGE_TITLE_CLASS}>Referenz bearbeiten</h1>
           <p className={DASHBOARD_PAGE_SUBTITLE_CLASS}>
-            Prüfe die Felder und speichere deine Änderungen.
+            {fromDeskId
+              ? 'Felder aus dem Deal Desk (RFP-Analyse) — bitte prüfen und speichern.'
+              : 'Prüfe die Felder und speichere deine Änderungen.'}
           </p>
         </div>
         <ReferenceForm

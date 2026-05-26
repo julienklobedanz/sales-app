@@ -1,9 +1,18 @@
 'use client'
 
+import { Info } from 'lucide-react'
+
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import {
   winProbabilityRecommendationLabel,
   winProbabilityRingClass,
+  winProbabilityScoreLegend,
   winProbabilityTone,
   winProbabilityValueClass,
 } from '@/lib/deal-desk/win-probability'
@@ -74,14 +83,30 @@ export function WinProbabilityGauge({
         </div>
       </div>
       {showRecommendation ? (
-        <p
-          className={cn(
-            'mt-2 text-center text-[11px] font-semibold',
-            winProbabilityValueClass(tone)
-          )}
-        >
-          {winProbabilityRecommendationLabel(tone)}
-        </p>
+        <TooltipProvider delayDuration={200}>
+          <div
+            className={cn(
+              'mt-2 flex items-center justify-center gap-1 text-[11px] font-semibold',
+              winProbabilityValueClass(tone)
+            )}
+          >
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex size-4 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
+                  aria-label="Score-Schwellenwerte anzeigen"
+                >
+                  <Info className="size-3.5" aria-hidden />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[240px] text-xs">
+                {winProbabilityScoreLegend()}
+              </TooltipContent>
+            </Tooltip>
+            <span>{winProbabilityRecommendationLabel(tone)}</span>
+          </div>
+        </TooltipProvider>
       ) : null}
     </div>
   )

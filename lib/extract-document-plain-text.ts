@@ -4,9 +4,12 @@
  */
 import 'server-only'
 
+import { RFP_LOW_TEXT_ERROR } from '@/lib/deal-desk/rfp-extraction-messages'
 import { extractPdfPlainText } from '@/lib/pdf-text-extract'
 
 const MAX_BYTES = 4.5 * 1024 * 1024
+
+export { RFP_LOW_TEXT_ERROR, RFP_SCAN_PDF_HINT } from '@/lib/deal-desk/rfp-extraction-messages'
 
 async function extractTextFromPdf(buffer: Buffer): Promise<string> {
   return extractPdfPlainText(buffer)
@@ -24,7 +27,7 @@ async function extractTextFromDocx(buffer: Buffer): Promise<string> {
 
 export type ExtractPlainTextResult =
   | { ok: true; text: string }
-  | { ok: false; error: string }
+  | { ok: false; error: string; isScanLikely?: boolean }
 
 /**
  * PDF oder DOCX → Klartext (Ausschnitt für RFP reicht oft mit Limit).
@@ -64,11 +67,7 @@ export async function extractPlainTextFromFile(
 
     const t = text.trim()
     if (t.length < 40) {
-      return {
-        ok: false,
-        error:
-          'Zu wenig erkennbarer Text (evtl. Scan-PDF). Bitte durchsuchbares PDF/DOCX verwenden.',
-      }
+      return { ok: false, error: RFP_LOW_TEXT_ERROR, isScanLikely: true }
     }
     return { ok: true, text: t.slice(0, maxChars) }
   } catch {
