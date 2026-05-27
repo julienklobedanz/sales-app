@@ -71,6 +71,7 @@ import {
   runDealDeskDemoAnalyzeAction,
   updateDealDeskProjectAction,
 } from './actions'
+import { BidTimelineCard } from './components/bid-timeline-card'
 import { DealDeskProjectHeader } from './components/deal-desk-project-header'
 import { RedFlagsPanel } from './components/red-flags-panel'
 import { ReferenceIncubatorTab } from './components/reference-incubator-tab'
@@ -861,71 +862,13 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
                 className={TAB_CARD_CLASS}
               />
 
-              {(() => {
-                const timelineItems = analysis.timelineItems ?? []
-                const sortedItems = [...timelineItems]
-                  .filter((it) => typeof it?.dueDate === 'string' && it.dueDate.length >= 10)
-                  .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
-
-                const MS_DAY = 24 * 60 * 60 * 1000
-                const now = new Date()
-                now.setHours(0, 0, 0, 0)
-
-                function formatDateDe(iso: string) {
-                  const d = new Date(iso)
-                  const dd = String(d.getDate()).padStart(2, '0')
-                  const mm = String(d.getMonth() + 1).padStart(2, '0')
-                  const yyyy = d.getFullYear()
-                  return `${dd}.${mm}.${yyyy}`
-                }
-
-                function daysUntil(iso: string) {
-                  const d = new Date(iso)
-                  d.setHours(0, 0, 0, 0)
-                  return Math.round((d.getTime() - now.getTime()) / MS_DAY)
-                }
-
-                return (
-                  <Card className={TAB_CARD_CLASS}>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Bid-Timeline / Fristen</CardTitle>
-                      <CardDescription>
-                        Aus dem RFP extrahierte Deadlines (Datum + Countdown).
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {sortedItems.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">
-                          Keine konkreten Fristen/Deadlines im Dokument erkannt.
-                        </p>
-                      ) : (
-                        <div className="space-y-2">
-                          {sortedItems.map((it, idx) => (
-                            <div
-                              key={`${it.id}-${idx}`}
-                              className="flex items-start gap-3 rounded-xl border border-border bg-muted/30 px-4 py-3"
-                            >
-                              <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-background">
-                                <Clock className="size-4 text-muted-foreground" aria-hidden />
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <p className="text-sm font-medium text-foreground">
-                                  {formatDateDe(it.dueDate)} ({daysUntil(it.dueDate)} Tage): {it.title}
-                                </p>
-                                {it.evidence ? (
-                                  <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                                    Beleg: {it.evidence}
-                                  </p>
-                                ) : null}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                )
-              })()}
+              <BidTimelineCard
+                className={TAB_CARD_CLASS}
+                timelineItems={analysis.timelineItems ?? []}
+                customerName={analysis.customerName}
+                rfpTitle={activeProject.projectName || 'RFP'}
+                projectId={activeProject.id}
+              />
 
               {(() => {
                 const draftRows = analysis.draftRows ?? []
