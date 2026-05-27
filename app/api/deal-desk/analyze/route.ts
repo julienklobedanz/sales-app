@@ -76,6 +76,10 @@ export async function POST(req: NextRequest) {
     formData.get('reRun') === '1' ||
     formData.get('reRun') === 'true' ||
     formData.get('reRun') === 'yes'
+  const append =
+    formData.get('append') === '1' ||
+    formData.get('append') === 'true' ||
+    formData.get('append') === 'yes'
 
   const { data: project, error: projectErr } = await supabase
     .from('deal_desk_projects')
@@ -88,7 +92,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: 'Projekt nicht gefunden.' }, { status: 404 })
   }
 
-  const uploadedFiles = formData.getAll('files').filter((f): f is File => f instanceof File && f.size > 0)
+  let uploadedFiles = formData.getAll('files').filter((f): f is File => f instanceof File && f.size > 0)
+  let forceReRunAllDocs = reRun
 
   await supabase
     .from('deal_desk_projects')
@@ -104,6 +109,81 @@ export async function POST(req: NextRequest) {
       { success: false, error: message, ...extra },
       { status }
     )
+  }
+
+  if (append) {
+    if (uploadedFiles.length === 0) {
+      return NextResponse.json({ success: false, error: 'Keine Dateien zum Hinzufügen.' }, { status: 400 })
+    }
+
+    const { count: existingCount, error: countErr } = await supabase
+      .from('deal_desk_documents')
+      .select('id', { count: 'exact', head: true })
+      .eq('project_id', projectId)
+      .eq('organization_id', orgId)
+
+    if (countErr) {
+      return fail(countErr.message)
+    }
+
+    const total = (existingCount ?? 0) + uploadedFiles.length
+    if (total > MAX_FILES) {
+      return fail(
+        `Maximal ${MAX_FILES} Dokumente pro Projekt (aktuell ${existingCount ?? 0}, +${uploadedFiles.length} neu).`,
+        400
+      )
+    }
+
+    const sortStart = existingCount ?? 0
+    for (let i = 0; i < uploadedFiles.length; i++) {
+      const file = uploadedFiles[i]!
+
+      const { data: docRow, error: docErr } = await supabase
+        .from('deal_desk_documents')
+        .insert({
+          project_id: projectId,
+          organization_id: orgId,
+          file_name: file.name,
+          mime_type: file.type || null,
+          size_bytes: file.size,
+          extract_status: 'pending',
+          sort_order: sortStart + i,
+        })
+        .select('id')
+        .single()
+
+      if (docErr || !docRow?.id) {
+        return fail(docErr?.message ?? 'Dokument-Metadaten fehlgeschlagen.')
+      }
+
+      const docId = docRow.id as string
+      const safeName = sanitizeFileName(file.name)
+      const storagePath = `${orgId}/deal-desk/${projectId}/${docId}/${safeName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('rfp-documents')
+        .upload(storagePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: file.type || undefined,
+        })
+
+      if (uploadError) {
+        await supabase
+          .from('deal_desk_documents')
+          .update({ extract_status: 'failed' })
+          .eq('id', docId)
+        return fail(`Upload fehlgeschlagen: ${uploadError.message}`)
+      }
+
+      await supabase
+        .from('deal_desk_documents')
+        .update({ storage_path: storagePath })
+        .eq('id', docId)
+    }
+
+    uploadedFiles = []
+    forceReRunAllDocs = true
   }
 
   const fileNames: string[] = []
@@ -188,7 +268,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  if (reRun && uploadedFiles.length === 0) {
+  if (forceReRunAllDocs && uploadedFiles.length === 0) {
     const { data: storedDocs, error: docsErr } = await supabase
       .from('deal_desk_documents')
       .select('id, file_name, storage_path, mime_type')

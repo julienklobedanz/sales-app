@@ -1,0 +1,80 @@
+import type { DealDeskMockAnalysis } from '@/lib/deal-desk/mock-analysis'
+import { winProbabilityTone } from '@/lib/deal-desk/win-probability'
+
+export type HeroKeyTakeaway = {
+  icon: string
+  text: string
+}
+
+export function buildHeroKeyTakeaways(
+  analysis: Pick<
+    DealDeskMockAnalysis,
+    'winProbability' | 'icpFitLabel' | 'draftRows' | 'redFlags'
+  >
+): HeroKeyTakeaway[] {
+  const matched = (analysis.draftRows ?? []).filter((r) => r.reference).length
+  const flags = analysis.redFlags ?? []
+  const criticalHigh = flags.filter(
+    (f) => f.severity === 'critical' || f.severity === 'high'
+  )
+  const slaOrContractRisk = criticalHigh.find((f) =>
+    /sla|pönale|haftung|vertrag|festpreis/i.test(`${f.title} ${f.excerpt}`)
+  )
+
+  const tone = winProbabilityTone(analysis.winProbability ?? 0)
+  const takeaways: HeroKeyTakeaway[] = []
+
+  if (tone === 'go') {
+    takeaways.push({
+      icon: '✨',
+      text: 'Budget & Laufzeit passen zum ICP-Korridor',
+    })
+  } else if (tone === 'caution') {
+    takeaways.push({
+      icon: '✨',
+      text: `${analysis.icpFitLabel || 'ICP'} — Details und Scope prüfen`,
+    })
+  } else {
+    takeaways.push({
+      icon: '✨',
+      text: 'Schwacher strategischer Fit — Go-Entscheidung kritisch prüfen',
+    })
+  }
+
+  if (slaOrContractRisk) {
+    takeaways.push({
+      icon: '⚠️',
+      text: `Erhöhtes Risiko: ${slaOrContractRisk.title}`,
+    })
+  } else if (criticalHigh.length > 0) {
+    takeaways.push({
+      icon: '⚠️',
+      text: `${criticalHigh.length} kritische/hohe Vertrags-Flags im Fokus`,
+    })
+  } else {
+    takeaways.push({
+      icon: '⚠️',
+      text: 'Keine kritischen Vertrags-Flags erkannt',
+    })
+  }
+
+  if (matched > 0) {
+    takeaways.push({
+      icon: '🤝',
+      text: `Matcht mit ${matched} intern${matched === 1 ? 'er' : 'en'} Referenz${matched === 1 ? '' : 'en'}`,
+    })
+  } else {
+    takeaways.push({
+      icon: '🤝',
+      text: 'Noch keine Referenz-Matches — Proof nachziehen',
+    })
+  }
+
+  return takeaways
+}
+
+export function recommendationBadgeClass(tone: ReturnType<typeof winProbabilityTone>): string {
+  if (tone === 'go') return 'bg-emerald-600 text-white'
+  if (tone === 'caution') return 'bg-amber-500 text-white'
+  return 'bg-red-600 text-white'
+}

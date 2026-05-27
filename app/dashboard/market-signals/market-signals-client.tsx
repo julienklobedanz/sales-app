@@ -764,13 +764,22 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
   )
 
   useEffect(() => {
-    if (!selected) {
-      setAttachedRefIds(new Set())
-      return
-    }
     setAttachedRefIds((prev) => {
+      // Verhindert Render-Loops: Wenn sich der Inhalt nicht ändert, dieselbe Set-Instanz zurückgeben.
+      if (!selected || quickRefs.length === 0) {
+        return prev.size === 0 ? prev : new Set()
+      }
+
       const allowed = new Set(quickRefs.map((r) => r.id))
-      return new Set(Array.from(prev).filter((id) => allowed.has(id)))
+
+      let changed = false
+      const next = new Set<string>()
+      for (const id of prev) {
+        if (allowed.has(id)) next.add(id)
+        else changed = true
+      }
+
+      return changed ? next : prev
     })
   }, [quickRefs, selected])
 
@@ -1332,8 +1341,9 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                               const isTodayPriority = priorityKeys.has(signalKeyOf(rep))
                               return (
                                 <li key={key}>
-                                  <button
-                                    type="button"
+                                  <div
+                                    role="button"
+                                    tabIndex={0}
                                     aria-label={listAria}
                                     title={`${relativeTime(ts)} · ${rep.headline}`}
                                     onClick={() => {
@@ -1341,7 +1351,14 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                       if (isMobile) setMobileOpen(true)
                                       void markReadForGroup(groupItem.items)
                                     }}
-                                    className={`group relative flex w-full items-center gap-2.5 rounded-lg border-l-[3px] py-2 pl-2 pr-1 text-left transition-colors ${
+                                    onKeyDown={(e) => {
+                                      if (e.key !== 'Enter' && e.key !== ' ') return
+                                      e.preventDefault()
+                                      setSelectedKey(key)
+                                      if (isMobile) setMobileOpen(true)
+                                      void markReadForGroup(groupItem.items)
+                                    }}
+                                    className={`group relative flex w-full cursor-pointer items-center gap-2.5 rounded-lg border-l-[3px] py-2 pl-2 pr-1 text-left transition-colors ${
                                       isActive
                                         ? `bg-primary/10 ${inboxRowAccentClass(rep)} dark:bg-primary/15`
                                         : `border-l-transparent hover:bg-muted/70`
@@ -1461,7 +1478,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                         </Tooltip>
                                       </div>
                                     </div>
-                                  </button>
+                                  </div>
                                 </li>
                               )
                             })}

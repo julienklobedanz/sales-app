@@ -38,9 +38,24 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { SME_ROUTE_OPTIONS } from '@/lib/deal-desk/mock-analysis'
 import { projectToWorkspaceState } from '@/lib/deal-desk/project-mapper'
+import {
+  buildHeroKeyTakeaways,
+  recommendationBadgeClass,
+} from '@/lib/deal-desk/hero-key-takeaways'
+import {
+  winProbabilityRecommendationLabel,
+  winProbabilityScoreLegend,
+  winProbabilityTone,
+} from '@/lib/deal-desk/win-probability'
 import {
   defaultProjectNameFromFiles,
   type DealDeskProject,
@@ -364,6 +379,68 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
     [reloadProject]
   )
 
+  const appendDocuments = useCallback(
+    async (projectId: string, incoming: File[]) => {
+      if (analyzing) return
+      const valid = incoming.filter(isAcceptedRfpFile)
+      if (valid.length === 0) {
+        toast.error('Bitte PDF, Word (DOC/DOCX) oder Excel (XLS/XLSX) hochladen.')
+        return
+      }
+
+      const project = projects.find((p) => p.id === projectId)
+      const existingCount = project?.analysis.documentNames.length ?? 0
+      if (existingCount + valid.length > MAX_RFP_FILES) {
+        toast.error(`Maximal ${MAX_RFP_FILES} Dokumente pro Projekt.`)
+        return
+      }
+
+      setAnalyzing(true)
+      setAnalyzeStatus(
+        valid.length > 1
+          ? `${valid.length} Dokumente werden hinzugefügt und analysiert …`
+          : 'Dokument wird hinzugefügt und analysiert …'
+      )
+
+      try {
+        const formData = new FormData()
+        formData.set('projectId', projectId)
+        formData.set('append', '1')
+        for (const file of valid) {
+          formData.append('files', file)
+        }
+
+        const res = await fetch('/api/deal-desk/analyze', { method: 'POST', body: formData })
+        const json = (await res.json()) as AnalyzeApiResult
+
+        if (!res.ok || !json.success) {
+          showAnalysisErrorToast(json.error ?? 'Dokumente konnten nicht hinzugefügt werden.', json.isScanLikely)
+          await reloadProject(projectId)
+          return
+        }
+
+        await reloadProject(projectId)
+        setActiveTab('decision')
+        showAnalysisSuccessToast(
+          json,
+          json.quotaExceeded
+            ? 'Demo-Analyse geladen (OpenAI-Limit).'
+            : json.source === 'mock'
+              ? 'Projekt mit neuen Dokumenten aktualisiert (Fallback-Demo).'
+              : json.extractionUsedOcr
+                ? `${valid.length} Dokument(e) hinzugefügt — Analyse abgeschlossen (OCR).`
+                : `${valid.length} Dokument(e) hinzugefügt — Analyse abgeschlossen.`
+        )
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Netzwerkfehler.')
+      } finally {
+        setAnalyzing(false)
+        setAnalyzeStatus(null)
+      }
+    },
+    [analyzing, projects, reloadProject]
+  )
+
   function onFilesPick(fileList: FileList | null | undefined) {
     if (!fileList?.length) return
     const incoming = Array.from(fileList)
@@ -659,7 +736,12 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
         onDeleteProject={(id) => void deleteProject(id)}
         onRenameProject={renameProject}
         onRemoveDocument={(projectId, fileName) => void removeProjectDocument(projectId, fileName)}
+        onAddDocuments={(files) => void appendDocuments(activeProject.id, files)}
+        addingDocuments={analyzing}
+        maxDocuments={MAX_RFP_FILES}
+        acceptFileAttr={ACCEPT_ATTR}
         onNewRfp={openNewRfpUpload}
+        onClose={openNewRfpUpload}
         onReanalyze={() => void rerunAnalysis(activeProject.id)}
         reanalyzing={analyzing}
         canReanalyze={activeProject.analysis.documentNames.length > 0}
@@ -670,21 +752,36 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
 
       {!uploadMode ? (
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabKey)} className="w-full">
-        <TabsList className="h-auto w-full flex-wrap justify-start gap-1 bg-muted/50 p-1">
-          <TabsTrigger value="decision" className="gap-1.5">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabKey)} className="w-full gap-4">
+        <TabsList
+          variant="line"
+          className="h-auto w-full flex-wrap justify-start gap-0 rounded-none border-border bg-transparent p-0"
+        >
+          <TabsTrigger
+            value="decision"
+            className="gap-1.5 rounded-none px-3 py-2.5 after:bg-primary data-[state=active]:font-semibold data-[state=active]:text-foreground sm:px-4"
+          >
             <LayoutDashboard className="size-3.5" />
             Bid-Übersicht
           </TabsTrigger>
-          <TabsTrigger value="draft" className="gap-1.5">
+          <TabsTrigger
+            value="draft"
+            className="gap-1.5 rounded-none px-3 py-2.5 after:bg-primary data-[state=active]:font-semibold data-[state=active]:text-foreground sm:px-4"
+          >
             <Sparkles className="size-3.5" />
             Antwort-Entwürfe
           </TabsTrigger>
-          <TabsTrigger value="sme" className="gap-1.5">
+          <TabsTrigger
+            value="sme"
+            className="gap-1.5 rounded-none px-3 py-2.5 after:bg-primary data-[state=active]:font-semibold data-[state=active]:text-foreground sm:px-4"
+          >
             <Clock className="size-3.5" />
             SME Routing
           </TabsTrigger>
-          <TabsTrigger value="incubator" className="gap-1.5">
+          <TabsTrigger
+            value="incubator"
+            className="gap-1.5 rounded-none px-3 py-2.5 after:bg-primary data-[state=active]:font-semibold data-[state=active]:text-foreground sm:px-4"
+          >
             <Sprout className="size-3.5" />
             Referenz Inkubator
           </TabsTrigger>
@@ -693,63 +790,65 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
         <div className={TAB_STAGE_CLASS}>
           <TabsContent value="decision" forceMount className={TAB_PANEL_CLASS}>
             <div className="w-full space-y-6">
-              <Card className={cn(TAB_CARD_CLASS, 'overflow-hidden border-blue-200/60 dark:border-blue-900/40')}>
-                <CardContent className="flex w-full flex-col gap-6 p-6 md:flex-row md:items-start">
-                  <WinProbabilityGauge value={analysis.winProbability ?? 0} size={152} />
-                  <div className="min-w-0 flex-1 space-y-3">
-                    <Badge className="bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-100">
-                      {analysis.icpFitLabel}
-                    </Badge>
-                    <p className="text-sm leading-relaxed text-foreground/90">{analysis.icpSummary}</p>
-                  </div>
-                </CardContent>
-              </Card>
-
               {(() => {
-                const draftRows = analysis.draftRows ?? []
-                const requirementsCount = draftRows.length
-                const missingReferenceCount = draftRows.filter((r) => !r.reference).length
-                const missingAnswerCount = draftRows.filter((r) => Boolean(r.reference) && !r.answer).length
-                const gaps = missingReferenceCount + missingAnswerCount
-
-                const smeTasks = analysis.smeTasks ?? []
-                const smeCount = smeTasks.length
-
-                const flags = redFlags ?? []
-                const flagsCriticalHigh = flags.filter(
-                  (f) => f.severity === 'critical' || f.severity === 'high'
-                ).length
-                const legalMarkedCount = flags.filter((f) => Boolean(f.markedForLegal)).length
+                const winTone = winProbabilityTone(analysis.winProbability ?? 0)
+                const heroTakeaways = buildHeroKeyTakeaways(analysis)
 
                 return (
-                  <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                    <div className="rounded-xl border border-border bg-muted/20 p-4">
-                      <p className="text-xs font-medium text-muted-foreground">Anforderungen</p>
-                      <p className="mt-1 text-2xl font-bold">{requirementsCount}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">aus Unterlagen extrahiert</p>
-                    </div>
-                    <div className="rounded-xl border border-border bg-muted/20 p-4">
-                      <p className="text-xs font-medium text-muted-foreground">Lücken</p>
-                      <p className="mt-1 text-2xl font-bold">{gaps}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {missingReferenceCount > 0 ? `${missingReferenceCount} ohne Referenz` : 'Referenzen ok'}
-                      </p>
-                    </div>
-                    <div className="rounded-xl border border-border bg-muted/20 p-4">
-                      <p className="text-xs font-medium text-muted-foreground">SME offen</p>
-                      <p className="mt-1 text-2xl font-bold">{smeCount}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">interne Klärungspunkte</p>
-                    </div>
-                    <div className="rounded-xl border border-border bg-muted/20 p-4">
-                      <p className="text-xs font-medium text-muted-foreground">Flags</p>
-                      <p className="mt-1 text-2xl font-bold">{flagsCriticalHigh}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {legalMarkedCount > 0
-                          ? `Legal markiert: ${legalMarkedCount}`
-                          : 'kritisch/hoch im Fokus'}
-                      </p>
-                    </div>
-                  </div>
+                  <Card className="rounded-xl border border-slate-200/80 bg-white shadow-sm">
+                    <CardContent className="flex w-full flex-col gap-6 p-6 lg:flex-row lg:items-start">
+                      <div className="flex shrink-0 justify-center lg:justify-start">
+                        <WinProbabilityGauge
+                          value={analysis.winProbability ?? 0}
+                          size={124}
+                          showRecommendation={false}
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1 grid grid-cols-1 gap-6 lg:grid-cols-3">
+                        <div className="space-y-3 lg:col-span-2">
+                          <div className="mb-3 flex flex-wrap items-center gap-2">
+                            <TooltipProvider delayDuration={200}>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge
+                                    className={cn(
+                                      'cursor-help rounded px-2.5 py-0.5 text-xs font-medium shadow-none',
+                                      recommendationBadgeClass(winTone)
+                                    )}
+                                    tabIndex={0}
+                                  >
+                                    {winProbabilityRecommendationLabel(winTone)}
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-[240px] text-xs">
+                                  {winProbabilityScoreLegend()}
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            <Badge className="rounded border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 shadow-none">
+                              {analysis.icpFitLabel}
+                            </Badge>
+                          </div>
+                          <h3 className="text-base font-semibold text-slate-900">
+                            Strategischer Cloud- &amp; SAP-Match
+                          </h3>
+                          <p className="text-sm leading-relaxed text-zinc-600">{analysis.icpSummary}</p>
+                        </div>
+                        <div className="border-t border-slate-100 pt-4 lg:col-span-1 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+                          <ul className="space-y-2 text-xs font-medium text-slate-500">
+                            {heroTakeaways.map((item) => (
+                              <li key={item.text} className="flex gap-2 leading-snug">
+                                <span className="shrink-0" aria-hidden>
+                                  {item.icon}
+                                </span>
+                                <span>{item.text}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 )
               })()}
 
