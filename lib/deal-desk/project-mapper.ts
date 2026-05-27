@@ -150,6 +150,8 @@ export function rowToDealDeskProject(
     analysis,
     redFlags,
     smeRoutes: workspace.smeRoutes,
+    smeAssignments: workspace.smeAssignments,
+    smeCustomExperts: workspace.smeCustomExperts,
     decision: workspace.decision,
     bidTeam: workspace.bidTeam,
     analysisStatus: row.analysis_status,
@@ -163,6 +165,8 @@ export function projectToWorkspaceState(project: DealDeskProject) {
   return {
     redFlags: project.redFlags,
     smeRoutes: project.smeRoutes,
+    smeAssignments: project.smeAssignments,
+    smeCustomExperts: project.smeCustomExperts,
     decision: project.decision,
     bidTeam: project.bidTeam,
   }

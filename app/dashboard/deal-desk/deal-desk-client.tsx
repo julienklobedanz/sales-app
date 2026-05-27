@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import Image from 'next/image'
 import {
   Clock,
   FileSpreadsheet,
@@ -45,7 +44,6 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
-import { SME_ROUTE_OPTIONS } from '@/lib/deal-desk/mock-analysis'
 import { projectToWorkspaceState } from '@/lib/deal-desk/project-mapper'
 import {
   buildHeroKeyTakeaways,
@@ -73,6 +71,9 @@ import {
 } from './actions'
 import { BidTimelineCard } from './components/bid-timeline-card'
 import { DealDeskProjectHeader } from './components/deal-desk-project-header'
+import { ExecutiveBriefingDialog } from './components/executive-briefing-dialog'
+import { FirstDraftEngineCard } from './components/first-draft-engine-card'
+import { SmeRoutingBoard } from './components/sme-routing-board'
 import { RedFlagsPanel } from './components/red-flags-panel'
 import { ReferenceIncubatorTab } from './components/reference-incubator-tab'
 import { WinProbabilityGauge } from './components/win-probability-gauge'
@@ -721,7 +722,8 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
 
   const analysis = activeProject.analysis
   const redFlags = activeProject.redFlags
-  const smeRoutes = activeProject.smeRoutes
+  const smeAssignments = activeProject.smeAssignments
+  const smeCustomExperts = activeProject.smeCustomExperts
   const showDemo =
     activeProject.showDemoBadge || process.env.NEXT_PUBLIC_DEAL_DESK_DEMO === '1'
 
@@ -836,6 +838,14 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
                           <p className="text-sm leading-relaxed text-zinc-600">{analysis.icpSummary}</p>
                         </div>
                         <div className="border-t border-slate-100 pt-4 lg:col-span-1 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+                          <div className="mb-3 flex justify-end">
+                            <ExecutiveBriefingDialog
+                              projectName={activeProject.projectName || 'RFP'}
+                              analysis={analysis}
+                              redFlags={redFlags}
+                              className="h-8 gap-1.5 border-slate-200 bg-white text-xs font-medium shadow-sm"
+                            />
+                          </div>
                           <ul className="space-y-2 text-xs font-medium text-slate-500">
                             {heroTakeaways.map((item) => (
                               <li key={item.text} className="flex gap-2 leading-snug">
@@ -988,132 +998,47 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
           </TabsContent>
 
           <TabsContent value="draft" forceMount className={TAB_PANEL_CLASS}>
-            <Card className={TAB_CARD_CLASS}>
-              <CardHeader>
-                <CardTitle className="text-base">First Draft Engine</CardTitle>
-                <CardDescription>
-                  Kundenanforderung und Entwurf im Überblick — nur mit verifizierter Referenz (keine
-                  Halluzination). Eignungsmatrizen werden spaltenweise aus Referenzen befüllt, wo ein
-                  Match vorliegt.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-0 sm:p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="hover:bg-transparent">
-                      <TableHead className="h-10 w-[42%] px-4 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        Kundenanforderung
-                      </TableHead>
-                      <TableHead className="h-10 px-4 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        Unsere Antwort
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {(analysis.draftRows ?? []).map((row) => (
-                      <TableRow key={row.id}>
-                        <TableCell className="whitespace-normal px-4 py-4 align-top text-sm leading-relaxed text-foreground">
-                          {row.requirement}
-                        </TableCell>
-                        <TableCell className="whitespace-normal px-4 py-4 align-top">
-                          {row.answer ? (
-                            <>
-                              <p className="text-sm leading-relaxed text-foreground/90">{row.answer}</p>
-                              {row.reference ? (
-                                <div className="mt-3 flex w-full items-start gap-3 rounded-lg border border-emerald-200/70 bg-emerald-50/50 p-3 dark:border-emerald-900/50 dark:bg-emerald-950/20">
-                                  <div className="relative size-10 shrink-0 overflow-hidden rounded-md border border-border bg-background">
-                                    {row.reference.logoUrl ? (
-                                      <Image
-                                        src={row.reference.logoUrl}
-                                        alt=""
-                                        fill
-                                        sizes="40px"
-                                        className="object-contain p-1"
-                                      />
-                                    ) : (
-                                      <div className="flex size-full items-center justify-center text-[10px] font-bold text-muted-foreground">
-                                        {(row.reference.companyName ?? '?').slice(0, 2).toUpperCase()}
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className="min-w-0 text-xs">
-                                    <p className="font-semibold text-foreground">{row.reference.title}</p>
-                                    <p className="text-muted-foreground">
-                                      Proof · {row.reference.matchPercent}% Match ·{' '}
-                                      {row.reference.companyName}
-                                    </p>
-                                  </div>
-                                </div>
-                              ) : null}
-                            </>
-                          ) : (
-                            <p className="text-sm italic text-muted-foreground/80">
-                              Keine internen Informationen gefunden.
-                            </p>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+            <FirstDraftEngineCard
+              className={TAB_CARD_CLASS}
+              draftRows={analysis.draftRows ?? []}
+              onRequestSme={() => setActiveTab('sme')}
+            />
           </TabsContent>
 
           <TabsContent value="sme" forceMount className={TAB_PANEL_CLASS}>
-            <Card className={TAB_CARD_CLASS}>
-              <CardHeader>
-                <CardTitle className="text-base">SME Routing</CardTitle>
-                <CardDescription>
-                  Offene Punkte, die die KI nicht sicher beantworten konnte — intern weiterleiten.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {(analysis.smeTasks ?? []).map((task) => (
-                  <div
-                    key={task.id}
-                    className="flex w-full flex-col gap-3 rounded-xl border border-border bg-muted/30 p-4 md:flex-row md:items-center md:justify-between"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant="outline" className="text-[10px]">
-                          {task.category}
-                        </Badge>
-                        <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-                          <Clock className="size-3" aria-hidden />
-                          Frist: {task.dueInDays} Tage
-                        </span>
-                      </div>
-                      <p className="mt-2 text-sm text-foreground">{task.question}</p>
-                    </div>
-                    <Select
-                      value={smeRoutes[task.id] ?? ''}
-                      onValueChange={(v) => {
-                        updateProject(activeProject.id, (p) => ({
-                          ...p,
-                          smeRoutes: { ...p.smeRoutes, [task.id]: v },
-                        }))
-                        void logDealDeskSmeRouteAction(activeProject.id, {
-                          taskId: task.id,
-                          route: v,
-                        })
-                      }}
-                    >
-                      <SelectTrigger className="h-9 w-full shrink-0 text-xs md:w-[220px]">
-                        <SelectValue placeholder="Weiterleiten …" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {SME_ROUTE_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+            <SmeRoutingBoard
+              className={TAB_CARD_CLASS}
+              tasks={analysis.smeTasks ?? []}
+              assignments={smeAssignments}
+              customExperts={smeCustomExperts}
+              onAssign={(taskId, expert) => {
+                updateProject(activeProject.id, (p) => ({
+                  ...p,
+                  smeRoutes: { ...p.smeRoutes, [taskId]: expert.route },
+                  smeAssignments: {
+                    ...p.smeAssignments,
+                    [taskId]: {
+                      route: expert.route,
+                      assigneeId: expert.id,
+                      assigneeName: expert.name,
+                      assigneeEmail: expert.email ?? null,
+                    },
+                  },
+                }))
+                void logDealDeskSmeRouteAction(activeProject.id, {
+                  taskId,
+                  route: expert.route,
+                  assigneeId: expert.id,
+                  assigneeName: expert.name,
+                })
+              }}
+              onAddExpert={(expert) => {
+                updateProject(activeProject.id, (p) => ({
+                  ...p,
+                  smeCustomExperts: [...p.smeCustomExperts, expert],
+                }))
+              }}
+            />
           </TabsContent>
 
           <TabsContent value="incubator" forceMount className={TAB_PANEL_CLASS}>

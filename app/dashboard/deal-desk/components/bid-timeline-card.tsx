@@ -10,6 +10,12 @@ import { getTimelineItemVisual } from '@/lib/deal-desk/timeline-item-visual'
 import { cn } from '@/lib/utils'
 
 const MS_DAY = 24 * 60 * 60 * 1000
+/** Max. Fristen in der Bid-Übersicht */
+export const BID_TIMELINE_MAX_ITEMS = 15
+/** Ab dieser Anzahl wird die Liste in der Card scrollbar (~5 Zeilen sichtbar) */
+const BID_TIMELINE_SCROLL_AFTER = 5
+/** ~5 kompakte Zeilen (py-3 + eine Textzeile + gap-2) */
+const BID_TIMELINE_LIST_MAX_HEIGHT = 'max-h-[19.5rem]'
 
 function formatDateDe(iso: string) {
   const d = new Date(`${iso}T12:00:00`)
@@ -52,12 +58,15 @@ export function BidTimelineCard({
   const sortedItems = [...timelineItems]
     .filter((it) => typeof it?.dueDate === 'string' && it.dueDate.length >= 10)
     .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+  const displayItems = sortedItems.slice(0, BID_TIMELINE_MAX_ITEMS)
+  const truncatedCount = sortedItems.length - displayItems.length
+  const listScrollable = displayItems.length > BID_TIMELINE_SCROLL_AFTER
 
   function handleExportIcs() {
     downloadBidTimelineIcs({
       customerName,
       rfpTitle,
-      items: sortedItems,
+      items: displayItems,
       projectId,
     })
   }
@@ -67,12 +76,12 @@ export function BidTimelineCard({
       <CardHeader className="pb-3">
         <div className="flex w-full items-center justify-between gap-4">
           <div className="min-w-0 space-y-1">
-            <CardTitle className="text-base">Bid-Timeline / Fristen</CardTitle>
+            <CardTitle className="text-base">Deal Deadlines</CardTitle>
             <CardDescription>
               Aus dem RFP extrahierte Deadlines (Datum + Countdown).
             </CardDescription>
           </div>
-          {sortedItems.length > 0 ? (
+          {displayItems.length > 0 ? (
             <Button
               type="button"
               variant="outline"
@@ -87,18 +96,33 @@ export function BidTimelineCard({
         </div>
       </CardHeader>
       <CardContent>
-        {sortedItems.length === 0 ? (
+        {displayItems.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             Keine konkreten Fristen/Deadlines im Dokument erkannt.
           </p>
         ) : (
-          <div className="space-y-2">
-            {sortedItems.map((it, idx) => {
-              const days = daysUntil(it.dueDate, now)
-              const visual = getTimelineItemVisual(it.title)
-              const Icon = visual.Icon
+          <>
+            <div
+              className={cn(
+                'space-y-2',
+                listScrollable &&
+                  cn(
+                    BID_TIMELINE_LIST_MAX_HEIGHT,
+                    'overflow-y-auto overscroll-y-contain pr-1 [scrollbar-gutter:stable]'
+                  )
+              )}
+              aria-label={
+                listScrollable
+                  ? `${displayItems.length} Fristen, scrollbar`
+                  : undefined
+              }
+            >
+              {displayItems.map((it, idx) => {
+                const days = daysUntil(it.dueDate, now)
+                const visual = getTimelineItemVisual(it.title)
+                const Icon = visual.Icon
 
-              return (
+                return (
                 <div
                   key={`${it.id}-${idx}`}
                   className="rounded-xl border border-border bg-muted/30 px-4 py-3"
@@ -137,9 +161,21 @@ export function BidTimelineCard({
                     </p>
                   ) : null}
                 </div>
-              )
-            })}
-          </div>
+                )
+              })}
+            </div>
+            {listScrollable ? (
+              <p className="mt-2 text-xs text-muted-foreground">
+                {displayItems.length} Fristen — scrollen für alle Einträge.
+              </p>
+            ) : null}
+            {truncatedCount > 0 ? (
+              <p className="mt-1 text-xs text-muted-foreground">
+                {truncatedCount} weitere Frist{truncatedCount === 1 ? '' : 'en'} nicht angezeigt
+                (max. {BID_TIMELINE_MAX_ITEMS} in der Übersicht).
+              </p>
+            ) : null}
+          </>
         )}
       </CardContent>
     </Card>

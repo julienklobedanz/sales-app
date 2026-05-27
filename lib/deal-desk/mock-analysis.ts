@@ -40,6 +40,9 @@ export type DealDeskSmeTask = {
   category: string
   dueInDays: number
   routedTo?: string
+  /** Auszug aus dem RFP für die Kontext-Vorschau */
+  contextExcerpt?: string
+  contextPageHint?: string
 }
 
 export type DealDeskTimelineItem = {
@@ -249,18 +252,27 @@ export function buildMockDealDeskAnalysis(fileNames: string[]): DealDeskMockAnal
         question: 'Ist die unbegrenzte Haftungsklausel verhandelbar oder Deal-Breaker?',
         category: 'Legal',
         dueInDays: 2,
+        contextExcerpt:
+          '„Auftragnehmer haftet unbeschränkt für direkte und indirekte Schäden, einschließlich entgangenem Gewinn."',
+        contextPageHint: 'Anhang B, § 14.2',
       },
       {
         id: 's-2',
         question: 'Können wir 99,9 % SLA mit bestehendem Managed-Services-Stack garantieren?',
         category: 'Delivery / CTO',
         dueInDays: 3,
+        contextExcerpt:
+          'Verfügbarkeit des Dienstes mindestens 99,9 % pro Kalendermonat; Vertragsstrafe bei Unterschreitung.',
+        contextPageHint: 'Leistungsbeschreibung Kap. 7',
       },
       {
         id: 's-3',
         question: 'Festpreis-Kalkulation: Deckungsbeitrag bei 18 Monaten Laufzeit?',
         category: 'Finance',
         dueInDays: 4,
+        contextExcerpt:
+          'Scope als Festpreis definiert; Change Requests nur nach schriftlicher Zustimmung innerhalb von 5 Werktagen.',
+        contextPageHint: 'Kap. 3.4',
       },
     ],
   }

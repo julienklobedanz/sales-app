@@ -1,5 +1,10 @@
 import type { DealDeskMockAnalysis, DealDeskRedFlag } from '@/lib/deal-desk/mock-analysis'
 import { DEFAULT_BID_TEAM, type BidTeamAssignment } from '@/lib/deal-desk/mock-analysis'
+import {
+  DEMO_SME_PREVIEW_ASSIGNMENT,
+  type DealDeskSmeAssignment,
+  type SmeExpertOption,
+} from '@/lib/deal-desk/sme-routing'
 
 export type DealDeskAnalysisStatus = 'pending' | 'processing' | 'completed' | 'failed'
 
@@ -9,6 +14,8 @@ export type DealDeskProject = {
   analysis: DealDeskMockAnalysis
   redFlags: DealDeskRedFlag[]
   smeRoutes: Record<string, string>
+  smeAssignments: Record<string, DealDeskSmeAssignment>
+  smeCustomExperts: SmeExpertOption[]
   decision: 'go' | 'no-bid' | null
   bidTeam: BidTeamAssignment[]
   analysisStatus: DealDeskAnalysisStatus
@@ -38,7 +45,11 @@ export function createDealDeskProject(
     projectName: defaultProjectNameFromFiles(fileNames),
     analysis,
     redFlags: analysis.redFlags.map((f) => ({ ...f })),
-    smeRoutes: {},
+    smeRoutes:
+      opts?.analysisSource === 'mock' ? { 's-1': DEMO_SME_PREVIEW_ASSIGNMENT.route } : {},
+    smeAssignments:
+      opts?.analysisSource === 'mock' ? { 's-1': { ...DEMO_SME_PREVIEW_ASSIGNMENT } } : {},
+    smeCustomExperts: [],
     decision: null,
     bidTeam: DEFAULT_BID_TEAM.map((b) => ({ ...b })),
     analysisStatus: opts?.analysisStatus ?? 'completed',

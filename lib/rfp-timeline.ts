@@ -5,7 +5,7 @@ import type { DealDeskTimelineItem } from '@/lib/deal-desk/mock-analysis'
 
 const MODEL = 'gpt-4o-mini'
 const MAX_RFP_CHARS = 100_000
-const MAX_ITEMS = 8
+const MAX_ITEMS = 15
 
 function isIsoDate(s: unknown): s is string {
   return typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s)

@@ -47,6 +47,8 @@ function buildSmeTasks(
           : `Keine interne Referenz: ${row.requirementText.slice(0, 180)}`,
         category: row.category ?? 'Allgemein',
         dueInDays: 3 + (n % 5),
+        contextExcerpt: row.requirementText.slice(0, 320),
+        contextPageHint: row.category ? `Anforderung · ${row.category}` : 'RFP-Anforderung',
       })
       n++
     }
@@ -59,6 +61,8 @@ function buildSmeTasks(
         question: req.text.slice(0, 220),
         category: req.category ?? 'Allgemein',
         dueInDays: 5,
+        contextExcerpt: req.text.slice(0, 320),
+        contextPageHint: req.category ? `Anforderung · ${req.category}` : 'RFP-Anforderung',
       })
     }
   }

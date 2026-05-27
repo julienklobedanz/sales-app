@@ -333,7 +333,12 @@ export async function logDealDeskLegalSendAction(
 
 export async function logDealDeskSmeRouteAction(
   projectId: string,
-  details: { taskId: string; route: string }
+  details: {
+    taskId: string
+    route: string
+    assigneeId?: string
+    assigneeName?: string
+  }
 ): Promise<{ success: true } | { success: false; error: string }> {
   const auth = await getDeskAuth()
   if ('error' in auth) return { success: false, error: auth.error }
@@ -342,7 +347,12 @@ export async function logDealDeskSmeRouteAction(
     userId: auth.user.id,
     action: 'deal_desk_sme_route',
     entityId: projectId,
-    details: { task_id: details.taskId, route: details.route },
+    details: {
+      task_id: details.taskId,
+      route: details.route,
+      ...(details.assigneeId ? { assignee_id: details.assigneeId } : {}),
+      ...(details.assigneeName ? { assignee_name: details.assigneeName } : {}),
+    },
   })
   return { success: true }
 }
