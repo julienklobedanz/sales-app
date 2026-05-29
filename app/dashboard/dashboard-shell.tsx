@@ -69,16 +69,15 @@ export function DashboardShell({
   const [ticketModalType, setTicketModalType] = useState<'support' | 'feedback'>('support')
   const [supportChannelsOpen, setSupportChannelsOpen] = useState(false)
 
-  const [forceCollapsed, setForceCollapsed] = useState(() => {
-    if (typeof window === 'undefined') return false
-    return window.matchMedia?.('(max-width: 1023px)').matches ?? false
-  })
+  // Immer mit false starten (SSR + erster Client-Render), damit Radix useId-Reihenfolge stabil bleibt.
+  const [forceCollapsed, setForceCollapsed] = useState(false)
 
   useEffect(() => {
     const mql = window.matchMedia('(max-width: 1023px)')
-    const onChange = () => setForceCollapsed(mql.matches)
-    mql.addEventListener('change', onChange)
-    return () => mql.removeEventListener('change', onChange)
+    const sync = () => setForceCollapsed(mql.matches)
+    sync()
+    mql.addEventListener('change', sync)
+    return () => mql.removeEventListener('change', sync)
   }, [])
 
   // Prefetch wichtige Routen für snappige Navigation

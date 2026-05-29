@@ -41,6 +41,7 @@ export function CompanyDetailClient({
   activeDeals,
   marketSignals,
   initialEditOpen,
+  ndaAgreements,
 }: CompanyDetailClientProps) {
   const { isAdmin, isAccountManager, isSales } = useRole()
   const router = useRouter()
@@ -352,6 +353,7 @@ export function CompanyDetailClient({
         company={company}
         canEdit={canEditAccount}
         onEditClick={() => setEditAccountOpen(true)}
+        ndaAgreements={ndaAgreements}
       />
 
       <EditAccountDialog open={editAccountOpen} onOpenChange={setEditAccountOpen} company={company} />

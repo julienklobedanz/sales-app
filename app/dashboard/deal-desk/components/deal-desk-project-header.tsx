@@ -1,16 +1,10 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Briefcase, ChevronDown, Loader2, MoreVertical, RefreshCw, Upload, X } from 'lucide-react'
+import { Briefcase, ChevronDown, Loader2, Upload, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { DealDeskProjectSwitcher } from '@/app/dashboard/deal-desk/components/deal-desk-project-switcher'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -21,23 +15,17 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import type { DealDeskProject } from '@/lib/deal-desk/deal-desk-project'
 import { cn } from '@/lib/utils'
 
 type Props = {
-  projects: DealDeskProject[]
+  activeProjects: DealDeskProject[]
+  archivedProjects: DealDeskProject[]
   activeProject: DealDeskProject
   showDemoBadge?: boolean
-  canResetDemo?: boolean
-  onResetDemo?: () => void
   onSelectProject: (id: string) => void
+  onArchiveProject: (id: string) => void
+  onUnarchiveProject: (id: string) => void
   onDeleteProject: (id: string) => void
   onRenameProject: (id: string, name: string) => void
   onRemoveDocument: (projectId: string, fileName: string) => void
@@ -47,19 +35,17 @@ type Props = {
   acceptFileAttr?: string
   onNewRfp: () => void
   onClose: () => void
-  onReanalyze?: () => void
-  reanalyzing?: boolean
-  canReanalyze?: boolean
   fileIcon: (name: string) => React.ComponentType<{ className?: string }>
 }
 
 export function DealDeskProjectHeader({
-  projects,
+  activeProjects,
+  archivedProjects,
   activeProject,
   showDemoBadge = false,
-  canResetDemo = false,
-  onResetDemo,
   onSelectProject,
+  onArchiveProject,
+  onUnarchiveProject,
   onDeleteProject,
   onRenameProject,
   onRemoveDocument,
@@ -69,9 +55,6 @@ export function DealDeskProjectHeader({
   acceptFileAttr = '.pdf,.doc,.docx,.xls,.xlsx',
   onNewRfp,
   onClose,
-  onReanalyze,
-  reanalyzing = false,
-  canReanalyze = true,
   fileIcon,
 }: Props) {
   const [docsOpen, setDocsOpen] = useState(false)
@@ -86,10 +69,8 @@ export function DealDeskProjectHeader({
     Boolean(onAddDocuments) &&
     !atDocLimit &&
     activeProject.analysisStatus !== 'processing' &&
-    !addingDocuments &&
-    !reanalyzing
-  const actionsBusy =
-    reanalyzing || activeProject.analysisStatus === 'processing' || addingDocuments
+    !addingDocuments
+  const actionsBusy = activeProject.analysisStatus === 'processing' || addingDocuments
 
   useEffect(() => {
     if (editingTitle) {
@@ -315,71 +296,19 @@ export function DealDeskProjectHeader({
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-2">
-        <Button type="button" size="sm" className="h-9" onClick={onNewRfp}>
-          Neues RFP
-        </Button>
-
-        {projects.length > 1 ? (
-          <Select value={activeProject.id} onValueChange={onSelectProject}>
-            <SelectTrigger
-              className="h-9 w-auto gap-1 border-0 bg-transparent px-2 text-xs font-medium text-muted-foreground shadow-none hover:bg-muted/60 hover:text-foreground focus:ring-0 focus-visible:ring-0 [&>svg]:opacity-70"
-              aria-label="Anderes RFP-Projekt wählen"
-            >
-              <span className="sr-only">
-                <SelectValue />
-              </span>
-              <span aria-hidden>Wechseln</span>
-            </SelectTrigger>
-            <SelectContent align="end">
-              {projects.map((p) => (
-                <SelectItem key={p.id} value={p.id}>
-                  {p.projectName}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ) : null}
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="size-9 shrink-0 text-muted-foreground"
-              aria-label="Weitere Aktionen"
-            >
-              <MoreVertical className="size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52">
-            {onReanalyze && canReanalyze ? (
-              <DropdownMenuItem
-                disabled={actionsBusy}
-                onSelect={() => onReanalyze()}
-              >
-                <RefreshCw className="size-4" />
-                Analyse erneut starten
-              </DropdownMenuItem>
-            ) : null}
-            {canResetDemo && onResetDemo ? (
-              <>
-                {onReanalyze && canReanalyze ? <DropdownMenuSeparator /> : null}
-                <DropdownMenuItem onSelect={onResetDemo}>Demo zurücksetzen</DropdownMenuItem>
-              </>
-            ) : null}
-            {(onReanalyze && canReanalyze) || (canResetDemo && onResetDemo) ? (
-              <DropdownMenuSeparator />
-            ) : null}
-            <DropdownMenuItem
-              variant="destructive"
-              onSelect={() => onDeleteProject(activeProject.id)}
-            >
-              Projekt löschen
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+      <div className="flex shrink-0 items-center gap-1.5">
+        <DealDeskProjectSwitcher
+          activeProjects={activeProjects}
+          archivedProjects={archivedProjects}
+          selectedProjectId={activeProject.id}
+          onSelectProject={onSelectProject}
+          onArchiveProject={onArchiveProject}
+          onUnarchiveProject={onUnarchiveProject}
+          onDeleteProject={onDeleteProject}
+          onNewRfp={onNewRfp}
+          actionsBusy={actionsBusy}
+          variant="compact"
+        />
 
         <Button
           type="button"

@@ -10,6 +10,7 @@ import {
   getReferencesByCompanyId,
   getActiveDealsByCompanyId,
 } from '../actions'
+import { getNdaAgreementsByCompanyId } from '../nda-actions'
 
 export default async function CompanyDetailPage({
   params,
@@ -103,14 +104,25 @@ export default async function CompanyDetailPage({
     }
   }
 
-  const [strategy, stakeholders, internalContacts, references, activeDeals, externalContactsResult] = await Promise.all([
+  const [
+    strategy,
+    stakeholders,
+    internalContacts,
+    references,
+    activeDeals,
+    externalContactsResult,
+    ndaResult,
+  ] = await Promise.all([
     getCompanyStrategy(id),
     getStakeholders(id),
     getContactsByCompanyId(id),
     getReferencesByCompanyId(id),
     getActiveDealsByCompanyId(id),
     getExternalContactsSafe(),
+    getNdaAgreementsByCompanyId(id),
   ])
+
+  const ndaAgreements = ndaResult.success ? ndaResult.rows : []
 
   const [executiveEventsResult, accountNewsResult] = await Promise.all([
     supabase
@@ -171,6 +183,7 @@ export default async function CompanyDetailPage({
           activeDeals={activeDeals}
           marketSignals={marketSignals}
           initialEditOpen={initialEditOpen}
+          ndaAgreements={ndaAgreements}
         />
       </div>
     </div>

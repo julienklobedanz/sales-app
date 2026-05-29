@@ -11,6 +11,7 @@ export type DealDeskAnalysisStatus = 'pending' | 'processing' | 'completed' | 'f
 export type DealDeskProject = {
   id: string
   projectName: string
+  archivedAt: string | null
   analysis: DealDeskMockAnalysis
   redFlags: DealDeskRedFlag[]
   smeRoutes: Record<string, string>
@@ -43,6 +44,7 @@ export function createDealDeskProject(
   return {
     id: opts?.id ?? crypto.randomUUID(),
     projectName: defaultProjectNameFromFiles(fileNames),
+    archivedAt: null,
     analysis,
     redFlags: analysis.redFlags.map((f) => ({ ...f })),
     smeRoutes:

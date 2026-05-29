@@ -9,7 +9,7 @@ export const COPY = {
     settings: 'Einstellungen',
   },
   pages: {
-    dashboard: 'Dashboard',
+    dashboard: 'Home',
     evidence: 'Referenzen',
     marketSignals: 'Marktsignale',
     dealDesk: 'Deal Desk',
@@ -88,7 +88,14 @@ export const COPY = {
   },
   accounts: {
     searchCompaniesPlaceholder: 'Firma suchen …',
+    searchPartnersPlaceholder: 'Partner suchen …',
     addAccount: 'Account hinzufügen',
+    addPartner: 'Partner hinzufügen',
+    bulkUploadTooltip:
+      'Accounts aus Excel- oder CSV-Datei importieren (Spalten z. B. Name, Website, Branche).',
+    tooltipFilter: 'Filtern',
+    tooltipFavorites: 'Favoriten',
+    alsoLinkedAccountHint: 'Auch als Account verknüpft',
     ariaFavoritesOnlyOn: 'Nur Favoriten anzeigen',
     ariaFavoritesOnlyOff: 'Alle Accounts anzeigen',
     createDialogNameHint: 'Tippen für Vorschläge aus deiner Organisation und Brandfetch.',
@@ -107,6 +114,11 @@ export const COPY = {
   dashboard: {
     searchReferencesPlaceholder: 'Referenzen suchen...',
     columnsToggleAria: 'Spalten ein-/ausblenden',
+    tooltipFavorites: 'Favoriten',
+    tooltipStatus: 'Status',
+    tooltipColumns: 'Spalten',
+    tooltipImport: 'Importieren',
+    tooltipCreateReference: 'Referenz erstellen',
   },
   marketSignals: {
     pageSubtitle: 'Deine Account-Intelligenz auf einen Blick',

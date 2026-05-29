@@ -8,6 +8,7 @@ import {
   normalizeCompanyAccountStatus,
   type CompanyAccountStatusValue,
 } from '@/lib/accounts/company-account-status'
+import type { PartnerCategory } from '@/lib/accounts/company-entity'
 import { fetchBrandfetchCompany, inputToDomain } from '@/lib/accounts/brandfetch-accounts-refresh'
 
 export type { CompanyAccountStatusValue } from '@/lib/accounts/company-account-status'
@@ -849,6 +850,7 @@ export async function createCompany(payload: {
     .from('companies')
     .insert({
       organization_id: profile.organization_id,
+      entity_kind: 'account',
       name,
       website_url: payload.website_url?.trim() || null,
       industry: payload.industry?.trim() || null,
@@ -865,6 +867,89 @@ export async function createCompany(payload: {
 
   revalidatePath(ROUTES.accounts)
   return { success: true, id: data?.id }
+}
+
+export async function createPartner(payload: {
+  name: string
+  website_url?: string | null
+  industry?: string | null
+  headquarters?: string | null
+  logo_url?: string | null
+  description?: string | null
+  partner_category: PartnerCategory
+  alsoCreateAccount?: boolean
+}): Promise<
+  { success: true; id: string; accountId?: string } | { success: false; error: string }
+> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht eingeloggt.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id, role')
+    .eq('id', user.id)
+    .single()
+  if (!profile?.organization_id) return { success: false, error: 'Onboarding unvollständig.' }
+  if (profile.role === 'sales') return { success: false, error: 'Keine Berechtigung.' }
+
+  const name = payload.name.trim()
+  if (!name) return { success: false, error: 'Name ist erforderlich.' }
+
+  const baseFields = {
+    organization_id: profile.organization_id,
+    name,
+    website_url: payload.website_url?.trim() || null,
+    industry: payload.industry?.trim() || null,
+    headquarters: payload.headquarters?.trim() || null,
+    logo_url: payload.logo_url?.trim() || null,
+    description: payload.description?.trim() || null,
+  }
+
+  let linkedAccountId: string | null = null
+
+  if (payload.alsoCreateAccount) {
+    const { data: accountRow, error: accountError } = await supabase
+      .from('companies')
+      .insert({
+        ...baseFields,
+        entity_kind: 'account',
+        account_status: null,
+      })
+      .select('id')
+      .single()
+
+    if (accountError) return { success: false, error: accountError.message }
+    linkedAccountId = accountRow?.id ?? null
+  }
+
+  const { data: partnerRow, error: partnerError } = await supabase
+    .from('companies')
+    .insert({
+      ...baseFields,
+      entity_kind: 'partner',
+      partner_category: payload.partner_category,
+      linked_account_id: linkedAccountId,
+      account_status: null,
+    })
+    .select('id')
+    .single()
+
+  if (partnerError) {
+    if (linkedAccountId) {
+      await supabase.from('companies').delete().eq('id', linkedAccountId)
+    }
+    return { success: false, error: partnerError.message }
+  }
+
+  revalidatePath(ROUTES.accounts)
+  return {
+    success: true,
+    id: partnerRow!.id,
+    accountId: linkedAccountId ?? undefined,
+  }
 }
 
 export async function bulkCreateCompaniesFromSheet(fileBuffer: Uint8Array): Promise<{
@@ -952,6 +1037,7 @@ export async function bulkCreateCompaniesFromSheet(fileBuffer: Uint8Array): Prom
 
     const { error } = await supabase.from('companies').insert({
       organization_id: profile.organization_id,
+      entity_kind: 'account',
       name,
       website_url: website || null,
       industry: industry || null,

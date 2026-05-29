@@ -6,6 +6,7 @@ import type {
   ExternalContactRow,
   StakeholderRow,
 } from './actions'
+import type { NdaAgreementRow } from './nda-actions'
 
 export type CompanyDetailCompany = {
   id: string
@@ -52,4 +53,5 @@ export type CompanyDetailClientProps = {
     }>
   }
   initialEditOpen?: boolean
+  ndaAgreements: NdaAgreementRow[]
 }

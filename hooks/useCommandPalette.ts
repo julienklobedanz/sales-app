@@ -5,6 +5,7 @@ import * as React from "react"
 type Listener = () => void
 
 let openState = false
+let pendingQuery: string | null = null
 const listeners = new Set<Listener>()
 let keyboardListenerAttached = false
 
@@ -12,6 +13,18 @@ function setOpenState(next: boolean | ((prev: boolean) => boolean)) {
   const value = typeof next === "function" ? (next as (prev: boolean) => boolean)(openState) : next
   openState = value
   for (const l of listeners) l()
+}
+
+/** Öffnet die Palette mit vorausgefüllter Suche (z. B. Icebreaker auf dem Home-Screen). */
+export function openCommandPaletteWithQuery(query: string) {
+  pendingQuery = query.trim()
+  setOpenState(true)
+}
+
+export function consumeCommandPalettePendingQuery(): string {
+  const q = pendingQuery ?? ""
+  pendingQuery = null
+  return q
 }
 
 function subscribe(listener: Listener) {

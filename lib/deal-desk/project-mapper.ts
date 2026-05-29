@@ -21,6 +21,7 @@ export type DealDeskProjectRow = {
   win_probability: number | null
   error_message: string | null
   deal_id: string | null
+  archived_at: string | null
   created_at: string
   updated_at: string
 }
@@ -147,6 +148,7 @@ export function rowToDealDeskProject(
   return {
     id: row.id,
     projectName: row.project_name,
+    archivedAt: row.archived_at ?? null,
     analysis,
     redFlags,
     smeRoutes: workspace.smeRoutes,

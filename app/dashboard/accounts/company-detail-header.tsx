@@ -1,22 +1,25 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Building2, Globe, MapPinIcon, Users } from '@hugeicons/core-free-icons'
+import { ArrowLeftIcon, Building2, Globe, MapPinIcon, Pencil, Users } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import type { CompanyDetailCompany } from './company-detail-types'
 import { formatEmployeeCountDeDisplay } from '@/lib/format'
-import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 import { CompanyLogo } from '@/components/ui/company-logo'
+import { CompanyDetailNdaPopover } from './components/company-detail-nda-popover'
+import type { NdaAgreementRow } from './nda-actions'
 
 export function CompanyDetailHeader({
   company,
   canEdit,
   onEditClick,
+  ndaAgreements,
 }: {
   company: CompanyDetailCompany
   canEdit?: boolean
   onEditClick?: () => void
+  ndaAgreements: NdaAgreementRow[]
 }) {
   const employeeLabel =
     typeof company.employee_count === 'number' && Number.isFinite(company.employee_count)
@@ -74,13 +77,29 @@ export function CompanyDetailHeader({
       </div>
 
       <div className="flex shrink-0 flex-wrap items-center gap-2">
+        <CompanyDetailNdaPopover
+          companyId={company.id}
+          companyName={company.name}
+          initialAgreements={ndaAgreements}
+          canManage={Boolean(canEdit)}
+        />
         {canEdit && onEditClick ? (
-          <Button type="button" variant="secondary" onClick={onEditClick}>
-            {COPY.accounts.editButton}
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="size-9 shrink-0"
+            onClick={onEditClick}
+            aria-label="Bearbeiten"
+            title="Bearbeiten"
+          >
+            <AppIcon icon={Pencil} size={16} />
           </Button>
         ) : null}
-        <Button asChild variant="outline">
-          <Link href={ROUTES.accounts}>Zurück</Link>
+        <Button asChild variant="outline" size="icon" className="size-9 shrink-0">
+          <Link href={ROUTES.accounts} aria-label="Zurück zur Übersicht" title="Zurück">
+            <AppIcon icon={ArrowLeftIcon} size={16} />
+          </Link>
         </Button>
       </div>
     </div>

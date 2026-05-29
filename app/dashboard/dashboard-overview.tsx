@@ -41,7 +41,6 @@ import type {
 } from './actions'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
-import { TABLE_TOOLBAR } from '@/lib/table-toolbar'
 import { cn } from '@/lib/utils'
 import {
   createSharedPortfolio,
@@ -63,7 +62,6 @@ import {
   FileDownIcon,
   FileText,
   Filter,
-  LayoutTwoColumnIcon,
   LinkIcon,
   MoreHorizontal,
   Pencil,
@@ -75,7 +73,10 @@ import {
 } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { BulkImportDialog, type BulkImportGroupItem } from './overview/bulk-import-dialog'
+import { ReferenceLayoutSwitch } from './overview/reference-layout-switch'
 import { NewReferenceDialog } from './overview/new-reference-dialog'
+import { AccountsToolbarTooltip } from '@/app/dashboard/accounts/components/accounts-toolbar-tooltip'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { ShareLinkDialog } from './overview/share-link-dialog'
 import { BulkDeleteReferencesDialog } from './overview/bulk-delete-references-dialog'
 import { InboxReferencesConceptClient } from '@/app/dashboard/concepts/inbox-references/client'
@@ -192,9 +193,6 @@ function loadColumnOrderFromStorage(): ReferenceColumnKey[] {
     return [...COLUMN_KEYS] as ReferenceColumnKey[]
   }
 }
-
-/** Toolbar: Favoriten / Status / Spalten – gleiche Mindestbreite */
-const toolbarSegmentClass = `${TABLE_TOOLBAR.dashboard.toolbarButton} justify-center`
 
 // --- Hauptkomponente ---
 
@@ -837,64 +835,50 @@ export function DashboardOverview({
             onChange={setSearch}
           />
 
+          <TooltipProvider delayDuration={300}>
           <div className="flex shrink-0 flex-wrap items-center gap-2.5">
-            <Button
-              type="button"
-              variant="ghost"
-              className={cn(
-                toolbarSegmentClass,
-                favoritesOnly &&
-                  'bg-amber-100/70 text-foreground dark:bg-amber-950/40'
-              )}
-              onClick={() => setFavoritesOnly((v) => !v)}
-              aria-label={favoritesOnly ? 'Alle Referenzen anzeigen' : 'Nur Favoriten'}
-            >
-              <AppIcon
-                icon={StarIcon}
-                size={16}
+            <AccountsToolbarTooltip label={COPY.dashboard.tooltipFavorites}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="toolbar"
                 className={cn(
-                  'shrink-0',
-                  favoritesOnly ? 'text-amber-500 dark:text-amber-400' : 'text-muted-foreground'
+                  'shrink-0 px-2.5 hover:bg-muted/70',
+                  favoritesOnly &&
+                    'bg-amber-100/70 text-foreground dark:bg-amber-950/40'
                 )}
-              />
-              <span className="hidden lg:inline">Favoriten</span>
-            </Button>
-
-            <Button
-              type="button"
-              variant="ghost"
-              className={cn(
-                toolbarSegmentClass,
-                referenceLayout === 'inbox' && 'bg-primary/10 text-primary'
-              )}
-              aria-pressed={referenceLayout === 'inbox'}
-              aria-label={
-                referenceLayout === 'table'
-                  ? 'Inbox-Ansicht mit Detailbereich aktivieren'
-                  : 'Tabellenansicht aktivieren'
-              }
-              title="Zwischen klassischer Tabelle und Inbox-Layout (Liste + Detail) wechseln"
-              onClick={() => setReferenceLayout((v) => (v === 'table' ? 'inbox' : 'table'))}
-            >
-              <AppIcon icon={LayoutTwoColumnIcon} size={16} className="shrink-0 text-muted-foreground" />
-              <span className="hidden lg:inline">Inbox</span>
-            </Button>
+                onClick={() => setFavoritesOnly((v) => !v)}
+                aria-pressed={favoritesOnly}
+                aria-label={COPY.dashboard.tooltipFavorites}
+              >
+                <AppIcon
+                  icon={StarIcon}
+                  size={16}
+                  className={cn(
+                    'shrink-0',
+                    favoritesOnly ? 'text-amber-500 dark:text-amber-400' : 'text-muted-foreground'
+                  )}
+                />
+              </Button>
+            </AccountsToolbarTooltip>
 
             <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className={cn(
-                    toolbarSegmentClass,
-                    statusFilter !== 'all' && 'bg-primary/10 text-primary'
-                  )}
-                  aria-label="Referenzstatus filtern"
-                >
-                  <AppIcon icon={TrendingUp} size={16} className="shrink-0 text-muted-foreground" />
-                  <span className="hidden lg:inline">Status</span>
-                </Button>
-              </PopoverTrigger>
+              <AccountsToolbarTooltip label={COPY.dashboard.tooltipStatus}>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="toolbar"
+                    className={cn(
+                      'shrink-0 px-2.5 hover:bg-muted/70',
+                      statusFilter !== 'all' && 'bg-primary/10 text-primary'
+                    )}
+                    aria-label={COPY.dashboard.tooltipStatus}
+                  >
+                    <AppIcon icon={TrendingUp} size={16} className="shrink-0 text-muted-foreground" />
+                  </Button>
+                </PopoverTrigger>
+              </AccountsToolbarTooltip>
               <PopoverContent
                 align="end"
                 className="w-56 p-1"
@@ -919,17 +903,19 @@ export function DashboardOverview({
             </Popover>
 
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className={cn(toolbarSegmentClass, "hover:bg-muted/70")}
-                  aria-label={COPY.dashboard.columnsToggleAria}
-                >
-                  <AppIcon icon={Filter} size={16} className="shrink-0" />
-                  <span className="hidden lg:inline">{COPY.table.columns}</span>
-                </Button>
-              </DropdownMenuTrigger>
+              <AccountsToolbarTooltip label={COPY.dashboard.tooltipColumns}>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="toolbar"
+                    className="shrink-0 px-2.5 hover:bg-muted/70"
+                    aria-label={COPY.dashboard.columnsToggleAria}
+                  >
+                    <AppIcon icon={Filter} size={16} className="shrink-0" />
+                  </Button>
+                </DropdownMenuTrigger>
+              </AccountsToolbarTooltip>
               <DropdownMenuContent align="end" className="w-[min(100vw-2rem,16rem)]">
                 {columnOrder.map((column) => (
                   <DropdownMenuCheckboxItem
@@ -950,36 +936,41 @@ export function DashboardOverview({
             </DropdownMenu>
           </div>
 
-          {/* Admin: Importieren -> Erstellen */}
-          {profile.role === 'admin' && (
-            <>
-              <Button
-                variant="ghost"
-                size="sm"
-                className={cn(TABLE_TOOLBAR.dashboard.toolbarButton, "hover:bg-muted/70")}
-                onClick={() => {
-                  setBulkImportGroups([])
-                  setBulkImportOpen(true)
-                }}
-                aria-label="Referenzen importieren"
-              >
-                <AppIcon icon={UploadIcon} size={16} className="shrink-0" />
-                <span className="hidden lg:inline">Importieren</span>
-              </Button>
-              <Button
-                size="sm"
-                className={cn(
-                  TABLE_TOOLBAR.dashboard.toolbarButton,
-                  "rounded-lg bg-gradient-to-b from-blue-600 to-blue-700 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] hover:from-blue-600 hover:to-blue-700/95"
-                )}
-                onClick={() => setNewRefModalOpen(true)}
-                aria-label="Neue Referenz erstellen"
-              >
-                <AppIcon icon={CirclePlus} size={16} className="shrink-0" />
-                <span className="hidden lg:inline">Referenz erstellen</span>
-              </Button>
-            </>
-          )}
+          <div className="ml-auto flex shrink-0 flex-wrap items-center gap-2.5">
+            {profile.role === 'admin' && (
+              <AccountsToolbarTooltip label={COPY.dashboard.tooltipImport}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="toolbar"
+                  className="shrink-0 px-2.5 hover:bg-muted/70"
+                  onClick={() => {
+                    setBulkImportGroups([])
+                    setBulkImportOpen(true)
+                  }}
+                  aria-label={COPY.dashboard.tooltipImport}
+                >
+                  <AppIcon icon={UploadIcon} size={16} className="shrink-0" />
+                </Button>
+              </AccountsToolbarTooltip>
+            )}
+            <ReferenceLayoutSwitch
+              value={referenceLayout}
+              onChange={setReferenceLayout}
+            />
+            {profile.role === 'admin' && (
+                <Button
+                  type="button"
+                  size="toolbar"
+                  className="gap-1.5 rounded-lg bg-gradient-to-b from-blue-600 to-blue-700 px-3 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] hover:from-blue-600 hover:to-blue-700/95"
+                  onClick={() => setNewRefModalOpen(true)}
+                >
+                  <AppIcon icon={CirclePlus} size={16} className="shrink-0" />
+                  {COPY.dashboard.tooltipCreateReference}
+                </Button>
+            )}
+          </div>
+          </TooltipProvider>
 
           {selectedRefIds.size > 0 ? (
             <div className="fixed bottom-6 left-1/2 z-50 w-[min(720px,calc(100vw-24px))] -translate-x-1/2">

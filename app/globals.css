@@ -153,3 +153,21 @@
 .preview-modal-scroll::-webkit-scrollbar-thumb:hover {
   background: oklch(0.55 0 0 / 0.5);
 }
+
+@keyframes command-center-caret-calm {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.command-center-caret {
+  display: block;
+  width: 2px;
+  height: 1.25rem;
+  background-color: rgb(30 41 59);
+  animation: command-center-caret-calm 1.2s ease-in-out infinite;
+}

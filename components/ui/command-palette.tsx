@@ -21,32 +21,20 @@ import {
 } from "@/components/ui/command"
 import { createClient } from "@/lib/supabase/client"
 import { COPY } from "@/lib/copy"
-import { useCommandPalette } from "@/hooks/useCommandPalette"
+import { consumeCommandPalettePendingQuery, useCommandPalette } from "@/hooks/useCommandPalette"
+import {
+  formatReferenceListLabel,
+  hrefForGlobalSearchResult,
+  searchGlobalEntities,
+  type GlobalSearchResult,
+} from "@/lib/command-center/global-search"
+import { pushCommandRecent } from "@/lib/command-center/push-recent"
+import { loadCommandRecents, type CommandRecentItem } from "@/lib/command-center/recents"
 import { useRole } from "@/hooks/useRole"
 import { AppIcon } from "@/lib/icons"
 import { ROUTES } from "@/lib/routes"
 
-type SearchResult =
-  | { kind: "reference"; id: string; title: string; accountName: string | null }
-  | { kind: "account"; id: string; title: string }
-  | { kind: "deal"; id: string; title: string }
-
-type RecentItem = SearchResult & { at: number }
-
-const RECENTS_KEY = "refstack.recents.v1"
-const MAX_RECENTS = 5
-
-/** Zeichen, die LIKE/ilike in Postgres stören können */
-function sanitizeIlikeUserInput(q: string): string {
-  return q.trim().replace(/[%_\\]/g, "")
-}
-
-function buildIlikeOrFilter(columns: string[], raw: string): string | null {
-  const safe = sanitizeIlikeUserInput(raw)
-  if (!safe) return null
-  const pat = `%${safe}%`
-  return columns.map((col) => `${col}.ilike.${pat}`).join(",")
-}
+type RecentItem = CommandRecentItem
 
 function matchesSearch(haystack: string, needle: string): boolean {
   const n = needle.trim().toLowerCase()
@@ -54,101 +42,37 @@ function matchesSearch(haystack: string, needle: string): boolean {
   return haystack.toLowerCase().includes(n)
 }
 
-function companyNameFromReferenceRow(row: { companies?: unknown }): string | null {
-  const c = row.companies
-  if (c == null) return null
-  const obj = Array.isArray(c) ? c[0] : c
-  if (!obj || typeof obj !== "object") return null
-  const name = (obj as { name?: string | null }).name
-  return typeof name === "string" && name.trim() ? name.trim() : null
-}
-
-/** Anzeige in der Palette: mit Account nach „ — “, sonst Platzhalter in Klammern. */
-function formatReferenceListLabel(title: string, accountName: string | null | undefined): string {
-  const acc = accountName?.trim()
-  if (acc) return `${title} — ${acc}`
-  return `${title} (${COPY.commandPalette.referenceNoAccountLabel})`
-}
-
-function loadRecents(): RecentItem[] {
-  if (typeof window === "undefined") return []
-  try {
-    const raw = localStorage.getItem(RECENTS_KEY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw) as unknown
-    if (!Array.isArray(parsed)) return []
-    return (parsed as unknown[])
-      .filter((x): x is RecentItem => {
-        if (!x || typeof x !== "object") return false
-        const r = x as Partial<RecentItem>
-        if (typeof r.id !== "string" || typeof r.kind !== "string" || typeof r.title !== "string") {
-          return false
-        }
-        if (r.kind === "reference") {
-          const an = (r as { accountName?: unknown }).accountName
-          return an === undefined || an === null || typeof an === "string"
-        }
-        return true
-      })
-      .map((x) => {
-        const r = x as Partial<RecentItem> & { accountName?: string | null }
-        if (r.kind === "reference") {
-          return {
-            ...x,
-            accountName:
-              typeof r.accountName === "string" ? r.accountName : null,
-          } as RecentItem
-        }
-        return x as RecentItem
-      })
-      .slice(0, MAX_RECENTS)
-  } catch {
-    return []
-  }
-}
-
-function saveRecents(items: RecentItem[]) {
-  try {
-    localStorage.setItem(RECENTS_KEY, JSON.stringify(items.slice(0, MAX_RECENTS)))
-  } catch {
-    // ignore
-  }
-}
-
-function hrefFor(result: SearchResult) {
-  if (result.kind === "account") return ROUTES.accountsDetail(result.id)
-  if (result.kind === "deal") return ROUTES.deals.detail(result.id)
-  return ROUTES.evidence.detail(result.id)
-}
-
 export function CommandPalette() {
   const router = useRouter()
   const { open, setOpen } = useCommandPalette()
   const { isAdmin, isAccountManager } = useRole()
+  const [mounted, setMounted] = React.useState(false)
 
   const supabase = React.useMemo(() => createClient(), [])
 
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
+
   const [query, setQuery] = React.useState("")
   const [loading, setLoading] = React.useState(false)
-  const [results, setResults] = React.useState<SearchResult[]>([])
+  const [results, setResults] = React.useState<GlobalSearchResult[]>([])
   const [recents, setRecents] = React.useState<RecentItem[]>([])
 
   React.useEffect(() => {
-    setRecents(loadRecents())
+    setRecents(loadCommandRecents())
   }, [])
 
-  const push = (item: SearchResult) => {
-    setRecents((prev) => {
-      const nextAt = (prev[0]?.at ?? 0) + 1
-      const next: RecentItem[] = [
-        { ...item, at: nextAt },
-        ...prev.filter((x) => !(x.kind === item.kind && x.id === item.id)),
-      ].slice(0, MAX_RECENTS)
-      saveRecents(next)
-      return next
+  const push = (item: GlobalSearchResult | RecentItem) => {
+    pushCommandRecent({
+      kind: item.kind,
+      id: item.id,
+      title: item.title,
+      accountName: item.kind === "reference" ? item.accountName : undefined,
     })
+    setRecents(loadCommandRecents())
     setOpen(false)
-    router.push(hrefFor(item))
+    router.push(hrefForGlobalSearchResult(item))
   }
 
   React.useEffect(() => {
@@ -156,7 +80,10 @@ export function CommandPalette() {
       setQuery("")
       setResults([])
       setLoading(false)
+      return
     }
+    const pending = consumeCommandPalettePendingQuery()
+    if (pending) setQuery(pending)
   }, [open])
 
   React.useEffect(() => {
@@ -172,57 +99,11 @@ export function CommandPalette() {
     const handle = window.setTimeout(async () => {
       setLoading(true)
       setResults([])
-
-      const refOr = buildIlikeOrFilter(["title", "summary"], q)
-      const dealOr = buildIlikeOrFilter(["title", "industry"], q)
-      const companyPat = sanitizeIlikeUserInput(q)
-      if (!companyPat) {
-        if (!cancelled) {
-          setResults([])
-          setLoading(false)
-        }
-        return
+      const next = await searchGlobalEntities(supabase, q)
+      if (!cancelled) {
+        setResults(next)
+        setLoading(false)
       }
-      const likePat = `%${companyPat}%`
-
-      const [refs, accounts, deals] = await Promise.all([
-        refOr
-          ? supabase.from("references").select("id,title,companies(name)").or(refOr).limit(8)
-          : supabase
-              .from("references")
-              .select("id,title,companies(name)")
-              .ilike("title", likePat)
-              .limit(8),
-        supabase.from("companies").select("id,name").ilike("name", likePat).limit(8),
-        dealOr
-          ? supabase.from("deals").select("id,title").or(dealOr).limit(8)
-          : supabase.from("deals").select("id,title").ilike("title", likePat).limit(8),
-      ])
-
-      if (cancelled) return
-
-      const next: SearchResult[] = []
-      for (const r of (refs.data ?? []) as Array<{
-        id: string
-        title: string
-        companies?: unknown
-      }>) {
-        next.push({
-          kind: "reference",
-          id: r.id,
-          title: r.title,
-          accountName: companyNameFromReferenceRow(r),
-        })
-      }
-      for (const a of (accounts.data ?? []) as Array<{ id: string; name: string }>) {
-        next.push({ kind: "account", id: a.id, title: a.name })
-      }
-      for (const d of (deals.data ?? []) as Array<{ id: string; title: string }>) {
-        next.push({ kind: "deal", id: d.id, title: d.title })
-      }
-
-      setResults(next)
-      setLoading(false)
     }, 180)
 
     return () => {
@@ -345,6 +226,8 @@ export function CommandPalette() {
     hasEntityHits
 
   const showEmptyState = hasSearchQuery && !loading && !hasAnyVisible
+
+  if (!mounted) return null
 
   return (
     <CommandDialog

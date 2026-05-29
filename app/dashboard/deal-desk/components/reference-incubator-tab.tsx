@@ -1,7 +1,6 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import Link from 'next/link'
 import {
   ClipboardCopy,
   Download,
@@ -297,10 +296,6 @@ export function ReferenceIncubatorTab({
 
         <LegalClauseBuilder />
         <PdfResourcesCard />
-
-        <Button type="button" variant="outline" size="sm" className="w-full text-xs" asChild>
-          <Link href={ROUTES.evidence.root}>Zur Referenz-Datenbank</Link>
-        </Button>
       </aside>
     </div>
   )

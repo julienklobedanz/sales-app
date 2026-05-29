@@ -58,6 +58,13 @@ import { ROUTES } from '@/lib/routes'
 import { formatEmployeeCountDeDisplay } from '@/lib/format'
 import { useRole } from '@/hooks/useRole'
 import { CreateAccountDialog } from './create-account-dialog'
+import { CreatePartnerDialog } from './create-partner-dialog'
+import { EntityKindSwitch } from './components/entity-kind-switch'
+import { AccountSortSwitch } from './components/account-sort-switch'
+import { TooltipProvider } from '@/components/ui/tooltip'
+import { AccountsToolbarTooltip } from './components/accounts-toolbar-tooltip'
+import { type CompanyEntityKind, type NdaDisplayStatus, partnerCategoryLabel } from '@/lib/accounts/company-entity'
+import { NdaStatusBadge } from './components/nda-status-badge'
 import { toast } from 'sonner'
 
 export type CompanyCard = {
@@ -69,6 +76,11 @@ export type CompanyCard = {
   industry: string | null
   employee_count?: number | null
   is_favorite?: boolean | null
+  entity_kind?: CompanyEntityKind
+  partner_category?: string | null
+  linked_account_id?: string | null
+  linked_account_name?: string | null
+  nda_status?: NdaDisplayStatus
   open_deals_count?: number | null
   contacts_count?: number | null
   reference_count?: number | null
@@ -83,7 +95,9 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
   const [deleteTarget, setDeleteTarget] = useState<CompanyCard | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [favoritesOnly, setFavoritesOnly] = useState(false)
+  const [entityKind, setEntityKind] = useState<CompanyEntityKind>('account')
   const [createOpen, setCreateOpen] = useState(false)
+  const [createPartnerOpen, setCreatePartnerOpen] = useState(false)
   const [importingAccounts, setImportingAccounts] = useState(false)
   const [sortMode, setSortMode] = useState<'activity' | 'az'>('activity')
   const [filterOpen, setFilterOpen] = useState(false)
@@ -148,21 +162,29 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
     }
   }
 
+  const companiesForEntity = useMemo(
+    () =>
+      companiesWithFavoriteState.filter(
+        (c) => (c.entity_kind ?? 'account') === entityKind
+      ),
+    [companiesWithFavoriteState, entityKind]
+  )
+
   const uniqueIndustries = useMemo(() => {
     const set = new Set<string>()
-    for (const c of companies) {
+    for (const c of companiesForEntity) {
       const v = String(c.industry ?? '').trim()
       if (v) set.add(v)
     }
     return [...set].sort((a, b) => a.localeCompare(b, 'de'))
-  }, [companies])
+  }, [companiesForEntity])
 
   const filtersActive =
     filterIndustry !== '__all__' || filterEmployeeBand !== 'any' || filterReferences !== 'any'
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
-    let list = companiesWithFavoriteState
+    let list = companiesForEntity
     if (favoritesOnly) {
       list = list.filter((c) => c.is_favorite)
     }
@@ -203,7 +225,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
       return String(a.name ?? '').localeCompare(String(b.name ?? ''), 'de')
     })
   }, [
-    companiesWithFavoriteState,
+    companiesForEntity,
     search,
     favoritesOnly,
     sortMode,
@@ -212,7 +234,13 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
     filterReferences,
   ])
 
+  const isPartnerView = entityKind === 'partner'
+  const searchPlaceholder = isPartnerView
+    ? COPY.accounts.searchPartnersPlaceholder
+    : COPY.accounts.searchCompaniesPlaceholder
+
   return (
+    <TooltipProvider delayDuration={300}>
     <div className="space-y-5 rounded-3xl bg-muted/10 p-4 md:p-6">
       <div className="w-full">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -220,87 +248,102 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
             variant="dashboard"
             wrapperClassName="flex-1"
             type="search"
-            placeholder={COPY.accounts.searchCompaniesPlaceholder}
+            placeholder={searchPlaceholder}
             value={search}
             onChange={setSearch}
             aria-label="Firmen durchsuchen"
           />
           <div className="flex flex-wrap items-center gap-2.5">
-            <Button
-              type="button"
-              variant="ghost"
-              size="toolbar"
-              className="shrink-0 px-2.5 hover:bg-muted/70"
-              onClick={() => setFavoritesOnly((v) => !v)}
-              aria-pressed={favoritesOnly}
-              aria-label={favoritesOnly ? 'Favoritenfilter deaktivieren' : 'Nur Favoriten anzeigen'}
-            >
-              <AppIcon
-                icon={StarIcon}
-                size={16}
-                className={
-                  favoritesOnly
-                    ? 'text-amber-500 dark:text-amber-400 [&_path]:fill-current'
-                    : 'text-muted-foreground'
-                }
-              />
-            </Button>
-            {canManage && (
-              <>
-                <input
-                  ref={importInputRef}
-                  type="file"
-                  accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0]
-                    if (file) void handleAccountImport(file)
-                    e.target.value = ''
-                  }}
-                />
+              <AccountsToolbarTooltip label={COPY.accounts.tooltipFavorites}>
                 <Button
                   type="button"
                   variant="ghost"
                   size="toolbar"
-                  disabled={importingAccounts}
-                  className="hover:bg-muted/70"
-                  onDragOver={(e) => {
-                    e.preventDefault()
-                    if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault()
-                    const file = e.dataTransfer.files?.[0]
-                    if (file) void handleAccountImport(file)
-                  }}
-                  onClick={() => importInputRef.current?.click()}
-                >
-                  <AppIcon icon={importingAccounts ? Loader : UploadIcon} size={16} className={importingAccounts ? 'animate-spin' : ''} />
-                  Bulk Upload
-                </Button>
-              </>
-            )}
-            <Popover open={filterOpen} onOpenChange={setFilterOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="toolbar"
-                  className={`relative shrink-0 px-2.5 hover:bg-muted/70 ${filtersActive ? 'text-primary' : ''}`}
-                  aria-expanded={filterOpen}
-                  aria-label="Accounts filtern"
-                  title="Nach Branche, Mitarbeiterzahl und Referenzen filtern"
+                  className="shrink-0 px-2.5 hover:bg-muted/70"
+                  onClick={() => setFavoritesOnly((v) => !v)}
+                  aria-pressed={favoritesOnly}
+                  aria-label={COPY.accounts.tooltipFavorites}
                 >
                   <AppIcon
-                    icon={Filter}
+                    icon={StarIcon}
                     size={16}
-                    className={filtersActive ? 'text-primary' : 'text-muted-foreground'}
+                    className={
+                      favoritesOnly
+                        ? 'text-amber-500 dark:text-amber-400 [&_path]:fill-current'
+                        : 'text-muted-foreground'
+                    }
                   />
-                  {filtersActive ? (
-                    <span className="absolute right-1 top-1 size-1.5 rounded-full bg-primary" aria-hidden />
-                  ) : null}
                 </Button>
-              </PopoverTrigger>
+              </AccountsToolbarTooltip>
+              {canManage && !isPartnerView ? (
+                <>
+                  <input
+                    ref={importInputRef}
+                    type="file"
+                    accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) void handleAccountImport(file)
+                      e.target.value = ''
+                    }}
+                  />
+                  <AccountsToolbarTooltip
+                    label={COPY.accounts.bulkUploadTooltip}
+                    className="max-w-[240px] text-center leading-snug"
+                  >
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="toolbar"
+                      disabled={importingAccounts}
+                      className="shrink-0 px-2.5 hover:bg-muted/70"
+                      aria-label={COPY.accounts.bulkUploadTooltip}
+                      onDragOver={(e) => {
+                        e.preventDefault()
+                        if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault()
+                        const file = e.dataTransfer.files?.[0]
+                        if (file) void handleAccountImport(file)
+                      }}
+                      onClick={() => importInputRef.current?.click()}
+                    >
+                      <AppIcon
+                        icon={importingAccounts ? Loader : UploadIcon}
+                        size={16}
+                        className={importingAccounts ? 'animate-spin' : ''}
+                      />
+                    </Button>
+                  </AccountsToolbarTooltip>
+                </>
+              ) : null}
+              <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+                <AccountsToolbarTooltip label={COPY.accounts.tooltipFilter}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="toolbar"
+                      className={`relative shrink-0 px-2.5 hover:bg-muted/70 ${filtersActive ? 'text-primary' : ''}`}
+                      aria-expanded={filterOpen}
+                      aria-label={COPY.accounts.tooltipFilter}
+                    >
+                      <AppIcon
+                        icon={Filter}
+                        size={16}
+                        className={filtersActive ? 'text-primary' : 'text-muted-foreground'}
+                      />
+                      {filtersActive ? (
+                        <span
+                          className="absolute right-1 top-1 size-1.5 rounded-full bg-primary"
+                          aria-hidden
+                        />
+                      ) : null}
+                    </Button>
+                  </PopoverTrigger>
+                </AccountsToolbarTooltip>
               <PopoverContent className="w-[min(100vw-2rem,20rem)] space-y-4" align="end">
                 <div className="space-y-1.5">
                   <Label htmlFor="account-filter-industry" className="text-xs font-medium text-muted-foreground">
@@ -376,38 +419,26 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                 </Button>
               </PopoverContent>
             </Popover>
-            <div className="inline-flex items-center rounded-lg border border-border/70 bg-background/70 p-1">
-              <Button
-                type="button"
-                size="toolbar"
-                variant={sortMode === 'az' ? 'secondary' : 'ghost'}
-                className="h-8 px-3 text-xs"
-                onClick={() => setSortMode('az')}
-              >
-                A-Z
-              </Button>
-              <Button
-                type="button"
-                size="toolbar"
-                variant={sortMode === 'activity' ? 'secondary' : 'ghost'}
-                className="h-8 px-3 text-xs"
-                onClick={() => setSortMode('activity')}
-              >
-                Letzte Aktivität
-              </Button>
-            </div>
+            <EntityKindSwitch value={entityKind} onChange={setEntityKind} />
+            <AccountSortSwitch value={sortMode} onChange={setSortMode} />
             {canManage ? (
               <>
                 <Button
                   type="button"
                   size="toolbar"
                   className="rounded-lg bg-gradient-to-b from-blue-600 to-blue-700 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] hover:from-blue-600 hover:to-blue-700/95"
-                  onClick={() => setCreateOpen(true)}
+                  onClick={() =>
+                    isPartnerView ? setCreatePartnerOpen(true) : setCreateOpen(true)
+                  }
                 >
                   <AppIcon icon={Plus} size={16} />
-                  {COPY.accounts.addAccount}
+                  {isPartnerView ? COPY.accounts.addPartner : COPY.accounts.addAccount}
                 </Button>
                 <CreateAccountDialog open={createOpen} onOpenChange={setCreateOpen} />
+                <CreatePartnerDialog
+                  open={createPartnerOpen}
+                  onOpenChange={setCreatePartnerOpen}
+                />
               </>
             ) : null}
           </div>
@@ -416,13 +447,19 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
 
       {filtered.length === 0 ? (
         <p className="py-12 text-center text-sm text-muted-foreground">
-          {companies.length === 0
-            ? 'Noch keine Firmen angelegt.'
+          {companiesForEntity.length === 0
+            ? isPartnerView
+              ? 'Noch keine Partner angelegt.'
+              : 'Noch keine Accounts angelegt.'
             : favoritesOnly && !search.trim() && !filtersActive
               ? 'Keine Favoriten in dieser Ansicht.'
               : search.trim() || filtersActive || favoritesOnly
-                ? 'Keine Accounts für diese Suche oder Filter.'
-                : 'Keine Firma unter diesem Namen gefunden.'}
+                ? isPartnerView
+                  ? 'Keine Partner für diese Suche oder Filter.'
+                  : 'Keine Accounts für diese Suche oder Filter.'
+                : isPartnerView
+                  ? 'Kein Partner unter diesem Namen gefunden.'
+                  : 'Keine Firma unter diesem Namen gefunden.'}
         </p>
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -432,11 +469,15 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                 <Card className="group relative h-full overflow-hidden rounded-3xl border border-border/60 bg-card/95 shadow-sm transition-all duration-200 hover:border-primary/20 hover:shadow-md">
                   {canManage ? (
                     <div className="absolute right-3 top-3 z-10 flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
+                      <AccountsToolbarTooltip
+                        label={
+                          company.is_favorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'
+                        }
+                      >
                       <button
                         type="button"
                         className="inline-flex size-8 items-center justify-center rounded-full border border-border/80 bg-background/95 text-muted-foreground shadow-sm hover:bg-muted/70 hover:text-foreground"
                         aria-label={company.is_favorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}
-                        title={company.is_favorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}
                         disabled={favoriteSaving[company.id]}
                         onClick={(e) => {
                           e.stopPropagation()
@@ -453,11 +494,12 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                           }
                         />
                       </button>
+                      </AccountsToolbarTooltip>
+                      <AccountsToolbarTooltip label="Bearbeiten">
                       <button
                         type="button"
                         className="inline-flex size-8 items-center justify-center rounded-full border border-border/80 bg-background/95 text-muted-foreground shadow-sm hover:bg-muted/70 hover:text-foreground"
                         aria-label="Account bearbeiten"
-                        title="Account bearbeiten"
                         onClick={(e) => {
                           e.stopPropagation()
                           router.push(`${ROUTES.accountsDetail(company.id)}?edit=1`)
@@ -465,11 +507,12 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                       >
                         <AppIcon icon={Pencil} size={14} />
                       </button>
+                      </AccountsToolbarTooltip>
+                      <AccountsToolbarTooltip label="Löschen">
                       <button
                         type="button"
                         className="inline-flex size-8 items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-600 shadow-sm hover:bg-red-100"
                         aria-label="Account löschen"
-                        title="Account löschen"
                         onClick={(e) => {
                           e.stopPropagation()
                           if (deleting) return
@@ -478,6 +521,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                       >
                         <AppIcon icon={Cancel01Icon} size={14} />
                       </button>
+                      </AccountsToolbarTooltip>
                     </div>
                   ) : null}
                   <div
@@ -503,17 +547,24 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                             fallbackIconSize={24}
                             fallbackText={company.name}
                           />
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2.5">
-                              <CardTitle className="truncate text-base font-semibold">
-                                {company.name}
-                              </CardTitle>
+                          <div className="flex min-w-0 flex-1 flex-col items-start text-left">
+                            <CardTitle className="w-full truncate text-left text-base font-semibold">
+                              {company.name}
+                            </CardTitle>
+                            <div className="mt-0.5 w-full text-left">
+                              <NdaStatusBadge
+                                status={company.nda_status ?? 'none'}
+                                compact
+                                subtle
+                              />
                             </div>
-                            {(company.signal_count ?? 0) >= 3 ? (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-semibold text-white">
-                                <span className="text-[11px]">▲</span>
-                                Hot
-                              </span>
+                            {company.linked_account_name ? (
+                              <p className="mt-0.5 text-[10px] text-muted-foreground">
+                                {COPY.accounts.alsoLinkedAccountHint}
+                                {company.linked_account_name
+                                  ? `: ${company.linked_account_name}`
+                                  : ''}
+                              </p>
                             ) : null}
                           </div>
                         </div>
@@ -521,6 +572,14 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                     </CardHeader>
                     <CardContent className="pt-1 text-xs text-muted-foreground">
                       <div className="flex flex-wrap items-center gap-3">
+                        {isPartnerView && partnerCategoryLabel(company.partner_category) ? (
+                          <div className="flex items-center gap-1.5">
+                            <AppIcon icon={Users} size={14} className="shrink-0" />
+                            <span className="max-w-[150px] truncate">
+                              {partnerCategoryLabel(company.partner_category)}
+                            </span>
+                          </div>
+                        ) : null}
                         {company.industry && (
                           <div className="flex items-center gap-1.5">
                             <AppIcon icon={Building2} size={14} className="shrink-0" />
@@ -658,5 +717,6 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </TooltipProvider>
   )
 }

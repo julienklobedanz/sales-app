@@ -7,15 +7,30 @@ import { useEffect, useMemo, useState, useTransition } from 'react'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import {
+  Calendar,
+  CheckmarkCircle02Icon,
+  CopyCheckIcon,
+  CopyIcon,
   Delete02Icon,
+  ExternalLink,
   FilterHorizontalIcon,
+  InformationCircleIcon,
   Linkedin01Icon,
   LinkIcon,
   Loader,
+  Message01Icon,
   Paperclip,
+  PinIcon,
+  RefreshCw,
+  SettingsIcon,
   Sparkles,
+  SquareLock02Icon,
   StarIcon,
+  ThumbsDownIcon,
+  ThumbsUpIcon,
+  Timer,
   UploadIcon,
+  Users,
 } from '@hugeicons/core-free-icons'
 
 import { AppIcon } from '@/lib/icons'
@@ -58,24 +73,8 @@ import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { toast } from 'sonner'
 import { useRole } from '@/hooks/useRole'
-import {
-  CalendarClock,
-  CalendarDays,
-  CheckCircle2,
-  Copy,
-  CopyCheck,
-  ExternalLink,
-  Info,
-  Lock,
-  MessageCircle,
-  Pin,
-  RefreshCw,
-  Settings,
-  Sparkles as LucideSparkles,
-  ThumbsDown,
-  ThumbsUp,
-  Users,
-} from 'lucide-react'
+/** Einheitlicher Toolbar-/Aktions-Icon-Stil (wie Referenzen-Übersicht). */
+const MS_TOOLBAR_ICON_CLASS = 'shrink-0 text-muted-foreground'
 
 function formatLinkedInActivityLine(iso: string | null | undefined): string | null {
   if (!iso) return null
@@ -1138,7 +1137,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
           className="mt-4 w-full gap-2 shadow-sm"
           onClick={triggerIntroDraftGeneration}
         >
-          <LucideSparkles className="size-4" aria-hidden />
+          <AppIcon icon={Sparkles} size={16} className={MS_TOOLBAR_ICON_CLASS} aria-hidden />
           Outreach-Draft für {outreachDraftTargetName} generieren
         </Button>
       </div>
@@ -1165,7 +1164,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                         aria-label="Watchlist und Executives verwalten"
                         title="Watchlist und Executives verwalten"
                       >
-                        <Settings className="size-4" aria-hidden />
+                        <AppIcon icon={SettingsIcon} size={16} className={MS_TOOLBAR_ICON_CLASS} aria-hidden />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56">
@@ -1174,13 +1173,13 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                       </DropdownMenuLabel>
                       <DropdownMenuItem asChild className="cursor-pointer">
                         <Link href={`${ROUTES.marketSignalsManage}?view=champions`} className="flex items-center gap-2">
-                          <AppIcon icon={Sparkles} size={14} className="text-muted-foreground" />
+                          <AppIcon icon={Sparkles} size={16} className={MS_TOOLBAR_ICON_CLASS} />
                           Executives verwalten
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild className="cursor-pointer">
                         <Link href={ROUTES.marketSignalsManage} className="flex items-center gap-2">
-                          <AppIcon icon={StarIcon} size={14} className="text-muted-foreground" />
+                          <AppIcon icon={StarIcon} size={16} className={MS_TOOLBAR_ICON_CLASS} />
                           Watchlist verwalten
                         </Link>
                       </DropdownMenuItem>
@@ -1196,7 +1195,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                     aria-label="Alle sichtbaren Signale archivieren"
                     title="Alle sichtbaren Signale archivieren"
                   >
-                    <AppIcon icon={Delete02Icon} size={14} />
+                    <AppIcon icon={Delete02Icon} size={16} className={MS_TOOLBAR_ICON_CLASS} />
                   </Button>
                 </div>
               </div>
@@ -1236,14 +1235,14 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                       <TooltipTrigger asChild>
                         <Button
                           type="button"
-                          variant="outline"
-                          size="icon"
-                          className={cn('size-8 shrink-0 border-border bg-card', onlyActiveDeals && 'bg-muted')}
+                          variant="ghost"
+                          size="toolbar"
+                          className={cn('shrink-0 px-2.5 hover:bg-muted/70', onlyActiveDeals && 'bg-muted')}
                           aria-pressed={onlyActiveDeals}
                           aria-label="Nur aktive Deals"
                           onClick={() => setOnlyActiveDeals((prev) => !prev)}
                         >
-                          <AppIcon icon={FilterHorizontalIcon} size={14} className="text-foreground/85" />
+                          <AppIcon icon={FilterHorizontalIcon} size={16} className={MS_TOOLBAR_ICON_CLASS} />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent side="bottom" className="max-w-[220px] text-xs">
@@ -1255,14 +1254,14 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                       <TooltipTrigger asChild>
                         <Button
                           type="button"
-                          variant="outline"
-                          size="icon"
-                          className={cn('size-8 shrink-0 border-border bg-card', onlyFocusAccounts && 'bg-muted')}
+                          variant="ghost"
+                          size="toolbar"
+                          className={cn('shrink-0 px-2.5 hover:bg-muted/70', onlyFocusAccounts && 'bg-muted')}
                           aria-pressed={onlyFocusAccounts}
                           aria-label="Nur Focus-Accounts"
                           onClick={() => setOnlyFocusAccounts((prev) => !prev)}
                         >
-                          <AppIcon icon={StarIcon} size={14} className="text-foreground/85" />
+                          <AppIcon icon={StarIcon} size={16} className={MS_TOOLBAR_ICON_CLASS} />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent side="bottom" className="max-w-[220px] text-xs">
@@ -1284,17 +1283,17 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                         <TooltipTrigger asChild>
                           <Button
                             type="button"
-                            variant="outline"
-                            size="icon"
-                            className="size-8 shrink-0 border-border bg-card"
+                            variant="ghost"
+                            size="toolbar"
+                            className="shrink-0 px-2.5 hover:bg-muted/70"
                             disabled={newsIngestPending}
                             aria-label="Neue Signale aus Feeds laden"
                             onClick={() => runManualNewsIngest()}
                           >
                             {newsIngestPending ? (
-                              <AppIcon icon={Loader} size={14} className="animate-spin text-muted-foreground" />
+                              <AppIcon icon={Loader} size={16} className="animate-spin text-muted-foreground" />
                             ) : (
-                              <RefreshCw className="size-3.5 text-muted-foreground" aria-hidden />
+                              <AppIcon icon={RefreshCw} size={16} className={MS_TOOLBAR_ICON_CLASS} aria-hidden />
                             )}
                           </Button>
                         </TooltipTrigger>
@@ -1469,7 +1468,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                                 toast.success('AI-Intro-Snippet kopiert.')
                                               }}
                                             >
-                                              <AppIcon icon={Sparkles} size={14} />
+                                              <AppIcon icon={Sparkles} size={16} className={MS_TOOLBAR_ICON_CLASS} />
                                             </button>
                                           </TooltipTrigger>
                                           <TooltipContent side="left" className="max-w-[220px] text-xs">
@@ -1532,7 +1531,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                       ) : (
                         <>
                           <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-muted text-foreground/85">
-                            <AppIcon icon={Sparkles} size={18} />
+                            <AppIcon icon={Sparkles} size={16} className={MS_TOOLBAR_ICON_CLASS} />
                           </div>
                           <p className="mt-3 text-sm font-semibold text-foreground">Kein Signal ausgewählt</p>
                           <p className="mt-1 text-sm text-muted-foreground">
@@ -1630,7 +1629,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                             onClick={() => void submitDraftFeedback(true)}
                             aria-label="Nützlich"
                           >
-                            <ThumbsUp className="h-4 w-4" />
+                            <AppIcon icon={ThumbsUpIcon} size={16} className={MS_TOOLBAR_ICON_CLASS} />
                           </Button>
                           <Button
                             type="button"
@@ -1640,7 +1639,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                             onClick={() => void submitDraftFeedback(false)}
                             aria-label="Nicht nützlich"
                           >
-                            <ThumbsDown className="h-4 w-4" />
+                            <AppIcon icon={ThumbsDownIcon} size={16} className={MS_TOOLBAR_ICON_CLASS} />
                           </Button>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -1652,7 +1651,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                 title="Wiedervorlage, Priorität und Slack"
                                 aria-label="Wiedervorlage, Priorität und Slack"
                               >
-                                <CalendarDays className="h-4 w-4" />
+                                <AppIcon icon={Calendar} size={16} className={MS_TOOLBAR_ICON_CLASS} />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="min-w-[14rem]">
@@ -1664,7 +1663,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                 onSelect={() => void toggleTodayPriority(selected)}
                               >
                                 <span className="flex w-full items-center gap-2 text-sm font-medium">
-                                  <Pin className="size-3.5 shrink-0 text-amber-600" aria-hidden />
+                                  <AppIcon icon={PinIcon} size={16} className="shrink-0 text-amber-600" aria-hidden />
                                   Heute zuerst
                                 </span>
                                 <span className="text-muted-foreground pl-5 text-xs font-normal leading-snug">
@@ -1676,7 +1675,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                 onSelect={() => void snoozeSelected(1)}
                               >
                                 <span className="flex w-full items-center gap-2 text-sm font-medium">
-                                  <CalendarClock className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                                  <AppIcon icon={Timer} size={16} className={MS_TOOLBAR_ICON_CLASS} aria-hidden />
                                   Morgen
                                 </span>
                                 <span className="text-muted-foreground pl-5 text-xs font-normal leading-snug">
@@ -1688,7 +1687,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                 onSelect={() => void snoozeSelected(7)}
                               >
                                 <span className="flex w-full items-center gap-2 text-sm font-medium">
-                                  <CalendarDays className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                                  <AppIcon icon={Calendar} size={16} className={MS_TOOLBAR_ICON_CLASS} aria-hidden />
                                   Nächste Woche
                                 </span>
                                 <span className="text-muted-foreground pl-5 text-xs font-normal leading-snug">
@@ -1708,7 +1707,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                 }}
                               >
                                 <span className="flex w-full items-center gap-2 text-sm font-medium">
-                                  <MessageCircle className="size-3.5 shrink-0 text-violet-600" aria-hidden />
+                                  <AppIcon icon={Message01Icon} size={16} className="shrink-0 text-violet-600" aria-hidden />
                                   Slack öffnen
                                 </span>
                                 <span className="text-muted-foreground pl-5 text-xs font-normal leading-snug">
@@ -1748,7 +1747,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                     : 'Gemeinsame Kontakte und Warm-Intro-Pfade'
                                 }
                               >
-                                <Users className="size-4 shrink-0 opacity-90" aria-hidden />
+                                <AppIcon icon={Users} size={16} className={MS_TOOLBAR_ICON_CLASS} aria-hidden />
                               </button>
                             </HoverCardTrigger>
                             <HoverCardContent
@@ -1833,7 +1832,11 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                 }
                                 disabled={isSelectedInPipeline}
                               >
-                                {isSelectedInPipeline ? <CheckCircle2 className="mr-1 h-4 w-4" /> : <AppIcon icon={UploadIcon} size={16} />}
+                                {isSelectedInPipeline ? (
+                                  <AppIcon icon={CheckmarkCircle02Icon} size={16} className="mr-1 shrink-0" />
+                                ) : (
+                                  <AppIcon icon={UploadIcon} size={16} className="mr-1 shrink-0" />
+                                )}
                                 {isSelectedInPipeline ? 'In Pipeline' : 'In Pipeline überführen'}
                               </Button>
                             </DropdownMenuTrigger>
@@ -1907,7 +1910,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                   <Tooltip>
                                     <TooltipTrigger asChild>
                                       <button type="button" className="text-muted-foreground hover:text-foreground dark:hover:text-foreground">
-                                        <Info className="h-3.5 w-3.5" />
+                                        <AppIcon icon={InformationCircleIcon} size={16} className={MS_TOOLBAR_ICON_CLASS} />
                                       </button>
                                     </TooltipTrigger>
                                     <TooltipContent className="max-w-[260px] border-border bg-popover text-popover-foreground text-xs">
@@ -2013,7 +2016,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                             {candidate.profileUrl ? (
                                               <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" asChild>
                                                 <Link href={candidate.profileUrl} target="_blank" rel="noreferrer">
-                                                  <ExternalLink className="size-3.5" />
+                                                  <AppIcon icon={ExternalLink} size={16} className={MS_TOOLBAR_ICON_CLASS} />
                                                   LinkedIn öffnen
                                                 </Link>
                                               </Button>
@@ -2049,7 +2052,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                             )
                                           }
                                         >
-                                          <LucideSparkles className="size-3.5" aria-hidden />
+                                          <AppIcon icon={Sparkles} size={16} className={MS_TOOLBAR_ICON_CLASS} aria-hidden />
                                           {warmTrigger.label}
                                         </Button>
                                       </div>
@@ -2122,7 +2125,9 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                             <Badge variant="outline" className={`text-[10px] font-semibold ${readiness.legalBadgeClassName}`}>
                                               {readiness.legalBadgeLabel}
                                             </Badge>
-                                            {requestable ? <Lock className="size-3 text-muted-foreground" /> : null}
+                                            {requestable ? (
+                                              <AppIcon icon={SquareLock02Icon} size={16} className={MS_TOOLBAR_ICON_CLASS} />
+                                            ) : null}
                                           </div>
                                           <p className="text-sm font-semibold text-foreground">{r.title}</p>
                                           <p className="text-sm leading-relaxed text-muted-foreground">
@@ -2191,7 +2196,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                         )
                                       }
                                     >
-                                      <LucideSparkles className="size-4" aria-hidden />
+                                      <AppIcon icon={Sparkles} size={16} className={MS_TOOLBAR_ICON_CLASS} aria-hidden />
                                       {t.label}
                                     </Button>
                                   ))}
@@ -2224,7 +2229,11 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                       className="h-7 px-2 text-xs text-muted-foreground"
                                       onClick={() => void copyStrategySnippet()}
                                     >
-                                      {copySuccess ? <CopyCheck className="mr-1 h-3.5 w-3.5" /> : <Copy className="mr-1 h-3.5 w-3.5" />}
+                                      {copySuccess ? (
+                                        <AppIcon icon={CopyCheckIcon} size={16} className="mr-1 shrink-0" />
+                                      ) : (
+                                        <AppIcon icon={CopyIcon} size={16} className="mr-1 shrink-0" />
+                                      )}
                                       Kopieren
                                     </Button>
                                     <Button
@@ -2387,7 +2396,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                     onClick={() => void submitDraftFeedback(true)}
                     aria-label="Nützlich"
                   >
-                    <ThumbsUp className="h-4 w-4" />
+                    <AppIcon icon={ThumbsUpIcon} size={16} className={MS_TOOLBAR_ICON_CLASS} />
                   </Button>
                   <Button
                     type="button"
@@ -2397,7 +2406,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                     onClick={() => void submitDraftFeedback(false)}
                     aria-label="Nicht nützlich"
                   >
-                    <ThumbsDown className="h-4 w-4" />
+                    <AppIcon icon={ThumbsDownIcon} size={16} className={MS_TOOLBAR_ICON_CLASS} />
                   </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -2409,7 +2418,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                         title="Wiedervorlage, Priorität und Slack"
                         aria-label="Wiedervorlage, Priorität und Slack"
                       >
-                        <CalendarDays className="h-4 w-4" />
+                        <AppIcon icon={Calendar} size={16} className={MS_TOOLBAR_ICON_CLASS} />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="min-w-[14rem]">
@@ -2421,7 +2430,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                         onSelect={() => void toggleTodayPriority(selected)}
                       >
                         <span className="flex w-full items-center gap-2 text-sm font-medium">
-                          <Pin className="size-3.5 shrink-0 text-amber-600" aria-hidden />
+                          <AppIcon icon={PinIcon} size={16} className="shrink-0 text-amber-600" aria-hidden />
                           Heute zuerst
                         </span>
                         <span className="text-muted-foreground pl-5 text-xs font-normal leading-snug">
@@ -2433,7 +2442,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                         onSelect={() => void snoozeSelected(1)}
                       >
                         <span className="flex w-full items-center gap-2 text-sm font-medium">
-                          <CalendarClock className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                          <AppIcon icon={Timer} size={16} className={MS_TOOLBAR_ICON_CLASS} aria-hidden />
                           Morgen
                         </span>
                         <span className="text-muted-foreground pl-5 text-xs font-normal leading-snug">
@@ -2445,7 +2454,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                         onSelect={() => void snoozeSelected(7)}
                       >
                         <span className="flex w-full items-center gap-2 text-sm font-medium">
-                          <CalendarDays className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                          <AppIcon icon={Calendar} size={16} className={MS_TOOLBAR_ICON_CLASS} aria-hidden />
                           Nächste Woche
                         </span>
                         <span className="text-muted-foreground pl-5 text-xs font-normal leading-snug">
@@ -2465,7 +2474,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                         }}
                       >
                         <span className="flex w-full items-center gap-2 text-sm font-medium">
-                          <MessageCircle className="size-3.5 shrink-0 text-violet-600" aria-hidden />
+                          <AppIcon icon={Message01Icon} size={16} className="shrink-0 text-violet-600" aria-hidden />
                           Slack öffnen
                         </span>
                         <span className="text-muted-foreground pl-5 text-xs font-normal leading-snug">
@@ -2494,7 +2503,11 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                         }`}
                         disabled={isSelectedInPipeline}
                       >
-                        {isSelectedInPipeline ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AppIcon icon={UploadIcon} size={14} />}
+                        {isSelectedInPipeline ? (
+                          <AppIcon icon={CheckmarkCircle02Icon} size={16} className="mr-1 shrink-0" />
+                        ) : (
+                          <AppIcon icon={UploadIcon} size={16} className="mr-1 shrink-0" />
+                        )}
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
@@ -2567,7 +2580,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <button type="button" className="text-muted-foreground hover:text-foreground dark:hover:text-foreground">
-                                <Info className="h-3.5 w-3.5" />
+                                <AppIcon icon={InformationCircleIcon} size={16} className={MS_TOOLBAR_ICON_CLASS} />
                               </button>
                             </TooltipTrigger>
                             <TooltipContent className="max-w-[260px] border-border bg-popover text-popover-foreground text-xs">
@@ -2669,7 +2682,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                     {candidate.profileUrl ? (
                                       <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" asChild>
                                         <Link href={candidate.profileUrl} target="_blank" rel="noreferrer">
-                                          <ExternalLink className="size-3.5" />
+                                          <AppIcon icon={ExternalLink} size={16} className={MS_TOOLBAR_ICON_CLASS} />
                                           LinkedIn öffnen
                                         </Link>
                                       </Button>
@@ -2705,7 +2718,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                     )
                                   }
                                 >
-                                  <LucideSparkles className="size-3.5" aria-hidden />
+                                  <AppIcon icon={Sparkles} size={16} className={MS_TOOLBAR_ICON_CLASS} aria-hidden />
                                   {warmTrigger.label}
                                 </Button>
                               </div>
@@ -2778,7 +2791,9 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                     <Badge variant="outline" className={`text-[10px] font-semibold ${readiness.legalBadgeClassName}`}>
                                       {readiness.legalBadgeLabel}
                                     </Badge>
-                                    {requestable ? <Lock className="size-3 text-muted-foreground" /> : null}
+                                    {requestable ? (
+                                      <AppIcon icon={SquareLock02Icon} size={16} className={MS_TOOLBAR_ICON_CLASS} />
+                                    ) : null}
                                   </div>
                                   <p className="text-sm font-semibold text-foreground">{r.title}</p>
                                   <p className="text-sm leading-relaxed text-muted-foreground">
@@ -2846,7 +2861,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                 )
                               }
                             >
-                              <LucideSparkles className="size-4" aria-hidden />
+                              <AppIcon icon={Sparkles} size={16} className={MS_TOOLBAR_ICON_CLASS} aria-hidden />
                               {t.label}
                             </Button>
                           ))}
@@ -2871,7 +2886,11 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                               </Badge>
                             ) : null}
                             <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => void copyStrategySnippet()}>
-                              {copySuccess ? <CopyCheck className="mr-1 h-3.5 w-3.5" /> : <Copy className="mr-1 h-3.5 w-3.5" />}
+                              {copySuccess ? (
+                                <AppIcon icon={CopyCheckIcon} size={16} className="mr-1 shrink-0" />
+                              ) : (
+                                <AppIcon icon={CopyIcon} size={16} className="mr-1 shrink-0" />
+                              )}
                               Kopieren
                             </Button>
                             <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={triggerIntroDraftGeneration} disabled={introStrategyLoading}>

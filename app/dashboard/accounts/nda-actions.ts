@@ -1,0 +1,259 @@
+'use server'
+
+import { revalidatePath } from 'next/cache'
+import { ROUTES } from '@/lib/routes'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
+
+export type NdaAgreementRow = {
+  id: string
+  company_id: string
+  status: 'active' | 'expired' | 'pending'
+  valid_until: string | null
+  notes: string | null
+  file_storage_path: string | null
+  file_name: string | null
+  document_version: string | null
+  signed_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+const NDA_BUCKET = 'nda-documents'
+
+type NdaAuth =
+  | { error: string }
+  | {
+      supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>
+      orgId: string
+      canManage: boolean
+    }
+
+async function getNdaAuth(): Promise<NdaAuth> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: 'Nicht eingeloggt.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id, role')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.organization_id) return { error: 'Onboarding unvollständig.' }
+
+  const role = profile.role as string
+  return {
+    supabase,
+    orgId: profile.organization_id,
+    canManage: role === 'admin' || role === 'account_manager',
+  }
+}
+
+async function assertCompanyInOrg(
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+  companyId: string,
+  orgId: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { data } = await supabase
+    .from('companies')
+    .select('id')
+    .eq('id', companyId)
+    .eq('organization_id', orgId)
+    .maybeSingle()
+  if (!data) return { ok: false, error: 'Firma nicht gefunden.' }
+  return { ok: true }
+}
+
+export async function getNdaAgreementsByCompanyId(
+  companyId: string
+): Promise<{ success: true; rows: NdaAgreementRow[] } | { success: false; error: string }> {
+  const auth = await getNdaAuth()
+  if ('error' in auth) return { success: false, error: auth.error }
+
+  const companyCheck = await assertCompanyInOrg(auth.supabase, companyId, auth.orgId)
+  if (!companyCheck.ok) return { success: false, error: companyCheck.error }
+
+  const { data, error } = await auth.supabase
+    .from('nda_agreements')
+    .select(
+      'id, company_id, status, valid_until, notes, file_storage_path, file_name, document_version, signed_at, created_at, updated_at'
+    )
+    .eq('company_id', companyId)
+    .eq('organization_id', auth.orgId)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    if ((error.message ?? '').includes('nda_agreements')) {
+      return { success: true, rows: [] }
+    }
+    return { success: false, error: error.message }
+  }
+
+  return { success: true, rows: (data ?? []) as NdaAgreementRow[] }
+}
+
+export async function createNdaAgreement(payload: {
+  companyId: string
+  status: 'active' | 'expired' | 'pending'
+  validUntil: string | null
+  unlimited: boolean
+  notes?: string | null
+}): Promise<{ success: true; id: string } | { success: false; error: string }> {
+  const auth = await getNdaAuth()
+  if ('error' in auth) return { success: false, error: auth.error }
+  if (!auth.canManage) return { success: false, error: 'Keine Berechtigung.' }
+
+  const companyCheck = await assertCompanyInOrg(auth.supabase, payload.companyId, auth.orgId)
+  if (!companyCheck.ok) return { success: false, error: companyCheck.error }
+
+  const { data, error } = await auth.supabase
+    .from('nda_agreements')
+    .insert({
+      organization_id: auth.orgId,
+      company_id: payload.companyId,
+      status: payload.status,
+      valid_until: payload.unlimited ? null : payload.validUntil,
+      notes: payload.notes?.trim() || null,
+    })
+    .select('id')
+    .single()
+
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath(ROUTES.accounts)
+  revalidatePath(ROUTES.accountsDetail(payload.companyId))
+  return { success: true, id: data!.id }
+}
+
+export async function deleteNdaAgreement(
+  ndaId: string,
+  companyId: string
+): Promise<{ success: boolean; error?: string }> {
+  const auth = await getNdaAuth()
+  if ('error' in auth) return { success: false, error: auth.error }
+  if (!auth.canManage) return { success: false, error: 'Keine Berechtigung.' }
+
+  const { data: row } = await auth.supabase
+    .from('nda_agreements')
+    .select('file_storage_path')
+    .eq('id', ndaId)
+    .eq('company_id', companyId)
+    .eq('organization_id', auth.orgId)
+    .maybeSingle()
+
+  if (row?.file_storage_path) {
+    await auth.supabase.storage.from(NDA_BUCKET).remove([row.file_storage_path])
+  }
+
+  const { error } = await auth.supabase
+    .from('nda_agreements')
+    .delete()
+    .eq('id', ndaId)
+    .eq('company_id', companyId)
+    .eq('organization_id', auth.orgId)
+
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath(ROUTES.accounts)
+  revalidatePath(ROUTES.accountsDetail(companyId))
+  return { success: true }
+}
+
+export async function uploadNdaAgreementPdf(
+  ndaId: string,
+  companyId: string,
+  formData: FormData
+): Promise<{ success: boolean; error?: string }> {
+  const auth = await getNdaAuth()
+  if ('error' in auth) return { success: false, error: auth.error }
+  if (!auth.canManage) return { success: false, error: 'Keine Berechtigung.' }
+
+  const file = formData.get('file')
+  if (!(file instanceof File) || file.size === 0) {
+    return { success: false, error: 'Keine PDF-Datei ausgewählt.' }
+  }
+  if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+    return { success: false, error: 'Nur PDF-Dateien sind erlaubt.' }
+  }
+
+  const documentVersion = String(formData.get('document_version') ?? '').trim() || null
+  const signedAtRaw = String(formData.get('signed_at') ?? '').trim()
+  const signedAt = signedAtRaw || null
+
+  const { data: existing } = await auth.supabase
+    .from('nda_agreements')
+    .select('id, file_storage_path')
+    .eq('id', ndaId)
+    .eq('company_id', companyId)
+    .eq('organization_id', auth.orgId)
+    .maybeSingle()
+
+  if (!existing) return { success: false, error: 'NDA nicht gefunden.' }
+
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120) || 'nda.pdf'
+  const storagePath = `${auth.orgId}/${companyId}/${ndaId}/${Date.now()}-${safeName}`
+
+  const bytes = new Uint8Array(await file.arrayBuffer())
+  const { error: uploadError } = await auth.supabase.storage.from(NDA_BUCKET).upload(storagePath, bytes, {
+    contentType: 'application/pdf',
+    upsert: false,
+  })
+
+  if (uploadError) return { success: false, error: uploadError.message }
+
+  if (existing.file_storage_path && existing.file_storage_path !== storagePath) {
+    await auth.supabase.storage.from(NDA_BUCKET).remove([existing.file_storage_path])
+  }
+
+  const { error: updateError } = await auth.supabase
+    .from('nda_agreements')
+    .update({
+      file_storage_path: storagePath,
+      file_name: safeName,
+      document_version: documentVersion,
+      signed_at: signedAt,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', ndaId)
+
+  if (updateError) {
+    await auth.supabase.storage.from(NDA_BUCKET).remove([storagePath])
+    return { success: false, error: updateError.message }
+  }
+
+  revalidatePath(ROUTES.accounts)
+  revalidatePath(ROUTES.accountsDetail(companyId))
+  return { success: true }
+}
+
+export async function getNdaAgreementDownloadUrl(
+  ndaId: string,
+  companyId: string
+): Promise<{ success: true; url: string } | { success: false; error: string }> {
+  const auth = await getNdaAuth()
+  if ('error' in auth) return { success: false, error: auth.error }
+
+  const { data: row } = await auth.supabase
+    .from('nda_agreements')
+    .select('file_storage_path, file_name')
+    .eq('id', ndaId)
+    .eq('company_id', companyId)
+    .eq('organization_id', auth.orgId)
+    .maybeSingle()
+
+  if (!row?.file_storage_path) {
+    return { success: false, error: 'Kein Dokument hochgeladen.' }
+  }
+
+  const { data, error } = await auth.supabase.storage
+    .from(NDA_BUCKET)
+    .createSignedUrl(row.file_storage_path, 120)
+
+  if (error || !data?.signedUrl) {
+    return { success: false, error: error?.message ?? 'Download fehlgeschlagen.' }
+  }
+
+  return { success: true, url: data.signedUrl }
+}

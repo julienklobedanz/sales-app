@@ -1,7 +1,9 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  AlertTriangle,
+  CheckCircle2,
   Clock,
   FileSpreadsheet,
   FileText,
@@ -48,6 +50,7 @@ import { projectToWorkspaceState } from '@/lib/deal-desk/project-mapper'
 import {
   buildHeroKeyTakeaways,
   recommendationBadgeClass,
+  type HeroTakeawayIconKind,
 } from '@/lib/deal-desk/hero-key-takeaways'
 import {
   winProbabilityRecommendationLabel,
@@ -67,10 +70,12 @@ import {
   removeDealDeskDocumentAction,
   resetDealDeskDemoForOrg,
   runDealDeskDemoAnalyzeAction,
+  setDealDeskProjectArchivedAction,
   updateDealDeskProjectAction,
 } from './actions'
 import { BidTimelineCard } from './components/bid-timeline-card'
 import { DealDeskProjectHeader } from './components/deal-desk-project-header'
+import { DealDeskProjectSwitcher } from './components/deal-desk-project-switcher'
 import { ExecutiveBriefingDialog } from './components/executive-briefing-dialog'
 import { FirstDraftEngineCard } from './components/first-draft-engine-card'
 import { SmeRoutingBoard } from './components/sme-routing-board'
@@ -101,7 +106,17 @@ type TabKey = 'decision' | 'draft' | 'sme' | 'incubator'
 
 const DESK_LAYOUT_CLASS = 'mx-auto w-full max-w-6xl space-y-6'
 const TAB_PANEL_CLASS =
-  'mt-6 w-full outline-none focus-visible:outline-none data-[state=inactive]:hidden'
+  'mt-2 w-full outline-none focus-visible:outline-none data-[state=inactive]:hidden'
+
+const DEAL_DESK_TAB_TRIGGER_CLASS =
+  'h-auto min-w-0 flex-1 justify-center gap-1.5 rounded-md px-3.5 py-1.5 text-sm font-medium text-slate-500 shadow-none transition-all after:hidden hover:bg-slate-50 hover:text-slate-800 data-[state=active]:border-transparent data-[state=active]:bg-slate-100 data-[state=active]:font-medium data-[state=active]:text-slate-900 data-[state=active]:shadow-none dark:data-[state=active]:bg-slate-100 dark:data-[state=active]:text-slate-900'
+
+function HeroTakeawayIcon({ kind }: { kind: HeroTakeawayIconKind }) {
+  const className = 'size-4 shrink-0 text-slate-400'
+  if (kind === 'alert') return <AlertTriangle className={className} aria-hidden />
+  if (kind === 'partnership') return <CheckCircle2 className={className} aria-hidden />
+  return <Sparkles className={className} aria-hidden />
+}
 const TAB_STAGE_CLASS = 'w-full min-h-[680px] [scrollbar-gutter:stable]'
 const TAB_CARD_CLASS = 'w-full shadow-sm'
 
@@ -180,10 +195,19 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null)
   const [uploadMode, setUploadMode] = useState(false)
   const [activeTab, setActiveTab] = useState<TabKey>('decision')
-  const [canResetDemo, setCanResetDemo] = useState(false)
+  const activeProjects = useMemo(
+    () => projects.filter((p) => !p.archivedAt),
+    [projects]
+  )
+  const archivedProjects = useMemo(
+    () => projects.filter((p) => p.archivedAt),
+    [projects]
+  )
 
   const activeProject =
-    projects.find((p) => p.id === activeProjectId) ?? projects[projects.length - 1] ?? null
+    projects.find((p) => p.id === activeProjectId) ??
+    activeProjects[activeProjects.length - 1] ??
+    null
 
   const schedulePersist = useCallback((project: DealDeskProject) => {
     if (skipPersistRef.current) return
@@ -230,17 +254,19 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
       const listRes = await listDealDeskProjects()
       if (listRes.success) {
         setProjects(listRes.projects)
-        if (listRes.projects[0]) setActiveProjectId(listRes.projects[0].id)
+        const firstActive = listRes.projects.find((p) => !p.archivedAt) ?? null
+        if (firstActive) {
+          setActiveProjectId(firstActive.id)
+          setUploadMode(false)
+        } else if (listRes.projects.length > 0) {
+          setActiveProjectId(null)
+          setUploadMode(true)
+        }
       } else {
         toast.error(listRes.error)
       }
       skipPersistRef.current = false
       setLoadingDesk(false)
-      setCanResetDemo(
-        process.env.NEXT_PUBLIC_DEAL_DESK_DEMO === '1' ||
-          process.env.NEXT_PUBLIC_DEAL_DESK_DEMO_MODE === '1'
-      )
-
       if (runDemoOnMount && listRes.success && listRes.projects.length === 0) {
         const demo = await runDealDeskDemoAnalyzeAction()
         if (demo.success) {
@@ -262,6 +288,21 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
 
     return () => window.clearInterval(interval)
   }, [activeProjectId, activeProject?.analysisStatus, reloadProject])
+
+  useEffect(() => {
+    if (loadingDesk || uploadMode) return
+    if (activeProjectId && projects.some((p) => p.id === activeProjectId)) return
+    const pick = activeProjects[activeProjects.length - 1]
+    if (pick) {
+      setActiveProjectId(pick.id)
+      setUploadMode(false)
+      return
+    }
+    if (projects.length > 0) {
+      setUploadMode(true)
+      setActiveProjectId(null)
+    }
+  }, [loadingDesk, uploadMode, activeProjectId, projects, activeProjects])
 
   const startAnalysis = useCallback(
     async (files: File[]) => {
@@ -465,6 +506,7 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
   function openNewRfpUpload() {
     setPendingFiles([])
     setUploadMode(true)
+    setActiveProjectId(null)
     if (inputRef.current) inputRef.current.value = ''
   }
 
@@ -483,15 +525,47 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
       const next = prev.filter((p) => p.id !== id)
       if (next.length === 0) {
         setActiveProjectId(null)
-        setUploadMode(false)
+        setUploadMode(true)
         return []
       }
       if (activeProjectId === id) {
-        setActiveProjectId(next[next.length - 1]!.id)
+        const actives = next.filter((p) => !p.archivedAt)
+        setActiveProjectId(actives[actives.length - 1]?.id ?? next[next.length - 1]!.id)
       }
       return next
     })
     toast.message('Projekt entfernt.')
+  }
+
+  async function archiveProject(id: string) {
+    const res = await setDealDeskProjectArchivedAction(id, true)
+    if (!res.success) {
+      toast.error(res.error)
+      return
+    }
+    const archivedAt = new Date().toISOString()
+    setProjects((prev) => {
+      const next = prev.map((p) => (p.id === id ? { ...p, archivedAt } : p))
+      if (activeProjectId === id) {
+        const actives = next.filter((p) => !p.archivedAt)
+        setActiveProjectId(actives[actives.length - 1]?.id ?? null)
+        if (actives.length === 0) setUploadMode(true)
+      }
+      return next
+    })
+    toast.success('RFP archiviert.')
+  }
+
+  async function unarchiveProject(id: string) {
+    const res = await setDealDeskProjectArchivedAction(id, false)
+    if (!res.success) {
+      toast.error(res.error)
+      return
+    }
+    setProjects((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, archivedAt: null } : p))
+    )
+    toast.success('RFP wiederhergestellt.')
   }
 
   function renameProject(id: string, name: string) {
@@ -708,8 +782,38 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
     )
   }
 
-  if (projects.length === 0) {
-    return <div className={DESK_LAYOUT_CLASS}>{uploadZone}</div>
+  const showUploadSurface =
+    uploadMode || projects.length === 0 || (activeProjects.length === 0 && !activeProject)
+
+  const projectSwitcher = (
+    <DealDeskProjectSwitcher
+      activeProjects={activeProjects}
+      archivedProjects={archivedProjects}
+      selectedProjectId={uploadMode ? null : activeProjectId}
+      onSelectProject={selectProject}
+      onArchiveProject={(id) => void archiveProject(id)}
+      onUnarchiveProject={(id) => void unarchiveProject(id)}
+      onDeleteProject={(id) => void deleteProject(id)}
+      onNewRfp={openNewRfpUpload}
+      actionsBusy={analyzing}
+      variant="bar"
+      placeholder="RFP-Projekt wählen oder neues hochladen…"
+    />
+  )
+
+  if (showUploadSurface) {
+    return (
+      <div className={cn(DESK_LAYOUT_CLASS, 'space-y-4')}>
+        {projectSwitcher}
+        {activeProjects.length === 0 && projects.length > 0 ? (
+          <div className="rounded-lg border border-amber-200/80 bg-amber-50/80 px-4 py-3 text-sm text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100">
+            Alle RFPs sind archiviert. Laden Sie ein neues RFP hoch oder stellen Sie ein Projekt im Archiv
+            wieder her.
+          </div>
+        ) : null}
+        {uploadZone}
+      </div>
+    )
   }
 
   if (!activeProject) {
@@ -720,72 +824,52 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
     )
   }
 
-  const analysis = activeProject.analysis
-  const redFlags = activeProject.redFlags
-  const smeAssignments = activeProject.smeAssignments
-  const smeCustomExperts = activeProject.smeCustomExperts
+  const deskProject = activeProject
+  const analysis = deskProject.analysis
+  const redFlags = deskProject.redFlags
+  const smeAssignments = deskProject.smeAssignments
+  const smeCustomExperts = deskProject.smeCustomExperts
   const showDemo =
-    activeProject.showDemoBadge || process.env.NEXT_PUBLIC_DEAL_DESK_DEMO === '1'
+    deskProject.showDemoBadge || process.env.NEXT_PUBLIC_DEAL_DESK_DEMO === '1'
 
   return (
     <div className={cn(DESK_LAYOUT_CLASS, 'pb-8')}>
       <DealDeskProjectHeader
-        projects={projects}
+        activeProjects={activeProjects}
+        archivedProjects={archivedProjects}
         activeProject={activeProject}
         showDemoBadge={showDemo}
-        canResetDemo={canResetDemo}
-        onResetDemo={handleResetDemo}
         onSelectProject={selectProject}
+        onArchiveProject={(id) => void archiveProject(id)}
+        onUnarchiveProject={(id) => void unarchiveProject(id)}
         onDeleteProject={(id) => void deleteProject(id)}
         onRenameProject={renameProject}
         onRemoveDocument={(projectId, fileName) => void removeProjectDocument(projectId, fileName)}
-        onAddDocuments={(files) => void appendDocuments(activeProject.id, files)}
+        onAddDocuments={(files) => void appendDocuments(deskProject.id, files)}
         addingDocuments={analyzing}
         maxDocuments={MAX_RFP_FILES}
         acceptFileAttr={ACCEPT_ATTR}
         onNewRfp={openNewRfpUpload}
         onClose={openNewRfpUpload}
-        onReanalyze={() => void rerunAnalysis(activeProject.id)}
-        reanalyzing={analyzing}
-        canReanalyze={activeProject.analysis.documentNames.length > 0}
         fileIcon={fileIcon}
       />
 
-      {uploadMode ? <div className="space-y-4">{uploadZone}</div> : null}
-
-      {!uploadMode ? (
-
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabKey)} className="w-full gap-4">
-        <TabsList
-          variant="line"
-          className="h-auto w-full flex-wrap justify-start gap-0 rounded-none border-border bg-transparent p-0"
-        >
-          <TabsTrigger
-            value="decision"
-            className="gap-1.5 rounded-none px-3 py-2.5 after:bg-primary data-[state=active]:font-semibold data-[state=active]:text-foreground sm:px-4"
-          >
-            <LayoutDashboard className="size-3.5" />
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabKey)} className="w-full gap-6">
+        <TabsList className="mb-2 flex h-auto w-full gap-1 rounded-none border-0 bg-transparent p-0">
+          <TabsTrigger value="decision" className={DEAL_DESK_TAB_TRIGGER_CLASS}>
+            <LayoutDashboard className="size-4" />
             Bid-Übersicht
           </TabsTrigger>
-          <TabsTrigger
-            value="draft"
-            className="gap-1.5 rounded-none px-3 py-2.5 after:bg-primary data-[state=active]:font-semibold data-[state=active]:text-foreground sm:px-4"
-          >
-            <Sparkles className="size-3.5" />
+          <TabsTrigger value="draft" className={DEAL_DESK_TAB_TRIGGER_CLASS}>
+            <Sparkles className="size-4" />
             Antwort-Entwürfe
           </TabsTrigger>
-          <TabsTrigger
-            value="sme"
-            className="gap-1.5 rounded-none px-3 py-2.5 after:bg-primary data-[state=active]:font-semibold data-[state=active]:text-foreground sm:px-4"
-          >
-            <Clock className="size-3.5" />
+          <TabsTrigger value="sme" className={DEAL_DESK_TAB_TRIGGER_CLASS}>
+            <Clock className="size-4" />
             SME Routing
           </TabsTrigger>
-          <TabsTrigger
-            value="incubator"
-            className="gap-1.5 rounded-none px-3 py-2.5 after:bg-primary data-[state=active]:font-semibold data-[state=active]:text-foreground sm:px-4"
-          >
-            <Sprout className="size-3.5" />
+          <TabsTrigger value="incubator" className={DEAL_DESK_TAB_TRIGGER_CLASS}>
+            <Sprout className="size-4" />
             Referenz Inkubator
           </TabsTrigger>
         </TabsList>
@@ -798,8 +882,16 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
                 const heroTakeaways = buildHeroKeyTakeaways(analysis)
 
                 return (
-                  <Card className="rounded-xl border border-slate-200/80 bg-white shadow-sm">
-                    <CardContent className="flex w-full flex-col gap-6 p-6 lg:flex-row lg:items-start">
+                  <Card className="relative rounded-xl border border-slate-200/80 bg-white shadow-sm">
+                    <div className="absolute right-6 top-6 z-10">
+                      <ExecutiveBriefingDialog
+                        projectName={activeProject.projectName || 'RFP'}
+                        analysis={analysis}
+                        redFlags={redFlags}
+                        className="h-8 gap-1.5 border-slate-200 bg-white text-xs font-medium shadow-sm"
+                      />
+                    </div>
+                    <CardContent className="flex w-full flex-col gap-6 p-6 pt-14 sm:pt-6 lg:flex-row lg:items-start lg:pr-52">
                       <div className="flex shrink-0 justify-center lg:justify-start">
                         <WinProbabilityGauge
                           value={analysis.winProbability ?? 0}
@@ -837,21 +929,11 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
                           </h3>
                           <p className="text-sm leading-relaxed text-zinc-600">{analysis.icpSummary}</p>
                         </div>
-                        <div className="border-t border-slate-100 pt-4 lg:col-span-1 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
-                          <div className="mb-3 flex justify-end">
-                            <ExecutiveBriefingDialog
-                              projectName={activeProject.projectName || 'RFP'}
-                              analysis={analysis}
-                              redFlags={redFlags}
-                              className="h-8 gap-1.5 border-slate-200 bg-white text-xs font-medium shadow-sm"
-                            />
-                          </div>
-                          <ul className="space-y-2 text-xs font-medium text-slate-500">
+                        <div className="border-t border-slate-100 pt-4 lg:col-span-1 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-12">
+                          <ul className="mt-4 space-y-2.5 text-xs font-medium text-slate-500">
                             {heroTakeaways.map((item) => (
-                              <li key={item.text} className="flex gap-2 leading-snug">
-                                <span className="shrink-0" aria-hidden>
-                                  {item.icon}
-                                </span>
+                              <li key={item.text} className="flex gap-2.5 leading-snug">
+                                <HeroTakeawayIcon kind={item.icon} />
                                 <span>{item.text}</span>
                               </li>
                             ))}
@@ -1046,7 +1128,6 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
           </TabsContent>
         </div>
       </Tabs>
-      ) : null}
     </div>
   )
 }

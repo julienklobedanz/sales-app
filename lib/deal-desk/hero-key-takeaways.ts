@@ -1,8 +1,10 @@
 import type { DealDeskMockAnalysis } from '@/lib/deal-desk/mock-analysis'
 import { winProbabilityTone } from '@/lib/deal-desk/win-probability'
 
+export type HeroTakeawayIconKind = 'sparkles' | 'alert' | 'partnership'
+
 export type HeroKeyTakeaway = {
-  icon: string
+  icon: HeroTakeawayIconKind
   text: string
 }
 
@@ -26,46 +28,46 @@ export function buildHeroKeyTakeaways(
 
   if (tone === 'go') {
     takeaways.push({
-      icon: '✨',
+      icon: 'sparkles',
       text: 'Budget & Laufzeit passen zum ICP-Korridor',
     })
   } else if (tone === 'caution') {
     takeaways.push({
-      icon: '✨',
+      icon: 'sparkles',
       text: `${analysis.icpFitLabel || 'ICP'} — Details und Scope prüfen`,
     })
   } else {
     takeaways.push({
-      icon: '✨',
+      icon: 'sparkles',
       text: 'Schwacher strategischer Fit — Go-Entscheidung kritisch prüfen',
     })
   }
 
   if (slaOrContractRisk) {
     takeaways.push({
-      icon: '⚠️',
+      icon: 'alert',
       text: `Erhöhtes Risiko: ${slaOrContractRisk.title}`,
     })
   } else if (criticalHigh.length > 0) {
     takeaways.push({
-      icon: '⚠️',
+      icon: 'alert',
       text: `${criticalHigh.length} kritische/hohe Vertrags-Flags im Fokus`,
     })
   } else {
     takeaways.push({
-      icon: '⚠️',
+      icon: 'alert',
       text: 'Keine kritischen Vertrags-Flags erkannt',
     })
   }
 
   if (matched > 0) {
     takeaways.push({
-      icon: '🤝',
+      icon: 'partnership',
       text: `Matcht mit ${matched} intern${matched === 1 ? 'er' : 'en'} Referenz${matched === 1 ? '' : 'en'}`,
     })
   } else {
     takeaways.push({
-      icon: '🤝',
+      icon: 'partnership',
       text: 'Noch keine Referenz-Matches — Proof nachziehen',
     })
   }

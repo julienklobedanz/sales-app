@@ -2,6 +2,21 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
 import { CompaniesGrid } from './companies-grid'
+import { resolveNdaDisplayStatus, type NdaDisplayStatus } from '@/lib/accounts/company-entity'
+
+type CompanyRow = {
+  id: string
+  name: string
+  logo_url: string | null
+  website_url: string | null
+  headquarters: string | null
+  industry: string | null
+  employee_count: number | null
+  is_favorite?: boolean | null
+  entity_kind?: string | null
+  partner_category?: string | null
+  linked_account_id?: string | null
+}
 
 export default async function AccountsPage() {
   const supabase = await createServerSupabaseClient()
@@ -19,90 +34,163 @@ export default async function AccountsPage() {
 
   if (!profile) redirect(ROUTES.onboarding)
 
-  // is_favorite ist optional (Migration evtl. noch nicht ausgeführt) → fallback ohne Spalte
-  let companies:
-    | {
-        id: string
-        name: string
-        logo_url: string | null
-        website_url: string | null
-        headquarters: string | null
-        industry: string | null
-        employee_count: number | null
-        is_favorite?: boolean | null
-      }[]
-    | null = null
+  const extendedSelect =
+    'id, name, logo_url, website_url, headquarters, industry, employee_count, is_favorite, entity_kind, partner_category, linked_account_id'
 
-  const withFav = await supabase
+  let companies: CompanyRow[] | null = null
+
+  const withExtended = await supabase
     .from('companies')
-    .select('id, name, logo_url, website_url, headquarters, industry, employee_count, is_favorite')
+    .select(extendedSelect)
     .eq('organization_id', profile.organization_id)
     .order('name')
 
-  if (withFav.error && (withFav.error.message ?? '').includes('is_favorite')) {
-    const withoutFav = await supabase
-      .from('companies')
-      .select('id, name, logo_url, website_url, headquarters, industry, employee_count')
-      .eq('organization_id', profile.organization_id)
-      .order('name')
-    companies = (withoutFav.data ?? []).map((c) => ({ ...c, is_favorite: false }))
+  if (withExtended.error) {
+    const msg = withExtended.error.message ?? ''
+    if (msg.includes('entity_kind') || msg.includes('partner_category') || msg.includes('linked_account_id')) {
+      const withFav = await supabase
+        .from('companies')
+        .select(
+          'id, name, logo_url, website_url, headquarters, industry, employee_count, is_favorite'
+        )
+        .eq('organization_id', profile.organization_id)
+        .order('name')
+
+      if (withFav.error && (withFav.error.message ?? '').includes('is_favorite')) {
+        const basic = await supabase
+          .from('companies')
+          .select('id, name, logo_url, website_url, headquarters, industry, employee_count')
+          .eq('organization_id', profile.organization_id)
+          .order('name')
+        companies = (basic.data ?? []).map((c) => ({
+          ...c,
+          is_favorite: false,
+          entity_kind: 'account',
+          partner_category: null,
+          linked_account_id: null,
+        }))
+      } else {
+        companies = (withFav.data ?? []).map((c) => ({
+          ...c,
+          entity_kind: 'account',
+          partner_category: null,
+          linked_account_id: null,
+        }))
+      }
+    } else if (msg.includes('is_favorite')) {
+      const withoutFav = await supabase
+        .from('companies')
+        .select(
+          'id, name, logo_url, website_url, headquarters, industry, employee_count, entity_kind, partner_category, linked_account_id'
+        )
+        .eq('organization_id', profile.organization_id)
+        .order('name')
+      companies = (withoutFav.data ?? []).map((c) => ({ ...c, is_favorite: false }))
+    } else {
+      companies = []
+    }
   } else {
-    companies = withFav.data ?? []
+    companies = withExtended.data ?? []
+  }
+
+  const linkedAccountIds = [
+    ...new Set(
+      (companies ?? [])
+        .map((c) => c.linked_account_id)
+        .filter((id): id is string => Boolean(id))
+    ),
+  ]
+
+  const linkedAccountNameById: Record<string, string> = {}
+  if (linkedAccountIds.length) {
+    const { data: linkedRows } = await supabase
+      .from('companies')
+      .select('id, name')
+      .in('id', linkedAccountIds)
+    for (const row of linkedRows ?? []) {
+      linkedAccountNameById[row.id] = row.name
+    }
   }
 
   const companyIds = (companies ?? []).map((c) => c.id)
 
-  // Counts für Score/Card: Deals, Referenzen, Stakeholder, Strategy-Filled
-  const [dealsRows, refRows, stakeholderRows, strategyRows, executiveSignalRows, newsSignalRows] = await Promise.all([
-    companyIds.length
-      ? supabase
-          .from('deals')
-          .select('id, company_id, status')
-          .in('company_id', companyIds)
-          .eq('organization_id', profile.organization_id)
-      : Promise.resolve({ data: [] as { id: string; company_id: string | null; status: string }[] | null }),
-    companyIds.length
-      ? supabase
-          .from('references')
-          .select('id, company_id')
-          .in('company_id', companyIds)
-          .is('deleted_at', null)
-      : Promise.resolve({ data: [] as { id: string; company_id: string | null }[] | null }),
-    companyIds.length
-      ? supabase
-          .from('stakeholders')
-          .select('id, company_id')
-          .in('company_id', companyIds)
-      : Promise.resolve({ data: [] as { id: string; company_id: string | null }[] | null }),
-    companyIds.length
-      ? supabase
-          .from('company_strategies')
-          .select('company_id, main_goals, red_flags, competitive_situation, next_steps')
-          .in('company_id', companyIds)
-      : Promise.resolve({
-          data: [] as {
-            company_id: string
-            main_goals: string | null
-            red_flags: string | null
-            competitive_situation: string | null
-            next_steps: string | null
-          }[] | null,
-        }),
-    companyIds.length
-      ? supabase
-          .from('market_signal_executive_events')
-          .select('company_id')
-          .in('company_id', companyIds)
-          .limit(4000)
-      : Promise.resolve({ data: [] as { company_id: string | null }[] | null }),
-    companyIds.length
-      ? supabase
-          .from('market_signal_account_news')
-          .select('company_id')
-          .in('company_id', companyIds)
-          .limit(4000)
-      : Promise.resolve({ data: [] as { company_id: string | null }[] | null }),
-  ])
+  const ndaStatusByCompany: Record<string, NdaDisplayStatus> = {}
+  if (companyIds.length) {
+    const ndaRes = await supabase
+      .from('nda_agreements')
+      .select('company_id, status, valid_until')
+      .eq('organization_id', profile.organization_id)
+      .in('company_id', companyIds)
+
+    if (!ndaRes.error) {
+      const grouped: Record<string, { status: string; valid_until: string | null }[]> = {}
+      for (const row of ndaRes.data ?? []) {
+        if (!row.company_id) continue
+        grouped[row.company_id] = grouped[row.company_id] ?? []
+        grouped[row.company_id].push({
+          status: row.status,
+          valid_until: row.valid_until,
+        })
+      }
+      for (const [companyId, rows] of Object.entries(grouped)) {
+        ndaStatusByCompany[companyId] = resolveNdaDisplayStatus(rows)
+      }
+    }
+  }
+
+  const [dealsRows, refRows, stakeholderRows, strategyRows, executiveSignalRows, newsSignalRows] =
+    await Promise.all([
+      companyIds.length
+        ? supabase
+            .from('deals')
+            .select('id, company_id, status')
+            .in('company_id', companyIds)
+            .eq('organization_id', profile.organization_id)
+        : Promise.resolve({
+            data: [] as { id: string; company_id: string | null; status: string }[] | null,
+          }),
+      companyIds.length
+        ? supabase
+            .from('references')
+            .select('id, company_id')
+            .in('company_id', companyIds)
+            .is('deleted_at', null)
+        : Promise.resolve({ data: [] as { id: string; company_id: string | null }[] | null }),
+      companyIds.length
+        ? supabase
+            .from('stakeholders')
+            .select('id, company_id')
+            .in('company_id', companyIds)
+        : Promise.resolve({ data: [] as { id: string; company_id: string | null }[] | null }),
+      companyIds.length
+        ? supabase
+            .from('company_strategies')
+            .select('company_id, main_goals, red_flags, competitive_situation, next_steps')
+            .in('company_id', companyIds)
+        : Promise.resolve({
+            data: [] as {
+              company_id: string
+              main_goals: string | null
+              red_flags: string | null
+              competitive_situation: string | null
+              next_steps: string | null
+            }[] | null,
+          }),
+      companyIds.length
+        ? supabase
+            .from('market_signal_executive_events')
+            .select('company_id')
+            .in('company_id', companyIds)
+            .limit(4000)
+        : Promise.resolve({ data: [] as { company_id: string | null }[] | null }),
+      companyIds.length
+        ? supabase
+            .from('market_signal_account_news')
+            .select('company_id')
+            .in('company_id', companyIds)
+            .limit(4000)
+        : Promise.resolve({ data: [] as { company_id: string | null }[] | null }),
+    ])
 
   const activeDealStatuses = new Set([
     'in_negotiation',
@@ -152,11 +240,16 @@ export default async function AccountsPage() {
   const enrichedCompanies =
     (companies ?? []).map((c) => ({
       ...c,
+      entity_kind: (c.entity_kind === 'partner' ? 'partner' : 'account') as 'account' | 'partner',
       open_deals_count: dealCountByCompany[c.id] ?? 0,
       reference_count: refCountByCompany[c.id] ?? 0,
       stakeholder_count: stakeholderCountByCompany[c.id] ?? 0,
       strategy_filled: strategyFilledByCompany[c.id] ?? false,
       signal_count: signalCountByCompany[c.id] ?? 0,
+      nda_status: ndaStatusByCompany[c.id] ?? 'none',
+      linked_account_name: c.linked_account_id
+        ? linkedAccountNameById[c.linked_account_id] ?? null
+        : null,
     })) ?? []
 
   return (
