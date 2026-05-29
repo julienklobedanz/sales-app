@@ -37,6 +37,7 @@ export type MarketSignalsCompanyOption = {
 }
 
 export type MarketSignalsPageModel = {
+  senderFullName: string | null
   executives: ExecutiveTrackingRow[]
   news: AccountNewsRow[]
   companies: MarketSignalsCompanyOption[]
@@ -88,6 +89,7 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
   } = await supabase.auth.getUser()
   if (!user) {
     return {
+      senderFullName: null,
       executives: [],
       news: [],
       companies: [],
@@ -102,13 +104,14 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('organization_id')
+    .select('organization_id, full_name')
     .eq('id', user.id)
     .single()
 
   const orgId = profile?.organization_id as string | undefined
   if (!orgId) {
     return {
+      senderFullName: (profile?.full_name as string | null) ?? null,
       executives: [],
       news: [],
       companies: [],
@@ -346,6 +349,7 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
   }
 
   return {
+    senderFullName: (profile?.full_name as string | null) ?? null,
     executives,
     news,
     companies: companyList,

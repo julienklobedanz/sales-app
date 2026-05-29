@@ -81,7 +81,7 @@ function buildInstantEmailHtml(input: {
   const newsBlock =
     news.length === 0
       ? ''
-      : `<h2 style="font-size:16px;margin:16px 0 8px 0;">Account News</h2><ul style="margin:0 0 12px 0;padding-left:20px;">${news
+      : `<h2 style="font-size:16px;margin:16px 0 8px 0;">Company Update</h2><ul style="margin:0 0 12px 0;padding-left:20px;">${news
           .map(
             (n) =>
               `<li style="margin-bottom:8px;"><strong>${escapeHtml(n.companyName)}</strong><br/>${escapeHtml(n.body)}</li>`

@@ -135,7 +135,7 @@ export function AccountNewsFeed({
             size="toolbar"
             className="h-9 w-9 px-0 text-muted-foreground hover:bg-muted/70"
             onClick={handleMarkRead}
-            aria-label="Account News als gelesen markieren"
+            aria-label="Company Updates als gelesen markieren"
           >
             <AppIcon icon={MailOpen} size={16} />
           </Button>

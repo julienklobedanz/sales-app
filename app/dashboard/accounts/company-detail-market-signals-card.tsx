@@ -100,9 +100,9 @@ export function CompanyDetailMarketSignalsCard({ marketSignals }: Props) {
           </div>
 
           <div className="rounded-xl border border-border/80 bg-muted/5 p-4">
-            <h4 className="text-sm font-semibold">Account News</h4>
+            <h4 className="text-sm font-semibold">Company Update</h4>
             {marketSignals.accountNews.length === 0 ? (
-              <p className="mt-2 text-sm text-muted-foreground">Keine Account News vorhanden.</p>
+              <p className="mt-2 text-sm text-muted-foreground">Keine Company Updates vorhanden.</p>
             ) : (
               <>
                 <ul className="mt-3 space-y-2">

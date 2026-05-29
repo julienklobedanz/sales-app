@@ -490,7 +490,7 @@ export type TriggerMarketSignalsIngestResult =
     }
   | { success: false; error: string }
 
-/** Company News + Executive-Presse-Signale (Google News RSS, kein Scraping). */
+/** Company Updates + Exec-Presse-Signale (Google News RSS, kein Scraping). */
 export async function triggerMarketSignalsIngestForMyOrg(args?: {
   ingestMode?: 'all_accounts' | 'focus_only'
 }): Promise<TriggerMarketSignalsIngestResult> {

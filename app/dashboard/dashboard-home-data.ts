@@ -476,7 +476,7 @@ export async function loadSalesRepDashboardData(
       const current = signalCountByCompany.get(companyId) ?? {
         companyName: String(company?.name ?? 'Account'),
         count: 0,
-        latestSummary: String(row.body ?? 'Account News erkannt.'),
+        latestSummary: String(row.body ?? 'Company Update erkannt.'),
       }
       current.count += 1
       signalCountByCompany.set(companyId, current)

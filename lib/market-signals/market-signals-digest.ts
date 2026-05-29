@@ -190,7 +190,7 @@ export function buildMarketSignalsDigestEmailHtml(input: {
 <body style="font-family:system-ui,-apple-system,sans-serif;line-height:1.5;color:#0f172a;">
   <p style="margin:0 0 8px 0;">Hallo ${escapeHtml(recipientName || 'du')},</p>
   <p style="margin:0 0 16px 0;font-size:15px;">Hier ist dein täglicher Überblick zu <strong>Markt-Signalen</strong>: Sales sieht Favoriten; Admin und Account-Manager zusätzlich Accounts mit aktivem Deal.</p>
-  <h2 style="font-size:16px;margin:20px 0 8px 0;">Account News</h2>
+  <h2 style="font-size:16px;margin:20px 0 8px 0;">Company Update</h2>
   ${newsBlock}
   <h2 style="font-size:16px;margin:20px 0 8px 0;">Executive Tracking</h2>
   ${execBlock}

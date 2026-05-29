@@ -122,8 +122,10 @@ export const COPY = {
   },
   marketSignals: {
     pageSubtitle: 'Deine Account-Intelligenz auf einen Blick',
+    signalTypeExec: 'Exec Update',
+    signalTypeCompany: 'Company Update',
     executiveSection: 'Executive Tracking',
-    newsSection: 'Account News',
+    newsSection: 'Company Update',
     championSection: 'Executive Tracking',
     manage: 'Verwalten',
     filterAccount: 'Account filtern',
@@ -142,7 +144,7 @@ export const COPY = {
     executiveEmptyTitle: 'Noch keine Führungswechsel',
     executiveEmptyBody:
       'In Phase 1 werden Einträge manuell gepflegt oder per CSV importiert. Anschließend erscheinen sie hier.',
-    newsEmptyTitle: 'Noch keine Account-News',
+    newsEmptyTitle: 'Noch keine Company Updates',
     newsEmptyBody:
       'In Phase 1 werden Meldungen als Notizen je Account erfasst. Automatische Quellen folgen später.',
     roleChangeArrow: '→',

@@ -9,7 +9,7 @@ import {
   FileText,
   SettingsIcon,
   GalleryHorizontalEndIcon,
-  LifeBuoy,
+  HeadsetIcon,
   Send,
   TrendingUp,
 } from '@hugeicons/core-free-icons'
@@ -132,10 +132,10 @@ export function DashboardShell({
             collapsible="icon"
             className="border-r border-sidebar-border/90 bg-sidebar"
           >
-        <SidebarHeader className="px-3 py-4">
-          <SidebarMenu>
+        <SidebarHeader className="flex h-[84px] shrink-0 flex-col justify-center gap-0 p-0 px-3">
+          <SidebarMenu className="gap-0">
             <SidebarMenuItem>
-              <SidebarMenuButton size="lg" asChild className="hover:bg-transparent">
+              <SidebarMenuButton size="lg" asChild className="h-auto min-h-0 py-0 hover:bg-transparent">
                 <Link href={ROUTES.home} className="group/link flex items-center gap-2.5 group-data-[collapsible=icon]:justify-center">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-b from-blue-600 to-blue-700 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)]">
                     <AppIcon icon={GalleryHorizontalEndIcon} size={16} strokeWidth={2.5} />
@@ -272,7 +272,7 @@ export function DashboardShell({
                       onClick={() => setSupportChannelsOpen(true)}
                       className="w-full"
                     >
-                      <AppIcon icon={LifeBuoy} size={16} />
+                      <AppIcon icon={HeadsetIcon} size={16} />
                       <span>Support erhalten</span>
                     </button>
                   </SidebarMenuButton>

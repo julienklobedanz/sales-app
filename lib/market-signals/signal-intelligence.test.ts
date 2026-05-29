@@ -4,6 +4,7 @@ import {
   buildMarketSignalIntelligence,
   buildReferenceInsightLine,
   classifyRoleTransition,
+  extractEmbeddedSignalHook,
   formatRoleChangeFact,
   titleSeniorityScore,
 } from './signal-intelligence'
@@ -72,6 +73,20 @@ describe('buildReferenceInsightLine', () => {
     expect(
       buildReferenceInsightLine({ references: [], onlyApprovedReferences: true })
     ).toBeNull()
+  })
+})
+
+describe('extractEmbeddedSignalHook', () => {
+  it('finds CTO appointment buried in article body', () => {
+    const hook = extractEmbeddedSignalHook({
+      signalKind: 'news',
+      companyName: 'Apple',
+      personName: 'Thomas Müller',
+      newsBody:
+        'Apple kündigte heute neue Produkte an. Im gleichen Bericht wird erwähnt, dass Thomas Müller mit sofortiger Wirkung als CTO von Apple eingesetzt wird. Analysten sehen das positiv.',
+    })
+    expect(hook).toMatch(/Thomas Müller/i)
+    expect(hook).toMatch(/CTO/i)
   })
 })
 

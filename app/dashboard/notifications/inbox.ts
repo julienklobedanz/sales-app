@@ -290,7 +290,7 @@ export async function getInboxNotificationsImpl(
       newsSeen.add(dedupeKey)
       return {
         id: `market_news:${String(row.id)}`,
-        title: isFavorite ? 'Account News (Following)' : 'Account News',
+        title: isFavorite ? 'Company Update (Following)' : 'Company Update',
         text: body || `Neues Signal bei ${companyName}.`,
         href: ROUTES.accountsDetail(String(row.company_id)),
         createdAt: String(row.published_on ?? ''),

@@ -58,6 +58,9 @@ const DEMISSION_RE =
 const FLUFF_RE =
   /\b(momentum|lösungsorientiert|natürlicher einstieg|synerg|game.?changer|thought leader|spannendes zeitfenster)\b/i
 
+const SIGNAL_SENTENCE_RE =
+  /\b(ceo|cto|cio|cpo|cfo|chief|appointed|ernannt|wechselt|übernimmt|joins|named|promoted|beruft|wird|neu|posten)\b/i
+
 function normalizeTitle(title: string): string {
   return String(title ?? '')
     .replace(/\s+/g, ' ')
@@ -139,6 +142,55 @@ export function formatRoleChangeFact(input: {
   return `${name}: Führungswechsel bei ${company}.`
 }
 
+/** Relevantesten Satz aus Fließtext/Artikel für Highlight in der Insight-Card (z. B. CTO-Ernennung im Body). */
+export function extractEmbeddedSignalHook(input: {
+  signalKind: 'exec' | 'news'
+  newsBody?: string
+  changeSummary?: string
+  personName?: string
+  personTitleBefore?: string | null
+  personTitleAfter?: string | null
+  companyName?: string
+}): string | null {
+  if (input.signalKind === 'exec') {
+    const summary = String(input.changeSummary ?? '').trim()
+    if (summary && !FLUFF_RE.test(summary)) {
+      return summary.length > 220 ? `${summary.slice(0, 217)}…` : summary
+    }
+    const name = normalizeTitle(input.personName ?? '')
+    const after = normalizeTitle(input.personTitleAfter ?? '')
+    if (name && after) return `${name} — ${after}`
+    return null
+  }
+
+  const body = String(input.newsBody ?? input.changeSummary ?? '')
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (!body) return null
+
+  const sentences = body
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length >= 24)
+
+  const name = normalizeTitle(input.personName ?? '')
+  const companyToken = normalizeTitle(input.companyName ?? '').split(/\s+/)[0]?.toLowerCase() ?? ''
+
+  const scored = sentences.map((sentence) => {
+    let score = 0
+    if (SIGNAL_SENTENCE_RE.test(sentence)) score += 3
+    if (name && sentence.toLowerCase().includes(name.toLowerCase())) score += 4
+    if (companyToken && sentence.toLowerCase().includes(companyToken)) score += 2
+    if (/\b(cto|cpo|ceo|cio|cfo)\b/i.test(sentence)) score += 2
+    return { sentence, score }
+  })
+
+  scored.sort((a, b) => b.score - a.score)
+  const best = scored.find((x) => x.score >= 3)?.sentence ?? sentences[0]
+  if (!best) return body.length > 200 ? `${body.slice(0, 197)}…` : body
+  return best.length > 220 ? `${best.slice(0, 217)}…` : best
+}
+
 export function buildSalesWhyNow(input: {
   signalKind: 'exec' | 'news'
   personName?: string
@@ -168,7 +220,7 @@ export function buildSalesWhyNow(input: {
   }
 
   const hook = normalizeTitle(input.newsBody ?? input.changeSummary ?? '').slice(0, 120)
-  const fact = hook ? `Signal: ${hook}. ` : ''
+  const fact = hook ? `${hook}. ` : ''
   return `${fact}Veränderung bei ${company} erhöht kurzfristig den Bedarf an belastbaren Referenzen und einem klaren Business Case für ${solution} — ideal für einen konkreten Erstkontakt mit Entscheiderbezug.`
 }
 

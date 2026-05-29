@@ -3,20 +3,17 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import { useEffect, useMemo, useState, useTransition } from 'react'
+import { useEffect, useId, useMemo, useRef, useState, useTransition } from 'react'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
+import { Building2, ExternalLink as ExternalLinkLucide } from 'lucide-react'
 import {
   Calendar,
-  CheckmarkCircle02Icon,
   CopyCheckIcon,
   CopyIcon,
   Delete02Icon,
-  ExternalLink,
-  FilterHorizontalIcon,
   InformationCircleIcon,
   Linkedin01Icon,
-  LinkIcon,
   Loader,
   Message01Icon,
   Paperclip,
@@ -29,7 +26,6 @@ import {
   ThumbsDownIcon,
   ThumbsUpIcon,
   Timer,
-  UploadIcon,
   Users,
 } from '@hugeicons/core-free-icons'
 
@@ -37,6 +33,7 @@ import { AppIcon } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 import {
   buildMarketSignalIntelligence,
+  extractEmbeddedSignalHook,
   formatRoleChangeFact,
   parseWarmIntroBridge,
 } from '@/lib/market-signals/signal-intelligence'
@@ -44,6 +41,7 @@ import { CheckIcon } from '@/components/ui/check-icon'
 import type { MarketSignalsPageModel } from '@/app/dashboard/market-signals/data'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import {
@@ -70,11 +68,261 @@ import {
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { toast } from 'sonner'
 import { useRole } from '@/hooks/useRole'
 /** Einheitlicher Toolbar-/Aktions-Icon-Stil (wie Referenzen-Übersicht). */
 const MS_TOOLBAR_ICON_CLASS = 'shrink-0 text-muted-foreground'
+
+const MS_INBOX_LOGO_CLASS =
+  'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-100 bg-slate-50 p-1.5'
+
+type MarketSignalInboxItem = {
+  kind: 'exec' | 'news'
+  companyName: string
+  companyLogoUrl: string | null
+  headline: string
+  listTitlePrefix: string
+  listTitleRest: string
+  categoryBadge: 'people' | 'finance' | 'strategy'
+  personName?: string
+  personTitleBefore?: string | null
+  personTitleAfter?: string | null
+  changeSummaryRaw?: string
+}
+
+function MarketSignalInboxLogoBox({
+  logoUrl,
+  className,
+}: {
+  logoUrl: string | null
+  className?: string
+}) {
+  return (
+    <div className={cn(MS_INBOX_LOGO_CLASS, className)}>
+      {logoUrl ? (
+        <Image src={logoUrl} alt="" width={28} height={28} className="h-full w-full object-contain" />
+      ) : (
+        <Building2 className="h-4 w-4 text-slate-400" strokeWidth={1.75} aria-hidden />
+      )}
+    </div>
+  )
+}
+
+function marketSignalDetailTitle(item: MarketSignalInboxItem): string {
+  if (item.kind === 'news') {
+    if (item.listTitleRest?.trim()) return item.listTitleRest.trim()
+    const escaped = item.companyName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    return item.headline.replace(new RegExp(`^${escaped}\\s*•\\s*`), '').trim() || item.headline
+  }
+  if (item.changeSummaryRaw?.trim()) {
+    return formatRoleChangeFact({
+      personName: item.personName ?? 'Person',
+      personTitleBefore: item.personTitleBefore,
+      personTitleAfter: item.personTitleAfter,
+      companyName: item.companyName,
+      changeSummary: item.changeSummaryRaw,
+    })
+  }
+  return [item.listTitlePrefix, item.listTitleRest].filter(Boolean).join(' · ') || item.headline
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function renderHighlightedPhrases(text: string, phrases: string[]): ReactNode {
+  const unique = [...new Set(phrases.map((p) => p.trim()).filter((p) => p.length >= 4))].sort(
+    (a, b) => b.length - a.length
+  )
+  if (!unique.length) return text
+  const pattern = new RegExp(`(${unique.map(escapeRegExp).join('|')})`, 'gi')
+  const parts = text.split(pattern)
+  return parts.map((part, index) => {
+    const isHit = unique.some((phrase) => part.toLowerCase() === phrase.toLowerCase())
+    if (!isHit) return <span key={index}>{part}</span>
+    return (
+      <mark
+        key={index}
+        className="rounded-sm bg-amber-100/90 px-0.5 font-medium not-italic text-slate-900"
+      >
+        {part}
+      </mark>
+    )
+  })
+}
+
+function MarketSignalIcpBadge({ score }: { score: number }) {
+  return (
+    <Badge className="gap-1 border-0 bg-emerald-50 font-medium text-emerald-800 hover:bg-emerald-50">
+      ICP-Match {score}%
+      <TooltipProvider delayDuration={200}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              className="inline-flex text-emerald-700/70 hover:text-emerald-900"
+              aria-label="ICP-Match Erklärung"
+            >
+              <AppIcon icon={InformationCircleIcon} size={14} className="shrink-0" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-[260px] text-xs">
+            Basierend auf Branche, Unternehmensgröße, Signal-Typ, Aktualität und Referenz-Readiness.
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </Badge>
+  )
+}
+
+function MarketSignalDetailMetaRow({
+  companyLabel,
+  signalTypeShort,
+  sourceHref,
+  sourceLabel,
+  sourceTitle,
+  icpScore,
+}: {
+  companyLabel: string
+  signalTypeShort: string
+  sourceHref: string
+  sourceLabel: string
+  sourceTitle?: string
+  icpScore: number | null
+}) {
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-2">
+      <Badge className="border-0 bg-slate-100 font-medium text-slate-700 hover:bg-slate-100">
+        {companyLabel}
+      </Badge>
+      <Badge variant="outline" className="font-medium text-slate-700">
+        {signalTypeShort}
+      </Badge>
+      {icpScore !== null ? <MarketSignalIcpBadge score={icpScore} /> : null}
+      <Link
+        href={sourceHref}
+        target="_blank"
+        rel="noreferrer"
+        className="inline-flex max-w-full items-center gap-1 text-xs text-slate-500 hover:text-slate-800"
+        title={sourceTitle}
+        aria-label={`Quelle öffnen: ${sourceLabel}`}
+      >
+        <ExternalLinkLucide className="h-3 w-3 shrink-0" aria-hidden />
+        <span className="truncate">{sourceLabel}</span>
+      </Link>
+    </div>
+  )
+}
+
+function MarketSignalInsightCard({
+  whyNow,
+  embeddedHook,
+  highlightPhrases,
+}: {
+  whyNow: string
+  embeddedHook: string | null
+  highlightPhrases: string[]
+}) {
+  const hookInWhyNow =
+    embeddedHook &&
+    whyNow.toLowerCase().includes(embeddedHook.slice(0, Math.min(embeddedHook.length, 48)).toLowerCase())
+
+  if (!whyNow.trim() && !embeddedHook) return null
+
+  return (
+    <section className="rounded-xl border border-slate-200/60 bg-slate-50/50 p-5">
+      <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+        Insight
+      </p>
+      <div className="mt-3 border-l-2 border-blue-500 pl-3 text-sm italic leading-relaxed text-slate-600">
+        {!hookInWhyNow && embeddedHook ? (
+          <p className="mb-2 not-italic">{renderHighlightedPhrases(embeddedHook, highlightPhrases)}</p>
+        ) : null}
+        {whyNow.trim() ? <p>{renderHighlightedPhrases(whyNow, highlightPhrases)}</p> : null}
+      </div>
+    </section>
+  )
+}
+
+function MarketSignalStakeholderCard({ candidate }: { candidate: DecisionMakerCandidate }) {
+  const activity = formatLinkedInActivityLine(candidate.lastSeenAt)
+  const initials = personInitials(candidate.fullName)
+  const mutual = candidate.mutualConnections ?? 0
+  const profileUrl = candidate.profileUrl?.trim() || null
+
+  const openProfile = () => {
+    if (!profileUrl) return
+    window.open(profileUrl, '_blank', 'noopener,noreferrer')
+  }
+
+  return (
+    <div
+      role={profileUrl ? 'link' : undefined}
+      tabIndex={profileUrl ? 0 : undefined}
+      onClick={profileUrl ? openProfile : undefined}
+      onKeyDown={
+        profileUrl
+          ? (e) => {
+              if (e.key !== 'Enter' && e.key !== ' ') return
+              e.preventDefault()
+              openProfile()
+            }
+          : undefined
+      }
+      className={cn(
+        'relative flex h-full flex-col rounded-xl border border-slate-200/80 bg-white p-4 pr-10 shadow-sm transition-all dark:border-border dark:bg-card',
+        profileUrl && 'cursor-pointer hover:border-slate-300 hover:shadow-sm'
+      )}
+    >
+      {profileUrl ? (
+        <Link
+          href={profileUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="absolute top-3 right-3 rounded-sm p-0.5 text-slate-400 hover:text-blue-600"
+          aria-label={`LinkedIn-Profil von ${candidate.fullName}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <AppIcon icon={Linkedin01Icon} size={16} className="h-4 w-4 text-current" aria-hidden />
+        </Link>
+      ) : null}
+      <div className="flex flex-1 items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-blue-100 bg-blue-50 text-sm font-semibold text-blue-700">
+          {initials}
+        </div>
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <p className="font-semibold leading-snug text-slate-900">{candidate.fullName}</p>
+          <p className="mt-0.5 line-clamp-2 min-h-10 text-xs leading-snug text-slate-500">{candidate.title}</p>
+          <p className="mt-2 min-h-4 text-xs text-slate-500">
+            <span className="font-semibold text-slate-700">{candidate.confidence}%</span>
+            {mutual > 0 ? (
+              <>
+                {' '}
+                · {mutual} {mutual === 1 ? 'gemeinsamer Kontakt' : 'gemeinsame Kontakte'}
+              </>
+            ) : null}
+          </p>
+          <p className="mt-1 min-h-4 text-[11px] text-slate-400">
+            {activity ? `LinkedIn · ${activity}` : null}
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const MS_DETAIL_GROUP_BTN =
+  'h-8 rounded-none border-0 px-2.5 shadow-none hover:bg-slate-50 focus-visible:ring-0 focus-visible:ring-offset-0'
 
 function formatLinkedInActivityLine(iso: string | null | undefined): string | null {
   if (!iso) return null
@@ -161,12 +409,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
   }, [router])
   const canRunNewsIngest = isAdmin || isAccountManager || isSales
   const [nowTs] = useState(() => new Date().getTime())
-  const [onlyActiveDeals, setOnlyActiveDeals] = useState(false)
   const [onlyFocusAccounts, setOnlyFocusAccounts] = useState(true)
-  const restrictedCompanyIds = useMemo(
-    () => (onlyActiveDeals ? model.activeDealCompanyIds : undefined),
-    [model.activeDealCompanyIds, onlyActiveDeals]
-  )
 
   type InboxItem =
     | {
@@ -222,15 +465,17 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
   }
 
   function signalTypeLabel(badge: InboxItem['categoryBadge']) {
-    if (badge === 'people') return { short: 'Executive Update', full: 'Executive Update' }
-    return { short: 'Company News', full: 'Company News' }
+    if (badge === 'people') {
+      return { short: COPY.marketSignals.signalTypeExec, full: COPY.marketSignals.signalTypeExec }
+    }
+    return { short: COPY.marketSignals.signalTypeCompany, full: COPY.marketSignals.signalTypeCompany }
   }
 
-  /** Linker Akzentbalken für die ausgewählte Inbox-Zeile (Kategorie-Farbe). */
+  /** Linker Akzent für aktive Inbox-Zeile (Signal-Typ). */
   function inboxRowAccentClass(item: InboxItem): string {
     if (item.kind === 'exec' || item.categoryBadge === 'people') return 'border-l-blue-600'
     if (item.categoryBadge === 'finance') return 'border-l-emerald-500'
-    return 'border-l-amber-400'
+    return 'border-l-amber-500'
   }
 
   function relativeTime(iso: string) {
@@ -326,14 +571,9 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
 
   /** Kompakte Inbox-Zeile: Signal-Art. */
   function inboxRowSignalTypeLabel(item: InboxItem): string {
-    if (item.kind === 'exec') return 'Executive Update'
-    return 'Company News'
+    if (item.kind === 'exec') return COPY.marketSignals.signalTypeExec
+    return COPY.marketSignals.signalTypeCompany
   }
-
-  const restrictedSet = useMemo(
-    () => (restrictedCompanyIds?.length ? new Set(restrictedCompanyIds) : null),
-    [restrictedCompanyIds]
-  )
 
   const [readKeys, setReadKeys] = useState(() => new Set(model.signalReadKeys))
   const [priorityKeys, setPriorityKeys] = useState(() => {
@@ -441,7 +681,6 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
     })
 
     const merged = [...execItems, ...newsItems]
-      .filter((x) => (restrictedSet ? restrictedSet.has(x.companyId) : true))
       .filter((x) => (onlyFocusAccounts ? model.followingCompanyIds.includes(x.companyId) : true))
       .filter((x) => !irrelevantKeys.has(`${x.kind === 'exec' ? 'market_exec' : 'market_news'}:${x.id}`))
       .filter((x) => {
@@ -466,7 +705,6 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
     model.news,
     onlyFocusAccounts,
     priorityKeys,
-    restrictedSet,
     signalKeyOf,
     snoozedUntilByKey,
   ])
@@ -593,6 +831,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
   const [introDraftRequested, setIntroDraftRequested] = useState(false)
   const [introDraftRunId, setIntroDraftRunId] = useState(0)
   const [onlyApprovedReferences, setOnlyApprovedReferences] = useState(true)
+  const referencesApprovedOnlyId = useId()
   const [copySuccess, setCopySuccess] = useState(false)
   const [signalEvidenceExpanded, setSignalEvidenceExpanded] = useState(false)
 
@@ -943,6 +1182,42 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
     [signalIntelligence]
   )
 
+  const insightWhyNow = useMemo(() => {
+    const raw =
+      signalIntelligence?.insight.why_now?.trim() ||
+      executiveSummaryBullets.slice(1).join(' ').trim() ||
+      executiveSummaryBullets[0]?.trim() ||
+      ''
+    return raw.replace(/^Signal:\s*/i, '')
+  }, [executiveSummaryBullets, signalIntelligence])
+
+  const embeddedSignalHook = useMemo(() => {
+    if (!selected) return null
+    return extractEmbeddedSignalHook({
+      signalKind: selected.kind,
+      newsBody: selected.kind === 'news' ? selected.body : undefined,
+      changeSummary: selected.kind === 'exec' ? selected.changeSummaryRaw : undefined,
+      personName: selected.kind === 'exec' ? selected.personName : undefined,
+      personTitleBefore: selected.kind === 'exec' ? selected.personTitleBefore : undefined,
+      personTitleAfter: selected.kind === 'exec' ? selected.personTitleAfter : undefined,
+      companyName: selected.companyName,
+    })
+  }, [selected])
+
+  const insightHighlightPhrases = useMemo(() => {
+    if (!selected) return []
+    const phrases: string[] = []
+    if (embeddedSignalHook) phrases.push(embeddedSignalHook)
+    if (selected.kind === 'exec') {
+      if (selected.personName) phrases.push(selected.personName)
+      const after = selected.personTitleAfter?.trim()
+      if (after) phrases.push(after)
+      const before = selected.personTitleBefore?.trim()
+      if (before) phrases.push(before)
+    }
+    return phrases
+  }, [embeddedSignalHook, selected])
+
   const signalEvidenceText = useMemo(() => {
     if (!selected) return ''
     if (selected.kind === 'news') return String(selected.body || selected.sourceSummary || '').trim()
@@ -963,29 +1238,22 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
   function renderDraftText(text: string | null): ReactNode {
     const content = String(text ?? '').trim()
     if (!content) return <p className="text-sm leading-relaxed text-muted-foreground">Keine Empfehlung verfügbar.</p>
-    const paragraphs = content.split(/\n+/).filter(Boolean)
+    const parts = content.split(/(\[[^\]]+\])/g)
     return (
-      <div className="space-y-3 font-serif text-[15px] leading-relaxed text-foreground">
-        {paragraphs.map((para, pi) => {
-          const parts = para.split(/(\[[^\]]+\])/g)
-          return (
-            <p key={pi}>
-              {parts.map((part, idx) =>
-                /^\[[^\]]+\]$/.test(part) ? (
-                  <span
-                    key={idx}
-                    className="rounded px-1 font-sans text-sm font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-500/25 dark:text-yellow-100"
-                  >
-                    {part}
-                  </span>
-                ) : (
-                  <span key={idx}>{part}</span>
-                )
-              )}
-            </p>
+      <pre className="whitespace-pre-wrap font-serif text-[15px] leading-relaxed text-foreground">
+        {parts.map((part, idx) =>
+          /^\[[^\]]+\]$/.test(part) ? (
+            <span
+              key={idx}
+              className="rounded px-1 font-sans text-sm font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-500/25 dark:text-yellow-100"
+            >
+              {part}
+            </span>
+          ) : (
+            <span key={idx}>{part}</span>
           )
-        })}
-      </div>
+        )}
+      </pre>
     )
   }
 
@@ -1019,6 +1287,39 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
     window.open('https://slack.com/app_redirect', '_blank', 'noopener,noreferrer')
   }
 
+  const outreachDraftPayloadRef = useRef({
+    headline: '',
+    signalKind: 'news' as 'exec' | 'news',
+    companyName: '',
+    summarySnippet: '',
+    referenceTitles: [] as string[],
+    recipientFullName: null as string | null,
+    senderFullName: model.senderFullName,
+  })
+
+  useEffect(() => {
+    outreachDraftPayloadRef.current = {
+      headline: selected?.headline ?? '',
+      signalKind: selected?.kind ?? 'news',
+      companyName: selected?.companyName ?? '',
+      summarySnippet: (
+        signalIntelligence?.insight.why_now ??
+        signalIntelligence?.insight.signal_fact ??
+        selected?.sourceSummary ??
+        ''
+      ).slice(0, 1200),
+      referenceTitles: visibleQuickRefs.map((r) => r.title),
+      recipientFullName: decisionCandidates[0]?.fullName ?? null,
+      senderFullName: model.senderFullName,
+    }
+  }, [
+    decisionCandidates,
+    model.senderFullName,
+    selected,
+    signalIntelligence,
+    visibleQuickRefs,
+  ])
+
   useEffect(() => {
     if (!selected) {
       setIntroStrategyText(null)
@@ -1033,38 +1334,46 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
       setIntroStrategyLoading(false)
       return
     }
-    const ac = new AbortController()
+
+    let cancelled = false
     setIntroStrategyLoading(true)
+
     ;(async () => {
       try {
+        const payload = outreachDraftPayloadRef.current
         const res = await fetch('/api/market-signals/intro-strategy', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            headline: selected.headline,
-            signalKind: selected.kind,
-            companyName: selected.companyName,
+            headline: payload.headline,
+            signalKind: payload.signalKind,
+            companyName: payload.companyName,
             introTone,
-            summarySnippet: (signalIntelligence?.insight.why_now ?? selected.sourceSummary).slice(0, 1200),
-            referenceTitles: visibleQuickRefs.map((r) => r.title),
+            summarySnippet: payload.summarySnippet,
+            referenceTitles: payload.referenceTitles,
+            recipientFullName: payload.recipientFullName,
+            senderFullName: payload.senderFullName,
           }),
-          signal: ac.signal,
         })
+        if (cancelled) return
         if (!res.ok) throw new Error('strategy failed')
         const data = (await res.json()) as { strategy?: string; source?: string }
-        if (ac.signal.aborted) return
+        if (cancelled) return
         setIntroStrategyText(data.strategy ?? null)
         setIntroStrategySource(data.source === 'openai' ? 'openai' : 'heuristic')
       } catch {
-        if (ac.signal.aborted) return
+        if (cancelled) return
         setIntroStrategyText(null)
         setIntroStrategySource(null)
       } finally {
-        if (!ac.signal.aborted) setIntroStrategyLoading(false)
+        if (!cancelled) setIntroStrategyLoading(false)
       }
     })()
-    return () => ac.abort()
-  }, [selected, introTone, visibleQuickRefs, signalIntelligence, introDraftRequested, introDraftRunId])
+
+    return () => {
+      cancelled = true
+    }
+  }, [selected?.id, selectedGroup?.key, introTone, introDraftRequested, introDraftRunId])
 
   function runManualNewsIngest() {
     startNewsIngest(async () => {
@@ -1078,7 +1387,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
       if (ne > 0) console.warn('[market-signals ingest / news]', result.news.errors)
       if (ee > 0) console.warn('[market-signals ingest / executives]', result.executives.errors)
       toast.success(
-        `Signale: ${result.news.articlesInserted} News · ${result.executives.signalsInserted} Executive` +
+        `Signale: ${result.news.articlesInserted} Company Updates · ${result.executives.signalsInserted} Exec Updates` +
           (result.executives.skippedNoCompany > 0
             ? ` (${result.executives.skippedNoCompany} Exec. ohne Account-Zuordnung übersprungen)`
             : '')
@@ -1096,50 +1405,176 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
     ['concise', 'Kurz & Knapp'],
   ] as const
 
+  function renderReferencesSectionHeader(titleClassName = 'text-base') {
+    const availabilityHint =
+      signalIntelligence?.insight.reference_line ??
+      (visibleQuickRefs.length === 0
+        ? quickRefs.length > 0
+          ? null
+          : 'Keine Referenzen im Pool für dieses Signal-Konto.'
+        : null)
+
+    return (
+      <div>
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <h2 className={cn('font-semibold text-slate-900', titleClassName)}>
+            Passende Referenzen
+          </h2>
+          <div className="flex items-center gap-2">
+            <Switch
+              id={referencesApprovedOnlyId}
+              checked={onlyApprovedReferences}
+              onCheckedChange={setOnlyApprovedReferences}
+            />
+            <Label
+              htmlFor={referencesApprovedOnlyId}
+              className="cursor-pointer text-sm font-medium text-slate-700"
+            >
+              {onlyApprovedReferences ? 'Nur freigegebene' : 'Alle Referenzen'}
+            </Label>
+          </div>
+        </div>
+        {availabilityHint ? (
+          <p className="mt-2 border-l-2 border-amber-400 bg-slate-50/60 py-1 pl-3 text-sm text-slate-600">
+            {availabilityHint}
+          </p>
+        ) : null}
+      </div>
+    )
+  }
+
   function renderIntroTonePicker() {
     return (
-      <div className="space-y-2">
-        <p className="text-xs font-medium text-foreground">Tonalität des Entwurfs</p>
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Tonalität des Outreach-Entwurfs">
+      <div className="mt-6">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
+          Tonalität des Entwurfs
+        </p>
+        <div className="flex flex-wrap gap-1" role="group" aria-label="Tonalität des Outreach-Entwurfs">
           {INTRO_TONE_OPTIONS.map(([value, label]) => (
-            <Button
+            <button
               key={value}
               type="button"
-              size="sm"
-              variant={introTone === value ? 'secondary' : 'outline'}
-              className="h-8 px-3 text-xs"
               aria-pressed={introTone === value}
+              className={cn(
+                'rounded-lg px-4 py-1.5 text-sm transition-colors',
+                introTone === value
+                  ? 'bg-violet-600 font-medium text-white hover:bg-violet-600'
+                  : 'text-slate-600 hover:bg-violet-50'
+              )}
               onClick={() => setIntroTone(value)}
             >
               {label}
-            </Button>
+            </button>
           ))}
         </div>
       </div>
     )
   }
 
-  function renderOutreachDraftComposer() {
+  function renderOutreachDraftCard(compactLinks = false) {
+    const linkClass =
+      'text-slate-500 underline-offset-2 hover:text-slate-800 dark:text-muted-foreground dark:hover:text-foreground'
+
     return (
-      <div className="w-full max-w-lg rounded-xl border border-border bg-card p-4 shadow-sm">
-        <p className="text-xs leading-relaxed text-muted-foreground">
-          Platzhalter wie{' '}
-          <span className="rounded bg-yellow-100 px-1 text-yellow-800 dark:bg-yellow-500/25 dark:text-yellow-100">
-            [Name]
-          </span>{' '}
-          markieren offene Personalisierung im generierten Text.
-        </p>
-        <div className="mt-4">{renderIntroTonePicker()}</div>
-        <Button
-          type="button"
-          size="lg"
-          variant="outline"
-          className="mt-4 w-full gap-2 shadow-sm"
-          onClick={triggerIntroDraftGeneration}
-        >
-          <AppIcon icon={Sparkles} size={16} className={MS_TOOLBAR_ICON_CLASS} aria-hidden />
-          Outreach-Draft für {outreachDraftTargetName} generieren
-        </Button>
+      <div className="mt-6 rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-border dark:bg-card">
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Outreach-Draft</p>
+
+        {introStrategyLoading ? (
+          <>
+            <div className="mt-6 flex items-center gap-2 text-sm text-slate-600">
+              <AppIcon icon={Loader} size={16} className="animate-spin text-muted-foreground" />
+              Entwurf wird generiert …
+            </div>
+            {introDraftRequested ? renderIntroTonePicker() : null}
+          </>
+        ) : introStrategyText ? (
+          <>
+            <div className="mt-4 rounded-lg border border-slate-100 bg-slate-50/80 px-4 py-5 dark:border-border dark:bg-muted/40">
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                {introStrategySource === 'openai' ? (
+                  <Badge className="h-5 border-0 bg-slate-200 px-1.5 text-[10px] text-slate-700">KI</Badge>
+                ) : introStrategySource ? (
+                  <Badge variant="outline" className="h-5 px-1.5 text-[10px]">
+                    Regeln
+                  </Badge>
+                ) : null}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs text-slate-600"
+                  onClick={() => void copyStrategySnippet()}
+                >
+                  {copySuccess ? (
+                    <AppIcon icon={CopyCheckIcon} size={16} className="mr-1 shrink-0" />
+                  ) : (
+                    <AppIcon icon={CopyIcon} size={16} className="mr-1 shrink-0" />
+                  )}
+                  Kopieren
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs text-slate-600"
+                  onClick={triggerIntroDraftGeneration}
+                  disabled={introStrategyLoading}
+                >
+                  Neu generieren
+                </Button>
+              </div>
+              {renderDraftText(introStrategyText)}
+            </div>
+            {introDraftRequested ? renderIntroTonePicker() : null}
+            <div
+              className={cn(
+                'mt-6 flex flex-wrap gap-x-4 gap-y-1 border-t border-slate-200 pt-4 text-[11px] dark:border-border',
+                compactLinks && 'flex-col gap-2'
+              )}
+            >
+              <button
+                type="button"
+                className={linkClass}
+                onClick={async () => {
+                  if (!selected) return
+                  const key = signalKeyOf(selected)
+                  await logMarketSignalQuickAction({ signalKey: key, channel: 'hubspot_email' })
+                  window.open(
+                    `https://app.hubspot.com/contacts?query=${encodeURIComponent(selected.companyName)}`,
+                    '_blank',
+                    'noopener,noreferrer'
+                  )
+                }}
+              >
+                In HubSpot öffnen
+              </button>
+              <button
+                type="button"
+                className={linkClass}
+                onClick={async () => {
+                  if (!selected) return
+                  const key = signalKeyOf(selected)
+                  await logMarketSignalQuickAction({ signalKey: key, channel: 'salesforce_task' })
+                  window.open('https://login.salesforce.com/', '_blank', 'noopener,noreferrer')
+                }}
+              >
+                Task in Salesforce
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            {introDraftRequested ? renderIntroTonePicker() : null}
+            <Button
+              type="button"
+              className="mt-6 flex h-auto w-full items-center justify-center gap-2 rounded-xl border-0 bg-violet-600 from-violet-600 to-violet-700 py-2.5 px-5 text-sm font-medium text-white shadow-none hover:from-violet-600 hover:to-violet-700 hover:bg-violet-700"
+              onClick={triggerIntroDraftGeneration}
+            >
+              <AppIcon icon={Sparkles} size={16} className="text-white" aria-hidden />
+              Outreach-Draft für {outreachDraftTargetName} generieren
+            </Button>
+          </>
+        )}
       </div>
     )
   }
@@ -1230,6 +1665,13 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                   </Button>
                 </div>
                 <div className="mt-2 flex items-center gap-1.5">
+                  <Input
+                    value={signalFilter}
+                    onChange={(e) => setSignalFilter(e.target.value)}
+                    placeholder="Signale filtern..."
+                    className="h-10 min-w-0 flex-1 rounded-lg bg-card text-xs"
+                    aria-label="Signale filtern"
+                  />
                   <TooltipProvider delayDuration={300}>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -1237,31 +1679,18 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                           type="button"
                           variant="ghost"
                           size="toolbar"
-                          className={cn('shrink-0 px-2.5 hover:bg-muted/70', onlyActiveDeals && 'bg-muted')}
-                          aria-pressed={onlyActiveDeals}
-                          aria-label="Nur aktive Deals"
-                          onClick={() => setOnlyActiveDeals((prev) => !prev)}
-                        >
-                          <AppIcon icon={FilterHorizontalIcon} size={16} className={MS_TOOLBAR_ICON_CLASS} />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom" className="max-w-[220px] text-xs">
-                        Nur Accounts mit aktivem Deal in der Inbox
-                        {onlyActiveDeals ? ' (ein)' : ' (aus)'}.
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="toolbar"
-                          className={cn('shrink-0 px-2.5 hover:bg-muted/70', onlyFocusAccounts && 'bg-muted')}
+                          className="shrink-0 px-2.5 hover:bg-muted/70"
                           aria-pressed={onlyFocusAccounts}
                           aria-label="Nur Focus-Accounts"
                           onClick={() => setOnlyFocusAccounts((prev) => !prev)}
                         >
-                          <AppIcon icon={StarIcon} size={16} className={MS_TOOLBAR_ICON_CLASS} />
+                          <AppIcon
+                            icon={StarIcon}
+                            size={16}
+                            className={cn(
+                              onlyFocusAccounts ? 'text-amber-500' : 'text-muted-foreground'
+                            )}
+                          />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent side="bottom" className="max-w-[220px] text-xs">
@@ -1269,16 +1698,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                         {onlyFocusAccounts ? ' (ein)' : ' (alle Accounts)'}.
                       </TooltipContent>
                     </Tooltip>
-                  </TooltipProvider>
-                  <Input
-                    value={signalFilter}
-                    onChange={(e) => setSignalFilter(e.target.value)}
-                    placeholder="Signale filtern..."
-                    className="h-8 min-w-0 flex-1 bg-card text-xs"
-                    aria-label="Signale filtern"
-                  />
-                  {canRunNewsIngest ? (
-                    <TooltipProvider delayDuration={300}>
+                    {canRunNewsIngest ? (
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
@@ -1300,13 +1720,13 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                         <TooltipContent side="bottom" className="max-w-[240px] text-xs leading-snug">
                           <span className="font-medium text-foreground">Feeds jetzt abrufen</span>
                           <span className="mt-1 block text-muted-foreground">
-                            Lädt neue Company-News und Executive-Signale (RSS). Die Liste aktualisiert sich zusätzlich
+                            Lädt neue Company Updates und Exec-Signale (RSS). Die Liste aktualisiert sich zusätzlich
                             etwa alle 2 Minuten automatisch vom Server.
                           </span>
                         </TooltipContent>
                       </Tooltip>
-                    </TooltipProvider>
-                  ) : null}
+                    ) : null}
+                  </TooltipProvider>
                 </div>
               </div>
               <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-2 [scrollbar-gutter:stable] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-muted-foreground/35 [&::-webkit-scrollbar]:w-2">
@@ -1331,13 +1751,8 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                               const rep = groupItem.representative
                               const key = groupItem.key
                               const isActive = key === selectedKey
-                              const readKeysForGroup = groupItem.items.map(
-                                (item) => `${item.kind === 'exec' ? 'market_exec' : 'market_news'}:${item.id}`
-                              )
-                              const allRead = readKeysForGroup.every((rk) => readKeys.has(rk))
                               const ts = groupItem.latestTs
                               const listAria = `${rep.companyName}. ${inboxRowSignalTypeLabel(rep)}. ${rep.headline}`
-                              const isTodayPriority = priorityKeys.has(signalKeyOf(rep))
                               return (
                                 <li key={key}>
                                   <div
@@ -1357,45 +1772,27 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                       if (isMobile) setMobileOpen(true)
                                       void markReadForGroup(groupItem.items)
                                     }}
-                                    className={`group relative flex w-full cursor-pointer items-center gap-2.5 rounded-lg border-l-[3px] py-2 pl-2 pr-1 text-left transition-colors ${
+                                    className={cn(
+                                      'group relative flex w-full cursor-pointer items-center gap-2.5 rounded-xl border-l-4 py-2.5 pl-2.5 pr-1 text-left transition-colors',
                                       isActive
-                                        ? `bg-primary/10 ${inboxRowAccentClass(rep)} dark:bg-primary/15`
-                                        : `border-l-transparent hover:bg-muted/70`
-                                    }`}
+                                        ? cn('bg-slate-100/80', inboxRowAccentClass(rep))
+                                        : 'border-transparent hover:bg-muted/70'
+                                    )}
                                   >
-                                    <div className="relative flex shrink-0 -space-x-1.5">
+                                    <div className="relative flex shrink-0 -space-x-2">
                                       {groupItem.companies.length > 1
                                         ? groupItem.companies.slice(0, 3).map((co) => (
-                                            <div
+                                            <MarketSignalInboxLogoBox
                                               key={co.id}
-                                              className="relative z-10 size-8 overflow-hidden rounded-md border border-background bg-card ring-1 ring-border/80"
-                                            >
-                                              {co.logoUrl ? (
-                                                <Image
-                                                  src={co.logoUrl}
-                                                  alt=""
-                                                  width={32}
-                                                  height={32}
-                                                  className="size-8 object-contain p-1"
-                                                />
-                                              ) : null}
-                                            </div>
+                                              logoUrl={co.logoUrl}
+                                              className="relative z-10 ring-2 ring-sidebar"
+                                            />
                                           ))
-                                        : rep.companyLogoUrl ? (
-                                            <div className="relative size-8 overflow-hidden rounded-md border border-border bg-card ring-1 ring-border/80">
-                                              <Image
-                                                src={rep.companyLogoUrl}
-                                                alt=""
-                                                fill
-                                                sizes="32px"
-                                                className="object-contain p-1"
-                                              />
-                                            </div>
-                                          ) : (
-                                            <div className="size-8 rounded-md bg-muted ring-1 ring-border/80" />
+                                        : (
+                                            <MarketSignalInboxLogoBox logoUrl={rep.companyLogoUrl} />
                                           )}
                                       {groupItem.companies.length > 3 ? (
-                                        <span className="z-20 inline-flex size-8 items-center justify-center rounded-md border border-border bg-muted text-[9px] font-semibold text-muted-foreground">
+                                        <span className="z-20 inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-100 bg-slate-50 text-[10px] font-semibold text-slate-500 ring-2 ring-sidebar">
                                           +{groupItem.companies.length - 3}
                                         </span>
                                       ) : null}
@@ -1410,32 +1807,8 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                         {inboxRowSignalTypeLabel(rep)}
                                       </p>
                                     </div>
-                                    <div className="flex shrink-0 items-center gap-2 pr-0.5">
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <span
-                                            className={`size-2.5 shrink-0 rounded-full ${
-                                              isTodayPriority ? 'bg-amber-500' : 'bg-muted-foreground/40'
-                                            }`}
-                                            aria-label={isTodayPriority ? 'Priorität: Heute zuerst' : 'Standard-Priorität'}
-                                          />
-                                        </TooltipTrigger>
-                                        <TooltipContent side="left" className="max-w-[200px] text-xs">
-                                          {isTodayPriority
-                                            ? 'Heute zuerst markiert.'
-                                            : 'Standard-Priorität. Über „Aktionen“ als Heute zuerst markieren.'}
-                                        </TooltipContent>
-                                      </Tooltip>
-                                      {!allRead ? (
-                                        <span
-                                          className="size-2 shrink-0 rounded-full bg-blue-500"
-                                          title="Ungelesen"
-                                          aria-hidden
-                                        />
-                                      ) : null}
-                                    </div>
                                     <div className="relative shrink-0">
-                                      <div className="pointer-events-none absolute right-0 top-1/2 flex -translate-y-1/2 items-center gap-1 rounded-md border border-border/60 bg-background/95 px-0.5 py-0.5 opacity-0 shadow-sm ring-1 ring-border/60 backdrop-blur-sm transition-opacity duration-200 group-hover:pointer-events-auto group-hover:opacity-100 dark:bg-popover/95">
+                                      <div className="pointer-events-none absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-1 rounded-md border border-border/60 bg-background/95 px-0.5 py-0.5 opacity-0 shadow-sm ring-1 ring-border/60 backdrop-blur-sm transition-opacity duration-200 group-hover:pointer-events-auto group-hover:opacity-100 dark:bg-popover/95">
                                         <Tooltip>
                                           <TooltipTrigger asChild>
                                             <button
@@ -1544,116 +1917,125 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                 ) : (
                   <div className="flex h-full min-h-0 flex-col">
                     <div className="shrink-0 border-b border-border px-6 py-4">
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="flex min-w-0 flex-1 items-start gap-3">
-                          <div className="relative mt-0.5 flex shrink-0 -space-x-2">
-                            {selectedGroup && selectedGroup.companies.length > 1
-                              ? selectedGroup.companies.slice(0, 4).map((co) => (
-                                  <div
-                                    key={co.id}
-                                    className="relative z-10 size-10 overflow-hidden rounded-xl border-2 border-background bg-card shadow-sm ring-1 ring-border"
-                                  >
-                                    {co.logoUrl ? (
-                                      <Image
-                                        src={co.logoUrl}
-                                        alt=""
-                                        width={40}
-                                        height={40}
-                                        className="size-10 object-contain p-1.5"
-                                      />
-                                    ) : null}
-                                  </div>
-                                ))
-                              : selected.companyLogoUrl ? (
-                                  <div className="relative size-10 shrink-0 overflow-hidden rounded-xl border border-border bg-card">
-                                    <Image
-                                      src={selected.companyLogoUrl}
-                                      alt=""
-                                      fill
-                                      sizes="40px"
-                                      className="object-contain p-1.5"
-                                    />
-                                  </div>
-                                ) : (
-                                  <div className="size-10 shrink-0 rounded-xl border border-border bg-card" />
-                                )}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="min-w-0 truncate text-lg font-semibold leading-none tracking-tight text-foreground md:text-xl">
-                              {selected.headline}
-                            </p>
-                            <div className="mt-1.5 flex min-w-0 flex-nowrap items-center gap-x-2 overflow-hidden text-xs text-muted-foreground">
-                              <span className="shrink-0">
-                                {selectedGroup && selectedGroup.companies.length > 1
-                                  ? `${selectedGroup.companies.length} Accounts`
-                                  : selected.companyName}
-                              </span>
-                              <span className="shrink-0" aria-hidden>
-                                •
-                              </span>
-                              <span
-                                className="shrink-0 rounded border border-border bg-muted/50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground/85"
-                                title={signalTypeLabel(selected.categoryBadge).full}
-                              >
-                                {signalTypeLabel(selected.categoryBadge).short}
-                              </span>
-                              <span className="shrink-0" aria-hidden>
-                                •
-                              </span>
-                              <div className="min-w-0 flex-1">
-                                <Link
-                                  href={selected.sourceHref}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="inline-flex min-w-0 max-w-full items-center gap-1 text-[11px] font-medium text-blue-700 hover:underline dark:text-blue-400"
-                                  title={
-                                    sourcePreview?.hostname
-                                      ? `${selected.sourceLabel} · ${sourcePreview.hostname}`
-                                      : selected.sourceLabel
-                                  }
-                                  aria-label={`Quelle öffnen: ${selected.sourceLabel}`}
-                                >
-                                  <AppIcon icon={LinkIcon} size={12} className="shrink-0" />
-                                  <span className="truncate">via {selected.sourceLabel}</span>
-                                </Link>
-                              </div>
-                            </div>
-                          </div>
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0 flex-1">
+                          <h1 className="text-xl font-semibold tracking-tight text-slate-900">
+                            {marketSignalDetailTitle(selected)}
+                          </h1>
+                          <MarketSignalDetailMetaRow
+                            companyLabel={
+                              selectedGroup && selectedGroup.companies.length > 1
+                                ? `${selectedGroup.companies.length} Accounts`
+                                : selected.companyName
+                            }
+                            signalTypeShort={signalTypeLabel(selected.categoryBadge).short}
+                            sourceHref={selected.sourceHref}
+                            sourceLabel={selected.sourceLabel}
+                            sourceTitle={
+                              sourcePreview?.hostname
+                                ? `${selected.sourceLabel} · ${sourcePreview.hostname}`
+                                : selected.sourceLabel
+                            }
+                            icpScore={signalIcpScore}
+                          />
                         </div>
-                        <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="size-8"
-                            onClick={() => void submitDraftFeedback(true)}
-                            aria-label="Nützlich"
+                        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                          <Select
+                            value={isSelectedInPipeline ? 'in_pipeline' : undefined}
+                            onValueChange={(dealId) => {
+                              if (dealId === 'in_pipeline' || !selected) return
+                              void (async () => {
+                                setAddToDealPendingId(dealId)
+                                const signalKey = `${selected.kind === 'exec' ? 'market_exec' : 'market_news'}:${selected.id}`
+                                const res = await addMarketSignalToDeal({
+                                  dealId,
+                                  companyId: selected.companyId,
+                                  signalKey,
+                                  referenceIds: (quickRefs ?? []).map((r) => r.id),
+                                })
+                                setAddToDealPendingId(null)
+                                if (!res.success) {
+                                  toast.error(res.error)
+                                  return
+                                }
+                                toast.success(
+                                  res.added > 0
+                                    ? `Zu Deal hinzugefügt: ${res.added} Referenz${res.added === 1 ? '' : 'en'}`
+                                    : 'Zum Deal hinzugefügt',
+                                  {
+                                    action: {
+                                      label: 'Deal öffnen',
+                                      onClick: () => {
+                                        window.location.href = ROUTES.deals.detail(dealId)
+                                      },
+                                    },
+                                  }
+                                )
+                                await dismissItems(clusterItemsForDismiss)
+                                setSelectedKey(null)
+                              })()
+                            }}
+                            disabled={isSelectedInPipeline || model.activeDeals.length === 0}
                           >
-                            <AppIcon icon={ThumbsUpIcon} size={16} className={MS_TOOLBAR_ICON_CLASS} />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="size-8"
-                            onClick={() => void submitDraftFeedback(false)}
-                            aria-label="Nicht nützlich"
-                          >
-                            <AppIcon icon={ThumbsDownIcon} size={16} className={MS_TOOLBAR_ICON_CLASS} />
-                          </Button>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                className="size-8"
-                                title="Wiedervorlage, Priorität und Slack"
-                                aria-label="Wiedervorlage, Priorität und Slack"
-                              >
-                                <AppIcon icon={Calendar} size={16} className={MS_TOOLBAR_ICON_CLASS} />
-                              </Button>
-                            </DropdownMenuTrigger>
+                            <SelectTrigger size="sm" className="w-[11.5rem]">
+                              <SelectValue
+                                placeholder={
+                                  model.activeDeals.length === 0
+                                    ? 'Keine Deals'
+                                    : 'In Pipeline überführen'
+                                }
+                              />
+                            </SelectTrigger>
+                            <SelectContent align="end">
+                              {isSelectedInPipeline ? (
+                                <SelectItem value="in_pipeline">In Pipeline</SelectItem>
+                              ) : (
+                                model.activeDeals.slice(0, 12).map((d) => (
+                                  <SelectItem
+                                    key={d.id}
+                                    value={d.id}
+                                    disabled={addToDealPendingId === d.id}
+                                  >
+                                    {d.title}
+                                  </SelectItem>
+                                ))
+                              )}
+                            </SelectContent>
+                          </Select>
+                          <div className="flex items-center divide-x divide-slate-200 rounded-lg border border-slate-200 bg-white shadow-sm">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className={MS_DETAIL_GROUP_BTN}
+                              onClick={() => void submitDraftFeedback(true)}
+                              aria-label="Nützlich"
+                            >
+                              <AppIcon icon={ThumbsUpIcon} size={16} className={MS_TOOLBAR_ICON_CLASS} />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className={MS_DETAIL_GROUP_BTN}
+                              onClick={() => void submitDraftFeedback(false)}
+                              aria-label="Nicht nützlich"
+                            >
+                              <AppIcon icon={ThumbsDownIcon} size={16} className={MS_TOOLBAR_ICON_CLASS} />
+                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className={MS_DETAIL_GROUP_BTN}
+                                  title="Wiedervorlage, Priorität und Slack"
+                                  aria-label="Wiedervorlage, Priorität und Slack"
+                                >
+                                  <AppIcon icon={Calendar} size={16} className={MS_TOOLBAR_ICON_CLASS} />
+                                </Button>
+                              </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="min-w-[14rem]">
                               <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
                                 Inbox &amp; Erinnerung
@@ -1716,40 +2098,38 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
-                          {selected.kind === 'exec' ? (
-                            <Button type="button" variant="outline" size="icon" className="size-8 shrink-0" asChild>
-                              <Link href={selected.sourceHref} target="_blank" rel="noreferrer" aria-label="Auf LinkedIn öffnen">
-                                <AppIcon icon={Linkedin01Icon} size={16} />
-                              </Link>
-                            </Button>
-                          ) : null}
-                          <HoverCard openDelay={200} closeDelay={150}>
-                            <HoverCardTrigger asChild>
-                              <button
-                                type="button"
-                                className={`inline-flex size-8 shrink-0 items-center justify-center rounded-md border transition-colors ${
-                                  mutualConnectionsPreview.count > 0
-                                    ? 'border-violet-200 bg-violet-50/90 text-violet-900 shadow-sm hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-950/50 dark:text-violet-100 dark:hover:bg-violet-950/70'
-                                    : 'border-transparent text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground'
-                                }`}
-                                title={
-                                  mutualConnectionsPreview.count > 0
-                                    ? `${mutualConnectionsPreview.count} ${
-                                        mutualConnectionsPreview.count === 1 ? 'gemeinsamer Kontakt' : 'gemeinsame Kontakte'
-                                      }`
-                                    : 'Gemeinsame Kontakte'
-                                }
-                                aria-label={
-                                  mutualConnectionsPreview.count > 0
-                                    ? `${mutualConnectionsPreview.count} ${
-                                        mutualConnectionsPreview.count === 1 ? 'gemeinsamer Kontakt' : 'gemeinsame Kontakte'
-                                      }, Details anzeigen`
-                                    : 'Gemeinsame Kontakte und Warm-Intro-Pfade'
-                                }
-                              >
-                                <AppIcon icon={Users} size={16} className={MS_TOOLBAR_ICON_CLASS} aria-hidden />
-                              </button>
-                            </HoverCardTrigger>
+                            <HoverCard openDelay={200} closeDelay={150}>
+                              <HoverCardTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className={cn(
+                                    MS_DETAIL_GROUP_BTN,
+                                    mutualConnectionsPreview.count > 0 && 'text-violet-700'
+                                  )}
+                                  title={
+                                    mutualConnectionsPreview.count > 0
+                                      ? `${mutualConnectionsPreview.count} ${
+                                          mutualConnectionsPreview.count === 1
+                                            ? 'gemeinsamer Kontakt'
+                                            : 'gemeinsame Kontakte'
+                                        }`
+                                      : 'Gemeinsame Kontakte'
+                                  }
+                                  aria-label={
+                                    mutualConnectionsPreview.count > 0
+                                      ? `${mutualConnectionsPreview.count} ${
+                                          mutualConnectionsPreview.count === 1
+                                            ? 'gemeinsamer Kontakt'
+                                            : 'gemeinsame Kontakte'
+                                        }, Details anzeigen`
+                                      : 'Gemeinsame Kontakte und Warm-Intro-Pfade'
+                                  }
+                                >
+                                  <AppIcon icon={Users} size={16} className={MS_TOOLBAR_ICON_CLASS} aria-hidden />
+                                </Button>
+                              </HoverCardTrigger>
                             <HoverCardContent
                               side="top"
                               align="end"
@@ -1818,114 +2198,25 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                 )}
                               </div>
                             </HoverCardContent>
-                          </HoverCard>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                className={
-                                  isSelectedInPipeline
-                                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200 dark:hover:bg-emerald-950/60'
-                                    : 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-100 dark:hover:bg-blue-950/65'
-                                }
-                                disabled={isSelectedInPipeline}
-                              >
-                                {isSelectedInPipeline ? (
-                                  <AppIcon icon={CheckmarkCircle02Icon} size={16} className="mr-1 shrink-0" />
-                                ) : (
-                                  <AppIcon icon={UploadIcon} size={16} className="mr-1 shrink-0" />
-                                )}
-                                {isSelectedInPipeline ? 'In Pipeline' : 'In Pipeline überführen'}
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              {model.activeDeals.length === 0 ? (
-                                <DropdownMenuItem disabled>Keine aktiven Deals</DropdownMenuItem>
-                              ) : (
-                                model.activeDeals.slice(0, 12).map((d) => (
-                                  <DropdownMenuItem
-                                    key={d.id}
-                                    disabled={addToDealPendingId === d.id}
-                                    onSelect={async () => {
-                                      if (!selected) return
-                                      setAddToDealPendingId(d.id)
-                                      const signalKey = `${selected.kind === 'exec' ? 'market_exec' : 'market_news'}:${selected.id}`
-                                      const res = await addMarketSignalToDeal({
-                                        dealId: d.id,
-                                        companyId: selected.companyId,
-                                        signalKey,
-                                        referenceIds: (quickRefs ?? []).map((r) => r.id),
-                                      })
-                                      setAddToDealPendingId(null)
-                                      if (!res.success) {
-                                        toast.error(res.error)
-                                        return
-                                      }
-                                      toast.success(
-                                        res.added > 0
-                                          ? `Zu Deal hinzugefügt: ${res.added} Referenz${res.added === 1 ? '' : 'en'}`
-                                          : 'Zum Deal hinzugefügt',
-                                        {
-                                          action: {
-                                            label: 'Deal öffnen',
-                                            onClick: () => {
-                                              window.location.href = ROUTES.deals.detail(d.id)
-                                            },
-                                          },
-                                        }
-                                      )
-                                      await dismissItems(clusterItemsForDismiss)
-                                      setSelectedKey(null)
-                                    }}
-                                  >
-                                    {d.title}
-                                  </DropdownMenuItem>
-                                ))
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                            </HoverCard>
+                          </div>
                         </div>
                       </div>
                     </div>
 
                     <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-8 sm:px-6">
-                      <div className="mx-auto w-full max-w-5xl space-y-12 border-l border-dashed border-slate-200 pl-5 sm:pl-7 dark:border-slate-700">
-                          <motion.section
+                      <div className="mx-auto w-full max-w-5xl space-y-10">
+                          <motion.div
                             initial={{ opacity: 0, y: 6 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.2 }}
-                            className="relative rounded-r-xl border-l-4 border-blue-500 bg-blue-50/50 py-5 pl-5 pr-4 dark:border-blue-400 dark:bg-blue-950/35"
                           >
-                            <p className="text-[10px] font-semibold uppercase tracking-wider text-blue-800/80 dark:text-blue-200/90">
-                              Warum jetzt?
-                            </p>
-                            <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
-                              <h2 className="text-sm font-semibold text-foreground">Insight — Kurz-Begründung</h2>
-                              {signalIcpScore !== null ? (
-                                <div className="flex shrink-0 items-center gap-1.5 rounded-md bg-white/70 px-2 py-1 dark:bg-slate-950/40">
-                                  <span className="text-xs font-medium text-muted-foreground">ICP-Match</span>
-                                  <span className="text-lg font-bold tabular-nums text-foreground">{signalIcpScore}%</span>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <button type="button" className="text-muted-foreground hover:text-foreground dark:hover:text-foreground">
-                                        <AppIcon icon={InformationCircleIcon} size={16} className={MS_TOOLBAR_ICON_CLASS} />
-                                      </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent className="max-w-[260px] border-border bg-popover text-popover-foreground text-xs">
-                                      Basierend auf Branche, Unternehmensgröße, Signal-Typ, Aktualität und Referenz-Readiness.
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </div>
-                              ) : null}
-                            </div>
-                            <ul className="mt-3 list-inside list-disc space-y-2 text-sm leading-relaxed text-foreground/85 marker:text-blue-500 dark:text-blue-50/95 dark:marker:text-blue-400">
-                              {executiveSummaryBullets.map((line, i) => (
-                                <li key={i}>{line}</li>
-                              ))}
-                            </ul>
-                          </motion.section>
+                            <MarketSignalInsightCard
+                              whyNow={insightWhyNow}
+                              embeddedHook={embeddedSignalHook}
+                              highlightPhrases={insightHighlightPhrases}
+                            />
+                          </motion.div>
 
                           {signalEvidenceText &&
                           selected.kind === 'news' &&
@@ -1955,14 +2246,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                           ) : null}
 
                           <section className="space-y-4">
-                            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                              <div>
-                                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                                  Wer kontaktieren?
-                                </p>
-                                <h2 className="mt-1 text-base font-semibold text-foreground">Passende Ansprechpartner</h2>
-                              </div>
-                            </div>
+                            <h2 className="text-base font-semibold text-foreground">Passende Ansprechpartner</h2>
                             {decisionCandidatesLoadingCompanyId === selected.companyId ? (
                               <p className="text-sm text-muted-foreground">Profile werden geladen …</p>
                             ) : decisionCandidates.length === 0 ? (
@@ -1972,60 +2256,15 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                             ) : (
                               <>
                                 <div
-                                  className="-mx-1 flex gap-3 overflow-x-auto overscroll-x-contain px-1 pb-2 snap-x snap-mandatory scroll-smooth [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-muted-foreground/35"
+                                  className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"
                                   role="list"
                                   aria-label="Passende Ansprechpartner"
                                 >
-                                  {displayStakeholders.map((candidate) => {
-                                    const activity = formatLinkedInActivityLine(candidate.lastSeenAt)
-                                    const initials = candidate.fullName
-                                      .split(/\s+/)
-                                      .filter(Boolean)
-                                      .slice(0, 2)
-                                      .map((n) => n[0]?.toUpperCase() ?? '')
-                                      .join('')
-                                    const mutual = candidate.mutualConnections ?? 0
-                                    return (
-                                      <div
-                                        key={candidate.id}
-                                        role="listitem"
-                                        className="w-[calc(100%-0.5rem)] shrink-0 snap-start rounded-2xl bg-slate-50/90 p-4 shadow-sm dark:bg-slate-900/50 sm:w-[calc((100%-0.75rem)/2)] sm:max-w-[calc((100%-0.75rem)/2)]"
-                                      >
-                                        <div className="flex items-start gap-3">
-                                          <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-900 dark:bg-blue-950 dark:text-blue-100">
-                                            {initials || '—'}
-                                          </div>
-                                          <div className="min-w-0 flex-1 space-y-2">
-                                            <div>
-                                              <p className="font-semibold leading-snug text-foreground">{candidate.fullName}</p>
-                                              <p className="text-xs text-muted-foreground">{candidate.title}</p>
-                                            </div>
-                                            <p className="text-xs text-muted-foreground">
-                                              <span className="font-semibold text-foreground">{candidate.confidence}%</span>
-                                              {mutual > 0 ? (
-                                                <>
-                                                  {' '}
-                                                  · {mutual}{' '}
-                                                  {mutual === 1 ? 'gemeinsamer LinkedIn-Kontakt' : 'gemeinsame LinkedIn-Kontakte'}
-                                                </>
-                                              ) : null}
-                                            </p>
-                                            {activity ? (
-                                              <p className="text-[11px] text-muted-foreground">LinkedIn · {activity}</p>
-                                            ) : null}
-                                            {candidate.profileUrl ? (
-                                              <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" asChild>
-                                                <Link href={candidate.profileUrl} target="_blank" rel="noreferrer">
-                                                  <AppIcon icon={ExternalLink} size={16} className={MS_TOOLBAR_ICON_CLASS} />
-                                                  LinkedIn öffnen
-                                                </Link>
-                                              </Button>
-                                            ) : null}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    )
-                                  })}
+                                  {displayStakeholders.map((candidate) => (
+                                    <div key={candidate.id} role="listitem" className="h-full">
+                                      <MarketSignalStakeholderCard candidate={candidate} />
+                                    </div>
+                                  ))}
                                 </div>
                                 {(() => {
                                   const warmTrigger = signalIntelligence?.action_triggers.find(
@@ -2035,7 +2274,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                   if (!warmTrigger && !bridgeLine) return null
                                   if (warmTrigger?.internalColleagueName) {
                                     return (
-                                      <div className="rounded-xl border-2 border-violet-300/80 bg-violet-50/80 px-4 py-4 text-sm leading-relaxed text-violet-950 dark:border-violet-800 dark:bg-violet-950/35 dark:text-violet-50">
+                                      <div className="rounded-xl border-2 border-violet-300/80 bg-violet-50/80 px-4 py-4 text-center text-sm leading-relaxed text-violet-950 dark:border-violet-800 dark:bg-violet-950/35 dark:text-violet-50">
                                         <p>
                                           <span className="font-semibold">Stärkster Hebel: </span>
                                           Dein Kollege {warmTrigger.internalColleagueName} kennt{' '}
@@ -2044,7 +2283,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                         <Button
                                           type="button"
                                           size="sm"
-                                          className="mt-3 gap-1.5 bg-violet-600 hover:bg-violet-700"
+                                          className="mx-auto mt-3 gap-1.5 bg-violet-600 hover:bg-violet-700"
                                           onClick={() =>
                                             void handleWarmIntroRequest(
                                               warmTrigger.internalColleagueName!,
@@ -2052,7 +2291,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                             )
                                           }
                                         >
-                                          <AppIcon icon={Sparkles} size={16} className={MS_TOOLBAR_ICON_CLASS} aria-hidden />
+                                          <AppIcon icon={Sparkles} size={16} className="text-white" aria-hidden />
                                           {warmTrigger.label}
                                         </Button>
                                       </div>
@@ -2070,31 +2309,9 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                           </section>
 
                           <section className="space-y-4">
-                            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                              <div>
-                                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                                  Referenzen
-                                </p>
-                                <h2 className="mt-1 text-base font-semibold text-foreground">Welche Story passt am besten?</h2>
-                              </div>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant={onlyApprovedReferences ? 'secondary' : 'outline'}
-                                className="h-8 shrink-0 text-xs"
-                                onClick={() => setOnlyApprovedReferences((prev) => !prev)}
-                              >
-                                Nur freigegeben
-                              </Button>
-                            </div>
-                            {visibleQuickRefs.length === 0 ? (
-                              <p className="text-sm text-muted-foreground">
-                                {quickRefs.length > 0 && signalIntelligence?.insight.reference_line
-                                  ? signalIntelligence.insight.reference_line
-                                  : 'Keine Referenzen im Pool für dieses Signal-Konto.'}
-                              </p>
-                            ) : (
-                              <div className="space-y-4">
+                            {renderReferencesSectionHeader()}
+                            {visibleQuickRefs.length > 0 ? (
+                              <div className="mt-4 space-y-4">
                                 {visibleQuickRefs.map((r) => {
                                   const readiness = readinessForReference(r.status)
                                   const attached = attachedRefIds.has(r.id)
@@ -2175,124 +2392,13 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                   )
                                 })}
                               </div>
-                            )}
+                            ) : null}
                           </section>
 
-                          <section className="space-y-4 pb-4">
-                            {!introStrategyText && !introStrategyLoading ? (
-                              <div className="flex flex-col items-center gap-3 py-4">
-                                {signalIntelligence?.action_triggers
-                                  .filter((t) => t.type === 'warm_intro')
-                                  .map((t) => (
-                                    <Button
-                                      key={`warm-${t.label}`}
-                                      type="button"
-                                      size="lg"
-                                      className="w-full max-w-lg gap-2 bg-violet-600 shadow-md hover:bg-violet-700"
-                                      onClick={() =>
-                                        void handleWarmIntroRequest(
-                                          t.internalColleagueName ?? 'Kollege',
-                                          t.primaryStakeholderName
-                                        )
-                                      }
-                                    >
-                                      <AppIcon icon={Sparkles} size={16} className={MS_TOOLBAR_ICON_CLASS} aria-hidden />
-                                      {t.label}
-                                    </Button>
-                                  ))}
-                                {renderOutreachDraftComposer()}
-                              </div>
-                            ) : null}
-
-                            {introStrategyLoading ? (
-                              <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
-                                <AppIcon icon={Loader} size={16} className="animate-spin" />
-                                Entwurf wird generiert …
-                              </div>
-                            ) : null}
-
-                            {introStrategyText ? (
-                              <>
-                                <div className="mt-6 rounded-lg bg-muted/55 px-5 py-6 shadow-inner dark:bg-muted/55">
-                                  <div className="mb-3 flex flex-wrap items-center gap-2">
-                                    {introStrategySource === 'openai' ? (
-                                      <Badge className="h-5 px-1.5 text-[10px]">KI</Badge>
-                                    ) : introStrategySource ? (
-                                      <Badge variant="outline" className="h-5 px-1.5 text-[10px]">
-                                        Regeln
-                                      </Badge>
-                                    ) : null}
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-7 px-2 text-xs text-muted-foreground"
-                                      onClick={() => void copyStrategySnippet()}
-                                    >
-                                      {copySuccess ? (
-                                        <AppIcon icon={CopyCheckIcon} size={16} className="mr-1 shrink-0" />
-                                      ) : (
-                                        <AppIcon icon={CopyIcon} size={16} className="mr-1 shrink-0" />
-                                      )}
-                                      Kopieren
-                                    </Button>
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-7 px-2 text-xs text-muted-foreground"
-                                      onClick={triggerIntroDraftGeneration}
-                                      disabled={introStrategyLoading}
-                                    >
-                                      Neu generieren
-                                    </Button>
-                                  </div>
-                                  {renderDraftText(introStrategyText)}
-                                </div>
-
-                                <div className="mt-4 max-w-lg rounded-xl border border-border bg-card p-4">
-                                  <p className="mb-2 text-xs text-muted-foreground">
-                                    Andere Tonalität? Wähle unten und generiere neu.
-                                  </p>
-                                  {renderIntroTonePicker()}
-                                </div>
-
-                                <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border pt-4 text-[11px] dark:border-border">
-                                  <button
-                                    type="button"
-                                    className="text-muted-foreground underline-offset-2 hover:text-foreground hover:underline dark:text-muted-foreground dark:hover:text-foreground"
-                                    onClick={async () => {
-                                      const key = signalKeyOf(selected)
-                                      await logMarketSignalQuickAction({ signalKey: key, channel: 'hubspot_email' })
-                                      window.open(
-                                        `https://app.hubspot.com/contacts?query=${encodeURIComponent(selected.companyName)}`,
-                                        '_blank',
-                                        'noopener,noreferrer'
-                                      )
-                                    }}
-                                  >
-                                    In HubSpot öffnen
-                                  </button>
-                                  <span className="text-border dark:text-muted-foreground/50" aria-hidden>
-                                    ·
-                                  </span>
-                                  <button
-                                    type="button"
-                                    className="text-muted-foreground underline-offset-2 hover:text-foreground hover:underline dark:text-muted-foreground dark:hover:text-foreground"
-                                    onClick={async () => {
-                                      const key = signalKeyOf(selected)
-                                      await logMarketSignalQuickAction({ signalKey: key, channel: 'salesforce_task' })
-                                      window.open('https://login.salesforce.com/', '_blank', 'noopener,noreferrer')
-                                    }}
-                                  >
-                                    Task in Salesforce
-                                  </button>
-                                </div>
-                              </>
-                            ) : null}
-
+                          <section className="pb-4">
+                            {renderOutreachDraftCard()}
                             {!introStrategyLoading && introDraftRequested && !introStrategyText ? (
-                              <p className="mt-4 text-sm text-muted-foreground">Kein Entwurf verfügbar. Bitte erneut versuchen.</p>
+                              <p className="mt-3 text-sm text-slate-600">Kein Entwurf verfügbar. Bitte erneut versuchen.</p>
                             ) : null}
                           </section>
                       </div>
@@ -2314,113 +2420,125 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
           <DialogTitle className="sr-only">Signal Details</DialogTitle>
           <div className="flex h-full min-h-0 flex-col overflow-hidden bg-card">
             <div className="shrink-0 border-b border-border px-4 py-3">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex min-w-0 flex-1 items-start gap-2">
-                  {selected && selectedGroup && selectedGroup.companies.length > 1 ? (
-                    <div className="relative mt-0.5 flex shrink-0 -space-x-1.5">
-                      {selectedGroup.companies.slice(0, 4).map((co) => (
-                        <div
-                          key={co.id}
-                          className="relative z-10 size-8 overflow-hidden rounded-lg border-2 border-background bg-card shadow-sm ring-1 ring-border"
-                        >
-                          {co.logoUrl ? (
-                            <Image
-                              src={co.logoUrl}
-                              alt=""
-                              width={32}
-                              height={32}
-                              className="size-8 object-contain p-1"
-                            />
-                          ) : null}
-                        </div>
-                      ))}
-                    </div>
-                  ) : selected?.companyLogoUrl ? (
-                    <div className="relative mt-0.5 size-8 shrink-0 overflow-hidden rounded-lg border border-border bg-card">
-                      <Image src={selected.companyLogoUrl} alt="" fill sizes="32px" className="object-contain p-1" />
-                    </div>
-                  ) : null}
-                  <div className="min-w-0 flex-1">
-                    <p className="min-w-0 truncate text-sm font-semibold leading-none text-foreground">
-                      {selected?.headline ?? 'Signal'}
-                    </p>
-                    <div className="mt-1.5 flex min-w-0 flex-nowrap items-center gap-x-1.5 overflow-hidden text-[11px] text-muted-foreground">
-                      {selected && selectedGroup && selectedGroup.companies.length > 1 ? (
-                        <span className="shrink-0">{selectedGroup.companies.length} Accounts</span>
-                      ) : (
-                        <span className="shrink-0">{selected?.companyName ?? ''}</span>
-                      )}
-                      {selected ? (
-                        <>
-                          <span className="shrink-0" aria-hidden>
-                            •
-                          </span>
-                          <span
-                            className="shrink-0 rounded border border-border bg-muted/50 px-1 py-px text-[10px] font-semibold uppercase tracking-wide text-foreground/85"
-                            title={signalTypeLabel(selected.categoryBadge).full}
-                          >
-                            {signalTypeLabel(selected.categoryBadge).short}
-                          </span>
-                          <span className="shrink-0" aria-hidden>
-                            •
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <Link
-                              href={selected.sourceHref}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex min-w-0 max-w-full items-center gap-0.5 font-medium text-blue-700 hover:underline dark:text-blue-400"
-                              title={
-                                sourcePreview?.hostname
-                                  ? `${selected.sourceLabel} · ${sourcePreview.hostname}`
-                                  : selected.sourceLabel
-                              }
-                              aria-label={`Quelle öffnen: ${selected.sourceLabel}`}
-                            >
-                              <AppIcon icon={LinkIcon} size={12} className="shrink-0" />
-                              <span className="truncate">via {selected.sourceLabel}</span>
-                            </Link>
-                          </div>
-                        </>
-                      ) : null}
-                    </div>
-                  </div>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  {selected ? (
+                    <>
+                      <h1 className="text-lg font-semibold tracking-tight text-slate-900">
+                        {marketSignalDetailTitle(selected)}
+                      </h1>
+                      <MarketSignalDetailMetaRow
+                        companyLabel={
+                          selectedGroup && selectedGroup.companies.length > 1
+                            ? `${selectedGroup.companies.length} Accounts`
+                            : selected.companyName
+                        }
+                        signalTypeShort={signalTypeLabel(selected.categoryBadge).short}
+                        sourceHref={selected.sourceHref}
+                        sourceLabel={selected.sourceLabel}
+                        sourceTitle={
+                          sourcePreview?.hostname
+                            ? `${selected.sourceLabel} · ${sourcePreview.hostname}`
+                            : selected.sourceLabel
+                        }
+                        icpScore={signalIcpScore}
+                      />
+                    </>
+                  ) : (
+                    <p className="text-sm font-semibold text-foreground">Signal</p>
+                  )}
                 </div>
                 {selected ? (
-                <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="size-8"
-                    onClick={() => void submitDraftFeedback(true)}
-                    aria-label="Nützlich"
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <Select
+                    value={isSelectedInPipeline ? 'in_pipeline' : undefined}
+                    onValueChange={(dealId) => {
+                      if (dealId === 'in_pipeline' || !selected) return
+                      void (async () => {
+                        setAddToDealPendingId(dealId)
+                        const signalKey = `${selected.kind === 'exec' ? 'market_exec' : 'market_news'}:${selected.id}`
+                        const res = await addMarketSignalToDeal({
+                          dealId,
+                          companyId: selected.companyId,
+                          signalKey,
+                          referenceIds: (quickRefs ?? []).map((r) => r.id),
+                        })
+                        setAddToDealPendingId(null)
+                        if (!res.success) {
+                          toast.error(res.error)
+                          return
+                        }
+                        toast.success(
+                          res.added > 0
+                            ? `Zu Deal hinzugefügt: ${res.added} Referenz${res.added === 1 ? '' : 'en'}`
+                            : 'Zum Deal hinzugefügt',
+                          {
+                            action: {
+                              label: 'Deal öffnen',
+                              onClick: () => {
+                                window.location.href = ROUTES.deals.detail(dealId)
+                              },
+                            },
+                          }
+                        )
+                        await dismissItems(clusterItemsForDismiss)
+                        setSelectedKey(null)
+                        setMobileOpen(false)
+                      })()
+                    }}
+                    disabled={isSelectedInPipeline || model.activeDeals.length === 0}
                   >
-                    <AppIcon icon={ThumbsUpIcon} size={16} className={MS_TOOLBAR_ICON_CLASS} />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="size-8"
-                    onClick={() => void submitDraftFeedback(false)}
-                    aria-label="Nicht nützlich"
-                  >
-                    <AppIcon icon={ThumbsDownIcon} size={16} className={MS_TOOLBAR_ICON_CLASS} />
-                  </Button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        className="size-8"
-                        title="Wiedervorlage, Priorität und Slack"
-                        aria-label="Wiedervorlage, Priorität und Slack"
-                      >
-                        <AppIcon icon={Calendar} size={16} className={MS_TOOLBAR_ICON_CLASS} />
-                      </Button>
-                    </DropdownMenuTrigger>
+                    <SelectTrigger size="sm" className="h-8 w-[9.5rem] text-xs">
+                      <SelectValue
+                        placeholder={model.activeDeals.length === 0 ? 'Keine Deals' : 'Pipeline'}
+                      />
+                    </SelectTrigger>
+                    <SelectContent align="end">
+                      {isSelectedInPipeline ? (
+                        <SelectItem value="in_pipeline">In Pipeline</SelectItem>
+                      ) : (
+                        model.activeDeals.slice(0, 12).map((d) => (
+                          <SelectItem key={d.id} value={d.id} disabled={addToDealPendingId === d.id}>
+                            {d.title}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <div className="flex items-center divide-x divide-slate-200 rounded-lg border border-slate-200 bg-white shadow-sm">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className={MS_DETAIL_GROUP_BTN}
+                      onClick={() => void submitDraftFeedback(true)}
+                      aria-label="Nützlich"
+                    >
+                      <AppIcon icon={ThumbsUpIcon} size={16} className={MS_TOOLBAR_ICON_CLASS} />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className={MS_DETAIL_GROUP_BTN}
+                      onClick={() => void submitDraftFeedback(false)}
+                      aria-label="Nicht nützlich"
+                    >
+                      <AppIcon icon={ThumbsDownIcon} size={16} className={MS_TOOLBAR_ICON_CLASS} />
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className={MS_DETAIL_GROUP_BTN}
+                          title="Wiedervorlage, Priorität und Slack"
+                          aria-label="Wiedervorlage, Priorität und Slack"
+                        >
+                          <AppIcon icon={Calendar} size={16} className={MS_TOOLBAR_ICON_CLASS} />
+                        </Button>
+                      </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="min-w-[14rem]">
                       <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
                         Inbox &amp; Erinnerung
@@ -2482,120 +2600,26 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                         </span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
-                  </DropdownMenu>
-                  {selected.kind === 'exec' ? (
-                    <Button type="button" variant="outline" size="icon" className="size-8 shrink-0" asChild>
-                      <Link href={selected.sourceHref} target="_blank" rel="noreferrer" aria-label="Auf LinkedIn öffnen">
-                        <AppIcon icon={Linkedin01Icon} size={16} />
-                      </Link>
-                    </Button>
-                  ) : null}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className={`h-8 px-2 text-xs ${
-                          isSelectedInPipeline
-                            ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200'
-                            : 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-100'
-                        }`}
-                        disabled={isSelectedInPipeline}
-                      >
-                        {isSelectedInPipeline ? (
-                          <AppIcon icon={CheckmarkCircle02Icon} size={16} className="mr-1 shrink-0" />
-                        ) : (
-                          <AppIcon icon={UploadIcon} size={16} className="mr-1 shrink-0" />
-                        )}
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      {model.activeDeals.length === 0 ? (
-                        <DropdownMenuItem disabled>Keine aktiven Deals</DropdownMenuItem>
-                      ) : (
-                        model.activeDeals.slice(0, 12).map((d) => (
-                          <DropdownMenuItem
-                            key={d.id}
-                            disabled={addToDealPendingId === d.id}
-                            onSelect={async () => {
-                              if (!selected) return
-                              setAddToDealPendingId(d.id)
-                              const signalKey = `${selected.kind === 'exec' ? 'market_exec' : 'market_news'}:${selected.id}`
-                              const res = await addMarketSignalToDeal({
-                                dealId: d.id,
-                                companyId: selected.companyId,
-                                signalKey,
-                                referenceIds: (quickRefs ?? []).map((r) => r.id),
-                              })
-                              setAddToDealPendingId(null)
-                              if (!res.success) {
-                                toast.error(res.error)
-                                return
-                              }
-                              toast.success(
-                                res.added > 0
-                                  ? `Zu Deal hinzugefügt: ${res.added} Referenz${res.added === 1 ? '' : 'en'}`
-                                  : 'Zum Deal hinzugefügt',
-                                {
-                                  action: {
-                                    label: 'Deal öffnen',
-                                    onClick: () => {
-                                      window.location.href = ROUTES.deals.detail(d.id)
-                                    },
-                                  },
-                                }
-                              )
-                              await dismissItems(clusterItemsForDismiss)
-                              setSelectedKey(null)
-                              setMobileOpen(false)
-                            }}
-                          >
-                            {d.title}
-                          </DropdownMenuItem>
-                        ))
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                    </DropdownMenu>
+                  </div>
                 </div>
                 ) : null}
               </div>
             </div>
             <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-4">
               {selected ? (
-                <div className="space-y-12 border-l border-dashed border-slate-200 pl-4 dark:border-slate-700">
-                  <motion.section
+                <div className="space-y-10">
+                  <motion.div
                     initial={{ opacity: 0, y: 4 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.18 }}
-                    className="rounded-r-xl border-l-4 border-blue-500 bg-blue-50/50 py-3 pl-4 pr-3 dark:border-blue-400 dark:bg-blue-950/35"
                   >
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-blue-800/80 dark:text-blue-200/90">Warum jetzt?</p>
-                    <div className="mt-2 flex flex-wrap items-start justify-between gap-2">
-                      <h2 className="text-sm font-semibold text-foreground">Insight — Kurz-Begründung</h2>
-                      {signalIcpScore !== null ? (
-                        <div className="flex shrink-0 items-center gap-1.5 rounded-md bg-white/70 px-2 py-1 dark:bg-slate-950/40">
-                          <span className="text-xs font-medium text-muted-foreground">ICP-Match</span>
-                          <span className="text-base font-bold tabular-nums text-foreground">{signalIcpScore}%</span>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button type="button" className="text-muted-foreground hover:text-foreground dark:hover:text-foreground">
-                                <AppIcon icon={InformationCircleIcon} size={16} className={MS_TOOLBAR_ICON_CLASS} />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent className="max-w-[260px] border-border bg-popover text-popover-foreground text-xs">
-                              Basierend auf Branche, Unternehmensgröße, Signal-Typ, Aktualität und Referenz-Readiness.
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                      ) : null}
-                    </div>
-                    <ul className="mt-2 list-inside list-disc space-y-1.5 text-[13px] leading-snug text-foreground/85 marker:text-blue-500 dark:text-blue-50/95 dark:marker:text-blue-400">
-                      {executiveSummaryBullets.map((line, i) => (
-                        <li key={i}>{line}</li>
-                      ))}
-                    </ul>
-                  </motion.section>
+                    <MarketSignalInsightCard
+                      whyNow={insightWhyNow}
+                      embeddedHook={embeddedSignalHook}
+                      highlightPhrases={insightHighlightPhrases}
+                    />
+                  </motion.div>
                   {signalEvidenceText &&
                   selected.kind === 'news' &&
                   !executiveSummaryBullets.some((b) => b === signalEvidenceText) ? (
@@ -2623,12 +2647,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                     </section>
                   ) : null}
                   <section className="space-y-4">
-                    <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        Wer kontaktieren?
-                      </p>
-                      <h2 className="mt-1 text-sm font-semibold text-foreground">Passende Ansprechpartner</h2>
-                    </div>
+                    <h2 className="text-sm font-semibold text-foreground">Passende Ansprechpartner</h2>
                     {decisionCandidatesLoadingCompanyId === selected.companyId ? (
                       <p className="text-sm text-muted-foreground">Profile werden geladen …</p>
                     ) : decisionCandidates.length === 0 ? (
@@ -2638,60 +2657,15 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                     ) : (
                       <>
                         <div
-                          className="-mx-1 flex gap-3 overflow-x-auto overscroll-x-contain px-1 pb-2 snap-x snap-mandatory scroll-smooth [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-muted-foreground/35"
+                          className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"
                           role="list"
                           aria-label="Passende Ansprechpartner"
                         >
-                          {displayStakeholders.map((candidate) => {
-                            const activity = formatLinkedInActivityLine(candidate.lastSeenAt)
-                            const initials = candidate.fullName
-                              .split(/\s+/)
-                              .filter(Boolean)
-                              .slice(0, 2)
-                              .map((n) => n[0]?.toUpperCase() ?? '')
-                              .join('')
-                            const mutual = candidate.mutualConnections ?? 0
-                            return (
-                              <div
-                                key={candidate.id}
-                                role="listitem"
-                                className="w-[calc(100%-0.5rem)] shrink-0 snap-start rounded-2xl bg-slate-50/90 p-4 shadow-sm dark:bg-slate-900/50 sm:w-[calc((100%-0.75rem)/2)] sm:max-w-[calc((100%-0.75rem)/2)]"
-                              >
-                                <div className="flex items-start gap-3">
-                                  <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-900 dark:bg-blue-950 dark:text-blue-100">
-                                    {initials || '—'}
-                                  </div>
-                                  <div className="min-w-0 flex-1 space-y-2">
-                                    <div>
-                                      <p className="font-semibold leading-snug text-foreground">{candidate.fullName}</p>
-                                      <p className="text-xs text-muted-foreground">{candidate.title}</p>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">
-                                      <span className="font-semibold text-foreground">{candidate.confidence}%</span>
-                                      {mutual > 0 ? (
-                                        <>
-                                          {' '}
-                                          · {mutual}{' '}
-                                          {mutual === 1 ? 'gemeinsamer LinkedIn-Kontakt' : 'gemeinsame LinkedIn-Kontakte'}
-                                        </>
-                                      ) : null}
-                                    </p>
-                                    {activity ? (
-                                      <p className="text-[11px] text-muted-foreground">LinkedIn · {activity}</p>
-                                    ) : null}
-                                    {candidate.profileUrl ? (
-                                      <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" asChild>
-                                        <Link href={candidate.profileUrl} target="_blank" rel="noreferrer">
-                                          <AppIcon icon={ExternalLink} size={16} className={MS_TOOLBAR_ICON_CLASS} />
-                                          LinkedIn öffnen
-                                        </Link>
-                                      </Button>
-                                    ) : null}
-                                  </div>
-                                </div>
-                              </div>
-                            )
-                          })}
+                          {displayStakeholders.map((candidate) => (
+                            <div key={candidate.id} role="listitem" className="h-full">
+                              <MarketSignalStakeholderCard candidate={candidate} />
+                            </div>
+                          ))}
                         </div>
                         {(() => {
                           const warmTrigger = signalIntelligence?.action_triggers.find(
@@ -2701,7 +2675,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                           if (!warmTrigger && !bridgeLine) return null
                           if (warmTrigger?.internalColleagueName) {
                             return (
-                              <div className="rounded-xl border-2 border-violet-300/80 bg-violet-50/80 px-4 py-4 text-sm leading-relaxed text-violet-950 dark:border-violet-800 dark:bg-violet-950/35 dark:text-violet-50">
+                              <div className="rounded-xl border-2 border-violet-300/80 bg-violet-50/80 px-4 py-4 text-center text-sm leading-relaxed text-violet-950 dark:border-violet-800 dark:bg-violet-950/35 dark:text-violet-50">
                                 <p>
                                   <span className="font-semibold">Stärkster Hebel: </span>
                                   Dein Kollege {warmTrigger.internalColleagueName} kennt{' '}
@@ -2710,7 +2684,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                 <Button
                                   type="button"
                                   size="sm"
-                                  className="mt-3 w-full gap-1.5 bg-violet-600 hover:bg-violet-700"
+                                  className="mx-auto mt-3 gap-1.5 bg-violet-600 hover:bg-violet-700"
                                   onClick={() =>
                                     void handleWarmIntroRequest(
                                       warmTrigger.internalColleagueName!,
@@ -2718,7 +2692,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                     )
                                   }
                                 >
-                                  <AppIcon icon={Sparkles} size={16} className={MS_TOOLBAR_ICON_CLASS} aria-hidden />
+                                  <AppIcon icon={Sparkles} size={16} className="text-white" aria-hidden />
                                   {warmTrigger.label}
                                 </Button>
                               </div>
@@ -2736,31 +2710,9 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                   </section>
 
                   <section className="space-y-4">
-                    <div className="flex flex-col gap-2">
-                      <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                          Referenzen
-                        </p>
-                        <h2 className="mt-1 text-sm font-semibold text-foreground">Welche Story passt am besten?</h2>
-                      </div>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant={onlyApprovedReferences ? 'secondary' : 'outline'}
-                        className="h-8 w-full shrink-0 text-xs sm:w-auto"
-                        onClick={() => setOnlyApprovedReferences((prev) => !prev)}
-                      >
-                        Nur freigegeben
-                      </Button>
-                    </div>
-                    {visibleQuickRefs.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">
-                        {quickRefs.length > 0 && signalIntelligence?.insight.reference_line
-                          ? signalIntelligence.insight.reference_line
-                          : 'Keine Referenzen im Pool für dieses Signal-Konto.'}
-                      </p>
-                    ) : (
-                      <div className="space-y-4">
+                    {renderReferencesSectionHeader('text-sm')}
+                    {visibleQuickRefs.length > 0 ? (
+                      <div className="mt-4 space-y-4">
                         {visibleQuickRefs.map((r) => {
                           const readiness = readinessForReference(r.status)
                           const attached = attachedRefIds.has(r.id)
@@ -2841,102 +2793,12 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                           )
                         })}
                       </div>
-                    )}
+                    ) : null}
                   </section>
                   <section>
-                    {!introStrategyText && !introStrategyLoading ? (
-                      <div className="flex flex-col gap-3 py-2">
-                        {signalIntelligence?.action_triggers
-                          .filter((t) => t.type === 'warm_intro')
-                          .map((t) => (
-                            <Button
-                              key={`m-warm-${t.label}`}
-                              type="button"
-                              size="lg"
-                              className="gap-2 bg-violet-600 shadow-md hover:bg-violet-700"
-                              onClick={() =>
-                                void handleWarmIntroRequest(
-                                  t.internalColleagueName ?? 'Kollege',
-                                  t.primaryStakeholderName
-                                )
-                              }
-                            >
-                              <AppIcon icon={Sparkles} size={16} className={MS_TOOLBAR_ICON_CLASS} aria-hidden />
-                              {t.label}
-                            </Button>
-                          ))}
-                        {renderOutreachDraftComposer()}
-                      </div>
-                    ) : null}
-                    {introStrategyLoading ? (
-                      <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
-                        <AppIcon icon={Loader} size={16} className="animate-spin" />
-                        Entwurf wird generiert …
-                      </div>
-                    ) : null}
-                    {introStrategyText ? (
-                      <>
-                        <div className="mt-4 rounded-lg bg-muted/55 px-4 py-5 dark:bg-muted/55">
-                          <div className="mb-2 flex flex-wrap items-center gap-2">
-                            {introStrategySource === 'openai' ? (
-                              <Badge className="h-5 px-1.5 text-[10px]">KI</Badge>
-                            ) : introStrategySource ? (
-                              <Badge variant="outline" className="h-5 px-1.5 text-[10px]">
-                                Regeln
-                              </Badge>
-                            ) : null}
-                            <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => void copyStrategySnippet()}>
-                              {copySuccess ? (
-                                <AppIcon icon={CopyCheckIcon} size={16} className="mr-1 shrink-0" />
-                              ) : (
-                                <AppIcon icon={CopyIcon} size={16} className="mr-1 shrink-0" />
-                              )}
-                              Kopieren
-                            </Button>
-                            <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={triggerIntroDraftGeneration} disabled={introStrategyLoading}>
-                              Neu generieren
-                            </Button>
-                          </div>
-                          {renderDraftText(introStrategyText)}
-                        </div>
-                        <div className="mt-3 rounded-xl border border-border bg-card p-3">
-                          <p className="mb-2 text-xs text-muted-foreground">
-                            Andere Tonalität? Wähle unten und generiere neu.
-                          </p>
-                          {renderIntroTonePicker()}
-                        </div>
-                        <div className="mt-4 flex flex-wrap gap-x-3 gap-y-1 border-t border-border pt-3 text-[11px] dark:border-border">
-                          <button
-                            type="button"
-                            className="text-muted-foreground underline-offset-2 hover:text-foreground hover:underline dark:text-muted-foreground"
-                            onClick={async () => {
-                              const key = signalKeyOf(selected)
-                              await logMarketSignalQuickAction({ signalKey: key, channel: 'hubspot_email' })
-                              window.open(
-                                `https://app.hubspot.com/contacts?query=${encodeURIComponent(selected.companyName)}`,
-                                '_blank',
-                                'noopener,noreferrer'
-                              )
-                            }}
-                          >
-                            In HubSpot öffnen
-                          </button>
-                          <button
-                            type="button"
-                            className="text-muted-foreground underline-offset-2 hover:text-foreground hover:underline dark:text-muted-foreground"
-                            onClick={async () => {
-                              const key = signalKeyOf(selected)
-                              await logMarketSignalQuickAction({ signalKey: key, channel: 'salesforce_task' })
-                              window.open('https://login.salesforce.com/', '_blank', 'noopener,noreferrer')
-                            }}
-                          >
-                            Task in Salesforce
-                          </button>
-                        </div>
-                      </>
-                    ) : null}
+                    {renderOutreachDraftCard(true)}
                     {!introStrategyLoading && introDraftRequested && !introStrategyText ? (
-                      <p className="mt-3 text-sm text-muted-foreground">Kein Entwurf verfügbar. Bitte erneut versuchen.</p>
+                      <p className="mt-3 text-sm text-slate-600">Kein Entwurf verfügbar. Bitte erneut versuchen.</p>
                     ) : null}
                   </section>
                 </div>

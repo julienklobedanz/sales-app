@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { z } from 'zod'
 
+import {
+  buildHeuristicOutreachDraft,
+  normalizeOutreachDraftText,
+  type IntroTone,
+} from '@/lib/market-signals/outreach-draft'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
@@ -13,39 +18,14 @@ const BodySchema = z.object({
   introTone: z.enum(['challenging', 'advisory', 'concise']),
   summarySnippet: z.string().max(1200),
   referenceTitles: z.array(z.string()).max(4),
+  recipientFullName: z.string().max(200).optional().nullable(),
+  senderFullName: z.string().max(200).optional().nullable(),
 })
 
-function heuristicStrategy(body: z.infer<typeof BodySchema>): string {
-  const { signalKind, introTone, summarySnippet, referenceTitles } = body
-  const low = summarySnippet.toLowerCase()
-  let angle = ''
-  if (/budget|kost|einspar|effizienz|spar|kosten/.test(low)) {
-    angle = 'Dieses Signal deutet auf Budget- und Effizienzthemen hin'
-  } else if (/cloud|migration|modernis|digital|transformation/.test(low)) {
-    angle = 'Modernisierung und Plattform-/Cloud-Themen stehen im Fokus'
-  } else if (/security|cyber|ciso|risiko|compliance/.test(low)) {
-    angle = 'Security-, Risiko- und Compliance-Agenda ist erkennbar'
-  } else if (/expansion|wachstum|m&a|übernahme|neue märkte|expansion/.test(low)) {
-    angle = 'Wachstum und Expansion prägen das Umfeld'
-  } else if (signalKind === 'exec') {
-    angle =
-      'Neuer Entscheider: 90-Tage-Fenster für IT-Infrastruktur und Anbieterwechsel vor Budget-Freeze'
-  } else {
-    angle = 'Operativer Veränderungsbedarf beim Account ist das Leitmotiv'
-  }
-
-  const ref = referenceTitles[0]
-  const toneHint =
-    introTone === 'challenging'
-      ? 'Formuliere eine klare Hypothese und lade zum Gegenargument ein.'
-      : introTone === 'concise'
-        ? 'Bleib in den ersten Sätzen extrem knapp; ein Beleg pro Aussage.'
-        : 'Arbeite beratend mit klarer Nutzen-Linie und einem konkreten nächsten Schritt.'
-
-  if (ref) {
-    return `${angle}. Nutze die Referenz „${ref}“, um die Story glaubwürdig zu machen. ${toneHint}`
-  }
-  return `${angle}. Ergänze schnell eine passende Referenz aus dem Pool, bevor du den Entwurf finalisierst. ${toneHint}`
+function toneLabel(introTone: IntroTone): string {
+  if (introTone === 'challenging') return 'herausfordernd, mit klarer Hypothese'
+  if (introTone === 'concise') return 'kurz und knapp, maximal 3 kurze Absätze im Body'
+  return 'beratend, nutzenorientiert mit einem konkreten nächsten Schritt'
 }
 
 export async function POST(req: NextRequest) {
@@ -69,8 +49,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Ungültige Parameter.' }, { status: 400 })
   }
 
-  const base = heuristicStrategy(parsed.data)
-  let strategy = base
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('full_name')
+    .eq('id', user.id)
+    .single()
+
+  const senderFullName =
+    parsed.data.senderFullName?.trim() ||
+    String((profile as { full_name?: string | null } | null)?.full_name ?? '').trim() ||
+    '[Ihr Name]'
+
+  const draftInput = {
+    ...parsed.data,
+    senderFullName,
+  }
+
+  let strategy = buildHeuristicOutreachDraft(draftInput)
   let source: 'heuristic' | 'openai' = 'heuristic'
 
   const apiKey = process.env.OPENAI_API_KEY
@@ -82,20 +77,38 @@ export async function POST(req: NextRequest) {
         messages: [
           {
             role: 'system',
-            content:
-              'Du bist Senior Sales Strategist (B2B IT/SaaS). Antworte auf Deutsch mit GENAU einem oder zwei kurzen Sätzen (max. 320 Zeichen). Keine Floskeln (kein „Momentum“, „lösungsorientiert“, „natürlicher Einstieg“). Fokus: Budget-Fenster, 90-Tage-Phase neuer Entscheider, Anbieterwechsel. Nutze die Basis-Empfehlung als Anker.',
+            content: [
+              'Du bist Senior Sales Strategist (B2B IT/SaaS) und schreibst einen personalisierten Erstansprache-Entwurf auf Deutsch.',
+              'Antworte NUR mit dem fertigen E-Mail-Text in exakt dieser Struktur (Plain Text):',
+              '1) Eine Begrüßungszeile mit Komma (z. B. "Guten Tag Herr/Frau Nachname," oder "Guten Tag [Name]," wenn unbekannt)',
+              '2) Genau EINE Leerzeile',
+              '3) Body: 2–4 kurze Absätze, bezogen auf das Signal und den Account. Keine Floskeln.',
+              '4) Genau ZWEI Leerzeilen',
+              '5) Abschlusszeile mit Komma (z. B. "Vielen Dank im Voraus und beste Grüße,")',
+              '6) Direkt darunter Vor- und Nachname des Absenders (eine Zeile, keine Leerzeile dazwischen)',
+              'Keine Betreffzeile, kein Markdown, keine Anführungszeichen um die Mail.',
+            ].join(' '),
           },
           {
             role: 'user',
-            content: `Signal: ${parsed.data.headline}\nAccount: ${parsed.data.companyName}\nArt: ${parsed.data.signalKind}\nKontext: ${parsed.data.summarySnippet}\nReferenzen (Titel): ${parsed.data.referenceTitles.join(' | ') || '—'}\nTon für Draft: ${parsed.data.introTone}\nBasis-Empfehlung: ${base}`,
+            content: [
+              `Signal-Überschrift: ${parsed.data.headline}`,
+              `Account: ${parsed.data.companyName}`,
+              `Signal-Art: ${parsed.data.signalKind === 'exec' ? 'Executive Update' : 'Company Update'}`,
+              `Kontext / Warum jetzt: ${parsed.data.summarySnippet}`,
+              `Empfänger: ${parsed.data.recipientFullName?.trim() || 'unbekannt — Platzhalter [Name] nutzen'}`,
+              `Referenzen: ${parsed.data.referenceTitles.join(' | ') || '—'}`,
+              `Tonalität: ${toneLabel(parsed.data.introTone)}`,
+              `Absender (Signatur): ${senderFullName}`,
+            ].join('\n'),
           },
         ],
-        max_tokens: 200,
-        temperature: 0.45,
+        max_tokens: 650,
+        temperature: 0.5,
       })
       const text = completion.choices[0]?.message?.content?.trim()
       if (text) {
-        strategy = text
+        strategy = normalizeOutreachDraftText(text, draftInput)
         source = 'openai'
       }
     } catch {
