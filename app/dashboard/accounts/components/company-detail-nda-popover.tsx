@@ -27,7 +27,6 @@ import {
 import {
   Sheet,
   SheetContent,
-  SheetFooter,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
@@ -43,6 +42,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { resolveNdaDisplayStatus } from '@/lib/accounts/company-entity'
+import { shouldNotifyNdaExpiry } from '@/lib/accounts/nda-expiry'
 import type { NdaAgreementRow } from '../nda-actions'
 import {
   createNdaAgreement,
@@ -56,6 +56,7 @@ import {
   NdaStatusBadge,
   ndaAgreementStatusLabel,
 } from './nda-status-badge'
+import { NdaPdfDropzone, titleFromPdfFilename } from './nda-pdf-dropzone'
 import { AccountsToolbarTooltip } from './accounts-toolbar-tooltip'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
@@ -77,9 +78,11 @@ export function CompanyDetailNdaPopover({
   const [open, setOpen] = useState(false)
   const [agreements, setAgreements] = useState(initialAgreements)
   const [addOpen, setAddOpen] = useState(false)
+  const [addTitle, setAddTitle] = useState('')
   const [addStatus, setAddStatus] = useState<'active' | 'pending' | 'expired'>('active')
   const [addUnlimited, setAddUnlimited] = useState(true)
   const [addValidUntil, setAddValidUntil] = useState('')
+  const [addPdfFile, setAddPdfFile] = useState<File | null>(null)
   const [addNotes, setAddNotes] = useState('')
   const [addPending, setAddPending] = useState(false)
   const [uploadingId, setUploadingId] = useState<string | null>(null)
@@ -98,20 +101,25 @@ export function CompanyDetailNdaPopover({
   )
 
   const expiringSoon = agreements.filter((a) => {
-    if (a.status !== 'active' || !a.valid_until) return false
-    const end = new Date(`${a.valid_until}T12:00:00`)
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    end.setHours(0, 0, 0, 0)
-    const days = Math.round((end.getTime() - today.getTime()) / (24 * 60 * 60 * 1000))
-    return days >= 0 && days <= 30
+    const notify = shouldNotifyNdaExpiry({ status: a.status, validUntil: a.valid_until })
+    return notify !== null && notify.daysUntil >= 0
   }).length
 
   function resetAddForm() {
+    setAddTitle('')
     setAddNotes('')
     setAddValidUntil('')
+    setAddPdfFile(null)
     setAddUnlimited(true)
     setAddStatus('active')
+  }
+
+  function handleAddPdfFile(file: File | null) {
+    setAddPdfFile(file)
+    if (file) {
+      const derived = titleFromPdfFilename(file.name)
+      if (derived) setAddTitle(derived)
+    }
   }
 
   async function refreshFromServer() {
@@ -119,10 +127,16 @@ export function CompanyDetailNdaPopover({
   }
 
   async function handleCreate() {
+    if (!addUnlimited && !addValidUntil.trim()) {
+      toast.error('Bitte Enddatum angeben oder „Unbefristet“ aktivieren.')
+      return
+    }
+
     setAddPending(true)
     try {
       const res = await createNdaAgreement({
         companyId,
+        title: addTitle,
         status: addStatus,
         unlimited: addUnlimited,
         validUntil: addValidUntil || null,
@@ -132,10 +146,29 @@ export function CompanyDetailNdaPopover({
         toast.error(res.error ?? 'Anlegen fehlgeschlagen.')
         return
       }
-      toast.success('NDA-Vereinbarung angelegt.')
+
+      if (addPdfFile) {
+        const fd = new FormData()
+        fd.set('file', addPdfFile)
+        const uploadRes = await uploadNdaAgreementPdf(res.id, companyId, fd)
+        if (!uploadRes.success) {
+          toast.error(uploadRes.error ?? 'NDA angelegt, PDF-Upload fehlgeschlagen.')
+          setAddOpen(false)
+          resetAddForm()
+          setUploadPanelId(res.id)
+          await refreshFromServer()
+          return
+        }
+      }
+
+      toast.success(addPdfFile ? 'NDA mit PDF gespeichert.' : 'NDA-Vereinbarung angelegt.')
+      if (!res.titlePersisted) {
+        toast.warning(
+          'Titel konnte nicht gespeichert werden — bitte Datenbank-Migration für nda_agreements.title ausführen (Supabase SQL Editor).'
+        )
+      }
       setAddOpen(false)
       resetAddForm()
-      setUploadPanelId(res.id)
       await refreshFromServer()
     } finally {
       setAddPending(false)
@@ -227,15 +260,7 @@ export function CompanyDetailNdaPopover({
           className="flex h-full w-[min(480px,100vw)] max-w-[480px] flex-col gap-0 border-l p-0 sm:max-w-[480px]"
         >
           <SheetHeader className="space-y-3 border-b border-border px-4 py-4 pr-12 text-left">
-            <div className="flex items-start justify-between gap-3">
-              <SheetTitle className="text-base leading-tight">NDA — {companyName}</SheetTitle>
-              {canManage ? (
-                <Button type="button" size="sm" className="shrink-0" onClick={() => setAddOpen(true)}>
-                  <AppIcon icon={Plus} size={14} className="mr-1" />
-                  Hinzufügen
-                </Button>
-              ) : null}
-            </div>
+            <SheetTitle className="text-base leading-tight">NDA & Vertragsdokumente</SheetTitle>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
               <NdaStatusBadge status={displayStatus} compact subtle />
               <span>
@@ -254,9 +279,16 @@ export function CompanyDetailNdaPopover({
             </div>
           ) : null}
 
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+          <div
+            className={cn(
+              'min-h-0 flex-1 px-4',
+              agreements.length === 0
+                ? 'flex flex-col items-center justify-center text-center'
+                : 'overflow-y-auto py-4'
+            )}
+          >
             {agreements.length === 0 ? (
-              <div className="flex flex-col items-center justify-center px-4 py-12 text-center">
+              <div className="flex max-w-[320px] flex-col items-center px-4">
                 <div className="mb-3 flex size-12 items-center justify-center rounded-2xl bg-muted/60">
                   <NdaDocumentIcon className="size-7 text-muted-foreground" />
                 </div>
@@ -268,7 +300,7 @@ export function CompanyDetailNdaPopover({
                 {canManage ? (
                   <Button type="button" size="sm" className="mt-4" onClick={() => setAddOpen(true)}>
                     <AppIcon icon={Plus} size={14} className="mr-1.5" />
-                    Erste Vereinbarung anlegen
+                    Vertragsdokumente hinzufügen
                   </Button>
                 ) : null}
               </div>
@@ -297,35 +329,45 @@ export function CompanyDetailNdaPopover({
               </ul>
             )}
           </div>
-
-          <SheetFooter className="border-t border-border px-4 py-3 text-[11px] leading-relaxed text-muted-foreground">
-            Unbefristet = kein Enddatum. PDF-Upload nur für Admin und Account Manager.
-          </SheetFooter>
         </SheetContent>
       </Sheet>
 
       <Dialog open={addOpen} onOpenChange={(v) => !addPending && setAddOpen(v)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>NDA hinzufügen</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-1">
-            <div className="space-y-1.5">
-              <Label>Status</Label>
-              <Select
-                value={addStatus}
-                onValueChange={(v) => setAddStatus(v as typeof addStatus)}
-                disabled={addPending}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Aktiv</SelectItem>
-                  <SelectItem value="pending">Ausstehend</SelectItem>
-                  <SelectItem value="expired">Abgelaufen</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,1fr)_11.5rem] sm:items-end">
+              <div className="space-y-1.5">
+                <Label htmlFor="nda-sheet-title">Titel</Label>
+                <Input
+                  id="nda-sheet-title"
+                  className="h-10"
+                  value={addTitle}
+                  onChange={(e) => setAddTitle(e.target.value)}
+                  disabled={addPending}
+                  placeholder="z. B. Rahmen-NDA 2024"
+                  autoFocus
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Status</Label>
+                <Select
+                  value={addStatus}
+                  onValueChange={(v) => setAddStatus(v as typeof addStatus)}
+                  disabled={addPending}
+                >
+                  <SelectTrigger className="h-10 w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Aktiv</SelectItem>
+                    <SelectItem value="pending">Ausstehend</SelectItem>
+                    <SelectItem value="expired">Abgelaufen</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <Checkbox
@@ -350,6 +392,13 @@ export function CompanyDetailNdaPopover({
                 />
               </div>
             ) : null}
+            <NdaPdfDropzone
+              id="nda-sheet-pdf"
+              file={addPdfFile}
+              onFileChange={handleAddPdfFile}
+              disabled={addPending}
+              uploading={addPending && Boolean(addPdfFile)}
+            />
             <div className="space-y-1.5">
               <Label htmlFor="nda-sheet-notes">Notizen (optional)</Label>
               <Textarea
@@ -459,12 +508,15 @@ function NdaAgreementEntry({
           />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-foreground">
-              {ndaAgreementStatusLabel(row.status)}
+              {row.title?.trim() || ndaAgreementStatusLabel(row.status)}
               <span className="font-normal text-muted-foreground">
                 {' '}
                 · {formatNdaValidUntil(row.valid_until)}
               </span>
             </p>
+            {row.title?.trim() ? (
+              <p className="text-[11px] text-muted-foreground">{ndaAgreementStatusLabel(row.status)}</p>
+            ) : null}
             {row.notes ? (
               <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{row.notes}</p>
             ) : null}
@@ -543,27 +595,28 @@ function NdaAgreementEntry({
               />
             </div>
           </div>
+          <NdaPdfDropzone
+            id={`nda-upload-${row.id}`}
+            file={null}
+            onFileChange={(file) => {
+              if (file) onFileSelected(file, { version, signedAt })
+            }}
+            disabled={uploading}
+            uploading={uploading}
+          />
           <input
             ref={fileInputRef}
             type="file"
             accept="application/pdf,.pdf"
             className="hidden"
+            tabIndex={-1}
+            aria-hidden
             onChange={(e) => {
               const file = e.target.files?.[0]
               if (file) onFileSelected(file, { version, signedAt })
               e.target.value = ''
             }}
           />
-          <Button
-            type="button"
-            size="sm"
-            className="w-full"
-            disabled={uploading}
-            onClick={onPickFile}
-          >
-            <AppIcon icon={uploading ? Loader : UploadIcon} size={14} className="mr-1.5" />
-            PDF auswählen
-          </Button>
         </div>
       ) : null}
     </li>

@@ -1,5 +1,6 @@
 'use server'
 
+import { fetchNdaExpiryInboxCandidates } from '@/app/dashboard/notifications/nda-inbox'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { formatRelativeTimeDe } from '@/lib/relative-time-de'
@@ -299,9 +300,17 @@ export async function getInboxNotificationsImpl(
     })
     .filter((row): row is InboxCandidate => Boolean(row))
 
-  const merged = [...executiveCandidates, ...newsCandidates, ...approvalCandidates]
+  const ndaCandidates =
+    role === 'admin' ? await fetchNdaExpiryInboxCandidates(supabase, orgId) : []
+
+  const merged = [...ndaCandidates, ...executiveCandidates, ...newsCandidates, ...approvalCandidates]
     .sort((a, b) => {
       if (a.priority !== b.priority) return a.priority - b.priority
+      const aNda = a.id.startsWith('nda_expiry:')
+      const bNda = b.id.startsWith('nda_expiry:')
+      if (aNda && bNda) {
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      }
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     })
     .slice(0, 80)

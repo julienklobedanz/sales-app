@@ -1,12 +1,19 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import {
+  isMissingNdaTitleColumn,
+  NDA_AGREEMENT_SELECT_BASE,
+  NDA_AGREEMENT_SELECT_WITH_TITLE,
+  NDA_TITLE_MIGRATION_HINT,
+} from '@/lib/accounts/nda-schema'
 import { ROUTES } from '@/lib/routes'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
 export type NdaAgreementRow = {
   id: string
   company_id: string
+  title: string | null
   status: 'active' | 'expired' | 'pending'
   valid_until: string | null
   notes: string | null
@@ -75,14 +82,23 @@ export async function getNdaAgreementsByCompanyId(
   const companyCheck = await assertCompanyInOrg(auth.supabase, companyId, auth.orgId)
   if (!companyCheck.ok) return { success: false, error: companyCheck.error }
 
-  const { data, error } = await auth.supabase
+  let { data, error } = await auth.supabase
     .from('nda_agreements')
-    .select(
-      'id, company_id, status, valid_until, notes, file_storage_path, file_name, document_version, signed_at, created_at, updated_at'
-    )
+    .select(NDA_AGREEMENT_SELECT_WITH_TITLE)
     .eq('company_id', companyId)
     .eq('organization_id', auth.orgId)
     .order('created_at', { ascending: false })
+
+  if (error && isMissingNdaTitleColumn(error.message)) {
+    const fallback = await auth.supabase
+      .from('nda_agreements')
+      .select(NDA_AGREEMENT_SELECT_BASE)
+      .eq('company_id', companyId)
+      .eq('organization_id', auth.orgId)
+      .order('created_at', { ascending: false })
+    data = fallback.data
+    error = fallback.error
+  }
 
   if (error) {
     if ((error.message ?? '').includes('nda_agreements')) {
@@ -91,16 +107,25 @@ export async function getNdaAgreementsByCompanyId(
     return { success: false, error: error.message }
   }
 
-  return { success: true, rows: (data ?? []) as NdaAgreementRow[] }
+  const rows = (data ?? []).map((row) => ({
+    ...(row as Omit<NdaAgreementRow, 'title'>),
+    title: (row as { title?: string | null }).title ?? null,
+  }))
+
+  return { success: true, rows: rows as NdaAgreementRow[] }
 }
 
 export async function createNdaAgreement(payload: {
   companyId: string
+  title?: string | null
   status: 'active' | 'expired' | 'pending'
   validUntil: string | null
   unlimited: boolean
   notes?: string | null
-}): Promise<{ success: true; id: string } | { success: false; error: string }> {
+}): Promise<
+  | { success: true; id: string; titlePersisted: boolean }
+  | { success: false; error: string }
+> {
   const auth = await getNdaAuth()
   if ('error' in auth) return { success: false, error: auth.error }
   if (!auth.canManage) return { success: false, error: 'Keine Berechtigung.' }
@@ -108,23 +133,41 @@ export async function createNdaAgreement(payload: {
   const companyCheck = await assertCompanyInOrg(auth.supabase, payload.companyId, auth.orgId)
   if (!companyCheck.ok) return { success: false, error: companyCheck.error }
 
-  const { data, error } = await auth.supabase
+  const baseRow = {
+    organization_id: auth.orgId,
+    company_id: payload.companyId,
+    status: payload.status,
+    valid_until: payload.unlimited ? null : payload.validUntil,
+    notes: payload.notes?.trim() || null,
+  }
+
+  const titleValue = payload.title?.trim() || null
+
+  let { data, error } = await auth.supabase
     .from('nda_agreements')
-    .insert({
-      organization_id: auth.orgId,
-      company_id: payload.companyId,
-      status: payload.status,
-      valid_until: payload.unlimited ? null : payload.validUntil,
-      notes: payload.notes?.trim() || null,
-    })
+    .insert({ ...baseRow, title: titleValue })
     .select('id')
     .single()
 
-  if (error) return { success: false, error: error.message }
+  let titlePersisted = true
+
+  if (error && isMissingNdaTitleColumn(error.message)) {
+    titlePersisted = false
+    const fallback = await auth.supabase.from('nda_agreements').insert(baseRow).select('id').single()
+    data = fallback.data
+    error = fallback.error
+  }
+
+  if (error) {
+    if (isMissingNdaTitleColumn(error.message)) {
+      return { success: false, error: NDA_TITLE_MIGRATION_HINT }
+    }
+    return { success: false, error: error.message }
+  }
 
   revalidatePath(ROUTES.accounts)
   revalidatePath(ROUTES.accountsDetail(payload.companyId))
-  return { success: true, id: data!.id }
+  return { success: true, id: data!.id, titlePersisted }
 }
 
 export async function deleteNdaAgreement(

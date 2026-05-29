@@ -14,14 +14,14 @@ export function partnerCategoryLabel(value: string | null | undefined): string |
   return PARTNER_CATEGORY_OPTIONS.find((o) => o.value === value)?.label ?? value
 }
 
+import { NDA_EXPIRY_WARNING_DAYS, ndaDaysUntilExpiry } from '@/lib/accounts/nda-expiry'
+
 export type NdaDisplayStatus = 'active' | 'expiring' | 'none'
 
 export function resolveNdaDisplayStatus(
   rows: { status: string; valid_until: string | null }[]
 ): NdaDisplayStatus {
   if (!rows.length) return 'none'
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
 
   let hasActive = false
   let hasExpiring = false
@@ -39,13 +39,11 @@ export function resolveNdaDisplayStatus(
       continue
     }
 
-    const end = new Date(`${row.valid_until}T12:00:00`)
-    end.setHours(0, 0, 0, 0)
-    const days = Math.round((end.getTime() - today.getTime()) / (24 * 60 * 60 * 1000))
+    const days = ndaDaysUntilExpiry(row.valid_until)
 
     if (days < 0) {
       hasExpiring = true
-    } else if (days <= 30) {
+    } else if (days <= NDA_EXPIRY_WARNING_DAYS) {
       hasExpiring = true
       hasActive = true
     } else {
