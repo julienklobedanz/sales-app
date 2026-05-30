@@ -54,8 +54,11 @@ export async function fetchNdaExpiryInboxCandidates(
       .eq('organization_id', orgId)
       .not('valid_until', 'is', null)
       .in('status', ['active', 'pending'])
-    data = fallback.data
-    error = fallback.error
+    if (fallback.error) {
+      error = fallback.error
+    } else {
+      data = (fallback.data ?? []).map((row) => ({ ...row, title: null }))
+    }
   }
 
   if (error) {

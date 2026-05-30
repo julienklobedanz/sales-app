@@ -1,16 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import { Send, ShieldAlert } from 'lucide-react'
+import { Loader2, Paperclip, Send, ShieldAlert } from 'lucide-react'
 import { toast } from 'sonner'
 
+import { sendDealDeskRedFlagsToLegalAction } from '@/app/dashboard/deal-desk/actions'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { logDealDeskLegalSendAction } from '@/app/dashboard/deal-desk/actions'
 import { isValidBidTeamEmail } from '@/lib/deal-desk/bid-team'
 import type { DealDeskRedFlag } from '@/lib/deal-desk/mock-analysis'
 import { cn } from '@/lib/utils'
@@ -46,8 +46,10 @@ type Props = {
 export function RedFlagsPanel({ flags, projectId, onFlagsChange, className }: Props) {
   const [legalSendOpen, setLegalSendOpen] = useState(false)
   const [legalEmail, setLegalEmail] = useState('')
+  const [sending, setSending] = useState(false)
 
-  const markedCount = flags.filter((f) => f.markedForLegal).length
+  const markedFlags = flags.filter((f) => f.markedForLegal)
+  const markedCount = markedFlags.length
   const scrollable = flags.length > RED_FLAGS_MAX_VISIBLE
 
   function toggleMark(flagId: string) {
@@ -56,7 +58,7 @@ export function RedFlagsPanel({ flags, projectId, onFlagsChange, className }: Pr
     )
   }
 
-  function sendToLegal() {
+  async function sendToLegal() {
     const email = legalEmail.trim()
     if (!isValidBidTeamEmail(email)) {
       toast.error('Bitte eine gültige E-Mail-Adresse für Legal eingeben.')
@@ -66,13 +68,25 @@ export function RedFlagsPanel({ flags, projectId, onFlagsChange, className }: Pr
       toast.error('Zuerst mindestens eine Red Flag zur Prüfung markieren.')
       return
     }
-    setLegalSendOpen(false)
-    void logDealDeskLegalSendAction(projectId, {
-      flagIds: flags.filter((f) => f.markedForLegal).map((f) => f.id),
-      emailDomain: email,
+
+    setSending(true)
+    const result = await sendDealDeskRedFlagsToLegalAction(projectId, {
+      legalEmail: email,
+      flags,
     })
+    setSending(false)
+
+    if (!result.success) {
+      toast.error(result.error)
+      return
+    }
+
+    setLegalSendOpen(false)
     toast.success(
-      `${markedCount} markierte Red Flag${markedCount === 1 ? '' : 's'} an ${email} weitergeleitet.`
+      `${markedCount} Red Flag${markedCount === 1 ? '' : 's'} an ${email} gesendet` +
+        (result.attachedCount > 0
+          ? ` — ${result.attachedCount} Vertrags-/RFP-Dokument${result.attachedCount === 1 ? '' : 'e'} angehängt.`
+          : ' (E-Mail ohne Dateianhang — Dokumente im Speicher prüfen).')
     )
   }
 
@@ -97,9 +111,13 @@ export function RedFlagsPanel({ flags, projectId, onFlagsChange, className }: Pr
               size="sm"
               variant="outline"
               className="shrink-0 gap-1.5 text-xs"
-              disabled={markedCount === 0}
+              disabled={markedCount === 0 || sending}
             >
-              <Send className="size-3.5" />
+              {sending ? (
+                <Loader2 className="size-3.5 animate-spin" aria-hidden />
+              ) : (
+                <Send className="size-3.5" aria-hidden />
+              )}
               An Legal senden
             </Button>
           </PopoverTrigger>
@@ -108,7 +126,7 @@ export function RedFlagsPanel({ flags, projectId, onFlagsChange, className }: Pr
             <p className="mt-1 text-xs leading-snug text-muted-foreground">
               {markedCount === 0
                 ? 'Keine markierten Punkte.'
-                : `${markedCount} zur Prüfung markierte Red Flag${markedCount === 1 ? '' : 's'} werden versendet.`}
+                : `${markedCount} markierte Red Flag${markedCount === 1 ? '' : 's'}: E-Mail mit Klausel-Auszügen und den zugehörigen Vertrags-/Anhang-Dokumenten aus dem RFP-Paket.`}
             </p>
             <div className="mt-3 w-full space-y-2">
               <Label htmlFor="legal-contact-email" className="text-xs">
@@ -121,16 +139,30 @@ export function RedFlagsPanel({ flags, projectId, onFlagsChange, className }: Pr
                 value={legalEmail}
                 onChange={(e) => setLegalEmail(e.target.value)}
                 className="h-9 w-full text-xs"
+                disabled={sending}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault()
-                    sendToLegal()
+                    void sendToLegal()
                   }
                 }}
               />
             </div>
-            <Button type="button" size="sm" className="mt-3 w-full" onClick={sendToLegal}>
-              Senden
+            <Button
+              type="button"
+              size="sm"
+              className="mt-3 w-full gap-1.5"
+              disabled={sending}
+              onClick={() => void sendToLegal()}
+            >
+              {sending ? (
+                <>
+                  <Loader2 className="size-3.5 animate-spin" aria-hidden />
+                  Wird gesendet…
+                </>
+              ) : (
+                'Senden inkl. Dokumente'
+              )}
             </Button>
           </PopoverContent>
         </Popover>
@@ -156,6 +188,12 @@ export function RedFlagsPanel({ flags, projectId, onFlagsChange, className }: Pr
                     </div>
                     {flag.pageHint ? (
                       <p className="text-[11px] text-muted-foreground">{flag.pageHint}</p>
+                    ) : null}
+                    {flag.sourceFileName ? (
+                      <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                        <Paperclip className="size-3 shrink-0" aria-hidden />
+                        Quelldokument: {flag.sourceFileName}
+                      </p>
                     ) : null}
                   </div>
                   <Button

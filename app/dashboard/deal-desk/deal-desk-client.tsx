@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import {
   AlertTriangle,
   CheckCircle2,
@@ -182,6 +183,7 @@ function mergePendingFiles(existing: File[], incoming: File[]): File[] {
 }
 
 export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: boolean }) {
+  const searchParams = useSearchParams()
   const inputRef = useRef<HTMLInputElement>(null)
   const skipPersistRef = useRef(true)
   const persistTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
@@ -277,6 +279,16 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
       }
     })()
   }, [runDemoOnMount, reloadProject])
+
+  useEffect(() => {
+    if (loadingDesk) return
+    const projectId = searchParams.get('project')
+    if (!projectId) return
+    if (projects.some((p) => p.id === projectId)) {
+      setActiveProjectId(projectId)
+      setUploadMode(false)
+    }
+  }, [loadingDesk, searchParams, projects])
 
   useEffect(() => {
     if (!activeProjectId || !activeProject) return

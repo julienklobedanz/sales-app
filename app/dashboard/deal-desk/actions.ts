@@ -16,6 +16,12 @@ import {
   type DealDeskProjectRow,
 } from '@/lib/deal-desk/project-mapper'
 import { buildReferencePrefillFromAnalysis } from '@/lib/deal-desk/build-harvest-from-snapshot'
+import type { DealDeskRedFlag } from '@/lib/deal-desk/mock-analysis'
+import {
+  collectLegalAttachmentDocuments,
+  enrichRedFlagsWithDocuments,
+} from '@/lib/deal-desk/red-flag-document-match'
+import { sendLegalRedFlagsEmail } from '@/lib/deal-desk/send-legal-red-flags-email'
 import { defaultWorkspaceState } from '@/lib/deal-desk/workspace-state'
 import { ROUTES } from '@/lib/routes'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
@@ -408,25 +414,88 @@ export async function logDealDeskNoBidAction(
   return { success: true }
 }
 
-export async function logDealDeskLegalSendAction(
+export async function sendDealDeskRedFlagsToLegalAction(
   projectId: string,
-  details: { flagIds: string[]; emailDomain?: string }
-): Promise<{ success: true } | { success: false; error: string }> {
+  details: {
+    legalEmail: string
+    flags: Array<{
+      id: string
+      severity: string
+      title: string
+      excerpt: string
+      pageHint?: string
+      sourceFileName?: string | null
+      sourceDocumentId?: string | null
+      markedForLegal?: boolean
+    }>
+  }
+): Promise<
+  | { success: true; attachedCount: number }
+  | { success: false; error: string }
+> {
   const auth = await getDeskAuth()
   if ('error' in auth) return { success: false, error: auth.error }
-  const email = details.emailDomain?.trim()
+
+  const legalEmail = details.legalEmail.trim().toLowerCase()
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(legalEmail)) {
+    return { success: false, error: 'Ungültige E-Mail-Adresse.' }
+  }
+
+  const marked = details.flags.filter((f) => f.markedForLegal)
+  if (marked.length === 0) {
+    return { success: false, error: 'Keine markierten Red Flags.' }
+  }
+
+  const projectFetch = await fetchDealDeskProjectRow(auth.supabase, projectId, auth.orgId)
+  if (projectFetch.error || !projectFetch.row) {
+    return { success: false, error: projectFetch.error ?? 'Projekt nicht gefunden.' }
+  }
+
+  const documents = await loadProjectDocuments(auth.supabase, projectId, auth.orgId)
+  const project = rowToDealDeskProject(projectFetch.row, documents)
+
+  const markedEnriched = enrichRedFlagsWithDocuments(
+    marked as DealDeskRedFlag[],
+    documents
+  )
+
+  const attachmentDocs = collectLegalAttachmentDocuments(markedEnriched, documents)
+
+  const sendResult = await sendLegalRedFlagsEmail({
+    legalEmail,
+    projectName: project.projectName,
+    customerName: project.analysis.customerName,
+    senderName: auth.fullName ?? auth.email,
+    flags: markedEnriched,
+    documents: attachmentDocs,
+  })
+
+  if (!sendResult.success) {
+    return { success: false, error: sendResult.error }
+  }
+
   await logDealDeskAudit(auth.supabase, {
     orgId: auth.orgId,
     userId: auth.user.id,
     action: 'deal_desk_legal_send',
     entityId: projectId,
     details: {
-      flag_count: details.flagIds.length,
-      flag_ids: details.flagIds,
-      ...(email ? { legal_contact_domain: email.split('@')[1] ?? 'unknown' } : {}),
+      flag_count: marked.length,
+      flag_ids: marked.map((f) => f.id),
+      legal_email: legalEmail,
+      attachments_count: sendResult.attachedCount,
     },
   })
-  return { success: true }
+
+  return { success: true, attachedCount: sendResult.attachedCount }
+}
+
+/** @deprecated Nutze sendDealDeskRedFlagsToLegalAction */
+export async function logDealDeskLegalSendAction(
+  projectId: string,
+  details: { flagIds: string[]; emailDomain?: string }
+): Promise<{ success: true } | { success: false; error: string }> {
+  return { success: false, error: 'Bitte sendDealDeskRedFlagsToLegalAction verwenden.' }
 }
 
 export async function logDealDeskSmeRouteAction(

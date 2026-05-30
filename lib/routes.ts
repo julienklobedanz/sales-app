@@ -38,6 +38,8 @@ export const ROUTES = {
   marketSignals: '/dashboard/market-signals',
   marketSignalsManage: '/dashboard/market-signals/manage',
   dealDesk: '/dashboard/deal-desk',
+  dealDeskProject: (projectId: string) =>
+    `/dashboard/deal-desk?project=${encodeURIComponent(projectId)}`,
   match: '/dashboard/match',
   /** Semantische Suche mit Deal-Kontext (`matchReferences`). */
   matchWithDeal: (dealId: string) =>

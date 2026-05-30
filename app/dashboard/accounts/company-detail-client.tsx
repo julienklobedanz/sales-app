@@ -354,6 +354,7 @@ export function CompanyDetailClient({
         canEdit={canEditAccount}
         onEditClick={() => setEditAccountOpen(true)}
         ndaAgreements={ndaAgreements}
+        openNdaOnMount={searchParams.get('openNda') === '1'}
       />
 
       <EditAccountDialog open={editAccountOpen} onOpenChange={setEditAccountOpen} company={company} />

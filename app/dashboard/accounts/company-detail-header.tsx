@@ -15,11 +15,13 @@ export function CompanyDetailHeader({
   canEdit,
   onEditClick,
   ndaAgreements,
+  openNdaOnMount = false,
 }: {
   company: CompanyDetailCompany
   canEdit?: boolean
   onEditClick?: () => void
   ndaAgreements: NdaAgreementRow[]
+  openNdaOnMount?: boolean
 }) {
   const employeeLabel =
     typeof company.employee_count === 'number' && Number.isFinite(company.employee_count)
@@ -82,6 +84,7 @@ export function CompanyDetailHeader({
           companyName={company.name}
           initialAgreements={ndaAgreements}
           canManage={Boolean(canEdit)}
+          openOnMount={openNdaOnMount}
         />
         {canEdit && onEditClick ? (
           <Button

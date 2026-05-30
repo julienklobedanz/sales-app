@@ -66,6 +66,8 @@ type Props = {
   companyName: string
   initialAgreements: NdaAgreementRow[]
   canManage: boolean
+  /** z. B. aus Command-Center-Suche (?openNda=1) */
+  openOnMount?: boolean
 }
 
 export function CompanyDetailNdaPopover({
@@ -73,9 +75,10 @@ export function CompanyDetailNdaPopover({
   companyName,
   initialAgreements,
   canManage,
+  openOnMount = false,
 }: Props) {
   const router = useRouter()
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(openOnMount)
   const [agreements, setAgreements] = useState(initialAgreements)
   const [addOpen, setAddOpen] = useState(false)
   const [addTitle, setAddTitle] = useState('')

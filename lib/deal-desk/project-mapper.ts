@@ -1,4 +1,5 @@
 import type { DealDeskMockAnalysis } from '@/lib/deal-desk/mock-analysis'
+import { normalizeExecutiveBriefingFields } from '@/lib/deal-desk/executive-briefing-fields'
 import {
   buildDemoDealDeskAnalysis,
   buildMockDealDeskAnalysis,
@@ -88,6 +89,9 @@ function parseAnalysisSnapshot(
       customerName: partial.customerName ?? customerName ?? fallback.customerName,
       icpFitLabel: partial.icpFitLabel ?? fallback.icpFitLabel,
       icpSummary: partial.icpSummary ?? fallback.icpSummary,
+      executiveBriefing: partial.executiveBriefing
+        ? normalizeExecutiveBriefingFields(partial.executiveBriefing)
+        : fallback.executiveBriefing,
     }
   }
   if (documentNames.length > 0) {

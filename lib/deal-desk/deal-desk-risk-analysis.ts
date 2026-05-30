@@ -17,7 +17,8 @@ export type DealDeskRiskAnalysisResult = {
 export async function analyzeDealDeskRisks(
   apiKey: string,
   plainText: string,
-  projectName: string
+  projectName: string,
+  documentFileNames: string[] = []
 ): Promise<DealDeskRiskAnalysisResult | { error: string }> {
   const body = plainText.trim().slice(0, MAX_CHARS)
   if (body.length < 80) {
@@ -29,6 +30,11 @@ export async function analyzeDealDeskRisks(
       redFlags: [],
     }
   }
+
+  const fileList =
+    documentFileNames.length > 0
+      ? `\nHochgeladene Dateien (sourceFileName exakt aus dieser Liste wählen):\n${documentFileNames.map((n) => `- ${n}`).join('\n')}`
+      : ''
 
   const prompt = `Du analysierst ein RFP/Ausschreibungspaket für eine Go/No-Bid-Entscheidung.
 
@@ -44,13 +50,16 @@ Antworte NUR mit JSON (kein Markdown):
       "severity": "critical|high|medium",
       "title": "...",
       "excerpt": "<wörtliche oder paraphrasierte Risikopassage>",
-      "pageHint": "<optional Quelle>"
+      "pageHint": "<optional Kap./Anhang/§>",
+      "sourceFileName": "<exakter Dateiname aus der Liste oder null>"
     }
   ]
 }
+${fileList}
 
 Regeln:
 - 3 bis 8 redFlags, nur echte Vertrags-/SLA-/Haftungs-/Compliance-Risiken.
+- sourceFileName: das Dokument (Vertrag, Anhang, Leistungsbeschreibung), in dem die Klausel steht.
 - winProbability: konservativ bei vielen critical/high Flags.`
 
   try {
@@ -108,12 +117,18 @@ Regeln:
         const sev = o.severity
         const severity =
           sev === 'critical' || sev === 'high' || sev === 'medium' ? sev : 'medium'
+        const sourceFileName =
+          typeof o.sourceFileName === 'string' && o.sourceFileName.trim()
+            ? o.sourceFileName.trim()
+            : null
         redFlags.push({
           id: typeof o.id === 'string' ? o.id : `rf-${++i}`,
           severity,
           title,
           excerpt,
           pageHint: typeof o.pageHint === 'string' ? o.pageHint : undefined,
+          sourceFileName,
+          sourceDocumentId: null,
           markedForLegal: false,
         })
       }

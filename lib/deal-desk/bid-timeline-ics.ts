@@ -48,9 +48,14 @@ export function buildBidTimelineIcsContent(params: {
       const uid = `${projectId ?? 'project'}-${it.id}@${host}`
       const dtStart = toIcsDate(it.dueDate)
       const dtEnd = toIcsDate(addDaysIso(it.dueDate, 1))
+      const timeNote = it.dueTime
+        ? `Uhrzeit im RFP: ${it.dueTime} (Kalendereintrag ganztägig). `
+        : ''
       const description = it.evidence
-        ? escapeIcsText(`Beleg: ${it.evidence}`)
-        : escapeIcsText(`RFP-Frist aus Deal Desk — ${it.title}`)
+        ? escapeIcsText(`${timeNote}Beleg: ${it.evidence}`)
+        : escapeIcsText(
+            `${timeNote}RFP-Frist aus Deal Desk — ${it.title}`.trim()
+          )
 
       return [
         'BEGIN:VEVENT',

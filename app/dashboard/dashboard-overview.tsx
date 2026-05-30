@@ -73,7 +73,11 @@ import {
 } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { BulkImportDialog, type BulkImportGroupItem } from './overview/bulk-import-dialog'
-import { ReferenceLayoutSwitch } from './overview/reference-layout-switch'
+import { EvidenceLibraryToolbar } from './overview/evidence-library-toolbar'
+import { ComplianceDocumentsTable } from './overview/compliance-documents-table'
+import { ComplianceUploadDialog } from './overview/compliance-upload-dialog'
+import type { EvidenceLibraryMode } from './overview/reference-library-switch'
+import type { ComplianceDocumentRow } from '@/app/dashboard/settings/compliance-actions'
 import { NewReferenceDialog } from './overview/new-reference-dialog'
 import { AccountsToolbarTooltip } from '@/app/dashboard/accounts/components/accounts-toolbar-tooltip'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -89,6 +93,8 @@ import {
 import { ReferenceDetailSheet } from './overview/reference-detail-sheet'
 import { ReferencesOverviewBrandfetchSync } from './overview/references-overview-brandfetch-sync'
 import { FilterMenuCheckboxOption } from '@/components/table/filter-menu-checkbox-option'
+import { TableRowCheckbox } from '@/components/table/table-row-checkbox'
+import { TableRowAlign } from '@/components/table/table-row-align'
 import { toast } from 'sonner'
 import { BULK_IMPORT_MAX_FILES } from '@/lib/references/bulk-import-limits'
 import { copyTableRowsSelected } from '@/lib/copy'
@@ -168,6 +174,18 @@ const COLUMN_LABELS: Record<(typeof COLUMN_KEYS)[number], string> = {
 }
 
 const COLUMN_ORDER_STORAGE_KEY = 'dashboard-overview-column-order-v1'
+const EVIDENCE_LIBRARY_MODE_STORAGE_KEY = 'evidence-library-mode-v1'
+const EVIDENCE_SHOW_EXPIRED_CERTS_KEY = 'evidence-compliance-show-expired-v1'
+
+function loadEvidenceLibraryMode(): EvidenceLibraryMode {
+  if (typeof window === 'undefined') return 'references'
+  try {
+    const raw = localStorage.getItem(EVIDENCE_LIBRARY_MODE_STORAGE_KEY)
+    return raw === 'certificates' ? 'certificates' : 'references'
+  } catch {
+    return 'references'
+  }
+}
 
 function loadColumnOrderFromStorage(): ReferenceColumnKey[] {
   if (typeof window === 'undefined') return [...COLUMN_KEYS] as ReferenceColumnKey[]
@@ -214,6 +232,7 @@ export function DashboardOverview({
   contacts = [],
   externalContacts = [],
   orgDateDisplayFormat = 'de-DE',
+  complianceDocuments = [],
 }: {
   references: ReferenceRow[]
   totalCount: number
@@ -225,9 +244,11 @@ export function DashboardOverview({
   contacts?: ContactOption[]
   externalContacts?: { id: string; company_id: string; first_name: string | null; last_name: string | null; email: string | null; role: string | null; phone?: string | null }[]
   orgDateDisplayFormat?: OrgDateDisplayFormat | string
+  complianceDocuments?: ComplianceDocumentRow[]
 }) {
   const router = useRouter()
   const [search, setSearch] = useState('')
+  const [certificateSearch, setCertificateSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>(initialStatusFilter)
   const [companyFilter, setCompanyFilter] = useState<string>('all')
   const [tagsFilter, setTagsFilter] = useState<string>('all')
@@ -243,6 +264,11 @@ export function DashboardOverview({
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [favoritesOnly, setFavoritesOnly] = useState(initialFavoritesOnly)
   const [referenceLayout, setReferenceLayout] = useState<'inbox' | 'table'>('table')
+  const [libraryMode, setLibraryMode] = useState<EvidenceLibraryMode>('references')
+  const [complianceUploadOpen, setComplianceUploadOpen] = useState(false)
+  const [showExpiredCertificates, setShowExpiredCertificates] = useState(false)
+  const isReferencesLibrary = libraryMode === 'references'
+  const isCertificatesLibrary = libraryMode === 'certificates'
   const [rowMenuOpenId, setRowMenuOpenId] = useState<string | null>(null)
   const [selectedRef, setSelectedRef] = useState<ReferenceRow | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -281,6 +307,36 @@ export function DashboardOverview({
       setDetailAssetsLoading(false)
     }
   }, [])
+
+  useEffect(() => {
+    setLibraryMode(loadEvidenceLibraryMode())
+    try {
+      setShowExpiredCertificates(localStorage.getItem(EVIDENCE_SHOW_EXPIRED_CERTS_KEY) === '1')
+    } catch {
+      /* ignore */
+    }
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      localStorage.setItem(EVIDENCE_LIBRARY_MODE_STORAGE_KEY, libraryMode)
+    } catch {
+      /* ignore */
+    }
+  }, [libraryMode])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      localStorage.setItem(
+        EVIDENCE_SHOW_EXPIRED_CERTS_KEY,
+        showExpiredCertificates ? '1' : '0'
+      )
+    } catch {
+      /* ignore */
+    }
+  }, [showExpiredCertificates])
 
   useEffect(() => {
     if (!selectedRef?.id || !sheetOpen) return
@@ -825,154 +881,35 @@ export function DashboardOverview({
       {/* Toolbar & Tabelle */}
       <div className="space-y-3.5">
         {/* Toolbar: Suche bis zu den Buttons; rechts Favoriten → Status → Spalten → … */}
-        <div className="flex w-full min-w-0 flex-wrap items-center gap-2.5 sm:gap-3.5 overflow-x-hidden transition-all duration-300">
-          <ToolbarSearchField
-            variant="dashboard"
-            wrapperClassName="min-w-0 flex-1 basis-[min(100%,24rem)] transition-all duration-300"
-            className="bg-white"
-            placeholder={COPY.dashboard.searchReferencesPlaceholder}
-            value={search}
-            onChange={setSearch}
-          />
+        <EvidenceLibraryToolbar
+          libraryMode={libraryMode}
+          onLibraryModeChange={setLibraryMode}
+          referenceLayout={referenceLayout}
+          onReferenceLayoutChange={setReferenceLayout}
+          searchValue={isReferencesLibrary ? search : certificateSearch}
+          onSearchChange={isReferencesLibrary ? setSearch : setCertificateSearch}
+          isAdmin={profile.role === 'admin'}
+          favoritesOnly={favoritesOnly}
+          onFavoritesOnlyChange={setFavoritesOnly}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+          statusOptions={filterOptions.statuses}
+          statusLabels={STATUS_LABELS}
+          columnOrder={columnOrder}
+          visibleColumns={visibleColumns}
+          onVisibleColumnsChange={setVisibleColumns}
+          columnLabels={COLUMN_LABELS}
+          onImportClick={() => {
+            setBulkImportGroups([])
+            setBulkImportOpen(true)
+          }}
+          onCreateReferenceClick={() => setNewRefModalOpen(true)}
+          onUploadCertificateClick={() => setComplianceUploadOpen(true)}
+          showExpiredCertificates={showExpiredCertificates}
+          onShowExpiredCertificatesChange={setShowExpiredCertificates}
+        />
 
-          <TooltipProvider delayDuration={300}>
-          <div className="flex shrink-0 flex-wrap items-center gap-2.5">
-            <AccountsToolbarTooltip label={COPY.dashboard.tooltipFavorites}>
-              <Button
-                type="button"
-                variant="ghost"
-                size="toolbar"
-                className={cn(
-                  'shrink-0 px-2.5 hover:bg-muted/70',
-                  favoritesOnly &&
-                    'bg-amber-100/70 text-foreground dark:bg-amber-950/40'
-                )}
-                onClick={() => setFavoritesOnly((v) => !v)}
-                aria-pressed={favoritesOnly}
-                aria-label={COPY.dashboard.tooltipFavorites}
-              >
-                <AppIcon
-                  icon={StarIcon}
-                  size={16}
-                  className={cn(
-                    'shrink-0',
-                    favoritesOnly ? 'text-amber-500 dark:text-amber-400' : 'text-muted-foreground'
-                  )}
-                />
-              </Button>
-            </AccountsToolbarTooltip>
-
-            <Popover>
-              <AccountsToolbarTooltip label={COPY.dashboard.tooltipStatus}>
-                <PopoverTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="toolbar"
-                    className={cn(
-                      'shrink-0 px-2.5 hover:bg-muted/70',
-                      statusFilter !== 'all' && 'bg-primary/10 text-primary'
-                    )}
-                    aria-label={COPY.dashboard.tooltipStatus}
-                  >
-                    <AppIcon icon={TrendingUp} size={16} className="shrink-0 text-muted-foreground" />
-                  </Button>
-                </PopoverTrigger>
-              </AccountsToolbarTooltip>
-              <PopoverContent
-                align="end"
-                className="w-56 p-1"
-                onOpenAutoFocus={(e) => e.preventDefault()}
-              >
-                <div className="max-h-56 space-y-0 overflow-y-auto text-sm">
-                  {['all', ...filterOptions.statuses].map((value) => {
-                      const isAll = value === 'all'
-                      const label = isAll ? 'Alle' : STATUS_LABELS[value] ?? value
-                      const selected = statusFilter === value
-                      return (
-                        <FilterMenuCheckboxOption
-                          key={value}
-                          label={label}
-                          selected={selected}
-                          onSelect={() => setStatusFilter(value)}
-                        />
-                      )
-                    })}
-                </div>
-              </PopoverContent>
-            </Popover>
-
-            <DropdownMenu>
-              <AccountsToolbarTooltip label={COPY.dashboard.tooltipColumns}>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="toolbar"
-                    className="shrink-0 px-2.5 hover:bg-muted/70"
-                    aria-label={COPY.dashboard.columnsToggleAria}
-                  >
-                    <AppIcon icon={Filter} size={16} className="shrink-0" />
-                  </Button>
-                </DropdownMenuTrigger>
-              </AccountsToolbarTooltip>
-              <DropdownMenuContent align="end" className="w-[min(100vw-2rem,16rem)]">
-                {columnOrder.map((column) => (
-                  <DropdownMenuCheckboxItem
-                    key={column}
-                    checked={visibleColumns[column]}
-                    onCheckedChange={(checked) =>
-                      setVisibleColumns((prev) => ({
-                        ...prev,
-                        [column]: Boolean(checked),
-                      }))
-                    }
-                    onSelect={(e: Event) => e.preventDefault()}
-                  >
-                    {COLUMN_LABELS[column]}
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-          <div className="ml-auto flex shrink-0 flex-wrap items-center gap-2.5">
-            {profile.role === 'admin' && (
-              <AccountsToolbarTooltip label={COPY.dashboard.tooltipImport}>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="toolbar"
-                  className="shrink-0 px-2.5 hover:bg-muted/70"
-                  onClick={() => {
-                    setBulkImportGroups([])
-                    setBulkImportOpen(true)
-                  }}
-                  aria-label={COPY.dashboard.tooltipImport}
-                >
-                  <AppIcon icon={UploadIcon} size={16} className="shrink-0" />
-                </Button>
-              </AccountsToolbarTooltip>
-            )}
-            <ReferenceLayoutSwitch
-              value={referenceLayout}
-              onChange={setReferenceLayout}
-            />
-            {profile.role === 'admin' && (
-                <Button
-                  type="button"
-                  size="toolbar"
-                  className="gap-1.5 rounded-lg bg-gradient-to-b from-blue-600 to-blue-700 px-3 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] hover:from-blue-600 hover:to-blue-700/95"
-                  onClick={() => setNewRefModalOpen(true)}
-                >
-                  <AppIcon icon={CirclePlus} size={16} className="shrink-0" />
-                  {COPY.dashboard.tooltipCreateReference}
-                </Button>
-            )}
-          </div>
-          </TooltipProvider>
-
-          {selectedRefIds.size > 0 ? (
+          {isReferencesLibrary && selectedRefIds.size > 0 ? (
             <div className="fixed bottom-6 left-1/2 z-50 w-[min(720px,calc(100vw-24px))] -translate-x-1/2">
               <div className="flex items-center justify-between rounded-lg border bg-background/95 px-4 py-3 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/75">
                 <div className="text-sm text-muted-foreground">
@@ -1074,18 +1011,25 @@ export function DashboardOverview({
               }}
             />
           )}
-        </div>
 
-        {referenceLayout === 'table' ? (
+        {isCertificatesLibrary ? (
+          <ComplianceDocumentsTable
+            documents={complianceDocuments}
+            search={certificateSearch}
+            showExpired={showExpiredCertificates}
+            isAdmin={profile.role === 'admin'}
+            onUploadClick={() => setComplianceUploadOpen(true)}
+          />
+        ) : referenceLayout === 'table' ? (
           <>
         <div className="min-w-0 overflow-x-auto rounded-xl border border-border/70 bg-card shadow-sm shadow-slate-900/5">
-          <Table className="min-w-[800px]">
+          <Table className="min-w-[800px] w-full">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[32px] pr-0">
-                  <input
-                    type="checkbox"
+                <TableHead className="w-[32px] align-middle p-2 pr-0">
+                  <TableRowCheckbox
                     ref={selectAllCheckboxRef}
+                    rowHeight={10}
                     checked={
                       filteredReferences.length > 0 &&
                       filteredReferences.every((r) => selectedRefIds.has(r.id))
@@ -1101,8 +1045,8 @@ export function DashboardOverview({
                         )
                       }
                     }}
-                    className="size-4 rounded border-muted-foreground/50"
                     aria-label="Alle auswählen"
+                    disabled={filteredReferences.length === 0}
                   />
                 </TableHead>
                 {orderedVisibleColumnKeys.map((column) => (
@@ -1181,15 +1125,13 @@ export function DashboardOverview({
                     }}
                   >
                     <TableCell
-                      className="w-[32px] pr-0"
+                      className="w-[32px] align-middle p-2 pr-0"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <input
-                        type="checkbox"
+                      <TableRowCheckbox
                         checked={selectedRefIds.has(ref.id)}
                         onChange={() => toggleCart(ref.id)}
                         onClick={(e) => e.stopPropagation()}
-                        className="size-4 rounded border-muted-foreground/50"
                         aria-label={`${ref.title} in Warenkorb`}
                       />
                     </TableCell>
@@ -1204,9 +1146,10 @@ export function DashboardOverview({
                       </React.Fragment>
                     ))}
                     <TableCell
-                      className="w-[88px] min-w-[88px] p-1 text-right"
+                      className="w-[88px] min-w-[88px] align-middle p-2 text-right"
                       onClick={(e: React.MouseEvent) => e.stopPropagation()}
                     >
+                      <TableRowAlign className="justify-end">
                       <div className="flex items-center justify-end gap-0.5 pr-0 opacity-0 transition-opacity group-hover:opacity-100 has-[[data-state=open]]:opacity-100">
                         <Button
                           variant="ghost"
@@ -1289,6 +1232,7 @@ export function DashboardOverview({
                         </DropdownMenuContent>
                       </DropdownMenu>
                       </div>
+                      </TableRowAlign>
                     </TableCell>
                   </TableRow>
                 ))
@@ -1432,6 +1376,13 @@ export function DashboardOverview({
       )}
 
       {/* Bulk-Import-Modal (nur Admin) */}
+      {profile.role === 'admin' && (
+        <ComplianceUploadDialog
+          open={complianceUploadOpen}
+          onOpenChange={setComplianceUploadOpen}
+        />
+      )}
+
       {profile.role === 'admin' && (
         <BulkImportDialog
           open={bulkImportOpen}

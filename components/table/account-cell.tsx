@@ -12,16 +12,18 @@ export function AccountCell({
   companyId?: string | null
 }) {
   return (
-    <div className="flex min-w-0 max-w-[260px] items-center gap-2.5">
+    <div className="flex h-9 min-w-0 max-w-[260px] items-center gap-2.5">
       <CompanyLogo
         src={companyLogoUrl}
         companyId={companyId}
         fallbackText={companyName}
-        containerClassName="h-9 w-9 shrink-0 rounded-md"
+        containerClassName="size-9 shrink-0 rounded-md"
         fallbackIconSize={18}
         imageClassName="p-0.5"
       />
-      <span className="truncate font-semibold text-foreground">{companyName ?? "Kein Account"}</span>
+      <span className="truncate text-sm font-semibold leading-none text-foreground">
+        {companyName ?? 'Kein Account'}
+      </span>
     </div>
   )
 }

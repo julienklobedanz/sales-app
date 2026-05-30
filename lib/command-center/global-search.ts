@@ -1,11 +1,99 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+
+import { isMissingNdaTitleColumn } from '@/lib/accounts/nda-schema'
+import { formatNdaExpiryDateDe, ndaDaysUntilExpiry } from '@/lib/accounts/nda-expiry'
+import {
+  complianceSearchTitle,
+  formatComplianceValidUntilLine,
+} from '@/lib/compliance/format'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 
-export type GlobalSearchResult =
-  | { kind: 'reference'; id: string; title: string; accountName: string | null }
-  | { kind: 'account'; id: string; title: string }
-  | { kind: 'deal'; id: string; title: string }
+export type CommandSearchResult =
+  | { kind: 'account'; id: string; title: string; logoUrl: string | null }
+  | {
+      kind: 'rfp'
+      id: string
+      title: string
+      customerName: string | null
+      statusLabel: string
+    }
+  | {
+      kind: 'nda'
+      id: string
+      companyId: string
+      title: string
+      companyName: string
+      statusLine: string
+      hasFile: boolean
+    }
+  | {
+      kind: 'reference'
+      id: string
+      title: string
+      accountName: string | null
+      industry: string | null
+    }
+  | {
+      kind: 'market_signal'
+      id: string
+      signalKind: 'exec' | 'news'
+      title: string
+      companyId: string
+      companyName: string
+    }
+  | {
+      kind: 'contact_external'
+      id: string
+      name: string
+      role: string | null
+      companyName: string
+      companyId: string | null
+    }
+  | {
+      kind: 'contact_internal'
+      id: string
+      name: string
+      roleLabel: string
+    }
+  | {
+      kind: 'certificate'
+      id: string
+      title: string
+      documentType: string
+      validUntilLine: string
+      hasFile: boolean
+    }
+
+export type CommandSearchGroups = {
+  accounts: CommandSearchResult[]
+  rfps: CommandSearchResult[]
+  ndas: CommandSearchResult[]
+  references: CommandSearchResult[]
+  marketSignals: CommandSearchResult[]
+  contacts: CommandSearchResult[]
+  certificates: CommandSearchResult[]
+}
+
+export const COMMAND_SEARCH_GROUP_ORDER: (keyof CommandSearchGroups)[] = [
+  'accounts',
+  'rfps',
+  'ndas',
+  'references',
+  'marketSignals',
+  'contacts',
+  'certificates',
+]
+
+export const COMMAND_SEARCH_GROUP_LABELS: Record<keyof CommandSearchGroups, string> = {
+  accounts: 'Accounts',
+  rfps: 'Offene RFPs & Ausschreibungen',
+  ndas: 'NDA & Vertragsdokumente',
+  references: 'Referenzen (Case Studies)',
+  marketSignals: 'Marktsignale',
+  contacts: 'Ansprechpartner',
+  certificates: 'Zertifikate & Security',
+}
 
 export function sanitizeIlikeUserInput(q: string): string {
   return q.trim().replace(/[%_\\]/g, '')
@@ -18,13 +106,38 @@ function buildIlikeOrFilter(columns: string[], raw: string): string | null {
   return columns.map((col) => `${col}.ilike.${pat}`).join(',')
 }
 
-function companyNameFromReferenceRow(row: { companies?: unknown }): string | null {
-  const c = row.companies
-  if (c == null) return null
-  const obj = Array.isArray(c) ? c[0] : c
-  if (!obj || typeof obj !== 'object') return null
-  const name = (obj as { name?: string | null }).name
-  return typeof name === 'string' && name.trim() ? name.trim() : null
+function companyFromJoin(raw: unknown): { name: string; logoUrl: string | null } | null {
+  const c = Array.isArray(raw) ? raw[0] : raw
+  if (!c || typeof c !== 'object') return null
+  const name = String((c as { name?: string }).name ?? '').trim()
+  if (!name) return null
+  const logoUrl = (c as { logo_url?: string | null }).logo_url
+  return { name, logoUrl: typeof logoUrl === 'string' ? logoUrl : null }
+}
+
+function rfpStatusLabel(status: string): string {
+  if (status === 'processing') return 'In Bearbeitung'
+  if (status === 'completed') return 'Abgeschlossen'
+  if (status === 'failed') return 'Fehlgeschlagen'
+  return 'Ausstehend'
+}
+
+function ndaStatusLine(status: string, validUntil: string | null): string {
+  const s = String(status ?? '').toLowerCase()
+  if (s === 'expired') return 'Abgelaufen'
+  if (s === 'pending') return 'Ausstehend'
+  if (!validUntil) return 'Aktiv (unbefristet)'
+  const days = ndaDaysUntilExpiry(validUntil)
+  if (days < 0) return `Abgelaufen (seit ${formatNdaExpiryDateDe(validUntil)})`
+  return `Aktiv (bis ${formatNdaExpiryDateDe(validUntil)})`
+}
+
+function internalRoleLabel(role: string | null | undefined): string {
+  const r = String(role ?? '').toLowerCase()
+  if (r === 'admin') return 'Admin'
+  if (r === 'account_manager') return 'Account Team'
+  if (r === 'sales') return 'Sales'
+  return 'Kollege'
 }
 
 export function formatReferenceListLabel(
@@ -36,8 +149,15 @@ export function formatReferenceListLabel(
   return `${title} (${COPY.commandPalette.referenceNoAccountLabel})`
 }
 
+/** Legacy flache Trefferliste (Command Palette). */
+export type GlobalSearchResult =
+  | { kind: 'reference'; id: string; title: string; accountName: string | null }
+  | { kind: 'account'; id: string; title: string }
+  | { kind: 'deal'; id: string; title: string }
+
+/** Legacy flache Navigation (Command Palette, Recents). */
 export function hrefForGlobalSearchResult(result: {
-  kind: GlobalSearchResult['kind']
+  kind: 'reference' | 'account' | 'deal'
   id: string
 }): string {
   if (result.kind === 'account') return ROUTES.accountsDetail(result.id)
@@ -45,48 +165,336 @@ export function hrefForGlobalSearchResult(result: {
   return ROUTES.evidence.detail(result.id)
 }
 
+export function emptyCommandSearchGroups(): CommandSearchGroups {
+  return {
+    accounts: [],
+    rfps: [],
+    ndas: [],
+    references: [],
+    marketSignals: [],
+    contacts: [],
+    certificates: [],
+  }
+}
+
+export function hasAnyCommandSearchHit(groups: CommandSearchGroups): boolean {
+  return COMMAND_SEARCH_GROUP_ORDER.some((key) => groups[key].length > 0)
+}
+
+/** Accounts-Gruppe: nur echte Accounts, keine Doppelten (gleiche ID oder gleicher Name). */
+export function dedupeAccountSearchResults(
+  items: Extract<CommandSearchResult, { kind: 'account' }>[]
+): Extract<CommandSearchResult, { kind: 'account' }>[] {
+  const byId = new Map<string, Extract<CommandSearchResult, { kind: 'account' }>>()
+  for (const item of items) {
+    if (!byId.has(item.id)) byId.set(item.id, item)
+  }
+  const byName = new Map<string, Extract<CommandSearchResult, { kind: 'account' }>>()
+  for (const item of byId.values()) {
+    const key = item.title.trim().toLowerCase()
+    if (!key) {
+      byName.set(item.id, item)
+      continue
+    }
+    if (!byName.has(key)) byName.set(key, item)
+  }
+  return [...byName.values()]
+}
+
+export async function searchCommandCenter(
+  supabase: SupabaseClient,
+  rawQuery: string
+): Promise<CommandSearchGroups> {
+  const q = rawQuery.trim()
+  if (!q) return emptyCommandSearchGroups()
+
+  const likePat = `%${sanitizeIlikeUserInput(q)}%`
+  if (!sanitizeIlikeUserInput(q)) return emptyCommandSearchGroups()
+
+  const refOr = buildIlikeOrFilter(['title', 'summary', 'industry'], q)
+  const deskOr = buildIlikeOrFilter(['project_name', 'customer_name'], q)
+  const ndaOr = buildIlikeOrFilter(['title', 'notes'], q)
+  const contactOr = buildIlikeOrFilter(['first_name', 'last_name', 'role'], q)
+  const certOr = buildIlikeOrFilter(['title', 'document_type'], q)
+
+  const accountsRes = await fetchAccountSearchRows(supabase, likePat)
+
+  const [
+    refsRes,
+    deskRes,
+    ndaRes,
+    execRes,
+    newsRes,
+    contactsRes,
+    profilesRes,
+    certsRes,
+  ] = await Promise.all([
+    refOr
+      ? supabase
+          .from('references')
+          .select('id,title,industry,companies(name)')
+          .or(refOr)
+          .limit(6)
+      : supabase.from('references').select('id,title,industry,companies(name)').limit(0),
+    deskOr
+      ? supabase
+          .from('deal_desk_projects')
+          .select('id,project_name,customer_name,analysis_status')
+          .or(deskOr)
+          .limit(6)
+      : supabase.from('deal_desk_projects').select('id,project_name,customer_name,analysis_status').limit(0),
+    fetchNdaSearchRows(supabase, ndaOr, likePat),
+    supabase
+      .from('market_signal_executive_events')
+      .select('id,person_name,change_summary,company_id,companies(name)')
+      .or(`person_name.ilike.${likePat},change_summary.ilike.${likePat}`)
+      .limit(5),
+    supabase
+      .from('market_signal_account_news')
+      .select('id,body,company_id,companies(name)')
+      .ilike('body', likePat)
+      .limit(5),
+    contactOr
+      ? supabase
+          .from('contact_persons')
+          .select('id,first_name,last_name,role,company_id,companies(name)')
+          .or(contactOr)
+          .limit(8)
+      : supabase.from('contact_persons').select('id,first_name,last_name,role,company_id,companies(name)').limit(0),
+    supabase.from('profiles').select('id,full_name,role').ilike('full_name', likePat).limit(5),
+    certOr
+      ? supabase
+          .from('organization_compliance_documents')
+          .select('id,title,document_type,valid_until,file_storage_path')
+          .eq('is_current', true)
+          .or(certOr)
+          .limit(6)
+      : supabase
+          .from('organization_compliance_documents')
+          .select('id,title,document_type,valid_until,file_storage_path')
+          .eq('is_current', true)
+          .limit(0),
+  ])
+
+  const groups = emptyCommandSearchGroups()
+
+  const accountCandidates: Extract<CommandSearchResult, { kind: 'account' }>[] = []
+  for (const row of accountsRes.data ?? []) {
+    const kind = String((row as { entity_kind?: string }).entity_kind ?? 'account')
+    if (kind !== 'account') continue
+    accountCandidates.push({
+      kind: 'account',
+      id: String(row.id),
+      title: String(row.name ?? ''),
+      logoUrl: (row.logo_url as string | null) ?? null,
+    })
+  }
+  groups.accounts.push(...dedupeAccountSearchResults(accountCandidates))
+
+  for (const row of deskRes.data ?? []) {
+    const title = String(row.project_name ?? 'Projekt')
+    groups.rfps.push({
+      kind: 'rfp',
+      id: String(row.id),
+      title,
+      customerName: (row.customer_name as string | null) ?? null,
+      statusLabel: rfpStatusLabel(String(row.analysis_status ?? 'pending')),
+    })
+  }
+
+  for (const row of ndaRes) {
+    const co = companyFromJoin(row.companies)
+    const docTitle = String(row.title ?? '').trim() || 'NDA'
+    groups.ndas.push({
+      kind: 'nda',
+      id: String(row.id),
+      companyId: String(row.company_id),
+      title: docTitle,
+      companyName: co?.name ?? 'Account',
+      statusLine: ndaStatusLine(String(row.status), row.valid_until as string | null),
+      hasFile: Boolean(row.file_storage_path),
+    })
+  }
+
+  for (const row of refsRes.data ?? []) {
+    const co = companyFromJoin(row.companies)
+    groups.references.push({
+      kind: 'reference',
+      id: String(row.id),
+      title: String(row.title ?? ''),
+      accountName: co?.name ?? null,
+      industry: (row.industry as string | null) ?? null,
+    })
+  }
+
+  for (const row of execRes.data ?? []) {
+    const co = companyFromJoin(row.companies)
+    const person = String(row.person_name ?? '').trim()
+    const summary = String(row.change_summary ?? '').trim()
+    groups.marketSignals.push({
+      kind: 'market_signal',
+      id: String(row.id),
+      signalKind: 'exec',
+      title: person ? `${person}${summary ? ` — ${summary.slice(0, 80)}` : ''}` : summary.slice(0, 120),
+      companyId: String(row.company_id),
+      companyName: co?.name ?? 'Account',
+    })
+  }
+
+  for (const row of newsRes.data ?? []) {
+    const co = companyFromJoin(row.companies)
+    const body = String(row.body ?? '').trim()
+    groups.marketSignals.push({
+      kind: 'market_signal',
+      id: String(row.id),
+      signalKind: 'news',
+      title: body.slice(0, 120) || `News bei ${co?.name ?? 'Account'}`,
+      companyId: String(row.company_id),
+      companyName: co?.name ?? 'Account',
+    })
+  }
+
+  for (const row of contactsRes.data ?? []) {
+    const co = companyFromJoin(row.companies)
+    const name = [row.first_name, row.last_name].filter(Boolean).join(' ').trim() || 'Kontakt'
+    groups.contacts.push({
+      kind: 'contact_external',
+      id: String(row.id),
+      name,
+      role: (row.role as string | null) ?? null,
+      companyName: co?.name ?? '—',
+      companyId: row.company_id ? String(row.company_id) : null,
+    })
+  }
+
+  for (const row of profilesRes.data ?? []) {
+    const name = String(row.full_name ?? '').trim()
+    if (!name) continue
+    groups.contacts.push({
+      kind: 'contact_internal',
+      id: String(row.id),
+      name,
+      roleLabel: internalRoleLabel(row.role as string),
+    })
+  }
+
+  if (!certsRes.error) {
+    for (const row of certsRes.data ?? []) {
+      const docType = String(row.document_type ?? '')
+      const title = complianceSearchTitle({
+        title: String(row.title ?? ''),
+        document_type: docType,
+      })
+      groups.certificates.push({
+        kind: 'certificate',
+        id: String(row.id),
+        title,
+        documentType: docType,
+        validUntilLine: formatComplianceValidUntilLine((row.valid_until as string | null) ?? null),
+        hasFile: Boolean(row.file_storage_path),
+      })
+    }
+  } else {
+    const msg = certsRes.error.message ?? ''
+    const missingTable =
+      msg.includes('organization_compliance_documents') || msg.includes('does not exist')
+    if (!missingTable) {
+      console.warn('[searchCommandCenter] compliance documents:', msg)
+    }
+  }
+
+  return groups
+}
+
+async function fetchAccountSearchRows(supabase: SupabaseClient, likePat: string) {
+  const withKind = await supabase
+    .from('companies')
+    .select('id,name,logo_url,entity_kind')
+    .eq('entity_kind', 'account')
+    .ilike('name', likePat)
+    .limit(8)
+
+  if (!withKind.error || !(withKind.error.message ?? '').includes('entity_kind')) {
+    return withKind
+  }
+
+  return supabase.from('companies').select('id,name,logo_url').ilike('name', likePat).limit(8)
+}
+
+type NdaSearchRow = {
+  id: string
+  company_id: string
+  title?: string | null
+  status: string
+  valid_until: string | null
+  file_storage_path: string | null
+  companies: unknown
+}
+
+async function fetchNdaSearchRows(
+  supabase: SupabaseClient,
+  ndaOr: string | null,
+  likePat: string
+): Promise<NdaSearchRow[]> {
+  const baseSelect =
+    'id,company_id,status,valid_until,file_storage_path,companies(name,logo_url)'
+  const withTitle =
+    'id,company_id,title,status,valid_until,file_storage_path,companies(name,logo_url)'
+
+  const run = (select: string, filter: { or?: string; ilikeNotes?: boolean }) => {
+    let q = supabase.from('nda_agreements').select(select).limit(6)
+    if (filter.or) q = q.or(filter.or)
+    else if (filter.ilikeNotes) q = q.ilike('notes', likePat)
+    return q
+  }
+
+  let res = ndaOr
+    ? await run(withTitle, { or: ndaOr })
+    : await run(withTitle, { ilikeNotes: true })
+
+  if (res.error && isMissingNdaTitleColumn(res.error.message)) {
+    if (ndaOr) {
+      const notesOnly = ndaOr.replace(/title\.ilike/g, 'notes.ilike')
+      res = await run(baseSelect, { or: notesOnly })
+    } else {
+      res = await run(baseSelect, { ilikeNotes: true })
+    }
+  }
+
+  if (res.error) return []
+
+  return (res.data ?? []) as unknown as NdaSearchRow[]
+}
+
+/** Legacy flache Liste für Command Palette (cmdk). */
 export async function searchGlobalEntities(
   supabase: SupabaseClient,
   rawQuery: string
 ): Promise<GlobalSearchResult[]> {
-  const q = rawQuery.trim()
-  if (!q) return []
+  const groups = await searchCommandCenter(supabase, rawQuery)
+  const dealsRes = await supabase
+    .from('deals')
+    .select('id,title')
+    .ilike('title', `%${sanitizeIlikeUserInput(rawQuery)}%`)
+    .limit(8)
 
-  const refOr = buildIlikeOrFilter(['title', 'summary'], q)
-  const dealOr = buildIlikeOrFilter(['title', 'industry'], q)
-  const companyPat = sanitizeIlikeUserInput(q)
-  if (!companyPat) return []
+  const flat: GlobalSearchResult[] = []
 
-  const likePat = `%${companyPat}%`
-
-  const [refs, accounts, deals] = await Promise.all([
-    refOr
-      ? supabase.from('references').select('id,title,companies(name)').or(refOr).limit(8)
-      : supabase.from('references').select('id,title,companies(name)').ilike('title', likePat).limit(8),
-    supabase.from('companies').select('id,name').ilike('name', likePat).limit(8),
-    dealOr
-      ? supabase.from('deals').select('id,title').or(dealOr).limit(8)
-      : supabase.from('deals').select('id,title').ilike('title', likePat).limit(8),
-  ])
-
-  const next: GlobalSearchResult[] = []
-  for (const r of (refs.data ?? []) as Array<{
-    id: string
-    title: string
-    companies?: unknown
-  }>) {
-    next.push({
+  for (const r of groups.references) {
+    if (r.kind !== 'reference') continue
+    flat.push({
       kind: 'reference',
       id: r.id,
       title: r.title,
-      accountName: companyNameFromReferenceRow(r),
+      accountName: r.accountName,
     })
   }
-  for (const a of (accounts.data ?? []) as Array<{ id: string; name: string }>) {
-    next.push({ kind: 'account', id: a.id, title: a.name })
+  for (const a of groups.accounts) {
+    if (a.kind !== 'account') continue
+    flat.push({ kind: 'account', id: a.id, title: a.title })
   }
-  for (const d of (deals.data ?? []) as Array<{ id: string; title: string }>) {
-    next.push({ kind: 'deal', id: d.id, title: d.title })
+  for (const d of dealsRes.data ?? []) {
+    flat.push({ kind: 'deal', id: String(d.id), title: String(d.title) })
   }
-  return next
+  return flat
 }

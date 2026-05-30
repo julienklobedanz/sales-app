@@ -2,6 +2,7 @@ import 'server-only'
 
 import { formatOpenAiHttpError } from '@/lib/openai-api-errors'
 import type { DealDeskTimelineItem } from '@/lib/deal-desk/mock-analysis'
+import { normalizeDueTime } from '@/lib/deal-desk/timeline-display'
 
 const MODEL = 'gpt-4o-mini'
 const MAX_RFP_CHARS = 100_000
@@ -29,10 +30,11 @@ export async function extractTimelineFromRfpText(
 Regeln:
 - NUR JSON (kein Markdown).
 - Antworte exakt mit dieser Form:
-{"timelineItems":[{"id":"...","title":"...","dueDate":"YYYY-MM-DD","evidence":string|null}]}
+{"timelineItems":[{"id":"...","title":"...","dueDate":"YYYY-MM-DD","dueTime":"HH:MM"|null,"evidence":string|null}]}
 - dueDate NUR, wenn im Text ein konkretes Datum inkl. Jahr erkennbar ist. (Dann als ISO YYYY-MM-DD ausgeben.)
+- dueTime: konkrete Uhrzeit zur Frist im 24h-Format (z. B. "13:00"), NUR wenn im Dokument explizit genannt — sonst null.
 - Maximal ${MAX_ITEMS} Einträge.
-- "title" kurz und auf Deutsch (z. B. "Angebotsabgabe", "Rückfragenfrist").
+- "title" kurz und auf Deutsch (z. B. "Angebotsabgabe", "Q&A / Rückfragenfrist").
 - evidence: kurzer Beleg/Zitat aus dem Text oder null, falls kein kurzer Beleg möglich ist.
 
 Wenn keine konkreten Daten erkennbar sind: timelineItems = []`
@@ -82,13 +84,20 @@ Wenn keine konkreten Daten erkennbar sind: timelineItems = []`
       const id = typeof o.id === 'string' ? o.id.trim() : ''
       const title = typeof o.title === 'string' ? o.title.trim() : ''
       const dueDate = o.dueDate
+      const dueTime = normalizeDueTime(o.dueTime)
       const evidence =
         o.evidence === null || typeof o.evidence === 'string'
           ? (o.evidence as string | null)
           : null
 
       if (!id || !title || !isIsoDate(dueDate)) continue
-      timelineItems.push({ id, title, dueDate, evidence: evidence ?? null })
+      timelineItems.push({
+        id,
+        title,
+        dueDate,
+        ...(dueTime ? { dueTime } : {}),
+        evidence: evidence ?? null,
+      })
     }
 
     return { timelineItems }

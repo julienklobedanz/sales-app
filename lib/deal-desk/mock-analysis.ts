@@ -1,5 +1,7 @@
 /** Demo-Daten für Deal Desk — ersetzen durch API-Pipeline bei Live-Betrieb. */
 
+import type { DealDeskExecutiveBriefingFields } from '@/lib/deal-desk/executive-briefing-fields'
+
 export type BidTeamRoleKey =
   | 'sales_lead'
   | 'solution_manager'
@@ -19,6 +21,9 @@ export type DealDeskRedFlag = {
   title: string
   excerpt: string
   pageHint?: string
+  /** Dateiname des Quell-Dokuments (Vertrag, Anhang, …). */
+  sourceFileName?: string | null
+  sourceDocumentId?: string | null
   markedForLegal?: boolean
 }
 
@@ -50,9 +55,11 @@ export type DealDeskTimelineItem = {
   title: string
   /**
    * ISO-Date aus dem Dokument, Format: YYYY-MM-DD
-   * (Zeitanteil ignoriert für die UI-Countdown-Berechnung)
+   * (Countdown und Kalender-Export basieren auf dem Kalendertag)
    */
   dueDate: string
+  /** Uhrzeit aus dem Dokument (24h, HH:mm) — nur Anzeige, ICS bleibt ganztägig */
+  dueTime?: string | null
   evidence?: string | null
 }
 
@@ -63,10 +70,50 @@ export type DealDeskMockAnalysis = {
   winProbability: number
   icpFitLabel: string
   icpSummary: string
+  executiveBriefing?: DealDeskExecutiveBriefingFields
   redFlags: DealDeskRedFlag[]
   timelineItems: DealDeskTimelineItem[]
   draftRows: DealDeskDraftRow[]
   smeTasks: DealDeskSmeTask[]
+}
+
+export const DEMO_EXECUTIVE_BRIEFING: DealDeskExecutiveBriefingFields = {
+  submissionDeadline: '19.06.2026',
+  desiredServiceStart: '01.09.2026',
+  expectedDealVolume: 'ca. 1.2M € TCV (Laufzeit 36 Monate)',
+  bidInvestment: 'Mittel (Benötigt ca. 5 Personentage aus Presales & Cloud-Architecture)',
+  strategicAssessment:
+    'Die Ausschreibung adressiert Cloud-Migration und SAP-nahe Infrastruktur — exakt euer Kern-ICP (Enterprise IT, DACH, >500 MA). Budgetrahmen und Laufzeit passen zu drei gewonnenen Deals der letzten 18 Monate. Hauptrisiko: aggressive SLA-Pönalen und unbegrenzte Haftungsklausel; ohne Legal-Review kein GO.',
+  techFocus: 'Cloud-Migration (AWS/Azure) + SAP S/4HANA Core-Schnittstellen',
+  governance: 'ISO 27001 erforderlich, zwingende Datenhaltung in der Schweiz (Finanz-Compliance)',
+  economicDecisionMaker: 'Thomas Müller (CPO/CTO, Logistik-Board)',
+  competition: 'Starker Verdacht auf [Mitbewerber A] aufgrund der Formulierung in Kap. 4.2.',
+  ourLeverage: 'Matcht perfekt mit den 2 internen Referenzen (Aurubis & SAP-EMEA-Case).',
+  tenderProcedure: 'Digitaler Upload am 19.06., danach Shortlist-Präsentation im Juli.',
+  keyTakeaways: [
+    'Budget & Laufzeit passen zum ICP-Korridor',
+    'Erhöhtes Risiko: Unbegrenzte Haftung',
+    'Matcht mit 2 internen Referenzen',
+  ],
+  capabilityRisks: [
+    {
+      kind: 'critical',
+      title: 'Unbegrenzte Haftung',
+      detail:
+        '„Auftragnehmer haftet unbeschränkt für direkte und indirekte Schäden, einschließlich entgangenem Gewinn."',
+    },
+    {
+      kind: 'high',
+      title: 'Pönale bei SLA-Bruch',
+      detail: 'Vertragsstrafe 0,5 % des Auftragswerts pro Verzugstag, max. 25 %.',
+    },
+    {
+      kind: 'delivery',
+      title: 'Ressourcen-Engpass',
+      detail:
+        'Gewünschter Servicebeginn am 01.09.2026 erfordert sofortiges Ressourcen-Blocking der Cloud-SMEs für Q3.',
+    },
+  ],
 }
 
 export const BID_TEAM_ROLE_DEFS: { key: BidTeamRoleKey; label: string; description: string }[] = [
@@ -117,6 +164,7 @@ export const DEMO_SAMPLE_RED_FLAGS: DealDeskRedFlag[] = [
     excerpt:
       '„Auftragnehmer haftet unbeschränkt für direkte und indirekte Schäden, einschließlich entgangenem Gewinn."',
     pageHint: 'Anhang B, § 14.2',
+    sourceFileName: 'Vertragsentwurf.pdf',
   },
   {
     id: 'rf-2',
@@ -124,6 +172,7 @@ export const DEMO_SAMPLE_RED_FLAGS: DealDeskRedFlag[] = [
     title: 'Pönale bei SLA-Bruch',
     excerpt: 'Vertragsstrafe 0,5 % des Auftragswerts pro Verzugstag, max. 25 % — ohne Ausschluss höherer Schäden.',
     pageHint: 'Leistungsbeschreibung Kap. 7',
+    sourceFileName: 'Leistungsbeschreibung.pdf',
   },
   {
     id: 'rf-3',
@@ -131,6 +180,7 @@ export const DEMO_SAMPLE_RED_FLAGS: DealDeskRedFlag[] = [
     title: 'Festpreis ohne Change-Request-Mechanismus',
     excerpt: 'Scope als Festpreis definiert; Change Requests nur nach schriftlicher Zustimmung innerhalb von 5 Werktagen.',
     pageHint: 'Kap. 3.4',
+    sourceFileName: 'Vertragsentwurf.pdf',
   },
 ]
 
@@ -159,8 +209,8 @@ export function buildMockDealDeskAnalysis(fileNames: string[]): DealDeskMockAnal
     customerName: 'Logistik AG Schweiz',
     winProbability: 78,
     icpFitLabel: 'Starker ICP-Fit',
-    icpSummary:
-      `Die Ausschreibung adressiert Cloud-Migration und SAP-nahe Infrastruktur — exakt euer Kern-ICP (Enterprise IT, DACH, >500 MA). Budgetrahmen und Laufzeit passen zu drei gewonnenen Deals der letzten 18 Monate. Hauptrisiko: aggressive SLA-Pönalen und unbegrenzte Haftungsklausel; ohne Legal-Review kein GO.${multiDocHint}`,
+    icpSummary: `${DEMO_EXECUTIVE_BRIEFING.strategicAssessment ?? ''}${multiDocHint}`,
+    executiveBriefing: { ...DEMO_EXECUTIVE_BRIEFING },
     redFlags: [
       ...DEMO_SAMPLE_RED_FLAGS.map((f) => ({ ...f })),
       {
@@ -196,21 +246,29 @@ export function buildMockDealDeskAnalysis(fileNames: string[]): DealDeskMockAnal
       }
       return [
         {
+          id: 'tl-qa',
+          title: 'Q&A / Rückfragenfrist',
+          dueDate: '2026-06-12',
+          dueTime: '13:00',
+          evidence: 'Rückfragen bis 12.06.2026, 13:00 Uhr über das Portal.',
+        },
+        {
           id: 'tl-angebot',
-          title: 'Angebotsabgabe',
-          dueDate: iso(addDays(21)),
+          title: 'Angebotsabgabe (Deadline)',
+          dueDate: '2026-06-19',
+          dueTime: '17:00',
           evidence: null,
         },
         {
-          id: 'tl-qa',
-          title: 'Q&A / Rückfragenfrist',
-          dueDate: iso(addDays(14)),
+          id: 'tl-shortlist',
+          title: 'Voraussichtlicher Shortlist-Pitch',
+          dueDate: '2026-07-15',
           evidence: null,
         },
         {
           id: 'tl-vertrag',
-          title: 'Vertrags-/Projektstart',
-          dueDate: iso(addDays(60)),
+          title: 'Geplanter Servicebeginn',
+          dueDate: '2026-09-01',
           evidence: null,
         },
       ]

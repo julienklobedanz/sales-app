@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import { analyzeDealDeskRisks } from '@/lib/deal-desk/deal-desk-risk-analysis'
+import { enrichRedFlagsWithDocuments } from '@/lib/deal-desk/red-flag-document-match'
+import { extractExecutiveBriefingFromRfp } from '@/lib/deal-desk/executive-briefing-extract'
 import { mapRfpAnalysisToDealDeskSnapshot } from '@/lib/deal-desk/map-rfp-to-desk'
 import { defaultWorkspaceState } from '@/lib/deal-desk/workspace-state'
 import { buildDemoDealDeskAnalysis } from '@/lib/deal-desk/mock-analysis'
@@ -450,7 +452,11 @@ export async function POST(req: NextRequest) {
     requirements: extracted.requirements,
   })
 
-  const riskResult = await analyzeDealDeskRisks(apiKey, mergedText, projectName)
+  const [riskResult, briefingResult] = await Promise.all([
+    analyzeDealDeskRisks(apiKey, mergedText, projectName, fileNames),
+    extractExecutiveBriefingFromRfp(apiKey, mergedText, projectName),
+  ])
+
   if ('error' in riskResult) {
     if (isQuotaError(riskResult.error)) {
       return finishWithMockQuotaFallback()
@@ -458,13 +464,37 @@ export async function POST(req: NextRequest) {
     return fail(riskResult.error, 422)
   }
 
+  if ('error' in briefingResult) {
+    if (isQuotaError(briefingResult.error)) {
+      return finishWithMockQuotaFallback()
+    }
+    return fail(briefingResult.error, 422)
+  }
+
+  const { data: projectDocs } = await supabase
+    .from('deal_desk_documents')
+    .select('id, file_name, storage_path, mime_type')
+    .eq('project_id', projectId)
+    .eq('organization_id', orgId)
+
+  const linkedRedFlags = enrichRedFlagsWithDocuments(
+    riskResult.redFlags,
+    (projectDocs ?? []).map((d) => ({
+      id: d.id as string,
+      file_name: d.file_name as string,
+      storage_path: d.storage_path as string | null,
+      mime_type: d.mime_type as string | null,
+    }))
+  )
+
   const snapshot = await mapRfpAnalysisToDealDeskSnapshot({
     apiKey,
     projectName,
     fileNames,
     requirements: extracted.requirements,
     coverage,
-    risk: riskResult,
+    risk: { ...riskResult, redFlags: linkedRedFlags },
+    executiveBriefing: briefingResult,
     timelineItems,
     supabase,
   })

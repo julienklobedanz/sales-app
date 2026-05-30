@@ -14,6 +14,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { TableCell } from "@/components/ui/table"
+import { TableDataCell } from "@/components/table/table-row-align"
 import { ReferenceStatusBadge } from "@/components/reference-status-badge"
 import { AccountCell } from "@/components/table/account-cell"
 import { FilterMenuCheckboxOption } from "@/components/table/filter-menu-checkbox-option"
@@ -857,7 +858,7 @@ export function renderReferenceColumnCell(
   switch (column) {
     case "company":
       return (
-        <TableCell>
+        <TableDataCell>
           <Link
             href={ROUTES.accountsDetail(ref.company_id)}
             onClick={(e) => e.stopPropagation()}
@@ -872,12 +873,12 @@ export function renderReferenceColumnCell(
               }
             />
           </Link>
-        </TableCell>
+        </TableDataCell>
       )
     case "title": {
       const summaryText = String(ref.summary ?? "").trim()
       return (
-        <TableCell className="max-w-[200px] text-foreground">
+        <TableDataCell className="max-w-[200px] text-foreground">
           <div className="flex min-w-0 items-center gap-1.5">
             <HoverCard openDelay={0} closeDelay={100}>
               <HoverCardTrigger asChild>
@@ -904,9 +905,9 @@ export function renderReferenceColumnCell(
                 )}
               </HoverCardContent>
             </HoverCard>
-            <span className="min-w-0 truncate">{ref.title}</span>
+            <span className="min-w-0 truncate leading-none">{ref.title}</span>
           </div>
-        </TableCell>
+        </TableDataCell>
       )
     }
     case "industry": {
@@ -914,34 +915,45 @@ export function renderReferenceColumnCell(
         String(ref.industry ?? '').trim() ||
         companyIndustryById.get(ref.company_id) ||
         ''
-      return <TableCell className="text-muted-foreground">{industry}</TableCell>
+      return (
+        <TableDataCell className="text-muted-foreground">
+          <span className="truncate leading-none">{industry}</span>
+        </TableDataCell>
+      )
     }
     case "status":
       return (
-        <TableCell>
+        <TableDataCell>
           <ReferenceStatusBadge
             status={ref.status}
             customerApprovalStatus={ref.customer_approval_status}
           />
-        </TableCell>
+        </TableDataCell>
       )
     case "project_status":
       return (
-        <TableCell className="text-sm text-muted-foreground">
-          {ref.project_status
-            ? PROJECT_STATUS_LABELS[ref.project_status] ?? ref.project_status
-            : ""}
-        </TableCell>
+        <TableDataCell className="text-sm text-muted-foreground">
+          <span className="leading-none">
+            {ref.project_status
+              ? PROJECT_STATUS_LABELS[ref.project_status] ?? ref.project_status
+              : ''}
+          </span>
+        </TableDataCell>
       )
     case "updated_at":
       return (
-        <TableCell className="text-right text-muted-foreground text-sm">
-          {ref.updated_at ? formatReferenceDate(ref.updated_at, dateFmt) : ""}
-        </TableCell>
+        <TableDataCell
+          className="text-right text-muted-foreground text-sm"
+          alignClassName="justify-end"
+        >
+          <span className="leading-none">
+            {ref.updated_at ? formatReferenceDate(ref.updated_at, dateFmt) : ''}
+          </span>
+        </TableDataCell>
       )
     case "tags":
       return (
-        <TableCell className="max-w-[140px]">
+        <TableDataCell className="max-w-[140px]">
           {ref.tags ? (
             <div className="flex flex-wrap gap-1">
               {ref.tags
@@ -959,33 +971,55 @@ export function renderReferenceColumnCell(
                 ))}
             </div>
           ) : null}
-        </TableCell>
+        </TableDataCell>
       )
     case "country":
-      return <TableCell className="text-muted-foreground">{ref.country ?? ""}</TableCell>
+      return (
+        <TableDataCell className="text-muted-foreground">
+          <span className="leading-none">{ref.country ?? ''}</span>
+        </TableDataCell>
+      )
     case "project_start":
       return (
-        <TableCell className="text-right text-muted-foreground text-sm">
-          {ref.project_start ? formatReferenceDate(ref.project_start, dateFmt) : ""}
-        </TableCell>
+        <TableDataCell
+          className="text-right text-muted-foreground text-sm"
+          alignClassName="justify-end"
+        >
+          <span className="leading-none">
+            {ref.project_start ? formatReferenceDate(ref.project_start, dateFmt) : ''}
+          </span>
+        </TableDataCell>
       )
     case "project_end":
       return (
-        <TableCell className="text-right text-muted-foreground text-sm">
-          {ref.project_end ? formatReferenceDate(ref.project_end, dateFmt) : ""}
-        </TableCell>
+        <TableDataCell
+          className="text-right text-muted-foreground text-sm"
+          alignClassName="justify-end"
+        >
+          <span className="leading-none">
+            {ref.project_end ? formatReferenceDate(ref.project_end, dateFmt) : ''}
+          </span>
+        </TableDataCell>
       )
     case "duration_months":
       return (
-        <TableCell className="text-right text-muted-foreground text-sm">
-          {ref.duration_months != null ? `${ref.duration_months}` : ""}
-        </TableCell>
+        <TableDataCell
+          className="text-right text-muted-foreground text-sm"
+          alignClassName="justify-end"
+        >
+          <span className="leading-none">
+            {ref.duration_months != null ? `${ref.duration_months}` : ''}
+          </span>
+        </TableDataCell>
       )
     case "created_at":
       return (
-        <TableCell className="text-right text-muted-foreground text-sm">
-          {formatReferenceDate(ref.created_at, dateFmt)}
-        </TableCell>
+        <TableDataCell
+          className="text-right text-muted-foreground text-sm"
+          alignClassName="justify-end"
+        >
+          <span className="leading-none">{formatReferenceDate(ref.created_at, dateFmt)}</span>
+        </TableDataCell>
       )
     default:
       return null

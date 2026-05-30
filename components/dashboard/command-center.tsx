@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Briefcase, Building2, FileText, Loader2, Search } from 'lucide-react'
+import { Building2, FileText, Loader2, Search } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRole } from '@/hooks/useRole'
 import { commandCenterSuggestionsForRole } from '@/lib/command-center/suggestions'
@@ -13,13 +13,17 @@ import {
 } from '@/lib/command-center/recents'
 import { firstNameFromFullName, relativeTimeDe } from '@/lib/command-center/format'
 import {
-  formatReferenceListLabel,
-  hrefForGlobalSearchResult,
-  searchGlobalEntities,
-  type GlobalSearchResult,
+  emptyCommandSearchGroups,
+  searchCommandCenter,
+  type CommandSearchGroups,
+  type CommandSearchResult,
 } from '@/lib/command-center/global-search'
+import { hrefForCommandSearchResult } from '@/lib/command-center/search-navigation'
+import { hrefForGlobalSearchResult } from '@/lib/command-center/global-search'
 import { pushCommandRecent } from '@/lib/command-center/push-recent'
-import { COPY } from '@/lib/copy'
+import { getNdaAgreementDownloadUrl } from '@/app/dashboard/accounts/nda-actions'
+import { getComplianceDocumentDownloadUrl } from '@/app/dashboard/settings/compliance-actions'
+import { CommandCenterSearchResults } from '@/components/dashboard/command-center-search-results'
 import { cn } from '@/lib/utils'
 
 function recentTitle(item: CommandRecentItem) {
@@ -30,15 +34,31 @@ function recentTitle(item: CommandRecentItem) {
 }
 
 function RecentIcon({ kind }: { kind: CommandRecentKind }) {
-  if (kind === 'deal') return <Briefcase className="size-4 shrink-0 text-slate-500" aria-hidden />
   if (kind === 'account') return <Building2 className="size-4 shrink-0 text-slate-500" aria-hidden />
   return <FileText className="size-4 shrink-0 text-slate-500" aria-hidden />
 }
 
-function ResultIcon({ kind }: { kind: GlobalSearchResult['kind'] }) {
-  if (kind === 'deal') return <Briefcase className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-  if (kind === 'account') return <Building2 className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-  return <FileText className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+function pushRecentForResult(item: CommandSearchResult) {
+  if (item.kind === 'reference') {
+    pushCommandRecent({
+      kind: 'reference',
+      id: item.id,
+      title: item.title,
+      accountName: item.accountName,
+    })
+    return
+  }
+  if (item.kind === 'account') {
+    pushCommandRecent({ kind: 'account', id: item.id, title: item.title })
+    return
+  }
+  if (item.kind === 'nda') {
+    pushCommandRecent({ kind: 'account', id: item.companyId, title: item.companyName })
+    return
+  }
+  if (item.kind === 'market_signal') {
+    pushCommandRecent({ kind: 'account', id: item.companyId, title: item.companyName })
+  }
 }
 
 type Props = {
@@ -54,7 +74,7 @@ export function CommandCenter({ greetingName }: Props) {
   const [query, setQuery] = useState('')
   const [focused, setFocused] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [results, setResults] = useState<GlobalSearchResult[]>([])
+  const [groups, setGroups] = useState<CommandSearchGroups>(emptyCommandSearchGroups)
   const [recents, setRecents] = useState<CommandRecentItem[]>([])
   const [nowMs] = useState(() => Date.now())
 
@@ -62,7 +82,7 @@ export function CommandCenter({ greetingName }: Props) {
   const suggestions = useMemo(() => commandCenterSuggestionsForRole(role), [role])
   const displayRecents = recents.slice(0, 4)
   const showEmptyPulseCaret = focused && query.length === 0
-  const showResults = focused && query.trim().length > 0
+  const showResultsPanel = focused && query.trim().length > 0
 
   const refreshRecents = useCallback(() => {
     setRecents(loadCommandRecents())
@@ -76,7 +96,7 @@ export function CommandCenter({ greetingName }: Props) {
   useEffect(() => {
     const q = query.trim()
     if (!q) {
-      setResults([])
+      setGroups(emptyCommandSearchGroups())
       setLoading(false)
       return
     }
@@ -84,9 +104,9 @@ export function CommandCenter({ greetingName }: Props) {
     let cancelled = false
     const handle = window.setTimeout(async () => {
       setLoading(true)
-      const next = await searchGlobalEntities(supabase, q)
+      const next = await searchCommandCenter(supabase, q)
       if (!cancelled) {
-        setResults(next)
+        setGroups(next)
         setLoading(false)
       }
     }, 180)
@@ -97,30 +117,35 @@ export function CommandCenter({ greetingName }: Props) {
     }
   }, [query, supabase])
 
-  const grouped = useMemo(() => {
-    return {
-      refs: results.filter((r) => r.kind === 'reference'),
-      accounts: results.filter((r) => r.kind === 'account'),
-      deals: results.filter((r) => r.kind === 'deal'),
-    }
-  }, [results])
-
   function applySuggestion(text: string) {
     setQuery(text)
     inputRef.current?.focus()
   }
 
-  function selectResult(item: GlobalSearchResult) {
-    pushCommandRecent({
-      kind: item.kind,
-      id: item.id,
-      title: item.title,
-      accountName: item.kind === 'reference' ? item.accountName : undefined,
-    })
+  async function selectResult(item: CommandSearchResult) {
+    if (item.kind === 'nda' && item.hasFile) {
+      const dl = await getNdaAgreementDownloadUrl(item.id, item.companyId)
+      if (dl.success) {
+        window.open(dl.url, '_blank', 'noopener,noreferrer')
+      }
+    }
+    if (item.kind === 'certificate' && item.hasFile) {
+      const dl = await getComplianceDocumentDownloadUrl(item.id)
+      if (dl.success) {
+        window.open(dl.url, '_blank', 'noopener,noreferrer')
+        pushRecentForResult(item)
+        refreshRecents()
+        setFocused(false)
+        setQuery('')
+        return
+      }
+    }
+
+    pushRecentForResult(item)
     refreshRecents()
     setFocused(false)
     setQuery('')
-    router.push(hrefForGlobalSearchResult(item))
+    router.push(hrefForCommandSearchResult(item))
   }
 
   function openRecent(item: CommandRecentItem) {
@@ -156,9 +181,9 @@ export function CommandCenter({ greetingName }: Props) {
                 onChange={(e) => setQuery(e.target.value)}
                 onFocus={() => setFocused(true)}
                 onBlur={() => {
-                  window.setTimeout(() => setFocused(false), 160)
+                  window.setTimeout(() => setFocused(false), 180)
                 }}
-                placeholder="Suche nach NDAs, Referenzen, Aufgaben oder System-Einstellungen…"
+                placeholder="Suche nach NDAs, Referenzen, RFPs, Marktsignale…"
                 className={cn(
                   'relative z-[1] w-full min-w-0 bg-transparent text-sm leading-5 text-slate-800 outline-none placeholder:text-slate-400',
                   showEmptyPulseCaret && 'caret-transparent'
@@ -167,67 +192,27 @@ export function CommandCenter({ greetingName }: Props) {
                 spellCheck={false}
                 aria-label="Globale Suche"
                 role="combobox"
-                aria-expanded={showResults}
+                aria-expanded={showResultsPanel}
                 aria-controls="command-center-results"
               />
             </div>
+            {loading && query.trim() ? (
+              <Loader2 className="size-4 shrink-0 animate-spin text-slate-400" aria-hidden />
+            ) : null}
           </div>
 
-          {showResults ? (
+          {showResultsPanel ? (
             <div
               id="command-center-results"
               role="listbox"
-              className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 max-h-[min(360px,50vh)] overflow-y-auto rounded-2xl border border-slate-200/80 bg-white py-2 text-left shadow-lg"
+              className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl animate-in fade-in-50 slide-in-from-top-1 duration-150"
             >
-              {loading ? (
-                <p className="flex items-center gap-2 px-4 py-3 text-sm text-muted-foreground">
-                  <Loader2 className="size-4 animate-spin" aria-hidden />
-                  {COPY.commandPalette.searchLoading}
-                </p>
-              ) : results.length === 0 ? (
-                <p className="px-4 py-3 text-sm text-muted-foreground">
-                  {COPY.commandPalette.searchEmpty}
-                </p>
-              ) : (
-                <div className="space-y-1 px-1">
-                  {grouped.refs.length > 0 ? (
-                    <ResultGroup label="Referenzen">
-                      {grouped.refs.map((r) => (
-                        <ResultRow
-                          key={`ref:${r.id}`}
-                          item={r}
-                          label={formatReferenceListLabel(r.title, r.accountName)}
-                          onSelect={() => selectResult(r)}
-                        />
-                      ))}
-                    </ResultGroup>
-                  ) : null}
-                  {grouped.accounts.length > 0 ? (
-                    <ResultGroup label="Accounts">
-                      {grouped.accounts.map((r) => (
-                        <ResultRow
-                          key={`acc:${r.id}`}
-                          item={r}
-                          label={r.title}
-                          onSelect={() => selectResult(r)}
-                        />
-                      ))}
-                    </ResultGroup>
-                  ) : null}
-                  {grouped.deals.length > 0 ? (
-                    <ResultGroup label="Deals">
-                      {grouped.deals.map((r) => (
-                        <ResultRow
-                          key={`deal:${r.id}`}
-                          item={r}
-                          label={r.title}
-                          onSelect={() => selectResult(r)}
-                        />
-                      ))}
-                    </ResultGroup>
-                  ) : null}
-                </div>
-              )}
+              <CommandCenterSearchResults
+                query={query}
+                loading={loading}
+                groups={groups}
+                onSelect={(item) => void selectResult(item)}
+              />
             </div>
           ) : null}
         </div>
@@ -276,39 +261,5 @@ export function CommandCenter({ greetingName }: Props) {
         </div>
       ) : null}
     </div>
-  )
-}
-
-function ResultGroup({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="px-1">
-      <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-        {label}
-      </p>
-      {children}
-    </div>
-  )
-}
-
-function ResultRow({
-  item,
-  label,
-  onSelect,
-}: {
-  item: GlobalSearchResult
-  label: string
-  onSelect: () => void
-}) {
-  return (
-    <button
-      type="button"
-      role="option"
-      onMouseDown={(e) => e.preventDefault()}
-      onClick={onSelect}
-      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-800 transition-colors hover:bg-slate-50"
-    >
-      <ResultIcon kind={item.kind} />
-      <span className="min-w-0 truncate text-left">{label}</span>
-    </button>
   )
 }

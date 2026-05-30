@@ -37,9 +37,9 @@ export function ReferenceLayoutSwitch({ value, onChange }: Props) {
           )}
         >
           {isInbox ? (
-            <AppIcon icon={LayoutTwoColumnIcon} size={14} className="text-slate-600" />
+            <AppIcon icon={LayoutTwoColumnIcon} size={14} className="text-muted-foreground" />
           ) : (
-            <Table2 className="size-3.5 text-slate-600" aria-hidden />
+            <Table2 className="size-3.5 text-muted-foreground" aria-hidden />
           )}
         </span>
       </button>

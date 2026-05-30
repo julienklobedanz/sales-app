@@ -13,7 +13,7 @@ type DraggableColumnHeadProps = {
   onDragOverColumn: (key: string | null) => void
   onColumnMove: (from: string, to: string) => void
   className?: string
-  /** Ausrichtung des Spalteninhalts (Griff bleibt links) */
+  /** Rechtsbündig: Griff + Titel als Gruppe am rechten Rand (kein Leerraum dazwischen). */
   contentAlign?: "start" | "end"
   children: React.ReactNode
 }
@@ -28,11 +28,13 @@ export function DraggableColumnHead({
   children,
 }: DraggableColumnHeadProps) {
   const isDropTarget = dragOverColumn === columnKey
+  const alignEnd = contentAlign === "end"
 
   return (
     <TableHead
       className={cn(
         "h-9 text-xs font-semibold text-muted-foreground",
+        alignEnd && "text-right",
         className,
         isDropTarget && "bg-primary/10 ring-1 ring-inset ring-primary/40"
       )}
@@ -59,8 +61,8 @@ export function DraggableColumnHead({
     >
       <div
         className={cn(
-          "flex min-w-0 items-center gap-1",
-          contentAlign === "end" && "justify-end"
+          "flex w-full min-w-0 items-center gap-1",
+          alignEnd && "justify-end"
         )}
       >
         <button
@@ -78,14 +80,7 @@ export function DraggableColumnHead({
         >
           <AppIcon icon={DragDropHorizontalIcon} size={14} />
         </button>
-        <div
-          className={cn(
-            "flex min-w-0 flex-1 items-center gap-1",
-            contentAlign === "end" && "justify-end"
-          )}
-        >
-          {children}
-        </div>
+        <div className="flex min-w-0 items-center gap-1">{children}</div>
       </div>
     </TableHead>
   )

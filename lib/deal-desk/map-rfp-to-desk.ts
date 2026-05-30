@@ -8,6 +8,7 @@ import type {
   DealDeskTimelineItem,
 } from '@/lib/deal-desk/mock-analysis'
 import type { DealDeskRiskAnalysisResult } from '@/lib/deal-desk/deal-desk-risk-analysis'
+import type { DealDeskExecutiveBriefingFields } from '@/lib/deal-desk/executive-briefing-fields'
 import type { RfpCoverageRow } from '@/lib/rfp-coverage'
 import type { ExtractedRfpRequirement } from '@/lib/rfp-requirements'
 import { generateDealDeskAnswerForRequirement } from '@/lib/deal-desk/generate-desk-answer'
@@ -106,11 +107,21 @@ export async function mapRfpAnalysisToDealDeskSnapshot(params: {
   requirements: ExtractedRfpRequirement[]
   coverage: RfpCoverageRow[]
   risk: DealDeskRiskAnalysisResult
+  executiveBriefing: DealDeskExecutiveBriefingFields
   timelineItems: DealDeskTimelineItem[]
   supabase: SupabaseClient
 }): Promise<DealDeskMockAnalysis> {
-  const { apiKey, projectName, fileNames, requirements, coverage, risk, timelineItems, supabase } =
-    params
+  const {
+    apiKey,
+    projectName,
+    fileNames,
+    requirements,
+    coverage,
+    risk,
+    executiveBriefing,
+    timelineItems,
+    supabase,
+  } = params
   const primary = fileNames[0] ?? 'RFP-Paket'
   const docLabel =
     fileNames.length === 1
@@ -164,7 +175,7 @@ export async function mapRfpAnalysisToDealDeskSnapshot(params: {
 
   const matchedRows = draftRows.filter((r) => r.reference).length
   const icpSummary = [
-    risk.icpSummary,
+    executiveBriefing.strategicAssessment?.trim() || risk.icpSummary,
     `${requirements.length} Anforderungen aus den Unterlagen extrahiert`,
     matchedRows > 0
       ? `, ${matchedRows} mit interner Referenz abgedeckt (≥${Math.round(DESK_COVER_THRESHOLD * 100)} % Match).`
@@ -178,6 +189,7 @@ export async function mapRfpAnalysisToDealDeskSnapshot(params: {
     winProbability,
     icpFitLabel: risk.icpFitLabel,
     icpSummary,
+    executiveBriefing,
     redFlags: risk.redFlags,
     draftRows,
     smeTasks,

@@ -96,8 +96,15 @@ export async function getNdaAgreementsByCompanyId(
       .eq('company_id', companyId)
       .eq('organization_id', auth.orgId)
       .order('created_at', { ascending: false })
-    data = fallback.data
-    error = fallback.error
+    if (fallback.error) {
+      error = fallback.error
+    } else {
+      const rows = (fallback.data ?? []).map((row) => ({
+        ...(row as Omit<NdaAgreementRow, 'title'>),
+        title: null,
+      }))
+      return { success: true, rows: rows as NdaAgreementRow[] }
+    }
   }
 
   if (error) {

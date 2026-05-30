@@ -8,6 +8,7 @@ import { enrichReferencedCompaniesMissingBrandfetch } from '@/app/dashboard/refe
 import { DEV_ROLE_COOKIE, parseAppRoleCookie } from '@/lib/dev-role-preview'
 import type { AppRole } from '@/hooks/useRole'
 import { normalizeOrgDateDisplayFormat } from '@/lib/format'
+import { listComplianceDocuments } from '@/app/dashboard/settings/compliance-actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -80,6 +81,9 @@ export default async function EvidenceHubPage() {
     (orgFmtResult.data as { date_display_format?: string | null } | null)?.date_display_format
   )
 
+  const complianceListed = await listComplianceDocuments()
+  const complianceDocuments = complianceListed.success ? complianceListed.rows : []
+
   return (
     <DashboardOverview
       references={references}
@@ -90,6 +94,7 @@ export default async function EvidenceHubPage() {
       contacts={contactsResult.data ?? []}
       externalContacts={externalContactsResult.data ?? []}
       orgDateDisplayFormat={orgDateDisplayFormat}
+      complianceDocuments={complianceDocuments}
     />
   )
 }

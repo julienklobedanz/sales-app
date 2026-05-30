@@ -11,6 +11,7 @@ import {
   getActiveDealsByCompanyId,
 } from '../actions'
 import { getNdaAgreementsByCompanyId } from '../nda-actions'
+import { fetchExternalContactsForCompany } from '@/lib/accounts/external-contacts-fetch'
 
 export default async function CompanyDetailPage({
   params,
@@ -55,53 +56,7 @@ export default async function CompanyDetailPage({
   async function getExternalContactsSafe() {
     const orgId = profile.organization_id
     if (!orgId) return []
-    try {
-      const { data, error } = await supabase
-        .from('external_contacts')
-        .select('id, company_id, first_name, last_name, email, role, phone, last_interaction_at, created_at, updated_at')
-        .eq('company_id', id)
-        .eq('organization_id', orgId)
-        .order('created_at', { ascending: true })
-
-      if (error) throw error
-      return data
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e)
-      const disableLastInteraction = msg.toLowerCase().includes('last_interaction_at')
-      const disablePhone = msg.toLowerCase().includes('phone') && msg.toLowerCase().includes('column')
-      if (!disableLastInteraction && !disablePhone) {
-        console.error('[accounts/[id]] external_contacts query failed:', e)
-        return []
-      }
-
-      // Schema-Cache-Fallback: Wenn (nach Migration) Spalten noch nicht im PostgREST-Cache bekannt sind.
-      const selectBase = 'id, company_id, first_name, last_name, email, role'
-      const selectPhone = disablePhone ? '' : ', phone'
-      const selectLastInteraction = disableLastInteraction ? '' : ', last_interaction_at'
-      const select = `${selectBase}${selectPhone}${selectLastInteraction}, created_at, updated_at`
-
-      const { data, error } = await supabase
-        .from('external_contacts')
-        .select(select)
-        .eq('company_id', id)
-        .eq('organization_id', orgId)
-        .order('created_at', { ascending: true })
-
-      if (error) {
-        console.error('[accounts/[id]] external_contacts fallback query failed:', error)
-        return []
-      }
-
-      // Damit unsere TS-Typen konsistent bleiben: fehlende Spalten auf Default mappen.
-      const rows = (data ?? []) as unknown as Record<string, unknown>[]
-      return rows.map((r) => {
-        return {
-          ...r,
-          phone: disablePhone ? null : ((r.phone as string | null | undefined) ?? null),
-          last_interaction_at: disableLastInteraction ? null : ((r.last_interaction_at as string | null | undefined) ?? null),
-        }
-      })
-    }
+    return fetchExternalContactsForCompany(supabase, id, orgId)
   }
 
   const [
