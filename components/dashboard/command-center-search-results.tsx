@@ -23,7 +23,6 @@ import {
   type CommandSearchGroups,
   type CommandSearchResult,
 } from '@/lib/command-center/global-search'
-import { cn } from '@/lib/utils'
 
 const GROUP_HEADING_CLASS =
   'text-[10px] font-bold uppercase tracking-wider text-slate-400 px-4 py-2 bg-slate-50/50 border-b border-slate-100 first:border-t-0'
@@ -54,7 +53,7 @@ export function CommandCenterSearchResults({ query, loading, groups, onSelect }:
 
         {showEmpty ? (
           <CommandEmpty className="px-4 py-10 text-center text-sm text-slate-500">
-            Noch keine Treffer für „{trimmed}" gefunden. Versuche es mit einem anderen Begriff.
+            Noch keine Treffer für „{trimmed}“ gefunden. Versuche es mit einem anderen Begriff.
           </CommandEmpty>
         ) : null}
 

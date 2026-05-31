@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
@@ -58,11 +58,6 @@ export function ComplianceUploadDialog({ open, onOpenChange }: Props) {
         : (result.types[0]?.slug ?? 'iso_27001')
     )
   }, [])
-
-  useEffect(() => {
-    if (!open) return
-    void loadTypes()
-  }, [open, loadTypes])
 
   function reset() {
     setDocumentType('iso_27001')
@@ -127,7 +122,8 @@ export function ComplianceUploadDialog({ open, onOpenChange }: Props) {
       <Dialog
         open={open}
         onOpenChange={(next) => {
-          if (!next) reset()
+          if (next) void loadTypes()
+          else reset()
           onOpenChange(next)
         }}
       >

@@ -315,7 +315,7 @@ export function CompanyDetailNdaPopover({
               <ul className="space-y-2">
                 {agreements.map((row) => (
                   <NdaAgreementEntry
-                    key={row.id}
+                    key={`${row.id}:${row.document_version ?? ''}:${row.signed_at ?? ''}:${row.file_storage_path ?? ''}`}
                     row={row}
                     canManage={canManage}
                     uploadOpen={uploadPanelId === row.id}
@@ -327,7 +327,6 @@ export function CompanyDetailNdaPopover({
                     fileInputRef={(el) => {
                       fileInputRefs.current[row.id] = el
                     }}
-                    onPickFile={() => fileInputRefs.current[row.id]?.click()}
                     onFileSelected={(file, meta) => void handleUpload(row.id, file, meta)}
                     onDownload={() => void handleDownload(row.id)}
                     onDelete={() => setDeleteTarget(row)}
@@ -479,7 +478,6 @@ function NdaAgreementEntry({
   uploading,
   downloading,
   fileInputRef,
-  onPickFile,
   onFileSelected,
   onDownload,
   onDelete,
@@ -491,7 +489,6 @@ function NdaAgreementEntry({
   uploading: boolean
   downloading: boolean
   fileInputRef: (el: HTMLInputElement | null) => void
-  onPickFile: () => void
   onFileSelected: (file: File, meta: { version: string; signedAt: string }) => void
   onDownload: () => void
   onDelete: () => void
@@ -499,11 +496,6 @@ function NdaAgreementEntry({
   const [version, setVersion] = useState(row.document_version ?? '')
   const [signedAt, setSignedAt] = useState(row.signed_at ?? '')
   const hasFile = Boolean(row.file_storage_path)
-
-  useEffect(() => {
-    setVersion(row.document_version ?? '')
-    setSignedAt(row.signed_at ?? '')
-  }, [row.document_version, row.signed_at])
 
   return (
     <li className="rounded-xl border border-border/70 bg-card/50">

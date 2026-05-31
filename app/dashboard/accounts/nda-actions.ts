@@ -86,12 +86,14 @@ export async function getNdaAgreementsByCompanyId(
   const companyCheck = await assertCompanyInOrg(auth.supabase, companyId, auth.orgId)
   if (!companyCheck.ok) return { success: false, error: companyCheck.error }
 
-  let { data, error } = await auth.supabase
+  const { data, error: initialError } = await auth.supabase
     .from('nda_agreements')
     .select(NDA_AGREEMENT_SELECT_WITH_TITLE)
     .eq('company_id', companyId)
     .eq('organization_id', auth.orgId)
     .order('created_at', { ascending: false })
+
+  let error = initialError
 
   if (error && isMissingNdaTitleColumn(error.message)) {
     const fallback = await auth.supabase

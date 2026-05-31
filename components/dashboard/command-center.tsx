@@ -75,7 +75,7 @@ export function CommandCenter({ greetingName }: Props) {
   const [focused, setFocused] = useState(false)
   const [loading, setLoading] = useState(false)
   const [groups, setGroups] = useState<CommandSearchGroups>(emptyCommandSearchGroups)
-  const [recents, setRecents] = useState<CommandRecentItem[]>([])
+  const [recents, setRecents] = useState<CommandRecentItem[]>(() => loadCommandRecents())
   const [nowMs] = useState(() => Date.now())
 
   const firstName = firstNameFromFullName(greetingName)
@@ -89,17 +89,12 @@ export function CommandCenter({ greetingName }: Props) {
   }, [])
 
   useEffect(() => {
-    refreshRecents()
     inputRef.current?.focus()
-  }, [refreshRecents])
+  }, [])
 
   useEffect(() => {
     const q = query.trim()
-    if (!q) {
-      setGroups(emptyCommandSearchGroups())
-      setLoading(false)
-      return
-    }
+    if (!q) return
 
     let cancelled = false
     const handle = window.setTimeout(async () => {
@@ -137,6 +132,8 @@ export function CommandCenter({ greetingName }: Props) {
         refreshRecents()
         setFocused(false)
         setQuery('')
+        setGroups(emptyCommandSearchGroups())
+        setLoading(false)
         return
       }
     }
@@ -145,6 +142,8 @@ export function CommandCenter({ greetingName }: Props) {
     refreshRecents()
     setFocused(false)
     setQuery('')
+    setGroups(emptyCommandSearchGroups())
+    setLoading(false)
     router.push(hrefForCommandSearchResult(item))
   }
 
@@ -178,7 +177,14 @@ export function CommandCenter({ greetingName }: Props) {
                 ref={inputRef}
                 type="text"
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => {
+                  const v = e.target.value
+                  setQuery(v)
+                  if (!v.trim()) {
+                    setGroups(emptyCommandSearchGroups())
+                    setLoading(false)
+                  }
+                }}
                 onFocus={() => setFocused(true)}
                 onBlur={() => {
                   window.setTimeout(() => setFocused(false), 180)

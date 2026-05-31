@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Check, ChevronDown, Loader2, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -44,12 +44,12 @@ export function ComplianceDocumentTypeCombobox({
   const inputRef = useRef<HTMLInputElement>(null)
 
   const selected = options.find((o) => o.slug === value)
+  const inputValue = open ? query : (selected?.label ?? '')
 
-  useEffect(() => {
-    if (!open) {
-      setQuery(selected?.label ?? '')
-    }
-  }, [open, selected?.label])
+  function handleOpenChange(next: boolean) {
+    if (next) setQuery(selected?.label ?? '')
+    setOpen(next)
+  }
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -82,7 +82,7 @@ export function ComplianceDocumentTypeCombobox({
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <div
           className={cn(
@@ -93,7 +93,7 @@ export function ComplianceDocumentTypeCombobox({
           <Input
             ref={inputRef}
             id="compliance-doc-type"
-            value={query}
+            value={inputValue}
             onChange={(e) => {
               setQuery(e.target.value)
               setOpen(true)

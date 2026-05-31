@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Loader2, Pencil, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -58,12 +58,14 @@ export function ComplianceDocumentTypesDialog({ open, onOpenChange, onTypesChang
     onTypesChange?.(result.types)
   }, [onTypesChange])
 
-  useEffect(() => {
-    if (!open) return
-    void reload()
-    setEditingId(null)
-    setNewLabel('')
-  }, [open, reload])
+  function handleOpenChange(next: boolean) {
+    onOpenChange(next)
+    if (next) {
+      setEditingId(null)
+      setNewLabel('')
+      void reload()
+    }
+  }
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
@@ -109,7 +111,7 @@ export function ComplianceDocumentTypesDialog({ open, onOpenChange, onTypesChang
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader className="space-y-2 pb-2">
           <DialogTitle>Dokumenttypen verwalten</DialogTitle>

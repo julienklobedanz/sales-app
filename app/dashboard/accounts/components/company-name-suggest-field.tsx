@@ -44,12 +44,7 @@ export function CompanyNameSuggestField({
     open && !disabled && trimmed.length > 0
 
   useEffect(() => {
-    if (!trimmed) {
-      setSuggestions([])
-      setSearchHint(null)
-      setSearching(false)
-      return
-    }
+    if (!trimmed) return
 
     const debounce = window.setTimeout(() => {
       const reqId = ++searchAbortRef.current
@@ -85,8 +80,15 @@ export function CompanyNameSuggestField({
         type="text"
         value={value}
         onChange={(e) => {
-          onValueChange(e.target.value)
+          const next = e.target.value
+          onValueChange(next)
           setOpen(true)
+          if (!next.trim()) {
+            searchAbortRef.current += 1
+            setSuggestions([])
+            setSearchHint(null)
+            setSearching(false)
+          }
         }}
         onFocus={() => {
           if (trimmed.length > 0) setOpen(true)
@@ -114,9 +116,11 @@ export function CompanyNameSuggestField({
           {suggestions.map((s) => {
             const isExisting = s.source === 'local'
             return (
-              <li key={s.id} role="option">
+              <li key={s.id}>
                 <button
                   type="button"
+                  role="option"
+                  aria-selected={false}
                   className={cn(
                     'flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-accent hover:text-accent-foreground',
                     isExisting && 'bg-emerald-50/50 dark:bg-emerald-950/20'
