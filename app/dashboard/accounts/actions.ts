@@ -26,13 +26,8 @@ export type CompanyStrategyRow = {
   updated_at: string | null
 }
 
-export type StakeholderRole =
-  | 'economic_buyer'
-  | 'champion'
-  | 'blocker'
-  | 'technical_buyer'
-  | 'user_buyer'
-  | 'unknown'
+export type { StakeholderRole } from '@/lib/accounts/stakeholder-role'
+import type { StakeholderRole } from '@/lib/accounts/stakeholder-role'
 
 export type StakeholderRow = {
   id: string
@@ -521,10 +516,44 @@ export type ExternalContactRow = {
   last_name: string | null
   email: string | null
   phone: string | null
+  /** Jobtitel (z. B. CIO), nicht Miller-Heiman-Rolle */
   role: string | null
+  buying_center_role?: StakeholderRole | null
   last_interaction_at?: string | null
   created_at: string
   updated_at: string | null
+}
+
+export async function updateExternalContactBuyingCenterRole(
+  id: string,
+  role: StakeholderRole
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createServerSupabaseClient()
+  const { data: row } = await supabase
+    .from('external_contacts')
+    .select('company_id')
+    .eq('id', id)
+    .maybeSingle()
+
+  const { error } = await supabase
+    .from('external_contacts')
+    .update({ buying_center_role: role, updated_at: new Date().toISOString() })
+    .eq('id', id)
+
+  if (error) {
+    const msg = error.message ?? ''
+    if (/buying_center_role/i.test(msg)) {
+      return {
+        success: false,
+        error:
+          'Buying-Center-Rolle für Referenz-Kontakte ist in der Datenbank noch nicht verfügbar. Bitte Migration ausführen.',
+      }
+    }
+    return { success: false, error: msg }
+  }
+
+  if (row?.company_id) revalidatePath(ROUTES.accountsDetail(row.company_id as string))
+  return { success: true }
 }
 
 export async function getContactsByCompanyId(companyId: string): Promise<ContactPersonRow[]> {

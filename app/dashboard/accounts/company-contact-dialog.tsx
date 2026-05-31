@@ -18,16 +18,12 @@ type Props = {
   setCLast: (v: string) => void
   cEmail: string
   setCEmail: (v: string) => void
-  cPosition: string
-  setCPosition: (v: string) => void
   cPhone: string
   setCPhone: (v: string) => void
   cLinkedIn: string
   setCLinkedIn: (v: string) => void
   cRole: string
   setCRole: (v: string) => void
-  cLastInteraction: string
-  setCLastInteraction: (v: string) => void
   cIsRefApprovalContact: boolean
   setCIsRefApprovalContact: (v: boolean) => void
   onSave: () => void
@@ -45,16 +41,12 @@ export function CompanyContactDialog({
   setCLast,
   cEmail,
   setCEmail,
-  cPosition,
-  setCPosition,
   cPhone,
   setCPhone,
   cLinkedIn,
   setCLinkedIn,
   cRole,
   setCRole,
-  cLastInteraction,
-  setCLastInteraction,
   cIsRefApprovalContact,
   setCIsRefApprovalContact,
   onSave,
@@ -79,17 +71,17 @@ export function CompanyContactDialog({
             <Input value={cLast} onChange={(e) => setCLast(e.target.value)} disabled={saving} />
           </div>
           <div className="grid gap-2">
-            <Label>E-Mail</Label>
-            <Input value={cEmail} onChange={(e) => setCEmail(e.target.value)} disabled={saving} />
+            <Label>Rolle</Label>
+            <Input
+              value={cRole}
+              onChange={(e) => setCRole(e.target.value)}
+              disabled={saving}
+              placeholder="z. B. Economic Buyer (optional)"
+            />
           </div>
           <div className="grid gap-2">
-            <Label>Position</Label>
-            <Input
-              value={cPosition}
-              onChange={(e) => setCPosition(e.target.value)}
-              disabled={saving}
-              placeholder="z. B. Head of Procurement"
-            />
+            <Label>E-Mail</Label>
+            <Input value={cEmail} onChange={(e) => setCEmail(e.target.value)} disabled={saving} />
           </div>
           <div className="grid gap-2">
             <Label>Telefon</Label>
@@ -109,15 +101,6 @@ export function CompanyContactDialog({
               placeholder="https://… (optional)"
             />
           </div>
-          <div className="grid gap-2">
-            <Label>Rolle</Label>
-            <Input
-              value={cRole}
-              onChange={(e) => setCRole(e.target.value)}
-              disabled={saving}
-              placeholder="z. B. Economic Buyer (optional)"
-            />
-          </div>
           <div className="flex items-start gap-3 rounded-lg border border-border/80 bg-muted/15 px-3 py-3">
             <Checkbox
               id="ref-approval-contact"
@@ -133,15 +116,6 @@ export function CompanyContactDialog({
                 Pro Account ist nur eine Person wählbar (ersetzt die vorherige Zuordnung).
               </span>
             </label>
-          </div>
-          <div className="grid gap-2">
-            <Label>Letzte Interaktion</Label>
-            <Input
-              type="date"
-              value={cLastInteraction}
-              onChange={(e) => setCLastInteraction(e.target.value)}
-              disabled={saving}
-            />
           </div>
         </div>
         <DialogFooter>

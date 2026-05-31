@@ -33,7 +33,6 @@ import {
 } from "@hugeicons/core-free-icons"
 import { AppIcon } from "@/lib/icons"
 import Link from "next/link"
-import { Eye } from "lucide-react"
 
 import type { ReferenceRow } from "../actions"
 
@@ -878,35 +877,31 @@ export function renderReferenceColumnCell(
     case "title": {
       const summaryText = String(ref.summary ?? "").trim()
       return (
-        <TableDataCell className="max-w-[200px] text-foreground">
-          <div className="flex min-w-0 items-center gap-1.5">
-            <HoverCard openDelay={0} closeDelay={100}>
-              <HoverCardTrigger asChild>
-                <button
-                  type="button"
-                  className="inline-flex shrink-0 rounded-sm p-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  aria-label="Zusammenfassung anzeigen"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Eye className="size-3.5" strokeWidth={2} aria-hidden />
-                </button>
-              </HoverCardTrigger>
-              <HoverCardContent
-                align="start"
-                className="w-[min(100vw-2rem,380px)] max-h-[260px] overflow-y-auto"
+        <TableDataCell className="max-w-[min(100%,420px)] min-w-[140px]">
+          <HoverCard openDelay={200} closeDelay={80}>
+            <HoverCardTrigger asChild>
+              <span
+                className="block min-w-0 cursor-default truncate text-sm font-semibold leading-snug text-foreground decoration-foreground/30 underline-offset-2 hover:underline"
+                title={ref.title}
               >
-                {summaryText ? (
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{summaryText}</p>
-                ) : (
-                  <p className="text-sm leading-relaxed text-muted-foreground">
-                    Noch keine Kurz-Zusammenfassung hinterlegt. Sie wird beim Anlegen der Referenz automatisch
-                    ergänzt, sobald ausreichend Kontext vorliegt — oder kann in der Referenz bearbeitet werden.
-                  </p>
-                )}
-              </HoverCardContent>
-            </HoverCard>
-            <span className="min-w-0 truncate leading-none">{ref.title}</span>
-          </div>
+                {ref.title}
+              </span>
+            </HoverCardTrigger>
+            <HoverCardContent
+              align="start"
+              className="w-[min(100vw-2rem,380px)] max-h-[260px] overflow-y-auto"
+            >
+              <p className="mb-2 text-xs font-medium text-muted-foreground">Projekt-Zusammenfassung</p>
+              {summaryText ? (
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{summaryText}</p>
+              ) : (
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  Noch keine Kurz-Zusammenfassung hinterlegt. Sie wird beim Anlegen der Referenz automatisch
+                  ergänzt, sobald ausreichend Kontext vorliegt — oder kann in der Referenz bearbeitet werden.
+                </p>
+              )}
+            </HoverCardContent>
+          </HoverCard>
         </TableDataCell>
       )
     }

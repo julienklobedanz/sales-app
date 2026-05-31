@@ -17,6 +17,7 @@ import {
   deleteStakeholder,
   setCompanyInternalReferenceApprovalContact,
   updateContactPerson,
+  updateExternalContactBuyingCenterRole,
   updateStakeholder,
   upsertCompanyStrategy,
 } from './actions'
@@ -36,7 +37,7 @@ export function CompanyDetailClient({
   strategy: initialStrategy,
   stakeholders: initialStakeholders,
   internalContacts: initialInternalContacts,
-  externalContacts,
+  externalContacts: initialExternalContacts,
   references,
   activeDeals,
   marketSignals,
@@ -85,6 +86,7 @@ export function CompanyDetailClient({
   })
 
   const [stakeholders, setStakeholders] = useState(initialStakeholders)
+  const [externalContacts, setExternalContacts] = useState(initialExternalContacts)
   const [internalContacts, setInternalContacts] = useState(initialInternalContacts)
   const [internalRefApprovalContactId, setInternalRefApprovalContactId] = useState<string | null>(
     company.internal_reference_approval_contact_id ?? null
@@ -117,9 +119,7 @@ export function CompanyDetailClient({
   const [cPhone, setCPhone] = useState('')
   const [cRole, setCRole] = useState('')
   const [contactSaving, setContactSaving] = useState(false)
-  const [cPosition, setCPosition] = useState('')
   const [cLinkedIn, setCLinkedIn] = useState('')
-  const [cLastInteraction, setCLastInteraction] = useState('')
   const [cIsRefApprovalContact, setCIsRefApprovalContact] = useState(false)
 
   const saveStrategy = async (opts?: { silent?: boolean }) => {
@@ -252,10 +252,9 @@ export function CompanyDetailClient({
     setCLast(c?.last_name ?? '')
     setCEmail(c?.email ?? '')
     setCPhone(c?.phone ?? '')
-    setCRole(c?.role ?? '')
-    setCPosition((c as unknown as { position?: string | null })?.position ?? '')
+    const legacyPosition = (c as unknown as { position?: string | null })?.position?.trim()
+    setCRole(c?.role?.trim() || legacyPosition || '')
     setCLinkedIn((c as unknown as { linkedin_url?: string | null })?.linkedin_url ?? '')
-    setCLastInteraction(((c as unknown as { last_interaction_at?: string | null })?.last_interaction_at ?? '')?.slice(0, 10))
     setContactOpen(true)
   }
 
@@ -270,9 +269,7 @@ export function CompanyDetailClient({
           email: cEmail.trim() || null,
           phone: cPhone.trim() || null,
           linkedin_url: cLinkedIn.trim() || null,
-          last_interaction_at: cLastInteraction || null,
           role: cRole.trim() || null,
-          position: cPosition.trim() || null,
         })
         if (!res.success) return toast.error(res.error ?? 'Speichern fehlgeschlagen.')
         if (cIsRefApprovalContact) {
@@ -303,7 +300,6 @@ export function CompanyDetailClient({
                   phone: cPhone.trim() || null,
                   linkedin_url: cLinkedIn.trim() || null,
                   role: cRole.trim() || null,
-                  position: cPosition.trim() || null,
                 } as ContactPersonRow)
               : p
           )
@@ -315,9 +311,7 @@ export function CompanyDetailClient({
           email: cEmail.trim() || null,
           phone: cPhone.trim() || null,
           linkedin_url: cLinkedIn.trim() || null,
-          last_interaction_at: cLastInteraction || null,
           role: cRole.trim() || null,
-          position: cPosition.trim() || null,
         })
         if (!res.success) return toast.error(res.error ?? 'Speichern fehlgeschlagen.')
         const created = res.contact
@@ -390,6 +384,7 @@ export function CompanyDetailClient({
             strategyFields={strategyFields}
             saveStrategy={saveStrategy}
             stakeholders={stakeholders}
+            externalContacts={externalContacts}
             marketSignals={marketSignals}
             onSetStakeholderRole={async (id, role) => {
               const res = await updateStakeholder(id, { role })
@@ -397,7 +392,32 @@ export function CompanyDetailClient({
                 toast.error(res.error ?? 'Speichern fehlgeschlagen.')
                 return
               }
-              setStakeholders((prev) => prev.map((s) => (s.id === id ? ({ ...s, role } as StakeholderRow) : s)))
+              setStakeholders((prev) =>
+                prev.map((s) => (s.id === id ? ({ ...s, role } as StakeholderRow) : s))
+              )
+              if (role !== 'unknown') {
+                setExternalContacts((prev) =>
+                  prev.map((c) =>
+                    c.buying_center_role === role ? { ...c, buying_center_role: 'unknown' as const } : c
+                  )
+                )
+              }
+              toast.success('Rolle aktualisiert.')
+            }}
+            onSetExternalBuyingCenterRole={async (id, role) => {
+              const res = await updateExternalContactBuyingCenterRole(id, role)
+              if (!res.success) {
+                toast.error(res.error ?? 'Speichern fehlgeschlagen.')
+                return
+              }
+              setExternalContacts((prev) =>
+                prev.map((c) => (c.id === id ? { ...c, buying_center_role: role } : c))
+              )
+              if (role !== 'unknown') {
+                setStakeholders((prev) =>
+                  prev.map((s) => (s.role === role ? ({ ...s, role: 'unknown' as const } as StakeholderRow) : s))
+                )
+              }
               toast.success('Rolle aktualisiert.')
             }}
           />
@@ -409,6 +429,7 @@ export function CompanyDetailClient({
             marketSignals={marketSignals}
             internalContacts={internalContacts}
             externalContacts={externalContacts}
+            companyName={company.name}
             organizationName={organizationName}
             internalReferenceApprovalContactId={internalRefApprovalContactId}
             canEdit={canEditBuyingCenter}
@@ -470,16 +491,12 @@ export function CompanyDetailClient({
         setCLast={setCLast}
         cEmail={cEmail}
         setCEmail={setCEmail}
-        cPosition={cPosition}
-        setCPosition={setCPosition}
         cPhone={cPhone}
         setCPhone={setCPhone}
         cLinkedIn={cLinkedIn}
         setCLinkedIn={setCLinkedIn}
         cRole={cRole}
         setCRole={setCRole}
-        cLastInteraction={cLastInteraction}
-        setCLastInteraction={setCLastInteraction}
         cIsRefApprovalContact={cIsRefApprovalContact}
         setCIsRefApprovalContact={setCIsRefApprovalContact}
         onSave={saveContact}

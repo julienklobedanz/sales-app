@@ -5,9 +5,10 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { LinkIcon, Loader } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
-import type { StakeholderRole, StakeholderRow } from './actions'
+import type { ExternalContactRow, StakeholderRole, StakeholderRow } from './actions'
 import type { CompanyDetailClientProps } from './company-detail-types'
 import { formatDateUtcDe } from '@/lib/format'
+import { externalContactJobTitle } from './company-contact-action-buttons'
 import {
   Select,
   SelectContent,
@@ -19,6 +20,20 @@ import {
 function autoResizeTextarea(el: HTMLTextAreaElement) {
   el.style.height = '0px'
   el.style.height = `${Math.max(el.scrollHeight, 36)}px`
+}
+
+function externalContactDisplayName(c: ExternalContactRow): string {
+  return [c.first_name, c.last_name].filter(Boolean).join(' ') || '—'
+}
+
+function externalSelectValue(id: string): string {
+  return `external:${id}`
+}
+
+function parseSelectValue(value: string): { kind: 'none' } | { kind: 'stakeholder'; id: string } | { kind: 'external'; id: string } {
+  if (value === '__none__') return { kind: 'none' }
+  if (value.startsWith('external:')) return { kind: 'external', id: value.slice('external:'.length) }
+  return { kind: 'stakeholder', id: value }
 }
 
 type StrategyField = {
@@ -34,8 +49,10 @@ type Props = {
   strategyFields: StrategyField[]
   saveStrategy: (opts?: { silent?: boolean }) => Promise<void>
   stakeholders: StakeholderRow[]
+  externalContacts: ExternalContactRow[]
   marketSignals: CompanyDetailClientProps['marketSignals']
   onSetStakeholderRole: (id: string, role: StakeholderRole) => Promise<void>
+  onSetExternalBuyingCenterRole: (id: string, role: StakeholderRole) => Promise<void>
 }
 
 export function CompanyDetailStrategyTab({
@@ -44,22 +61,63 @@ export function CompanyDetailStrategyTab({
   strategyFields,
   saveStrategy,
   stakeholders,
+  externalContacts,
   marketSignals,
   onSetStakeholderRole,
+  onSetExternalBuyingCenterRole,
 }: Props) {
-  const byRole = (role: StakeholderRole) => stakeholders.filter((s) => s.role === role)
-  const selectedByRole = (role: StakeholderRole) => byRole(role)[0]?.id ?? '__none__'
+  const stakeholderByRole = (role: StakeholderRole) => stakeholders.filter((s) => s.role === role)
+  const externalByRole = (role: StakeholderRole) =>
+    externalContacts.filter((c) => (c.buying_center_role ?? 'unknown') === role)
+
+  function selectedValueForRole(role: StakeholderRole): string {
+    const ext = externalByRole(role)[0]
+    if (ext) return externalSelectValue(ext.id)
+    const st = stakeholderByRole(role)[0]
+    return st?.id ?? '__none__'
+  }
+
+  function pickedLabelForRole(role: StakeholderRole): { name: string; title?: string | null; tag?: string } | null {
+    const ext = externalByRole(role)[0]
+    if (ext) {
+      return {
+        name: externalContactDisplayName(ext),
+        title: externalContactJobTitle(ext),
+        tag: 'Referenz',
+      }
+    }
+    const st = stakeholderByRole(role)[0]
+    if (!st) return null
+    return { name: st.name, title: st.title }
+  }
 
   async function setPrimaryRole(role: StakeholderRole, selectedId: string) {
-    const current = byRole(role)
-    if (selectedId === '__none__') {
-      await Promise.all(current.map((c) => onSetStakeholderRole(c.id, 'unknown')))
+    const parsed = parseSelectValue(selectedId)
+    const currentStakeholders = stakeholderByRole(role)
+    const currentExternals = externalByRole(role)
+
+    if (parsed.kind === 'none') {
+      await Promise.all([
+        ...currentStakeholders.map((c) => onSetStakeholderRole(c.id, 'unknown')),
+        ...currentExternals.map((c) => onSetExternalBuyingCenterRole(c.id, 'unknown')),
+      ])
       return
     }
+
     await Promise.all([
-      ...current.filter((c) => c.id !== selectedId).map((c) => onSetStakeholderRole(c.id, 'unknown')),
-      onSetStakeholderRole(selectedId, role),
+      ...currentStakeholders
+        .filter((c) => parsed.kind !== 'stakeholder' || c.id !== parsed.id)
+        .map((c) => onSetStakeholderRole(c.id, 'unknown')),
+      ...currentExternals
+        .filter((c) => parsed.kind !== 'external' || c.id !== parsed.id)
+        .map((c) => onSetExternalBuyingCenterRole(c.id, 'unknown')),
     ])
+
+    if (parsed.kind === 'stakeholder') {
+      await onSetStakeholderRole(parsed.id, role)
+    } else {
+      await onSetExternalBuyingCenterRole(parsed.id, role)
+    }
   }
 
   function signalHref(url: string | null, label: string) {
@@ -152,21 +210,19 @@ export function CompanyDetailStrategyTab({
               { role: 'user_buyer', label: 'User Buyer' },
               { role: 'blocker', label: 'Blocker' },
             ] as { role: StakeholderRole; label: string }[]).map((row) => {
-              const picked = byRole(row.role)[0]
+              const picked = pickedLabelForRole(row.role)
               return (
                 <div key={row.role} className="space-y-2">
                   <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{row.label}</div>
                   {canEdit ? (
                     <Select
-                      value={selectedByRole(row.role)}
+                      value={selectedValueForRole(row.role)}
                       onValueChange={(id) => {
                         void setPrimaryRole(row.role, id)
                       }}
                     >
                       <SelectTrigger className="h-11 w-full min-w-0 border-input bg-background px-3 text-left shadow-sm">
-                        <SelectValue
-                          placeholder={`Stakeholder für „${row.label}“ wählen …`}
-                        />
+                        <SelectValue placeholder={`Stakeholder für „${row.label}“ wählen …`} />
                       </SelectTrigger>
                       <SelectContent className="max-h-[min(280px,50vh)]">
                         <SelectItem value="__none__">Keine Zuordnung</SelectItem>
@@ -178,6 +234,19 @@ export function CompanyDetailStrategyTab({
                             ) : null}
                           </SelectItem>
                         ))}
+                        {externalContacts.map((c) => {
+                          const name = externalContactDisplayName(c)
+                          const title = externalContactJobTitle(c)
+                          return (
+                            <SelectItem key={externalSelectValue(c.id)} value={externalSelectValue(c.id)}>
+                              <span className="font-medium">{name}</span>
+                              {title !== '—' ? (
+                                <span className="text-muted-foreground"> · {title}</span>
+                              ) : null}
+                              <span className="text-muted-foreground"> · Referenz</span>
+                            </SelectItem>
+                          )
+                        })}
                       </SelectContent>
                     </Select>
                   ) : (
@@ -185,8 +254,11 @@ export function CompanyDetailStrategyTab({
                       {picked ? (
                         <>
                           <span className="font-medium text-foreground">{picked.name}</span>
-                          {picked.title ? (
+                          {picked.title && picked.title !== '—' ? (
                             <span className="text-muted-foreground"> · {picked.title}</span>
+                          ) : null}
+                          {picked.tag ? (
+                            <span className="text-muted-foreground"> · {picked.tag}</span>
                           ) : null}
                         </>
                       ) : (

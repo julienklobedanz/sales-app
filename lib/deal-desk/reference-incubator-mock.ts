@@ -14,26 +14,36 @@ export type ReferenceIncubatorHarvest = {
   projectVolume: string
 }
 
-export const SUCCESS_STORY_KIT = [
+export type SuccessStoryKitItem = {
+  id: string
+  kind: 'pdf' | 'template' | 'guide'
+  title: string
+  subtext: string
+  downloadPath?: string
+}
+
+export const SUCCESS_STORY_KIT: SuccessStoryKitItem[] = [
   {
-    id: 'msa-clause',
-    kind: 'pdf' as const,
-    title: 'Standard-Vertragsklausel (Marketing & Referenzfreigabe)',
-    subtext: 'Zum direkten Einbau in eure MSAs und Angebote.',
+    id: 'dsgvo-reference-consent',
+    kind: 'pdf',
+    title: 'DSGVO Vereinbarung zur namentlichen Nennung eines Ansprechpartners',
+    subtext:
+      'Einwilligung für Reference Calls — ausfüllbare Felder im PDF gelb markiert (White-Label mit eurem Firmennamen).',
+    downloadPath: '/api/deal-desk/dsgvo-reference-consent-pdf',
   },
   {
     id: 'nda-waiver',
-    kind: 'template' as const,
+    kind: 'template',
     title: 'Der NDA-Waiver',
     subtext: 'Vereinbarung zur anonymisierten Nutzung sensibler Daten.',
   },
   {
     id: 'checkin-guide',
-    kind: 'guide' as const,
+    kind: 'guide',
     title: '6-Month Check-in Script',
     subtext: 'Gesprächsleitfaden für das Go-Live Meeting zur Logo-Einholung.',
   },
-] as const
+]
 
 export function buildReferenceIncubatorHarvest(customerName: string): ReferenceIncubatorHarvest {
   return {

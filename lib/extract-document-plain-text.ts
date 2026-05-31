@@ -10,8 +10,6 @@ import { extractPdfPlainTextWithOcrFallback } from '@/lib/pdf-text-extract'
 
 const MAX_BYTES = 4.5 * 1024 * 1024
 
-export { RFP_LOW_TEXT_ERROR, RFP_SCAN_PDF_HINT } from '@/lib/deal-desk/rfp-extraction-messages'
-
 async function extractTextFromDocx(buffer: Buffer): Promise<string> {
   const mammoth = await import('mammoth')
   const result = await (

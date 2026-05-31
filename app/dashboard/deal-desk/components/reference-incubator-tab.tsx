@@ -49,6 +49,32 @@ async function copyText(label: string, text: string) {
   }
 }
 
+async function downloadKitPdf(path: string, title: string) {
+  try {
+    const res = await fetch(path, { credentials: 'include' })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      toast.error(
+        typeof (err as { error?: string }).error === 'string'
+          ? (err as { error: string }).error
+          : 'Download fehlgeschlagen.'
+      )
+      return
+    }
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = res.headers.get('Content-Disposition')?.match(/filename="([^"]+)"/)?.[1]
+      ?? 'Dokument.pdf'
+    a.click()
+    URL.revokeObjectURL(url)
+    toast.success(`${title} heruntergeladen.`)
+  } catch {
+    toast.error('Download fehlgeschlagen.')
+  }
+}
+
 function PdfResourcesCard() {
   return (
     <Card className="rounded-xl border border-slate-200/80 bg-white shadow-sm">
@@ -65,23 +91,36 @@ function PdfResourcesCard() {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-0 divide-y divide-slate-100">
         {SUCCESS_STORY_KIT.map((item) => (
-          <div key={item.id} className="border-b border-slate-100 pb-3 last:border-0 last:pb-0">
-            <button
+          <div
+            key={item.id}
+            className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
+          >
+            <div className="min-w-0 flex-1 space-y-1">
+              <KitKindBadge kind={item.kind} />
+              <p className="text-xs font-semibold text-slate-900">{item.title}</p>
+              <p className="line-clamp-2 text-[11px] leading-relaxed text-slate-600">
+                {item.subtext}
+              </p>
+            </div>
+            <Button
               type="button"
-              className="flex w-full items-start justify-between gap-2 text-left"
-              onClick={() => toast.message(`${item.title} — Download (Demo).`)}
+              variant="ghost"
+              size="icon"
+              className="size-8 shrink-0 text-slate-500 hover:text-slate-900"
+              aria-label={`${item.title} herunterladen`}
+              title={item.downloadPath ? 'PDF herunterladen' : 'Download (Demo)'}
+              onClick={() => {
+                if (item.downloadPath) {
+                  void downloadKitPdf(item.downloadPath, item.title)
+                  return
+                }
+                toast.message(`${item.title} — Download (Demo).`)
+              }}
             >
-              <div className="min-w-0 flex-1 space-y-1">
-                <KitKindBadge kind={item.kind} />
-                <p className="text-xs font-semibold text-slate-900">{item.title}</p>
-                <p className="line-clamp-2 text-[11px] leading-relaxed text-slate-600">
-                  {item.subtext}
-                </p>
-              </div>
-              <Download className="mt-1 size-4 shrink-0 text-slate-400" aria-hidden />
-            </button>
+              <Download className="size-4" aria-hidden />
+            </Button>
           </div>
         ))}
       </CardContent>
@@ -105,26 +144,21 @@ function LegalClauseBuilder() {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-0 divide-y divide-slate-100">
         {LEGAL_CLAUSE_ITEMS.map((item) => (
-          <div key={item.id} className="space-y-2 border-b border-slate-100 pb-3 last:border-0 last:pb-0">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-slate-900">{item.title}</p>
-                <p className="text-[11px] text-muted-foreground">{item.description}</p>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-7 shrink-0 gap-1 border-slate-200 bg-white text-[11px]"
-                onClick={() => void copyText(item.title, item.text)}
-              >
-                <ClipboardCopy className="size-3" aria-hidden />
-                Kopieren
-              </Button>
-            </div>
-            <p className="line-clamp-3 text-[11px] leading-relaxed text-slate-600">{item.text}</p>
+          <div key={item.id} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+            <p className="min-w-0 text-xs font-semibold leading-snug text-slate-900">{item.title}</p>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-8 shrink-0 text-slate-500 hover:text-slate-900"
+              aria-label={`${item.title} kopieren`}
+              title="Klausel kopieren"
+              onClick={() => void copyText(item.title, item.text)}
+            >
+              <ClipboardCopy className="size-4" aria-hidden />
+            </Button>
           </div>
         ))}
       </CardContent>

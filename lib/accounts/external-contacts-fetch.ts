@@ -1,14 +1,17 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import type { ExternalContactRow } from '@/app/dashboard/accounts/actions'
+import { parseStakeholderRole } from '@/lib/accounts/stakeholder-role'
 
 const SELECT_BASE =
   'id, company_id, first_name, last_name, email, role, created_at, updated_at'
 
 const SELECT_WITH_PHONE = `${SELECT_BASE}, phone`
-const SELECT_FULL = `${SELECT_WITH_PHONE}, last_interaction_at`
+const SELECT_WITH_LAST = `${SELECT_WITH_PHONE}, last_interaction_at`
+const SELECT_WITH_BCR = `${SELECT_WITH_PHONE}, buying_center_role`
+const SELECT_FULL = `${SELECT_WITH_LAST}, buying_center_role`
 
-type FetchFlags = { phone: boolean; lastInteraction: boolean }
+type FetchFlags = { phone: boolean; lastInteraction: boolean; buyingCenterRole: boolean }
 
 function formatSupabaseError(error: unknown): string {
   if (!error || typeof error !== 'object') return String(error ?? '')
@@ -22,7 +25,11 @@ function isLikelyMissingColumnError(text: string): boolean {
     t.includes('column') ||
     t.includes('schema cache') ||
     t.includes('could not find') ||
-    (t.includes('does not exist') && (t.includes('external_contacts') || t.includes('phone') || t.includes('last_interaction')))
+    (t.includes('does not exist') &&
+      (t.includes('external_contacts') ||
+        t.includes('phone') ||
+        t.includes('last_interaction') ||
+        t.includes('buying_center_role')))
   )
 }
 
@@ -41,21 +48,26 @@ function mapRows(
     last_interaction_at: flags.lastInteraction
       ? ((r.last_interaction_at as string | null | undefined) ?? null)
       : null,
+    buying_center_role: flags.buyingCenterRole
+      ? parseStakeholderRole(r.buying_center_role)
+      : undefined,
     created_at: String(r.created_at ?? ''),
     updated_at: (r.updated_at as string | null) ?? null,
   }))
 }
 
-/** Lädt externe Kontakte mit Fallback, falls phone / last_interaction_at noch nicht migriert sind. */
+/** Lädt externe Kontakte mit Fallback, falls optionale Spalten noch nicht migriert sind. */
 export async function fetchExternalContactsForCompany(
   supabase: SupabaseClient,
   companyId: string,
   organizationId: string
 ): Promise<ExternalContactRow[]> {
   const attempts: Array<{ select: string; flags: FetchFlags }> = [
-    { select: SELECT_FULL, flags: { phone: true, lastInteraction: true } },
-    { select: SELECT_WITH_PHONE, flags: { phone: true, lastInteraction: false } },
-    { select: SELECT_BASE, flags: { phone: false, lastInteraction: false } },
+    { select: SELECT_FULL, flags: { phone: true, lastInteraction: true, buyingCenterRole: true } },
+    { select: SELECT_WITH_BCR, flags: { phone: true, lastInteraction: false, buyingCenterRole: true } },
+    { select: SELECT_WITH_LAST, flags: { phone: true, lastInteraction: true, buyingCenterRole: false } },
+    { select: SELECT_WITH_PHONE, flags: { phone: true, lastInteraction: false, buyingCenterRole: false } },
+    { select: SELECT_BASE, flags: { phone: false, lastInteraction: false, buyingCenterRole: false } },
   ]
 
   let lastErrorText = ''

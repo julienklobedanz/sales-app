@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import type { ColumnDef } from "@tanstack/react-table"
-import { ArrowUpDown, FileText, MoreHorizontal } from "@hugeicons/core-free-icons"
+import { ArrowUpDown, MoreHorizontal } from "@hugeicons/core-free-icons"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -113,14 +113,9 @@ export function evidenceColumns(): ColumnDef<ReferenceRow>[] {
         </Button>
       ),
       cell: ({ row }) => (
-        <div className="flex min-w-0 max-w-[420px] items-center gap-2">
-          <AppIcon
-            icon={FileText}
-            size={16}
-            className="shrink-0 text-muted-foreground"
-          />
-          <span className="truncate">{row.original.title}</span>
-        </div>
+        <span className="block min-w-0 max-w-[420px] truncate text-sm font-semibold text-foreground">
+          {row.original.title}
+        </span>
       ),
     },
     {

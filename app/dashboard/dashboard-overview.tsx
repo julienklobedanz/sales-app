@@ -100,6 +100,7 @@ import {
 } from './overview/reference-table-column-renders'
 import { ReferenceDetailSheet } from './overview/reference-detail-sheet'
 import { ReferencesOverviewBrandfetchSync } from './overview/references-overview-brandfetch-sync'
+import { ReferencesBulkActionsBar } from './overview/references-bulk-actions-bar'
 import { FilterMenuCheckboxOption } from '@/components/table/filter-menu-checkbox-option'
 import { TableRowCheckbox } from '@/components/table/table-row-checkbox'
 import { TableRowAlign } from '@/components/table/table-row-align'
@@ -910,95 +911,48 @@ export function DashboardOverview({
           onShowExpiredCertificatesChange={setShowExpiredCertificates}
         />
 
-          {isReferencesLibrary && selectedRefIds.size > 0 ? (
-            <div className="fixed bottom-6 left-1/2 z-50 w-[min(720px,calc(100vw-24px))] -translate-x-1/2">
-              <div className="flex items-center justify-between rounded-lg border bg-background/95 px-4 py-3 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/75">
-                <div className="text-sm text-muted-foreground">
-                  {selectedRefIds.size} ausgewählt
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      Aktionen
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-[260px]">
-                    <DropdownMenuLabel>Bulk-Aktionen</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {profile.role === 'sales' && (
-                      <>
-                        <DropdownMenuItem
-                          onSelect={async () => {
-                            const selected = Array.from(selectedRefIds)
-                            const result = await createSharedPortfolio(selected)
-                            if (!result.success) {
-                              toast.error(result.error ?? 'Kollektions-Link konnte nicht erstellt werden.')
-                              return
-                            }
-                            const absoluteUrl =
-                              result.url.startsWith('http://') || result.url.startsWith('https://')
-                                ? result.url
-                                : new URL(result.url, window.location.origin).toString()
-                            await navigator.clipboard.writeText(absoluteUrl)
-                            toast.success('Kollektions-Link erstellt und kopiert.')
-                          }}
-                        >
-                          <AppIcon icon={LinkIcon} size={16} className="mr-2" />
-                          Kollektions-Link erstellen
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={async () => {
-                            const base = process.env.NEXT_PUBLIC_SUPABASE_URL
-                            const withFile = selectedRefs.filter((r) => r.file_path)
-                            if (withFile.length === 0) {
-                              toast.error('Keine der ausgewählten Referenzen hat ein Dokument zum Herunterladen.')
-                              return
-                            }
-                            withFile.forEach((r) => {
-                              const url = `${base}/storage/v1/object/public/references/${r.file_path}`
-                              window.open(url, '_blank', 'noopener,noreferrer')
-                            })
-                            toast.success(`${withFile.length} Referenz${withFile.length !== 1 ? 'en' : ''} werden heruntergeladen.`)
-                          }}
-                        >
-                          <AppIcon icon={FileDownIcon} size={16} className="mr-2" />
-                          {selectedRefLabel} als PDF herunterladen
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          disabled={approvalEligibleCount === 0}
-                          onSelect={async (e: Event) => {
-                            e.preventDefault()
-                            await handleBulkRequestApproval()
-                          }}
-                        >
-                          <AppIcon icon={Send} size={16} className="mr-2" />
-                          {selectedRefLabel} um Freigabe anfragen
-                        </DropdownMenuItem>
-                      </>
-                    )}
-                    {profile.role === 'admin' && (
-                      <DropdownMenuItem
-                        className="text-destructive focus:text-destructive"
-                        onSelect={(e: Event) => {
-                          e.preventDefault()
-                          setBulkDeleteConfirmOpen(true)
-                        }}
-                      >
-                        <AppIcon icon={Trash2} size={16} className="mr-2" />
-                        Ausgewählte löschen
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setSelectedRefIds(new Set())}>
-                      <AppIcon icon={Cancel01Icon} size={16} className="mr-2 text-muted-foreground" />
-                      Auswahl aufheben
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-          ) : null}
- 
+        {isReferencesLibrary ? (
+          <ReferencesBulkActionsBar
+            selectedCount={selectedRefIds.size}
+            selectedRefLabel={selectedRefLabel}
+            showSalesActions={profile.role === 'sales'}
+            showAdminDelete={profile.role === 'admin'}
+            approvalEligibleCount={approvalEligibleCount}
+            onClearSelection={() => setSelectedRefIds(new Set())}
+            onBulkDelete={() => setBulkDeleteConfirmOpen(true)}
+            onBulkRequestApproval={() => void handleBulkRequestApproval()}
+            onCreateSharedPortfolio={async () => {
+              const selected = Array.from(selectedRefIds)
+              const result = await createSharedPortfolio(selected)
+              if (!result.success) {
+                toast.error(result.error ?? 'Kollektions-Link konnte nicht erstellt werden.')
+                return
+              }
+              const absoluteUrl =
+                result.url.startsWith('http://') || result.url.startsWith('https://')
+                  ? result.url
+                  : new URL(result.url, window.location.origin).toString()
+              await navigator.clipboard.writeText(absoluteUrl)
+              toast.success('Kollektions-Link erstellt und kopiert.')
+            }}
+            onDownloadPdfs={() => {
+              const base = process.env.NEXT_PUBLIC_SUPABASE_URL
+              const withFile = selectedRefs.filter((r) => r.file_path)
+              if (withFile.length === 0) {
+                toast.error('Keine der ausgewählten Referenzen hat ein Dokument zum Herunterladen.')
+                return
+              }
+              withFile.forEach((r) => {
+                const url = `${base}/storage/v1/object/public/references/${r.file_path}`
+                window.open(url, '_blank', 'noopener,noreferrer')
+              })
+              toast.success(
+                `${withFile.length} Referenz${withFile.length !== 1 ? 'en' : ''} werden heruntergeladen.`
+              )
+            }}
+          />
+        ) : null}
+
           {profile.role === 'admin' && (
             <BulkDeleteReferencesDialog
               open={bulkDeleteConfirmOpen}

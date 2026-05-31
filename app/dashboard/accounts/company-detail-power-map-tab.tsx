@@ -9,6 +9,7 @@ export function CompanyDetailPowerMapTab({
   marketSignals,
   internalContacts,
   externalContacts,
+  companyName,
   organizationName,
   internalReferenceApprovalContactId,
   canEdit,
@@ -23,6 +24,7 @@ export function CompanyDetailPowerMapTab({
   marketSignals: CompanyDetailClientProps['marketSignals']
   internalContacts: ContactPersonRow[]
   externalContacts: ExternalContactRow[]
+  companyName: string
   organizationName: string | null
   internalReferenceApprovalContactId: string | null
   canEdit: boolean
@@ -37,6 +39,8 @@ export function CompanyDetailPowerMapTab({
     <div className="flex w-full min-w-0 flex-col gap-6">
       <CompanyDetailStakeholdersTab
         stakeholders={stakeholders}
+        externalContacts={externalContacts}
+        companyName={companyName}
         canEdit={canEdit}
         onAdd={onAddStakeholder}
         onEdit={onEditStakeholder}
@@ -44,7 +48,6 @@ export function CompanyDetailPowerMapTab({
       />
       <CompanyDetailContactsTab
         internalContacts={internalContacts}
-        externalContacts={externalContacts}
         organizationName={organizationName}
         internalReferenceApprovalContactId={internalReferenceApprovalContactId}
         canEdit={canEdit}

@@ -72,11 +72,12 @@ export function CompanyStakeholderDialog({
 }: Props) {
   return (
     <Dialog open={open} onOpenChange={(v) => !saving && onOpenChange(v)}>
-      <DialogContent>
-        <DialogHeader>
+      <DialogContent className="flex max-h-[min(90vh,40rem)] w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-md">
+        <DialogHeader className="shrink-0 space-y-1 px-6 pt-6 pb-2">
           <DialogTitle>{editing ? 'Stakeholder bearbeiten' : 'Stakeholder hinzufügen'}</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-2">
+          <div className="grid gap-3 pb-2">
           <div className="grid gap-2">
             <Label>Name</Label>
             <Input value={shName} onChange={(e) => setShName(e.target.value)} disabled={saving} />
@@ -137,6 +138,8 @@ export function CompanyStakeholderDialog({
               value={shPriorities}
               onChange={(e) => setShPriorities(e.target.value)}
               disabled={saving}
+              rows={3}
+              className="min-h-[4.5rem] resize-y"
             />
           </div>
           <div className="grid gap-2">
@@ -159,10 +162,17 @@ export function CompanyStakeholderDialog({
           </div>
           <div className="grid gap-2">
             <Label>Notizen</Label>
-            <Textarea value={shNotes} onChange={(e) => setShNotes(e.target.value)} disabled={saving} />
+            <Textarea
+              value={shNotes}
+              onChange={(e) => setShNotes(e.target.value)}
+              disabled={saving}
+              rows={3}
+              className="min-h-[4.5rem] resize-y"
+            />
+          </div>
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="shrink-0 gap-2 border-t border-border/70 bg-card px-6 py-4">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
             Abbrechen
           </Button>
