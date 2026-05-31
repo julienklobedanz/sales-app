@@ -26,11 +26,21 @@ export function RequestApprovalDialog({
   referenceId,
   defaultInternalOwnerName,
   triggerIcon,
+  triggerId,
+  triggerVariant = 'outline',
+  triggerClassName = 'w-full',
+  triggerLabel = 'Freigabe anfordern',
+  autoOpen = false,
 }: {
   referenceId: string
   /** Vorausfüllung (Referenz oder Profil); Feld bleibt Pflicht. */
   defaultInternalOwnerName?: string | null
   triggerIcon?: ReactNode
+  triggerId?: string
+  triggerVariant?: 'default' | 'outline'
+  triggerClassName?: string
+  triggerLabel?: string
+  autoOpen?: boolean
 }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -43,6 +53,11 @@ export function RequestApprovalDialog({
     setOwnerName((defaultInternalOwnerName ?? '').trim())
     setMessage('')
   }, [open, defaultInternalOwnerName])
+
+  useEffect(() => {
+    if (!autoOpen) return
+    setOpen(true)
+  }, [autoOpen])
 
   async function onSubmit() {
     if (!ownerName.trim()) {
@@ -78,9 +93,15 @@ export function RequestApprovalDialog({
 
   return (
     <>
-      <Button type="button" variant="outline" className="w-full" onClick={() => setOpen(true)}>
+      <Button
+        id={triggerId}
+        type="button"
+        variant={triggerVariant}
+        className={triggerClassName}
+        onClick={() => setOpen(true)}
+      >
         {triggerIcon ? <span className="mr-2 inline-flex items-center">{triggerIcon}</span> : null}
-        Freigabe anfordern
+        {triggerLabel}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-2xl">

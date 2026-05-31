@@ -161,6 +161,29 @@ export function formatReferenceVolume(value: string | null | undefined): string 
   return `${symbol} ${formatNumberDe(parsed.amountDigits)}`
 }
 
+/**
+ * Deal-Volumen (`deals.volume`): Tausenderpunkte + Währung (de-DE, z. B. „1.500.000 €“).
+ * Für Tabellen und Detailansichten — einheitlich statt Rohwert aus der DB.
+ */
+export function formatDealVolume(value: string | null | undefined): string {
+  const raw = String(value ?? '').trim()
+  if (!raw) return '—'
+
+  const parsed = parseReferenceVolume(raw)
+  if (parsed) {
+    const amount = formatNumberDe(parsed.amountDigits)
+    const symbol = VOLUME_SYMBOL_BY_CODE[parsed.currencyCode] ?? '€'
+    if (parsed.currencyCode === 'EUR') {
+      return `${amount} €`
+    }
+    return `${symbol} ${amount}`.trim()
+  }
+
+  const digits = raw.replace(/\D/g, '')
+  if (!digits) return raw
+  return `${formatNumberDe(digits)} €`
+}
+
 export function diffMonthsUtc(startIso: string, endIso: string) {
   const s = new Date(startIso)
   const e = new Date(endIso)

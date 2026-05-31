@@ -9,7 +9,6 @@ import {
   Building2,
   Globe,
   LinkIcon,
-  Mail,
   MapPinIcon,
   Pencil,
   StarIcon,
@@ -26,9 +25,13 @@ import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 import { PdfExportDialog } from './pdf-export-dialog'
 import { PptxOnepagerExportButton } from './pptx-onepager-export-button'
 import { ShareLinkButton } from './share-link-button'
-import { RequestApprovalDialog } from './request-approval-dialog'
+import { ReferenceReadinessActions } from './reference-readiness-actions'
+import { ReferenceReadinessValue } from './reference-readiness-value'
+import {
+  canStartApprovalWorkflow,
+} from '@/lib/references/approval-workflow'
+import { resolveReferenceReadinessState } from '@/lib/references/reference-readiness-state'
 import { ReferenceViewedTracker } from './reference-viewed-tracker'
-import { ApprovalPendingActions } from './approval-pending-actions'
 import { getReferenceDetailActivities } from './reference-detail-activities'
 import { ReferenceActivitiesTimeline } from './reference-activities-timeline'
 import { ReferenceContextHighlighted } from '@/components/reference-context-highlighted'
@@ -39,6 +42,7 @@ import {
 import { normalizeNarrativeText } from '@/lib/references/narrative-normalize'
 import { getReferenceAssetsImpl } from '@/app/dashboard/references/assets'
 import { formatProjectEndWithDurationDe } from '@/lib/references/reference-duration-months'
+import { cn } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -113,8 +117,11 @@ export default async function EvidenceDetailPage({
       customer_contact_id,
       customer_approval_status,
       approval_owner_name,
+      approval_requested_at,
       approval_expires_at,
       approval_scope_named_mention,
+      approval_scope_anonymous_mention,
+      approval_scope_reference_call,
       approval_grace_until,
       approval_internal_status,
       approval_contact_id,
@@ -167,8 +174,11 @@ export default async function EvidenceDetailPage({
     customer_contact_id: string | null
     customer_approval_status: string | null
     approval_owner_name: string | null
+    approval_requested_at: string | null
     approval_expires_at: string | null
     approval_scope_named_mention: boolean | null
+    approval_scope_anonymous_mention: boolean | null
+    approval_scope_reference_call: boolean | null
     approval_grace_until: string | null
     approval_internal_status: string | null
     approval_contact_id: string | null
@@ -289,46 +299,46 @@ export default async function EvidenceDetailPage({
   const referenceIsInternalOnly =
     normalizedStatus === 'internal_only' || normalizedStatus === 'internal'
 
-  let readinessLabel: string
-  let readinessTone: string
-
-  if (internalApproval === 'pending_internal' && !staleInternalPending) {
-    readinessLabel = 'Interne Freigabe ausstehend'
-    readinessTone = 'bg-sky-50 text-sky-800 border-sky-200'
-  } else if (internalApproval === 'withdrawn_internal') {
-    readinessLabel = 'Anfrage widerrufen'
-    readinessTone = 'bg-slate-100 text-slate-600 border-slate-200'
-  } else if (approvalStatus === 'approved' || staleInternalPending) {
-    const customerWorkflowApproved =
-      baseApprovalStatus === 'approved' ||
-      normalizedStatus === 'approved' ||
-      normalizedStatus === 'external'
-    readinessLabel =
-      referenceIsInternalOnly && customerWorkflowApproved
-        ? 'Kundenfreigabe · nur intern nutzbar'
-        : referenceIsInternalOnly && !customerWorkflowApproved
-          ? 'Einsatzbereit · nur intern'
-          : 'Freigegeben'
-    readinessTone = 'bg-emerald-50 text-emerald-700 border-emerald-200'
-  } else if (approvalStatus === 'pending') {
-    readinessLabel = 'Kundenfreigabe läuft'
-    readinessTone = 'bg-amber-50 text-amber-700 border-amber-200'
-  } else if (approvalStatus === 'rejected') {
-    readinessLabel = 'Abgelehnt'
-    readinessTone = 'bg-red-50 text-red-700 border-red-200'
-  } else if (approvalStatus === 'expired') {
-    readinessLabel = 'Grace Period'
-    readinessTone = 'bg-orange-50 text-orange-700 border-orange-200'
-  } else {
-    readinessLabel = 'Nicht angefragt'
-    readinessTone = 'bg-slate-100 text-slate-600 border-slate-200'
-  }
   const competitorBlacklist = Array.isArray(ref.approval_competitor_blacklist)
     ? ref.approval_competitor_blacklist
     : []
   const internalStatus = String(ref.approval_internal_status ?? '')
-  const salesReadinessLabel =
-    (ref.approval_scope_named_mention ?? true) ? 'Namentlich freigegeben' : 'Anonymisiert nutzen'
+  const isNdaDeal = Boolean(ref.is_nda_deal)
+  const ndaDealBadgeClass = isNdaDeal
+    ? 'border-amber-200 bg-amber-50 text-amber-900'
+    : 'border-border bg-slate-50 text-slate-700'
+
+  const canStartApproval = canStartApprovalWorkflow({
+    role,
+    referenceStatus: normalizedStatus,
+    internalApprovalStatus: internalApproval,
+    customerApprovalStatus: ref.customer_approval_status,
+    approvalRequestedAt: ref.approval_requested_at,
+    staleInternalPending,
+    isApprovalGranted,
+  })
+  const autoOpenApprovalDialog = qs.startApproval === '1' || qs.startApproval === 'true'
+
+  const readinessState = resolveReferenceReadinessState({
+    referenceStatus: normalizedStatus,
+    internalApprovalStatus: internalApproval,
+    customerApprovalStatus: ref.customer_approval_status,
+    approvalRequestedAt: ref.approval_requested_at,
+    staleInternalPending,
+    isApprovalGranted,
+    canStartApproval,
+    canInternalApprove: role === 'admin' || role === 'account_manager',
+    approvalScopeNamedMention: ref.approval_scope_named_mention,
+    approvalScopeAnonymousMention: ref.approval_scope_anonymous_mention,
+    approvalScopeReferenceCall: ref.approval_scope_reference_call,
+    referenceIsInternalOnly,
+  })
+
+  const ownerDisplay =
+    (ref.approval_owner_name ?? '').trim() || null
+  const expiresDisplay = ref.approval_expires_at
+    ? formatReferenceDate(ref.approval_expires_at, orgDateFmt)
+    : null
 
   let glossaryFromWorkflow: string[] = []
   if (organizationId) {
@@ -601,87 +611,46 @@ export default async function EvidenceDetailPage({
             </CardContent>
           </Card>
 
-          <Card className={role === 'sales' ? 'order-2' : undefined}>
+          <Card className={cn('w-full', role === 'sales' ? 'order-2' : undefined)}>
             <CardHeader>
               <CardTitle className="text-base">Reference Readiness</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              {role === 'sales' ? (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-muted-foreground">NDA</span>
-                    <span
-                      className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${
-                        Boolean(ref.is_nda_deal)
-                          ? 'border-amber-200 bg-amber-50 text-amber-900'
-                          : 'border-border bg-slate-50 text-slate-700'
-                      }`}
-                    >
-                      {Boolean(ref.is_nda_deal) ? 'Vertraulich (NDA)' : 'Kein NDA'}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-muted-foreground">Freigabe</span>
-                    <span
-                      className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${
-                        staleInternalPending || isApprovalGranted
-                          ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-                          : internalApproval === 'pending_internal'
-                            ? 'border-sky-200 bg-sky-50 text-sky-800'
-                            : approvalStatus === 'pending'
-                              ? 'border-amber-200 bg-amber-50 text-amber-800'
-                              : 'border-border bg-slate-50 text-slate-700'
-                      }`}
-                    >
-                      {staleInternalPending || isApprovalGranted
-                        ? 'Einsatzbereit'
-                        : internalApproval === 'pending_internal'
-                          ? 'Interne Prüfung'
-                          : approvalStatus === 'pending'
-                            ? 'Kundenfreigabe läuft'
-                            : salesReadinessLabel}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    {staleInternalPending || isApprovalGranted
-                      ? `Nutzen: ${salesReadinessLabel.toLowerCase()}.`
-                      : internalApproval === 'pending_internal'
-                        ? 'Die Referenz wird intern geprüft. Du musst nichts tun.'
-                        : approvalStatus === 'pending'
-                          ? 'Der Kunde bearbeitet die Freigabe.'
-                          : 'Freigabe-Details siehst du nach Abschluss des Freigabeprozesses.'}
-                  </p>
+            <CardContent className="space-y-3 text-sm transition-all duration-200">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-muted-foreground">NDA Deal?</span>
+                  <span
+                    className={`rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors duration-200 ${ndaDealBadgeClass}`}
+                  >
+                    {isNdaDeal ? 'Ja' : 'Nein'}
+                  </span>
                 </div>
-              ) : (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-muted-foreground">{role === 'sales' ? 'Freigabe' : 'Status'}</span>
+                  <span
+                    className={cn(
+                      'rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors duration-200',
+                      readinessState.badge.className
+                    )}
+                  >
+                    {readinessState.badge.label}
+                  </span>
+                </div>
+                {role !== 'sales' ? (
+                  <>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-muted-foreground">Verantwortlich</span>
+                      <ReferenceReadinessValue value={ownerDisplay} />
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-muted-foreground">Gültig bis</span>
+                      <ReferenceReadinessValue value={expiresDisplay} />
+                    </div>
+                  </>
+                ) : null}
+              </div>
+              {role === 'sales' ? null : (
                 <>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-muted-foreground">NDA</span>
-                    <span
-                      className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${
-                        Boolean(ref.is_nda_deal)
-                          ? 'border-amber-200 bg-amber-50 text-amber-900'
-                          : 'border-border bg-slate-50 text-slate-700'
-                      }`}
-                    >
-                      {Boolean(ref.is_nda_deal) ? 'Vertraulich (NDA)' : 'Kein NDA'}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-muted-foreground">Status</span>
-                    <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${readinessTone}`}>
-                      {readinessLabel}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-muted-foreground">Verantwortlich</span>
-                    <span className="font-medium text-right">{ref.approval_owner_name ?? '—'}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-muted-foreground">Gültig bis</span>
-                    <span className="font-medium">
-                      {ref.approval_expires_at ? formatReferenceDate(ref.approval_expires_at, orgDateFmt) : '—'}
-                    </span>
-                  </div>
                   {competitorBlacklist.length ? (
                     <div className="space-y-1.5">
                       <p className="text-muted-foreground">Nicht verwenden für</p>
@@ -716,24 +685,26 @@ export default async function EvidenceDetailPage({
                       Consent-Dokument ansehen
                     </a>
                   ) : null}
-                  <ApprovalPendingActions
-                    referenceId={id}
-                    canInternalApprove={
-                      internalStatus === 'pending_internal' &&
-                      !staleInternalPending &&
-                      (role === 'admin' || role === 'account_manager')
-                    }
-                    approvalStatus={approvalStatus}
-                    internalStatus={internalStatus}
-                    approvalOwnerName={ref.approval_owner_name ?? null}
-                    approvalContactId={ref.approval_contact_id ?? null}
-                    approvalExternalContactId={ref.approval_external_contact_id ?? null}
-                    referenceContactId={ref.contact_id ?? null}
-                    referenceCustomerContactId={ref.customer_contact_id ?? null}
-                    staleInternalPending={staleInternalPending}
-                  />
                 </>
               )}
+              <ReferenceReadinessActions
+                referenceId={id}
+                readiness={readinessState}
+                canStartApproval={canStartApproval}
+                canInternalApprove={
+                  internalStatus === 'pending_internal' &&
+                  !staleInternalPending &&
+                  (role === 'admin' || role === 'account_manager')
+                }
+                defaultInternalOwnerName={
+                  (ref.approval_owner_name ?? '').trim() || requesterDisplayName || ''
+                }
+                autoOpenApprovalDialog={autoOpenApprovalDialog}
+                approvalContactId={ref.approval_contact_id ?? null}
+                approvalExternalContactId={ref.approval_external_contact_id ?? null}
+                referenceContactId={ref.contact_id ?? null}
+                referenceCustomerContactId={ref.customer_contact_id ?? null}
+              />
             </CardContent>
           </Card>
 
@@ -748,15 +719,6 @@ export default async function EvidenceDetailPage({
               </div>
               {role === 'sales' ? null : (
                 <>
-                  {!isApprovalGranted ? (
-                    <RequestApprovalDialog
-                      referenceId={id}
-                      defaultInternalOwnerName={
-                        (ref.approval_owner_name ?? '').trim() || requesterDisplayName || ''
-                      }
-                      triggerIcon={<AppIcon icon={Mail} size={16} />}
-                    />
-                  ) : null}
                   <ShareLinkButton referenceId={id} triggerClassName="w-full" />
                   <form action={toggleFavorite.bind(null, id)}>
                     <Button

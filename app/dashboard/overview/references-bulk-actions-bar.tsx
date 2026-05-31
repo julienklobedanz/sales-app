@@ -10,17 +10,15 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { AppIcon } from '@/lib/icons'
-import { Cancel01Icon, FileDownIcon, LinkIcon, Send, Trash2 } from '@hugeicons/core-free-icons'
+import { Cancel01Icon, FileDownIcon, LinkIcon, Trash2 } from '@hugeicons/core-free-icons'
 
 type Props = {
   selectedCount: number
   selectedRefLabel: string
   showSalesActions: boolean
   showAdminDelete: boolean
-  approvalEligibleCount: number
   onClearSelection: () => void
   onBulkDelete: () => void
-  onBulkRequestApproval: () => void
   onCreateSharedPortfolio: () => void
   onDownloadPdfs: () => void
 }
@@ -30,10 +28,8 @@ export function ReferencesBulkActionsBar({
   selectedRefLabel,
   showSalesActions,
   showAdminDelete,
-  approvalEligibleCount,
   onClearSelection,
   onBulkDelete,
-  onBulkRequestApproval,
   onCreateSharedPortfolio,
   onDownloadPdfs,
 }: Props) {
@@ -61,16 +57,6 @@ export function ReferencesBulkActionsBar({
                 <DropdownMenuItem onSelect={() => onDownloadPdfs()}>
                   <AppIcon icon={FileDownIcon} size={16} className="mr-2" />
                   {selectedRefLabel} als PDF herunterladen
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  disabled={approvalEligibleCount === 0}
-                  onSelect={(e: Event) => {
-                    e.preventDefault()
-                    void onBulkRequestApproval()
-                  }}
-                >
-                  <AppIcon icon={Send} size={16} className="mr-2" />
-                  {selectedRefLabel} um Freigabe anfragen
                 </DropdownMenuItem>
               </>
             ) : null}

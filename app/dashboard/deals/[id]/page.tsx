@@ -13,6 +13,7 @@ import { DealStatusBadge } from '@/components/deal-status-badge'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
+import { formatDealVolume } from '@/lib/format'
 
 export const dynamic = 'force-dynamic'
 
@@ -146,7 +147,9 @@ export default async function DealDetailPage({
               </div>
               <div className="flex justify-between gap-2">
                 <span className="text-muted-foreground">Volumen</span>
-                <span className="font-medium truncate max-w-[220px]">{deal.volume ?? '—'}</span>
+                <span className="font-medium tabular-nums truncate max-w-[220px]">
+                  {formatDealVolume(deal.volume)}
+                </span>
               </div>
               <div className="flex justify-between gap-2">
                 <span className="text-muted-foreground">Ablaufdatum</span>

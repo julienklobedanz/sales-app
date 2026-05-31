@@ -6,13 +6,12 @@ import { AppIcon } from '@/lib/icons'
 import { DatabaseSyncIcon, Wifi01Icon } from '@hugeicons/core-free-icons'
 import type { AccountDealRow } from './actions'
 import { ROUTES } from '@/lib/routes'
+import { formatDealVolume } from '@/lib/format'
 
 export function CompanyDetailPipelineTab({
   activeDeals,
-  canEdit,
 }: {
   activeDeals: AccountDealRow[]
-  canEdit: boolean
 }) {
   // Salesforce-Integration ist optional. Sobald `salesforce_opportunity_id` gesetzt ist, gilt der Deal als CRM-gesynct.
   const hasCrm = activeDeals.some((d) => Boolean((d as unknown as { salesforce_opportunity_id?: string | null }).salesforce_opportunity_id))
@@ -23,22 +22,15 @@ export function CompanyDetailPipelineTab({
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <CardTitle>Pipeline</CardTitle>
-              <CardDescription>
-                {activeDeals.length} Deals · Quelle:{' '}
-                <span className="inline-flex items-center gap-1">
-                  <AppIcon icon={pipelineSource === 'live' ? Wifi01Icon : DatabaseSyncIcon} size={14} className="text-muted-foreground" />
-                  {pipelineSource === 'live' ? 'CRM (Live)' : pipelineSource === 'mixed' ? 'CRM + Lokal' : 'RefStack (Lokal)'}
-                </span>
-              </CardDescription>
-            </div>
-            {canEdit ? (
-              <div className="text-xs text-muted-foreground">
-                Hinweis: „Deal anlegen“ erfolgt aktuell über den Deals-Bereich.
-              </div>
-            ) : null}
+          <div>
+            <CardTitle>Pipeline</CardTitle>
+            <CardDescription>
+              {activeDeals.length} Deals · Quelle:{' '}
+              <span className="inline-flex items-center gap-1">
+                <AppIcon icon={pipelineSource === 'live' ? Wifi01Icon : DatabaseSyncIcon} size={14} className="text-muted-foreground" />
+                {pipelineSource === 'live' ? 'CRM (Live)' : pipelineSource === 'mixed' ? 'CRM + Lokal' : 'RefStack (Lokal)'}
+              </span>
+            </CardDescription>
           </div>
         </CardHeader>
         <CardContent>
@@ -63,7 +55,9 @@ export function CompanyDetailPipelineTab({
                         {d.title}
                       </Link>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{d.volume ?? '—'}</TableCell>
+                    <TableCell className="text-muted-foreground tabular-nums">
+                      {formatDealVolume(d.volume)}
+                    </TableCell>
                     <TableCell>
                       <Badge variant="outline">{d.status}</Badge>
                     </TableCell>

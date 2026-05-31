@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   diffMonthsUtc,
   formatDateUtcDe,
+  formatDealVolume,
   formatEmployeeCountDeDisplay,
   formatNumberDe,
   formatReferenceDate,
@@ -53,6 +54,23 @@ describe('formatNumberDe', () => {
 
   it('fällt bei NaN auf Original zurück', () => {
     expect(formatNumberDe('abc')).toBe('abc')
+  })
+})
+
+describe('formatDealVolume', () => {
+  it('liefert Gedankenstrich für leer', () => {
+    expect(formatDealVolume(null)).toBe('—')
+    expect(formatDealVolume('')).toBe('—')
+  })
+
+  it('formatiert reine Zahlen mit Tausenderpunkten und €', () => {
+    expect(formatDealVolume('1500000')).toBe('1.500.000 €')
+    expect(formatDealVolume('1.500.000')).toBe('1.500.000 €')
+  })
+
+  it('erkennt Währungstoken', () => {
+    expect(formatDealVolume('EUR 250000')).toBe('250.000 €')
+    expect(formatDealVolume('USD 1000000')).toBe('$ 1.000.000')
   })
 })
 

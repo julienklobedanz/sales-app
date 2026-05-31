@@ -50,7 +50,6 @@ import {
   logMarketSignalQuickAction,
   markMarketSignalNotificationsRead,
   markMarketSignalsIrrelevant,
-  requestReferenceApprovalForSignal,
   setMarketSignalPriority,
   snoozeMarketSignal,
   submitMarketSignalDraftFeedback,
@@ -2357,20 +2356,13 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                                 size="sm"
                                                 variant="outline"
                                                 className="h-8 text-xs"
-                                                onClick={async () => {
-                                                  const res = await requestReferenceApprovalForSignal({
-                                                    referenceId: r.id,
-                                                    referenceTitle: r.title,
-                                                    companyName: selected?.companyName ?? '',
-                                                  })
-                                                  if (!res.success) {
-                                                    toast.error(res.error)
-                                                    return
-                                                  }
-                                                  toast.success('Freigabe angefragt')
-                                                }}
+                                                asChild
                                               >
-                                                Freigabe
+                                                <Link
+                                                  href={`${ROUTES.evidence.detail(r.id)}?startApproval=1`}
+                                                >
+                                                  Freigabe
+                                                </Link>
                                               </Button>
                                             ) : null}
                                             <Button
@@ -2758,20 +2750,11 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                                         size="sm"
                                         variant="outline"
                                         className="h-8 text-xs"
-                                        onClick={async () => {
-                                          const res = await requestReferenceApprovalForSignal({
-                                            referenceId: r.id,
-                                            referenceTitle: r.title,
-                                            companyName: selected?.companyName ?? '',
-                                          })
-                                          if (!res.success) {
-                                            toast.error(res.error)
-                                            return
-                                          }
-                                          toast.success('Freigabe angefragt')
-                                        }}
+                                        asChild
                                       >
-                                        Freigabe
+                                        <Link href={`${ROUTES.evidence.detail(r.id)}?startApproval=1`}>
+                                          Freigabe
+                                        </Link>
                                       </Button>
                                     ) : null}
                                     <Button

@@ -176,6 +176,18 @@ export default async function EditReferencePage({
               : 'Prüfe die Felder und speichere deine Änderungen.'}
           </p>
         </div>
+        {fromDeskId ? (
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-950 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100">
+            <p className="font-medium">Nächster Schritt: Freigabe</p>
+            <p className="mt-1 text-emerald-900/90 dark:text-emerald-200/90 leading-relaxed">
+              Nach dem Speichern startest du den Freigabeprozess ausschließlich in der Referenz-Detailansicht
+              unter <strong>Reference Readiness</strong> („Freigabe anfordern“).
+            </p>
+            <Button asChild variant="outline" size="sm" className="mt-3 bg-background">
+              <Link href={ROUTES.evidence.detail(id)}>Zur Detailansicht</Link>
+            </Button>
+          </div>
+        ) : null}
         <ReferenceForm
           companies={companies ?? []}
           contacts={contacts ?? []}

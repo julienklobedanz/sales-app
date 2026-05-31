@@ -10,6 +10,8 @@ import { logEventForCurrentOrg } from '@/lib/events/log-event'
 import { getAppOrigin } from '@/lib/env/app-origin'
 import { getPortfolioManageAndPreviewUrlsForApprovalEmail } from '@/app/dashboard/references/sharing'
 import { parseOrgPublicLinkPolicy } from '@/lib/organization-link-policy'
+import { ensureApprovalRecipientFromInputImpl } from '@/app/dashboard/references/approval-contacts'
+import { canStartApprovalWorkflow } from '@/lib/references/approval-workflow'
 
 function getResend(): Resend | null {
   const key = process.env.RESEND_API_KEY
@@ -368,6 +370,8 @@ export async function submitForApprovalImpl(
       approval_contact_id,
       approval_external_contact_id,
       customer_approval_status,
+      approval_internal_status,
+      approval_requested_at,
       approval_reference_status_snapshot,
       approval_requested_by,
       approval_reference_giver_name,
@@ -387,13 +391,47 @@ export async function submitForApprovalImpl(
 
   if (fetchError || !row) throw new Error('Referenz nicht gefunden')
 
-  const ref = row as unknown as ReferenceApprovalRow
+  const ref = row as unknown as ReferenceApprovalRow & {
+    approval_internal_status?: string | null
+  }
 
   const { data: profile } = await supabase
     .from('profiles')
     .select('full_name, role, organization_id')
     .eq('id', user.id)
     .maybeSingle()
+
+  const userRole = String((profile as { role?: string } | null)?.role ?? 'sales') as
+    | 'admin'
+    | 'sales'
+    | 'account_manager'
+  const refStatus = String(ref.status ?? 'draft')
+  const internalApproval = String(ref.approval_internal_status ?? '')
+  const customerApproval = String(ref.customer_approval_status ?? '')
+  const isApprovalGranted =
+    customerApproval === 'approved' || refStatus === 'approved' || refStatus === 'external'
+  const staleInternalPending =
+    internalApproval === 'pending_internal' &&
+    (isApprovalGranted ||
+      refStatus === 'anonymized' ||
+      refStatus === 'internal_only' ||
+      refStatus === 'internal')
+
+  if (
+    !canStartApprovalWorkflow({
+      role: userRole,
+      referenceStatus: refStatus,
+      internalApprovalStatus: internalApproval,
+      customerApprovalStatus: ref.customer_approval_status,
+      approvalRequestedAt: (ref as { approval_requested_at?: string | null }).approval_requested_at,
+      staleInternalPending,
+      isApprovalGranted,
+    })
+  ) {
+    throw new Error(
+      'Freigabe kann nur von der Referenz-Detailseite gestartet werden (Reference Readiness), wenn die Referenz den passenden Status hat (Entwurf bzw. nur intern für Sales).'
+    )
+  }
   const organizationId =
     typeof (profile as { organization_id?: string | null } | null)?.organization_id === 'string'
       ? (profile as { organization_id: string }).organization_id
@@ -533,7 +571,13 @@ export type ApproveInternalAndSendResult =
   | { success: true }
   | { success: false; error: string }
 
-export type ApproveInternalRecipientOptions = Pick<SubmitForApprovalOptions, 'contactId' | 'externalContactId'>
+export type ApproveInternalRecipientOptions = Pick<
+  SubmitForApprovalOptions,
+  'contactId' | 'externalContactId'
+> & {
+  /** Freitext-E-Mail, wenn kein Kontakt aus der Liste gewählt wurde */
+  recipientEmail?: string
+}
 
 export async function approveInternalAndSendImpl(
   referenceId: string,
@@ -576,14 +620,35 @@ export async function approveInternalAndSendImpl(
   let contactEmail: string
   let firstName: string
   try {
+    let recipientOpts: SubmitForApprovalOptions = {
+      contactId: recipient?.contactId,
+      externalContactId: recipient?.externalContactId,
+    }
+
+    if (
+      recipient?.recipientEmail?.trim() &&
+      !recipient.contactId &&
+      !recipient.externalContactId
+    ) {
+      const ensured = await ensureApprovalRecipientFromInputImpl(
+        supabase,
+        referenceId,
+        recipient.recipientEmail.trim()
+      )
+      if ('error' in ensured) {
+        return { success: false, error: ensured.error }
+      }
+      recipientOpts = {
+        contactId: ensured.contactId ?? undefined,
+        externalContactId: ensured.externalContactId ?? undefined,
+      }
+    }
+
     const resolved = await resolveContactForApproval(
       supabase,
       ref,
       ref.company_id,
-      {
-        contactId: recipient?.contactId,
-        externalContactId: recipient?.externalContactId,
-      },
+      recipientOpts,
       { requireRecipientEmail: false }
     )
     contactEmail = resolved.email

@@ -51,7 +51,6 @@ export function CompanyDetailClient({
   const canEditAccount = isAdmin || isAccountManager
   const canEditStrategy = isAdmin || isAccountManager || isSales
   const canEditBuyingCenter = isAdmin || isAccountManager || isSales
-  const canEditPipeline = isAdmin || isAccountManager || isSales
   const initialTabParam = searchParams.get('tab')
   const initialTab =
     initialTabParam === 'mission_control' ||
@@ -443,7 +442,7 @@ export function CompanyDetailClient({
         </TabsContent>
 
         <TabsContent value="pipeline" className="mt-6">
-          <CompanyDetailPipelineTab activeDeals={activeDeals} canEdit={canEditPipeline} />
+          <CompanyDetailPipelineTab activeDeals={activeDeals} />
         </TabsContent>
 
         <TabsContent value="proof_points" className="mt-6">

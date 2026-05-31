@@ -8,22 +8,13 @@ import { LinkIcon, Loader, Sparkles, FileText } from '@hugeicons/core-free-icons
 import { Button } from '@/components/ui/button'
 import { AppIcon } from '@/lib/icons'
 import { ROUTES } from '@/lib/routes'
-import { formatNumberDe } from '@/lib/format'
+import { formatReferenceVolume } from '@/lib/format'
 import { MatchScoreCircle } from '@/components/match/match-score-circle'
 import type { MatchReferenceHit } from '@/app/dashboard/actions'
 import { createSharedPortfolio } from '@/app/dashboard/actions'
 import { addReferenceToDealWithScore } from '../actions'
 import { PdfExportDialog } from '@/app/dashboard/evidence/[id]/pdf-export-dialog'
 import { KiEntwurfSheet } from './ki-entwurf-sheet'
-
-function formatVolume(raw: string | null | undefined): string {
-  if (raw == null || raw === '') return '—'
-  const n = parseInt(String(raw).replace(/\D/g, ''), 10)
-  if (!Number.isNaN(n) && String(raw).replace(/\D/g, '').length >= 4) {
-    return `${formatNumberDe(n)} €`
-  }
-  return raw
-}
 
 export function MatchResultCard({
   hit,
@@ -93,7 +84,7 @@ export function MatchResultCard({
   const meta = [
     hit.industry?.trim() || null,
     hit.companyName?.trim() || null,
-    formatVolume(hit.volumeEur),
+    hit.volumeEur ? formatReferenceVolume(hit.volumeEur) || '—' : null,
   ]
     .filter(Boolean)
     .join(' · ')

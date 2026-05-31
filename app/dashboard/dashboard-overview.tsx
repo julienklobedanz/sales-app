@@ -40,7 +40,6 @@ import {
   deleteReference,
   getExistingShareForReference,
   getReferenceAssets,
-  submitForApproval,
   toggleFavorite,
 } from './actions'
 import type { Profile } from './dashboard-shell'
@@ -762,41 +761,6 @@ export function DashboardOverview({
   )
   const selectedCount = selectedRefs.length
   const selectedRefLabel = `${selectedCount} Referenz${selectedCount === 1 ? '' : 'en'}`
-  const approvalEligibleRefs = useMemo(
-    () =>
-      selectedRefs.filter(
-        (r) =>
-          r.status === 'anonymized' ||
-          r.status === 'internal_only' ||
-          r.status === 'draft'
-      ),
-    [selectedRefs]
-  )
-  const approvalEligibleCount = approvalEligibleRefs.length
-
-  const handleBulkRequestApproval = async () => {
-    if (approvalEligibleCount === 0) {
-      toast.error('Freigabe ist nur für Entwurf-, interne oder anonymisierte Referenzen möglich.')
-      return
-    }
-    const results = await Promise.allSettled(
-      approvalEligibleRefs.map((ref) => submitForApproval(ref.id))
-    )
-    const successCount = results.filter((r) => r.status === 'fulfilled').length
-    const failedCount = results.length - successCount
-    if (successCount > 0) {
-      toast.success(
-        `${successCount} Referenz${successCount === 1 ? '' : 'en'} zur Freigabe angefragt.`
-      )
-    }
-    if (failedCount > 0) {
-      toast.error(
-        `${failedCount} Freigabe-Anfrage${failedCount === 1 ? '' : 'n'} konnten nicht gesendet werden.`
-      )
-    }
-    router.refresh()
-  }
-
   useEffect(() => {
     const el = selectAllCheckboxRef.current
     if (!el) return
@@ -827,18 +791,6 @@ export function DashboardOverview({
     toast.success('ID in die Zwischenablage kopiert')
   }
 
-  const handleSubmitForApproval = async (id: string) => {
-    try {
-      await submitForApproval(id)
-      toast.success(
-        'Freigabe angefordert. Es geht kein automatischer Kundenversand — der Account Manager übernimmt den Kontakt.'
-      )
-      router.refresh()
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Fehler beim Anfordern der Freigabe.')
-    }
-  }
-
   async function copyReferenceShareLink(referenceId: string) {
     const existing = await getExistingShareForReference(referenceId)
     let shareUrl = existing?.url ?? null
@@ -856,18 +808,6 @@ export function DashboardOverview({
         : new URL(shareUrl, window.location.origin).toString()
     await navigator.clipboard.writeText(absoluteUrl)
     toast.success('Kundenlink kopiert.')
-  }
-
-  const handleRequestSpecificApproval = async (id: string) => {
-    try {
-      await submitForApproval(id)
-      toast.success(
-        'Einzelfreigabe angefordert. Kein automatischer Kundenversand — der Account Manager übernimmt den Kontakt.'
-      )
-      router.refresh()
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Fehler beim Anfordern.')
-    }
   }
 
   return (
@@ -910,10 +850,8 @@ export function DashboardOverview({
             selectedRefLabel={selectedRefLabel}
             showSalesActions={profile.role === 'sales'}
             showAdminDelete={profile.role === 'admin'}
-            approvalEligibleCount={approvalEligibleCount}
             onClearSelection={() => setSelectedRefIds(new Set())}
             onBulkDelete={() => setBulkDeleteConfirmOpen(true)}
-            onBulkRequestApproval={() => void handleBulkRequestApproval()}
             onCreateSharedPortfolio={async () => {
               const selected = Array.from(selectedRefIds)
               const result = await createSharedPortfolio(selected)
@@ -1302,8 +1240,6 @@ export function DashboardOverview({
         normalizeTagLabel={normalizeTagLabel}
         onToggleFavorite={handleToggleFavorite}
         onOpenShareLink={setShareLinkPopoverRef}
-        onSubmitForApproval={handleSubmitForApproval}
-        onRequestSpecificApproval={handleRequestSpecificApproval}
         onDelete={handleDelete}
         orgDateDisplayFormat={orgDateDisplayFormat}
       />

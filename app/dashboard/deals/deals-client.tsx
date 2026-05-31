@@ -16,6 +16,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { AppIcon } from '@/lib/icons'
 import { DealStatusBadge } from '@/components/deal-status-badge'
 import { COPY } from '@/lib/copy'
+import { formatDealVolume } from '@/lib/format'
 import { AccountCell } from '@/components/table/account-cell'
 import {
   Select,
@@ -66,17 +67,6 @@ function isExpiringIn30Days(dateStr: string | null): boolean {
   end.setHours(0, 0, 0, 0)
   const days = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
   return days <= 30
-}
-
-function formatEuroAmount(raw: string | null | undefined): string {
-  const s = String(raw ?? '').trim()
-  if (!s) return '—'
-  // Nur wenn es wie eine Zahl aussieht: hübsch formatieren (de-DE)
-  const digits = s.replace(/[^\d]/g, '')
-  if (!digits) return s
-  const n = Number(digits)
-  if (!Number.isFinite(n)) return s
-  return `${new Intl.NumberFormat('de-DE').format(n)} €`
 }
 
 export function DealsClientContent({
@@ -263,7 +253,7 @@ export function DealsClientContent({
         ),
         cell: ({ row }) => (
           <span className="text-muted-foreground tabular-nums">
-            {formatEuroAmount(row.original.volume)}
+            {formatDealVolume(row.original.volume)}
           </span>
         ),
       },

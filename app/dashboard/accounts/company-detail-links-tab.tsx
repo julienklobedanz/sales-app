@@ -5,6 +5,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import type { AccountDealRow, CompanyRefRow } from './actions'
 import { referenceStatusLabel } from './company-detail-constants'
 import { ROUTES } from '@/lib/routes'
+import { formatDealVolume } from '@/lib/format'
+import { formatDealVolume } from '@/lib/format'
 
 type Props = {
   references: CompanyRefRow[]
@@ -77,7 +79,9 @@ export function CompanyDetailLinksTab({ references, activeDeals }: Props) {
                         {d.title}
                       </Link>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{d.volume ?? '—'}</TableCell>
+                    <TableCell className="text-muted-foreground tabular-nums">
+                      {formatDealVolume(d.volume)}
+                    </TableCell>
                     <TableCell>
                       <Badge variant="outline">{d.status}</Badge>
                     </TableCell>

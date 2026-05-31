@@ -1,6 +1,7 @@
 'use client'
 
 import type { Dispatch, MouseEvent, SetStateAction } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import {
@@ -68,8 +69,6 @@ export function ReferenceDetailSheet({
   normalizeTagLabel,
   onToggleFavorite,
   onOpenShareLink,
-  onSubmitForApproval,
-  onRequestSpecificApproval,
   onDelete,
   orgDateDisplayFormat = 'de-DE',
 }: {
@@ -92,8 +91,6 @@ export function ReferenceDetailSheet({
   normalizeTagLabel: (raw: string) => string
   onToggleFavorite: (id: string, e?: MouseEvent) => void
   onOpenShareLink: (ref: ReferenceRow) => void
-  onSubmitForApproval: (id: string) => void | Promise<void>
-  onRequestSpecificApproval: (id: string) => void | Promise<void>
   onDelete: (id: string, e?: MouseEvent) => void
   orgDateDisplayFormat?: OrgDateDisplayFormat | string
 }) {
@@ -596,26 +593,25 @@ export function ReferenceDetailSheet({
                   )}
                 </div>
 
-                {/* Rechte Seite: Freigabe anfragen / Account Owner + Löschen ganz rechts */}
+                {/* Rechte Seite: Detail für Freigabe / Löschen */}
                 <div className="flex w-full justify-end gap-2 sm:w-auto">
-                  {profile.role === 'sales' &&
-                    selectedRef.status === 'internal_only' && (
-                      <Button
-                        size="sm"
-                        onClick={() => void onRequestSpecificApproval(selectedRef.id)}
-                      >
-                        <AppIcon icon={Send} size={16} className="mr-2" /> Freigabe anfragen
-                      </Button>
-                    )}
-                  {profile.role === 'admin' &&
-                    selectedRef.status === 'draft' && (
-                      <Button
-                        size="sm"
-                        onClick={() => void onSubmitForApproval(selectedRef.id)}
-                      >
-                        <AppIcon icon={Mail} size={16} className="mr-2" /> Freigabe anfragen
-                      </Button>
-                    )}
+                  {(profile.role === 'admin' || profile.role === 'account_manager') &&
+                  selectedRef.status === 'draft' ? (
+                    <Button size="sm" variant="outline" asChild>
+                      <Link href={`${ROUTES.evidence.detail(selectedRef.id)}?startApproval=1`}>
+                        <AppIcon icon={Send} size={16} className="mr-2" />
+                        Freigabe (Detail)
+                      </Link>
+                    </Button>
+                  ) : null}
+                  {profile.role === 'sales' && selectedRef.status === 'internal_only' ? (
+                    <Button size="sm" variant="outline" asChild>
+                      <Link href={`${ROUTES.evidence.detail(selectedRef.id)}?startApproval=1`}>
+                        <AppIcon icon={Send} size={16} className="mr-2" />
+                        Freigabe (Detail)
+                      </Link>
+                    </Button>
+                  ) : null}
                   {profile.role === 'admin' && (
                     <Button
                       variant="ghost"
