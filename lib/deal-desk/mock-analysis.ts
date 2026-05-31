@@ -1,6 +1,11 @@
 /** Demo-Daten für Deal Desk — ersetzen durch API-Pipeline bei Live-Betrieb. */
 
 import type { DealDeskExecutiveBriefingFields } from '@/lib/deal-desk/executive-briefing-fields'
+import {
+  computeDeliveryWinProbability,
+  type WinProbabilityBreakdown,
+} from '@/lib/deal-desk/compute-delivery-win-probability'
+import type { RfpCoverageRow } from '@/lib/rfp-coverage'
 
 export type BidTeamRoleKey =
   | 'sales_lead'
@@ -68,6 +73,8 @@ export type DealDeskMockAnalysis = {
   documentNames: string[]
   customerName: string
   winProbability: number
+  /** Berechnung aus Portfolio, Capabilities, Nachweisen (kein KI-Schätzwert). */
+  winProbabilityBreakdown?: WinProbabilityBreakdown
   icpFitLabel: string
   icpSummary: string
   executiveBriefing?: DealDeskExecutiveBriefingFields
@@ -203,15 +210,46 @@ export function buildMockDealDeskAnalysis(fileNames: string[]): DealDeskMockAnal
     fileNames.length > 1
       ? ` Querschnitt aus ${fileNames.length} Dokumenten (u. a. Leistungsbeschreibung, Eignungsmatrix, Vertragsentwurf).`
       : ''
-  return {
-    documentName: docLabel,
-    documentNames: fileNames,
-    customerName: 'Logistik AG Schweiz',
-    winProbability: 78,
-    icpFitLabel: 'Starker ICP-Fit',
-    icpSummary: `${DEMO_EXECUTIVE_BRIEFING.strategicAssessment ?? ''}${multiDocHint}`,
-    executiveBriefing: { ...DEMO_EXECUTIVE_BRIEFING },
-    redFlags: [
+
+  const draftRows: DealDeskMockAnalysis['draftRows'] = [
+    {
+      id: 'd-1',
+      requirement: 'Haben Sie Erfahrung mit Cloud-Migration in der Logistik (SAP S/4, Hybrid)?',
+      answer:
+        'Ja. Wir haben eine vergleichbare Migration bei Aurubis durchgeführt: Lift-and-Shift der Kern-Workloads, anschließend Containerisierung der Integrationslayer. Time-to-Value nach 14 Wochen für die erste produktive Umgebung.',
+      reference: {
+        title: 'Cloud-Migration Aurubis',
+        companyName: 'Aurubis',
+        logoUrl: null,
+        matchPercent: 95,
+      },
+    },
+    {
+      id: 'd-2',
+      requirement: 'Beschreiben Sie Ihr Vorgehen zum Betrieb mit 99,9 % Verfügbarkeit.',
+      answer: null,
+      reference: {
+        title: 'Managed Services SLA',
+        companyName: 'Intern',
+        logoUrl: null,
+        matchPercent: 58,
+      },
+    },
+    {
+      id: 'd-3',
+      requirement: 'Nachweis ISO 27001 und Datenschutz-Konzept für Schweizer Standorte.',
+      answer:
+        'ISO 27001 zertifiziert; Datenresidenz EU/CH wählbar. Referenzprojekt mit vergleichbarem Compliance-Rahmen (Finanzdienstleister, CH).',
+      reference: {
+        title: 'Compliance-Rollout Finanz CH',
+        companyName: 'Helvetia FinTech',
+        logoUrl: null,
+        matchPercent: 72,
+      },
+    },
+  ]
+
+  const redFlags: DealDeskRedFlag[] = [
       ...DEMO_SAMPLE_RED_FLAGS.map((f) => ({ ...f })),
       {
         id: 'rf-4',
@@ -234,7 +272,55 @@ export function buildMockDealDeskAnalysis(fileNames: string[]): DealDeskMockAnal
         excerpt: 'Bei vorzeitiger Beendigung 15 % des Gesamtauftragswerts als pauschale Vertragsstrafe.',
         pageHint: 'Kap. 12.1',
       },
+  ]
+
+  const requirements = draftRows.map((d) => ({
+    id: d.id,
+    text: d.requirement,
+    category: d.id === 'd-3' ? 'Compliance' : 'Technical',
+  }))
+
+  const coverage: RfpCoverageRow[] = draftRows.map((d) => ({
+    requirementId: d.id,
+    requirementText: d.requirement,
+    matches: d.reference
+      ? [
+          {
+            id: d.id,
+            title: d.reference.title,
+            summary: null,
+            industry: null,
+            similarity: d.reference.matchPercent / 100,
+            companyName: d.reference.companyName,
+          },
+        ]
+      : [],
+  }))
+
+  const winProbabilityBreakdown = computeDeliveryWinProbability({
+    requirements,
+    coverage,
+    complianceDocs: [
+      {
+        document_type: 'iso_27001',
+        title: 'ISO 27001 Zertifikat',
+        valid_until: '2030-12-31',
+        file_storage_path: 'demo/iso.pdf',
+      },
     ],
+    redFlags: DEMO_SAMPLE_RED_FLAGS.map((f) => ({ ...f })),
+  })
+
+  return {
+    documentName: docLabel,
+    documentNames: fileNames,
+    customerName: 'Logistik AG Schweiz',
+    winProbability: winProbabilityBreakdown.finalScore,
+    winProbabilityBreakdown,
+    icpFitLabel: 'Starker ICP-Fit',
+    icpSummary: `${DEMO_EXECUTIVE_BRIEFING.strategicAssessment ?? ''}${multiDocHint}`,
+    executiveBriefing: { ...DEMO_EXECUTIVE_BRIEFING },
+    redFlags,
     timelineItems: (() => {
       const now = new Date()
       now.setHours(0, 0, 0, 0)
@@ -273,37 +359,7 @@ export function buildMockDealDeskAnalysis(fileNames: string[]): DealDeskMockAnal
         },
       ]
     })(),
-    draftRows: [
-      {
-        id: 'd-1',
-        requirement: 'Haben Sie Erfahrung mit Cloud-Migration in der Logistik (SAP S/4, Hybrid)?',
-        answer:
-          'Ja. Wir haben eine vergleichbare Migration bei Aurubis durchgeführt: Lift-and-Shift der Kern-Workloads, anschließend Containerisierung der Integrationslayer. Time-to-Value nach 14 Wochen für die erste produktive Umgebung.',
-        reference: {
-          title: 'Cloud-Migration Aurubis',
-          companyName: 'Aurubis',
-          logoUrl: null,
-          matchPercent: 95,
-        },
-      },
-      {
-        id: 'd-2',
-        requirement: 'Beschreiben Sie Ihr Vorgehen zum Betrieb mit 99,9 % Verfügbarkeit.',
-        answer: null,
-      },
-      {
-        id: 'd-3',
-        requirement: 'Nachweis ISO 27001 und Datenschutz-Konzept für Schweizer Standorte.',
-        answer:
-          'ISO 27001 zertifiziert; Datenresidenz EU/CH wählbar. Referenzprojekt mit vergleichbarem Compliance-Rahmen (Finanzdienstleister, CH).',
-        reference: {
-          title: 'Compliance-Rollout Finanz CH',
-          companyName: 'Helvetia FinTech',
-          logoUrl: null,
-          matchPercent: 72,
-        },
-      },
-    ],
+    draftRows,
     smeTasks: [
       {
         id: 's-1',

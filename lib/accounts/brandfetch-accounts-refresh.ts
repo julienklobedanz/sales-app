@@ -250,9 +250,12 @@ export function pickBestLogoUrlFromBrandfetchJson(
 export async function fetchBrandfetchCompany(
   domain: string,
   options?: { excludeLogoUrl?: string | null }
-): Promise<{ success: true; data: BrandfetchCompanyPayload } | { success: false }> {
+): Promise<
+  | { success: true; data: BrandfetchCompanyPayload }
+  | { success: false; status?: number }
+> {
   const apiKey = process.env.BRANDFETCH_API_KEY
-  if (!apiKey) return { success: false }
+  if (!apiKey) return { success: false, status: 0 }
 
   let res: Response
   try {
@@ -263,7 +266,7 @@ export async function fetchBrandfetchCompany(
   } catch {
     return { success: false }
   }
-  if (!res.ok) return { success: false }
+  if (!res.ok) return { success: false, status: res.status }
 
   let json: {
     name?: string | null

@@ -1,3 +1,1 @@
-'use client'
-
-export type EvidenceLibraryMode = 'references' | 'certificates'
+export type { EvidenceLibraryMode } from '@/lib/evidence/evidence-library-mode'

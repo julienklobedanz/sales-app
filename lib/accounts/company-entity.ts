@@ -14,19 +14,29 @@ export function partnerCategoryLabel(value: string | null | undefined): string |
   return PARTNER_CATEGORY_OPTIONS.find((o) => o.value === value)?.label ?? value
 }
 
-import { NDA_EXPIRY_WARNING_DAYS, ndaDaysUntilExpiry } from '@/lib/accounts/nda-expiry'
+import { NDA_EXPIRY_WARNING_DAYS, ndaDaysUntilExpiry } from './nda-expiry'
 
 export type NdaDisplayStatus = 'active' | 'expiring' | 'none'
 
-export function resolveNdaDisplayStatus(
-  rows: { status: string; valid_until: string | null }[]
-): NdaDisplayStatus {
-  if (!rows.length) return 'none'
+export type NdaAgreementStatusInput = {
+  status: string
+  valid_until: string | null
+  /** Nur mit hochgeladenem PDF gilt ein NDA als vorhanden (Badge / Grid). */
+  file_storage_path?: string | null
+}
+
+export function hasNdaDocumentUploaded(row: NdaAgreementStatusInput): boolean {
+  return Boolean(row.file_storage_path?.trim())
+}
+
+export function resolveNdaDisplayStatus(rows: NdaAgreementStatusInput[]): NdaDisplayStatus {
+  const documented = rows.filter(hasNdaDocumentUploaded)
+  if (!documented.length) return 'none'
 
   let hasActive = false
   let hasExpiring = false
 
-  for (const row of rows) {
+  for (const row of documented) {
     if (row.status === 'expired') continue
     if (row.status === 'pending') {
       hasExpiring = true

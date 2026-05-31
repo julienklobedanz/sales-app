@@ -100,7 +100,11 @@ export function CompanyDetailNdaPopover({
   }, [initialAgreements])
 
   const displayStatus = resolveNdaDisplayStatus(
-    agreements.map((a) => ({ status: a.status, valid_until: a.valid_until }))
+    agreements.map((a) => ({
+      status: a.status,
+      valid_until: a.valid_until,
+      file_storage_path: a.file_storage_path,
+    }))
   )
 
   const expiringSoon = agreements.filter((a) => {
@@ -140,7 +144,7 @@ export function CompanyDetailNdaPopover({
       const res = await createNdaAgreement({
         companyId,
         title: addTitle,
-        status: addStatus,
+        status: addPdfFile ? addStatus : 'pending',
         unlimited: addUnlimited,
         validUntil: addValidUntil || null,
         notes: addNotes,

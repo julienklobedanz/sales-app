@@ -54,6 +54,7 @@ import {
   type HeroTakeawayIconKind,
 } from '@/lib/deal-desk/hero-key-takeaways'
 import {
+  winProbabilityBreakdownTooltip,
   winProbabilityRecommendationLabel,
   winProbabilityScoreLegend,
   winProbabilityTone,
@@ -927,8 +928,10 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
                                     {winProbabilityRecommendationLabel(winTone)}
                                   </Badge>
                                 </TooltipTrigger>
-                                <TooltipContent side="top" className="max-w-[240px] text-xs">
-                                  {winProbabilityScoreLegend()}
+                                <TooltipContent side="top" className="max-w-[280px] whitespace-pre-line text-xs">
+                                  {analysis.winProbabilityBreakdown
+                                    ? winProbabilityBreakdownTooltip(analysis.winProbabilityBreakdown)
+                                    : winProbabilityScoreLegend()}
                                 </TooltipContent>
                               </Tooltip>
                             </TooltipProvider>

@@ -11,6 +11,7 @@ import type { NdaAgreementRow } from './nda-actions'
 export type CompanyDetailCompany = {
   id: string
   name: string
+  entity_kind?: 'account' | 'partner' | null
   logo_url: string | null
   website_url: string | null
   headquarters: string | null

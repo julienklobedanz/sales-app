@@ -1,6 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-import { isMissingNdaTitleColumn } from '@/lib/accounts/nda-schema'
+import {
+  isMissingNdaFileStorageColumn,
+  isMissingNdaTitleColumn,
+} from '@/lib/accounts/nda-schema'
 import { formatNdaExpiryDateDe, ndaDaysUntilExpiry } from '@/lib/accounts/nda-expiry'
 import {
   complianceSearchTitle,
@@ -440,6 +443,9 @@ async function fetchNdaSearchRows(
     'id,company_id,status,valid_until,file_storage_path,companies(name,logo_url)'
   const withTitle =
     'id,company_id,title,status,valid_until,file_storage_path,companies(name,logo_url)'
+  const legacyBase = 'id,company_id,status,valid_until,companies(name,logo_url)'
+  const legacyWithTitle =
+    'id,company_id,title,status,valid_until,companies(name,logo_url)'
 
   const run = (select: string, filter: { or?: string; ilikeNotes?: boolean }) => {
     let q = supabase.from('nda_agreements').select(select).limit(6)
@@ -461,9 +467,31 @@ async function fetchNdaSearchRows(
     }
   }
 
+  if (res.error && isMissingNdaFileStorageColumn(res.error.message)) {
+    if (ndaOr) {
+      const notesOnly = ndaOr.replace(/title\.ilike/g, 'notes.ilike')
+      res = await run(legacyWithTitle, { or: notesOnly })
+      if (res.error && isMissingNdaTitleColumn(res.error.message)) {
+        res = await run(legacyBase, { or: notesOnly })
+      }
+    } else {
+      res = await run(legacyWithTitle, { ilikeNotes: true })
+      if (res.error && isMissingNdaTitleColumn(res.error.message)) {
+        res = await run(legacyBase, { ilikeNotes: true })
+      }
+    }
+  }
+
   if (res.error) return []
 
-  return (res.data ?? []) as unknown as NdaSearchRow[]
+  const rawRows = Array.isArray(res.data) ? res.data : []
+  return rawRows.map((row) => {
+    const typed = row as unknown as NdaSearchRow
+    return {
+      ...typed,
+      file_storage_path: typed.file_storage_path ?? null,
+    }
+  })
 }
 
 /** Legacy flache Liste für Command Palette (cmdk). */

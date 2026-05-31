@@ -11,24 +11,17 @@ import type { DealDeskRiskAnalysisResult } from '@/lib/deal-desk/deal-desk-risk-
 import type { DealDeskExecutiveBriefingFields } from '@/lib/deal-desk/executive-briefing-fields'
 import type { RfpCoverageRow } from '@/lib/rfp-coverage'
 import type { ExtractedRfpRequirement } from '@/lib/rfp-requirements'
+import {
+  computeDeliveryWinProbability,
+  DESK_COVER_THRESHOLD,
+  formatWinProbabilityBreakdownSummary,
+} from '@/lib/deal-desk/compute-delivery-win-probability'
+import { loadOrgComplianceDocsForDelivery } from '@/lib/deal-desk/load-org-delivery-context'
 import { generateDealDeskAnswerForRequirement } from '@/lib/deal-desk/generate-desk-answer'
 
-export const DESK_COVER_THRESHOLD = 0.55
+export { DESK_COVER_THRESHOLD }
 
 const SME_CATEGORIES = new Set(['legal', 'compliance', 'pricing', 'finance', 'security'])
-
-function computeCoverageWinPercent(coverage: RfpCoverageRow[]): number {
-  if (!coverage.length) return 40
-  const covered = coverage.filter((row) => {
-    const best = row.matches[0]
-    return best && best.similarity >= DESK_COVER_THRESHOLD && !row.embedError
-  }).length
-  return Math.round((covered / coverage.length) * 100)
-}
-
-function blendWinProbability(coveragePct: number, riskWin: number): number {
-  return Math.min(100, Math.max(0, Math.round(coveragePct * 0.55 + riskWin * 0.45)))
-}
 
 function buildSmeTasks(
   coverage: RfpCoverageRow[],
@@ -109,6 +102,7 @@ export async function mapRfpAnalysisToDealDeskSnapshot(params: {
   risk: DealDeskRiskAnalysisResult
   executiveBriefing: DealDeskExecutiveBriefingFields
   timelineItems: DealDeskTimelineItem[]
+  organizationId: string
   supabase: SupabaseClient
 }): Promise<DealDeskMockAnalysis> {
   const {
@@ -120,6 +114,7 @@ export async function mapRfpAnalysisToDealDeskSnapshot(params: {
     risk,
     executiveBriefing,
     timelineItems,
+    organizationId,
     supabase,
   } = params
   const primary = fileNames[0] ?? 'RFP-Paket'
@@ -129,8 +124,14 @@ export async function mapRfpAnalysisToDealDeskSnapshot(params: {
       : `${primary} + ${fileNames.length - 1} weitere`
 
   const logoByRef = await enrichLogoUrls(supabase, coverage)
-  const coveragePct = computeCoverageWinPercent(coverage)
-  const winProbability = blendWinProbability(coveragePct, risk.winProbability)
+  const complianceDocs = await loadOrgComplianceDocsForDelivery(supabase, organizationId)
+  const winBreakdown = computeDeliveryWinProbability({
+    requirements,
+    coverage,
+    complianceDocs,
+    redFlags: risk.redFlags,
+  })
+  const winProbability = winBreakdown.finalScore
 
   const draftRows = await Promise.all(
     coverage.map(async (row) => {
@@ -176,17 +177,19 @@ export async function mapRfpAnalysisToDealDeskSnapshot(params: {
   const matchedRows = draftRows.filter((r) => r.reference).length
   const icpSummary = [
     executiveBriefing.strategicAssessment?.trim() || risk.icpSummary,
-    `${requirements.length} Anforderungen aus den Unterlagen extrahiert`,
+    `${requirements.length} Anforderungen extrahiert.`,
+    `Lieferfähigkeit (Win Score ${winProbability}%): ${formatWinProbabilityBreakdownSummary(winBreakdown)}.`,
     matchedRows > 0
-      ? `, ${matchedRows} mit interner Referenz abgedeckt (≥${Math.round(DESK_COVER_THRESHOLD * 100)} % Match).`
-      : '. Noch keine Referenz-Matches — Antworten und SME-Routing prüfen.',
-  ].join('')
+      ? `${matchedRows} Referenz-Matches im Antwort-Entwurf (≥${Math.round(DESK_COVER_THRESHOLD * 100)} % Ähnlichkeit).`
+      : 'Referenz-Matches für Antwort-Entwürfe prüfen.',
+  ].join(' ')
 
   return {
     documentName: docLabel,
     documentNames: fileNames,
     customerName: risk.customerName,
     winProbability,
+    winProbabilityBreakdown: winBreakdown,
     icpFitLabel: risk.icpFitLabel,
     icpSummary,
     executiveBriefing,

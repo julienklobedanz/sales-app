@@ -518,8 +518,8 @@ export function CompanyCombobox({
           )}
           {mergedSuggestions.length === 0 && !searching && !loading && !previewLoading && (
             <div className="px-3 py-2 text-xs text-muted-foreground">
-              Keine Treffer in euren Accounts. Markendaten werden bei passender Eingabe automatisch
-              geladen — oder Domain nutzen (z. B. merck.de) und Enter drücken.
+              Keine Treffer in euren Accounts. Firmennamen weiter ausformulieren oder Enter drücken,
+              um Markendaten zu laden.
             </div>
           )}
         </div>

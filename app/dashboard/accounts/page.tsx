@@ -118,18 +118,22 @@ export default async function AccountsPage() {
   if (companyIds.length) {
     const ndaRes = await supabase
       .from('nda_agreements')
-      .select('company_id, status, valid_until')
+      .select('company_id, status, valid_until, file_storage_path')
       .eq('organization_id', profile.organization_id)
       .in('company_id', companyIds)
 
     if (!ndaRes.error) {
-      const grouped: Record<string, { status: string; valid_until: string | null }[]> = {}
+      const grouped: Record<
+        string,
+        { status: string; valid_until: string | null; file_storage_path: string | null }[]
+      > = {}
       for (const row of ndaRes.data ?? []) {
         if (!row.company_id) continue
         grouped[row.company_id] = grouped[row.company_id] ?? []
         grouped[row.company_id].push({
           status: row.status,
           valid_until: row.valid_until,
+          file_storage_path: row.file_storage_path,
         })
       }
       for (const [companyId, rows] of Object.entries(grouped)) {

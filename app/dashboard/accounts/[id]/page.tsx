@@ -46,7 +46,7 @@ export default async function CompanyDetailPage({
   const { data: company } = await supabase
     .from('companies')
     .select(
-      'id, name, logo_url, website_url, headquarters, industry, description, employee_count, account_status, internal_reference_approval_contact_id'
+      'id, name, entity_kind, logo_url, website_url, headquarters, industry, description, employee_count, account_status, internal_reference_approval_contact_id'
     )
     .eq('id', id)
     .single()
@@ -128,7 +128,13 @@ export default async function CompanyDetailPage({
     <div className="px-6 py-6 md:px-10 lg:px-16 xl:px-24">
       <div className="w-full max-w-6xl mx-auto">
         <CompanyDetailClient
-          company={company}
+          company={{
+            ...company,
+            entity_kind:
+              (company as { entity_kind?: string }).entity_kind === 'partner'
+                ? 'partner'
+                : 'account',
+          }}
           organizationName={organizationName}
           strategy={strategy}
           stakeholders={stakeholders}

@@ -86,6 +86,8 @@ function parseAnalysisSnapshot(
           : fallback.redFlags,
       winProbability:
         typeof partial.winProbability === 'number' ? partial.winProbability : fallback.winProbability,
+      winProbabilityBreakdown:
+        partial.winProbabilityBreakdown ?? fallback.winProbabilityBreakdown,
       customerName: partial.customerName ?? customerName ?? fallback.customerName,
       icpFitLabel: partial.icpFitLabel ?? fallback.icpFitLabel,
       icpSummary: partial.icpSummary ?? fallback.icpSummary,

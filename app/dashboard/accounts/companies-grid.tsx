@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useEffect, useLayoutEffect, useTransition } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   Card,
   CardContent,
@@ -59,10 +59,21 @@ import { formatEmployeeCountDeDisplay } from '@/lib/format'
 import { useRole } from '@/hooks/useRole'
 import { CreateAccountDialog } from './create-account-dialog'
 import { CreatePartnerDialog } from './create-partner-dialog'
+import { CompaniesImportDialog } from './components/companies-import-dialog'
 import { EntityKindSwitch } from './components/entity-kind-switch'
 import { AccountSortSwitch } from './components/account-sort-switch'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { AccountsToolbarTooltip } from './components/accounts-toolbar-tooltip'
+import {
+  accountsDetailHref,
+  parseAccountsListView,
+  type AccountsListView,
+} from '@/lib/accounts/accounts-list-view'
+import {
+  setAccountsListViewOptimistic,
+  syncAccountsListViewFromUrl,
+  useAccountsListView,
+} from '@/lib/accounts/accounts-list-view-store'
 import { type CompanyEntityKind, type NdaDisplayStatus, partnerCategoryLabel } from '@/lib/accounts/company-entity'
 import { NdaStatusBadge } from './components/nda-status-badge'
 import { toast } from 'sonner'
@@ -91,14 +102,18 @@ export type CompanyCard = {
 
 export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
   const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const [, startViewTransition] = useTransition()
+  const listView = useAccountsListView()
   const [search, setSearch] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<CompanyCard | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [favoritesOnly, setFavoritesOnly] = useState(false)
-  const [entityKind, setEntityKind] = useState<CompanyEntityKind>('account')
   const [createOpen, setCreateOpen] = useState(false)
   const [createPartnerOpen, setCreatePartnerOpen] = useState(false)
-  const [importingAccounts, setImportingAccounts] = useState(false)
+  const [importDialogOpen, setImportDialogOpen] = useState(false)
+  const [importing, setImporting] = useState(false)
   const [sortMode, setSortMode] = useState<'activity' | 'az'>('activity')
   const [filterOpen, setFilterOpen] = useState(false)
   const [filterIndustry, setFilterIndustry] = useState<string>('__all__')
@@ -110,7 +125,27 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
   const [favoriteSaving, setFavoriteSaving] = useState<Record<string, boolean>>({})
   const { isAdmin, isAccountManager } = useRole()
   const canManage = isAdmin || isAccountManager
-  const importInputRef = useRef<HTMLInputElement | null>(null)
+
+  useLayoutEffect(() => {
+    syncAccountsListViewFromUrl(parseAccountsListView(searchParams))
+  }, [searchParams])
+
+  const entityKind: CompanyEntityKind = listView
+
+  function setListView(next: AccountsListView) {
+    setAccountsListViewOptimistic(next)
+    const params = new URLSearchParams(searchParams.toString())
+    if (next === 'partner') {
+      params.set('view', 'partner')
+    } else {
+      params.delete('view')
+    }
+    const query = params.toString()
+    const href = query ? `${pathname}?${query}` : pathname
+    startViewTransition(() => {
+      router.replace(href, { scroll: false })
+    })
+  }
 
   function employeeLabel(value: number | null | undefined): string | null {
     if (typeof value !== 'number' || !Number.isFinite(value)) return null
@@ -144,21 +179,23 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
     }
   }
 
-  async function handleAccountImport(file: File) {
-    setImportingAccounts(true)
+  async function handleBulkImport(file: File): Promise<boolean> {
+    setImporting(true)
     try {
       const bytes = new Uint8Array(await file.arrayBuffer())
-      const result = await bulkCreateCompaniesFromSheet(bytes)
+      const result = await bulkCreateCompaniesFromSheet(bytes, { entityKind })
       if (!result.success) {
         toast.error(result.error ?? 'Import fehlgeschlagen.')
-        return
+        return false
       }
+      const label = entityKind === 'partner' ? 'Partner' : 'Accounts'
       toast.success(
-        `${result.createdCount} Accounts importiert (${result.skippedCount} übersprungen, ${result.failedCount} fehlgeschlagen).`
+        `${result.createdCount} ${label} importiert (${result.skippedCount} übersprungen, ${result.failedCount} fehlgeschlagen).`
       )
       router.refresh()
+      return true
     } finally {
-      setImportingAccounts(false)
+      setImporting(false)
     }
   }
 
@@ -235,6 +272,19 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
   ])
 
   const isPartnerView = entityKind === 'partner'
+
+  function companyHref(companyId: string, opts?: { edit?: boolean }) {
+    let href = accountsDetailHref(companyId, isPartnerView ? 'partner' : 'account')
+    if (opts?.edit) {
+      href += `${href.includes('?') ? '&' : '?'}edit=1`
+    }
+    return href
+  }
+
+  function openCompany(companyId: string, opts?: { edit?: boolean }) {
+    router.push(companyHref(companyId, opts))
+  }
+
   const searchPlaceholder = isPartnerView
     ? COPY.accounts.searchPartnersPlaceholder
     : COPY.accounts.searchCompaniesPlaceholder
@@ -275,48 +325,43 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                   />
                 </Button>
               </AccountsToolbarTooltip>
-              {canManage && !isPartnerView ? (
+              {canManage ? (
                 <>
-                  <input
-                    ref={importInputRef}
-                    type="file"
-                    accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0]
-                      if (file) void handleAccountImport(file)
-                      e.target.value = ''
-                    }}
-                  />
                   <AccountsToolbarTooltip
-                    label={COPY.accounts.bulkUploadTooltip}
+                    label={
+                      isPartnerView
+                        ? COPY.accounts.bulkUploadTooltipPartner
+                        : COPY.accounts.bulkUploadTooltip
+                    }
                     className="max-w-[240px] text-center leading-snug"
                   >
                     <Button
                       type="button"
                       variant="ghost"
                       size="toolbar"
-                      disabled={importingAccounts}
+                      disabled={importing}
                       className="shrink-0 px-2.5 hover:bg-muted/70"
-                      aria-label={COPY.accounts.bulkUploadTooltip}
-                      onDragOver={(e) => {
-                        e.preventDefault()
-                        if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'
-                      }}
-                      onDrop={(e) => {
-                        e.preventDefault()
-                        const file = e.dataTransfer.files?.[0]
-                        if (file) void handleAccountImport(file)
-                      }}
-                      onClick={() => importInputRef.current?.click()}
+                      aria-label={
+                        isPartnerView
+                          ? COPY.accounts.bulkUploadTooltipPartner
+                          : COPY.accounts.bulkUploadTooltip
+                      }
+                      onClick={() => setImportDialogOpen(true)}
                     >
                       <AppIcon
-                        icon={importingAccounts ? Loader : UploadIcon}
+                        icon={importing ? Loader : UploadIcon}
                         size={16}
-                        className={importingAccounts ? 'animate-spin' : ''}
+                        className={importing ? 'animate-spin' : ''}
                       />
                     </Button>
                   </AccountsToolbarTooltip>
+                  <CompaniesImportDialog
+                    open={importDialogOpen}
+                    onOpenChange={setImportDialogOpen}
+                    entityKind={entityKind}
+                    importing={importing}
+                    onImport={handleBulkImport}
+                  />
                 </>
               ) : null}
               <Popover open={filterOpen} onOpenChange={setFilterOpen}>
@@ -419,7 +464,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                 </Button>
               </PopoverContent>
             </Popover>
-            <EntityKindSwitch value={entityKind} onChange={setEntityKind} />
+            <EntityKindSwitch value={entityKind} onChange={setListView} />
             <AccountSortSwitch value={sortMode} onChange={setSortMode} />
             {canManage ? (
               <>
@@ -502,7 +547,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                         aria-label="Account bearbeiten"
                         onClick={(e) => {
                           e.stopPropagation()
-                          router.push(`${ROUTES.accountsDetail(company.id)}?edit=1`)
+                          openCompany(company.id, { edit: true })
                         }}
                       >
                         <AppIcon icon={Pencil} size={14} />
@@ -635,7 +680,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
 
               <ContextMenuContent className="w-56">
                 <ContextMenuItem asChild>
-                  <Link href={ROUTES.accountsDetail(company.id)}>Öffnen</Link>
+                  <Link href={companyHref(company.id)}>Öffnen</Link>
                 </ContextMenuItem>
                 <ContextMenuItem
                   onSelect={(e) => {
@@ -650,7 +695,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                   <>
                     <ContextMenuSeparator />
                     <ContextMenuItem asChild>
-                      <Link href={`${ROUTES.accountsDetail(company.id)}?edit=1`}>Bearbeiten</Link>
+                      <Link href={companyHref(company.id, { edit: true })}>Bearbeiten</Link>
                     </ContextMenuItem>
                     <ContextMenuItem
                       variant="destructive"

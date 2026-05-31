@@ -1,6 +1,7 @@
 export const COPY = {
   nav: {
     accounts: 'Accounts',
+    partners: 'Partner',
     deals: 'Deals',
     evidence: 'Referenzen',
     marketSignals: 'Marktsignale',
@@ -93,15 +94,46 @@ export const COPY = {
     addPartner: 'Partner hinzufügen',
     bulkUploadTooltip:
       'Accounts aus Excel- oder CSV-Datei importieren (Spalten z. B. Name, Website, Branche).',
+    bulkUploadTooltipPartner:
+      'Partner aus Excel- oder CSV-Datei importieren (Spalten z. B. Name, Website, Kategorie).',
+    importTemplateDownload: 'Excel-Vorlage herunterladen',
+    importCancel: 'Abbrechen',
+    importRemoveFile: 'Datei entfernen',
+    importInvalidFile: 'Bitte eine CSV- oder Excel-Datei (.csv, .xlsx, .xls) wählen.',
+    importInProgress: 'Import läuft …',
+    importAccount: {
+      title: 'Accounts importieren',
+      description:
+        'Pro Zeile reicht der Firmenname in Spalte A — Website, Branche, Standort, Logo und Mitarbeiterzahl werden beim Import per Brandfetch ergänzt. Weitere Spalten sind optional.',
+      dropzoneTitle: 'CSV oder Excel hierher ziehen',
+      dropzoneHint: 'oder klicken, um eine Datei vom Gerät zu wählen',
+      fileSelectedHint: 'Klicken oder ziehen zum Ersetzen',
+      submit: 'Importieren',
+    },
+    importPartner: {
+      title: 'Partner importieren',
+      description:
+        'Pro Zeile reicht der Name in Spalte A (optional Kategorie in F: sub, tech, legal, other). Alle anderen Felder werden per Brandfetch ergänzt.',
+      dropzoneTitle: 'CSV oder Excel hierher ziehen',
+      dropzoneHint: 'oder klicken, um eine Datei vom Gerät zu wählen',
+      fileSelectedHint: 'Klicken oder ziehen zum Ersetzen',
+      submit: 'Importieren',
+    },
     tooltipFilter: 'Filtern',
     tooltipFavorites: 'Favoriten',
     alsoLinkedAccountHint: 'Auch als Account verknüpft',
     ariaFavoritesOnlyOn: 'Nur Favoriten anzeigen',
     ariaFavoritesOnlyOff: 'Alle Accounts anzeigen',
-    createDialogNameHint: 'Tippen für Vorschläge aus deiner Organisation und Brandfetch.',
+    createDialogNameHint:
+      'Firmennamen eingeben — Vorschläge aus euren Accounts, Partnern und Markendaten erscheinen beim Tippen.',
     createDialogSuggestLocal: 'Bereits angelegt',
-    createDialogSuggestBrandfetch: 'Vorschlag',
-    createDialogSearching: 'Suche …',
+    createDialogSuggestBrandfetch: 'Markenvorschlag',
+    createDialogSearching: 'Suche nach Firmennamen …',
+    createDialogTypeMore: 'Mindestens 2 Zeichen für die Namenssuche eingeben.',
+    createDialogNoResults:
+      'Keine Treffer für diesen Namen. Namen weiter ausformulieren oder unten manuell anlegen.',
+    createDialogBrandfetchHint:
+      'Markendaten vorübergehend nicht verfügbar. Bitte kurz warten oder Stammdaten manuell ausfüllen.',
     createDialogOpenExisting: 'Dieser Account existiert bereits. Es wird zur Detailseite gewechselt.',
     editDialogTitle: 'Account bearbeiten',
     editSuccess: 'Account gespeichert.',

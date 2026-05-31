@@ -7,7 +7,6 @@ const MODEL = 'gpt-4o-mini'
 const MAX_CHARS = 80_000
 
 export type DealDeskRiskAnalysisResult = {
-  winProbability: number
   icpFitLabel: string
   icpSummary: string
   customerName: string
@@ -23,7 +22,6 @@ export async function analyzeDealDeskRisks(
   const body = plainText.trim().slice(0, MAX_CHARS)
   if (body.length < 80) {
     return {
-      winProbability: 45,
       icpFitLabel: 'Unklar',
       icpSummary: 'Zu wenig Text für eine belastbare Einschätzung.',
       customerName: projectName,
@@ -40,9 +38,8 @@ export async function analyzeDealDeskRisks(
 
 Antworte NUR mit JSON (kein Markdown):
 {
-  "winProbability": <0-100>,
   "icpFitLabel": "<kurz, z.B. Starker ICP-Fit>",
-  "icpSummary": "<2-4 Sätze Deutsch>",
+  "icpSummary": "<2-4 Sätze Deutsch — strategische Passung, Branche, Volumen; KEIN Prozent-Score>",
   "customerName": "<Auftraggeber/Kunde aus Text oder "${projectName}">",
   "redFlags": [
     {
@@ -60,7 +57,7 @@ ${fileList}
 Regeln:
 - 3 bis 8 redFlags, nur echte Vertrags-/SLA-/Haftungs-/Compliance-Risiken.
 - sourceFileName: das Dokument (Vertrag, Anhang, Leistungsbeschreibung), in dem die Klausel steht.
-- winProbability: konservativ bei vielen critical/high Flags.`
+- Kein winProbability-Feld — Score wird separat aus Referenzen und Nachweisen berechnet.`
 
   try {
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -92,10 +89,6 @@ Regeln:
     const raw = json?.choices?.[0]?.message?.content?.trim() ?? ''
     const parsed = JSON.parse(raw) as Record<string, unknown>
 
-    const winProbability = Math.min(
-      100,
-      Math.max(0, Math.round(Number(parsed.winProbability) || 50))
-    )
     const icpFitLabel =
       typeof parsed.icpFitLabel === 'string' ? parsed.icpFitLabel.trim() : 'ICP prüfen'
     const icpSummary =
@@ -134,7 +127,7 @@ Regeln:
       }
     }
 
-    return { winProbability, icpFitLabel, icpSummary, customerName, redFlags }
+    return { icpFitLabel, icpSummary, customerName, redFlags }
   } catch (e) {
     return { error: e instanceof Error ? e.message : 'Risikoanalyse fehlgeschlagen.' }
   }

@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ToolbarSearchField } from '@/components/ui/toolbar-search-field'
@@ -76,7 +76,15 @@ import { BulkImportDialog, type BulkImportGroupItem } from './overview/bulk-impo
 import { EvidenceLibraryToolbar } from './overview/evidence-library-toolbar'
 import { ComplianceDocumentsTable } from './overview/compliance-documents-table'
 import { ComplianceUploadDialog } from './overview/compliance-upload-dialog'
-import type { EvidenceLibraryMode } from './overview/reference-library-switch'
+import {
+  EVIDENCE_LIBRARY_MODE_STORAGE_KEY,
+  type EvidenceLibraryMode,
+} from '@/lib/evidence/evidence-library-mode'
+import {
+  setEvidenceLibraryModeOptimistic,
+  syncEvidenceLibraryModeFromStorage,
+  useEvidenceLibraryMode,
+} from '@/lib/evidence/evidence-library-mode-store'
 import type { ComplianceDocumentRow } from '@/app/dashboard/settings/compliance-actions'
 import { NewReferenceDialog } from './overview/new-reference-dialog'
 import { AccountsToolbarTooltip } from '@/app/dashboard/accounts/components/accounts-toolbar-tooltip'
@@ -174,18 +182,7 @@ const COLUMN_LABELS: Record<(typeof COLUMN_KEYS)[number], string> = {
 }
 
 const COLUMN_ORDER_STORAGE_KEY = 'dashboard-overview-column-order-v1'
-const EVIDENCE_LIBRARY_MODE_STORAGE_KEY = 'evidence-library-mode-v1'
 const EVIDENCE_SHOW_EXPIRED_CERTS_KEY = 'evidence-compliance-show-expired-v1'
-
-function loadEvidenceLibraryMode(): EvidenceLibraryMode {
-  if (typeof window === 'undefined') return 'references'
-  try {
-    const raw = localStorage.getItem(EVIDENCE_LIBRARY_MODE_STORAGE_KEY)
-    return raw === 'certificates' ? 'certificates' : 'references'
-  } catch {
-    return 'references'
-  }
-}
 
 function loadColumnOrderFromStorage(): ReferenceColumnKey[] {
   if (typeof window === 'undefined') return [...COLUMN_KEYS] as ReferenceColumnKey[]
@@ -264,7 +261,7 @@ export function DashboardOverview({
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [favoritesOnly, setFavoritesOnly] = useState(initialFavoritesOnly)
   const [referenceLayout, setReferenceLayout] = useState<'inbox' | 'table'>('table')
-  const [libraryMode, setLibraryMode] = useState<EvidenceLibraryMode>('references')
+  const libraryMode = useEvidenceLibraryMode()
   const [complianceUploadOpen, setComplianceUploadOpen] = useState(false)
   const [showExpiredCertificates, setShowExpiredCertificates] = useState(false)
   const isReferencesLibrary = libraryMode === 'references'
@@ -308,13 +305,17 @@ export function DashboardOverview({
     }
   }, [])
 
-  useEffect(() => {
-    setLibraryMode(loadEvidenceLibraryMode())
+  useLayoutEffect(() => {
+    syncEvidenceLibraryModeFromStorage()
     try {
       setShowExpiredCertificates(localStorage.getItem(EVIDENCE_SHOW_EXPIRED_CERTS_KEY) === '1')
     } catch {
       /* ignore */
     }
+  }, [])
+
+  const handleLibraryModeChange = useCallback((mode: EvidenceLibraryMode) => {
+    setEvidenceLibraryModeOptimistic(mode)
   }, [])
 
   useEffect(() => {
@@ -883,7 +884,7 @@ export function DashboardOverview({
         {/* Toolbar: Suche bis zu den Buttons; rechts Favoriten → Status → Spalten → … */}
         <EvidenceLibraryToolbar
           libraryMode={libraryMode}
-          onLibraryModeChange={setLibraryMode}
+          onLibraryModeChange={handleLibraryModeChange}
           referenceLayout={referenceLayout}
           onReferenceLayoutChange={setReferenceLayout}
           searchValue={isReferencesLibrary ? search : certificateSearch}

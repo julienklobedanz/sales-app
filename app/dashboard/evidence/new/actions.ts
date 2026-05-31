@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { REVALIDATE, ROUTES } from '@/lib/routes'
 import { narrativeFieldLengthError } from '@/lib/references/reference-narrative-limits'
+import { resolveDomainForCompanyName } from '@/lib/accounts/resolve-company-for-import'
+import { fetchBrandfetchCompany } from '@/lib/accounts/brandfetch-accounts-refresh'
 import { mapBrandfetchIndustriesArrayToGermanCategory } from '@/lib/brandfetch/map-brandfetch-industry-to-de'
 import { normalizeNarrativeText } from '@/lib/references/narrative-normalize'
 import { extractDataFromDocument } from '@/lib/document-extraction'
@@ -51,7 +53,7 @@ export type CompanySearchSuggestion = {
 }
 
 export type CompanySearchResult =
-  | { success: true; suggestions: CompanySearchSuggestion[] }
+  | { success: true; suggestions: CompanySearchSuggestion[]; hint?: string }
   | { success: false; error: string }
 
 function normalizeDomain(input: string): string {
@@ -104,26 +106,39 @@ function domainToDisplayName(domain: string): string {
  * Brand-Search (Name) — optional mit BRANDFETCH_CLIENT_ID.
  * Ohne Client-ID: einzelner Fallback über Domain-Raten + /v2/brands/domain (wie bisher).
  */
-async function brandfetchSuggestionsForQuery(query: string): Promise<CompanySearchSuggestion[]> {
-  const q = query.trim()
-  if (q.length < 1) return []
+type BrandfetchSuggestionsMeta = { rateLimited?: boolean; notConfigured?: boolean }
 
-  const clientId = process.env.BRANDFETCH_CLIENT_ID?.trim()
-  if (clientId) {
+async function brandfetchSuggestionsForQuery(
+  query: string
+): Promise<{ suggestions: CompanySearchSuggestion[]; meta: BrandfetchSuggestionsMeta }> {
+  const q = query.trim()
+  if (q.length < 1) return { suggestions: [], meta: {} }
+
+  const hasApiKey = Boolean(process.env.BRANDFETCH_API_KEY?.trim())
+  const hasClientId = Boolean(process.env.BRANDFETCH_CLIENT_ID?.trim())
+  if (!hasApiKey && !hasClientId) {
+    return { suggestions: [], meta: { notConfigured: true } }
+  }
+
+  const out: CompanySearchSuggestion[] = []
+  const seen = new Set<string>()
+  const meta: BrandfetchSuggestionsMeta = {}
+
+  const pushFromSearchApi = async (): Promise<void> => {
+    const clientId = process.env.BRANDFETCH_CLIENT_ID?.trim()
+    if (!clientId || q.length < 2) return
     try {
       const res = await fetch(
         `https://api.brandfetch.io/v2/search/${encodeURIComponent(q)}?c=${encodeURIComponent(clientId)}`,
-        { next: { revalidate: 0 } }
+        { cache: 'no-store' }
       )
-      if (!res.ok) return []
+      if (!res.ok) return
       const arr = (await res.json()) as Array<{
         name?: string | null
         domain: string
         icon?: string | null
       }>
-      if (!Array.isArray(arr)) return []
-      const out: CompanySearchSuggestion[] = []
-      const seen = new Set<string>()
+      if (!Array.isArray(arr)) return
       for (const item of arr) {
         if (!item?.domain) continue
         const domain = normalizeDomain(item.domain)
@@ -137,25 +152,41 @@ async function brandfetchSuggestionsForQuery(query: string): Promise<CompanySear
         })
         if (out.length >= 8) break
       }
-      return out
     } catch (e) {
-      console.error('brandfetchSuggestionsForQuery:', e)
-      return []
+      console.error('brandfetchSuggestionsForQuery search API:', e)
     }
   }
 
-  const domain = inputToDomain(q) ?? (normalizeDomain(q).includes('.') ? normalizeDomain(q) : null)
-  if (!domain || !domain.includes('.')) return []
-  const fetched = await fetchBrandfetchData(domain)
-  if (!fetched.success) return []
-  return [
-    {
-      id: `brandfetch:${domain}`,
-      name: fetched.company_name,
-      logo_url: fetched.logo_url,
-      source: 'brandfetch',
-    },
-  ]
+  const pushFromResolvedDomain = async (): Promise<void> => {
+    if (out.length >= 8) return
+    const direct = inputToDomain(q) ?? (normalizeDomain(q).includes('.') ? normalizeDomain(q) : null)
+    const domain =
+      direct && direct.includes('.') ? direct : await resolveDomainForCompanyName(q)
+    if (!domain || !domain.includes('.') || seen.has(domain)) return
+
+    const fetched = await fetchBrandfetchCompany(domain)
+    if (!fetched.success) {
+      if (fetched.status === 429) meta.rateLimited = true
+      return
+    }
+
+    seen.add(domain)
+    const displayName = fetched.data.companyName?.trim() || q
+    const duplicateName = out.some((s) => s.name.trim().toLowerCase() === displayName.toLowerCase())
+    if (!duplicateName) {
+      out.push({
+        id: `brandfetch:${domain}`,
+        name: displayName,
+        logo_url: fetched.data.logoUrl,
+        source: 'brandfetch',
+      })
+    }
+  }
+
+  await pushFromSearchApi()
+  await pushFromResolvedDomain()
+
+  return { suggestions: out, meta }
 }
 
 /** Sucht Unternehmensvorschläge für die Combobox (lokal in der Organisation + Brandfetch). */
@@ -209,7 +240,7 @@ export async function searchCompanySuggestions(input: string): Promise<CompanySe
   }))
 
   // 2. Brandfetch-Vorschläge (parallel zu lokalen Treffern)
-  const remote = await brandfetchSuggestionsForQuery(query)
+  const { suggestions: remote, meta } = await brandfetchSuggestionsForQuery(query)
   const seenNames = new Set(suggestions.map((s) => s.name.toLowerCase()))
   for (const r of remote) {
     if (seenNames.has(r.name.toLowerCase())) continue
@@ -217,7 +248,18 @@ export async function searchCompanySuggestions(input: string): Promise<CompanySe
     suggestions.push(r)
   }
 
-  return { success: true, suggestions }
+  let hint: string | undefined
+  if (suggestions.length === 0 && remote.length === 0) {
+    if (meta.notConfigured) {
+      hint =
+        'Markendaten-Suche ist nicht eingerichtet (BRANDFETCH_API_KEY oder BRANDFETCH_CLIENT_ID in .env.local).'
+    } else if (meta.rateLimited) {
+      hint =
+        'Brandfetch-Limit erreicht — bitte kurz warten. Für bessere Namenssuche BRANDFETCH_CLIENT_ID hinterlegen.'
+    }
+  }
+
+  return { success: true, suggestions, hint }
 }
 
 /** Server Action: KI-Import aus PDF/DOCX/PPTX (für das Referenz-Formular im Client). */
@@ -257,7 +299,7 @@ export async function enrichAndSaveCompany(domain: string): Promise<EnrichCompan
     return {
       success: false,
       error:
-        'Bitte eine Domain (z. B. bmw.de) eingeben — oder BRANDFETCH_CLIENT_ID in den Umgebungsvariablen setzen, damit Firmennamen per Brandfetch-Suche zugeordnet werden können.',
+        'Zu diesem Namen konnten keine Markendaten gefunden werden. Bitte den Firmennamen präzisieren oder die Felder manuell ausfüllen.',
     }
   }
 
@@ -406,23 +448,7 @@ async function resolveDomainForEnrichmentInput(input: string): Promise<string | 
   if (!trimmed) return null
   const directDomain = inputToDomain(trimmed) ?? normalizeDomain(trimmed)
   if (directDomain && directDomain.includes('.')) return directDomain
-
-  // Name-basierter Fallback über Brandfetch Search (wenn Client-ID konfiguriert ist)
-  const clientId = process.env.BRANDFETCH_CLIENT_ID?.trim()
-  if (!clientId || trimmed.length < 2) return null
-  try {
-    const res = await fetch(
-      `https://api.brandfetch.io/v2/search/${encodeURIComponent(trimmed)}?c=${encodeURIComponent(clientId)}`,
-      { next: { revalidate: 0 } }
-    )
-    if (!res.ok) return null
-    const arr = (await res.json()) as Array<{ domain?: string | null }>
-    if (!Array.isArray(arr) || arr.length === 0) return null
-    const firstDomain = normalizeDomain(String(arr[0]?.domain ?? ''))
-    return firstDomain && firstDomain.includes('.') ? firstDomain : null
-  } catch {
-    return null
-  }
+  return resolveDomainForCompanyName(trimmed)
 }
 
 export async function fetchCompanyEnrichment(input: string): Promise<FetchEnrichmentResult> {
@@ -431,7 +457,7 @@ export async function fetchCompanyEnrichment(input: string): Promise<FetchEnrich
     return {
       success: false,
       error:
-        'Kein passender Account gefunden. Gib eine Domain ein oder hinterlege BRANDFETCH_CLIENT_ID für Namenssuche.',
+        'Kein Unternehmen zu diesem Namen gefunden. Bitte den Firmennamen präzisieren oder Stammdaten manuell ausfüllen.',
     }
   }
   return fetchBrandfetchData(domain)

@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -23,10 +22,9 @@ import { ROUTES } from '@/lib/routes'
 import { COPY } from '@/lib/copy'
 import {
   fetchCompanyEnrichment,
-  searchCompanySuggestions,
   type CompanySearchSuggestion,
 } from '@/app/dashboard/evidence/new/actions'
-import { cn } from '@/lib/utils'
+import { CompanyNameSuggestField } from './components/company-name-suggest-field'
 import { displayHostFromUrl, normalizeWebsiteForSave } from './account-company-helpers'
 import {
   ACCOUNT_STATUS_FORM_OPTIONS,
@@ -53,14 +51,8 @@ export function CreateAccountDialog({
   const [description, setDescription] = useState('')
   const [accountStatus, setAccountStatus] = useState<AccountStatusFormValue>('__none__')
 
-  const [debouncedQuery, setDebouncedQuery] = useState('')
   const [debouncedEnrichQuery, setDebouncedEnrichQuery] = useState('')
-  const [suggestions, setSuggestions] = useState<CompanySearchSuggestion[]>([])
-  const [searchLoading, setSearchLoading] = useState(false)
-  const [suggestOpen, setSuggestOpen] = useState(false)
 
-  const wrapRef = useRef<HTMLDivElement>(null)
-  const searchAbortRef = useRef(0)
   const enrichReqRef = useRef(0)
   const lastAutoQueryRef = useRef('')
 
@@ -73,11 +65,7 @@ export function CreateAccountDialog({
     setEmployeeCount('')
     setDescription('')
     setAccountStatus('__none__')
-    setSuggestions([])
-    setDebouncedQuery('')
     setDebouncedEnrichQuery('')
-    setSuggestOpen(false)
-    setSearchLoading(false)
     lastAutoQueryRef.current = ''
   }, [])
 
@@ -88,38 +76,9 @@ export function CreateAccountDialog({
   }, [open, resetForm])
 
   useEffect(() => {
-    const t = window.setTimeout(() => setDebouncedQuery(name.trim()), 280)
-    return () => window.clearTimeout(t)
-  }, [name])
-
-  useEffect(() => {
     const t = window.setTimeout(() => setDebouncedEnrichQuery(name.trim()), 2000)
     return () => window.clearTimeout(t)
   }, [name])
-
-  useEffect(() => {
-    if (!open || debouncedQuery.length < 1) {
-      setSuggestions([])
-      setSearchLoading(false)
-      return
-    }
-
-    const id = ++searchAbortRef.current
-    setSearchLoading(true)
-
-    ;(async () => {
-      const res = await searchCompanySuggestions(debouncedQuery)
-      if (searchAbortRef.current !== id) return
-      setSearchLoading(false)
-      if (res.success) {
-        setSuggestions(res.suggestions)
-        setSuggestOpen(res.suggestions.length > 0)
-      } else {
-        setSuggestions([])
-        setSuggestOpen(false)
-      }
-    })()
-  }, [debouncedQuery, open])
 
   useEffect(() => {
     if (!open) return
@@ -148,19 +107,7 @@ export function CreateAccountDialog({
     })()
   }, [debouncedEnrichQuery, open])
 
-  useEffect(() => {
-    const fn = (e: MouseEvent) => {
-      if (!wrapRef.current?.contains(e.target as Node)) {
-        setSuggestOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', fn)
-    return () => document.removeEventListener('mousedown', fn)
-  }, [])
-
   const applySuggestion = async (s: CompanySearchSuggestion) => {
-    setSuggestOpen(false)
-
     if (!s.id.startsWith('brandfetch:')) {
       toast.info(COPY.accounts.createDialogOpenExisting)
       onOpenChange(false)
@@ -172,11 +119,12 @@ export function CreateAccountDialog({
     const domain = s.id.slice('brandfetch:'.length)
     setEnriching(true)
     try {
-      const res = await fetchCompanyEnrichment(domain)
+      const res = await fetchCompanyEnrichment(s.name.trim() || domain)
       if (!res.success) {
         toast.error(res.error)
         return
       }
+      lastAutoQueryRef.current = res.company_name.trim().toLowerCase()
       setName(res.company_name)
       setWebsiteUrl(displayHostFromUrl(res.website_url))
       setIndustry(res.industry ?? '')
@@ -230,7 +178,7 @@ export function CreateAccountDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !pending && !enriching && onOpenChange(v)}>
-      <DialogContent>
+      <DialogContent className="overflow-visible">
         <DialogHeader>
           <DialogTitle>Account hinzufügen</DialogTitle>
         </DialogHeader>
@@ -238,71 +186,20 @@ export function CreateAccountDialog({
         <div className="grid gap-4">
           <div className="grid gap-2">
             <Label htmlFor="account-name">Name</Label>
-            <div className="relative" ref={wrapRef}>
-              <Input
-                id="account-name"
-                value={name}
-                onChange={(e) => {
-                  setName(e.target.value)
-                  if (e.target.value.trim().length >= 1) setSuggestOpen(true)
-                }}
-                onFocus={() => {
-                  if (suggestions.length > 0) setSuggestOpen(true)
-                }}
-                placeholder="z. B. ACME GmbH"
-                disabled={pending || enriching}
-                autoFocus
-                autoComplete="off"
-                aria-autocomplete="list"
-                aria-expanded={suggestOpen}
-              />
-              {suggestOpen && (searchLoading || suggestions.length > 0) ? (
-                <ul
-                  role="listbox"
-                  className="absolute left-0 right-0 top-full z-50 mt-1 max-h-56 overflow-auto rounded-md border border-border bg-popover p-1 text-sm shadow-md"
-                >
-                  {searchLoading && suggestions.length === 0 ? (
-                    <li className="px-3 py-2 text-muted-foreground">{COPY.accounts.createDialogSearching}</li>
-                  ) : null}
-                  {suggestions.map((s) => (
-                    <li key={s.id} role="option" aria-selected={false}>
-                      <button
-                        type="button"
-                        className={cn(
-                          'flex w-full items-center gap-2 rounded-sm px-2 py-2 text-left hover:bg-accent hover:text-accent-foreground'
-                        )}
-                        onMouseDown={(e) => {
-                          e.preventDefault()
-                          void applySuggestion(s)
-                        }}
-                      >
-                        {s.logo_url ? (
-                          <Image
-                            src={s.logo_url}
-                            alt=""
-                            width={24}
-                            height={24}
-                            unoptimized
-                            className="size-6 shrink-0 rounded object-contain"
-                          />
-                        ) : (
-                          <span className="flex size-6 shrink-0 items-center justify-center rounded bg-muted text-[10px] font-medium text-muted-foreground">
-                            ?
-                          </span>
-                        )}
-                        <span className="min-w-0 flex-1 truncate font-medium">{s.name}</span>
-                        <span className="shrink-0 text-[10px] text-muted-foreground">
-                          {s.source === 'local'
-                            ? COPY.accounts.createDialogSuggestLocal
-                            : COPY.accounts.createDialogSuggestBrandfetch}
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </div>
-            <p className="text-xs text-muted-foreground">{COPY.accounts.createDialogNameHint}</p>
+            <CompanyNameSuggestField
+              id="account-name"
+              value={name}
+              onValueChange={setName}
+              onSelectSuggestion={applySuggestion}
+              disabled={pending}
+              placeholder="z. B. ACME GmbH"
+              autoFocus
+            />
+            <p className="text-xs text-muted-foreground">
+              {enriching
+                ? 'Markendaten werden geladen …'
+                : COPY.accounts.createDialogNameHint}
+            </p>
           </div>
 
           <div className="grid gap-2">

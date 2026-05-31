@@ -28,10 +28,12 @@ async function guessDomainFromCompanyName(name: string): Promise<string | null> 
     normalizeCompanyNameForMatch(name).replace(/\s+/g, '')
   if (!token || token.length < 3) return null
 
-  for (const tld of ['com', 'de', 'eu', 'net']) {
+  for (const tld of ['com', 'de', 'eu', 'net'] as const) {
     const host = `${token}.${tld}`
     const fetched = await fetchBrandfetchCompany(host)
     if (!fetched.success) continue
+    // .com-Treffer direkt nutzen (z. B. „cloudflare“ → cloudflare.com)
+    if (tld === 'com') return host
     const apiName = fetched.data.companyName ?? ''
     if (
       companyNamesEquivalent(apiName, name) ||
@@ -43,7 +45,8 @@ async function guessDomainFromCompanyName(name: string): Promise<string | null> 
   return null
 }
 
-async function resolveDomainForCompanyName(name: string): Promise<string | null> {
+/** Domain zu Firmennamen (Brandfetch Search, Domain-Raten, TLD-Versuche). */
+export async function resolveDomainForCompanyName(name: string): Promise<string | null> {
   const trimmed = name.trim()
   if (!trimmed) return null
   const direct = inputToDomain(trimmed)
@@ -76,7 +79,20 @@ async function resolveDomainForCompanyName(name: string): Promise<string | null>
     }
   }
 
-  return guessDomainFromCompanyName(trimmed)
+  const guessed = await guessDomainFromCompanyName(trimmed)
+  if (guessed) return guessed
+
+  const slug = trimmed
+    .toLowerCase()
+    .replace(/\s+/g, '')
+    .replace(/[^a-z0-9-]/g, '')
+  if (slug.length >= 2) {
+    const host = `${slug}.com`
+    const fetched = await fetchBrandfetchCompany(host)
+    if (fetched.success) return host
+  }
+
+  return null
 }
 
 export type ResolvedCompanyForImport = {
@@ -105,6 +121,45 @@ async function lookupBrandfetch(rawName: string): Promise<BrandfetchLookup> {
   }
   const fetched = await fetchBrandfetchCompany(domain)
   return { domain, data: fetched.success ? fetched.data : null }
+}
+
+export type BulkImportRowInput = {
+  name: string
+  website: string
+  industry: string
+  headquarters: string
+  employeeCount: number | null
+}
+
+export type BulkImportRowEnriched = BulkImportRowInput & {
+  logo_url: string | null
+  description: string | null
+}
+
+/** Excel-Import: leere Spalten per Brandfetch (Name → Domain-Suche) auffüllen. */
+export async function enrichBulkImportRowFromBrandfetch(
+  row: BulkImportRowInput
+): Promise<BulkImportRowEnriched> {
+  const lookup = await lookupBrandfetchForCompany(row.name, row.website || null)
+  const data = lookup.data
+  if (!data) {
+    return { ...row, logo_url: null, description: null }
+  }
+
+  const employeeCount =
+    row.employeeCount != null && Number.isFinite(row.employeeCount)
+      ? row.employeeCount
+      : data.employeeCount
+
+  return {
+    name: data.companyName?.trim() || row.name,
+    website: row.website || data.websiteUrl || '',
+    industry: row.industry || data.industry || '',
+    headquarters: row.headquarters || data.headquarters || '',
+    employeeCount: employeeCount ?? null,
+    logo_url: data.logoUrl ?? null,
+    description: data.description ?? null,
+  }
 }
 
 /** Website-Domain zuerst, sonst Namenssuche (+ TLD-Raten). */

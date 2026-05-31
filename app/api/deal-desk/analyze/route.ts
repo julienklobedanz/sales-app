@@ -496,6 +496,7 @@ export async function POST(req: NextRequest) {
     risk: { ...riskResult, redFlags: linkedRedFlags },
     executiveBriefing: briefingResult,
     timelineItems,
+    organizationId: orgId,
     supabase,
   })
 

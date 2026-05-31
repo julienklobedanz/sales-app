@@ -2,10 +2,14 @@
 
 import { revalidatePath } from 'next/cache'
 import {
+  isMissingNdaFileStorageColumn,
   isMissingNdaTitleColumn,
   NDA_AGREEMENT_SELECT_BASE,
+  NDA_AGREEMENT_SELECT_LEGACY,
+  NDA_AGREEMENT_SELECT_LEGACY_WITH_TITLE,
   NDA_AGREEMENT_SELECT_WITH_TITLE,
   NDA_TITLE_MIGRATION_HINT,
+  withNdaFileFieldsNull,
 } from '@/lib/accounts/nda-schema'
 import { ROUTES } from '@/lib/routes'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
@@ -103,6 +107,37 @@ export async function getNdaAgreementsByCompanyId(
         ...(row as Omit<NdaAgreementRow, 'title'>),
         title: null,
       }))
+      return { success: true, rows: rows as NdaAgreementRow[] }
+    }
+  }
+
+  if (error && isMissingNdaFileStorageColumn(error.message)) {
+    const legacyWithTitle = await auth.supabase
+      .from('nda_agreements')
+      .select(NDA_AGREEMENT_SELECT_LEGACY_WITH_TITLE)
+      .eq('company_id', companyId)
+      .eq('organization_id', auth.orgId)
+      .order('created_at', { ascending: false })
+
+    const legacyRes =
+      legacyWithTitle.error && isMissingNdaTitleColumn(legacyWithTitle.error.message)
+        ? await auth.supabase
+            .from('nda_agreements')
+            .select(NDA_AGREEMENT_SELECT_LEGACY)
+            .eq('company_id', companyId)
+            .eq('organization_id', auth.orgId)
+            .order('created_at', { ascending: false })
+        : legacyWithTitle
+
+    if (legacyRes.error) {
+      error = legacyRes.error
+    } else {
+      const rows = (legacyRes.data ?? []).map((row) =>
+        withNdaFileFieldsNull({
+          ...(row as Record<string, unknown>),
+          title: (row as { title?: string | null }).title ?? null,
+        })
+      )
       return { success: true, rows: rows as NdaAgreementRow[] }
     }
   }

@@ -21,6 +21,12 @@ export type ComplianceDocumentRow = {
 }
 
 const COMPLIANCE_BUCKET = 'compliance-documents'
+const SIGNED_URL_TTL_SEC = 3600
+
+export type ComplianceDocumentAccessUrls = {
+  viewUrl: string
+  downloadUrl: string
+}
 
 const COMPLIANCE_SELECT =
   'id,organization_id,document_type,title,valid_until,file_storage_path,file_name,is_current,uploaded_by,created_at,updated_at'
@@ -179,15 +185,34 @@ export async function listCurrentComplianceDocuments(): Promise<
   }
 }
 
-export async function getComplianceDocumentDownloadUrl(
+async function createComplianceFileAccessUrls(
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+  fileStoragePath: string,
+  fileName: string | null
+): Promise<ComplianceDocumentAccessUrls | null> {
+  const downloadName = fileName?.trim() || 'dokument.pdf'
+  const [viewRes, downloadRes] = await Promise.all([
+    supabase.storage.from(COMPLIANCE_BUCKET).createSignedUrl(fileStoragePath, SIGNED_URL_TTL_SEC),
+    supabase.storage
+      .from(COMPLIANCE_BUCKET)
+      .createSignedUrl(fileStoragePath, SIGNED_URL_TTL_SEC, { download: downloadName }),
+  ])
+
+  if (!viewRes.data?.signedUrl || !downloadRes.data?.signedUrl) return null
+  return { viewUrl: viewRes.data.signedUrl, downloadUrl: downloadRes.data.signedUrl }
+}
+
+export async function getComplianceDocumentAccessUrls(
   documentId: string
-): Promise<{ success: true; url: string } | { success: false; error: string }> {
+): Promise<
+  { success: true; urls: ComplianceDocumentAccessUrls } | { success: false; error: string }
+> {
   const auth = await getComplianceAuth()
   if ('error' in auth) return { success: false, error: auth.error }
 
   const { data, error } = await auth.supabase
     .from('organization_compliance_documents')
-    .select('file_storage_path')
+    .select('file_storage_path,file_name')
     .eq('id', documentId)
     .eq('organization_id', auth.orgId)
     .maybeSingle()
@@ -196,15 +221,61 @@ export async function getComplianceDocumentDownloadUrl(
     return { success: false, error: 'Dokument nicht gefunden oder keine Datei hinterlegt.' }
   }
 
-  const { data: signed, error: signError } = await auth.supabase.storage
-    .from(COMPLIANCE_BUCKET)
-    .createSignedUrl(data.file_storage_path, 120)
-
-  if (signError || !signed?.signedUrl) {
-    return { success: false, error: signError?.message ?? 'Download-Link konnte nicht erstellt werden.' }
+  const urls = await createComplianceFileAccessUrls(
+    auth.supabase,
+    data.file_storage_path,
+    data.file_name
+  )
+  if (!urls) {
+    return { success: false, error: 'Download-Link konnte nicht erstellt werden.' }
   }
 
-  return { success: true, url: signed.signedUrl }
+  return { success: true, urls }
+}
+
+/** Signierte URLs für viele Dokumente (Prefetch in der Zertifikate-Tabelle). */
+export async function prefetchComplianceDocumentUrls(
+  documentIds: string[]
+): Promise<
+  | { success: true; urlsById: Record<string, ComplianceDocumentAccessUrls> }
+  | { success: false; error: string }
+> {
+  const auth = await getComplianceAuth()
+  if ('error' in auth) return { success: false, error: auth.error }
+
+  const ids = [...new Set(documentIds.map((id) => id.trim()).filter(Boolean))]
+  if (ids.length === 0) return { success: true, urlsById: {} }
+
+  const { data, error } = await auth.supabase
+    .from('organization_compliance_documents')
+    .select('id,file_storage_path,file_name')
+    .eq('organization_id', auth.orgId)
+    .in('id', ids)
+
+  if (error) return { success: false, error: error.message }
+
+  const urlsById: Record<string, ComplianceDocumentAccessUrls> = {}
+  await Promise.all(
+    (data ?? []).map(async (row) => {
+      if (!row.file_storage_path) return
+      const urls = await createComplianceFileAccessUrls(
+        auth.supabase,
+        row.file_storage_path,
+        row.file_name
+      )
+      if (urls) urlsById[row.id] = urls
+    })
+  )
+
+  return { success: true, urlsById }
+}
+
+export async function getComplianceDocumentDownloadUrl(
+  documentId: string
+): Promise<{ success: true; url: string } | { success: false; error: string }> {
+  const result = await getComplianceDocumentAccessUrls(documentId)
+  if (!result.success) return result
+  return { success: true, url: result.urls.downloadUrl }
 }
 
 export async function deleteComplianceDocuments(

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState, useTransition } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useState, useTransition } from 'react'
 import { Fragment } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
@@ -44,6 +44,24 @@ import { createClient } from '@/lib/supabase/client'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
 import { cn } from '@/lib/utils'
+import {
+  accountsDetailHref,
+  accountsListHref,
+  accountsListTitle,
+  parseAccountsListView,
+} from '@/lib/accounts/accounts-list-view'
+import {
+  syncAccountsListViewFromUrl,
+  useAccountsListView,
+} from '@/lib/accounts/accounts-list-view-store'
+import {
+  evidenceLibraryTitle,
+  loadEvidenceLibraryModeFromStorage,
+} from '@/lib/evidence/evidence-library-mode'
+import {
+  syncEvidenceLibraryModeFromStorage,
+  useEvidenceLibraryMode,
+} from '@/lib/evidence/evidence-library-mode-store'
 import { ROUTES } from '@/lib/routes'
 import { toast } from 'sonner'
 import { clearDevPreviewRole, setDevPreviewRole } from '@/app/dashboard/dev-preview-role-actions'
@@ -85,6 +103,19 @@ export function DashboardHeader({
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const router = useRouter()
+  const accountsListView = useAccountsListView()
+  const evidenceLibraryMode = useEvidenceLibraryMode()
+
+  useLayoutEffect(() => {
+    syncAccountsListViewFromUrl(parseAccountsListView(searchParams))
+  }, [searchParams])
+
+  useLayoutEffect(() => {
+    if (pathname === ROUTES.evidence.root) {
+      syncEvidenceLibraryModeFromStorage(loadEvidenceLibraryModeFromStorage())
+    }
+  }, [pathname])
+
   const { resolvedTheme, setTheme } = useTheme()
   const { setOpen } = useCommandPalette()
   const [roleSwitchPending, startRoleSwitch] = useTransition()
@@ -182,14 +213,17 @@ export function DashboardHeader({
     }
     if (pathname.startsWith(ROUTES.evidence.root)) {
       return {
-        title: COPY.pages.evidence,
-        subtitle: pathname === ROUTES.evidence.root ? undefined : undefined,
+        title:
+          pathname === ROUTES.evidence.root
+            ? evidenceLibraryTitle(evidenceLibraryMode)
+            : COPY.pages.evidence,
+        subtitle: undefined,
       }
     }
     if (pathname.startsWith(ROUTES.accounts)) {
       return {
-        title: 'Accounts',
-        subtitle: pathname === ROUTES.accounts ? undefined : undefined,
+        title: accountsListTitle(accountsListView),
+        subtitle: undefined,
       }
     }
     if (pathname.startsWith(ROUTES.deals.root)) {
@@ -226,7 +260,7 @@ export function DashboardHeader({
       title: 'Dashboard',
       subtitle: undefined,
     }
-  }, [pathname])
+  }, [pathname, accountsListView, evidenceLibraryMode])
   const hasHeaderSecondaryLine = dynamicCrumbs.length > 0 || Boolean(headerMeta.subtitle)
 
   useEffect(() => {
@@ -312,23 +346,28 @@ export function DashboardHeader({
                 ? 'Referenzen & Deals'
                 : 'Strategie'
         const fallbackName = accountCrumbNames[id] ?? 'Account'
-        if (!cancelled) {
-          setDynamicCrumbs([
-            { label: 'Accounts', href: ROUTES.accounts },
-            { label: fallbackName, href: ROUTES.accountsDetail(id) },
-            { label: tabLabel },
-          ])
-        }
-        if (accountCrumbNames[id]) return
         const supabase = createClient()
-        const { data } = await supabase.from('companies').select('name').eq('id', id).maybeSingle()
+        const { data } = await supabase
+          .from('companies')
+          .select('name, entity_kind')
+          .eq('id', id)
+          .maybeSingle()
+        const listView =
+          (data as { entity_kind?: string } | null)?.entity_kind === 'partner'
+            ? 'partner'
+            : parseAccountsListView(searchParams)
+        const listLabel = accountsListTitle(listView)
+        const listHref = accountsListHref(listView)
         if (!cancelled) {
           if (data?.name) {
             setAccountCrumbNames((prev) => ({ ...prev, [id]: data.name as string }))
           }
           setDynamicCrumbs([
-            { label: 'Accounts', href: ROUTES.accounts },
-            { label: data?.name ?? fallbackName, href: ROUTES.accountsDetail(id) },
+            { label: listLabel, href: listHref },
+            {
+              label: data?.name ?? fallbackName,
+              href: accountsDetailHref(id, listView),
+            },
             { label: tabLabel },
           ])
         }

@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -23,12 +22,11 @@ import { ROUTES } from '@/lib/routes'
 import { COPY } from '@/lib/copy'
 import {
   fetchCompanyEnrichment,
-  searchCompanySuggestions,
   type CompanySearchSuggestion,
 } from '@/app/dashboard/evidence/new/actions'
-import { cn } from '@/lib/utils'
 import { displayHostFromUrl, normalizeWebsiteForSave } from './account-company-helpers'
 import { PARTNER_CATEGORY_OPTIONS, type PartnerCategory } from '@/lib/accounts/company-entity'
+import { CompanyNameSuggestField } from './components/company-name-suggest-field'
 
 export function CreatePartnerDialog({
   open,
@@ -48,15 +46,9 @@ export function CreatePartnerDialog({
   const [partnerCategory, setPartnerCategory] = useState<PartnerCategory>('sub')
   const [alsoCreateAccount, setAlsoCreateAccount] = useState(false)
 
-  const [debouncedQuery, setDebouncedQuery] = useState('')
   const [debouncedEnrichQuery, setDebouncedEnrichQuery] = useState('')
-  const [suggestions, setSuggestions] = useState<CompanySearchSuggestion[]>([])
-  const [searchLoading, setSearchLoading] = useState(false)
-  const [suggestOpen, setSuggestOpen] = useState(false)
-
-  const wrapRef = useRef<HTMLDivElement>(null)
-  const searchAbortRef = useRef(0)
   const enrichReqRef = useRef(0)
+  const lastAutoQueryRef = useRef('')
 
   const resetForm = useCallback(() => {
     setName('')
@@ -66,11 +58,8 @@ export function CreatePartnerDialog({
     setHeadquarters('')
     setPartnerCategory('sub')
     setAlsoCreateAccount(false)
-    setSuggestions([])
-    setDebouncedQuery('')
     setDebouncedEnrichQuery('')
-    setSuggestOpen(false)
-    setSearchLoading(false)
+    lastAutoQueryRef.current = ''
   }, [])
 
   useEffect(() => {
@@ -78,81 +67,33 @@ export function CreatePartnerDialog({
   }, [open, resetForm])
 
   useEffect(() => {
-    const t = window.setTimeout(() => setDebouncedQuery(name.trim()), 280)
-    return () => window.clearTimeout(t)
-  }, [name])
-
-  useEffect(() => {
     const t = window.setTimeout(() => setDebouncedEnrichQuery(name.trim()), 2000)
     return () => window.clearTimeout(t)
   }, [name])
 
   useEffect(() => {
-    if (!open || debouncedQuery.length < 1) {
-      setSuggestions([])
-      setSearchLoading(false)
-      return
-    }
+    if (!open) return
+    const query = debouncedEnrichQuery.trim()
+    if (query.length < 2) return
+    const normalized = query.toLowerCase()
+    if (normalized === lastAutoQueryRef.current) return
 
-    const id = ++searchAbortRef.current
-    setSearchLoading(true)
-
-    ;(async () => {
-      const res = await searchCompanySuggestions(debouncedQuery)
-      if (searchAbortRef.current !== id) return
-      setSearchLoading(false)
-      if (res.success) {
-        setSuggestions(res.suggestions)
-        setSuggestOpen(res.suggestions.length > 0)
-      } else {
-        setSuggestions([])
-        setSuggestOpen(false)
-      }
-    })()
-  }, [debouncedQuery, open])
-
-  useEffect(() => {
-    if (!open || debouncedEnrichQuery.length < 2) return
-    const q = debouncedEnrichQuery
     const reqId = ++enrichReqRef.current
-
-    ;(async () => {
-      const res = await searchCompanySuggestions(q)
-      if (enrichReqRef.current !== reqId) return
-      const bf = res.success
-        ? res.suggestions.find((s) => s.id.startsWith('brandfetch:'))
-        : undefined
-      if (!bf) return
-      const domain = bf.id.slice('brandfetch:'.length)
-      setEnriching(true)
-      try {
-        const enriched = await fetchCompanyEnrichment(domain)
-        if (enrichReqRef.current !== reqId) return
-        if (!enriched.success) return
-        setName((prev) => (prev.trim() ? prev : enriched.company_name))
-        setWebsiteUrl((prev) => prev || displayHostFromUrl(enriched.website_url))
-        setIndustry((prev) => prev || enriched.industry || '')
-        setHeadquarters(
-          (prev) => prev || enriched.headquarters?.trim() || enriched.country?.trim() || ''
-        )
-        setLogoUrl((prev) => prev || enriched.logo_url || '')
-      } finally {
-        if (enrichReqRef.current === reqId) setEnriching(false)
-      }
-    })()
+    setEnriching(true)
+    void fetchCompanyEnrichment(query).then((enriched) => {
+      if (reqId !== enrichReqRef.current) return
+      setEnriching(false)
+      if (!enriched.success) return
+      lastAutoQueryRef.current = normalized
+      setName(enriched.company_name?.trim() || query)
+      setWebsiteUrl(displayHostFromUrl(enriched.website_url))
+      setIndustry(enriched.industry ?? '')
+      setHeadquarters(enriched.headquarters?.trim() || enriched.country?.trim() || '')
+      setLogoUrl(enriched.logo_url ?? '')
+    })
   }, [debouncedEnrichQuery, open])
 
-  useEffect(() => {
-    const fn = (e: MouseEvent) => {
-      if (!wrapRef.current?.contains(e.target as Node)) setSuggestOpen(false)
-    }
-    document.addEventListener('mousedown', fn)
-    return () => document.removeEventListener('mousedown', fn)
-  }, [])
-
   const applySuggestion = async (s: CompanySearchSuggestion) => {
-    setSuggestOpen(false)
-
     if (!s.id.startsWith('brandfetch:')) {
       toast.info(COPY.accounts.createDialogOpenExisting)
       onOpenChange(false)
@@ -164,11 +105,12 @@ export function CreatePartnerDialog({
     const domain = s.id.slice('brandfetch:'.length)
     setEnriching(true)
     try {
-      const res = await fetchCompanyEnrichment(domain)
+      const res = await fetchCompanyEnrichment(s.name.trim() || domain)
       if (!res.success) {
         toast.error(res.error)
         return
       }
+      lastAutoQueryRef.current = res.company_name.trim().toLowerCase()
       setName(res.company_name)
       setWebsiteUrl(displayHostFromUrl(res.website_url))
       setIndustry(res.industry ?? '')
@@ -212,7 +154,7 @@ export function CreatePartnerDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !pending && !enriching && onOpenChange(v)}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="overflow-visible sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Partner hinzufügen</DialogTitle>
         </DialogHeader>
@@ -220,66 +162,20 @@ export function CreatePartnerDialog({
         <div className="grid gap-4">
           <div className="grid gap-2">
             <Label htmlFor="partner-name">Name</Label>
-            <div className="relative" ref={wrapRef}>
-              <Input
-                id="partner-name"
-                value={name}
-                onChange={(e) => {
-                  setName(e.target.value)
-                  if (e.target.value.trim().length >= 1) setSuggestOpen(true)
-                }}
-                onFocus={() => {
-                  if (suggestions.length > 0) setSuggestOpen(true)
-                }}
-                placeholder="z. B. Integrator AG"
-                disabled={pending || enriching}
-                autoFocus
-                autoComplete="off"
-              />
-              {suggestOpen && (searchLoading || suggestions.length > 0) ? (
-                <ul
-                  role="listbox"
-                  className="absolute left-0 right-0 top-full z-50 mt-1 max-h-56 overflow-auto rounded-md border border-border bg-popover p-1 text-sm shadow-md"
-                >
-                  {searchLoading && suggestions.length === 0 ? (
-                    <li className="px-3 py-2 text-muted-foreground">
-                      {COPY.accounts.createDialogSearching}
-                    </li>
-                  ) : null}
-                  {suggestions.map((s) => (
-                    <li key={s.id} role="option">
-                      <button
-                        type="button"
-                        className={cn(
-                          'flex w-full items-center gap-2 rounded-sm px-2 py-2 text-left hover:bg-accent'
-                        )}
-                        onMouseDown={(e) => {
-                          e.preventDefault()
-                          void applySuggestion(s)
-                        }}
-                      >
-                        {s.logo_url ? (
-                          <Image
-                            src={s.logo_url}
-                            alt=""
-                            width={24}
-                            height={24}
-                            unoptimized
-                            className="size-6 shrink-0 rounded object-contain"
-                          />
-                        ) : (
-                          <span className="flex size-6 shrink-0 items-center justify-center rounded bg-muted text-[10px]">
-                            ?
-                          </span>
-                        )}
-                        <span className="min-w-0 flex-1 truncate font-medium">{s.name}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </div>
-            <p className="text-xs text-muted-foreground">{COPY.accounts.createDialogNameHint}</p>
+            <CompanyNameSuggestField
+              id="partner-name"
+              value={name}
+              onValueChange={setName}
+              onSelectSuggestion={applySuggestion}
+              disabled={pending}
+              placeholder="z. B. Integrator AG"
+              autoFocus
+            />
+            <p className="text-xs text-muted-foreground">
+              {enriching
+                ? 'Markendaten werden geladen …'
+                : COPY.accounts.createDialogNameHint}
+            </p>
           </div>
 
           <div className="grid gap-2">

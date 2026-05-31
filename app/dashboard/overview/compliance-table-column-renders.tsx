@@ -49,7 +49,8 @@ export type ComplianceTableHeaderRenderContext = {
 }
 
 export type ComplianceTableCellRenderContext = {
-  downloadingId: string | null
+  resolvingId: string | null
+  onOpenPdf: (doc: ComplianceDocumentRow) => void
   onDownload: (doc: ComplianceDocumentRow) => void
 }
 
@@ -178,7 +179,7 @@ export function renderComplianceColumnCell(
   switch (column) {
     case 'document_type':
       return (
-        <TableDataCell className="text-sm text-slate-700">
+        <TableDataCell className="text-sm font-medium text-slate-900">
           <span className="flex items-center gap-3">
             <ComplianceDocumentTypeIcon
               documentType={doc.document_type}
@@ -194,7 +195,17 @@ export function renderComplianceColumnCell(
     case 'title':
       return (
         <TableDataCell className="font-medium text-slate-900">
-          <span className="truncate leading-none">{doc.title}</span>
+          {doc.file_storage_path ? (
+            <button
+              type="button"
+              className="max-w-full truncate text-left leading-none hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 rounded-sm"
+              onClick={() => ctx.onOpenPdf(doc)}
+            >
+              {doc.title}
+            </button>
+          ) : (
+            <span className="truncate leading-none">{doc.title}</span>
+          )}
         </TableDataCell>
       )
     case 'valid_until':
@@ -249,11 +260,11 @@ export function renderComplianceActionsCell(
           variant="ghost"
           size="icon"
           className="size-8 rounded-lg hover:bg-muted/70"
-          disabled={!doc.file_storage_path || ctx.downloadingId === doc.id}
+          disabled={!doc.file_storage_path || ctx.resolvingId === doc.id}
           onClick={() => ctx.onDownload(doc)}
           aria-label={`${doc.title} herunterladen`}
         >
-          {ctx.downloadingId === doc.id ? (
+          {ctx.resolvingId === doc.id ? (
             <Loader2 className="size-4 animate-spin" aria-hidden />
           ) : (
             <Download className="size-4 text-muted-foreground" aria-hidden />

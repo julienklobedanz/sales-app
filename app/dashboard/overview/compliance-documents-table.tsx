@@ -6,7 +6,11 @@ import { Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import type { ComplianceDocumentRow } from '@/app/dashboard/settings/compliance-actions'
-import { getComplianceDocumentDownloadUrl } from '@/app/dashboard/settings/compliance-actions'
+import {
+  getComplianceDocumentAccessUrls,
+  prefetchComplianceDocumentUrls,
+  type ComplianceDocumentAccessUrls,
+} from '@/app/dashboard/settings/compliance-actions'
 import { BulkDeleteComplianceDocumentsDialog } from '@/app/dashboard/overview/bulk-delete-compliance-documents-dialog'
 import {
   COMPLIANCE_COLUMN_KEYS,
@@ -59,7 +63,9 @@ export function ComplianceDocumentsTable({
   onUploadClick,
 }: Props) {
   const router = useRouter()
-  const [downloadingId, setDownloadingId] = useState<string | null>(null)
+  const [resolvingId, setResolvingId] = useState<string | null>(null)
+  const urlCacheRef = useRef<Map<string, ComplianceDocumentAccessUrls>>(new Map())
+  const prefetchGenRef = useRef(0)
   const [bulkDownloading, setBulkDownloading] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
@@ -71,6 +77,19 @@ export function ComplianceDocumentsTable({
   const [sortKey, setSortKey] = useState<ComplianceColumnKey | null>(null)
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const selectAllCheckboxRef = useRef<HTMLInputElement | null>(null)
+
+  useEffect(() => {
+    const ids = documents.filter((d) => d.file_storage_path).map((d) => d.id)
+    if (ids.length === 0) return
+
+    const generation = ++prefetchGenRef.current
+    void prefetchComplianceDocumentUrls(ids).then((result) => {
+      if (generation !== prefetchGenRef.current || !result.success) return
+      for (const [id, urls] of Object.entries(result.urlsById)) {
+        urlCacheRef.current.set(id, urls)
+      }
+    })
+  }, [documents])
 
   useEffect(() => {
     const loaded = loadComplianceColumnOrderFromStorage()
@@ -210,19 +229,64 @@ export function ComplianceDocumentsTable({
     }
   }
 
+  function triggerFileDownload(url: string) {
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.rel = 'noopener'
+    anchor.style.display = 'none'
+    document.body.appendChild(anchor)
+    anchor.click()
+    anchor.remove()
+  }
+
+  async function resolveAccessUrls(
+    doc: ComplianceDocumentRow
+  ): Promise<ComplianceDocumentAccessUrls | null> {
+    const cached = urlCacheRef.current.get(doc.id)
+    if (cached) return cached
+
+    setResolvingId(doc.id)
+    try {
+      const result = await getComplianceDocumentAccessUrls(doc.id)
+      if (!result.success) {
+        toast.error(result.error)
+        return null
+      }
+      urlCacheRef.current.set(doc.id, result.urls)
+      return result.urls
+    } finally {
+      setResolvingId(null)
+    }
+  }
+
+  async function handleOpenPdf(doc: ComplianceDocumentRow) {
+    if (!doc.file_storage_path) {
+      toast.error('Für dieses Dokument ist keine Datei hinterlegt.')
+      return
+    }
+    const cached = urlCacheRef.current.get(doc.id)
+    if (cached) {
+      window.open(cached.viewUrl, '_blank', 'noopener,noreferrer')
+      return
+    }
+    const urls = await resolveAccessUrls(doc)
+    if (!urls) return
+    window.open(urls.viewUrl, '_blank', 'noopener,noreferrer')
+  }
+
   async function handleDownload(doc: ComplianceDocumentRow) {
     if (!doc.file_storage_path) {
       toast.error('Für dieses Dokument ist keine Datei hinterlegt.')
       return
     }
-    setDownloadingId(doc.id)
-    const result = await getComplianceDocumentDownloadUrl(doc.id)
-    setDownloadingId(null)
-    if (!result.success) {
-      toast.error(result.error)
+    const cached = urlCacheRef.current.get(doc.id)
+    if (cached) {
+      triggerFileDownload(cached.downloadUrl)
       return
     }
-    window.open(result.url, '_blank', 'noopener,noreferrer')
+    const urls = await resolveAccessUrls(doc)
+    if (!urls) return
+    triggerFileDownload(urls.downloadUrl)
   }
 
   async function handleBulkDownload() {
@@ -234,9 +298,16 @@ export function ComplianceDocumentsTable({
     setBulkDownloading(true)
     let opened = 0
     for (const doc of withFile) {
-      const result = await getComplianceDocumentDownloadUrl(doc.id)
+      const cached = urlCacheRef.current.get(doc.id)
+      if (cached) {
+        triggerFileDownload(cached.downloadUrl)
+        opened++
+        continue
+      }
+      const result = await getComplianceDocumentAccessUrls(doc.id)
       if (result.success) {
-        window.open(result.url, '_blank', 'noopener,noreferrer')
+        urlCacheRef.current.set(doc.id, result.urls)
+        triggerFileDownload(result.urls.downloadUrl)
         opened++
       }
     }
@@ -260,7 +331,8 @@ export function ComplianceDocumentsTable({
   }
 
   const cellCtx = {
-    downloadingId,
+    resolvingId,
+    onOpenPdf: (doc: ComplianceDocumentRow) => void handleOpenPdf(doc),
     onDownload: (doc: ComplianceDocumentRow) => void handleDownload(doc),
   }
 

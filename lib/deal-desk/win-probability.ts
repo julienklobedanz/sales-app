@@ -1,5 +1,7 @@
 /** Win-Probability-Ring: Farben und Go/No-Go-Empfehlung. */
 
+import type { WinProbabilityBreakdown } from '@/lib/deal-desk/compute-delivery-win-probability'
+
 export const WIN_PROBABILITY_THRESHOLDS = {
   /** Ab diesem Wert: Grün — klare GO-Empfehlung */
   goMin: 70,
@@ -24,7 +26,18 @@ export function winProbabilityRecommendationLabel(tone: WinProbabilityTone): str
 
 export function winProbabilityScoreLegend(): string {
   const { goMin, cautionMin } = WIN_PROBABILITY_THRESHOLDS
-  return `Score: ≥${goMin}% GO · ${cautionMin}–${goMin - 1}% prüfen · <${cautionMin}% NO-BID`
+  return `Lieferfähigkeit: Portfolio 40% · Capabilities 35% · Nachweise 25% · Vertragsrisiko als Abzug. ≥${goMin}% GO · ${cautionMin}–${goMin - 1}% prüfen · <${cautionMin}% NO-BID`
+}
+
+export function winProbabilityBreakdownTooltip(breakdown: WinProbabilityBreakdown): string {
+  const lines = [
+    `Portfolio (Referenzen): ${breakdown.portfolioScore}%`,
+    `Capabilities (Match-Tiefe): ${breakdown.capabilityScore}%`,
+    `Nachweise (Compliance): ${breakdown.evidenceScore}%`,
+    breakdown.contractPenalty > 0 ? `Vertragsrisiko: −${breakdown.contractPenalty} Punkte` : null,
+    `Gewichtet: ${breakdown.weightedScore}% → ${breakdown.finalScore}%`,
+  ].filter(Boolean)
+  return lines.join('\n')
 }
 
 export function winProbabilityRingClass(tone: WinProbabilityTone): string {

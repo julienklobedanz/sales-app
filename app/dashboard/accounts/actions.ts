@@ -9,7 +9,7 @@ import {
   type CompanyAccountStatusValue,
 } from '@/lib/accounts/company-account-status'
 import type { PartnerCategory } from '@/lib/accounts/company-entity'
-import { fetchBrandfetchCompany, inputToDomain } from '@/lib/accounts/brandfetch-accounts-refresh'
+import { enrichBulkImportRowFromBrandfetch } from '@/lib/accounts/resolve-company-for-import'
 
 export type { CompanyAccountStatusValue } from '@/lib/accounts/company-account-status'
 
@@ -952,7 +952,19 @@ export async function createPartner(payload: {
   }
 }
 
-export async function bulkCreateCompaniesFromSheet(fileBuffer: Uint8Array): Promise<{
+function normalizePartnerCategoryFromImport(raw: string): PartnerCategory {
+  const t = raw.trim().toLowerCase()
+  if (t === 'sub' || t === 'subunternehmer') return 'sub'
+  if (t === 'tech' || t === 'technologie') return 'tech'
+  if (t === 'legal' || t === 'recht') return 'legal'
+  if (t === 'other' || t === 'sonstiges') return 'other'
+  return 'other'
+}
+
+export async function bulkCreateCompaniesFromSheet(
+  fileBuffer: Uint8Array,
+  options: { entityKind?: 'account' | 'partner' } = {}
+): Promise<{
   success: boolean
   createdCount: number
   skippedCount: number
@@ -977,6 +989,8 @@ export async function bulkCreateCompaniesFromSheet(fileBuffer: Uint8Array): Prom
     return { success: false, createdCount: 0, skippedCount: 0, failedCount: 0, error: 'Keine Berechtigung.' }
   }
 
+  const entityKind = options.entityKind === 'partner' ? 'partner' : 'account'
+
   let workbook: XLSX.WorkBook
   try {
     workbook = XLSX.read(fileBuffer, { type: 'array' })
@@ -993,6 +1007,7 @@ export async function bulkCreateCompaniesFromSheet(fileBuffer: Uint8Array): Prom
     .from('companies')
     .select('name')
     .eq('organization_id', profile.organization_id)
+    .eq('entity_kind', entityKind)
   const existingNames = new Set((existingCompanies ?? []).map((c) => String(c.name ?? '').trim().toLowerCase()))
 
   const pick = (row: Record<string, unknown>, keys: string[]) => {
@@ -1019,31 +1034,45 @@ export async function bulkCreateCompaniesFromSheet(fileBuffer: Uint8Array): Prom
       continue
     }
 
-    let website = pick(row, ['website', 'Website', 'domain', 'Domain'])
-    let industry = pick(row, ['industry', 'Industry', 'branche', 'Branche'])
-    let headquarters = pick(row, ['headquarters', 'Headquarters', 'hq', 'HQ', 'standort', 'Standort'])
     const employeeRaw = pick(row, ['employee_count', 'Employee Count', 'employees', 'Employees', 'mitarbeiter', 'Mitarbeiter'])
-    const employeeCount = employeeRaw ? Number(employeeRaw.replace(/[^\d]/g, '')) : null
+    const employeeFromSheet = employeeRaw ? Number(employeeRaw.replace(/[^\d]/g, '')) : null
 
-    const domain = inputToDomain(website)
-    if (domain) {
-      const fetched = await fetchBrandfetchCompany(domain)
-      if (fetched.success) {
-        website = website || fetched.data.websiteUrl || ''
-        industry = industry || fetched.data.industry || ''
-        headquarters = headquarters || fetched.data.headquarters || ''
-      }
-    }
+    const enriched = await enrichBulkImportRowFromBrandfetch({
+      name,
+      website: pick(row, ['website', 'Website', 'domain', 'Domain']),
+      industry: pick(row, ['industry', 'Industry', 'branche', 'Branche']),
+      headquarters: pick(row, ['headquarters', 'Headquarters', 'hq', 'HQ', 'standort', 'Standort']),
+      employeeCount: Number.isFinite(employeeFromSheet as number) ? employeeFromSheet : null,
+    })
+
+    const partnerCategoryRaw = pick(row, [
+      'partner_category',
+      'Partner Category',
+      'Kategorie',
+      'kategorie',
+      'category',
+      'Category',
+    ])
+    const partner_category =
+      entityKind === 'partner'
+        ? normalizePartnerCategoryFromImport(partnerCategoryRaw || 'other')
+        : null
 
     const { error } = await supabase.from('companies').insert({
       organization_id: profile.organization_id,
-      entity_kind: 'account',
-      name,
-      website_url: website || null,
-      industry: industry || null,
-      headquarters: headquarters || null,
-      employee_count: Number.isFinite(employeeCount as number) ? employeeCount : null,
+      entity_kind: entityKind,
+      name: enriched.name,
+      website_url: enriched.website.trim() || null,
+      industry: enriched.industry.trim() || null,
+      headquarters: enriched.headquarters.trim() || null,
+      employee_count:
+        enriched.employeeCount != null && Number.isFinite(enriched.employeeCount)
+          ? enriched.employeeCount
+          : null,
+      logo_url: enriched.logo_url,
+      description: enriched.description?.trim() || null,
       account_status: null,
+      ...(entityKind === 'partner' ? { partner_category } : {}),
     })
     if (error) {
       failedCount += 1

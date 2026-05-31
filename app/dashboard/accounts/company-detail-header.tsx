@@ -4,6 +4,7 @@ import { ArrowLeftIcon, Building2, Globe, MapPinIcon, Pencil, Users } from '@hug
 import { AppIcon } from '@/lib/icons'
 import type { CompanyDetailCompany } from './company-detail-types'
 import { formatEmployeeCountDeDisplay } from '@/lib/format'
+import { accountsListHref } from '@/lib/accounts/accounts-list-view'
 import { ROUTES } from '@/lib/routes'
 import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 import { CompanyLogo } from '@/components/ui/company-logo'
@@ -100,7 +101,11 @@ export function CompanyDetailHeader({
           </Button>
         ) : null}
         <Button asChild variant="outline" size="icon" className="size-9 shrink-0">
-          <Link href={ROUTES.accounts} aria-label="Zurück zur Übersicht" title="Zurück">
+          <Link
+            href={accountsListHref(company.entity_kind === 'partner' ? 'partner' : 'account')}
+            aria-label="Zurück zur Übersicht"
+            title="Zurück"
+          >
             <AppIcon icon={ArrowLeftIcon} size={16} />
           </Link>
         </Button>

@@ -5,7 +5,10 @@ import {
   ndaExpiryInboxPriority,
   shouldNotifyNdaExpiry,
 } from '@/lib/accounts/nda-expiry'
-import { isMissingNdaTitleColumn } from '@/lib/accounts/nda-schema'
+import {
+  isMissingNdaFileStorageColumn,
+  isMissingNdaTitleColumn,
+} from '@/lib/accounts/nda-schema'
 import { ROUTES } from '@/lib/routes'
 
 export type NdaInboxCandidate = {
@@ -17,14 +20,37 @@ export type NdaInboxCandidate = {
   priority: number
 }
 
-export async function fetchNdaExpiryInboxCandidates(
-  supabase: SupabaseClient,
-  orgId: string
-): Promise<NdaInboxCandidate[]> {
-  let { data, error } = await supabase
-    .from('nda_agreements')
-    .select(
-      `
+type InboxRow = {
+  id: string
+  company_id: string
+  title?: string | null
+  status: string
+  valid_until: string
+  companies: unknown
+}
+
+const INBOX_SELECT_WITH_TITLE = `
+      id,
+      company_id,
+      title,
+      status,
+      valid_until,
+      file_storage_path,
+      updated_at,
+      companies ( name )
+    `
+
+const INBOX_SELECT_NO_TITLE = `
+      id,
+      company_id,
+      status,
+      valid_until,
+      file_storage_path,
+      updated_at,
+      companies ( name )
+    `
+
+const INBOX_SELECT_LEGACY_WITH_TITLE = `
       id,
       company_id,
       title,
@@ -33,42 +59,99 @@ export async function fetchNdaExpiryInboxCandidates(
       updated_at,
       companies ( name )
     `
-    )
+
+const INBOX_SELECT_LEGACY = `
+      id,
+      company_id,
+      status,
+      valid_until,
+      updated_at,
+      companies ( name )
+    `
+
+async function queryNdaInboxRows(
+  supabase: SupabaseClient,
+  orgId: string,
+  select: string,
+  filterUploadedPdf: boolean
+) {
+  let q = supabase
+    .from('nda_agreements')
+    .select(select)
     .eq('organization_id', orgId)
     .not('valid_until', 'is', null)
     .in('status', ['active', 'pending'])
 
-  if (error && isMissingNdaTitleColumn(error.message)) {
-    const fallback = await supabase
-      .from('nda_agreements')
-      .select(
-        `
-        id,
-        company_id,
-        status,
-        valid_until,
-        updated_at,
-        companies ( name )
-      `
-      )
-      .eq('organization_id', orgId)
-      .not('valid_until', 'is', null)
-      .in('status', ['active', 'pending'])
+  if (filterUploadedPdf) {
+    q = q.not('file_storage_path', 'is', null)
+  }
+
+  return q
+}
+
+function mapInboxRows(raw: unknown, forceTitleNull = false): InboxRow[] {
+  if (!Array.isArray(raw)) return []
+  return raw.map((row) => {
+    const r = row as InboxRow
+    return {
+      ...r,
+      title: forceTitleNull ? null : (r.title ?? null),
+    }
+  })
+}
+
+export async function fetchNdaExpiryInboxCandidates(
+  supabase: SupabaseClient,
+  orgId: string
+): Promise<NdaInboxCandidate[]> {
+  let rows: InboxRow[] = []
+  let queryError: { message: string } | null = null
+
+  const initial = await queryNdaInboxRows(supabase, orgId, INBOX_SELECT_WITH_TITLE, true)
+  if (initial.error) {
+    queryError = initial.error
+  } else {
+    rows = mapInboxRows(initial.data)
+  }
+
+  if (queryError && isMissingNdaTitleColumn(queryError.message)) {
+    const fallback = await queryNdaInboxRows(supabase, orgId, INBOX_SELECT_NO_TITLE, true)
     if (fallback.error) {
-      error = fallback.error
+      queryError = fallback.error
     } else {
-      data = (fallback.data ?? []).map((row) => ({ ...row, title: null }))
+      rows = mapInboxRows(fallback.data, true)
+      queryError = null
     }
   }
 
-  if (error) {
-    console.error('[fetchNdaExpiryInboxCandidates]', error.message)
+  if (queryError && isMissingNdaFileStorageColumn(queryError.message)) {
+    const legacyWithTitle = await queryNdaInboxRows(
+      supabase,
+      orgId,
+      INBOX_SELECT_LEGACY_WITH_TITLE,
+      false
+    )
+    const legacyRes =
+      legacyWithTitle.error && isMissingNdaTitleColumn(legacyWithTitle.error.message)
+        ? await queryNdaInboxRows(supabase, orgId, INBOX_SELECT_LEGACY, false)
+        : legacyWithTitle
+
+    if (legacyRes.error) {
+      queryError = legacyRes.error
+    } else {
+      rows = mapInboxRows(legacyRes.data)
+      queryError = null
+    }
+  }
+
+  if (queryError) {
+    console.error('[fetchNdaExpiryInboxCandidates]', queryError.message)
     return []
   }
 
   const candidates: NdaInboxCandidate[] = []
 
-  for (const row of data ?? []) {
+  for (const row of rows) {
     const validUntil = String(row.valid_until ?? '').trim()
     const notify = shouldNotifyNdaExpiry({
       status: String(row.status ?? ''),
