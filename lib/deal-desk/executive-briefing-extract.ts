@@ -43,14 +43,22 @@ Antworte NUR mit JSON (kein Markdown):
       "title": "<Kurztitel>",
       "detail": "<1-2 Sätze oder Zitat-Auszug>"
     }
-  ]
+  ],
+  "domainTags": ["<3-10 Domänen-Tags, z.B. Dienstleistungen, EU-Ausschreibung, Cybersicherheit, KRITIS>"],
+  "projectLocation": "<kompakter Standort, z.B. Stuttgart, DE oder Remote / CH oder null>",
+  "bidderRequirements": ["<Zertifizierungen, Haftpflicht, Referenzen an den Bieter>"],
+  "roleQualifications": ["<Sprachkenntnisse, Rollen, KRITIS-Erfahrung der Projektteilnehmer>"],
+  "specialConditions": ["<Datenhaltung EU/EWR, Mindestlohn, Laufzeit, Bietergemeinschaft etc.>"]
 }
 
 Regeln:
 - Nur Inhalte aus dem Dokument; bei fehlenden Infos null bzw. leere Arrays.
 - Daten im Format TT.MM.JJJJ wenn im Text erkennbar.
 - capabilityRisks: Vertrags-/SLA-/Haftungsrisiken (critical/high) plus ggf. delivery bei knappem Start/Ressourcen.
-- keyTakeaways: prägnant, für Vorstand/E-Mail.`
+- keyTakeaways: prägnant, für Vorstand/E-Mail.
+- domainTags: thematische Klassifizierung (keine Duplikate).
+- projectLocation: Stadt + Land-Kürzel wenn erkennbar, sonst null.
+- bidderRequirements / roleQualifications / specialConditions: je 0-8 kurze Bullet-Strings aus dem Text.`
 
   try {
     const res = await fetch('https://api.openai.com/v1/chat/completions', {

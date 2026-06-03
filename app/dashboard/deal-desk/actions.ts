@@ -8,7 +8,7 @@ import {
   DEMO_SEED_PROJECT_NAME,
   seedDealDeskDemoProject,
 } from '@/lib/deal-desk/demo-seed'
-import type { DealDeskProject } from '@/lib/deal-desk/deal-desk-project'
+import type { DealDeskProject, DealDeskProjectOwner } from '@/lib/deal-desk/deal-desk-project'
 import {
   projectToWorkspaceState,
   rowToDealDeskProject,
@@ -29,10 +29,10 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 const DESK_PATH = ROUTES.dealDesk
 
 const DEAL_DESK_PROJECT_SELECT_WITH_ARCHIVE =
-  'id, organization_id, project_name, customer_name, analysis_status, analysis_snapshot, analysis_source, workspace_state, win_probability, error_message, deal_id, archived_at, created_at, updated_at'
+  'id, organization_id, project_name, customer_name, analysis_status, analysis_snapshot, analysis_source, workspace_state, win_probability, error_message, deal_id, archived_at, created_by, created_at, updated_at'
 
 const DEAL_DESK_PROJECT_SELECT_LEGACY =
-  'id, organization_id, project_name, customer_name, analysis_status, analysis_snapshot, analysis_source, workspace_state, win_probability, error_message, deal_id, created_at, updated_at'
+  'id, organization_id, project_name, customer_name, analysis_status, analysis_snapshot, analysis_source, workspace_state, win_probability, error_message, deal_id, created_by, created_at, updated_at'
 
 function isMissingArchivedColumnError(message: string | undefined): boolean {
   return Boolean(message && /archived_at/i.test(message))
@@ -72,6 +72,7 @@ async function fetchDealDeskProjectRows(
   const rows = (legacy.data ?? []).map((row) => ({
     ...(row as Omit<DealDeskProjectRow, 'archived_at'>),
     archived_at: null,
+    created_by: (row as { created_by?: string | null }).created_by ?? null,
   })) as DealDeskProjectRow[]
 
   return { rows, error: null }
@@ -111,9 +112,44 @@ async function fetchDealDeskProjectRow(
   if (!legacy.data) return { row: null, error: 'Projekt nicht gefunden.' }
 
   return {
-    row: { ...(legacy.data as Omit<DealDeskProjectRow, 'archived_at'>), archived_at: null },
+    row: {
+      ...(legacy.data as Omit<DealDeskProjectRow, 'archived_at'>),
+      archived_at: null,
+      created_by: (legacy.data as { created_by?: string | null }).created_by ?? null,
+    },
     error: null,
   }
+}
+
+async function loadProjectOwnersByUserIds(
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+  userIds: string[]
+): Promise<Map<string, DealDeskProjectOwner>> {
+  const unique = [...new Set(userIds.filter((id) => typeof id === 'string' && id.length > 0))]
+  const map = new Map<string, DealDeskProjectOwner>()
+  if (unique.length === 0) return map
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, full_name, avatar_url')
+    .in('id', unique)
+
+  if (error) return map
+
+  for (const row of data ?? []) {
+    const id = row.id as string
+    const fullName = String((row as { full_name?: string | null }).full_name ?? '').trim()
+    const avatarRaw = (row as { avatar_url?: string | null }).avatar_url
+    const avatarUrl =
+      typeof avatarRaw === 'string' && avatarRaw.trim().length > 0 ? avatarRaw.trim() : null
+    map.set(id, {
+      userId: id,
+      fullName: fullName || 'Unbekannt',
+      avatarUrl,
+    })
+  }
+
+  return map
 }
 
 type DeskAuth =
@@ -203,10 +239,13 @@ export async function listDealDeskProjects(): Promise<
     }
   }
 
+  const ownerIds = rows.map((r) => r.created_by).filter((id): id is string => Boolean(id))
+  const ownersByUserId = await loadProjectOwnersByUserIds(supabase, ownerIds)
+
   const projects: DealDeskProject[] = []
   for (const row of rows) {
     const docs = await loadProjectDocuments(supabase, row.id, orgId)
-    projects.push(rowToDealDeskProject(row, docs))
+    projects.push(rowToDealDeskProject(row, docs, ownersByUserId))
   }
 
   return { success: true, projects }
@@ -226,7 +265,14 @@ export async function getDealDeskProject(
   }
 
   const docs = await loadProjectDocuments(supabase, projectId, orgId)
-  return { success: true, project: rowToDealDeskProject(fetched.row, docs) }
+  const ownersByUserId = await loadProjectOwnersByUserIds(
+    supabase,
+    fetched.row.created_by ? [fetched.row.created_by] : []
+  )
+  return {
+    success: true,
+    project: rowToDealDeskProject(fetched.row, docs, ownersByUserId),
+  }
 }
 
 export async function createDealDeskProjectAction(input: {

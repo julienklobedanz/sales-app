@@ -8,10 +8,18 @@ import {
 
 export type DealDeskAnalysisStatus = 'pending' | 'processing' | 'completed' | 'failed'
 
+/** Nutzer, der das RFP-Projekt angelegt / hochgeladen hat (`deal_desk_projects.created_by`). */
+export type DealDeskProjectOwner = {
+  userId: string
+  fullName: string
+  avatarUrl: string | null
+}
+
 export type DealDeskProject = {
   id: string
   projectName: string
   archivedAt: string | null
+  owner: DealDeskProjectOwner | null
   analysis: DealDeskMockAnalysis
   redFlags: DealDeskRedFlag[]
   smeRoutes: Record<string, string>
@@ -45,6 +53,7 @@ export function createDealDeskProject(
     id: opts?.id ?? crypto.randomUUID(),
     projectName: defaultProjectNameFromFiles(fileNames),
     archivedAt: null,
+    owner: null,
     analysis,
     redFlags: analysis.redFlags.map((f) => ({ ...f })),
     smeRoutes:

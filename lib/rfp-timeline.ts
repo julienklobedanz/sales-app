@@ -34,7 +34,8 @@ Regeln:
 - dueDate NUR, wenn im Text ein konkretes Datum inkl. Jahr erkennbar ist. (Dann als ISO YYYY-MM-DD ausgeben.)
 - dueTime: konkrete Uhrzeit zur Frist im 24h-Format (z. B. "13:00"), NUR wenn im Dokument explizit genannt — sonst null.
 - Maximal ${MAX_ITEMS} Einträge.
-- "title" kurz und auf Deutsch (z. B. "Angebotsabgabe", "Q&A / Rückfragenfrist").
+- "title" kurz und auf Deutsch (z. B. "Angebotsabgabe", "Q&A / Rückfragenfrist", "Bekanntmachung / Vergabe" für das Vergabedatum).
+- Vergabedatum/Bekanntmachung als eigener Eintrag, wenn im Text erkennbar (erscheint nur im Zeitstrahl, nicht als operative Frist).
 - evidence: kurzer Beleg/Zitat aus dem Text oder null, falls kein kurzer Beleg möglich ist.
 
 Wenn keine konkreten Daten erkennbar sind: timelineItems = []`

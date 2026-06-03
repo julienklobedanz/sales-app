@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Briefcase, ChevronDown, Loader2, Upload, X } from 'lucide-react'
+import { Briefcase, ChevronDown, Loader2, MapPin, Upload, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { DealDeskProjectSwitcher } from '@/app/dashboard/deal-desk/components/deal-desk-project-switcher'
@@ -15,6 +15,7 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import { DealDeskDomainTags } from '@/app/dashboard/deal-desk/components/deal-desk-domain-tags'
 import type { DealDeskProject } from '@/lib/deal-desk/deal-desk-project'
 import { cn } from '@/lib/utils'
 
@@ -22,6 +23,8 @@ type Props = {
   activeProjects: DealDeskProject[]
   archivedProjects: DealDeskProject[]
   activeProject: DealDeskProject
+  domainTags?: string[]
+  projectLocation?: string | null
   showDemoBadge?: boolean
   onSelectProject: (id: string) => void
   onArchiveProject: (id: string) => void
@@ -42,6 +45,8 @@ export function DealDeskProjectHeader({
   activeProjects,
   archivedProjects,
   activeProject,
+  domainTags = [],
+  projectLocation = null,
   showDemoBadge = false,
   onSelectProject,
   onArchiveProject,
@@ -91,15 +96,17 @@ export function DealDeskProjectHeader({
   }
 
   const docCountLabel = `${docCount} Dokument${docCount === 1 ? '' : 'e'}`
+  const locationLabel = projectLocation?.trim()
+  const showLocation = Boolean(locationLabel && locationLabel !== '—')
 
   return (
-    <div className="flex w-full items-center justify-between gap-4 rounded-xl border border-border bg-card px-4 py-3">
+    <div className="flex w-full items-center justify-between gap-6 rounded-xl border border-border bg-card px-6 py-6">
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-100">
           <Briefcase className="size-5" />
         </div>
-        <div className="min-w-0 flex flex-col gap-0.5">
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <div className="min-w-0 flex flex-col">
+          <div className="flex min-w-0 flex-wrap items-center gap-2.5">
             {editingTitle ? (
               <div className="min-w-0 flex-1">
                 <Label htmlFor="deal-desk-project-name" className="sr-only">
@@ -117,7 +124,7 @@ export function DealDeskProjectHeader({
                       commitTitleEdit()
                     }
                   }}
-                  className="h-9 max-w-lg text-lg font-semibold tracking-tight"
+                  className="h-10 max-w-lg text-2xl font-bold tracking-tight"
                   placeholder="Projektname"
                 />
               </div>
@@ -125,7 +132,7 @@ export function DealDeskProjectHeader({
               <button
                 type="button"
                 onClick={() => setEditingProjectId(activeProject.id)}
-                className="max-w-full truncate text-left text-xl font-semibold tracking-tight text-foreground transition-colors hover:text-foreground/80"
+                className="max-w-full truncate text-left text-2xl font-bold tracking-tight text-foreground transition-colors hover:text-foreground/80"
                 title="Klicken zum Bearbeiten"
               >
                 {activeProject.projectName || 'Unbenanntes Projekt'}
@@ -140,8 +147,18 @@ export function DealDeskProjectHeader({
               </span>
             ) : null}
           </div>
-          <p className="flex flex-wrap items-center gap-1 text-sm text-muted-foreground">
+          <DealDeskDomainTags tags={domainTags} className="mt-3" />
+          <p className="mt-2 flex flex-wrap items-center gap-1 text-sm text-muted-foreground">
             <span className="truncate">{activeProject.analysis.customerName}</span>
+            {showLocation ? (
+              <>
+                <span aria-hidden>·</span>
+                <span className="inline-flex items-center gap-1 shrink-0">
+                  <MapPin className="size-3 shrink-0 opacity-70" aria-hidden />
+                  <span>{locationLabel}</span>
+                </span>
+              </>
+            ) : null}
             <span aria-hidden>·</span>
             <Popover open={docsOpen} onOpenChange={setDocsOpen}>
               <PopoverTrigger asChild>
@@ -296,7 +313,7 @@ export function DealDeskProjectHeader({
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-1.5">
+      <div className="flex shrink-0 items-center gap-2">
         <DealDeskProjectSwitcher
           activeProjects={activeProjects}
           archivedProjects={archivedProjects}
@@ -310,16 +327,14 @@ export function DealDeskProjectHeader({
           variant="compact"
         />
 
-        <Button
+        <button
           type="button"
-          variant="ghost"
-          size="icon"
-          className="size-9 shrink-0 text-muted-foreground hover:text-foreground"
+          className="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           aria-label="Detailansicht schließen und Upload anzeigen"
           onClick={onClose}
         >
-          <X className="size-4" />
-        </Button>
+          <X className="size-4" aria-hidden />
+        </button>
       </div>
     </div>
   )

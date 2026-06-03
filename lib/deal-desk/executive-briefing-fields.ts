@@ -20,6 +20,13 @@ export type DealDeskExecutiveBriefingFields = {
   tenderProcedure: string | null
   keyTakeaways: string[]
   capabilityRisks: DealDeskCapabilityRisk[]
+  /** KI-Klassifizierung (Domänen-Tags, z. B. Cybersicherheit, KRITIS). */
+  domainTags: string[]
+  /** Kompakter Standort für Meta-Leiste (z. B. „Stuttgart, DE“). */
+  projectLocation: string | null
+  bidderRequirements: string[]
+  roleQualifications: string[]
+  specialConditions: string[]
 }
 
 export const EMPTY_EXECUTIVE_BRIEFING: DealDeskExecutiveBriefingFields = {
@@ -36,6 +43,11 @@ export const EMPTY_EXECUTIVE_BRIEFING: DealDeskExecutiveBriefingFields = {
   tenderProcedure: null,
   keyTakeaways: [],
   capabilityRisks: [],
+  domainTags: [],
+  projectLocation: null,
+  bidderRequirements: [],
+  roleQualifications: [],
+  specialConditions: [],
 }
 
 export function normalizeExecutiveBriefingFields(
@@ -51,6 +63,16 @@ export function normalizeExecutiveBriefingFields(
     for (const item of o.keyTakeaways) {
       if (typeof item === 'string' && item.trim()) keyTakeaways.push(item.trim())
     }
+  }
+
+  const stringList = (key: string): string[] => {
+    const items: string[] = []
+    const src = o[key]
+    if (!Array.isArray(src)) return items
+    for (const item of src) {
+      if (typeof item === 'string' && item.trim()) items.push(item.trim())
+    }
+    return items
   }
 
   const capabilityRisks: DealDeskCapabilityRisk[] = []
@@ -84,5 +106,39 @@ export function normalizeExecutiveBriefingFields(
     tenderProcedure: str(o.tenderProcedure),
     keyTakeaways,
     capabilityRisks,
+    domainTags: stringList('domainTags'),
+    projectLocation: str(o.projectLocation),
+    bidderRequirements: stringList('bidderRequirements'),
+    roleQualifications: stringList('roleQualifications'),
+    specialConditions: stringList('specialConditions'),
+  }
+}
+
+/** Ergänzt fehlende KI-Felder aus Fallback (nur Demo/Mock — nicht bei API-Snapshots). */
+export function mergeExecutiveBriefingFields(
+  partial: unknown,
+  fallback: DealDeskExecutiveBriefingFields | undefined,
+  fillEnrichmentFromFallback = false
+): DealDeskExecutiveBriefingFields | undefined {
+  const normalized = partial ? normalizeExecutiveBriefingFields(partial) : undefined
+  if (!normalized) return fallback
+  if (!fallback || !fillEnrichmentFromFallback) return normalized
+  return {
+    ...normalized,
+    domainTags:
+      normalized.domainTags.length > 0 ? normalized.domainTags : fallback.domainTags,
+    projectLocation: normalized.projectLocation ?? fallback.projectLocation,
+    bidderRequirements:
+      normalized.bidderRequirements.length > 0
+        ? normalized.bidderRequirements
+        : fallback.bidderRequirements,
+    roleQualifications:
+      normalized.roleQualifications.length > 0
+        ? normalized.roleQualifications
+        : fallback.roleQualifications,
+    specialConditions:
+      normalized.specialConditions.length > 0
+        ? normalized.specialConditions
+        : fallback.specialConditions,
   }
 }

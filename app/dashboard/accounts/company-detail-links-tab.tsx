@@ -6,7 +6,6 @@ import type { AccountDealRow, CompanyRefRow } from './actions'
 import { referenceStatusLabel } from './company-detail-constants'
 import { ROUTES } from '@/lib/routes'
 import { formatDealVolume } from '@/lib/format'
-import { formatDealVolume } from '@/lib/format'
 
 type Props = {
   references: CompanyRefRow[]

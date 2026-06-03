@@ -76,16 +76,13 @@ export function DealDeskProjectSwitcher({
         ) : (
           <Button
             type="button"
-            variant="ghost"
+            variant="outline"
             size="sm"
-            className={cn(
-              'h-9 gap-1 px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground',
-              className
-            )}
+            className={cn('h-9 gap-1.5 px-3 text-sm font-medium shadow-sm', className)}
             aria-label="Projekt wechseln oder neues RFP hochladen"
           >
-            <span>Wechseln</span>
-            <ChevronDown className="size-4 opacity-70" aria-hidden />
+            Wechseln
+            <ChevronDown className="size-4 shrink-0 opacity-60" aria-hidden />
           </Button>
         )}
       </DropdownMenuTrigger>

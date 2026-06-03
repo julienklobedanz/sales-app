@@ -1,11 +1,11 @@
 import type { DealDeskMockAnalysis } from '@/lib/deal-desk/mock-analysis'
-import { normalizeExecutiveBriefingFields } from '@/lib/deal-desk/executive-briefing-fields'
+import { mergeExecutiveBriefingFields } from '@/lib/deal-desk/executive-briefing-fields'
 import {
   buildDemoDealDeskAnalysis,
   buildMockDealDeskAnalysis,
   DEMO_SAMPLE_RED_FLAGS,
 } from '@/lib/deal-desk/mock-analysis'
-import type { DealDeskProject } from '@/lib/deal-desk/deal-desk-project'
+import type { DealDeskProject, DealDeskProjectOwner } from '@/lib/deal-desk/deal-desk-project'
 import { parseWorkspaceState } from '@/lib/deal-desk/workspace-state'
 
 export type DealDeskAnalysisStatus = 'pending' | 'processing' | 'completed' | 'failed'
@@ -23,6 +23,7 @@ export type DealDeskProjectRow = {
   error_message: string | null
   deal_id: string | null
   archived_at: string | null
+  created_by: string | null
   created_at: string
   updated_at: string
 }
@@ -62,7 +63,8 @@ function parseAnalysisSnapshot(
   raw: unknown,
   documentNames: string[],
   customerName: string | null,
-  winProbability: number | null
+  winProbability: number | null,
+  fillEnrichmentFromFallback = false
 ): DealDeskMockAnalysis {
   if (raw && typeof raw === 'object' && 'documentNames' in (raw as object)) {
     const partial = raw as Partial<DealDeskMockAnalysis>
@@ -91,9 +93,11 @@ function parseAnalysisSnapshot(
       customerName: partial.customerName ?? customerName ?? fallback.customerName,
       icpFitLabel: partial.icpFitLabel ?? fallback.icpFitLabel,
       icpSummary: partial.icpSummary ?? fallback.icpSummary,
-      executiveBriefing: partial.executiveBriefing
-        ? normalizeExecutiveBriefingFields(partial.executiveBriefing)
-        : fallback.executiveBriefing,
+      executiveBriefing: mergeExecutiveBriefingFields(
+        partial.executiveBriefing,
+        fallback.executiveBriefing,
+        fillEnrichmentFromFallback
+      ),
     }
   }
   if (documentNames.length > 0) {
@@ -110,28 +114,51 @@ function isDealDeskDemoRow(row: DealDeskProjectRow): boolean {
   return row.analysis_source !== 'api'
 }
 
+export function resolveProjectOwner(
+  row: Pick<DealDeskProjectRow, 'created_by'>,
+  ownersByUserId: Map<string, DealDeskProjectOwner>
+): DealDeskProjectOwner | null {
+  const userId = row.created_by
+  if (!userId) return null
+  return (
+    ownersByUserId.get(userId) ?? {
+      userId,
+      fullName: 'Unbekannt',
+      avatarUrl: null,
+    }
+  )
+}
+
 export function rowToDealDeskProject(
   row: DealDeskProjectRow,
-  documents: DealDeskDocumentRow[] = []
+  documents: DealDeskDocumentRow[] = [],
+  ownersByUserId: Map<string, DealDeskProjectOwner> = new Map()
 ): DealDeskProject {
+  const isDemo = isDealDeskDemoRow(row)
+
   const documentNames =
     documents.length > 0
       ? documents.sort((a, b) => a.sort_order - b.sort_order).map((d) => d.file_name)
-      : parseAnalysisSnapshot(row.analysis_snapshot, [], row.customer_name, row.win_probability)
-          .documentNames
+      : parseAnalysisSnapshot(
+          row.analysis_snapshot,
+          [],
+          row.customer_name,
+          row.win_probability,
+          isDemo
+        ).documentNames
 
   const analysis = parseAnalysisSnapshot(
     row.analysis_snapshot,
     documentNames,
     row.customer_name,
-    row.win_probability
+    row.win_probability,
+    isDemo
   )
 
   if (row.win_probability != null) {
     analysis.winProbability = row.win_probability
   }
 
-  const isDemo = isDealDeskDemoRow(row)
   const demoFlags = DEMO_SAMPLE_RED_FLAGS.map((f) => ({ ...f }))
 
   if (isDemo) {
@@ -155,6 +182,7 @@ export function rowToDealDeskProject(
     id: row.id,
     projectName: row.project_name,
     archivedAt: row.archived_at ?? null,
+    owner: resolveProjectOwner(row, ownersByUserId),
     analysis,
     redFlags,
     smeRoutes: workspace.smeRoutes,

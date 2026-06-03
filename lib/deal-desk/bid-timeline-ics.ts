@@ -1,4 +1,5 @@
 import type { DealDeskTimelineItem } from '@/lib/deal-desk/mock-analysis'
+import { isTimelineItemExcludedFromIcsExport } from '@/lib/deal-desk/timeline-item-visual'
 
 function escapeIcsText(value: string): string {
   return value
@@ -42,6 +43,7 @@ export function buildBidTimelineIcsContent(params: {
 
   const events = items
     .filter((it) => typeof it.dueDate === 'string' && it.dueDate.length >= 10)
+    .filter((it) => !isTimelineItemExcludedFromIcsExport(it.title))
     .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
     .map((it) => {
       const summary = `${customerName} | ${rfpTitle}: ${it.title}`

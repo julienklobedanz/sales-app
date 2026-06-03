@@ -3,6 +3,12 @@ import type {
   DealDeskCapabilityRisk,
   DealDeskExecutiveBriefingFields,
 } from '@/lib/deal-desk/executive-briefing-fields'
+import {
+  hasSuitabilityContent,
+  resolveDomainTags,
+  resolveProjectLocation,
+  resolveSuitabilityCriteria,
+} from '@/lib/deal-desk/deal-desk-bid-enrichment'
 import { buildHeroKeyTakeaways } from '@/lib/deal-desk/hero-key-takeaways'
 import { formatDealDeadlineLabel } from '@/lib/deal-desk/timeline-display'
 import {
@@ -83,10 +89,21 @@ export function buildExecutiveBriefingText(params: {
     (f) => f.severity === 'critical' || f.severity === 'high'
   )
 
+  const domainTags = resolveDomainTags(briefing)
+  const projectLocation = resolveProjectLocation(briefing)
+  const suitability = resolveSuitabilityCriteria(briefing)
+
   const lines: string[] = [
     `EXECUTIVE BRIEFING — ${projectName}`,
     `Kunde: ${analysis.customerName}`,
   ]
+
+  if (domainTags.length) {
+    lines.push(`Klassifizierung: ${domainTags.join(' · ')}`)
+  }
+  if (projectLocation !== '—') {
+    lines.push(`Standort: ${projectLocation}`)
+  }
 
   if (submissionDeadline) lines.push(`Abgabedatum (Deadline): ${submissionDeadline}`)
   if (desiredServiceStart) lines.push(`Gewünschter Servicebeginn: ${desiredServiceStart}`)
@@ -113,6 +130,22 @@ export function buildExecutiveBriefingText(params: {
   }
 
   lines.push('', '— STRATEGISCHE EINSCHÄTZUNG —', strategicAssessment)
+
+  if (hasSuitabilityContent(suitability)) {
+    lines.push('', '— EIGNUNG & RAHMENBEDINGUNGEN —')
+    if (suitability.bidderRequirements.length) {
+      lines.push('', 'Anforderungen an den Bieter:')
+      lines.push(...suitability.bidderRequirements.map((t) => `• ${t}`))
+    }
+    if (suitability.roleQualifications.length) {
+      lines.push('', 'Rollenqualifikationen:')
+      lines.push(...suitability.roleQualifications.map((t) => `• ${t}`))
+    }
+    if (suitability.specialConditions.length) {
+      lines.push('', 'Besondere Bedingungen:')
+      lines.push(...suitability.specialConditions.map((t) => `• ${t}`))
+    }
+  }
 
   lines.push('', '— SCOPE & COMPLIANCE —')
   const scopeLines = [

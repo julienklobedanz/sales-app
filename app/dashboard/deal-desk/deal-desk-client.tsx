@@ -3,8 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
-  AlertTriangle,
-  CheckCircle2,
   Clock,
   FileSpreadsheet,
   FileText,
@@ -48,11 +46,9 @@ import {
 } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { projectToWorkspaceState } from '@/lib/deal-desk/project-mapper'
-import {
-  buildHeroKeyTakeaways,
-  recommendationBadgeClass,
-  type HeroTakeawayIconKind,
-} from '@/lib/deal-desk/hero-key-takeaways'
+import { recommendationBadgeClass } from '@/lib/deal-desk/hero-key-takeaways'
+import { resolveBidEnrichment } from '@/lib/deal-desk/deal-desk-bid-enrichment'
+import { resolveBidOverviewMeta } from '@/lib/deal-desk/bid-overview-meta'
 import {
   winProbabilityBreakdownTooltip,
   winProbabilityRecommendationLabel,
@@ -75,6 +71,9 @@ import {
   setDealDeskProjectArchivedAction,
   updateDealDeskProjectAction,
 } from './actions'
+import { BidNextStepsCard, type BidNextStep } from './components/bid-next-steps-card'
+import { BidOverviewMetaBar } from './components/bid-overview-meta-bar'
+import { BidSuitabilityCriteriaCard } from './components/bid-suitability-criteria-card'
 import { BidTimelineCard } from './components/bid-timeline-card'
 import { DealDeskProjectHeader } from './components/deal-desk-project-header'
 import { DealDeskProjectSwitcher } from './components/deal-desk-project-switcher'
@@ -113,12 +112,6 @@ const TAB_PANEL_CLASS =
 const DEAL_DESK_TAB_TRIGGER_CLASS =
   'h-auto min-w-0 flex-1 justify-center gap-1.5 rounded-md px-3.5 py-1.5 text-sm font-medium text-slate-500 shadow-none transition-all after:hidden hover:bg-slate-50 hover:text-slate-800 data-[state=active]:border-transparent data-[state=active]:bg-slate-100 data-[state=active]:font-medium data-[state=active]:text-slate-900 data-[state=active]:shadow-none dark:data-[state=active]:bg-slate-100 dark:data-[state=active]:text-slate-900'
 
-function HeroTakeawayIcon({ kind }: { kind: HeroTakeawayIconKind }) {
-  const className = 'size-4 shrink-0 text-slate-400'
-  if (kind === 'alert') return <AlertTriangle className={className} aria-hidden />
-  if (kind === 'partnership') return <CheckCircle2 className={className} aria-hidden />
-  return <Sparkles className={className} aria-hidden />
-}
 const TAB_STAGE_CLASS = 'w-full min-h-[680px] [scrollbar-gutter:stable]'
 const TAB_CARD_CLASS = 'w-full shadow-sm'
 
@@ -844,6 +837,7 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
   const smeCustomExperts = deskProject.smeCustomExperts
   const showDemo =
     deskProject.showDemoBadge || process.env.NEXT_PUBLIC_DEAL_DESK_DEMO === '1'
+  const bidEnrichment = resolveBidEnrichment(analysis)
 
   return (
     <div className={cn(DESK_LAYOUT_CLASS, 'pb-8')}>
@@ -851,6 +845,8 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
         activeProjects={activeProjects}
         archivedProjects={archivedProjects}
         activeProject={activeProject}
+        domainTags={bidEnrichment.domainTags}
+        projectLocation={bidEnrichment.projectLocation}
         showDemoBadge={showDemo}
         onSelectProject={selectProject}
         onArchiveProject={(id) => void archiveProject(id)}
@@ -892,10 +888,10 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
             <div className="w-full space-y-6">
               {(() => {
                 const winTone = winProbabilityTone(analysis.winProbability ?? 0)
-                const heroTakeaways = buildHeroKeyTakeaways(analysis)
+                const bidMeta = resolveBidOverviewMeta(analysis, deskProject.owner)
 
                 return (
-                  <Card className="relative rounded-xl border border-slate-200/80 bg-white shadow-sm">
+                  <Card className="relative flex flex-col gap-0 overflow-hidden rounded-xl border border-slate-200/80 bg-white py-0 shadow-sm">
                     <div className="absolute right-6 top-6 z-10">
                       <ExecutiveBriefingDialog
                         projectName={activeProject.projectName || 'RFP'}
@@ -904,17 +900,17 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
                         className="h-8 gap-1.5 border-slate-200 bg-white text-xs font-medium shadow-sm"
                       />
                     </div>
-                    <CardContent className="flex w-full flex-col gap-6 p-6 pt-14 sm:pt-6 lg:flex-row lg:items-start lg:pr-52">
-                      <div className="flex shrink-0 justify-center lg:justify-start">
-                        <WinProbabilityGauge
-                          value={analysis.winProbability ?? 0}
-                          size={124}
-                          showRecommendation={false}
-                        />
-                      </div>
-                      <div className="min-w-0 flex-1 grid grid-cols-1 gap-6 lg:grid-cols-3">
-                        <div className="space-y-3 lg:col-span-2">
-                          <div className="mb-3 flex flex-wrap items-center gap-2">
+                    <div className="rounded-t-xl p-6 pt-14 sm:pt-6">
+                      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+                        <div className="flex shrink-0 justify-center lg:justify-start">
+                          <WinProbabilityGauge
+                            value={analysis.winProbability ?? 0}
+                            size={124}
+                            showRecommendation={false}
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1 space-y-4">
+                          <div className="flex flex-wrap items-center gap-2">
                             <TooltipProvider delayDuration={200}>
                               <Tooltip>
                                 <TooltipTrigger asChild>
@@ -944,21 +940,17 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
                           </h3>
                           <p className="text-sm leading-relaxed text-zinc-600">{analysis.icpSummary}</p>
                         </div>
-                        <div className="border-t border-slate-100 pt-4 lg:col-span-1 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-12">
-                          <ul className="mt-4 space-y-2.5 text-xs font-medium text-slate-500">
-                            {heroTakeaways.map((item) => (
-                              <li key={item.text} className="flex gap-2.5 leading-snug">
-                                <HeroTakeawayIcon kind={item.icon} />
-                                <span>{item.text}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
                       </div>
-                    </CardContent>
+                    </div>
+                    <BidOverviewMetaBar meta={bidMeta} />
                   </Card>
                 )
               })()}
+
+              <BidSuitabilityCriteriaCard
+                criteria={bidEnrichment.suitability}
+                className={TAB_CARD_CLASS}
+              />
 
               <RedFlagsPanel
                 flags={redFlags ?? []}
@@ -971,6 +963,7 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
 
               <BidTimelineCard
                 className={TAB_CARD_CLASS}
+                defaultOpen={false}
                 timelineItems={analysis.timelineItems ?? []}
                 customerName={analysis.customerName}
                 rfpTitle={activeProject.projectName || 'RFP'}
@@ -994,10 +987,11 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
                   (a, b) => (a.dueInDays ?? 99) - (b.dueInDays ?? 99)
                 )
 
-                const steps: Array<{ title: string; detail?: string; tab?: TabKey }> = []
+                const steps: BidNextStep[] = []
 
                 if (criticalHigh > 0) {
                   steps.push({
+                    id: 'legal-review',
                     title:
                       legalMarkedCount > 0
                         ? 'Legal Review für markierte Risiken starten'
@@ -1006,90 +1000,50 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
                       legalMarkedCount > 0
                         ? 'Nächster Schritt: Vertrags-Punkte prüfen und ggf. Ausschlüsse verhandeln.'
                         : 'Im „Red Flags“-Panel passende Punkte markieren und an Legal senden.',
-                    tab: 'decision',
+                    onActivate: () => setActiveTab('decision'),
                   })
                 }
 
                 if (missingReferenceCount > 0) {
                   steps.push({
+                    id: 'missing-refs',
                     title: `Referenzen für ${missingReferenceCount} Anforderungen nachziehen`,
                     detail: 'Tab „Antwort-Entwürfe“ öffnen und fehlende Proofs ergänzen.',
-                    tab: 'draft',
+                    onActivate: () => setActiveTab('draft'),
                   })
                 }
 
                 if (missingAnswerCount > 0) {
                   steps.push({
+                    id: 'missing-answers',
                     title: `Antworten für ${missingAnswerCount} passende Anforderungen vervollständigen`,
                     detail: 'Teilweise fehlen noch KI-Antworten — Referenzen prüfen und dann finalisieren.',
-                    tab: 'draft',
+                    onActivate: () => setActiveTab('draft'),
                   })
                 }
 
                 for (const task of sortedSme.slice(0, 2)) {
                   steps.push({
+                    id: `sme-${task.id}`,
                     title: `SME-Klärung: ${task.category}`,
                     detail: `${task.question} (Due: in ${task.dueInDays} Tagen)`,
-                    tab: 'sme',
+                    onActivate: () => setActiveTab('sme'),
                   })
                   if (steps.length >= 5) break
                 }
 
                 if (steps.length < 5 && smeTasks.length > 0) {
                   steps.push({
+                    id: 'sme-routing',
                     title: 'SME-Routing finalisieren',
                     detail: 'Stelle sicher, dass alle offenen Aufgaben an die richtigen Rollen geleitet sind.',
-                    tab: 'sme',
+                    onActivate: () => setActiveTab('sme'),
                   })
                 }
 
                 const stepsFinal = steps.slice(0, 5)
 
-                return (
-                  <Card className={TAB_CARD_CLASS}>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Nächste Schritte (max. 5)</CardTitle>
-                      <CardDescription>Aus den Red Flags, Lücken und SME-Aufgaben abgeleitet.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {stepsFinal.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">
-                          Keine offenen To-dos gefunden. (Wenn Inhalte fehlen, prüfe Red Flags / Entwürfe.)
-                        </p>
-                      ) : (
-                        <div className="space-y-2">
-                          {stepsFinal.map((s, idx) => (
-                            <div
-                              key={`${idx}-${s.title}`}
-                              className="flex items-start gap-3 rounded-xl border border-border bg-muted/30 px-4 py-3"
-                            >
-                              <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-background">
-                                <span className="text-sm font-bold text-muted-foreground">{idx + 1}</span>
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <p className="text-sm font-medium text-foreground">{s.title}</p>
-                                {s.detail ? (
-                                  <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{s.detail}</p>
-                                ) : null}
-                              </div>
-                              {s.tab ? (
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-8 gap-2"
-                                  onClick={() => setActiveTab(s.tab!)}
-                                >
-                                  Öffnen
-                                </Button>
-                              ) : null}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                )
+                return <BidNextStepsCard className={TAB_CARD_CLASS} steps={stepsFinal} />
               })()}
             </div>
           </TabsContent>
