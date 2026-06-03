@@ -59,11 +59,18 @@ export function RedFlagsPanel({
   const markedFlags = flags.filter((f) => f.markedForLegal)
   const markedCount = markedFlags.length
   const scrollable = flags.length > RED_FLAGS_MAX_VISIBLE
+  const allMarked = flags.length > 0 && flags.every((f) => f.markedForLegal)
+  const someMarked = flags.some((f) => f.markedForLegal)
 
   function toggleMark(flagId: string) {
     onFlagsChange(
       flags.map((f) => (f.id === flagId ? { ...f, markedForLegal: !f.markedForLegal } : f))
     )
+  }
+
+  function toggleAllMarked() {
+    const next = !allMarked
+    onFlagsChange(flags.map((f) => ({ ...f, markedForLegal: next })))
   }
 
   async function sendToLegal() {
@@ -171,6 +178,20 @@ export function RedFlagsPanel({
       headerActions={legalAction}
       title={
         <span className="flex items-center gap-2 text-base font-semibold text-foreground">
+          <span
+            className="flex shrink-0 items-center"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
+            <Checkbox
+              id="legal-flags-select-all"
+              checked={allMarked ? true : someMarked ? 'indeterminate' : false}
+              disabled={flags.length === 0}
+              onCheckedChange={() => toggleAllMarked()}
+              className="border-slate-300 data-[state=checked]:border-primary"
+              aria-label="Alle Red Flags zur Legal-Prüfung markieren"
+            />
+          </span>
           <ShieldAlert className="size-4 shrink-0 text-amber-600" aria-hidden />
           Red Flags
           {flags.length > 0 ? (
@@ -191,33 +212,45 @@ export function RedFlagsPanel({
           const styles = severityStyles(flag.severity)
           return (
             <div key={flag.id} className={cn('w-full overflow-hidden rounded-xl border', styles.border)}>
-              <div className="flex w-full items-stretch">
-                <div className="flex shrink-0 items-center justify-center py-4 pl-5 pr-3 sm:pl-6">
-                  <Checkbox
-                    id={`legal-flag-${flag.id}`}
-                    checked={Boolean(flag.markedForLegal)}
-                    onCheckedChange={() => toggleMark(flag.id)}
-                    className="border-slate-300 data-[state=checked]:border-primary"
-                    aria-label={`${flag.title} zur Legal-Prüfung markieren`}
-                  />
-                </div>
-                <div className="min-w-0 flex-1 space-y-2 py-4 pr-4">
+              <div className="flex items-start gap-3 px-5 py-4 sm:px-6">
+                <Checkbox
+                  id={`legal-flag-${flag.id}`}
+                  checked={Boolean(flag.markedForLegal)}
+                  onCheckedChange={() => toggleMark(flag.id)}
+                  className="mt-1 shrink-0 border-slate-300 data-[state=checked]:border-primary"
+                  aria-label={`${flag.title} zur Legal-Prüfung markieren`}
+                />
+                <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge className={cn('text-[10px] font-semibold uppercase', styles.badge)}>
                       {flag.severity}
                     </Badge>
                     <span className="font-semibold text-foreground">{flag.title}</span>
                   </div>
-                  {flag.pageHint ? (
-                    <p className="text-[11px] text-muted-foreground">{flag.pageHint}</p>
-                  ) : null}
-                  {flag.sourceFileName ? (
-                    <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                  {flag.pageHint || flag.sourceFileName ? (
+                    <p className="mb-3 mt-1 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground/70">
                       <Paperclip className="size-3 shrink-0" aria-hidden />
-                      Quelldokument: {flag.sourceFileName}
+                      {flag.sourceFileName ? (
+                        <span>
+                          {flag.sourceFileName}
+                          {flag.pageHint ? (
+                            <>
+                              <span aria-hidden className="px-0.5 text-muted-foreground/50">
+                                {' '}
+                                ·{' '}
+                              </span>
+                              {flag.pageHint}
+                            </>
+                          ) : null}
+                        </span>
+                      ) : (
+                        <span>{flag.pageHint}</span>
+                      )}
                     </p>
                   ) : null}
-                  <p className="text-sm leading-relaxed text-foreground/85">{flag.excerpt}</p>
+                  <blockquote className="border-l-2 border-foreground/20 pl-3 text-sm italic leading-relaxed text-foreground/90">
+                    {flag.excerpt}
+                  </blockquote>
                 </div>
               </div>
             </div>

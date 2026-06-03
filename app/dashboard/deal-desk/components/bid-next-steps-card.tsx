@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Check, Circle, CircleCheck } from 'lucide-react'
+import { Check, Circle, CircleCheck, ListChecks } from 'lucide-react'
 
 import { BidOverviewCollapsibleCard } from '@/app/dashboard/deal-desk/components/bid-overview-collapsible-card'
 import { cn } from '@/lib/utils'
@@ -37,7 +37,10 @@ export function BidNextStepsCard({ steps, className, defaultOpen = true }: Props
       className={className}
       contentClassName="pt-2 pb-6"
       title={
-        <span className="text-base font-semibold text-foreground">Nächste Schritte (max. 5)</span>
+        <span className="flex items-center gap-2 text-base font-semibold text-foreground">
+          <ListChecks className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+          Nächste Schritte (max. 5)
+        </span>
       }
       description={
         <span>Aus den Red Flags, Lücken und SME-Aufgaben abgeleitet.</span>

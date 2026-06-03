@@ -2,13 +2,11 @@
 
 import { useMemo, useState } from 'react'
 import {
-  ClipboardCopy,
+  Copy,
   Download,
   FileText,
   Loader2,
   Scale,
-  Sprout,
-  Trophy,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -19,11 +17,48 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ROUTES } from '@/lib/routes'
 import { buildHarvestFromAnalysis } from '@/lib/deal-desk/build-harvest-from-snapshot'
 import { LEGAL_CLAUSE_ITEMS } from '@/lib/deal-desk/legal-clauses'
+import {
+  buildCaseStudySolutionBullets,
+  buildCustomerChallengeBullets,
+} from '@/lib/deal-desk/reference-case-study-bullets'
 import type { DealDeskMockAnalysis } from '@/lib/deal-desk/mock-analysis'
 import { SUCCESS_STORY_KIT, type ReferenceIncubatorHarvest } from '@/lib/deal-desk/reference-incubator-mock'
 import { cn } from '@/lib/utils'
 
 const HARVEST_DELAY_MS = 2000
+
+function IncubatorSectionHeading({
+  eyebrow,
+  title,
+  description,
+}: {
+  eyebrow: string
+  title: string
+  description?: string
+}) {
+  return (
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{eyebrow}</p>
+      <h3 className="mt-1 text-lg font-semibold text-slate-900">{title}</h3>
+      {description ? (
+        <p className="mt-1 text-sm leading-snug text-slate-600">{description}</p>
+      ) : null}
+    </div>
+  )
+}
+
+function CaseStudyBulletList({ items }: { items: string[] }) {
+  return (
+    <ul className="space-y-2 text-sm leading-relaxed text-muted-foreground">
+      {items.map((item, idx) => (
+        <li key={`${idx}-${item.slice(0, 24)}`} className="flex gap-2">
+          <span className="mt-2 size-1 shrink-0 rounded-full bg-muted-foreground/50" aria-hidden />
+          <span>{item}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
 
 function KitKindBadge({ kind }: { kind: 'pdf' | 'template' | 'guide' }) {
   const label = kind === 'pdf' ? 'PDF' : kind === 'template' ? 'Template' : 'Guide'
@@ -65,8 +100,8 @@ async function downloadKitPdf(path: string, title: string) {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = res.headers.get('Content-Disposition')?.match(/filename="([^"]+)"/)?.[1]
-      ?? 'Dokument.pdf'
+    a.download =
+      res.headers.get('Content-Disposition')?.match(/filename="([^"]+)"/)?.[1] ?? 'Dokument.pdf'
     a.click()
     URL.revokeObjectURL(url)
     toast.success(`${title} heruntergeladen.`)
@@ -75,7 +110,7 @@ async function downloadKitPdf(path: string, title: string) {
   }
 }
 
-function PdfResourcesCard() {
+function PdfTemplates() {
   return (
     <Card className="rounded-xl border border-slate-200/80 bg-white shadow-sm">
       <CardHeader className="pb-3">
@@ -84,9 +119,9 @@ function PdfResourcesCard() {
             <FileText className="size-4 text-blue-600" aria-hidden />
           </div>
           <div>
-            <CardTitle className="text-sm">PDF Ressourcen</CardTitle>
+            <CardTitle className="text-sm">PDF Templates</CardTitle>
             <CardDescription className="text-xs">
-              Vorlagen für Freigabe, NDA und Check-in — zum Download.
+              Vorlagen für Freigabe, NDA und Check-in
             </CardDescription>
           </div>
         </div>
@@ -128,7 +163,7 @@ function PdfResourcesCard() {
   )
 }
 
-function LegalClauseBuilder() {
+function LegalTemplates() {
   return (
     <Card className="rounded-xl border border-slate-200/80 bg-white shadow-sm">
       <CardHeader className="pb-3">
@@ -137,28 +172,29 @@ function LegalClauseBuilder() {
             <Scale className="size-4 text-purple-600" aria-hidden />
           </div>
           <div>
-            <CardTitle className="text-sm">Legal Clause Builder</CardTitle>
+            <CardTitle className="text-sm">Legal Templates</CardTitle>
             <CardDescription className="text-xs">
-              Klauseln für Vertrag und Marketing — direkt kopieren.
+              Template Klauseln zur Referenznutzung für den Vertrag mit Ihrem Kunden
             </CardDescription>
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-0 divide-y divide-slate-100">
         {LEGAL_CLAUSE_ITEMS.map((item) => (
-          <div key={item.id} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+          <div
+            key={item.id}
+            className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
+          >
             <p className="min-w-0 text-xs font-semibold leading-snug text-slate-900">{item.title}</p>
-            <Button
+            <button
               type="button"
-              variant="ghost"
-              size="icon"
-              className="size-8 shrink-0 text-slate-500 hover:text-slate-900"
+              className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground/60 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label={`${item.title} kopieren`}
               title="Klausel kopieren"
               onClick={() => void copyText(item.title, item.text)}
             >
-              <ClipboardCopy className="size-4" aria-hidden />
-            </Button>
+              <Copy className="size-4" aria-hidden />
+            </button>
           </div>
         ))}
       </CardContent>
@@ -168,31 +204,43 @@ function LegalClauseBuilder() {
 
 function HarvestResult({
   harvest,
+  analysis,
   onOpenDraft,
   draftLoading,
 }: {
   harvest: ReferenceIncubatorHarvest
+  analysis: DealDeskMockAnalysis
   onOpenDraft: () => void
   draftLoading: boolean
 }) {
+  const challengeBullets = useMemo(() => buildCustomerChallengeBullets(analysis), [analysis])
+  const solutionBullets = useMemo(
+    () => buildCaseStudySolutionBullets(analysis, harvest.solution),
+    [analysis, harvest.solution]
+  )
+
   return (
     <div className="space-y-4 border-t border-slate-100 pt-4">
       <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">
         Auto-Harvest abgeschlossen
       </p>
       <p className="text-sm font-semibold text-slate-900">{harvest.companyName}</p>
-      <div className="grid gap-4 sm:grid-cols-2 sm:gap-6">
+      <div className="grid gap-6 sm:grid-cols-2 sm:gap-8">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
             Herausforderung
           </p>
-          <p className="mt-1.5 text-sm leading-relaxed text-slate-700">{harvest.challenge}</p>
+          <div className="mt-2">
+            <CaseStudyBulletList items={challengeBullets} />
+          </div>
         </div>
-        <div className="sm:border-l sm:border-slate-100 sm:pl-6">
+        <div className="sm:border-l sm:border-slate-100 sm:pl-8">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
             Lösung
           </p>
-          <p className="mt-1.5 text-sm leading-relaxed text-slate-700">{harvest.solution}</p>
+          <div className="mt-2">
+            <CaseStudyBulletList items={solutionBullets} />
+          </div>
         </div>
       </div>
       <Button
@@ -220,6 +268,11 @@ export function ReferenceIncubatorTab({
   const [draftLoading, setDraftLoading] = useState(false)
 
   const preview = useMemo(() => buildHarvestFromAnalysis(analysis), [analysis])
+  const previewChallengeBullets = useMemo(() => buildCustomerChallengeBullets(analysis), [analysis])
+  const previewSolutionBullets = useMemo(
+    () => buildCaseStudySolutionBullets(analysis, preview.solution),
+    [analysis, preview.solution]
+  )
 
   async function openDraftReference() {
     setDraftLoading(true)
@@ -243,95 +296,84 @@ export function ReferenceIncubatorTab({
   }
 
   return (
-    <div className="grid w-full gap-6 lg:grid-cols-2 lg:items-start">
-      <Card className="rounded-xl border border-slate-200/80 bg-white shadow-sm">
-        <CardHeader className="pb-2">
-          <div className="flex items-center gap-2">
-            <div className="flex size-8 items-center justify-center rounded-lg bg-blue-50">
-              <Sprout className="size-4 text-blue-600" aria-hidden />
-            </div>
-            <div>
-              <CardTitle className="text-base">AI Case Study Preview</CardTitle>
-              <CardDescription className="text-xs">
-                Vorab-Entwurf deiner Success Story — aus dem laufenden Bid.
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
+    <div className="grid w-full grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-x-8 lg:gap-y-4">
+      <div className="flex flex-col justify-end lg:col-span-5">
+        <IncubatorSectionHeading
+          eyebrow="The Winning Toolkit"
+          title="Ressourcen & Legal"
+        />
+      </div>
+      <div className="flex flex-col justify-end lg:col-span-7">
+        <IncubatorSectionHeading eyebrow="Success Story" title="AI Case Study Preview" />
+      </div>
 
-        <CardContent className="space-y-5">
-          <div className="space-y-4">
-            <p className="text-sm leading-relaxed text-slate-600">
-              Basierend auf den RFP-Antworten sind Herausforderung und Lösung bereits vorformuliert.
-              Nach &quot;Gewonnen&quot; wird der Entwurf finalisiert.
+      <aside className="flex min-w-0 flex-col gap-4 lg:col-span-5">
+        <LegalTemplates />
+        <PdfTemplates />
+      </aside>
+
+      <div className="min-w-0 lg:col-span-7">
+        <Card className="rounded-xl border border-slate-200/80 bg-white shadow-sm">
+          <CardContent className="space-y-5 p-6">
+            <p className="m-0 text-sm leading-relaxed text-slate-600">
+              Basierend auf dem RFP sind Herausforderung und Lösung bereits vorformuliert. Ein Klick auf Deal gewonnen legt diesen Deal als Referenzentwurf an.
             </p>
 
-            {phase === 'idle' ? (
-              <div className="grid gap-5 sm:grid-cols-2 sm:gap-8">
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                    Herausforderung
-                  </p>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-800">{preview.challenge}</p>
+            <div className="space-y-4">
+              {phase === 'idle' ? (
+                <div className="mt-6 grid gap-6 sm:grid-cols-2 sm:gap-8">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                      Herausforderung
+                    </p>
+                    <div className="mt-2">
+                      <CaseStudyBulletList items={previewChallengeBullets} />
+                    </div>
+                  </div>
+                  <div className="sm:border-l sm:border-slate-100 sm:pl-8">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                      Lösung
+                    </p>
+                    <div className="mt-2">
+                      <CaseStudyBulletList items={previewSolutionBullets} />
+                    </div>
+                  </div>
                 </div>
-                <div className="sm:border-l sm:border-slate-100 sm:pl-8">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                    Lösung
-                  </p>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-800">{preview.solution}</p>
-                </div>
-              </div>
-            ) : null}
+              ) : null}
 
-            {phase === 'loading' ? (
-              <div className="flex items-center gap-3 py-6 text-sm text-slate-600">
-                <Loader2 className="size-5 animate-spin text-emerald-600" aria-hidden />
-                RFP-Antworten werden geerntet …
-              </div>
-            ) : null}
-
-            {phase === 'done' && harvest ? (
-              <HarvestResult
-                harvest={harvest}
-                onOpenDraft={() => void openDraftReference()}
-                draftLoading={draftLoading}
-              />
-            ) : null}
-          </div>
-
-          {phase !== 'done' ? (
-            <Button
-              type="button"
-              size="lg"
-              className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700"
-              disabled={phase === 'loading'}
-              onClick={startHarvest}
-            >
               {phase === 'loading' ? (
-                <Loader2 className="size-5 animate-spin" aria-hidden />
-              ) : (
-                <Trophy className="size-5" aria-hidden />
-              )}
-              Deal Gewonnen — Harvesting starten
-            </Button>
-          ) : null}
-        </CardContent>
-      </Card>
+                <div className="flex items-center gap-3 py-6 text-sm text-slate-600">
+                  <Loader2 className="size-5 animate-spin text-emerald-600" aria-hidden />
+                  RFP-Antworten werden geerntet …
+                </div>
+              ) : null}
 
-      <aside className="min-w-0 space-y-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-            The Winning Toolkit
-          </p>
-          <h3 className="mt-1 text-lg font-semibold text-slate-900">Ressourcen &amp; Legal</h3>
-          <p className="mt-1 text-sm text-slate-600">
-            Klauseln, PDFs und Vorlagen — Referenz vertraglich absichern.
-          </p>
-        </div>
+              {phase === 'done' && harvest ? (
+                <HarvestResult
+                  harvest={harvest}
+                  analysis={analysis}
+                  onOpenDraft={() => void openDraftReference()}
+                  draftLoading={draftLoading}
+                />
+              ) : null}
+            </div>
 
-        <LegalClauseBuilder />
-        <PdfResourcesCard />
-      </aside>
+            {phase !== 'done' ? (
+              <Button
+                type="button"
+                className="h-auto w-full bg-emerald-600 py-4 text-sm font-medium hover:bg-emerald-700"
+                disabled={phase === 'loading'}
+                onClick={startHarvest}
+              >
+                {phase === 'loading' ? (
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                ) : null}
+                Deal Gewonnen — Harvesting starten
+              </Button>
+            ) : null}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

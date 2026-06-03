@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Briefcase, ChevronDown, Loader2, MapPin, Upload, X } from 'lucide-react'
+import { Briefcase, ChevronDown, FileText, Loader2, MapPin, Upload, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { DealDeskProjectSwitcher } from '@/app/dashboard/deal-desk/components/deal-desk-project-switcher'
@@ -100,15 +100,20 @@ export function DealDeskProjectHeader({
   const showLocation = Boolean(locationLabel && locationLabel !== '—')
 
   return (
-    <div className="flex w-full items-center justify-between gap-6 rounded-xl border border-border bg-card px-6 py-6">
-      <div className="flex min-w-0 flex-1 items-center gap-3">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-100">
+    <div className="flex w-full items-center justify-between rounded-xl border border-border bg-card px-6 py-5">
+      <div className="grid min-w-0 flex-1 grid-cols-[2.5rem_minmax(0,1fr)] gap-x-4 gap-y-1.5">
+        <div
+          className={cn(
+            'flex size-10 shrink-0 items-center justify-center self-center rounded-lg bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-100',
+            domainTags.length > 0 ? 'row-span-3' : 'row-span-2'
+          )}
+        >
           <Briefcase className="size-5" />
         </div>
-        <div className="min-w-0 flex flex-col">
-          <div className="flex min-w-0 flex-wrap items-center gap-2.5">
+
+        <div className="col-start-2 row-start-1 flex min-w-0 flex-wrap items-center gap-2 -ml-px">
             {editingTitle ? (
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 w-full max-w-lg">
                 <Label htmlFor="deal-desk-project-name" className="sr-only">
                   Projektname
                 </Label>
@@ -124,7 +129,7 @@ export function DealDeskProjectHeader({
                       commitTitleEdit()
                     }
                   }}
-                  className="h-10 max-w-lg text-2xl font-bold tracking-tight"
+                  className="h-auto w-full max-w-lg border-0 bg-transparent p-0 text-xl font-bold leading-tight tracking-normal shadow-none focus-visible:ring-0"
                   placeholder="Projektname"
                 />
               </div>
@@ -132,7 +137,7 @@ export function DealDeskProjectHeader({
               <button
                 type="button"
                 onClick={() => setEditingProjectId(activeProject.id)}
-                className="max-w-full truncate text-left text-2xl font-bold tracking-tight text-foreground transition-colors hover:text-foreground/80"
+                className="block max-w-full truncate border-0 bg-transparent p-0 text-left text-xl font-bold leading-tight text-foreground transition-colors hover:text-foreground/80"
                 title="Klicken zum Bearbeiten"
               >
                 {activeProject.projectName || 'Unbenanntes Projekt'}
@@ -146,39 +151,45 @@ export function DealDeskProjectHeader({
                 Demo
               </span>
             ) : null}
-          </div>
-          <DealDeskDomainTags tags={domainTags} className="mt-3" />
-          <p className="mt-2 flex flex-wrap items-center gap-1 text-sm text-muted-foreground">
-            <span className="truncate">{activeProject.analysis.customerName}</span>
-            {showLocation ? (
-              <>
-                <span aria-hidden>·</span>
-                <span className="inline-flex items-center gap-1 shrink-0">
-                  <MapPin className="size-3 shrink-0 opacity-70" aria-hidden />
-                  <span>{locationLabel}</span>
-                </span>
-              </>
-            ) : null}
-            <span aria-hidden>·</span>
-            <Popover open={docsOpen} onOpenChange={setDocsOpen}>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-0.5 text-foreground/85 underline decoration-dotted underline-offset-4 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  aria-label={`${docCountLabel} anzeigen und verwalten`}
-                >
-                  {addingDocuments ? (
-                    <Loader2 className="size-3 animate-spin" aria-hidden />
-                  ) : null}
-                  <span>{docCountLabel}</span>
-                  <ChevronDown className="size-3 opacity-70" aria-hidden />
-                </button>
-              </PopoverTrigger>
+        </div>
+
+        <div className="col-start-2 row-start-2 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
+          <span className="shrink-0 truncate">{activeProject.analysis.customerName}</span>
+              {showLocation ? (
+                <>
+                  <span aria-hidden className="text-muted-foreground/50">
+                    ·
+                  </span>
+                  <span className="inline-flex shrink-0 items-center gap-1">
+                    <MapPin className="size-3 shrink-0 opacity-70" aria-hidden />
+                    <span>{locationLabel}</span>
+                  </span>
+                </>
+              ) : null}
+              <span aria-hidden className="text-muted-foreground/50">
+                ·
+              </span>
+              <Popover open={docsOpen} onOpenChange={setDocsOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="inline-flex shrink-0 items-center gap-1 text-foreground/85 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    aria-label={`${docCountLabel} anzeigen und verwalten`}
+                  >
+                    {addingDocuments ? (
+                      <Loader2 className="size-3 animate-spin" aria-hidden />
+                    ) : (
+                      <FileText className="size-3 shrink-0 opacity-70" aria-hidden />
+                    )}
+                    <span>{docCountLabel}</span>
+                    <ChevronDown className="size-3 opacity-70" aria-hidden />
+                  </button>
+                </PopoverTrigger>
               <PopoverContent align="start" className="w-[min(22rem,calc(100vw-2rem))] p-0">
                 <PopoverHeader className="border-b border-border px-4 py-3">
                   <PopoverTitle>Dokumente</PopoverTitle>
                   <PopoverDescription>
-                    Unterlagen dieses RFP-Projekts — entfernen oder weitere Dateien hinzufügen.
+                    Unterlagen des RFP-Projekts verwalten
                   </PopoverDescription>
                 </PopoverHeader>
                 <ul className="max-h-[220px] space-y-2 overflow-y-auto px-4 py-3">
@@ -300,20 +311,27 @@ export function DealDeskProjectHeader({
                 ) : null}
               </PopoverContent>
             </Popover>
-            {activeProject.analysisStatus === 'processing' ? (
-              <>
-                <span aria-hidden>·</span>
-                <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-300">
-                  <Loader2 className="size-3 animate-spin" aria-hidden />
-                  Analyse läuft
-                </span>
-              </>
-            ) : null}
-          </p>
+              {activeProject.analysisStatus === 'processing' ? (
+                <>
+                  <span aria-hidden className="text-muted-foreground/50">
+                    ·
+                  </span>
+                  <span className="inline-flex shrink-0 items-center gap-1 text-amber-700 dark:text-amber-300">
+                    <Loader2 className="size-3 animate-spin" aria-hidden />
+                    Analyse läuft
+                  </span>
+                </>
+              ) : null}
         </div>
+
+        {domainTags.length > 0 ? (
+          <div className="col-start-2 row-start-3 min-w-0">
+            <DealDeskDomainTags tags={domainTags} compact className="flex flex-wrap" />
+          </div>
+        ) : null}
       </div>
 
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="flex shrink-0 items-center gap-3">
         <DealDeskProjectSwitcher
           activeProjects={activeProjects}
           archivedProjects={archivedProjects}

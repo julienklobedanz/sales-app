@@ -22,6 +22,15 @@ export type SuccessStoryKitItem = {
   downloadPath?: string
 }
 
+/** Demo: Kunden-Challenges aus dem RFP (Problem, Ausgangslage, Zielbild) — keine Legal-Red-Flags. */
+export const DEMO_CUSTOMER_CHALLENGE_BULLETS: string[] = [
+  'Problemstellung: SAP-nahe Kernsysteme und bestehende Infrastruktur sollen in eine moderne Cloud-Landschaft (AWS/Azure) überführt werden.',
+  'Ausgangslage: heterogene Legacy-Workloads, hoher Betriebsaufwand und komplexe Schnittstellen zwischen ERP und Cloud.',
+  'Zielbild: skalierbarer, sicherer Betrieb mit definiertem Servicebeginn und Shortlist-Prozess nach Angebotsabgabe.',
+  'Gefordert werden Migration, S/4HANA-Schnittstellen und Betrieb unter Finanz-Compliance (Datenhaltung Schweiz / EU-EWR).',
+  'Der Kunde sucht einen Partner mit Enterprise-Erfahrung (DACH) und integrierter Cloud- plus SAP-Delivery-Kompetenz.',
+]
+
 export const SUCCESS_STORY_KIT: SuccessStoryKitItem[] = [
   {
     id: 'dsgvo-reference-consent',

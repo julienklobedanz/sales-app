@@ -1,6 +1,6 @@
 'use client'
 
-import { CalendarRange } from 'lucide-react'
+import { CalendarClock, CalendarRange } from 'lucide-react'
 
 import { BidDeadlineProgressTimeline } from '@/app/dashboard/deal-desk/components/bid-deadline-progress-timeline'
 import { BidOverviewCollapsibleCard } from '@/app/dashboard/deal-desk/components/bid-overview-collapsible-card'
@@ -99,7 +99,12 @@ export function BidTimelineCard({
           />
         ) : null
       }
-      title={<span className="text-base font-semibold text-foreground">Deal Deadlines</span>}
+      title={
+        <span className="flex items-center gap-2 text-base font-semibold text-foreground">
+          <CalendarClock className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+          Deal Deadlines
+        </span>
+      }
       description={
         <span>
           Aus dem RFP extrahierte Fristen — Titel, Datum und Countdown. Kalender-Import ohne

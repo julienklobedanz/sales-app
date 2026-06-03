@@ -1,4 +1,5 @@
 import type { DealDeskMockAnalysis } from '@/lib/deal-desk/mock-analysis'
+import { buildCustomerChallengeBullets } from '@/lib/deal-desk/reference-case-study-bullets'
 import type { ReferenceIncubatorHarvest } from '@/lib/deal-desk/reference-incubator-mock'
 
 function firstSentence(text: string, max = 320): string {
@@ -15,17 +16,8 @@ function firstSentence(text: string, max = 320): string {
 export function buildHarvestFromAnalysis(analysis: DealDeskMockAnalysis): ReferenceIncubatorHarvest {
   const customerName = analysis.customerName?.trim() || 'Kunde'
 
-  const challengeFromFlags = (analysis.redFlags ?? [])
-    .map((f) => f.excerpt)
-    .filter(Boolean)
-    .join(' ')
-  const challengeFromReqs = analysis.draftRows
-    .map((r) => r.requirement)
-    .slice(0, 2)
-    .join(' ')
-
   const challenge = firstSentence(
-    challengeFromFlags || challengeFromReqs || analysis.icpSummary,
+    buildCustomerChallengeBullets(analysis).join(' ') || analysis.icpSummary,
     520
   )
 
