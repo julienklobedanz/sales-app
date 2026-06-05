@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 import { getDashboardData } from '@/app/dashboard/actions'
 import { DashboardOverview } from '@/app/dashboard/dashboard-overview'
 import { enrichReferencedCompaniesMissingBrandfetch } from '@/app/dashboard/references/sync-company-brandfetch'
-import { DEV_ROLE_COOKIE, parseAppRoleCookie } from '@/lib/dev-role-preview'
+import { DEV_ROLE_COOKIE, isDevRolePreviewEnabled, parseAppRoleCookie } from '@/lib/dev-role-preview'
 import type { AppRole } from '@/hooks/useRole'
 import { normalizeOrgDateDisplayFormat } from '@/lib/format'
 import { listComplianceDocuments } from '@/app/dashboard/settings/compliance-actions'
@@ -28,7 +28,9 @@ export default async function EvidenceHubPage() {
   if (!profile) redirect(ROUTES.onboarding)
 
   const cookieStore = await cookies()
-  const previewRole = parseAppRoleCookie(cookieStore.get(DEV_ROLE_COOKIE)?.value)
+  const previewRole = isDevRolePreviewEnabled()
+    ? parseAppRoleCookie(cookieStore.get(DEV_ROLE_COOKIE)?.value)
+    : null
   const serverRole = profile.role as AppRole
   const effectiveRole: AppRole = previewRole ?? serverRole
 

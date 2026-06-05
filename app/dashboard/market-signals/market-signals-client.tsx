@@ -7,6 +7,7 @@ import { useEffect, useId, useMemo, useRef, useState, useTransition } from 'reac
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { Building2, ExternalLink as ExternalLinkLucide } from 'lucide-react'
+import { buildSalesforceTaskUrl } from '@/lib/crm/salesforce'
 import {
   Calendar,
   CopyCheckIcon,
@@ -1554,7 +1555,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                   if (!selected) return
                   const key = signalKeyOf(selected)
                   await logMarketSignalQuickAction({ signalKey: key, channel: 'salesforce_task' })
-                  window.open('https://login.salesforce.com/', '_blank', 'noopener,noreferrer')
+                  window.open(buildSalesforceTaskUrl(), '_blank', 'noopener,noreferrer')
                 }}
               >
                 Task in Salesforce

@@ -92,6 +92,7 @@ export function DashboardHeader({
   userInitials,
   userRole,
   initialNotifications = [],
+  devRolePreviewEnabled = false,
 }: {
   userId: string
   userName: string
@@ -99,6 +100,7 @@ export function DashboardHeader({
   userInitials: string
   userRole: AppRole
   initialNotifications?: DashboardNotificationItem[]
+  devRolePreviewEnabled?: boolean
 }) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -609,27 +611,31 @@ export function DashboardHeader({
                 </div>
               </div>
             </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-              {COPY.roleSwitcher.profileMenuSectionTitle}
-            </DropdownMenuLabel>
-            <DropdownMenuItem
-              disabled={roleSwitchPending}
-              onSelect={() => selectDevRole('admin')}
-              className={cn('cursor-pointer', userRole === 'admin' && 'bg-accent font-medium')}
-            >
-              <AppIcon icon={Shield} size={16} className="shrink-0" />
-              {COPY.roleSwitcher.roleMarketingAdmin}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              disabled={roleSwitchPending}
-              onSelect={() => selectDevRole('sales')}
-              className={cn('cursor-pointer', userRole === 'sales' && 'bg-accent font-medium')}
-            >
-              <AppIcon icon={Briefcase} size={16} className="shrink-0" />
-              {COPY.roleSwitcher.roleSalesRep}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
+            {devRolePreviewEnabled ? (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  {COPY.roleSwitcher.profileMenuSectionTitle}
+                </DropdownMenuLabel>
+                <DropdownMenuItem
+                  disabled={roleSwitchPending}
+                  onSelect={() => selectDevRole('admin')}
+                  className={cn('cursor-pointer', userRole === 'admin' && 'bg-accent font-medium')}
+                >
+                  <AppIcon icon={Shield} size={16} className="shrink-0" />
+                  {COPY.roleSwitcher.roleMarketingAdmin}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={roleSwitchPending}
+                  onSelect={() => selectDevRole('sales')}
+                  className={cn('cursor-pointer', userRole === 'sales' && 'bg-accent font-medium')}
+                >
+                  <AppIcon icon={Briefcase} size={16} className="shrink-0" />
+                  {COPY.roleSwitcher.roleSalesRep}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            ) : null}
             <DropdownMenuGroup>
               <DropdownMenuItem
                 onSelect={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}

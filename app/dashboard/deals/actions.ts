@@ -5,6 +5,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { Resend } from 'resend'
 import { getAppOrigin } from '@/lib/env/app-origin'
+import { resolveReferenceManagerEmail } from '@/lib/reference-manager-email'
 import * as XLSX from 'xlsx'
 import type { DealRow, DealStatus, DealWithReferences } from './types'
 
@@ -735,9 +736,13 @@ export async function submitReferenceRequest(
   const orgId = profile?.organization_id
   if (!orgId) return { success: false, error: 'Keine Organisation.' }
 
-  const toEmail = process.env.REFERENCE_MANAGER_EMAIL ?? null
+  const toEmail = await resolveReferenceManagerEmail(supabase, orgId)
   if (!toEmail) {
-    return { success: false, error: 'REFERENCE_MANAGER_EMAIL ist nicht konfiguriert. Bitte in den Einstellungen hinterlegen.' }
+    return {
+      success: false,
+      error:
+        'Kein Reference Manager erreichbar. REFERENCE_MANAGER_EMAIL setzen oder mindestens einen Admin in der Organisation hinterlegen.',
+    }
   }
 
   const resend = getResend()
@@ -745,7 +750,7 @@ export async function submitReferenceRequest(
     try {
       const requesterName = profile?.full_name ?? user.email ?? 'Ein Nutzer'
       await resend.emails.send({
-        from: 'Refstack <onboarding@resend.dev>',
+        from: process.env.RESEND_FROM?.trim() || 'Refstack <onboarding@resend.dev>',
         to: toEmail,
         subject: `Referenzbedarf: ${deal.title}`,
         html: `

@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import type { AppRole } from '@/hooks/useRole'
-import { DEV_ROLE_COOKIE, parseAppRoleCookie } from '@/lib/dev-role-preview'
+import { DEV_ROLE_COOKIE, isDevRolePreviewEnabled, parseAppRoleCookie } from '@/lib/dev-role-preview'
 import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
 import { DashboardShell } from './dashboard-shell'
@@ -42,7 +42,9 @@ export default async function DashboardLayout({
   }
 
   const cookieStore = await cookies()
-  const previewRole = parseAppRoleCookie(cookieStore.get(DEV_ROLE_COOKIE)?.value)
+  const previewRole = isDevRolePreviewEnabled()
+    ? parseAppRoleCookie(cookieStore.get(DEV_ROLE_COOKIE)?.value)
+    : null
   const serverRole = profile.role as AppRole
   const effectiveRole: AppRole = previewRole ?? serverRole
 
@@ -73,6 +75,7 @@ export default async function DashboardLayout({
       profile={{ ...profile, role: effectiveRole }}
       initialNotifications={initialNotifications}
       workspaceBranding={workspaceBranding}
+      devRolePreviewEnabled={isDevRolePreviewEnabled()}
     >
       <DashboardMfaGate>{children}</DashboardMfaGate>
     </DashboardShell>

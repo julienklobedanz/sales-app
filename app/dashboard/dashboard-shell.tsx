@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Briefcase } from 'lucide-react'
+import { Briefcase, Handshake } from 'lucide-react'
 import {
   Building2,
   FileText,
@@ -55,12 +55,14 @@ export function DashboardShell({
   profile,
   initialNotifications = [],
   workspaceBranding = null,
+  devRolePreviewEnabled = false,
 }: {
   children: React.ReactNode
   user: User
   profile: Profile
   initialNotifications?: DashboardNotificationItem[]
   workspaceBranding?: { enabled: boolean; primary: string; secondary: string } | null
+  devRolePreviewEnabled?: boolean
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -218,6 +220,25 @@ export function DashboardShell({
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
+                    isActive={pathname?.startsWith(ROUTES.deals.root)}
+                    tooltip={COPY.nav.deals}
+                    className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-gradient-to-b data-[active=true]:from-blue-600 data-[active=true]:to-blue-700 data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] data-[active=true]:hover:translate-x-0"
+                  >
+                    <Link href={ROUTES.deals.root} className="flex items-center gap-2.5">
+                      <span className="relative z-10">
+                        <Handshake
+                          className="size-4 shrink-0"
+                          strokeWidth={pathname?.startsWith(ROUTES.deals.root) ? 2.5 : 2}
+                        />
+                      </span>
+                      <span className="relative z-10">{COPY.nav.deals}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
                     isActive={pathname?.startsWith(ROUTES.dealDesk)}
                     tooltip={COPY.nav.dealDesk}
                     className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-gradient-to-b data-[active=true]:from-blue-600 data-[active=true]:to-blue-700 data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] data-[active=true]:hover:translate-x-0"
@@ -334,6 +355,7 @@ export function DashboardShell({
             userInitials={userInitials}
             userRole={profile.role}
             initialNotifications={initialNotifications}
+            devRolePreviewEnabled={devRolePreviewEnabled}
           />
         </Suspense>
         <div

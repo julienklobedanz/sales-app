@@ -5,8 +5,13 @@ import type { DealWithReferences } from '@/app/dashboard/deals/types'
 
 type Company = { id: string; name: string }
 
-export function MatchRfpClient({ deal }: { deal: DealWithReferences }) {
-  // MVP im Match-Tab: Deal-Kontext ist über `deal` gegeben; optionaler Account-Kontext bleibt leer.
-  return <DealRfpSection deal={deal} companies={[] as Company[]} />
+export function MatchRfpClient({
+  deal,
+  companies,
+}: {
+  deal: DealWithReferences
+  companies: Company[]
+}) {
+  return <DealRfpSection deal={deal} companies={companies} />
 }
 

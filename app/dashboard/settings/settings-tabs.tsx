@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { getSalesforceInstanceUrl } from '@/lib/crm/salesforce'
 import { StickySaveBar } from './sticky-save-bar'
 import {
   AlertDialog,
@@ -56,12 +57,14 @@ const CARD_CLASS = 'rounded-xl border border-slate-200 bg-white p-6 shadow-sm'
 const DANGER_ZONE_CLASS = 'rounded-xl border border-red-300 bg-red-50/50 p-6 shadow-sm'
 
 export function SettingsTabs({
+  devRolePreviewEnabled = false,
   roleSwitcher,
   profile,
   org,
   teamMembers,
   auditLogs,
 }: {
+  devRolePreviewEnabled?: boolean
   roleSwitcher: {
     serverRole: AppRole
     previewRole: AppRole | null
@@ -885,12 +888,14 @@ export function SettingsTabs({
                   className="mt-3 bg-slate-50"
                 />
               </div>
-              <div className={CARD_CLASS}>
-                <SettingsDevRoleCard
-                  serverRole={roleSwitcher.serverRole}
-                  previewRole={roleSwitcher.previewRole}
-                />
-              </div>
+              {devRolePreviewEnabled ? (
+                <div className={CARD_CLASS}>
+                  <SettingsDevRoleCard
+                    serverRole={roleSwitcher.serverRole}
+                    previewRole={roleSwitcher.previewRole}
+                  />
+                </div>
+              ) : null}
             </CardContent>
           </div>
 
@@ -1041,7 +1046,7 @@ export function SettingsTabs({
               key: 'Salesforce',
               desc: 'Synchronisiere Opportunities und Pipeline-Daten.',
               logo: 'https://logo.clearbit.com/salesforce.com',
-              href: 'https://login.salesforce.com/',
+              href: getSalesforceInstanceUrl(),
             },
             {
               key: 'HubSpot',

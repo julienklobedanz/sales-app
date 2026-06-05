@@ -60,7 +60,30 @@ select 'deals.crm_synced_at',
        exists (
          select 1 from information_schema.columns
          where table_schema='public' and table_name='deals' and column_name='crm_synced_at'
+       )
+union all
+select 'deal_desk_projects',
+       exists (
+         select 1 from information_schema.tables
+         where table_schema='public' and table_name='deal_desk_projects'
+       )
+union all
+select 'deal_desk_documents',
+       exists (
+         select 1 from information_schema.tables
+         where table_schema='public' and table_name='deal_desk_documents'
+       )
+union all
+select 'companies.is_favorite',
+       exists (
+         select 1 from information_schema.columns
+         where table_schema='public' and table_name='companies' and column_name='is_favorite'
        );
+
+-- 1b) Storage bucket for Deal Desk / RFP uploads
+select id, name, public
+from storage.buckets
+where id = 'rfp-documents';
 
 -- 2) Critical RPC/function availability
 select p.proname as function_name
@@ -94,7 +117,9 @@ where schemaname='public'
     'audit_logs',
     'company_strategies',
     'stakeholders',
-    'shared_portfolios'
+    'shared_portfolios',
+    'deal_desk_projects',
+    'deal_desk_documents'
   )
 order by tablename;
 
@@ -114,6 +139,8 @@ where schemaname='public'
     'audit_logs',
     'company_strategies',
     'stakeholders',
-    'shared_portfolios'
+    'shared_portfolios',
+    'deal_desk_projects',
+    'deal_desk_documents'
   )
 order by tablename, policyname;

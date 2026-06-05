@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { getDealWithReferences } from '@/app/dashboard/deals/actions'
 import { MatchSmartClient } from './match-smart-client'
 import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
@@ -21,11 +22,31 @@ export default async function MatchPage({
   const isRfp = tab === 'rfp'
   const dealParam = params.deal?.trim()
 
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) redirect(ROUTES.login)
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .maybeSingle()
+  const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
+  if (!orgId) redirect(ROUTES.onboarding)
+
   let initialDeal = null
   if (dealParam) {
     initialDeal = await getDealWithReferences(dealParam)
     if (!initialDeal) redirect(ROUTES.deals.root)
   }
+
+  const { data: companies } = await supabase
+    .from('companies')
+    .select('id, name')
+    .eq('organization_id', orgId)
+    .order('name')
 
   return (
     <div className="space-y-6">
@@ -52,20 +73,26 @@ export default async function MatchPage({
 
       {isRfp ? (
         initialDeal ? (
-          <MatchRfpClient deal={initialDeal} />
+          <MatchRfpClient
+            deal={initialDeal}
+            companies={(companies ?? []) as Array<{ id: string; name: string }>}
+          />
         ) : (
           <Card className="rounded-3xl">
             <CardHeader>
               <CardTitle>RFP-Analyse</CardTitle>
-              <CardDescription>Für die RFP-Analyse wird ein Deal-Kontext benötigt. Öffne einen Deal und starte die RFP-Analyse von dort.</CardDescription>
+              <CardDescription>
+                Für die RFP-Analyse wird ein Deal-Kontext benötigt. Öffne einen Deal und starte die
+                RFP-Analyse von dort.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
                 <Button asChild variant="outline">
-                  <Link href={ROUTES.match}>Zurück zur Suche</Link>
+                  <Link href={ROUTES.deals.root}>Zu den Deals</Link>
                 </Button>
                 <Button asChild>
-                  <Link href={ROUTES.evidence.root}>Zu den Referenzen</Link>
+                  <Link href={ROUTES.match}>Zurück zur Suche</Link>
                 </Button>
               </div>
             </CardContent>

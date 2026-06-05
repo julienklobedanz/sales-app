@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { AppIcon } from '@/lib/icons'
 import { DatabaseSyncIcon, Wifi01Icon } from '@hugeicons/core-free-icons'
 import type { AccountDealRow } from './actions'
+import { buildSalesforceOpportunityUrl } from '@/lib/crm/salesforce'
 import { ROUTES } from '@/lib/routes'
 import { formatDealVolume } from '@/lib/format'
 
@@ -63,9 +64,24 @@ export function CompanyDetailPipelineTab({
                     </TableCell>
                     <TableCell className="text-muted-foreground">{d.expiry_date ?? '—'}</TableCell>
                     <TableCell className="text-muted-foreground">
-                      {(d as unknown as { salesforce_opportunity_id?: string | null }).salesforce_opportunity_id
-                        ? 'Live'
-                        : 'Lokal'}
+                      {(() => {
+                        const oppId = (d as unknown as { salesforce_opportunity_id?: string | null })
+                          .salesforce_opportunity_id
+                        const sfUrl = buildSalesforceOpportunityUrl({ opportunityId: oppId })
+                        if (sfUrl) {
+                          return (
+                            <a
+                              href={sfUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary underline-offset-2 hover:underline"
+                            >
+                              Salesforce
+                            </a>
+                          )
+                        }
+                        return 'Lokal'
+                      })()}
                     </TableCell>
                   </TableRow>
                 ))}

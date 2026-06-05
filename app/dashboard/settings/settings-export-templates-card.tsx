@@ -129,10 +129,10 @@ export function SettingsExportTemplatesCard({
             disabled={!organizationId}
           >
             <AppIcon icon={ExternalLink} size={16} />
-            Demo-PDF öffnen
+            Layout-Vorschau
           </Button>
           <p className="text-xs text-muted-foreground">
-            Öffnet ein Demo-PDF in einem neuen Tab.
+            Öffnet eine Beispiel-PDF mit dem gewählten Layout in einem neuen Tab.
           </p>
         </div>
       </div>

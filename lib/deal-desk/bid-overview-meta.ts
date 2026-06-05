@@ -84,9 +84,11 @@ export function formatBidVolumeDisplay(raw: string | null | undefined): BidVolum
   const withoutTail = text.replace(/\s*\([^)]*\)\s*/g, ' ').trim()
   const approx = isApproximateVolumeText(text)
 
-  const explicitRange = withoutTail.match(
-    /([\d,.]+)\s*[-–]\s*([\d,.]+)\s*(?:M(?:io)?|Millionen?)\b/i
-  )
+  const explicitRange =
+    withoutTail.match(/([\d,.]+)\s*M\s*[-–]\s*([\d,.]+)\s*M\b/i) ??
+    withoutTail.match(
+      /([\d,.]+)\s*[-–]\s*([\d,.]+)\s*(?:M(?:io)?|Millionen?)\b/i
+    )
   if (explicitRange) {
     const a = Number.parseFloat(explicitRange[1]!.replace(',', '.'))
     const b = Number.parseFloat(explicitRange[2]!.replace(',', '.'))

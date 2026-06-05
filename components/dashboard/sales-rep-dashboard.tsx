@@ -8,6 +8,7 @@ import { logMarketSignalQuickAction } from '@/app/dashboard/market-signals/actio
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { buildSalesforceTaskUrl } from '@/lib/crm/salesforce'
 import { ROUTES } from '@/lib/routes'
 import type { SalesRepDashboardModel } from '@/app/dashboard/dashboard-home-data'
 import { formatDateUtcDe } from '@/lib/format'
@@ -44,12 +45,7 @@ export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
   }
 
   function openSalesforceDeeplink(subject: string, body: string) {
-    const values = `Subject=${encodeURIComponent(subject)},Description=${encodeURIComponent(body)}`
-    window.open(
-      `https://login.salesforce.com/lightning/o/Task/new?defaultFieldValues=${values}`,
-      '_blank',
-      'noopener,noreferrer'
-    )
+    window.open(buildSalesforceTaskUrl({ subject, body }), '_blank', 'noopener,noreferrer')
   }
 
   function triggerAction(item: SalesRepDashboardModel['dailyTopActions'][number], channel: 'hubspot_email' | 'salesforce_task' | 'slack_mention') {
