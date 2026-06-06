@@ -14,7 +14,9 @@ type Props = {
   defaultOpen?: boolean
   title: ReactNode
   description?: ReactNode
-  /** Aktionen im Header (z. B. Export) — Klick klappt die Card nicht ein. */
+  /** Links neben dem Trigger (z. B. Checkbox) — außerhalb des Collapsible-Buttons. */
+  headerPrefix?: ReactNode
+  /** Aktionen im Header (z. B. Export) — außerhalb des Collapsible-Buttons. */
   headerActions?: ReactNode
   /** Bleibt sichtbar, wenn der Rest zugeklappt ist (z. B. Zeitstrahl). */
   pinnedBelowHeader?: ReactNode
@@ -27,6 +29,7 @@ export function BidOverviewCollapsibleCard({
   defaultOpen = true,
   title,
   description,
+  headerPrefix,
   headerActions,
   pinnedBelowHeader,
   children,
@@ -44,33 +47,27 @@ export function BidOverviewCollapsibleCard({
             open && pinnedBelowHeader == null && 'border-b-0'
           )}
         >
-          <CollapsibleTrigger asChild>
-            <button
-              type="button"
-              className={cn(
-                'flex w-full cursor-pointer select-none items-center justify-between gap-3 rounded-t-xl px-6 py-4 text-left transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-                !open && !pinnedBelowHeader && 'rounded-b-xl'
-              )}
-              aria-expanded={open}
-            >
-              <div className="min-w-0 flex-1 space-y-1">
-                {title}
-                {description ? (
-                  <div className="text-sm font-normal text-muted-foreground">{description}</div>
-                ) : null}
-              </div>
-              <div className="flex shrink-0 items-center gap-1">
-                {headerActions ? (
-                  <div
-                    className="flex items-center gap-2"
-                    onClick={(e) => e.stopPropagation()}
-                    onKeyDown={(e) => e.stopPropagation()}
-                  >
-                    {headerActions}
-                  </div>
-                ) : null}
+          <div
+            className={cn(
+              'flex w-full items-center gap-3 rounded-t-xl px-6 py-4 transition-colors hover:bg-muted/30',
+              !open && !pinnedBelowHeader && 'rounded-b-xl'
+            )}
+          >
+            {headerPrefix ? <div className="shrink-0">{headerPrefix}</div> : null}
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
+                className="flex min-w-0 flex-1 cursor-pointer select-none items-center justify-between gap-3 border-0 bg-transparent p-0 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                aria-expanded={open}
+              >
+                <div className="min-w-0 flex-1 space-y-1">
+                  {title}
+                  {description ? (
+                    <div className="text-sm font-normal text-muted-foreground">{description}</div>
+                  ) : null}
+                </div>
                 <span
-                  className="inline-flex size-8 items-center justify-center text-muted-foreground"
+                  className="inline-flex size-8 shrink-0 items-center justify-center text-muted-foreground"
                   aria-hidden
                 >
                   <ChevronDown
@@ -80,9 +77,12 @@ export function BidOverviewCollapsibleCard({
                     )}
                   />
                 </span>
-              </div>
-            </button>
-          </CollapsibleTrigger>
+              </button>
+            </CollapsibleTrigger>
+            {headerActions ? (
+              <div className="flex shrink-0 items-center gap-2">{headerActions}</div>
+            ) : null}
+          </div>
         </CardHeader>
 
         {pinnedBelowHeader ? (

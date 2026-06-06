@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { Award, Compass, Kanban, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useRole } from '@/hooks/useRole'
@@ -30,6 +31,9 @@ import { EditAccountDialog } from './edit-account-dialog'
 import { CompanyDetailPipelineTab } from './company-detail-pipeline-tab'
 import { CompanyDetailProofPointsTab } from './company-detail-proof-points-tab'
 import { CompanyDetailPowerMapTab } from './company-detail-power-map-tab'
+
+const ACCOUNT_DETAIL_TAB_TRIGGER_CLASS =
+  'h-auto min-w-0 flex-1 justify-center gap-1.5 rounded-md px-3.5 py-1.5 text-sm font-medium text-slate-500 shadow-none transition-all after:hidden hover:bg-slate-50 hover:text-slate-800 data-[state=active]:border-transparent data-[state=active]:bg-slate-100 data-[state=active]:font-medium data-[state=active]:text-slate-900 data-[state=active]:shadow-none dark:data-[state=active]:bg-slate-100 dark:data-[state=active]:text-slate-900'
 
 export function CompanyDetailClient({
   company,
@@ -367,16 +371,28 @@ export function CompanyDetailClient({
           params.set('tab', next)
           router.replace(`${pathname}?${params.toString()}`)
         }}
-        className="w-full"
+        className="w-full gap-6"
       >
-        <TabsList className="w-full justify-start gap-1">
-          <TabsTrigger value="mission_control">Strategie</TabsTrigger>
-          <TabsTrigger value="buying_center">Buying Center</TabsTrigger>
-          <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
-          <TabsTrigger value="proof_points">Passende Referenzen</TabsTrigger>
+        <TabsList className="mb-2 flex h-auto w-full gap-1 rounded-none border-0 bg-transparent p-0">
+          <TabsTrigger value="mission_control" className={ACCOUNT_DETAIL_TAB_TRIGGER_CLASS}>
+            <Compass className="size-4" />
+            Strategie
+          </TabsTrigger>
+          <TabsTrigger value="buying_center" className={ACCOUNT_DETAIL_TAB_TRIGGER_CLASS}>
+            <Users className="size-4" />
+            Buying Center
+          </TabsTrigger>
+          <TabsTrigger value="pipeline" className={ACCOUNT_DETAIL_TAB_TRIGGER_CLASS}>
+            <Kanban className="size-4" />
+            Pipeline
+          </TabsTrigger>
+          <TabsTrigger value="proof_points" className={ACCOUNT_DETAIL_TAB_TRIGGER_CLASS}>
+            <Award className="size-4" />
+            Passende Referenzen
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="mission_control" className="mt-6">
+        <TabsContent value="mission_control" className="mt-2">
           <CompanyDetailStrategyTab
             canEdit={canEditStrategy}
             strategySaving={strategySaving}
@@ -422,7 +438,7 @@ export function CompanyDetailClient({
           />
         </TabsContent>
 
-        <TabsContent value="buying_center" className="mt-6">
+        <TabsContent value="buying_center" className="mt-2">
           <CompanyDetailPowerMapTab
             stakeholders={stakeholders}
             marketSignals={marketSignals}
@@ -441,11 +457,11 @@ export function CompanyDetailClient({
           />
         </TabsContent>
 
-        <TabsContent value="pipeline" className="mt-6">
+        <TabsContent value="pipeline" className="mt-2">
           <CompanyDetailPipelineTab activeDeals={activeDeals} />
         </TabsContent>
 
-        <TabsContent value="proof_points" className="mt-6">
+        <TabsContent value="proof_points" className="mt-2">
           <CompanyDetailProofPointsTab company={company} references={references} />
         </TabsContent>
       </Tabs>

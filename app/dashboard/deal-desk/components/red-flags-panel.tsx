@@ -175,23 +175,19 @@ export function RedFlagsPanel({
       defaultOpen={defaultOpen}
       className={cn('w-full', className)}
       contentClassName="pt-2 pb-6"
+      headerPrefix={
+        <Checkbox
+          id="legal-flags-select-all"
+          checked={allMarked ? true : someMarked ? 'indeterminate' : false}
+          disabled={flags.length === 0}
+          onCheckedChange={() => toggleAllMarked()}
+          className="border-slate-300 data-[state=checked]:border-primary"
+          aria-label="Alle Red Flags zur Legal-Prüfung markieren"
+        />
+      }
       headerActions={legalAction}
       title={
         <span className="flex items-center gap-2 text-base font-semibold text-foreground">
-          <span
-            className="flex shrink-0 items-center"
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => e.stopPropagation()}
-          >
-            <Checkbox
-              id="legal-flags-select-all"
-              checked={allMarked ? true : someMarked ? 'indeterminate' : false}
-              disabled={flags.length === 0}
-              onCheckedChange={() => toggleAllMarked()}
-              className="border-slate-300 data-[state=checked]:border-primary"
-              aria-label="Alle Red Flags zur Legal-Prüfung markieren"
-            />
-          </span>
           <ShieldAlert className="size-4 shrink-0 text-amber-600" aria-hidden />
           Red Flags
           {flags.length > 0 ? (
