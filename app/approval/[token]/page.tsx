@@ -1,7 +1,6 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
@@ -11,6 +10,9 @@ import { AppIcon } from '@/lib/icons'
 import { formatDateUtcDe, formatReferenceVolume } from '@/lib/format'
 import { formatProjectEndWithDurationDe } from '@/lib/references/reference-duration-months'
 import { ApprovalDecisionForm } from './approval-decision-form'
+import { ApprovalCaseDataBar } from './approval-case-data-bar'
+import { ApprovalReferenceSections } from './approval-reference-sections'
+import { ApprovalDelegateDialog } from './approval-delegate-dialog'
 
 function InvalidLink() {
   return (
@@ -50,7 +52,6 @@ export default async function ApprovalPage({
       customer_challenge,
       our_solution,
       volume_eur,
-      contract_type,
       project_status,
       project_start,
       project_end,
@@ -121,9 +122,9 @@ export default async function ApprovalPage({
 
   const requester = typeof row.approval_requester_name === 'string' ? row.approval_requester_name.trim() : ''
   const message = typeof row.approval_message === 'string' ? row.approval_message.trim() : ''
-  const scopeItems = [
-    row.approval_scope_named_mention ? 'Namentliche Nennung' : null,
-    row.approval_scope_anonymous_mention ? 'Anonyme Nennung' : null,
+  const scopeNamedAvailable = !!row.approval_scope_named_mention
+  const scopeAnonymousAvailable = !!row.approval_scope_anonymous_mention
+  const extraScopeItems = [
     row.approval_scope_reference_call ? 'Referenz-Call' : null,
     row.approval_scope_logo_use ? 'Logo-Nutzung' : null,
     row.approval_scope_press_release ? 'Pressemeldung / Öffentliches Zitat' : null,
@@ -144,10 +145,33 @@ export default async function ApprovalPage({
         })
       : '—'
 
+  const caseDataItems = [
+    {
+      label: 'Branche',
+      value: row.industry ?? '—',
+      icon: <AppIcon icon={Building2} size={14} />,
+    },
+    {
+      label: 'Land',
+      value: row.country ?? '—',
+      icon: <AppIcon icon={Globe} size={14} />,
+    },
+    { label: 'Volumen', value: vol },
+    { label: 'Projektstart', value: start },
+    { label: 'Projektende', value: end },
+  ]
+
+  const proposedQuote =
+    typeof row.approval_quote_proposed === 'string' ? row.approval_quote_proposed.trim() : ''
+  const referenceGiverName =
+    typeof row.approval_reference_giver_name === 'string' ? row.approval_reference_giver_name.trim() : ''
+  const referenceGiverTitle =
+    typeof row.approval_reference_giver_title === 'string' ? row.approval_reference_giver_title.trim() : ''
+
   return (
-    <div className="min-h-screen bg-muted/20 px-4 py-10">
-      <div className="mx-auto max-w-2xl space-y-8">
-        <header className="text-center space-y-4">
+    <div className="min-h-screen bg-muted/20">
+      <div className="mx-auto max-w-7xl px-4 py-8">
+        <header className="mb-10 space-y-4 text-center">
           {logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- öffentliche Branding-URL aus Storage
             <img
@@ -159,7 +183,7 @@ export default async function ApprovalPage({
           <p className="text-sm font-medium" style={{ color: secondary }}>
             {orgName}
           </p>
-          <h1 className="text-2xl font-semibold tracking-tight" style={{ color: primary }}>
+          <h1 className="text-3xl font-semibold tracking-tight" style={{ color: primary }}>
             {row.title}
           </h1>
           {requester ? (
@@ -170,121 +194,80 @@ export default async function ApprovalPage({
           ) : (
             <p className="text-sm text-muted-foreground">Bitte prüfen Sie die Referenz und entscheiden Sie.</p>
           )}
+          <div className="flex justify-center">
+            <ApprovalDelegateDialog token={token} />
+          </div>
           {message ? (
-            <div className="rounded-md border border-border bg-background/80 p-4 text-left text-sm text-foreground whitespace-pre-wrap">
+            <div className="mx-auto max-w-2xl rounded-xl border border-border bg-card p-4 text-left text-sm text-foreground whitespace-pre-wrap shadow-sm">
               {message}
             </div>
           ) : null}
-          {(row.approval_owner_name || row.approval_expires_at || scopeItems.length) ? (
-            <div className="rounded-md border border-border bg-background/80 p-4 text-left text-sm">
+          {(row.approval_owner_name || row.approval_expires_at || isExpired) ? (
+            <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-center gap-x-6 gap-y-1 text-xs text-muted-foreground">
               {row.approval_owner_name ? (
-                <p>
-                  <span className="font-medium">Interner Verantwortlicher:</span>{' '}
+                <span>
+                  <span className="font-medium text-foreground">Verantwortlich:</span>{' '}
                   {row.approval_owner_name}
-                </p>
+                </span>
               ) : null}
               {row.approval_expires_at ? (
-                <p className="mt-1">
-                  <span className="font-medium">Antwort bis:</span>{' '}
+                <span>
+                  <span className="font-medium text-foreground">Antwort bis:</span>{' '}
                   {formatDateUtcDe(String(row.approval_expires_at))}
-                </p>
-              ) : null}
-              {scopeItems.length ? (
-                <div className="mt-2">
-                  <p className="font-medium">Angefragter Umfang:</p>
-                  <ul className="list-disc pl-5">
-                    {scopeItems.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-              {row.approval_quote_proposed ? (
-                <p className="mt-2">
-                  <span className="font-medium">Zitatvorschlag:</span> {row.approval_quote_proposed}
-                </p>
-              ) : null}
-              {row.approval_reference_giver_name ? (
-                <p className="mt-1">
-                  <span className="font-medium">Offizieller Referenz-Geber:</span> {row.approval_reference_giver_name}
-                  {row.approval_reference_giver_title ? ` · ${row.approval_reference_giver_title}` : ''}
-                </p>
+                </span>
               ) : null}
               {isExpired && inGrace ? (
-                <p className="mt-2 rounded bg-amber-50 px-2 py-1 text-amber-700">
-                  Hinweis: Diese Anfrage befindet sich in der Karenzzeit.
-                </p>
+                <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-amber-700">
+                  Karenzzeit aktiv
+                </span>
               ) : null}
             </div>
           ) : null}
         </header>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Referenz (Lesen)</CardTitle>
-            <CardDescription>Kein Login erforderlich.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-2 gap-4 border-y border-border py-4 text-sm">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <span className="opacity-70">
-                  <AppIcon icon={Building2} size={16} />
-                </span>
-                {row.industry ?? '—'}
-              </div>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <span className="opacity-70">
-                  <AppIcon icon={Globe} size={16} />
-                </span>
-                {row.country ?? '—'}
-              </div>
-            </div>
+        <ApprovalCaseDataBar items={caseDataItems} referenceTitle={row.title} />
 
-            {row.summary ? (
-              <div className="space-y-1">
-                <h3 className="text-sm font-semibold">Kurzbeschreibung</h3>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{row.summary}</p>
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-12">
+          <section className="space-y-4 lg:col-span-7">
+            <h2 className="text-lg font-semibold text-foreground">Referenz-Vorschau</h2>
+
+            <ApprovalReferenceSections
+              summary={row.summary}
+              challenge={row.customer_challenge}
+              solution={row.our_solution}
+            />
+
+            {extraScopeItems.length ? (
+              <div className="flex flex-wrap gap-2 pt-2">
+                {extraScopeItems.map((item) => (
+                  <span
+                    key={item}
+                    className="rounded-full border border-border bg-muted/40 px-3 py-1 text-xs text-muted-foreground"
+                  >
+                    {item}
+                  </span>
+                ))}
               </div>
             ) : null}
+          </section>
 
-            <div className="space-y-1">
-              <h3 className="text-sm font-semibold">Herausforderung</h3>
-              <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                {row.customer_challenge ?? '—'}
-              </p>
+          <aside className="lg:col-span-5">
+            <div className="sticky top-6 rounded-2xl border border-border bg-card p-6 shadow-sm">
+              <h2 className="mb-6 text-lg font-semibold text-foreground">Ihre Entscheidung</h2>
+              <ApprovalDecisionForm
+                token={token}
+                referenceTitle={row.title}
+                orgName={orgName}
+                companyName={company?.name}
+                scopeNamedAvailable={scopeNamedAvailable}
+                scopeAnonymousAvailable={scopeAnonymousAvailable}
+                initialApprovedQuote={proposedQuote}
+                initialReferenceGiverName={referenceGiverName}
+                initialReferenceGiverTitle={referenceGiverTitle}
+              />
             </div>
-            <div className="space-y-1">
-              <h3 className="text-sm font-semibold">Unsere Lösung</h3>
-              <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                {row.our_solution ?? '—'}
-              </p>
-            </div>
-
-            <div className="grid gap-2 rounded-md border border-border p-3 text-sm">
-              <div className="flex justify-between gap-2">
-                <span className="text-muted-foreground">Volumen</span>
-                <span className="font-medium tabular-nums">{vol}</span>
-              </div>
-              <div className="flex justify-between gap-2">
-                <span className="text-muted-foreground">Vertragsart</span>
-                <span className="font-medium">{row.contract_type ?? '—'}</span>
-              </div>
-              <div className="flex justify-between gap-2">
-                <span className="text-muted-foreground">Projektstart</span>
-                <span className="font-medium">{start}</span>
-              </div>
-              <div className="flex justify-between gap-2">
-                <span className="text-muted-foreground">Projektende</span>
-                <span className="font-medium">{end}</span>
-              </div>
-            </div>
-
-            <div className="border-t border-border pt-6">
-              <h3 className="mb-4 text-center text-sm font-semibold">Ihre Entscheidung</h3>
-              <ApprovalDecisionForm token={token} referenceTitle={row.title} />
-            </div>
-          </CardContent>
-        </Card>
+          </aside>
+        </div>
       </div>
     </div>
   )

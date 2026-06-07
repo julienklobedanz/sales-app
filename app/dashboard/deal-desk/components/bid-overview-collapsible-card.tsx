@@ -41,12 +41,7 @@ export function BidOverviewCollapsibleCard({
   return (
     <Card className={cn('flex flex-col gap-0 overflow-hidden py-0 shadow-sm', className)}>
       <Collapsible open={open} onOpenChange={setOpen}>
-        <CardHeader
-          className={cn(
-            'space-y-0 p-0',
-            open && pinnedBelowHeader == null && 'border-b-0'
-          )}
-        >
+        <CardHeader className="grid-rows-1 space-y-0 border-b-0 p-0 !pb-0">
           <div
             className={cn(
               'flex w-full items-center gap-3 rounded-t-xl px-6 py-4 transition-colors hover:bg-muted/30',
@@ -91,7 +86,14 @@ export function BidOverviewCollapsibleCard({
 
         <CollapsibleContent className={COLLAPSE_CONTENT_CLASS}>
           <div className="min-h-0 overflow-hidden">
-            <CardContent className={cn('pt-2', contentClassName)}>{children}</CardContent>
+            <CardContent
+              className={cn(
+                open ? 'border-t border-border pt-3' : 'border-t-0 p-0',
+                contentClassName
+              )}
+            >
+              {children}
+            </CardContent>
           </div>
         </CollapsibleContent>
       </Collapsible>
