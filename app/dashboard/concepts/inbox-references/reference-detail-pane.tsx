@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { formatDateUtcDe, formatReferenceVolume } from "@/lib/format"
+import { formatContractTypeDisplay } from "@/lib/references/contract-type"
 import { formatProjectEndWithDurationDe } from "@/lib/references/reference-duration-months"
 
 import type { ReferenceAssetRow } from "@/app/dashboard/actions"
@@ -180,7 +181,9 @@ export function ReferenceDetailPane({
               </div>
               <div className="rounded-lg border bg-background p-3">
                 <div className="text-xs text-muted-foreground">Vertragsart</div>
-                <div className="mt-1 font-medium">{selectedRef.contract_type ?? "—"}</div>
+                <div className="mt-1 font-medium">
+                  {formatContractTypeDisplay(selectedRef.contract_type) || "—"}
+                </div>
               </div>
               <div className="rounded-lg border bg-background p-3">
                 <div className="text-xs text-muted-foreground">Projektstart</div>

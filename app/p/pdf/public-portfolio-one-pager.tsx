@@ -2,6 +2,7 @@ import React from 'react'
 import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
 import type { PublicReference } from '@/app/p/actions'
 import { formatReferenceVolume } from '@/lib/format'
+import { formatContractTypeDisplay } from '@/lib/references/contract-type'
 import {
   computePublicPortfolioPdfLayout,
   kpisForPublicReference,
@@ -176,7 +177,7 @@ export function PublicPortfolioOnePagerDocument({
                       Volumen: {formatReferenceVolume(ref.volume_eur) || NOT_IN}
                     </Text>
                     <Text style={{ fontSize: 6, color: '#94a3b8', marginRight: 12 }}>
-                      Vertrag: {factValue(ref.contract_type)}
+                      Vertrag: {factValue(formatContractTypeDisplay(ref.contract_type))}
                     </Text>
                     <Text style={{ fontSize: 6, color: '#94a3b8' }}>
                       Website: {factValue(ref.website)}

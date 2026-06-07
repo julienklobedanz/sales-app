@@ -7,6 +7,7 @@ import { ROUTES } from '@/lib/routes'
 import type { ReferenceRow } from '@/app/dashboard/actions'
 import { narrativeFieldLengthError } from '@/lib/references/reference-narrative-limits'
 import { normalizeNarrativeText } from '@/lib/references/narrative-normalize'
+import { normalizeContractType } from '@/lib/references/contract-type'
 
 export async function updateReferenceImpl(id: string, formData: FormData) {
   const supabase = await createServerSupabaseClient()
@@ -35,7 +36,7 @@ export async function updateReferenceImpl(id: string, formData: FormData) {
       ? Math.max(0, Math.trunc(Number(employeeCountRaw)))
       : null
   const volume_eur = formData.get('volume_eur')?.toString()?.trim() ?? null
-  const contract_type = formData.get('contract_type')?.toString()?.trim() ?? null
+  const contract_type = normalizeContractType(formData.get('contract_type')?.toString())
   const incumbent_provider = formData.get('incumbent_provider')?.toString()?.trim() ?? null
   const competitors = formData.get('competitors')?.toString()?.trim() ?? null
   const customer_challenge = normalizeNarrativeText(formData.get('customer_challenge')?.toString())

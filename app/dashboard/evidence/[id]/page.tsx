@@ -18,6 +18,7 @@ import {
 } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { formatEmployeeCountDeDisplay, formatReferenceDate, formatReferenceVolume, normalizeOrgDateDisplayFormat } from '@/lib/format'
+import { formatContractTypeDisplay } from '@/lib/references/contract-type'
 import { deleteReferenceFromDetailPage } from './actions'
 import { ReferenceStatusWithHint } from '@/components/reference-status-with-hint'
 import { ROUTES } from '@/lib/routes'
@@ -581,7 +582,7 @@ export default async function EvidenceDetailPage({
               </div>
               <div className="flex justify-between gap-2">
                 <span className="text-muted-foreground">Vertragsart</span>
-                <span className="font-medium">{ref.contract_type ?? ''}</span>
+                <span className="font-medium">{formatContractTypeDisplay(ref.contract_type)}</span>
               </div>
               <div className="flex justify-between gap-2">
                 <span className="text-muted-foreground">Projektstart</span>

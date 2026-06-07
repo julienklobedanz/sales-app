@@ -348,3 +348,25 @@ export async function deactivatePortfolio(
   if (error) return { success: false }
   return { success: data === true }
 }
+
+const REVOKE_REASON_LABELS: Record<string, string> = {
+  outdated_content: 'Projektinhalte sind nicht mehr aktuell',
+  compliance_change: 'Interne Compliance-Richtlinien haben sich geändert',
+  contact_left: 'Ansprechpartner hat das Unternehmen verlassen',
+  other: 'Sonstiges (Bitte angeben)',
+}
+
+/** Showcase-Sperrlink: Zugriff widerrufen inkl. dokumentiertem Grund. */
+export async function revokePortfolioAccess(params: {
+  slug: string
+  manageToken?: string | null
+  reason: string
+  details?: string
+}): Promise<{ success: boolean }> {
+  const reasonLabel = REVOKE_REASON_LABELS[params.reason] ?? params.reason
+  // TODO: Trigger Admin-Notification (Toast/Email) und setze Referenz-Status auf 'Vom Kunden gesperrt'
+  void reasonLabel
+  void params.details
+
+  return deactivatePortfolio(params.slug, params.manageToken)
+}

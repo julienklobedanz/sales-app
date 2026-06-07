@@ -247,7 +247,7 @@ export async function getPortfolioManageAndPreviewUrlsForApprovalEmail(
       return null
     }
     const publicPreviewUrl = `${origin}/p/${encodeURIComponent(slug)}`
-    const manageUrl = `${publicPreviewUrl}?manage=${encodeURIComponent(payload.token)}`
+    const manageUrl = `${publicPreviewUrl}?manage=${encodeURIComponent(payload.token)}&mode=revoke`
     return { manageUrl, publicPreviewUrl }
   }
 
@@ -257,6 +257,7 @@ export async function getPortfolioManageAndPreviewUrlsForApprovalEmail(
   const publicPreviewUrl = `${origin}${path}`
   const u = new URL(publicPreviewUrl)
   u.searchParams.set('manage', created.manageToken)
+  u.searchParams.set('mode', 'revoke')
   return { manageUrl: u.toString(), publicPreviewUrl }
 }
 

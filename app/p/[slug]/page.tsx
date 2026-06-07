@@ -7,6 +7,7 @@ import {
   incrementPortfolioViews,
 } from '../actions'
 import { formatDateUtcDe, formatReferenceVolume } from '@/lib/format'
+import { formatContractTypeDisplay } from '@/lib/references/contract-type'
 import { formatProjectEndWithDurationDe } from '@/lib/references/reference-duration-months'
 import { kpisForPublicReference, formatProjectStatusDe } from '@/lib/public-portfolio/kpis-for-reference'
 import { Badge } from '@/components/ui/badge'
@@ -15,6 +16,7 @@ import { Separator } from '@/components/ui/separator'
 import { ShareOwnerContactCard } from './share-owner-contact-card'
 import { PortfolioUnlockGate } from './portfolio-unlock-gate'
 import { PublicPortfolioFooter } from './public-portfolio-footer'
+import { ShowcaseSingleReference } from './showcase-single-reference'
 import { Lock } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -99,6 +101,8 @@ export default async function PublicPortfolioPage({
   const manageRaw = sp.manage
   const manageToken =
     typeof manageRaw === 'string' && manageRaw.length > 0 ? manageRaw : null
+  const modeRaw = sp.mode
+  const revokeMode = typeof modeRaw === 'string' && modeRaw === 'revoke'
   const result = await getPublicPortfolio(slug, manageToken)
   const branding = await getPublicPortfolioBranding(slug)
   const shareOwner = await getPublicPortfolioShareOwner(slug)
@@ -141,6 +145,30 @@ export default async function PublicPortfolioPage({
   }
 
   await incrementPortfolioViews(slug)
+
+  if (result.references.length === 1 && branding.found) {
+    return (
+      <ShowcaseSingleReference
+        slug={slug}
+        reference={result.references[0]!}
+        branding={{
+          name: branding.name,
+          logo_url: branding.logo_url,
+          primary_color: branding.primary_color,
+          secondary_color: branding.secondary_color,
+        }}
+        workspaceName={workspaceName}
+        shareOwnerName={shareOwner.found ? shareOwner.name : 'RefStack Team'}
+        shareOwnerPosition={shareOwner.found ? shareOwner.position : 'Sales Ansprechpartner'}
+        shareOwnerAvatar={shareOwner.found ? shareOwner.avatar_url : null}
+        shareOwnerEmail={shareOwner.found ? shareOwner.email : null}
+        shareOwnerPhone={shareOwner.found ? shareOwner.phone : null}
+        shareOwnerBookingUrl={shareOwner.found ? shareOwner.booking_url : null}
+        canDeactivate={result.canDeactivate}
+        revokeMode={revokeMode}
+      />
+    )
+  }
 
   const shareOwnerName = shareOwner.found ? shareOwner.name : 'RefStack Team'
   const shareOwnerPosition = shareOwner.found ? shareOwner.position : 'Sales Ansprechpartner'
@@ -288,7 +316,7 @@ export default async function PublicPortfolioPage({
                           <div className="flex justify-between gap-3">
                             <span className="text-muted-foreground">Vertragsart</span>
                             <span className="text-right font-medium">
-                              {releaseDisplay(releaseText(ref.contract_type))}
+                              {releaseDisplay(releaseText(formatContractTypeDisplay(ref.contract_type)))}
                             </span>
                           </div>
                           <div className="flex justify-between gap-3">

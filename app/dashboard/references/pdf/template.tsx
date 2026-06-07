@@ -11,6 +11,7 @@ import type { PdfOrgBranding, PdfReference, PdfTemplate } from './types'
 import { anonymizeReferenceForOutput } from './anonymization'
 import { normalizeTextForPdfFlow } from './normalize-for-pdf'
 import { formatReferenceVolume } from '@/lib/format'
+import { formatContractTypeDisplay } from '@/lib/references/contract-type'
 
 const styles = StyleSheet.create({
   page: { padding: 28, fontSize: 11, fontFamily: 'Helvetica', color: '#0f172a', position: 'relative' },
@@ -62,7 +63,7 @@ function keyFacts(reference: PdfReference) {
     { label: 'Branche', value: v(reference.industry) },
     { label: 'Land', value: v(reference.country) },
     { label: 'Volumen', value: formatReferenceVolume(reference.volume_eur) || '—' },
-    { label: 'Vertragsart', value: v(reference.contract_type) },
+    { label: 'Vertragsart', value: v(formatContractTypeDisplay(reference.contract_type)) },
     { label: 'Projektstatus', value: v(reference.project_status) },
   ]
 }

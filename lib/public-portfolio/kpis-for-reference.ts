@@ -1,5 +1,6 @@
 import type { PublicReference } from '@/app/p/actions'
 import { formatReferenceVolume } from '@/lib/format'
+import { formatContractTypeDisplay } from '@/lib/references/contract-type'
 
 export type PublicPortfolioKpi = { label: string; value: string }
 
@@ -57,7 +58,7 @@ export function kpisForPublicReference(
     })
   }
 
-  const contract = ref.contract_type?.trim()
+  const contract = formatContractTypeDisplay(ref.contract_type)
   if (contract) {
     candidates.push({ label: 'Vertragsart', value: contract, weight: 76 })
   }

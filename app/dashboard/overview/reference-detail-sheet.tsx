@@ -50,6 +50,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { diffMonthsUtc, formatReferenceDate, formatNumberDe, formatReferenceVolume, normalizeOrgDateDisplayFormat, type OrgDateDisplayFormat } from '@/lib/format'
+import { formatContractTypeDisplay } from '@/lib/references/contract-type'
 import { AppIcon } from '@/lib/icons'
 import { ROUTES } from '@/lib/routes'
 
@@ -236,7 +237,7 @@ export function ReferenceDetailSheet({
                           <AppIcon icon={FileText} size={12} /> Vertragsart
                         </span>
                         <p className={`pl-4 text-xs font-medium ${selectedRef.contract_type ? 'text-foreground' : 'text-muted-foreground'}`}>
-                          {selectedRef.contract_type || '—'}
+                          {formatContractTypeDisplay(selectedRef.contract_type) || '—'}
                         </p>
                       </div>
                       <div className="space-y-0.5">

@@ -8,6 +8,7 @@ import { resolveDomainForCompanyName } from '@/lib/accounts/resolve-company-for-
 import { fetchBrandfetchCompany } from '@/lib/accounts/brandfetch-accounts-refresh'
 import { mapBrandfetchIndustriesArrayToGermanCategory } from '@/lib/brandfetch/map-brandfetch-industry-to-de'
 import { normalizeNarrativeText } from '@/lib/references/narrative-normalize'
+import { normalizeContractType } from '@/lib/references/contract-type'
 import { extractDataFromDocument } from '@/lib/document-extraction'
 import { parseGermanEmployeeCountInput } from '@/lib/format'
 import type { ExtractDataFromDocumentResult } from './types'
@@ -495,7 +496,7 @@ export async function createReference(
   const companyLogoUrlRaw = formData.get('company_logo_url')?.toString()?.trim() || null
   const company_logo_url = companyLogoUrlRaw || null
   const volume_eur = formData.get('volume_eur')?.toString()?.trim() || null
-  const contract_type = formData.get('contract_type')?.toString()?.trim() || null
+  const contract_type = normalizeContractType(formData.get('contract_type')?.toString())
   const incumbent_provider = formData.get('incumbent_provider')?.toString()?.trim() || null
   const competitors = formData.get('competitors')?.toString()?.trim() || null
   const customer_challenge = normalizeNarrativeText(formData.get('customer_challenge')?.toString())

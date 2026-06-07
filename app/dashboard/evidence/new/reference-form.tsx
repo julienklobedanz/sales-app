@@ -66,6 +66,11 @@ import {
   parseGermanEmployeeCountInput,
   parseReferenceVolume,
 } from '@/lib/format'
+import {
+  CONTRACT_TYPE_GROUPS,
+  CONTRACT_TYPE_VALUES,
+  formatContractTypeDisplay,
+} from '@/lib/references/contract-type'
 
 function normalizeWrappedParagraphs(input: string): string {
   const raw = input.replace(/\r\n/g, '\n').trim()
@@ -160,25 +165,6 @@ const PROJECT_STATUS_OPTIONS = [
   { value: 'completed', label: 'Abgeschlossen' },
 ] as const
 
-const CONTRACT_TYPE_GROUPS = [
-  {
-    label: 'Standard',
-    options: ['Festpreis', 'Time & Material', 'Rahmenvertrag'],
-  },
-  {
-    label: 'SaaS',
-    options: ['Subscription (Per User/Tiered)', 'Usage-Based'],
-  },
-  {
-    label: 'MSP',
-    options: ['SLA-Servicevertrag', 'Full Managed', 'Stundenkontingent'],
-  },
-  {
-    label: 'Andere',
-    options: ['Andere'],
-  },
-] as const
-
 const VOLUME_CURRENCY_OPTIONS = [
   { code: 'AED', symbol: 'AED' },
   { code: 'AUD', symbol: 'A$' },
@@ -192,8 +178,6 @@ const VOLUME_CURRENCY_OPTIONS = [
   { code: 'SGD', symbol: 'S$' },
   { code: 'USD', symbol: '$' },
 ] as const
-
-const CONTRACT_TYPE_VALUES: string[] = CONTRACT_TYPE_GROUPS.flatMap((group) => [...group.options])
 
 type Company = ReferenceFormCompany
 
@@ -326,7 +310,7 @@ export function ReferenceForm({
   const [volumeEur, setVolumeEur] = useState(() => formatThousandsDots(initialVolumeParsed?.amountDigits ?? ''))
   const [volumeCurrency, setVolumeCurrency] = useState(initialVolumeParsed?.currencyCode ?? 'EUR')
   const [contractType, setContractType] = useState(
-    initialData?.contract_type ?? ''
+    () => formatContractTypeDisplay(initialData?.contract_type) || ''
   )
   const [incumbentProvider, setIncumbentProvider] = useState(
     initialData?.incumbent_provider ?? ''
@@ -910,7 +894,9 @@ export function ReferenceForm({
                 <SelectSeparator />
                 <SelectGroup>
                   <SelectLabel>Bestehender Wert</SelectLabel>
-                  <SelectItem value={contractType}>{contractType}</SelectItem>
+                  <SelectItem value={contractType}>
+                    {formatContractTypeDisplay(contractType)}
+                  </SelectItem>
                 </SelectGroup>
               </>
             ) : null}

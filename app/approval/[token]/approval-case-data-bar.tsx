@@ -10,8 +10,10 @@ type CaseDataItem = {
   icon?: ReactNode
 }
 
-const BAR_SURFACE_CLASS =
-  'w-full rounded-2xl border border-border bg-card px-5 py-3.5 shadow-sm transition-all duration-300'
+const BAR_SHELL_CLASS =
+  'w-full overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-300'
+
+const BAR_BODY_CLASS = 'w-full bg-card px-5 py-3.5'
 
 function CaseDataGrid({ items, compact }: { items: CaseDataItem[]; compact?: boolean }) {
   return (
@@ -45,9 +47,12 @@ function CaseDataGrid({ items, compact }: { items: CaseDataItem[]; compact?: boo
 export function ApprovalCaseDataBar({
   items,
   referenceTitle,
+  revokeMode = false,
 }: {
   items: CaseDataItem[]
   referenceTitle: string
+  /** Sperr-Link-Ansicht: Info-Banner über der Metadaten-Leiste */
+  revokeMode?: boolean
 }) {
   const sentinelRef = useRef<HTMLDivElement>(null)
   const barRef = useRef<HTMLDivElement>(null)
@@ -93,32 +98,54 @@ export function ApprovalCaseDataBar({
     </div>
   )
 
+  const renderBarShell = (floating: boolean) => (
+    <div
+      className={cn(
+        BAR_SHELL_CLASS,
+        isGlass &&
+          'border-border/60 bg-background/95 shadow-md backdrop-blur-md supports-[backdrop-filter]:bg-background/90'
+      )}
+    >
+      {revokeMode ? (
+        <div
+          className={cn(
+            'flex w-full items-center justify-center gap-2 border-b border-amber-500/20 bg-amber-500/10 px-4 py-2 text-center',
+            isGlass && 'bg-amber-500/20 supports-[backdrop-filter]:bg-amber-500/25'
+          )}
+        >
+          <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
+            🔒 Sie sehen die Verwaltungs-Ansicht Ihrer Referenz. Sie können den Zugriff jederzeit über
+            den roten Button widerrufen.
+          </p>
+        </div>
+      ) : null}
+      <div
+        className={cn(
+          BAR_BODY_CLASS,
+          isGlass && 'bg-background/80 supports-[backdrop-filter]:bg-background/75'
+        )}
+      >
+        {barContent(floating)}
+      </div>
+    </div>
+  )
+
   return (
     <div className="mb-10">
       <div ref={sentinelRef} className="h-px w-full" aria-hidden />
 
       {isPinned ? (
         <div className="pointer-events-none fixed inset-x-0 top-0 z-50 w-full px-4 pt-4">
-          <div className="pointer-events-auto mx-auto w-full max-w-7xl">
-            <div
-              className={cn(
-                BAR_SURFACE_CLASS,
-                isGlass &&
-                  'border-border/50 bg-background/80 shadow-sm backdrop-blur-md supports-[backdrop-filter]:bg-background/80'
-              )}
-            >
-              {barContent(true)}
-            </div>
-          </div>
+          <div className="pointer-events-auto mx-auto w-full max-w-7xl">{renderBarShell(true)}</div>
         </div>
       ) : null}
 
       <div
         ref={barRef}
-        className={cn(BAR_SURFACE_CLASS, isPinned && 'pointer-events-none invisible')}
+        className={cn(isPinned && 'pointer-events-none invisible')}
         aria-hidden={isPinned}
       >
-        {barContent(false)}
+        {renderBarShell(false)}
       </div>
     </div>
   )

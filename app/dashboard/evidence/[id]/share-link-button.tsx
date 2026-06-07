@@ -50,6 +50,7 @@ function toAbsoluteUrl(url: string) {
 function buildManageUrl(absolutePublicUrl: string, manageToken: string): string {
   const u = new URL(absolutePublicUrl)
   u.searchParams.set('manage', manageToken)
+  u.searchParams.set('mode', 'revoke')
   return u.toString()
 }
 
