@@ -19,37 +19,45 @@ import {
 
 export function ApprovalDecisionForm({
   token,
+  mode = 'pending',
   referenceTitle,
   orgName,
   companyName,
   scopeNamedAvailable,
   scopeAnonymousAvailable,
   initialApprovedQuote = '',
+  initialComment = '',
+  initialScope,
   initialReferenceGiverName = '',
   initialReferenceGiverTitle = '',
 }: {
   token: string
+  mode?: 'pending' | 'approved'
   referenceTitle: string
   orgName: string
   companyName?: string
   scopeNamedAvailable: boolean
   scopeAnonymousAvailable: boolean
   initialApprovedQuote?: string
+  initialComment?: string
+  initialScope?: CustomerApprovalScopeSelection
   initialReferenceGiverName?: string
   initialReferenceGiverTitle?: string
 }) {
+  const isApprovedMode = mode === 'approved'
   const defaultType = scopeNamedAvailable ? 'named' : 'anonymous'
-  const [scope, setScope] = useState<CustomerApprovalScopeSelection>(() =>
-    defaultCustomerApprovalScope(defaultType)
+  const [scope, setScope] = useState<CustomerApprovalScopeSelection>(
+    () => initialScope ?? defaultCustomerApprovalScope(defaultType)
   )
-  const [comment, setComment] = useState('')
+  const [comment, setComment] = useState(initialComment)
   const [approvedQuote, setApprovedQuote] = useState(initialApprovedQuote)
   const [referenceGiverName, setReferenceGiverName] = useState(initialReferenceGiverName)
   const [referenceGiverTitle, setReferenceGiverTitle] = useState(initialReferenceGiverTitle)
-  const [consentForwarding, setConsentForwarding] = useState(false)
-  const [consentRelease, setConsentRelease] = useState(false)
+  const [consentForwarding, setConsentForwarding] = useState(isApprovedMode)
+  const [consentRelease, setConsentRelease] = useState(isApprovedMode)
   const [loading, setLoading] = useState(false)
-  const [done, setDone] = useState<'approved' | 'rejected' | null>(null)
+  const [done, setDone] = useState<'approved' | 'rejected' | 'updated' | null>(null)
+  const [confirmationEmailSent, setConfirmationEmailSent] = useState(false)
 
   const workspaceLabel = orgName.trim() || 'unserem Partner'
   const isNamed = scope.approvalType === 'named'
@@ -88,7 +96,8 @@ export function ApprovalDecisionForm({
         }
         return
       }
-      setDone(decision)
+      setConfirmationEmailSent(result.confirmationEmailSent === true)
+      setDone(isApprovedMode ? 'updated' : decision)
     } catch {
       toast.error('Die Entscheidung konnte nicht gespeichert werden.')
     } finally {
@@ -100,12 +109,18 @@ export function ApprovalDecisionForm({
     return (
       <div className="space-y-2 text-center">
         <p className="text-lg font-semibold text-foreground">
-          {done === 'approved'
-            ? 'Vielen Dank — die Referenz wurde freigegeben.'
-            : 'Vielen Dank — die Referenz wurde abgelehnt.'}
+          {done === 'updated'
+            ? 'Ihre Änderungen wurden gespeichert.'
+            : done === 'approved'
+              ? 'Vielen Dank — die Referenz wurde freigegeben.'
+              : 'Vielen Dank — die Referenz wurde abgelehnt.'}
         </p>
         <p className="text-sm text-muted-foreground">
-          Sie können dieses Fenster schließen. Der Ansprechpartner bei uns wurde informiert.
+          {done === 'updated' || done === 'approved'
+            ? confirmationEmailSent
+              ? 'Sie erhalten in Kürze eine Bestätigungs-E-Mail mit Ihrem persönlichen Freigabe- und Sperrlink.'
+              : 'Der Ansprechpartner bei uns wurde informiert.'
+            : 'Sie können dieses Fenster schließen. Der Ansprechpartner bei uns wurde informiert.'}
         </p>
         <p className="pt-2 text-xs text-muted-foreground">{referenceTitle}</p>
       </div>
@@ -232,17 +247,19 @@ export function ApprovalDecisionForm({
           onClick={() => void submit('approved')}
         >
           <CheckIcon className="size-[18px]" />
-          Freigabe erteilen
+          {isApprovedMode ? 'Änderungen speichern' : 'Freigabe erteilen'}
         </Button>
-        <Button
-          type="button"
-          variant="link"
-          className="h-auto w-full text-destructive/80 hover:text-destructive"
-          disabled={loading}
-          onClick={() => void submit('rejected')}
-        >
-          Ablehnen
-        </Button>
+        {!isApprovedMode ? (
+          <Button
+            type="button"
+            variant="link"
+            className="h-auto w-full text-destructive/80 hover:text-destructive"
+            disabled={loading}
+            onClick={() => void submit('rejected')}
+          >
+            Ablehnen
+          </Button>
+        ) : null}
       </div>
     </div>
   )

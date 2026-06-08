@@ -66,21 +66,21 @@ function approvedScopeBadge(input: ReferenceReadinessStateInput): ReadinessBadge
 
   if (refCall && named) {
     return {
-      label: 'Bereit für Ref. Calls',
+      label: 'Freigabe mit Ref. Calls',
       className: 'border-emerald-200 bg-emerald-50 text-emerald-800',
     }
   }
 
   if (confidential && !publicMarketing && named) {
     return {
-      label: 'Vertraulich freigegeben',
+      label: 'Freigabe ohne Ref. Calls',
       className: 'border-sky-200 bg-sky-50 text-sky-900',
     }
   }
 
   if (publicMarketing && named) {
     return {
-      label: 'Marketing freigegeben',
+      label: 'Vollständig freigegeben',
       className: 'border-emerald-200/80 bg-emerald-50 text-emerald-800',
     }
   }

@@ -13,6 +13,7 @@ import { ApprovalDecisionForm } from './approval-decision-form'
 import { ApprovalCaseDataBar } from './approval-case-data-bar'
 import { ApprovalReferenceSections } from './approval-reference-sections'
 import { ApprovalDelegateDialog } from './approval-delegate-dialog'
+import { customerApprovalScopeFromDb } from '@/lib/references/customer-approval-scope'
 
 function InvalidLink() {
   return (
@@ -66,6 +67,10 @@ export default async function ApprovalPage({
       approval_scope_press_release,
       approval_grace_until,
       approval_quote_proposed,
+      approval_quote_approved,
+      approval_comment,
+      approval_scope_confidential_sales,
+      approval_reference_call_frequency,
       approval_reference_giver_name,
       approval_reference_giver_title,
       companies (
@@ -110,20 +115,24 @@ export default async function ApprovalPage({
   const pending =
     row.customer_approval_status === 'pending' ||
     (row.customer_approval_status == null && String(row.status ?? '') === 'pending')
+  const approved = row.customer_approval_status === 'approved'
   const nowTs = new Date().getTime()
   const isExpired =
     !!row.approval_expires_at && new Date(String(row.approval_expires_at)).getTime() < nowTs
   const inGrace =
     !!row.approval_grace_until && new Date(String(row.approval_grace_until)).getTime() >= nowTs
 
-  if (!pending || (isExpired && !inGrace)) {
+  if (!pending && !approved) {
+    return <InvalidLink />
+  }
+  if (pending && isExpired && !inGrace) {
     return <InvalidLink />
   }
 
   const requester = typeof row.approval_requester_name === 'string' ? row.approval_requester_name.trim() : ''
   const message = typeof row.approval_message === 'string' ? row.approval_message.trim() : ''
-  const scopeNamedAvailable = !!row.approval_scope_named_mention
-  const scopeAnonymousAvailable = !!row.approval_scope_anonymous_mention
+  const scopeNamedAvailable = approved ? true : !!row.approval_scope_named_mention
+  const scopeAnonymousAvailable = approved ? true : !!row.approval_scope_anonymous_mention
   const extraScopeItems = [
     row.approval_scope_reference_call ? 'Referenz-Call' : null,
     row.approval_scope_logo_use ? 'Logo-Nutzung' : null,
@@ -163,6 +172,22 @@ export default async function ApprovalPage({
 
   const proposedQuote =
     typeof row.approval_quote_proposed === 'string' ? row.approval_quote_proposed.trim() : ''
+  const savedQuote =
+    typeof row.approval_quote_approved === 'string' ? row.approval_quote_approved.trim() : ''
+  const initialApprovedQuote = approved ? savedQuote || proposedQuote : proposedQuote
+  const initialComment =
+    typeof row.approval_comment === 'string' ? row.approval_comment.trim() : ''
+  const initialScope = approved
+    ? customerApprovalScopeFromDb({
+        approval_scope_named_mention: row.approval_scope_named_mention,
+        approval_scope_anonymous_mention: row.approval_scope_anonymous_mention,
+        approval_scope_logo_use: row.approval_scope_logo_use,
+        approval_scope_press_release: row.approval_scope_press_release,
+        approval_scope_reference_call: row.approval_scope_reference_call,
+        approval_scope_confidential_sales: row.approval_scope_confidential_sales,
+        approval_reference_call_frequency: row.approval_reference_call_frequency,
+      })
+    : undefined
   const referenceGiverName =
     typeof row.approval_reference_giver_name === 'string' ? row.approval_reference_giver_name.trim() : ''
   const referenceGiverTitle =
@@ -186,7 +211,12 @@ export default async function ApprovalPage({
           <h1 className="text-3xl font-semibold tracking-tight" style={{ color: primary }}>
             {row.title}
           </h1>
-          {requester ? (
+          {approved ? (
+            <p className="text-sm text-muted-foreground">
+              Sie haben diese Referenz bereits freigegeben. Hier können Sie Ihre Anmerkungen und
+              Freigabe-Umfang jederzeit anpassen.
+            </p>
+          ) : requester ? (
             <p className="text-sm text-muted-foreground">
               <span className="font-medium text-foreground">{requester}</span> bittet Sie um Freigabe
               dieser Referenz.
@@ -253,15 +283,20 @@ export default async function ApprovalPage({
 
           <aside className="lg:col-span-5">
             <div className="sticky top-6 rounded-2xl border border-border bg-card p-6 shadow-sm">
-              <h2 className="mb-6 text-lg font-semibold text-foreground">Ihre Entscheidung</h2>
+              <h2 className="mb-6 text-lg font-semibold text-foreground">
+                {approved ? 'Ihre Freigabe' : 'Ihre Entscheidung'}
+              </h2>
               <ApprovalDecisionForm
                 token={token}
+                mode={approved ? 'approved' : 'pending'}
                 referenceTitle={row.title}
                 orgName={orgName}
                 companyName={company?.name}
                 scopeNamedAvailable={scopeNamedAvailable}
                 scopeAnonymousAvailable={scopeAnonymousAvailable}
-                initialApprovedQuote={proposedQuote}
+                initialApprovedQuote={initialApprovedQuote}
+                initialComment={initialComment}
+                initialScope={initialScope}
                 initialReferenceGiverName={referenceGiverName}
                 initialReferenceGiverTitle={referenceGiverTitle}
               />

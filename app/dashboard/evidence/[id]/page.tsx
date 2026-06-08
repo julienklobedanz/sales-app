@@ -785,9 +785,6 @@ export default async function EvidenceDetailPage({
                   ((internalStatus === 'pending_internal' && !staleInternalPending) ||
                     internalStatus === 'withdrawn_internal')
                 }
-                defaultInternalOwnerName={
-                  (ref.approval_owner_name ?? '').trim() || requesterDisplayName || ''
-                }
                 defaultAccountManagerEmail={defaultAccountManagerEmail}
                 autoOpenApprovalDialog={autoOpenApprovalDialog}
                 approvalContactId={ref.approval_contact_id ?? null}

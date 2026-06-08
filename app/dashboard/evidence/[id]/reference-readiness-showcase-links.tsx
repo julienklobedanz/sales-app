@@ -45,7 +45,7 @@ export function ReferenceReadinessShowcaseLinks({
         }
         const revokeUrl = buildManageUrl(absolutePublicUrl(publicPreviewPath), res.manageToken)
         window.open(revokeUrl, '_blank', 'noopener,noreferrer')
-        toast.message('Sperr-Ansicht geöffnet', {
+        toast.success('Sperr-Ansicht geöffnet', {
           description:
             'Der Sperr-Link wurde erneuert — bitte nur an die freigebende Person weitergeben.',
           duration: 8000,

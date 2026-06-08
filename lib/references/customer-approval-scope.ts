@@ -45,6 +45,32 @@ export function resetNamedSubOptions(
   }
 }
 
+/** Rekonstruiert die UI-Auswahl aus gespeicherten Spalten (Bearbeitungsmodus). */
+export function customerApprovalScopeFromDb(row: {
+  approval_scope_named_mention?: boolean | null
+  approval_scope_anonymous_mention?: boolean | null
+  approval_scope_logo_use?: boolean | null
+  approval_scope_press_release?: boolean | null
+  approval_scope_reference_call?: boolean | null
+  approval_scope_confidential_sales?: boolean | null
+  approval_reference_call_frequency?: string | null
+}): CustomerApprovalScopeSelection {
+  const isAnonymous =
+    !!row.approval_scope_anonymous_mention && !row.approval_scope_named_mention
+  const approvalType: CustomerApprovalType = isAnonymous ? 'anonymous' : 'named'
+  const freq = row.approval_reference_call_frequency
+  const validFreq = REFERENCE_CALL_FREQUENCY_OPTIONS.some((o) => o.value === freq)
+    ? (freq as ReferenceCallFrequency)
+    : 'yearly'
+  return {
+    approvalType,
+    namentlichPublic: !!(row.approval_scope_logo_use || row.approval_scope_press_release),
+    namentlichConfidential: !!row.approval_scope_confidential_sales,
+    referenceCallsEnabled: !!row.approval_scope_reference_call,
+    referenceCallFrequency: validFreq,
+  }
+}
+
 /** Mappt die UI-Auswahl auf references-Spalten. */
 export function customerApprovalScopeToDbPatch(
   scope: CustomerApprovalScopeSelection

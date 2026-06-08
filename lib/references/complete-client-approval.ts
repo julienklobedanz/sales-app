@@ -3,6 +3,7 @@ import {
   customerApprovalScopeToDbPatch,
   type CustomerApprovalScopeSelection,
 } from '@/lib/references/customer-approval-scope'
+import { sendClientApprovalConfirmationEmail } from '@/lib/references/client-approval-confirmation-email'
 
 export type CompleteClientApprovalParams = {
   token: string
@@ -16,11 +17,12 @@ export type CompleteClientApprovalParams = {
 }
 
 export type CompleteClientApprovalResult =
-  | { success: true }
+  | { success: true; confirmationEmailSent?: boolean }
   | { success: false; error: string }
 
 type ReferenceApprovalRow = {
   id: string
+  title: string
   company_id: string
   organization_id: string | null
   customer_approval_status: string | null
@@ -28,6 +30,20 @@ type ReferenceApprovalRow = {
   approval_token: string | null
   approval_reference_status_snapshot: string | null
   approval_requested_by: string | null
+  approval_contact_id: string | null
+  approval_external_contact_id: string | null
+  approval_delegated_to_email: string | null
+  approval_delegated_to_name: string | null
+  companies?: { name?: string } | { name?: string }[] | null
+}
+
+function companyNameFromRow(row: ReferenceApprovalRow): string {
+  const companyRaw = row.companies
+  const company =
+    Array.isArray(companyRaw) && companyRaw.length > 0
+      ? (companyRaw[0] as { name?: string })
+      : (companyRaw as { name?: string } | null)
+  return company?.name?.trim() || 'Referenz'
 }
 
 export async function completeClientApprovalWithAdmin(
@@ -42,7 +58,22 @@ export async function completeClientApprovalWithAdmin(
   const { data: row, error: fetchError } = await admin
     .from('references')
     .select(
-      'id, company_id, organization_id, customer_approval_status, status, approval_token, approval_reference_status_snapshot, approval_requested_by'
+      `
+      id,
+      title,
+      company_id,
+      organization_id,
+      customer_approval_status,
+      status,
+      approval_token,
+      approval_reference_status_snapshot,
+      approval_requested_by,
+      approval_contact_id,
+      approval_external_contact_id,
+      approval_delegated_to_email,
+      approval_delegated_to_name,
+      companies ( name )
+    `
     )
     .eq('approval_token', token)
     .maybeSingle()
@@ -58,9 +89,18 @@ export async function completeClientApprovalWithAdmin(
 
   const customerStatus = ref.customer_approval_status
   const statusText = String(ref.status ?? '')
-  const canDecide =
+  const isPending =
     customerStatus === 'pending' || (customerStatus == null && statusText === 'pending')
-  if (!canDecide) {
+  const isApproved = customerStatus === 'approved'
+  const isUpdate = isApproved && params.decision === 'approved'
+
+  if (!isPending && !isUpdate) {
+    if (customerStatus === 'rejected') {
+      return { success: false, error: 'already_decided' }
+    }
+    if (isApproved && params.decision === 'rejected') {
+      return { success: false, error: 'already_decided' }
+    }
     return { success: false, error: 'already_decided' }
   }
 
@@ -78,51 +118,54 @@ export async function completeClientApprovalWithAdmin(
   }
 
   const snapshot = ref.approval_reference_status_snapshot?.trim()
-  const newStatus = params.decision === 'approved' ? 'external' : snapshot || 'draft'
-
   const approved = params.decision === 'approved'
   const scopePatch = approved && params.scope ? customerApprovalScopeToDbPatch(params.scope) : {}
 
-  const { error: updateError } = await admin
-    .from('references')
-    .update({
-      customer_approval_status: params.decision,
-      approval_comment: params.comment?.trim() || null,
-      approval_responded_at: new Date().toISOString(),
-      approval_token: null,
-      status: newStatus,
-      approval_quote_approved: params.approvedQuote?.trim() || null,
-      approval_consent_file_url: params.consentFileUrl?.trim() || null,
-      approval_reference_giver_name: params.referenceGiverName?.trim() || null,
-      approval_reference_giver_title: params.referenceGiverTitle?.trim() || null,
-      ...(approved
-        ? {
-            approval_internal_status: 'approved_internal',
-            approval_internal_reviewed_at: new Date().toISOString(),
-          }
-        : {}),
-      ...scopePatch,
-    })
-    .eq('id', ref.id)
+  const updatePatch: Record<string, unknown> = {
+    approval_comment: params.comment?.trim() || null,
+    approval_responded_at: new Date().toISOString(),
+    approval_quote_approved: params.approvedQuote?.trim() || null,
+    approval_consent_file_url: params.consentFileUrl?.trim() || null,
+    approval_reference_giver_name: params.referenceGiverName?.trim() || null,
+    approval_reference_giver_title: params.referenceGiverTitle?.trim() || null,
+    ...scopePatch,
+  }
+
+  if (isUpdate) {
+    // Freigabe-Link bleibt aktiv — Kunde kann Anmerkungen jederzeit anpassen.
+  } else if (approved) {
+    updatePatch.customer_approval_status = 'approved'
+    updatePatch.approval_token = token
+    updatePatch.status = 'external'
+  } else {
+    updatePatch.customer_approval_status = 'rejected'
+    updatePatch.approval_token = null
+    updatePatch.status = snapshot || 'draft'
+  }
+
+  const { error: updateError } = await admin.from('references').update(updatePatch).eq('id', ref.id)
 
   if (updateError) {
     return { success: false, error: updateError.message }
   }
 
-  await admin
-    .from('approvals')
-    .update({ status: params.decision === 'approved' ? 'approved' : 'rejected' })
-    .eq('reference_id', ref.id)
-    .eq('status', 'pending')
+  if (!isUpdate) {
+    await admin
+      .from('approvals')
+      .update({ status: approved ? 'approved' : 'rejected' })
+      .eq('reference_id', ref.id)
+      .eq('status', 'pending')
+  }
 
   const { error: eventError } = await admin.from('evidence_events').insert({
     organization_id: orgId,
     reference_id: ref.id,
-    event_type: 'reference_approval_responded',
+    event_type: isUpdate ? 'reference_approval_updated' : 'reference_approval_responded',
     payload: {
       decision: params.decision,
       comment: params.comment?.trim() || null,
       scope: params.scope ?? null,
+      is_update: isUpdate,
     },
     created_by: ref.approval_requested_by,
   })
@@ -131,5 +174,23 @@ export async function completeClientApprovalWithAdmin(
     return { success: false, error: eventError.message }
   }
 
-  return { success: true }
+  let confirmationEmailSent = false
+  if (approved) {
+    confirmationEmailSent = await sendClientApprovalConfirmationEmail({
+      admin,
+      referenceId: ref.id,
+      refTitle: ref.title,
+      companyName: companyNameFromRow(ref),
+      approvalToken: token,
+      isUpdate,
+      recipient: {
+        approval_contact_id: ref.approval_contact_id,
+        approval_external_contact_id: ref.approval_external_contact_id,
+        approval_delegated_to_email: ref.approval_delegated_to_email,
+        approval_delegated_to_name: ref.approval_delegated_to_name,
+      },
+    })
+  }
+
+  return { success: true, confirmationEmailSent }
 }

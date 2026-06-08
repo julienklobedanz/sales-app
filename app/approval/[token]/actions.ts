@@ -7,7 +7,7 @@ import type { CustomerApprovalScopeSelection } from '@/lib/references/customer-a
 import { getAppOrigin } from '@/lib/env/app-origin'
 
 export type CompleteClientApprovalResult =
-  | { success: true }
+  | { success: true; confirmationEmailSent?: boolean }
   | { success: false; error: string }
 
 export async function completeClientApproval(params: {

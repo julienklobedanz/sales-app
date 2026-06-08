@@ -25,7 +25,6 @@ function RequiredMark() {
 
 export function RequestApprovalDialog({
   referenceId,
-  defaultInternalOwnerName,
   defaultAccountManagerEmail,
   triggerIcon,
   triggerId,
@@ -35,8 +34,6 @@ export function RequestApprovalDialog({
   autoOpen = false,
 }: {
   referenceId: string
-  /** Vorausfüllung (Referenz oder Profil); Feld bleibt Pflicht. */
-  defaultInternalOwnerName?: string | null
   /** Vorausfüllung aus Account-Metadaten, falls hinterlegt */
   defaultAccountManagerEmail?: string | null
   triggerIcon?: ReactNode
@@ -49,16 +46,14 @@ export function RequestApprovalDialog({
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [ownerName, setOwnerName] = useState('')
   const [accountManagerEmail, setAccountManagerEmail] = useState('')
   const [message, setMessage] = useState('')
 
   useEffect(() => {
     if (!open) return
-    setOwnerName((defaultInternalOwnerName ?? '').trim())
     setAccountManagerEmail((defaultAccountManagerEmail ?? '').trim())
     setMessage('')
-  }, [open, defaultInternalOwnerName, defaultAccountManagerEmail])
+  }, [open, defaultAccountManagerEmail])
 
   useEffect(() => {
     if (!autoOpen) return
@@ -66,21 +61,19 @@ export function RequestApprovalDialog({
   }, [autoOpen])
 
   async function onSubmit() {
-    if (!ownerName.trim()) {
-      toast.error('Bitte einen internen Verantwortlichen bei der Freigabe angeben.')
+    const emailTrimmed = accountManagerEmail.trim()
+    if (!emailTrimmed) {
+      toast.error('Bitte die E-Mail des Account Managers angeben.')
       return
     }
-
-    const emailTrimmed = accountManagerEmail.trim()
-    if (emailTrimmed && !isApprovalRecipientEmail(emailTrimmed)) {
+    if (!isApprovalRecipientEmail(emailTrimmed)) {
       toast.error('Bitte eine gültige E-Mail-Adresse für den Account Manager eingeben.')
       return
     }
 
     const options: SubmitForApprovalOptions = {
-      ownerName: ownerName.trim(),
+      accountManagerEmail: emailTrimmed,
     }
-    if (emailTrimmed) options.accountManagerEmail = emailTrimmed
     if (message.trim()) options.message = message.trim()
 
     setLoading(true)
@@ -91,7 +84,6 @@ export function RequestApprovalDialog({
       )
       setOpen(false)
       setMessage('')
-      setOwnerName('')
       setAccountManagerEmail('')
       router.refresh()
     } catch (e) {
@@ -119,35 +111,20 @@ export function RequestApprovalDialog({
             <DialogTitle>Freigabe anfordern</DialogTitle>
           </DialogHeader>
           <div className="rounded-lg border border-sky-200/80 bg-sky-50/60 p-3 text-xs leading-relaxed text-sky-950 dark:border-sky-500/25 dark:bg-sky-500/10 dark:text-sky-100">
-            <p className="font-medium">Anfrage an den Account Manager — nicht an den Kunden.</p>
+            <p className="font-medium">Interne Prüfung beim Account Manager anstoßen</p>
             <p className="mt-1 text-sky-900/90 dark:text-sky-100/85">
-              Sales reicht hier zur internen Prüfung ein. Der Account Manager wählt später den
-              Kundenkontakt und sendet den Freigabe-Link. Zitat, Scope und Ablauf bleiben in der
-              Referenz bzw. unter Einstellungen hinterlegt.
+              Mit dieser Anfrage leiten Sie die Referenz zur internen Prüfung weiter — nicht direkt
+              an den Kunden. Der Account Manager erhält eine E-Mail, prüft die Referenz und bereitet
+              danach die Kundenfreigabe vor (Kontaktwahl und Versand des Freigabe-Links). Scope,
+              Zitat und Fristen sind an der Referenz bzw. in den Einstellungen hinterlegt.
             </p>
           </div>
           <div className="grid gap-5 py-2">
             <div className="grid gap-2">
-              <Label htmlFor="approval-owner">
-                Interner Verantwortlicher bei der Freigabe
+              <Label htmlFor="approval-am-email">
+                E-Mail des Account Managers
                 <RequiredMark />
               </Label>
-              <Input
-                id="approval-owner"
-                value={ownerName}
-                onChange={(e) => setOwnerName(e.target.value)}
-                placeholder="Name der Person, die intern die Freigabe koordiniert"
-                disabled={loading}
-                required
-                autoComplete="name"
-              />
-              <p className="text-xs text-muted-foreground">
-                Name des Sales-Verantwortlichen — wird intern gespeichert und in der Benachrichtigung
-                genannt.
-              </p>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="approval-am-email">E-Mail des Account Managers</Label>
               <Input
                 id="approval-am-email"
                 type="email"
@@ -155,12 +132,9 @@ export function RequestApprovalDialog({
                 onChange={(e) => setAccountManagerEmail(e.target.value)}
                 placeholder="account.manager@firma.de"
                 disabled={loading}
+                required
                 autoComplete="email"
               />
-              <p className="text-xs text-muted-foreground">
-                Optional, aber empfohlen: Empfänger der Benachrichtigung. Ohne Angabe wird der am
-                Account hinterlegte Freigabe-Kontakt verwendet (falls vorhanden).
-              </p>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="approval-msg">Nachricht an den Account Manager (optional)</Label>

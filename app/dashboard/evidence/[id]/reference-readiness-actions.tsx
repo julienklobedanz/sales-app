@@ -54,7 +54,6 @@ type Props = {
   existingSharePath: string | null
   canStartApproval: boolean
   canInternalApprove: boolean
-  defaultInternalOwnerName?: string | null
   defaultAccountManagerEmail?: string | null
   autoOpenApprovalDialog?: boolean
   approvalContactId: string | null
@@ -69,7 +68,6 @@ export function ReferenceReadinessActions({
   existingSharePath,
   canStartApproval,
   canInternalApprove,
-  defaultInternalOwnerName,
   defaultAccountManagerEmail,
   autoOpenApprovalDialog = false,
   approvalContactId,
@@ -248,7 +246,6 @@ export function ReferenceReadinessActions({
         <div className="w-full max-w-sm transition-opacity duration-200">
           <RequestApprovalDialog
             referenceId={referenceId}
-            defaultInternalOwnerName={defaultInternalOwnerName}
             defaultAccountManagerEmail={defaultAccountManagerEmail}
             triggerId="reference-readiness-approval-trigger"
             triggerVariant="default"
@@ -292,7 +289,6 @@ export function ReferenceReadinessActions({
           <div className="w-full max-w-sm transition-opacity duration-200">
             <RequestApprovalDialog
               referenceId={referenceId}
-              defaultInternalOwnerName={defaultInternalOwnerName}
               defaultAccountManagerEmail={defaultAccountManagerEmail}
               triggerId="reference-readiness-withdrawn-restart-trigger"
               triggerVariant="default"

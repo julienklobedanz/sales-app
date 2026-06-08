@@ -12,6 +12,7 @@ import { getPortfolioManageAndPreviewUrlsForApprovalEmail } from '@/app/dashboar
 import { parseOrgPublicLinkPolicy } from '@/lib/organization-link-policy'
 import { ensureApprovalRecipientFromInputImpl } from '@/app/dashboard/references/approval-contacts'
 import { canStartApprovalWorkflow } from '@/lib/references/approval-workflow'
+import { isApprovalRecipientEmail } from '@/lib/references/approval-recipient-input'
 
 function getResend(): Resend | null {
   const key = process.env.RESEND_API_KEY
@@ -115,10 +116,14 @@ async function sendClientApprovalEmail(args: {
   const patch: {
     approval_token: string
     customer_approval_status: string
+    approval_internal_status: string
+    approval_internal_reviewed_at: string
     approval_internal_reviewer_id?: string
   } = {
     approval_token: newToken,
     customer_approval_status: 'pending',
+    approval_internal_status: 'approved_internal',
+    approval_internal_reviewed_at: new Date().toISOString(),
   }
   if (args.internalReviewerId) {
     patch.approval_internal_reviewer_id = args.internalReviewerId
@@ -461,6 +466,11 @@ export async function submitForApprovalImpl(
       ? (profile as { full_name: string }).full_name.trim()
       : ''
 
+  const accountManagerEmail = options?.accountManagerEmail?.trim() ?? ''
+  if (!accountManagerEmail || !isApprovalRecipientEmail(accountManagerEmail)) {
+    throw new Error('Bitte eine gültige E-Mail-Adresse des Account Managers angeben.')
+  }
+
   let workflowSettingsUnknown: unknown = null
   if (organizationId) {
     const { data: org } = await supabase
@@ -576,7 +586,7 @@ export async function submitForApprovalImpl(
     accountCompanyId: ref.company_id,
     accountCompanyName: companyName,
     requesterName,
-    accountManagerEmail: options?.accountManagerEmail?.trim() || null,
+    accountManagerEmail,
     message: options?.message?.trim() || null,
   })
   await logEventForCurrentOrg({
@@ -724,6 +734,11 @@ export async function approveInternalAndSendImpl(
   }
 
   await logEventForCurrentOrg({
+    eventType: 'internal_approval_decided',
+    referenceId,
+    payload: { decision: 'approved_internal' },
+  })
+  await logEventForCurrentOrg({
     eventType: 'customer_approval_requested',
     referenceId,
     payload: {},
@@ -855,8 +870,9 @@ export async function resendClientApprovalEmailImpl(referenceId: string) {
 
   const ref = row as unknown as ReferenceApprovalRow
 
-  if (ref.customer_approval_status !== 'pending') {
-    throw new Error('Es liegt keine ausstehende Kunden-Freigabe vor.')
+  const customerStatus = String(ref.customer_approval_status ?? '').toLowerCase()
+  if (customerStatus !== 'pending' && customerStatus !== 'approved') {
+    throw new Error('Es liegt keine aktive Kunden-Freigabe vor.')
   }
 
   const canResend =

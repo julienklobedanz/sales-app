@@ -65,6 +65,29 @@ describe('resolveReferenceReadinessState', () => {
     expect(s.badge.label).toBe('Extern nutzbar')
   })
 
+  it('approved with public scope → Vollständig freigegeben', () => {
+    const s = resolveReferenceReadinessState({
+      ...base,
+      referenceStatus: 'external',
+      customerApprovalStatus: 'approved',
+      isApprovalGranted: true,
+      approvalScopeLogoUse: true,
+    })
+    expect(s.badge.label).toBe('Vollständig freigegeben')
+  })
+
+  it('approved with confidential scope → Freigabe ohne Ref. Calls', () => {
+    const s = resolveReferenceReadinessState({
+      ...base,
+      referenceStatus: 'external',
+      customerApprovalStatus: 'approved',
+      isApprovalGranted: true,
+      approvalScopeConfidentialSales: true,
+      approvalScopeLogoUse: false,
+    })
+    expect(s.badge.label).toBe('Freigabe ohne Ref. Calls')
+  })
+
   it('approved with ref call scope', () => {
     const s = resolveReferenceReadinessState({
       ...base,
@@ -74,7 +97,7 @@ describe('resolveReferenceReadinessState', () => {
       approvalScopeReferenceCall: true,
     })
     expect(s.phase).toBe('approved')
-    expect(s.badge.label).toBe('Bereit für Ref. Calls')
+    expect(s.badge.label).toBe('Freigabe mit Ref. Calls')
     expect(s.showMagicLink).toBe(true)
   })
 

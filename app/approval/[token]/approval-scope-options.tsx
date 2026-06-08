@@ -171,24 +171,24 @@ export function ApprovalScopeOptions({
                 id="scope-public-marketing"
                 checked={scope.namentlichPublic}
                 disabled={disabled}
-                title="Öffentliche Marketing-Nutzung"
-                description="Erlaubt die Nutzung von Logo, Case Study und Zitaten auf unserer Website, in Präsentationen und Social Media."
+                title="Öffentliche Nutzung"
+                description="Erlaubt die Nutzung des Logos meiner Firma, sowie der Case Study und meiner hier angegebenen Zitate auf Websites, in Präsentationen, auf Social Media, sowie Pressemitteilungen."
                 onCheckedChange={(checked) => onChange({ ...scope, namentlichPublic: checked })}
               />
               <ScopeSubOption
                 id="scope-confidential-sales"
                 checked={scope.namentlichConfidential}
                 disabled={disabled}
-                title="Vertrauliche 1:1 Sales-Nutzung"
-                description="Die Referenz wird ausschließlich in direkten, vertraulichen Gesprächen mit ausgewählten Interessenten (unter NDA) genutzt."
+                title="Nicht-öffentliche Nutzung"
+                description="Die Referenz darf ausschließlich in Gesprächen oder virtueller Kommunikation mit anderen Interessenten bzw. Neukunden unter NDA genutzt werden."
                 onCheckedChange={(checked) => onChange({ ...scope, namentlichConfidential: checked })}
               />
               <ScopeSubOption
                 id="scope-reference-calls"
                 checked={scope.referenceCallsEnabled}
                 disabled={disabled}
-                title="Bereitschaft für Reference Calls (Peer-to-Peer)"
-                description="Sie sind bereit, gelegentlich (z. B. 10–15 Min.) für einen kurzen Erfahrungsaustausch mit anderen Entscheidern zur Verfügung zu stehen."
+                title="Bereitschaft für Reference Calls"
+                description="Wären Sie bereit, gelegentlich (z. B. 10–15 Min.) für einen kurzen Erfahrungsaustausch mit anderen Entscheidern zur Verfügung zu stehen?"
                 onCheckedChange={(checked) =>
                   onChange({
                     ...scope,

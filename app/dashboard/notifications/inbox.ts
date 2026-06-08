@@ -15,9 +15,13 @@ export type DashboardNotificationItem = {
   read: boolean
 }
 
+/** Market-Signals älter als X Tage nicht mehr in der Bell (verhindert „6 ungelesen“ von Demo-Daten). */
+const MARKET_SIGNAL_INBOX_MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000
+
 /** Freigaben für die Notification-Bell (kein Activity-Spam wie „Referenz angesehen“). */
 const INBOX_EVENT_TYPES = [
   'reference_approval_responded',
+  'reference_approval_updated',
   'customer_approval_requested',
   'internal_approval_decided',
 ] as const
@@ -77,7 +81,18 @@ function mapEventToCopy(eventType: string, row: EventRowForCopy): InboxCandidate
       text,
       href: row.reference_id ? ROUTES.evidence.detail(row.reference_id) : ROUTES.evidence.root,
       createdAt: row.created_at,
-      priority: 4,
+      priority: 1,
+    }
+  }
+
+  if (eventType === 'reference_approval_updated') {
+    return {
+      id: `approval:${row.id}`,
+      title: 'Kunden-Freigabe angepasst',
+      text: `Der Kunde hat Anmerkungen oder den Freigabe-Umfang bei „${refTitle}“ geändert.`,
+      href: row.reference_id ? ROUTES.evidence.detail(row.reference_id) : ROUTES.evidence.root,
+      createdAt: row.created_at,
+      priority: 1,
     }
   }
 
@@ -85,26 +100,27 @@ function mapEventToCopy(eventType: string, row: EventRowForCopy): InboxCandidate
     return {
       id: `approval:${row.id}`,
       title: 'Kunden-Freigabe angefragt',
-      text: `Freigabe-E-Mail für „${refTitle}“ wurde versendet (oder Anfrage gespeichert).`,
+      text: `Freigabe-E-Mail für „${refTitle}“ wurde an den Kunden versendet.`,
       href: row.reference_id ? ROUTES.evidence.detail(row.reference_id) : ROUTES.evidence.root,
       createdAt: row.created_at,
-      priority: 4,
+      priority: 1,
     }
   }
 
   if (eventType === 'internal_approval_decided') {
     const d = String(payload.decision ?? '')
     let detail = 'Entscheidung liegt vor.'
-    if (d === 'approve_external') detail = 'Freigabe: extern nutzbar.'
+    if (d === 'approved_internal') detail = 'Intern freigegeben — Kundenlink wurde versendet.'
+    else if (d === 'approve_external') detail = 'Freigabe: extern nutzbar.'
     else if (d === 'approve_internal') detail = 'Freigabe: nur intern.'
-    else if (d === 'reject') detail = 'Anfrage abgelehnt.'
+    else if (d === 'reject' || d === 'rejected') detail = 'Anfrage abgelehnt.'
     return {
       id: `approval:${row.id}`,
       title: 'Interne Freigabe',
       text: `„${refTitle}“: ${detail}`,
       href: row.reference_id ? ROUTES.evidence.detail(row.reference_id) : ROUTES.evidence.root,
       createdAt: row.created_at,
-      priority: 4,
+      priority: 1,
     }
   }
 
@@ -303,14 +319,25 @@ export async function getInboxNotificationsImpl(
   const ndaCandidates =
     role === 'admin' ? await fetchNdaExpiryInboxCandidates(supabase, orgId) : []
 
+  const nowMs = Date.now()
+  const isMarketSignal = (id: string) =>
+    id.startsWith('market_exec:') || id.startsWith('market_news:')
+
   const merged = [...ndaCandidates, ...executiveCandidates, ...newsCandidates, ...approvalCandidates]
+    .filter((entry) => {
+      if (!isMarketSignal(entry.id)) return true
+      const ageMs = nowMs - new Date(entry.createdAt).getTime()
+      return ageMs <= MARKET_SIGNAL_INBOX_MAX_AGE_MS
+    })
     .sort((a, b) => {
-      if (a.priority !== b.priority) return a.priority - b.priority
       const aNda = a.id.startsWith('nda_expiry:')
       const bNda = b.id.startsWith('nda_expiry:')
       if (aNda && bNda) {
+        if (a.priority !== b.priority) return a.priority - b.priority
         return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
       }
+      if (aNda) return -1
+      if (bNda) return 1
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     })
     .slice(0, 80)

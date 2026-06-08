@@ -10,14 +10,14 @@ type Props = {
   role: 'admin' | 'sales' | 'account_manager'
   referenceStatus: string
   canStart: boolean
-  defaultInternalOwnerName?: string | null
+  defaultAccountManagerEmail?: string | null
   autoOpen?: boolean
 }
 
 export function ReferenceReadinessApproval({
   referenceId,
   canStart,
-  defaultInternalOwnerName,
+  defaultAccountManagerEmail,
   autoOpen = false,
 }: Props) {
   useEffect(() => {
@@ -33,7 +33,7 @@ export function ReferenceReadinessApproval({
   return (
     <RequestApprovalDialog
       referenceId={referenceId}
-      defaultInternalOwnerName={defaultInternalOwnerName}
+      defaultAccountManagerEmail={defaultAccountManagerEmail}
       triggerIcon={<AppIcon icon={Mail} size={16} />}
       triggerId="reference-readiness-approval-trigger"
       triggerVariant="default"
