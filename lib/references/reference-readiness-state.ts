@@ -337,11 +337,11 @@ export function resolveWorkflowStatusBadges(input: {
       isApprovalGranted: true,
       canStartApproval: false,
       canInternalApprove: false,
-      approvalScopeNamedMention: input.approvalScopeNamedMention,
-      approvalScopeAnonymousMention: input.approvalScopeAnonymousMention,
-      approvalScopeReferenceCall: input.approvalScopeReferenceCall,
-      approvalScopeConfidentialSales: input.approvalScopeConfidentialSales,
-      approvalScopeLogoUse: input.approvalScopeLogoUse,
+      approvalScopeNamedMention: input.approvalScopeNamedMention ?? null,
+      approvalScopeAnonymousMention: input.approvalScopeAnonymousMention ?? null,
+      approvalScopeReferenceCall: input.approvalScopeReferenceCall ?? null,
+      approvalScopeConfidentialSales: input.approvalScopeConfidentialSales ?? null,
+      approvalScopeLogoUse: input.approvalScopeLogoUse ?? null,
       referenceIsInternalOnly: input.referenceIsInternalOnly ?? false,
     })
   } else if (customer === 'rejected' || customerRaw === 'rejected') {
