@@ -17,6 +17,7 @@ import { ShareOwnerContactCard } from './share-owner-contact-card'
 import { PortfolioUnlockGate } from './portfolio-unlock-gate'
 import { PublicPortfolioFooter } from './public-portfolio-footer'
 import { ShowcaseSingleReference } from './showcase-single-reference'
+import { resolveApprovalEditUrlForManageView } from '@/lib/references/resolve-approval-edit-url-for-manage'
 import { Lock } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -147,10 +148,16 @@ export default async function PublicPortfolioPage({
   await incrementPortfolioViews(slug)
 
   if (result.references.length === 1 && branding.found) {
+    const singleRef = result.references[0]!
+    const approvalEditUrl =
+      revokeMode && result.canDeactivate && manageToken
+        ? await resolveApprovalEditUrlForManageView(slug, manageToken, singleRef.id)
+        : null
+
     return (
       <ShowcaseSingleReference
         slug={slug}
-        reference={result.references[0]!}
+        reference={singleRef}
         branding={{
           name: branding.name,
           logo_url: branding.logo_url,
@@ -166,6 +173,8 @@ export default async function PublicPortfolioPage({
         shareOwnerBookingUrl={shareOwner.found ? shareOwner.booking_url : null}
         canDeactivate={result.canDeactivate}
         revokeMode={revokeMode}
+        approvalEditUrl={approvalEditUrl}
+        showApprovalEdit={Boolean(approvalEditUrl)}
       />
     )
   }

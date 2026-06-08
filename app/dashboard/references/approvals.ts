@@ -12,6 +12,7 @@ import { getPortfolioManageAndPreviewUrlsForApprovalEmail } from '@/app/dashboar
 import { parseOrgPublicLinkPolicy } from '@/lib/organization-link-policy'
 import { ensureApprovalRecipientFromInputImpl } from '@/app/dashboard/references/approval-contacts'
 import { canStartApprovalWorkflow } from '@/lib/references/approval-workflow'
+import { hasActiveCustomerApprovalWorkflow } from '@/lib/references/effective-customer-approval'
 import { isApprovalRecipientEmail } from '@/lib/references/approval-recipient-input'
 
 function getResend(): Resend | null {
@@ -858,6 +859,7 @@ export async function resendClientApprovalEmailImpl(referenceId: string) {
       customer_approval_status,
       approval_reference_status_snapshot,
       approval_requested_by,
+      approval_requested_at,
       approval_contact_id,
       approval_external_contact_id,
       companies ( name )
@@ -868,10 +870,11 @@ export async function resendClientApprovalEmailImpl(referenceId: string) {
 
   if (fetchError || !row) throw new Error('Referenz nicht gefunden')
 
-  const ref = row as unknown as ReferenceApprovalRow
+  const ref = row as unknown as ReferenceApprovalRow & {
+    approval_requested_at?: string | null
+  }
 
-  const customerStatus = String(ref.customer_approval_status ?? '').toLowerCase()
-  if (customerStatus !== 'pending' && customerStatus !== 'approved') {
+  if (!hasActiveCustomerApprovalWorkflow(ref.customer_approval_status, ref.status)) {
     throw new Error('Es liegt keine aktive Kunden-Freigabe vor.')
   }
 
@@ -890,10 +893,18 @@ export async function resendClientApprovalEmailImpl(referenceId: string) {
     .update({
       approval_token: newToken,
       approval_requested_at: new Date().toISOString(),
+      customer_approval_status: 'pending',
+      approval_responded_at: null,
     })
     .eq('id', referenceId)
 
   if (updateError) throw new Error(updateError.message)
+
+  await supabase
+    .from('approvals')
+    .update({ status: 'pending' })
+    .eq('reference_id', referenceId)
+    .in('status', ['approved', 'rejected'])
 
   revalidatePath(ROUTES.home)
   revalidatePath(ROUTES.evidence.detail(referenceId))

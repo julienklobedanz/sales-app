@@ -53,7 +53,7 @@ describe('resolveReferenceReadinessState', () => {
     expect(s.showWithdraw).toBe(true)
   })
 
-  it('external without customer approval → extern nutzbar badge', () => {
+  it('legacy external without customer_approval_status → treated as approved', () => {
     const s = resolveReferenceReadinessState({
       ...base,
       referenceStatus: 'external',
@@ -62,7 +62,8 @@ describe('resolveReferenceReadinessState', () => {
       isApprovalGranted: true,
     })
     expect(s.phase).toBe('approved')
-    expect(s.badge.label).toBe('Extern nutzbar')
+    expect(s.badge.label).toBe('Namentlich freigegeben')
+    expect(s.showMagicLink).toBe(true)
   })
 
   it('approved with public scope → Vollständig freigegeben', () => {

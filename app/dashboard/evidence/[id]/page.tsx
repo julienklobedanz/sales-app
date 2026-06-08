@@ -359,6 +359,7 @@ export default async function EvidenceDetailPage({
   const workflowStatusBadges = resolveWorkflowStatusBadges({
     internalApprovalStatus: internalApproval,
     customerApprovalStatus: ref.customer_approval_status,
+    referenceStatus: normalizedStatus,
     approvalRequestedAt: ref.approval_requested_at,
     approvalScopeNamedMention: ref.approval_scope_named_mention,
     approvalScopeAnonymousMention: ref.approval_scope_anonymous_mention,

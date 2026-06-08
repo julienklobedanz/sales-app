@@ -125,8 +125,12 @@ export function ApprovalPendingActions({
 
   function onResend() {
     startTransition(async () => {
-      await resendClientApprovalEmail(referenceId)
-      toast.success('Neuer Freigabe-Link ist aktiv. Bitte manuell an den Kunden senden.')
+      try {
+        await resendClientApprovalEmail(referenceId)
+        toast.success('Neuer Freigabe-Link ist aktiv. Bitte manuell an den Kunden senden.')
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Freigabe-Link konnte nicht erneuert werden.')
+      }
     })
   }
 

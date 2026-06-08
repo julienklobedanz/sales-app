@@ -14,6 +14,7 @@ import { ApprovalCaseDataBar } from './approval-case-data-bar'
 import { ApprovalReferenceSections } from './approval-reference-sections'
 import { ApprovalDelegateDialog } from './approval-delegate-dialog'
 import { customerApprovalScopeFromDb } from '@/lib/references/customer-approval-scope'
+import { effectiveCustomerApprovalStatus } from '@/lib/references/effective-customer-approval'
 
 function InvalidLink() {
   return (
@@ -112,10 +113,14 @@ export default async function ApprovalPage({
     }
   }
 
+  const effectiveCustomer = effectiveCustomerApprovalStatus(
+    row.customer_approval_status,
+    row.status
+  )
   const pending =
-    row.customer_approval_status === 'pending' ||
+    effectiveCustomer === 'pending' ||
     (row.customer_approval_status == null && String(row.status ?? '') === 'pending')
-  const approved = row.customer_approval_status === 'approved'
+  const approved = effectiveCustomer === 'approved'
   const nowTs = new Date().getTime()
   const isExpired =
     !!row.approval_expires_at && new Date(String(row.approval_expires_at)).getTime() < nowTs

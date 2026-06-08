@@ -207,10 +207,14 @@ export function ReferenceReadinessActions({
 
   function onRegenerateLink() {
     startTransition(async () => {
-      await resendClientApprovalEmail(referenceId)
-      setRegenerateOpen(false)
-      toast.success('Neuer Link ist aktiv. Bitte erneut kopieren und versenden.')
-      router.refresh()
+      try {
+        await resendClientApprovalEmail(referenceId)
+        setRegenerateOpen(false)
+        toast.success('Neuer Link ist aktiv. Bitte erneut kopieren und versenden.')
+        router.refresh()
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Freigabe-Link konnte nicht erneuert werden.')
+      }
     })
   }
 
@@ -434,8 +438,8 @@ export function ReferenceReadinessActions({
           <AlertDialogHeader>
             <AlertDialogTitle>Neuen Freigabelink erzeugen?</AlertDialogTitle>
             <AlertDialogDescription>
-              Der bisherige Link verliert damit seine Gültigkeit. Sie müssen den neuen Magic Link erneut
-              an den Kunden senden.
+              Der bisherige Link verliert damit seine Gültigkeit und die Kundenfreigabe wird auf
+              „ausstehend“ zurückgesetzt. Bitte senden Sie den neuen Magic Link erneut an den Kunden.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

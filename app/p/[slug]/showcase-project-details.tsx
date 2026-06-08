@@ -40,11 +40,15 @@ export function ShowcaseProjectDetails({
   slug,
   shareOwnerEmail,
   bookingUrl,
+  approvalEditUrl,
+  showApprovalEdit,
 }: {
   reference: PublicReference
   slug: string
   shareOwnerEmail: string | null
   bookingUrl: string | null
+  approvalEditUrl?: string | null
+  showApprovalEdit?: boolean
 }) {
   const contractType = formatContractTypeDisplay(reference.contract_type) || '—'
   const projectStatus =
@@ -88,6 +92,8 @@ export function ShowcaseProjectDetails({
           slug={slug}
           shareOwnerEmail={shareOwnerEmail}
           bookingUrl={bookingUrl}
+          approvalEditUrl={approvalEditUrl}
+          showApprovalEdit={showApprovalEdit}
         />
       </div>
     </aside>

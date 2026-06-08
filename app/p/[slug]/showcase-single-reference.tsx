@@ -30,6 +30,8 @@ export function ShowcaseSingleReference({
   shareOwnerBookingUrl,
   canDeactivate,
   revokeMode,
+  approvalEditUrl,
+  showApprovalEdit,
 }: {
   slug: string
   reference: PublicReference
@@ -43,6 +45,8 @@ export function ShowcaseSingleReference({
   shareOwnerBookingUrl: string | null
   canDeactivate: boolean
   revokeMode: boolean
+  approvalEditUrl?: string | null
+  showApprovalEdit?: boolean
 }) {
   const vol = formatReferenceVolume(reference.volume_eur) || '—'
   const start =
@@ -140,6 +144,8 @@ export function ShowcaseSingleReference({
             slug={slug}
             shareOwnerEmail={shareOwnerEmail}
             bookingUrl={shareOwnerBookingUrl}
+            approvalEditUrl={approvalEditUrl}
+            showApprovalEdit={showApprovalEdit}
           />
         </div>
       </div>

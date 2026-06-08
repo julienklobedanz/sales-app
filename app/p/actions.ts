@@ -31,6 +31,8 @@ export type PublicReference = {
   duration_months: number | null
   approval_quote_approved: string | null
   approval_reference_giver_name: string | null
+  /** Nur bei gültigem Sperr-Link (?manage=…) — für „Meine Freigabe bearbeiten“. */
+  approval_token?: string | null
 }
 
 export type PublicPortfolioResult =

@@ -1,3 +1,5 @@
+import { effectiveCustomerApprovalStatus } from '@/lib/references/effective-customer-approval'
+
 /** UI-Zustände der Freigabestatus-Card (Detailansicht). */
 
 export type ReferenceReadinessPhase =
@@ -102,17 +104,20 @@ export function resolveReferenceReadinessState(
   input: ReferenceReadinessStateInput
 ): ReferenceReadinessState {
   const internal = input.internalApprovalStatus.toLowerCase()
-  const customer = String(input.customerApprovalStatus ?? '').toLowerCase()
+  const customer = effectiveCustomerApprovalStatus(
+    input.customerApprovalStatus,
+    input.referenceStatus
+  )
   const status = input.referenceStatus.toLowerCase()
 
   if (input.staleInternalPending) {
-    const customerApproved = customer === 'approved'
-    const badge = customerApproved
-      ? approvedScopeBadge(input)
-      : {
-          label: 'Extern nutzbar',
-          className: 'border-slate-200 bg-slate-100 text-slate-700',
-        }
+    const badge =
+      customer === 'approved'
+        ? approvedScopeBadge(input)
+        : {
+            label: 'Freigegeben',
+            className: 'border-emerald-200/80 bg-emerald-50 text-emerald-800',
+          }
 
     return {
       phase: 'approved',
@@ -140,7 +145,7 @@ export function resolveReferenceReadinessState(
     }
   }
 
-  if (customer === 'rejected') {
+  if (customer === 'rejected' || String(input.customerApprovalStatus ?? '').toLowerCase() === 'rejected') {
     return {
       phase: 'rejected',
       badge: {
@@ -155,7 +160,7 @@ export function resolveReferenceReadinessState(
     }
   }
 
-  if (customer === 'expired') {
+  if (customer === 'expired' || String(input.customerApprovalStatus ?? '').toLowerCase() === 'expired') {
     return {
       phase: 'expired',
       badge: {
@@ -185,18 +190,8 @@ export function resolveReferenceReadinessState(
     }
   }
 
-  const customerApproved = customer === 'approved'
-  const referenceStageExternal =
-    status === 'external' || status === 'approved' || input.isApprovalGranted
-
-  if (customerApproved || referenceStageExternal) {
-    const badge =
-      customerApproved
-        ? approvedScopeBadge(input)
-        : {
-            label: 'Extern nutzbar',
-            className: 'border-slate-200 bg-slate-100 text-slate-700',
-          }
+  if (customer === 'approved') {
+    const badge = approvedScopeBadge(input)
 
     return {
       phase: 'approved',
@@ -281,6 +276,7 @@ export type WorkflowStatusBadge = ReadinessBadge
 export function resolveWorkflowStatusBadges(input: {
   internalApprovalStatus: string
   customerApprovalStatus: string | null
+  referenceStatus?: string | null
   approvalRequestedAt: string | null
   approvalScopeNamedMention?: boolean | null
   approvalScopeAnonymousMention?: boolean | null
@@ -292,7 +288,11 @@ export function resolveWorkflowStatusBadges(input: {
   if (!input.approvalRequestedAt?.trim()) return null
 
   const internal = input.internalApprovalStatus.toLowerCase()
-  const customer = String(input.customerApprovalStatus ?? '').toLowerCase()
+  const customer = effectiveCustomerApprovalStatus(
+    input.customerApprovalStatus,
+    input.referenceStatus
+  )
+  const customerRaw = String(input.customerApprovalStatus ?? '').toLowerCase()
 
   let internalBadge: WorkflowStatusBadge
   switch (internal) {
@@ -329,7 +329,7 @@ export function resolveWorkflowStatusBadges(input: {
     }
   } else if (customer === 'approved') {
     customerBadge = approvedScopeBadge({
-      referenceStatus: 'external',
+      referenceStatus: input.referenceStatus ?? 'external',
       internalApprovalStatus: internal,
       customerApprovalStatus: 'approved',
       approvalRequestedAt: input.approvalRequestedAt,
@@ -344,12 +344,12 @@ export function resolveWorkflowStatusBadges(input: {
       approvalScopeLogoUse: input.approvalScopeLogoUse,
       referenceIsInternalOnly: input.referenceIsInternalOnly ?? false,
     })
-  } else if (customer === 'rejected') {
+  } else if (customer === 'rejected' || customerRaw === 'rejected') {
     customerBadge = {
       label: 'Vom Kunden abgelehnt',
       className: 'border-red-200 bg-red-50 text-red-700',
     }
-  } else if (customer === 'expired') {
+  } else if (customer === 'expired' || customerRaw === 'expired') {
     customerBadge = {
       label: 'Kundenfrist abgelaufen',
       className: 'border-orange-200 bg-orange-50 text-orange-800',

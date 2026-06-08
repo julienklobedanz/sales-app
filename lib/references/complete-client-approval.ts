@@ -4,6 +4,7 @@ import {
   type CustomerApprovalScopeSelection,
 } from '@/lib/references/customer-approval-scope'
 import { sendClientApprovalConfirmationEmail } from '@/lib/references/client-approval-confirmation-email'
+import { effectiveCustomerApprovalStatus } from '@/lib/references/effective-customer-approval'
 
 export type CompleteClientApprovalParams = {
   token: string
@@ -87,15 +88,19 @@ export async function completeClientApprovalWithAdmin(
     return { success: false, error: 'invalid_token' }
   }
 
-  const customerStatus = ref.customer_approval_status
   const statusText = String(ref.status ?? '')
+  const effectiveCustomer = effectiveCustomerApprovalStatus(
+    ref.customer_approval_status,
+    ref.status
+  )
   const isPending =
-    customerStatus === 'pending' || (customerStatus == null && statusText === 'pending')
-  const isApproved = customerStatus === 'approved'
+    effectiveCustomer === 'pending' ||
+    (ref.customer_approval_status == null && statusText === 'pending')
+  const isApproved = effectiveCustomer === 'approved'
   const isUpdate = isApproved && params.decision === 'approved'
 
   if (!isPending && !isUpdate) {
-    if (customerStatus === 'rejected') {
+    if (effectiveCustomer === 'rejected') {
       return { success: false, error: 'already_decided' }
     }
     if (isApproved && params.decision === 'rejected') {
