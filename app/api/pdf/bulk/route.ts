@@ -70,6 +70,9 @@ export async function POST(req: NextRequest) {
       project_status,
       project_start,
       project_end,
+      approval_quote_approved,
+      approval_reference_giver_name,
+      approval_reference_giver_title,
       company_id,
       companies ( name, logo_url )
     `)
@@ -127,6 +130,9 @@ export async function POST(req: NextRequest) {
         project_end: row.project_end ?? null,
         project_status: row.project_status ?? null,
       }),
+      approval_quote_approved: row.approval_quote_approved ?? null,
+      approval_reference_giver_name: row.approval_reference_giver_name ?? null,
+      approval_reference_giver_title: row.approval_reference_giver_title ?? null,
     }
   })
 

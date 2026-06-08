@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
-  estimateBodyHeightInches,
+  clipExecutiveSummary,
+  clipPptxBullet,
+  estimateBulletBlockHeight,
+  extractChallengeBulletsForPptx,
+  extractSolutionBulletsForPptx,
   normalizePptxFlowText,
-  pickOnepagerBodyFontPt,
+  resolveStatusPill,
 } from './reference-onepager-pptx'
 
 describe('reference-onepager-pptx', () => {
@@ -11,48 +15,54 @@ describe('reference-onepager-pptx', () => {
     expect(normalizePptxFlowText(raw)).toBe('Line one continued thought\n• Bullet A\n• Bullet B')
   })
 
-  it('pickOnepagerBodyFontPt returns preferred size for short copy', () => {
-    const pt = pickOnepagerBodyFontPt({
-      summary: 'Kurze Zusammenfassung.',
-      projektDetails: 'Volumen: 1 Mio',
-      challenge: '• Punkt eins',
-      solution: 'Kurze Lösung.',
-      leftW: 4.35,
-      rightW: 4.55,
-      maxRow1Body: 1.2,
-      row1BodyY: 2,
-      contentBottomY: 5.1,
-      gapBetweenSections: 0.14,
-      sectionLabelH: 0.22,
-      gapAfterSectionTitle: 0.04,
-      minRow2Body: 0.22,
-    })
-    expect(pt).toBeGreaterThanOrEqual(5.5)
-    expect(pt).toBeLessThanOrEqual(10)
+  it('extractChallengeBulletsForPptx keeps at most five bullets', () => {
+    const bullets = extractChallengeBulletsForPptx(
+      '• One\n• Two\n• Three\n• Four\n• Five\n• Six should drop'
+    )
+    expect(bullets).toHaveLength(5)
   })
 
-  it('long solution text picks a font size below preferred', () => {
-    const longSolution =
-      'A cornerstone of this approach is a comprehensive modernization program spanning network core, edge, and operations. '.repeat(
-        6
-      )
-    const pt = pickOnepagerBodyFontPt({
-      summary: 'Summary text for the reference.',
-      projektDetails: 'Volumen: 20000000\nVertragsart: Festpreis',
-      challenge: '• Challenge one\n• Challenge two\n• Challenge three',
-      solution: longSolution,
-      leftW: 4.35,
-      rightW: 4.55,
-      maxRow1Body: 0.9,
-      row1BodyY: 1.85,
-      contentBottomY: 5.125,
-      gapBetweenSections: 0.14,
-      sectionLabelH: 0.22,
-      gapAfterSectionTitle: 0.04,
-      minRow2Body: 0.22,
-    })
-    expect(pt).toBeGreaterThanOrEqual(5)
-    expect(pt).toBeLessThanOrEqual(10)
-    expect(longSolution.includes('…')).toBe(false)
+  it('extractSolutionBulletsForPptx splits prose into five short sentence bullets', () => {
+    const prose =
+      'First sentence about scale. Second sentence about logistics. Third sentence about modernization. Fourth sentence about vendors. Fifth sentence about rollout. Sixth sentence should be ignored.'
+    const bullets = extractSolutionBulletsForPptx(prose)
+    expect(bullets).toHaveLength(5)
+    expect(bullets[0]).toContain('First sentence')
+    expect(bullets[4]).not.toContain('Sixth')
+  })
+
+  it('clipPptxBullet enforces 85 character limit with ellipsis', () => {
+    const clipped = clipPptxBullet('A'.repeat(120), 85)
+    expect(clipped.length).toBeLessThanOrEqual(85)
+    expect(clipped.endsWith('...')).toBe(true)
+  })
+
+  it('clipExecutiveSummary limits to roughly two lines', () => {
+    const long =
+      'Modernizing network infrastructure and operations to meet rising data demands, while unlocking measurable gains in energy efficiency across the entire enterprise footprint and vendor ecosystem.'
+    const clipped = clipExecutiveSummary(long, 120)
+    expect(clipped.endsWith('…')).toBe(true)
+    expect(clipped.length).toBeLessThanOrEqual(121)
+  })
+
+  it('resolveStatusPill uses green styling for completed projects', () => {
+    const pill = resolveStatusPill('approved', 'completed')
+    expect(pill.label).toBe('Abgeschlossen')
+    expect(pill.fill).toBe('ECFDF5')
+  })
+
+  it('resolveStatusPill falls back to reference status label', () => {
+    const pill = resolveStatusPill('draft', null)
+    expect(pill.label).toBe('Entwurf')
+    expect(pill.text).toBe('475569')
+  })
+
+  it('estimateBulletBlockHeight grows with more wrapped bullets', () => {
+    const short = estimateBulletBlockHeight(['Kurz.'], 5.5)
+    const long = estimateBulletBlockHeight(
+      ['Ein deutlich längerer Bulletpoint der über mehrere Zeilen umbrechen sollte.', 'Noch einer.'],
+      5.5
+    )
+    expect(long).toBeGreaterThan(short)
   })
 })

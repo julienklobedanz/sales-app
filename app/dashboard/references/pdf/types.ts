@@ -23,6 +23,9 @@ export type PdfReference = {
   project_start: string | null
   project_end: string | null
   duration_months: number | null
+  approval_quote_approved: string | null
+  approval_reference_giver_name: string | null
+  approval_reference_giver_title: string | null
 }
 
 export type PdfOrgBranding = {

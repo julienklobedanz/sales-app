@@ -69,6 +69,10 @@ export async function GET(req: NextRequest) {
     project_start: '2023-04-01',
     project_end: '2025-01-31',
     duration_months: 22,
+    approval_quote_approved:
+      'RefStack hat uns geholfen, die Infrastruktur in Rekordzeit zu modernisieren. Ein voller Erfolg.',
+    approval_reference_giver_name: 'John Doe',
+    approval_reference_giver_title: 'VP Infrastructure',
   }
 
   const exportedAtLabel = new Date().toLocaleDateString('de-DE', { dateStyle: 'long' })
