@@ -50,6 +50,18 @@ describe('canStartApprovalWorkflow', () => {
     ).toBe(true)
   })
 
+  it('allows admin to restart after withdraw even when reference status is external', () => {
+    expect(
+      canStartApprovalWorkflow({
+        ...base,
+        role: 'admin',
+        referenceStatus: 'external',
+        internalApprovalStatus: 'withdrawn_internal',
+        isApprovalGranted: false,
+      })
+    ).toBe(true)
+  })
+
   it('blocks when customer approval pending', () => {
     expect(
       canStartApprovalWorkflow({

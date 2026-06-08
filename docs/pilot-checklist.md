@@ -72,7 +72,7 @@ Stripe: in Settings vorhanden – Checkout/Portal nur nutzen, wenn `STRIPE_*` in
 
 - [ ] Resend-Domain **verifiziert**, Testmail an Kundenpostfach.
 - [ ] End-to-End: **Freigabe anfordern → Mail → `/approval/[token]`** durchspielen.
-- [ ] Klären: wer **intern freigibt** vs. **Kunde** (UI: Reference Readiness / Approval Actions).
+- [ ] Klären: wer **intern freigibt** vs. **Kunde** (UI: Freigabestatus / Approval Actions).
 
 ---
 

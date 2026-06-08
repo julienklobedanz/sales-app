@@ -10,10 +10,23 @@ export function canStartApprovalWorkflow(params: {
   staleInternalPending: boolean
   isApprovalGranted: boolean
 }): boolean {
-  if (params.isApprovalGranted || params.staleInternalPending) return false
-
   const internal = params.internalApprovalStatus.toLowerCase()
   const customer = String(params.customerApprovalStatus ?? '').toLowerCase()
+
+  if (internal === 'withdrawn_internal') {
+    if (customer === 'pending') return false
+    if (params.role === 'sales') {
+      const status = params.referenceStatus.toLowerCase()
+      return status === 'internal_only' || status === 'internal'
+    }
+    if (params.role === 'admin' || params.role === 'account_manager') {
+      return true
+    }
+    return false
+  }
+
+  if (params.isApprovalGranted || params.staleInternalPending) return false
+
   const workflowStarted = Boolean(params.approvalRequestedAt?.trim())
 
   if (internal === 'pending_internal' && workflowStarted) return false

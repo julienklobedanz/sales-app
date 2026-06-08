@@ -1,4 +1,4 @@
-/** UI-Zustände der Reference-Readiness-Card (Detailansicht). */
+/** UI-Zustände der Freigabestatus-Card (Detailansicht). */
 
 export type ReferenceReadinessPhase =
   | 'request_approval'
@@ -28,6 +28,8 @@ export type ReferenceReadinessStateInput = {
   approvalScopeNamedMention: boolean | null
   approvalScopeAnonymousMention: boolean | null
   approvalScopeReferenceCall: boolean | null
+  approvalScopeConfidentialSales?: boolean | null
+  approvalScopeLogoUse?: boolean | null
   referenceIsInternalOnly: boolean
 }
 
@@ -45,6 +47,8 @@ function approvedScopeBadge(input: ReferenceReadinessStateInput): ReadinessBadge
   const named = input.approvalScopeNamedMention ?? true
   const anonymous = input.approvalScopeAnonymousMention ?? true
   const refCall = input.approvalScopeReferenceCall ?? false
+  const confidential = input.approvalScopeConfidentialSales ?? false
+  const publicMarketing = input.approvalScopeLogoUse ?? false
 
   if (input.referenceIsInternalOnly) {
     return {
@@ -67,9 +71,23 @@ function approvedScopeBadge(input: ReferenceReadinessStateInput): ReadinessBadge
     }
   }
 
-  if (named && !refCall) {
+  if (confidential && !publicMarketing && named) {
     return {
-      label: 'Freigabe ohne Ref. Call',
+      label: 'Vertraulich freigegeben',
+      className: 'border-sky-200 bg-sky-50 text-sky-900',
+    }
+  }
+
+  if (publicMarketing && named) {
+    return {
+      label: 'Marketing freigegeben',
+      className: 'border-emerald-200/80 bg-emerald-50 text-emerald-800',
+    }
+  }
+
+  if (named) {
+    return {
+      label: 'Namentlich freigegeben',
       className: 'border-emerald-200/80 bg-emerald-50 text-emerald-800',
     }
   }
@@ -88,9 +106,17 @@ export function resolveReferenceReadinessState(
   const status = input.referenceStatus.toLowerCase()
 
   if (input.staleInternalPending) {
+    const customerApproved = customer === 'approved'
+    const badge = customerApproved
+      ? approvedScopeBadge(input)
+      : {
+          label: 'Extern nutzbar',
+          className: 'border-slate-200 bg-slate-100 text-slate-700',
+        }
+
     return {
       phase: 'approved',
-      badge: approvedScopeBadge(input),
+      badge,
       showPrimaryStart: false,
       showMagicLink: true,
       showRegenerateLink: true,
@@ -152,22 +178,29 @@ export function resolveReferenceReadinessState(
         className: 'border-amber-200 bg-amber-50 text-amber-900',
       },
       showPrimaryStart: false,
-      showMagicLink: false,
-      showRegenerateLink: false,
+      showMagicLink: true,
+      showRegenerateLink: true,
       showWithdraw: true,
       showStaleHint: false,
     }
   }
 
-  if (
-    input.isApprovalGranted ||
-    customer === 'approved' ||
-    status === 'external' ||
-    status === 'approved'
-  ) {
+  const customerApproved = customer === 'approved'
+  const referenceStageExternal =
+    status === 'external' || status === 'approved' || input.isApprovalGranted
+
+  if (customerApproved || referenceStageExternal) {
+    const badge =
+      customerApproved
+        ? approvedScopeBadge(input)
+        : {
+            label: 'Extern nutzbar',
+            className: 'border-slate-200 bg-slate-100 text-slate-700',
+          }
+
     return {
       phase: 'approved',
-      badge: approvedScopeBadge(input),
+      badge,
       showPrimaryStart: false,
       showMagicLink: true,
       showRegenerateLink: true,
@@ -240,4 +273,93 @@ export function resolveReferenceReadinessState(
 export function formatReadinessEmpty(value: string | null | undefined): string | null {
   const t = typeof value === 'string' ? value.trim() : ''
   return t.length > 0 ? t : null
+}
+
+export type WorkflowStatusBadge = ReadinessBadge
+
+/** Getrennte Anzeige Intern vs. Kunde in der Freigabestatus-Card. */
+export function resolveWorkflowStatusBadges(input: {
+  internalApprovalStatus: string
+  customerApprovalStatus: string | null
+  approvalRequestedAt: string | null
+  approvalScopeNamedMention?: boolean | null
+  approvalScopeAnonymousMention?: boolean | null
+  approvalScopeReferenceCall?: boolean | null
+  approvalScopeConfidentialSales?: boolean | null
+  approvalScopeLogoUse?: boolean | null
+  referenceIsInternalOnly?: boolean
+}): { internal: WorkflowStatusBadge; customer: WorkflowStatusBadge | null } | null {
+  if (!input.approvalRequestedAt?.trim()) return null
+
+  const internal = input.internalApprovalStatus.toLowerCase()
+  const customer = String(input.customerApprovalStatus ?? '').toLowerCase()
+
+  let internalBadge: WorkflowStatusBadge
+  switch (internal) {
+    case 'approved_internal':
+      internalBadge = {
+        label: 'Intern freigegeben',
+        className: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+      }
+      break
+    case 'rejected_internal':
+      internalBadge = {
+        label: 'Intern abgelehnt',
+        className: 'border-red-200 bg-red-50 text-red-700',
+      }
+      break
+    case 'withdrawn_internal':
+      internalBadge = {
+        label: 'Widerrufen',
+        className: 'border-slate-200 bg-slate-100 text-slate-600',
+      }
+      break
+    default:
+      internalBadge = {
+        label: 'Interne Prüfung ausstehend',
+        className: 'border-sky-200 bg-sky-50 text-sky-800',
+      }
+  }
+
+  let customerBadge: WorkflowStatusBadge | null = null
+  if (customer === 'pending') {
+    customerBadge = {
+      label: 'Wartet auf Kundenfreigabe',
+      className: 'border-amber-200 bg-amber-50 text-amber-900',
+    }
+  } else if (customer === 'approved') {
+    customerBadge = approvedScopeBadge({
+      referenceStatus: 'external',
+      internalApprovalStatus: internal,
+      customerApprovalStatus: 'approved',
+      approvalRequestedAt: input.approvalRequestedAt,
+      staleInternalPending: false,
+      isApprovalGranted: true,
+      canStartApproval: false,
+      canInternalApprove: false,
+      approvalScopeNamedMention: input.approvalScopeNamedMention,
+      approvalScopeAnonymousMention: input.approvalScopeAnonymousMention,
+      approvalScopeReferenceCall: input.approvalScopeReferenceCall,
+      approvalScopeConfidentialSales: input.approvalScopeConfidentialSales,
+      approvalScopeLogoUse: input.approvalScopeLogoUse,
+      referenceIsInternalOnly: input.referenceIsInternalOnly ?? false,
+    })
+  } else if (customer === 'rejected') {
+    customerBadge = {
+      label: 'Vom Kunden abgelehnt',
+      className: 'border-red-200 bg-red-50 text-red-700',
+    }
+  } else if (customer === 'expired') {
+    customerBadge = {
+      label: 'Kundenfrist abgelaufen',
+      className: 'border-orange-200 bg-orange-50 text-orange-800',
+    }
+  } else if (internal !== 'withdrawn_internal' && internal !== 'rejected_internal') {
+    customerBadge = {
+      label: 'Noch nicht gestartet',
+      className: 'border-slate-200 bg-slate-100 text-slate-600',
+    }
+  }
+
+  return { internal: internalBadge, customer: customerBadge }
 }

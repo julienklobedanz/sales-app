@@ -167,7 +167,15 @@ export function ApprovalPendingActions({
         return
       }
       setDialogOpen(false)
-      toast.success('Kunden-Freigabe ist vorbereitet. Link unter „Link kopieren“ — kein automatischer Versand.')
+      if (result.customerEmailSent) {
+        toast.success(
+          `Freigabe-Anfrage mit Magic Link wurde an ${result.recipientEmail} gesendet.`
+        )
+      } else {
+        toast.success(
+          'Kundenfreigabe vorbereitet. E-Mail-Versand nicht möglich — Freigabe-Link kopieren und manuell senden.'
+        )
+      }
       router.refresh()
     })
   }
@@ -254,7 +262,7 @@ export function ApprovalPendingActions({
               onClick={onConfirmInternalApprove}
               disabled={pending || loadingContacts || !canConfirmRecipient}
             >
-              Freigabe vorbereiten
+              Kundenfreigabe vorbereiten
             </Button>
           </DialogFooter>
         </DialogContent>

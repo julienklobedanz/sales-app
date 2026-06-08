@@ -1,6 +1,9 @@
 'use server'
 
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
+import { completeClientApprovalWithAdmin } from '@/lib/references/complete-client-approval'
+import type { CustomerApprovalScopeSelection } from '@/lib/references/customer-approval-scope'
 import { getAppOrigin } from '@/lib/env/app-origin'
 
 export type CompleteClientApprovalResult =
@@ -15,40 +18,14 @@ export async function completeClientApproval(params: {
   consentFileUrl?: string
   referenceGiverName?: string
   referenceGiverTitle?: string
+  scope?: CustomerApprovalScopeSelection
 }): Promise<CompleteClientApprovalResult> {
-  const supabase = await createServerSupabaseClient()
-  await supabase
-    .from('references')
-    .update({
-      approval_quote_approved: params.approvedQuote?.trim() || null,
-      approval_consent_file_url: params.consentFileUrl?.trim() || null,
-      approval_reference_giver_name: params.referenceGiverName?.trim() || null,
-      approval_reference_giver_title: params.referenceGiverTitle?.trim() || null,
-    })
-    .eq('approval_token', params.token)
-  const { data, error } = await supabase.rpc('complete_client_approval', {
-    p_token: params.token,
-    p_decision: params.decision,
-    p_comment: params.comment ?? '',
-  })
-
-  if (error) {
-    return { success: false, error: error.message }
+  const admin = createServiceRoleSupabaseClient()
+  if (!admin) {
+    return { success: false, error: 'server_config' }
   }
 
-  const payload = data as { success?: boolean; error?: string } | null
-  if (!payload?.success) {
-    const code = payload?.error ?? 'unknown'
-    if (code === 'invalid_token') {
-      return { success: false, error: 'invalid_token' }
-    }
-    if (code === 'already_decided') {
-      return { success: false, error: 'already_decided' }
-    }
-    return { success: false, error: code }
-  }
-
-  return { success: true }
+  return completeClientApprovalWithAdmin(admin, params)
 }
 
 export async function delegateClientApproval(params: {

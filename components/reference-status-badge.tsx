@@ -4,6 +4,7 @@ type Props = {
   status: string | null | undefined
   /** Kunden-Freigabe-Link ausstehend (Epic 10) – hat Vorrang vor der Freigabestufe */
   customerApprovalStatus?: string | null
+  approvalInternalStatus?: string | null
   className?: string
 }
 
@@ -22,8 +23,23 @@ function normalizeStatus(raw: string | null | undefined) {
 export function ReferenceStatusBadge({
   status,
   customerApprovalStatus,
+  approvalInternalStatus,
   className,
 }: Props) {
+  if (String(approvalInternalStatus ?? '').toLowerCase() === 'withdrawn_internal') {
+    return (
+      <span
+        className={cn(
+          pill,
+          'border-slate-200 bg-slate-100/90 text-slate-600 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-300',
+          className
+        )}
+        role="status"
+      >
+        Widerrufen
+      </span>
+    )
+  }
   if (String(customerApprovalStatus ?? '').toLowerCase() === 'pending') {
     return (
       <span

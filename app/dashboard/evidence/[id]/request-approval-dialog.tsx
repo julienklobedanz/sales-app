@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { submitForApproval } from '@/app/dashboard/actions'
 import type { SubmitForApprovalOptions } from '@/app/dashboard/references/approval-submit-types'
+import { isApprovalRecipientEmail } from '@/lib/references/approval-recipient-input'
 
 function RequiredMark() {
   return <span className="text-destructive"> *</span>
@@ -25,6 +26,7 @@ function RequiredMark() {
 export function RequestApprovalDialog({
   referenceId,
   defaultInternalOwnerName,
+  defaultAccountManagerEmail,
   triggerIcon,
   triggerId,
   triggerVariant = 'outline',
@@ -35,6 +37,8 @@ export function RequestApprovalDialog({
   referenceId: string
   /** Vorausfüllung (Referenz oder Profil); Feld bleibt Pflicht. */
   defaultInternalOwnerName?: string | null
+  /** Vorausfüllung aus Account-Metadaten, falls hinterlegt */
+  defaultAccountManagerEmail?: string | null
   triggerIcon?: ReactNode
   triggerId?: string
   triggerVariant?: 'default' | 'outline'
@@ -46,13 +50,15 @@ export function RequestApprovalDialog({
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [ownerName, setOwnerName] = useState('')
+  const [accountManagerEmail, setAccountManagerEmail] = useState('')
   const [message, setMessage] = useState('')
 
   useEffect(() => {
     if (!open) return
     setOwnerName((defaultInternalOwnerName ?? '').trim())
+    setAccountManagerEmail((defaultAccountManagerEmail ?? '').trim())
     setMessage('')
-  }, [open, defaultInternalOwnerName])
+  }, [open, defaultInternalOwnerName, defaultAccountManagerEmail])
 
   useEffect(() => {
     if (!autoOpen) return
@@ -65,24 +71,28 @@ export function RequestApprovalDialog({
       return
     }
 
+    const emailTrimmed = accountManagerEmail.trim()
+    if (emailTrimmed && !isApprovalRecipientEmail(emailTrimmed)) {
+      toast.error('Bitte eine gültige E-Mail-Adresse für den Account Manager eingeben.')
+      return
+    }
+
     const options: SubmitForApprovalOptions = {
       ownerName: ownerName.trim(),
     }
+    if (emailTrimmed) options.accountManagerEmail = emailTrimmed
     if (message.trim()) options.message = message.trim()
 
     setLoading(true)
     try {
-      const result = await submitForApproval(referenceId, options)
-      if ((result as { stage?: string } | null)?.stage === 'internal_review_pending') {
-        toast.success(
-          'Zur internen Prüfung eingereicht. Der Account Manager übernimmt den Kundenkontakt — es geht kein automatischer Kundenversand raus.'
-        )
-      } else {
-        toast.success('Freigabe angefordert.')
-      }
+      await submitForApproval(referenceId, options)
+      toast.success(
+        'Zur internen Prüfung eingereicht. Der Account Manager wurde per E-Mail benachrichtigt.'
+      )
       setOpen(false)
       setMessage('')
       setOwnerName('')
+      setAccountManagerEmail('')
       router.refresh()
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Freigabe konnte nicht angefordert werden.')
@@ -108,9 +118,13 @@ export function RequestApprovalDialog({
           <DialogHeader>
             <DialogTitle>Freigabe anfordern</DialogTitle>
           </DialogHeader>
-          <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground leading-relaxed">
-            Kontakt beim Kunden, Referenz-Geber, Ablauf des Freigabe-Links, Wettbewerber-Ausschluss und Zitat sind in
-            der Referenz bzw. unter Einstellungen (Freigabe-Workflow) hinterlegt — hier nicht erneut erfassen.
+          <div className="rounded-lg border border-sky-200/80 bg-sky-50/60 p-3 text-xs leading-relaxed text-sky-950 dark:border-sky-500/25 dark:bg-sky-500/10 dark:text-sky-100">
+            <p className="font-medium">Anfrage an den Account Manager — nicht an den Kunden.</p>
+            <p className="mt-1 text-sky-900/90 dark:text-sky-100/85">
+              Sales reicht hier zur internen Prüfung ein. Der Account Manager wählt später den
+              Kundenkontakt und sendet den Freigabe-Link. Zitat, Scope und Ablauf bleiben in der
+              Referenz bzw. unter Einstellungen hinterlegt.
+            </p>
           </div>
           <div className="grid gap-5 py-2">
             <div className="grid gap-2">
@@ -128,8 +142,24 @@ export function RequestApprovalDialog({
                 autoComplete="name"
               />
               <p className="text-xs text-muted-foreground">
-                Pflichtfeld. Wird intern und in Benachrichtigungen genutzt (z. B. wenn der Salesforce-Owner noch
-                nicht angebunden ist).
+                Name des Sales-Verantwortlichen — wird intern gespeichert und in der Benachrichtigung
+                genannt.
+              </p>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="approval-am-email">E-Mail des Account Managers</Label>
+              <Input
+                id="approval-am-email"
+                type="email"
+                value={accountManagerEmail}
+                onChange={(e) => setAccountManagerEmail(e.target.value)}
+                placeholder="account.manager@firma.de"
+                disabled={loading}
+                autoComplete="email"
+              />
+              <p className="text-xs text-muted-foreground">
+                Optional, aber empfohlen: Empfänger der Benachrichtigung. Ohne Angabe wird der am
+                Account hinterlegte Freigabe-Kontakt verwendet (falls vorhanden).
               </p>
             </div>
             <div className="grid gap-2">
@@ -138,14 +168,10 @@ export function RequestApprovalDialog({
                 id="approval-msg"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                rows={6}
+                rows={5}
                 placeholder="Kontext zur Freigabe, Dringlichkeit, Besonderheiten …"
                 disabled={loading}
               />
-              <p className="text-xs text-muted-foreground">
-                Sichtbar im Freigabe-Kontext für euer Team; der Kundenkontakt erhält sie nicht automatisch als
-                separaten Textbaustein.
-              </p>
             </div>
           </div>
           <DialogFooter className="gap-2 sm:gap-0">

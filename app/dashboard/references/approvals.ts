@@ -110,20 +110,15 @@ async function sendClientApprovalEmail(args: {
    * Wenn false (Standard): kein Resend an den Kunden — Account Manager stellt den Kontakt her und sendet den Link manuell.
    */
   sendResendToCustomer?: boolean
-}): Promise<{ success: boolean; token: string }> {
+}): Promise<{ success: boolean; token: string; emailSent: boolean }> {
   const newToken = crypto.randomUUID()
-  const reviewedAt = new Date().toISOString()
   const patch: {
     approval_token: string
     customer_approval_status: string
-    approval_internal_status: string
-    approval_internal_reviewed_at: string
     approval_internal_reviewer_id?: string
   } = {
     approval_token: newToken,
     customer_approval_status: 'pending',
-    approval_internal_status: 'approved_internal',
-    approval_internal_reviewed_at: reviewedAt,
   }
   if (args.internalReviewerId) {
     patch.approval_internal_reviewer_id = args.internalReviewerId
@@ -133,6 +128,7 @@ async function sendClientApprovalEmail(args: {
 
   const resend = getResend()
   const sendMail = args.sendResendToCustomer === true
+  let emailSent = false
   if (args.contactEmail && resend && sendMail) {
     const requesterBlock = args.requesterName
       ? `<p><strong>${escapeHtml(args.requesterName)}</strong> bittet Sie um Freigabe dieser Referenz.</p>`
@@ -158,11 +154,12 @@ async function sendClientApprovalEmail(args: {
           portfolio,
         }),
       })
+      emailSent = true
     } catch (e) {
       console.error('E-Mail-Versand fehlgeschlagen:', e)
     }
   }
-  return { success: true, token: newToken }
+  return { success: true, token: newToken, emailSent }
 }
 
 async function resolveContactForApproval(
@@ -271,6 +268,15 @@ async function resolveContactForApproval(
     }
   }
 
+  if (!requireEmail) {
+    return {
+      email: '',
+      firstName: '',
+      approvalContactId: null,
+      approvalExternalContactId: null,
+    }
+  }
+
   throw new Error(
     'Kein Empfänger: Bitte in der Referenz einen Kundenkontakt mit gültiger E-Mail hinterlegen (oder im Account pflegen).'
   )
@@ -284,37 +290,50 @@ async function notifyInternalReferenceCoordinatorAboutPendingReview(args: {
   accountCompanyId: string
   accountCompanyName: string
   requesterName: string
+  /** Aus dem Formular — hat Vorrang vor dem am Account hinterlegten Kontakt */
+  accountManagerEmail?: string | null
+  message?: string | null
 }): Promise<void> {
   const resend = getResend()
   if (!resend) return
 
-  const { data: companyRow } = await args.supabase
-    .from('companies')
-    .select('internal_reference_approval_contact_id')
-    .eq('id', args.accountCompanyId)
-    .maybeSingle()
+  let email = String(args.accountManagerEmail ?? '').trim()
+  let greeting = 'Hallo,'
 
-  const contactId = (companyRow as { internal_reference_approval_contact_id?: string | null } | null)
-    ?.internal_reference_approval_contact_id
-  if (!contactId) return
+  if (!email.toLowerCase().includes('@')) {
+    const { data: companyRow } = await args.supabase
+      .from('companies')
+      .select('internal_reference_approval_contact_id')
+      .eq('id', args.accountCompanyId)
+      .maybeSingle()
 
-  const { data: person } = await args.supabase
-    .from('contact_persons')
-    .select('email, first_name')
-    .eq('id', contactId)
-    .eq('company_id', args.accountCompanyId)
-    .maybeSingle()
+    const contactId = (companyRow as { internal_reference_approval_contact_id?: string | null } | null)
+      ?.internal_reference_approval_contact_id
+    if (!contactId) return
 
-  const email = String(person?.email ?? '').trim()
+    const { data: person } = await args.supabase
+      .from('contact_persons')
+      .select('email, first_name')
+      .eq('id', contactId)
+      .eq('company_id', args.accountCompanyId)
+      .maybeSingle()
+
+    email = String(person?.email ?? '').trim()
+    if (person?.first_name) {
+      greeting = `Hallo ${escapeHtml(String(person.first_name).trim())},`
+    }
+  }
+
   if (!email.toLowerCase().includes('@')) return
 
   const detailUrl = `${getAppOrigin()}${ROUTES.evidence.detail(args.referenceId)}`
-  const greeting = person?.first_name
-    ? `Hallo ${escapeHtml(String(person.first_name).trim())},`
-    : 'Hallo,'
   const who = args.requesterName.trim()
     ? `<p><strong>${escapeHtml(args.requesterName.trim())}</strong> hat eine Kundenfreigabe zur internen Prüfung eingereicht.</p>`
     : '<p>Es liegt eine neue Freigabe zur internen Prüfung vor.</p>'
+  const messageBlock =
+    args.message?.trim()
+      ? `<p><strong>Nachricht:</strong><br/>${escapeHtml(args.message.trim()).replace(/\n/g, '<br/>')}</p>`
+      : ''
 
   try {
     await resend.emails.send({
@@ -326,6 +345,7 @@ async function notifyInternalReferenceCoordinatorAboutPendingReview(args: {
         ${who}
         <p>Referenz: <strong>${escapeHtml(args.referenceTitle)}</strong><br/>
         Account: <strong>${escapeHtml(args.accountCompanyName)}</strong></p>
+        ${messageBlock}
         <p>Bitte in RefStack prüfen und bei Bedarf die interne Freigabe erteilen (Vier-Augen), danach Versand an den Kunden:</p>
         <p><a href="${escapeHtml(detailUrl)}">Zur Referenz</a></p>
       `,
@@ -429,7 +449,7 @@ export async function submitForApprovalImpl(
     })
   ) {
     throw new Error(
-      'Freigabe kann nur von der Referenz-Detailseite gestartet werden (Reference Readiness), wenn die Referenz den passenden Status hat (Entwurf bzw. nur intern für Sales).'
+      'Freigabe kann nur von der Referenz-Detailseite gestartet werden (Freigabestatus), wenn die Referenz den passenden Status hat (Entwurf bzw. nur intern für Sales).'
     )
   }
   const organizationId =
@@ -462,7 +482,13 @@ export async function submitForApprovalImpl(
   const expiresAtIso = new Date(expiresAtMs).toISOString()
   const graceUntilIso = new Date(expiresAtMs + 30 * 24 * 60 * 60 * 1000).toISOString()
 
-  const resolvedRecipient = await resolveContactForApproval(supabase, ref, ref.company_id, options)
+  const resolvedRecipient = await resolveContactForApproval(
+    supabase,
+    ref,
+    ref.company_id,
+    options,
+    { requireRecipientEmail: false }
+  )
   const company =
     Array.isArray(ref.companies) && ref.companies.length > 0
       ? (ref.companies[0] as { name?: string })
@@ -550,6 +576,8 @@ export async function submitForApprovalImpl(
     accountCompanyId: ref.company_id,
     accountCompanyName: companyName,
     requesterName,
+    accountManagerEmail: options?.accountManagerEmail?.trim() || null,
+    message: options?.message?.trim() || null,
   })
   await logEventForCurrentOrg({
     eventType: 'internal_approval_requested',
@@ -568,7 +596,7 @@ export async function submitForApprovalImpl(
 }
 
 export type ApproveInternalAndSendResult =
-  | { success: true }
+  | { success: true; customerEmailSent: boolean; recipientEmail: string }
   | { success: false; error: string }
 
 export type ApproveInternalRecipientOptions = Pick<
@@ -672,8 +700,13 @@ export async function approveInternalAndSendImpl(
       ? (profile as { full_name: string }).full_name.trim()
       : ''
 
+  if (!contactEmail?.includes('@')) {
+    return { success: false, error: 'Bitte eine gültige E-Mail-Adresse für den Kundenkontakt angeben.' }
+  }
+
+  let customerEmailSent = false
   try {
-    await sendClientApprovalEmail({
+    const sent = await sendClientApprovalEmail({
       supabase,
       referenceId,
       ref,
@@ -682,8 +715,9 @@ export async function approveInternalAndSendImpl(
       firstName,
       companyName: company_name,
       internalReviewerId: user.id,
-      sendResendToCustomer: false,
+      sendResendToCustomer: true,
     })
+    customerEmailSent = sent.emailSent
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Freigabe konnte nicht gespeichert werden.'
     return { success: false, error: msg }
@@ -698,7 +732,7 @@ export async function approveInternalAndSendImpl(
   revalidatePath(ROUTES.home)
   revalidatePath(ROUTES.evidence.detail(referenceId))
   revalidatePath(ROUTES.evidence.root)
-  return { success: true }
+  return { success: true, customerEmailSent, recipientEmail: contactEmail }
 }
 
 export async function getApprovalLinkImpl(referenceId: string): Promise<string | null> {
@@ -715,6 +749,18 @@ export async function getApprovalLinkImpl(referenceId: string): Promise<string |
 
 export async function withdrawApprovalRequestImpl(referenceId: string): Promise<{ success: true }> {
   const supabase = await createServerSupabaseClient()
+  const { data: refRow } = await supabase
+    .from('references')
+    .select('approval_reference_status_snapshot')
+    .eq('id', referenceId)
+    .maybeSingle()
+  const snapshot =
+    typeof (refRow as { approval_reference_status_snapshot?: string | null } | null)
+      ?.approval_reference_status_snapshot === 'string'
+      ? (refRow as { approval_reference_status_snapshot: string }).approval_reference_status_snapshot.trim()
+      : ''
+  const restoredStatus = snapshot || 'draft'
+
   await supabase
     .from('references')
     .update({
@@ -724,6 +770,7 @@ export async function withdrawApprovalRequestImpl(referenceId: string): Promise<
       approval_requested_at: null,
       approval_contact_id: null,
       approval_external_contact_id: null,
+      status: restoredStatus,
     })
     .eq('id', referenceId)
   await supabase

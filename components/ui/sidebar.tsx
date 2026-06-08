@@ -71,19 +71,22 @@ function SidebarProvider({
   const isMobile = useIsMobile()
   const [openMobile, setOpenMobile] = React.useState(false)
 
-  // Initial state: Cookie oder localStorage (persistiert über Refresh). Kein Eintrag = standardmäßig ausgeklappt (defaultOpen).
-  const [_open, _setOpen] = React.useState(() => {
-    if (typeof document === "undefined") return defaultOpen
+  // Immer defaultOpen auf SSR + erstem Client-Render (stabile Radix useId-Reihenfolge), Persistenz nach Hydration.
+  const [_open, _setOpen] = React.useState(defaultOpen)
+
+  React.useEffect(() => {
     try {
       const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${SIDEBAR_COOKIE_NAME}=([^;]*)`))
-      if (match) return match[1].trim() === "true"
+      if (match) {
+        _setOpen(match[1].trim() === "true")
+        return
+      }
       const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY)
-      if (stored !== null) return stored === "true"
+      if (stored !== null) _setOpen(stored === "true")
     } catch {
       // localStorage/cookie nicht verfügbar (z. B. privates Fenster)
     }
-    return defaultOpen // ausgeklappt, wenn kein gespeicherter Zustand
-  })
+  }, [])
   const open = openProp ?? _open
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {

@@ -4,7 +4,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { toggleFavorite } from '@/app/dashboard/actions'
+import { getExistingShareForReference, toggleFavorite } from '@/app/dashboard/actions'
 import {
   Building2,
   Globe,
@@ -31,7 +31,10 @@ import { ReferenceReadinessValue } from './reference-readiness-value'
 import {
   canStartApprovalWorkflow,
 } from '@/lib/references/approval-workflow'
-import { resolveReferenceReadinessState } from '@/lib/references/reference-readiness-state'
+import {
+  resolveReferenceReadinessState,
+  resolveWorkflowStatusBadges,
+} from '@/lib/references/reference-readiness-state'
 import { ReferenceViewedTracker } from './reference-viewed-tracker'
 import { getReferenceDetailActivities } from './reference-detail-activities'
 import { ReferenceActivitiesTimeline } from './reference-activities-timeline'
@@ -123,6 +126,9 @@ export default async function EvidenceDetailPage({
       approval_scope_named_mention,
       approval_scope_anonymous_mention,
       approval_scope_reference_call,
+      approval_scope_logo_use,
+      approval_scope_confidential_sales,
+      approval_reference_call_frequency,
       approval_grace_until,
       approval_internal_status,
       approval_contact_id,
@@ -180,6 +186,9 @@ export default async function EvidenceDetailPage({
     approval_scope_named_mention: boolean | null
     approval_scope_anonymous_mention: boolean | null
     approval_scope_reference_call: boolean | null
+    approval_scope_logo_use: boolean | null
+    approval_scope_confidential_sales: boolean | null
+    approval_reference_call_frequency: string | null
     approval_grace_until: string | null
     approval_internal_status: string | null
     approval_contact_id: string | null
@@ -237,6 +246,31 @@ export default async function EvidenceDetailPage({
   const isFavorited = Boolean(favorite?.id)
   const tags = splitTags(ref.tags ?? null)
   const company = Array.isArray(ref.companies) ? ref.companies[0] : ref.companies
+
+  let defaultAccountManagerEmail: string | null = null
+  if (company?.id) {
+    const { data: companyApprovalRow } = await supabase
+      .from('companies')
+      .select('internal_reference_approval_contact_id')
+      .eq('id', company.id)
+      .maybeSingle()
+    const internalApprovalContactId = (
+      companyApprovalRow as { internal_reference_approval_contact_id?: string | null } | null
+    )?.internal_reference_approval_contact_id
+    if (internalApprovalContactId) {
+      const { data: approvalContactPerson } = await supabase
+        .from('contact_persons')
+        .select('email')
+        .eq('id', internalApprovalContactId)
+        .eq('company_id', company.id)
+        .maybeSingle()
+      const email = String(
+        (approvalContactPerson as { email?: string | null } | null)?.email ?? ''
+      ).trim()
+      if (email.includes('@')) defaultAccountManagerEmail = email
+    }
+  }
+
   const isAnonymizedView = qs?.view === 'anonymized'
   const companyName = company?.name ?? null
   const headerCompany = isAnonymizedView ? 'Kunde' : companyName
@@ -273,10 +307,13 @@ export default async function EvidenceDetailPage({
   const hasSolution = Boolean(solutionText?.trim())
   /** Herausforderung und Lösung untereinander (ruhiger Lesefluss). */
   const challengeSolutionGridClass = 'grid gap-4 grid-cols-1'
+  const internalApproval = String(ref.approval_internal_status ?? '').toLowerCase()
+  const isWithdrawnInternal = internalApproval === 'withdrawn_internal'
   const isApprovalGranted =
-    String(ref.customer_approval_status ?? '').toLowerCase() === 'approved' ||
-    normalizedStatus === 'approved' ||
-    normalizedStatus === 'external'
+    !isWithdrawnInternal &&
+    (String(ref.customer_approval_status ?? '').toLowerCase() === 'approved' ||
+      normalizedStatus === 'approved' ||
+      normalizedStatus === 'external')
   const nowMs = new Date().getTime()
   const expiresMs = ref.approval_expires_at ? new Date(ref.approval_expires_at).getTime() : null
   const graceMs = ref.approval_grace_until ? new Date(ref.approval_grace_until).getTime() : null
@@ -285,7 +322,6 @@ export default async function EvidenceDetailPage({
     baseApprovalStatus === 'approved' && expiresMs && expiresMs < nowMs && graceMs && graceMs >= nowMs
       ? 'expired'
       : baseApprovalStatus
-  const internalApproval = String(ref.approval_internal_status ?? '').toLowerCase()
   /** DB-Hygiene: Status/Kunde schon freigegeben, aber approval_internal_status hängt noch auf pending_internal. */
   const staleInternalPending =
     internalApproval === 'pending_internal' &&
@@ -320,6 +356,18 @@ export default async function EvidenceDetailPage({
   })
   const autoOpenApprovalDialog = qs.startApproval === '1' || qs.startApproval === 'true'
 
+  const workflowStatusBadges = resolveWorkflowStatusBadges({
+    internalApprovalStatus: internalApproval,
+    customerApprovalStatus: ref.customer_approval_status,
+    approvalRequestedAt: ref.approval_requested_at,
+    approvalScopeNamedMention: ref.approval_scope_named_mention,
+    approvalScopeAnonymousMention: ref.approval_scope_anonymous_mention,
+    approvalScopeReferenceCall: ref.approval_scope_reference_call,
+    approvalScopeConfidentialSales: ref.approval_scope_confidential_sales,
+    approvalScopeLogoUse: ref.approval_scope_logo_use,
+    referenceIsInternalOnly,
+  })
+
   const readinessState = resolveReferenceReadinessState({
     referenceStatus: normalizedStatus,
     internalApprovalStatus: internalApproval,
@@ -332,8 +380,12 @@ export default async function EvidenceDetailPage({
     approvalScopeNamedMention: ref.approval_scope_named_mention,
     approvalScopeAnonymousMention: ref.approval_scope_anonymous_mention,
     approvalScopeReferenceCall: ref.approval_scope_reference_call,
+    approvalScopeConfidentialSales: ref.approval_scope_confidential_sales,
+    approvalScopeLogoUse: ref.approval_scope_logo_use,
     referenceIsInternalOnly,
   })
+
+  const existingShare = await getExistingShareForReference(id)
 
   const ownerDisplay =
     (ref.approval_owner_name ?? '').trim() || null
@@ -432,7 +484,11 @@ export default async function EvidenceDetailPage({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="space-y-2 min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <ReferenceStatusWithHint status={ref.status} customerApprovalStatus={ref.customer_approval_status} />
+                <ReferenceStatusWithHint
+                  status={ref.status}
+                  customerApprovalStatus={ref.customer_approval_status}
+                  approvalInternalStatus={ref.approval_internal_status}
+                />
               </div>
               <h1 className={`${DASHBOARD_PAGE_TITLE_CLASS} break-words`}>
                 {ref.title}
@@ -614,7 +670,7 @@ export default async function EvidenceDetailPage({
 
           <Card className={cn('w-full', role === 'sales' ? 'order-2' : undefined)}>
             <CardHeader>
-              <CardTitle className="text-base">Reference Readiness</CardTitle>
+              <CardTitle className="text-base">Freigabestatus</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm transition-all duration-200">
               <div className="space-y-2">
@@ -626,27 +682,58 @@ export default async function EvidenceDetailPage({
                     {isNdaDeal ? 'Ja' : 'Nein'}
                   </span>
                 </div>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-muted-foreground">{role === 'sales' ? 'Freigabe' : 'Status'}</span>
-                  <span
-                    className={cn(
-                      'rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors duration-200',
-                      readinessState.badge.className
-                    )}
-                  >
-                    {readinessState.badge.label}
-                  </span>
-                </div>
+                {workflowStatusBadges ? (
+                  <>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-muted-foreground">Intern</span>
+                      <span
+                        className={cn(
+                          'rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors duration-200',
+                          workflowStatusBadges.internal.className
+                        )}
+                      >
+                        {workflowStatusBadges.internal.label}
+                      </span>
+                    </div>
+                    {workflowStatusBadges.customer ? (
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-muted-foreground">Kunde</span>
+                        <span
+                          className={cn(
+                            'rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors duration-200',
+                            workflowStatusBadges.customer.className
+                          )}
+                        >
+                          {workflowStatusBadges.customer.label}
+                        </span>
+                      </div>
+                    ) : null}
+                  </>
+                ) : (
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-muted-foreground">{role === 'sales' ? 'Freigabe' : 'Status'}</span>
+                    <span
+                      className={cn(
+                        'rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors duration-200',
+                        readinessState.badge.className
+                      )}
+                    >
+                      {readinessState.badge.label}
+                    </span>
+                  </div>
+                )}
                 {role !== 'sales' ? (
                   <>
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-muted-foreground">Verantwortlich</span>
                       <ReferenceReadinessValue value={ownerDisplay} />
                     </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-muted-foreground">Gültig bis</span>
-                      <ReferenceReadinessValue value={expiresDisplay} />
-                    </div>
+                    {readinessState.phase === 'pending_customer' && expiresDisplay ? (
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-muted-foreground">Antwortfrist (Referenzgeber)</span>
+                        <ReferenceReadinessValue value={expiresDisplay} />
+                      </div>
+                    ) : null}
                   </>
                 ) : null}
               </div>
@@ -691,15 +778,17 @@ export default async function EvidenceDetailPage({
               <ReferenceReadinessActions
                 referenceId={id}
                 readiness={readinessState}
+                existingSharePath={existingShare?.url ?? null}
                 canStartApproval={canStartApproval}
                 canInternalApprove={
-                  internalStatus === 'pending_internal' &&
-                  !staleInternalPending &&
-                  (role === 'admin' || role === 'account_manager')
+                  (role === 'admin' || role === 'account_manager') &&
+                  ((internalStatus === 'pending_internal' && !staleInternalPending) ||
+                    internalStatus === 'withdrawn_internal')
                 }
                 defaultInternalOwnerName={
                   (ref.approval_owner_name ?? '').trim() || requesterDisplayName || ''
                 }
+                defaultAccountManagerEmail={defaultAccountManagerEmail}
                 autoOpenApprovalDialog={autoOpenApprovalDialog}
                 approvalContactId={ref.approval_contact_id ?? null}
                 approvalExternalContactId={ref.approval_external_contact_id ?? null}

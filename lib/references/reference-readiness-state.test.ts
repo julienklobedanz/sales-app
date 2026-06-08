@@ -49,7 +49,20 @@ describe('resolveReferenceReadinessState', () => {
     expect(s.phase).toBe('pending_customer')
     expect(s.badge.label).toBe('Wartet auf Kundenfreigabe')
     expect(s.showPrimaryStart).toBe(false)
+    expect(s.showMagicLink).toBe(true)
     expect(s.showWithdraw).toBe(true)
+  })
+
+  it('external without customer approval → extern nutzbar badge', () => {
+    const s = resolveReferenceReadinessState({
+      ...base,
+      referenceStatus: 'external',
+      internalApprovalStatus: 'approved_internal',
+      customerApprovalStatus: null,
+      isApprovalGranted: true,
+    })
+    expect(s.phase).toBe('approved')
+    expect(s.badge.label).toBe('Extern nutzbar')
   })
 
   it('approved with ref call scope', () => {

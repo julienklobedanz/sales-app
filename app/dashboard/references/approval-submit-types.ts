@@ -4,6 +4,8 @@ export type SubmitForApprovalOptions = {
   contactId?: string
   /** Empfänger aus external_contacts (Kundenkontakt) */
   externalContactId?: string
+  /** E-Mail des Account Managers für die interne Freigabe-Benachrichtigung */
+  accountManagerEmail?: string
   message?: string
   ownerName?: string
   referenceGiverName?: string

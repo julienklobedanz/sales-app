@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useLayoutEffect, useMemo, useState, useTransition } from 'react'
+import { useEffect, useMemo, useState, useTransition } from 'react'
 import { Fragment } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
@@ -39,6 +39,7 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 import { useCommandPalette } from '@/hooks/useCommandPalette'
+import { useHydrated } from '@/hooks/use-hydrated'
 import { type AppRole } from '@/hooks/useRole'
 import { createClient } from '@/lib/supabase/client'
 import { AppIcon } from '@/lib/icons'
@@ -108,11 +109,13 @@ export function DashboardHeader({
   const accountsListView = useAccountsListView()
   const evidenceLibraryMode = useEvidenceLibraryMode()
 
-  useLayoutEffect(() => {
+  const hydrated = useHydrated()
+
+  useEffect(() => {
     syncAccountsListViewFromUrl(parseAccountsListView(searchParams))
   }, [searchParams])
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (pathname === ROUTES.evidence.root) {
       syncEvidenceLibraryModeFromStorage(loadEvidenceLibraryModeFromStorage())
     }
@@ -492,84 +495,101 @@ export function DashboardHeader({
           <AppIcon icon={SearchIcon} size={20} />
         </button>
 
-        <Popover>
-          <PopoverTrigger asChild>
-            <button
-              type="button"
-              className="relative inline-flex size-9 items-center justify-center rounded-md hover:bg-muted/60 transition-colors"
-              aria-label="Benachrichtigungen"
-            >
-              <AppIcon icon={Bell} size={20} />
-              {unreadCount > 0 ? (
-                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-white">
-                  {unreadCount}
-                </span>
-              ) : null}
-            </button>
-          </PopoverTrigger>
-          <PopoverContent
-            align="end"
-            side="bottom"
-            sideOffset={4}
-            className="w-96 p-0"
-          >
-            <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
-              <h3 className="text-sm font-semibold">{COPY.notifications.title}</h3>
-              <Button
+        {hydrated ? (
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
                 type="button"
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
-                disabled={unreadCount === 0 || markNotificationsPending}
-                aria-label={COPY.notifications.markAllReadAria}
-                title={COPY.notifications.markAllReadAria}
-                onClick={markAllNotificationsRead}
+                className="relative inline-flex size-9 items-center justify-center rounded-md hover:bg-muted/60 transition-colors"
+                aria-label="Benachrichtigungen"
               >
-                <AppIcon icon={MailOpen} size={18} />
-              </Button>
-            </div>
-            <div className="max-h-[28rem] overflow-auto">
-              {notifications.length === 0 ? (
-                <p className="px-4 py-6 text-center text-sm text-muted-foreground">
-                  Keine Benachrichtigungen.
-                </p>
-              ) : (
-                notifications.map((notification) => (
-                  <div
-                    key={notification.id}
-                    className="flex items-start gap-2 border-b px-4 py-3 last:border-b-0"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <Link
-                        href={notification.href}
-                        onClick={() => handleOpenNotification(notification.id)}
-                        className={cn(
-                          'inline-block max-w-full truncate rounded-sm text-sm font-medium text-foreground underline-offset-2 transition-colors',
-                          'hover:text-primary hover:underline',
-                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
-                        )}
-                      >
-                        {notification.title}
-                      </Link>
-                      <p className="text-xs text-muted-foreground">{notification.text}</p>
-                      <p className="mt-1 text-[11px] text-muted-foreground">{notification.time}</p>
+                <AppIcon icon={Bell} size={20} />
+                {unreadCount > 0 ? (
+                  <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-white">
+                    {unreadCount}
+                  </span>
+                ) : null}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              align="end"
+              side="bottom"
+              sideOffset={4}
+              className="w-96 p-0"
+            >
+              <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
+                <h3 className="text-sm font-semibold">{COPY.notifications.title}</h3>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
+                  disabled={unreadCount === 0 || markNotificationsPending}
+                  aria-label={COPY.notifications.markAllReadAria}
+                  title={COPY.notifications.markAllReadAria}
+                  onClick={markAllNotificationsRead}
+                >
+                  <AppIcon icon={MailOpen} size={18} />
+                </Button>
+              </div>
+              <div className="max-h-[28rem] overflow-auto">
+                {notifications.length === 0 ? (
+                  <p className="px-4 py-6 text-center text-sm text-muted-foreground">
+                    Keine Benachrichtigungen.
+                  </p>
+                ) : (
+                  notifications.map((notification) => (
+                    <div
+                      key={notification.id}
+                      className="flex items-start gap-2 border-b px-4 py-3 last:border-b-0"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <Link
+                          href={notification.href}
+                          onClick={() => handleOpenNotification(notification.id)}
+                          className={cn(
+                            'inline-block max-w-full truncate rounded-sm text-sm font-medium text-foreground underline-offset-2 transition-colors',
+                            'hover:text-primary hover:underline',
+                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
+                          )}
+                        >
+                          {notification.title}
+                        </Link>
+                        <p className="text-xs text-muted-foreground">{notification.text}</p>
+                        <p className="mt-1 text-[11px] text-muted-foreground">{notification.time}</p>
+                      </div>
+                      {!notification.read ? (
+                        <span
+                          className="mt-1.5 size-2 shrink-0 rounded-full bg-sidebar-primary"
+                          title={COPY.notifications.unreadBadgeAria}
+                          aria-label={COPY.notifications.unreadBadgeAria}
+                        />
+                      ) : null}
                     </div>
-                    {!notification.read ? (
-                      <span
-                        className="mt-1.5 size-2 shrink-0 rounded-full bg-sidebar-primary"
-                        title={COPY.notifications.unreadBadgeAria}
-                        aria-label={COPY.notifications.unreadBadgeAria}
-                      />
-                    ) : null}
-                  </div>
-                ))
-              )}
-            </div>
-          </PopoverContent>
-        </Popover>
+                  ))
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
+        ) : (
+          <button
+            type="button"
+            className="relative inline-flex size-9 items-center justify-center rounded-md hover:bg-muted/60 transition-colors"
+            aria-label="Benachrichtigungen"
+            tabIndex={-1}
+          >
+            <AppIcon icon={Bell} size={20} />
+            {unreadCount > 0 ? (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-white">
+                {unreadCount}
+              </span>
+            ) : null}
+          </button>
+        )}
 
         <div className="mx-1 h-6 w-px shrink-0 bg-border/80" aria-hidden="true" />
 
+        {hydrated ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -662,6 +682,23 @@ export function DashboardHeader({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        ) : (
+          <Button
+            type="button"
+            variant="ghost"
+            className="h-9 gap-2 px-2 font-normal hover:bg-muted/60"
+            aria-label="Profilmenü"
+            tabIndex={-1}
+          >
+            <span className="hidden max-w-[160px] truncate text-left text-sm font-medium sm:inline">
+              {userName}
+            </span>
+            <Avatar className="h-8 w-8 rounded-lg">
+              <AvatarFallback className="rounded-lg text-xs">{userInitials}</AvatarFallback>
+            </Avatar>
+            <span className="size-4 shrink-0" aria-hidden />
+          </Button>
+        )}
       </div>
     </header>
   )

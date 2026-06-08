@@ -3,8 +3,12 @@
  */
 export function getReferenceStatusExplanation(
   status: string | null | undefined,
-  customerApprovalStatus?: string | null
+  customerApprovalStatus?: string | null,
+  approvalInternalStatus?: string | null
 ): string {
+  if (String(approvalInternalStatus ?? '').toLowerCase() === 'withdrawn_internal') {
+    return 'Die Freigabe-Anfrage wurde widerrufen. Der Freigabe-Workflow kann erneut gestartet werden.'
+  }
   if (String(customerApprovalStatus ?? '').toLowerCase() === 'pending') {
     return 'Kundenfreigabe: Der Kunde bearbeitet die Freigabe oder sie steht noch aus. Die Referenz ist noch nicht für die externe Nutzung freigegeben.'
   }

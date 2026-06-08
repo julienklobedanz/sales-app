@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -11,46 +10,12 @@ import { CheckIcon } from '@/components/ui/check-icon'
 import { toast } from 'sonner'
 import { completeClientApproval } from './actions'
 import { Input } from '@/components/ui/input'
-import { cn } from '@/lib/utils'
 import { ApprovalOptionalLabel, ApprovalRequiredMark } from './approval-form-labels'
-
-type ApprovalType = 'named' | 'anonymous'
-
-function ScopeCard({
-  active,
-  disabled,
-  onClick,
-  title,
-  description,
-}: {
-  active: boolean
-  disabled: boolean
-  onClick: () => void
-  title: string
-  description: string
-}) {
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      className={cn(
-        'relative flex-1 rounded-xl border-2 p-4 text-left transition-all duration-200',
-        active
-          ? 'border-primary bg-primary/5 shadow-sm ring-2 ring-primary/10'
-          : 'border-border bg-background hover:border-muted-foreground/30'
-      )}
-    >
-      {active ? (
-        <span className="absolute right-3 top-3 inline-flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
-          <Check className="size-3" strokeWidth={3} />
-        </span>
-      ) : null}
-      <p className="pr-6 text-sm font-semibold text-foreground">{title}</p>
-      <p className="mt-1 text-xs text-muted-foreground">{description}</p>
-    </button>
-  )
-}
+import { ApprovalScopeOptions } from './approval-scope-options'
+import {
+  defaultCustomerApprovalScope,
+  type CustomerApprovalScopeSelection,
+} from '@/lib/references/customer-approval-scope'
 
 export function ApprovalDecisionForm({
   token,
@@ -73,25 +38,26 @@ export function ApprovalDecisionForm({
   initialReferenceGiverName?: string
   initialReferenceGiverTitle?: string
 }) {
-  const defaultType: ApprovalType = scopeNamedAvailable ? 'named' : 'anonymous'
-  const [approvalType, setApprovalType] = useState<ApprovalType>(defaultType)
+  const defaultType = scopeNamedAvailable ? 'named' : 'anonymous'
+  const [scope, setScope] = useState<CustomerApprovalScopeSelection>(() =>
+    defaultCustomerApprovalScope(defaultType)
+  )
   const [comment, setComment] = useState('')
   const [approvedQuote, setApprovedQuote] = useState(initialApprovedQuote)
   const [referenceGiverName, setReferenceGiverName] = useState(initialReferenceGiverName)
   const [referenceGiverTitle, setReferenceGiverTitle] = useState(initialReferenceGiverTitle)
-  const [consentReferenceCalls, setConsentReferenceCalls] = useState(false)
   const [consentForwarding, setConsentForwarding] = useState(false)
+  const [consentRelease, setConsentRelease] = useState(false)
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState<'approved' | 'rejected' | null>(null)
 
-  const showScopeCards = scopeNamedAvailable || scopeAnonymousAvailable
   const workspaceLabel = orgName.trim() || 'unserem Partner'
-  const canApprove = consentReferenceCalls && consentForwarding
-  const isNamed = approvalType === 'named'
+  const isNamed = scope.approvalType === 'named'
+  const canApprove = consentRelease && consentForwarding
 
   async function submit(decision: 'approved' | 'rejected') {
     if (decision === 'approved') {
-      if (!consentReferenceCalls || !consentForwarding) {
+      if (!consentRelease || !consentForwarding) {
         toast.error('Bitte bestätigen Sie beide Einwilligungen vor der Freigabe.')
         return
       }
@@ -106,12 +72,17 @@ export function ApprovalDecisionForm({
         approvedQuote: isNamed ? approvedQuote.trim() || undefined : undefined,
         referenceGiverName: isNamed ? referenceGiverName.trim() || undefined : undefined,
         referenceGiverTitle: isNamed ? referenceGiverTitle.trim() || undefined : undefined,
+        scope: decision === 'approved' ? scope : undefined,
       })
       if (!result.success) {
         if (result.error === 'already_decided') {
           toast.error('Diese Freigabe wurde bereits bearbeitet.')
         } else if (result.error === 'invalid_token') {
           toast.error('Dieser Link ist nicht mehr gültig.')
+        } else if (result.error === 'server_config') {
+          toast.error('Der Server ist nicht korrekt konfiguriert. Bitte wenden Sie sich an Ihren Ansprechpartner.')
+        } else if (result.error === 'org_missing') {
+          toast.error('Die Organisation zur Referenz konnte nicht ermittelt werden.')
         } else {
           toast.error('Die Entscheidung konnte nicht gespeichert werden.')
         }
@@ -143,31 +114,14 @@ export function ApprovalDecisionForm({
 
   return (
     <div className="space-y-6">
-      {showScopeCards ? (
-        <div className="space-y-3">
-          <p className="text-sm font-semibold text-foreground">Freigabe-Typ</p>
-          <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
-            {scopeNamedAvailable ? (
-              <ScopeCard
-                active={isNamed}
-                disabled={loading}
-                onClick={() => setApprovalType('named')}
-                title="Namentliche Freigabe"
-                description={`Inkl. Firmenname${companyName ? ` (${companyName})` : ''}`}
-              />
-            ) : null}
-            {scopeAnonymousAvailable ? (
-              <ScopeCard
-                active={!isNamed}
-                disabled={loading}
-                onClick={() => setApprovalType('anonymous')}
-                title="Anonymisierte Freigabe"
-                description="Vollständig anonymisiert"
-              />
-            ) : null}
-          </div>
-        </div>
-      ) : null}
+      <ApprovalScopeOptions
+        scope={scope}
+        disabled={loading}
+        scopeNamedAvailable={scopeNamedAvailable}
+        scopeAnonymousAvailable={scopeAnonymousAvailable}
+        companyName={companyName}
+        onChange={setScope}
+      />
 
       <div className="space-y-2">
         <ApprovalOptionalLabel htmlFor="approval-comment">
@@ -235,18 +189,17 @@ export function ApprovalDecisionForm({
       <div className="space-y-4 rounded-xl border border-border bg-muted/20 p-4">
         <div className="flex items-start gap-3">
           <Checkbox
-            id="consent-reference-calls"
-            checked={consentReferenceCalls}
-            onCheckedChange={(checked) => setConsentReferenceCalls(checked === true)}
+            id="consent-release"
+            checked={consentRelease}
+            onCheckedChange={(checked) => setConsentRelease(checked === true)}
             disabled={loading}
             className="mt-0.5"
           />
           <Label
-            htmlFor="consent-reference-calls"
+            htmlFor="consent-release"
             className="cursor-pointer text-xs leading-relaxed text-muted-foreground"
           >
-            Hiermit stimme ich der Freigabe der Referenz zu und stehe für diese Referenz jederzeit für
-            kurze Rückfragen anderer Kunden, die zukünftig ggf. mit {workspaceLabel} zusammenarbeiten.
+            Hiermit stimme ich der Freigabe der Referenz gemäß meiner obigen Auswahl zu.
             <ApprovalRequiredMark />
           </Label>
         </div>

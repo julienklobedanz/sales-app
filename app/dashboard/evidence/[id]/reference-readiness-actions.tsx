@@ -2,9 +2,16 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { LinkIcon } from '@hugeicons/core-free-icons'
+import { ExternalLink, LinkIcon } from '@hugeicons/core-free-icons'
+import { ChevronDown } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,13 +45,17 @@ import type { ReferenceReadinessState } from '@/lib/references/reference-readine
 import { cn } from '@/lib/utils'
 import { ApprovalContactSuggestField } from './approval-contact-suggest-field'
 import { RequestApprovalDialog } from './request-approval-dialog'
+import { ReferenceReadinessShowcaseLinks } from './reference-readiness-showcase-links'
 
 type Props = {
   referenceId: string
   readiness: ReferenceReadinessState
+  /** Aktiver Kundenlink (/p/slug), falls vorhanden */
+  existingSharePath: string | null
   canStartApproval: boolean
   canInternalApprove: boolean
   defaultInternalOwnerName?: string | null
+  defaultAccountManagerEmail?: string | null
   autoOpenApprovalDialog?: boolean
   approvalContactId: string | null
   approvalExternalContactId: string | null
@@ -55,9 +66,11 @@ type Props = {
 export function ReferenceReadinessActions({
   referenceId,
   readiness,
+  existingSharePath,
   canStartApproval,
   canInternalApprove,
   defaultInternalOwnerName,
+  defaultAccountManagerEmail,
   autoOpenApprovalDialog = false,
   approvalContactId,
   approvalExternalContactId,
@@ -78,11 +91,18 @@ export function ReferenceReadinessActions({
     selected: selectedContact,
   })
 
+  const showShowcaseSection =
+    readiness.phase === 'approved' && Boolean(existingSharePath?.trim())
+  const showCreateShareHint =
+    readiness.phase === 'approved' && !existingSharePath?.trim()
+
   const showActions =
     readiness.showPrimaryStart ||
     readiness.showMagicLink ||
     readiness.showRegenerateLink ||
-    readiness.showWithdraw
+    readiness.showWithdraw ||
+    showShowcaseSection ||
+    showCreateShareHint
 
   if (!showActions && !readiness.showStaleHint) {
     return null
@@ -151,12 +171,20 @@ export function ReferenceReadinessActions({
         return
       }
       setDialogOpen(false)
-      toast.success('Freigabe vorbereitet. Magic Link kopieren und an den Kunden senden.')
+      if (result.customerEmailSent) {
+        toast.success(
+          `Freigabe-Anfrage mit Magic Link wurde an ${result.recipientEmail} gesendet.`
+        )
+      } else {
+        toast.success(
+          'Kundenfreigabe vorbereitet. E-Mail-Versand nicht möglich — Freigabe-Link kopieren und manuell senden.'
+        )
+      }
       router.refresh()
     })
   }
 
-  function onMagicLink() {
+  function onCopyApprovalLink() {
     startTransition(async () => {
       const link = await getApprovalLink(referenceId)
       if (!link) {
@@ -164,7 +192,18 @@ export function ReferenceReadinessActions({
         return
       }
       await navigator.clipboard.writeText(link)
-      toast.success('Magic Link kopiert.')
+      toast.success('Freigabe-Link kopiert.')
+    })
+  }
+
+  function onOpenApprovalLink() {
+    startTransition(async () => {
+      const link = await getApprovalLink(referenceId)
+      if (!link) {
+        toast.error('Noch kein Freigabelink verfügbar.')
+        return
+      }
+      window.open(link, '_blank', 'noopener,noreferrer')
     })
   }
 
@@ -189,6 +228,8 @@ export function ReferenceReadinessActions({
     readiness.phase === 'request_approval' && canStartApproval && readiness.showPrimaryStart
   const primaryIsInternal =
     readiness.phase === 'internal_start' && canInternalApprove && readiness.showPrimaryStart
+  const primaryIsWithdrawnRestart =
+    readiness.phase === 'withdrawn' && readiness.showPrimaryStart
 
   return (
     <div
@@ -208,6 +249,7 @@ export function ReferenceReadinessActions({
           <RequestApprovalDialog
             referenceId={referenceId}
             defaultInternalOwnerName={defaultInternalOwnerName}
+            defaultAccountManagerEmail={defaultAccountManagerEmail}
             triggerId="reference-readiness-approval-trigger"
             triggerVariant="default"
             triggerClassName="w-full"
@@ -215,6 +257,12 @@ export function ReferenceReadinessActions({
             autoOpen={autoOpenApprovalDialog}
           />
         </div>
+      ) : null}
+
+      {readiness.phase === 'internal_start' && !canInternalApprove ? (
+        <p className="max-w-sm text-center text-xs leading-relaxed text-muted-foreground">
+          Interne Prüfung ausstehend — der Account Manager bereitet die Kundenfreigabe vor.
+        </p>
       ) : null}
 
       {primaryIsInternal ? (
@@ -225,35 +273,109 @@ export function ReferenceReadinessActions({
           onClick={openInternalApproveDialog}
           disabled={pending}
         >
-          Freigabe starten
+          Kundenfreigabe vorbereiten
         </Button>
+      ) : null}
+
+      {primaryIsWithdrawnRestart ? (
+        canInternalApprove ? (
+          <Button
+            type="button"
+            variant="default"
+            className="w-full max-w-sm transition-opacity duration-200"
+            onClick={openInternalApproveDialog}
+            disabled={pending}
+          >
+            Freigabe erneut starten
+          </Button>
+        ) : (
+          <div className="w-full max-w-sm transition-opacity duration-200">
+            <RequestApprovalDialog
+              referenceId={referenceId}
+              defaultInternalOwnerName={defaultInternalOwnerName}
+              defaultAccountManagerEmail={defaultAccountManagerEmail}
+              triggerId="reference-readiness-withdrawn-restart-trigger"
+              triggerVariant="default"
+              triggerClassName="w-full"
+              triggerLabel="Freigabe erneut starten"
+            />
+          </div>
+        )
       ) : null}
 
       {readiness.showMagicLink ? (
         <div className="flex w-full max-w-sm flex-col items-stretch gap-1.5 transition-opacity duration-200">
+          <p className="text-center text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            {readiness.phase === 'pending_customer' ? 'Kunden-Freigabe' : 'Freigabe-Link'}
+          </p>
           <Button
             type="button"
             variant="default"
             className="w-full gap-2"
-            onClick={onMagicLink}
+            onClick={() => onCopyApprovalLink()}
             disabled={pending}
           >
             <AppIcon icon={LinkIcon} size={16} />
-            Magic Link
+            Freigabe-Link kopieren
           </Button>
           {readiness.showRegenerateLink ? (
+            <div className="flex w-full">
+              <Button
+                type="button"
+                variant="outline"
+                className="min-w-0 flex-1 gap-2 rounded-r-none"
+                onClick={() => void onOpenApprovalLink()}
+                disabled={pending}
+              >
+                <AppIcon icon={ExternalLink} size={16} />
+                Freigabe-Seite öffnen
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="shrink-0 rounded-l-none border-l-0 px-2.5"
+                    disabled={pending}
+                    aria-label="Weitere Freigabe-Aktionen"
+                  >
+                    <ChevronDown className="size-4" aria-hidden />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem onClick={() => setRegenerateOpen(true)}>
+                    Neuer Freigabe-Link
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          ) : (
             <Button
               type="button"
-              variant="ghost"
-              size="sm"
-              className="h-8 text-xs text-muted-foreground hover:text-foreground"
-              onClick={() => setRegenerateOpen(true)}
+              variant="outline"
+              className="w-full gap-2"
+              onClick={() => void onOpenApprovalLink()}
               disabled={pending}
             >
-              Neuer Link
+              <AppIcon icon={ExternalLink} size={16} />
+              Freigabe-Seite öffnen
             </Button>
-          ) : null}
+          )}
         </div>
+      ) : null}
+
+      {showShowcaseSection && existingSharePath ? (
+        <ReferenceReadinessShowcaseLinks
+          referenceId={referenceId}
+          publicPreviewPath={existingSharePath}
+        />
+      ) : null}
+
+      {showCreateShareHint ? (
+        <p className="max-w-sm text-center text-xs leading-relaxed text-muted-foreground">
+          Für die Kunden-Showcase-Ansicht zuerst unter{' '}
+          <span className="font-medium text-foreground">Aktionen → Teilen</span> einen Kundenlink anlegen.
+        </p>
       ) : null}
 
       {readiness.showWithdraw ? (
@@ -305,7 +427,7 @@ export function ReferenceReadinessActions({
               onClick={onConfirmInternalApprove}
               disabled={pending || loadingContacts || !canConfirmRecipient}
             >
-              Freigabe vorbereiten
+              Kundenfreigabe vorbereiten
             </Button>
           </DialogFooter>
         </DialogContent>
