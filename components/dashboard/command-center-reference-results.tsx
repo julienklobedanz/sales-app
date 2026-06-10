@@ -17,6 +17,8 @@ function toMatchHit(hit: HomepageSemanticReferenceHit): MatchReferenceHit {
     similarity: hit.similarity,
     snippet: hit.snippet,
     companyName: hit.companyName,
+    companyId: hit.companyId,
+    companyLogoUrl: hit.companyLogoUrl,
     volumeEur: hit.volumeEur,
   }
 }

@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { LinkIcon, Loader, Sparkles, FileText } from '@hugeicons/core-free-icons'
 
 import { Button } from '@/components/ui/button'
+import { CompanyLogo } from '@/components/ui/company-logo'
 import { AppIcon } from '@/lib/icons'
 import { ROUTES } from '@/lib/routes'
 import { formatReferenceVolume } from '@/lib/format'
@@ -81,11 +82,8 @@ export function MatchResultCard({
     }
   }
 
-  const meta = [
-    hit.industry?.trim() || null,
-    hit.companyName?.trim() || null,
-    hit.volumeEur ? formatReferenceVolume(hit.volumeEur) || '—' : null,
-  ]
+  const companyName = hit.companyName?.trim() || null
+  const meta = [hit.industry?.trim() || null, hit.volumeEur ? formatReferenceVolume(hit.volumeEur) || '—' : null]
     .filter(Boolean)
     .join(' · ')
 
@@ -94,16 +92,31 @@ export function MatchResultCard({
       <div className="flex gap-4">
         <MatchScoreCircle key={`${hit.id}-${hit.similarity}`} similarity01={hit.similarity} />
         <div className="min-w-0 flex-1 space-y-2">
-          <div>
-            <Link
-              href={ROUTES.evidence.detail(hit.id)}
-              className="font-semibold text-foreground hover:underline line-clamp-2"
-            >
-              {hit.title}
-            </Link>
-            {meta ? (
-              <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{meta}</p>
-            ) : null}
+          <div className="flex gap-3">
+            <CompanyLogo
+              src={hit.companyLogoUrl}
+              companyId={hit.companyId}
+              fallbackText={companyName}
+              containerClassName="size-11 shrink-0 rounded-xl"
+              fallbackIconSize={20}
+              imageClassName="p-1"
+            />
+            <div className="min-w-0 flex-1">
+              {companyName ? (
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground truncate">
+                  {companyName}
+                </p>
+              ) : null}
+              <Link
+                href={ROUTES.evidence.detail(hit.id)}
+                className="font-semibold text-foreground hover:underline line-clamp-2"
+              >
+                {hit.title}
+              </Link>
+              {meta ? (
+                <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{meta}</p>
+              ) : null}
+            </div>
           </div>
           {hit.snippet ? (
             <p className="text-sm text-muted-foreground line-clamp-2 whitespace-pre-wrap">{hit.snippet}</p>

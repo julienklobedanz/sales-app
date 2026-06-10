@@ -6,6 +6,8 @@ export type HomepageSemanticReferenceHit = {
   similarity: number
   snippet: string
   companyName: string | null
+  companyId: string | null
+  companyLogoUrl: string | null
   volumeEur: string | null
 }
 

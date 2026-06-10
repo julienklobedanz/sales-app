@@ -374,6 +374,8 @@ export type MatchReferenceHit = {
   snippet: string
   /** Account (Firma) der Referenz. */
   companyName: string | null
+  companyId?: string | null
+  companyLogoUrl?: string | null
   /** Projekt-/Volumenangabe (Rohwert wie in Evidence). */
   volumeEur: string | null
 }

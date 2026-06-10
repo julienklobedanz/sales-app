@@ -8,8 +8,9 @@ import type { HomepageSemanticReferenceHit } from '@/lib/command-center/homepage
 import { embedTextWithOpenAI } from '@/lib/embeddings-openai'
 import { rpcMatchReferences } from '@/lib/match-references-rpc'
 import { snippetFromSummary } from '@/lib/match-reference-snippet'
+import { fetchCompanyFieldsForReferenceIds } from '@/lib/references/enrich-match-hits-company'
 
-export const HOME_SEMANTIC_MATCH_THRESHOLD = 0.42
+export const HOME_SEMANTIC_MATCH_THRESHOLD = 0.48
 export const HOME_SEMANTIC_MATCH_COUNT = 12
 
 type SemanticSearchParams = {
@@ -56,7 +57,7 @@ export async function searchHomepageReferencesSemantic(
 
   if (error) return { ok: false, error }
 
-  const hits: HomepageSemanticReferenceHit[] = rows.map((r) => {
+  const baseHits: HomepageSemanticReferenceHit[] = rows.map((r) => {
     const summary = r.summary?.trim() ?? null
     const title = r.title ?? ''
     const volRaw = r.volume_eur?.trim() ?? null
@@ -68,7 +69,25 @@ export async function searchHomepageReferencesSemantic(
       similarity: typeof r.similarity === 'number' ? r.similarity : 0,
       snippet: snippetFromSummary(summary, title),
       companyName: r.company_name?.trim() ? r.company_name : null,
+      companyId: null,
+      companyLogoUrl: null,
       volumeEur: volRaw && volRaw.length > 0 ? volRaw : null,
+    }
+  })
+
+  const companyByRef = await fetchCompanyFieldsForReferenceIds(
+    params.supabase,
+    baseHits.map((h) => h.id)
+  )
+
+  const hits = baseHits.map((h) => {
+    const co = companyByRef.get(h.id)
+    if (!co) return h
+    return {
+      ...h,
+      companyId: co.companyId,
+      companyName: h.companyName ?? co.companyName,
+      companyLogoUrl: co.companyLogoUrl,
     }
   })
 
