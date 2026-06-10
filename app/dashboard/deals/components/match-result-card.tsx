@@ -89,10 +89,9 @@ export function MatchResultCard({
 
   return (
     <div className="rounded-xl border bg-card p-4 shadow-sm">
-      <div className="flex gap-4">
-        <MatchScoreCircle key={`${hit.id}-${hit.similarity}`} similarity01={hit.similarity} />
-        <div className="min-w-0 flex-1 space-y-2">
-          <div className="flex gap-3">
+      <div className="space-y-2">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex min-w-0 flex-1 gap-3">
             <CompanyLogo
               src={hit.companyLogoUrl}
               companyId={hit.companyId}
@@ -101,7 +100,7 @@ export function MatchResultCard({
               fallbackIconSize={20}
               imageClassName="p-1"
             />
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1 text-left">
               {companyName ? (
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground truncate">
                   {companyName}
@@ -118,11 +117,14 @@ export function MatchResultCard({
               ) : null}
             </div>
           </div>
-          {hit.snippet ? (
-            <p className="text-sm text-muted-foreground line-clamp-2 whitespace-pre-wrap">{hit.snippet}</p>
-          ) : null}
+          <MatchScoreCircle key={`${hit.id}-${hit.similarity}`} similarity01={hit.similarity} />
+        </div>
 
-          <div className="flex flex-wrap gap-1.5 pt-1">
+        {hit.snippet ? (
+          <p className="text-left text-sm text-muted-foreground line-clamp-2 whitespace-pre-wrap">{hit.snippet}</p>
+        ) : null}
+
+        <div className="flex flex-wrap justify-start gap-1.5 pt-1">
             <Button type="button" variant="outline" size="sm" className="h-8 text-xs" onClick={() => setPdfOpen(true)}>
               <AppIcon icon={FileText} size={14} className="mr-1" />
               PDF exportieren
@@ -163,7 +165,6 @@ export function MatchResultCard({
                 {alreadyLinked ? 'Bereits im Deal' : 'In Deal übernehmen'}
               </Button>
             ) : null}
-          </div>
         </div>
       </div>
 
