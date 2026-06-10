@@ -5,22 +5,19 @@ import {
   searchCommandCenter,
   type CommandSearchGroups,
 } from '@/lib/command-center/global-search'
-import { searchReferencesSemantic } from '@/lib/command-center/search-references-semantic'
+import type { HomepageSemanticSearchResult } from '@/lib/command-center/homepage-semantic-types'
+import {
+  searchHomepageReferencesSemantic,
+  searchReferencesSemanticLegacy,
+} from '@/lib/command-center/search-references-semantic'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
-/**
- * Homepage Command Center: Referenzen semantisch (Embedding + match_references),
- * übrige Entitäten weiter per Keyword (ILIKE).
- */
-export async function searchCommandCenterAction(rawQuery: string): Promise<CommandSearchGroups> {
-  const q = rawQuery.trim()
-  if (!q) return emptyCommandSearchGroups()
-
+async function loadSearchAuth() {
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) return emptyCommandSearchGroups()
+  if (!user) return null
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -28,28 +25,81 @@ export async function searchCommandCenterAction(rawQuery: string): Promise<Comma
     .eq('id', user.id)
     .single()
 
-  if (!profile?.organization_id) return emptyCommandSearchGroups()
+  if (!profile?.organization_id) return null
 
-  const orgId = profile.organization_id as string
-  const role = (profile as { role?: string }).role ?? 'sales'
-  const salesVisibleOnly = role === 'sales'
+  return {
+    supabase,
+    orgId: profile.organization_id as string,
+    salesVisibleOnly: ((profile as { role?: string }).role ?? 'sales') === 'sales',
+  }
+}
+
+/**
+ * Homepage: semantische Referenz-Suche (nur nach Absenden im UI).
+ */
+export async function searchHomepageSemanticAction(
+  rawQuery: string
+): Promise<HomepageSemanticSearchResult> {
+  const q = rawQuery.trim()
+  if (!q) {
+    return { success: false, query: '', error: 'Bitte eine Suchanfrage eingeben.' }
+  }
+
+  const auth = await loadSearchAuth()
+  if (!auth) {
+    return { success: false, query: q, error: 'Nicht angemeldet oder keine Organisation.' }
+  }
 
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) {
-    return searchCommandCenter(supabase, q)
+    return {
+      success: false,
+      query: q,
+      error: 'Semantische Suche ist deaktiviert (OPENAI_API_KEY fehlt).',
+    }
   }
 
-  const semantic = await searchReferencesSemantic({
-    supabase,
+  const semantic = await searchHomepageReferencesSemantic({
+    supabase: auth.supabase,
     apiKey,
     query: q,
-    organizationId: orgId,
-    salesVisibleOnly,
+    organizationId: auth.orgId,
+    salesVisibleOnly: auth.salesVisibleOnly,
   })
 
   if (!semantic.ok) {
-    return searchCommandCenter(supabase, q)
+    return { success: false, query: q, error: semantic.error }
   }
 
-  return searchCommandCenter(supabase, q, { referenceHits: semantic.hits })
+  return { success: true, query: q, hits: semantic.hits }
+}
+
+/**
+ * Legacy: gemischte Keyword-Suche (Command Palette o. Ä.).
+ */
+export async function searchCommandCenterAction(rawQuery: string): Promise<CommandSearchGroups> {
+  const q = rawQuery.trim()
+  if (!q) return emptyCommandSearchGroups()
+
+  const auth = await loadSearchAuth()
+  if (!auth) return emptyCommandSearchGroups()
+
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey) {
+    return searchCommandCenter(auth.supabase, q)
+  }
+
+  const semantic = await searchReferencesSemanticLegacy({
+    supabase: auth.supabase,
+    apiKey,
+    query: q,
+    organizationId: auth.orgId,
+    salesVisibleOnly: auth.salesVisibleOnly,
+  })
+
+  if (!semantic.ok) {
+    return searchCommandCenter(auth.supabase, q)
+  }
+
+  return searchCommandCenter(auth.supabase, q, { referenceHits: semantic.hits })
 }

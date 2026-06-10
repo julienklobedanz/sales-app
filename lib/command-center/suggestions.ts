@@ -18,22 +18,62 @@ const SALES_SUGGESTIONS: CommandCenterSuggestion[] = [
     label: '📊 Datenplattform & BI',
     query: 'Daten-Silos abbauen, Lakehouse und Self-Service BI',
   },
+  {
+    label: '💶 Projekte über 2 Mio. Euro',
+    query: 'Projekte über 2 Millionen Euro mit Enterprise-Volumen',
+  },
+  {
+    label: '🏦 Referenzen Finanzbranche',
+    query: 'Compliance und Security für Banken und Versicherungen',
+  },
+  {
+    label: '🛡️ Security-Hardening',
+    query: 'Security-Hardening, SIEM und Zero-Trust-Blueprint',
+  },
+  {
+    label: '🔗 CRM & MDM',
+    query: 'CRM und MDM Harmonisierung mit Datenqualität',
+  },
 ]
 
 const ADMIN_SUGGESTIONS: CommandCenterSuggestion[] = [
-  { label: '👥 Nutzer verwalten', query: 'Nutzer' },
-  { label: '🛡️ System-Zertifikate', query: 'Zertifikate' },
-  { label: '⚙️ API-Status prüfen', query: 'API' },
+  { label: '☁️ Cloud & Governance', query: 'Cloud Migration mit Landing Zone und Governance' },
+  { label: '🔒 Compliance-Referenzen', query: 'Audit, Compliance und Zero Trust im Enterprise' },
+  { label: '💶 Große Projekte', query: 'Referenzen mit Projektvolumen über 3 Millionen Euro' },
 ]
 
 const ACCOUNT_MANAGER_SUGGESTIONS: CommandCenterSuggestion[] = [
-  { label: '⏳ Offene SME-Fragen', query: 'SME Routing' },
-  { label: '🚨 Kritische Red Flags', query: 'Red Flags' },
-  { label: '📅 Deadlines diese Woche', query: 'Fristen' },
+  { label: '☁️ Cloud-Migration', query: 'Skalierbare Cloud-Plattform und Migration' },
+  { label: '🔒 Security & Audit', query: 'Security-Hardening unter Compliance-Anforderungen' },
+  { label: '📊 Data Platform', query: 'Lakehouse, Analytics und Self-Service BI' },
 ]
 
 export function commandCenterSuggestionsForRole(role: AppRole): CommandCenterSuggestion[] {
   if (role === 'admin') return ADMIN_SUGGESTIONS
   if (role === 'account_manager') return ACCOUNT_MANAGER_SUGGESTIONS
   return SALES_SUGGESTIONS
+}
+
+/** Während der Eingabe: passende Beispielanfragen (keine Live-Suche). */
+export function filterCommandCenterSuggestions(
+  suggestions: CommandCenterSuggestion[],
+  draft: string,
+  limit = 5
+): CommandCenterSuggestion[] {
+  const q = draft.trim().toLowerCase()
+  if (!q) return suggestions.slice(0, limit)
+
+  const scored = suggestions
+    .map((s) => {
+      const hay = `${s.label} ${s.query}`.toLowerCase()
+      if (hay.includes(q)) return { s, score: 3 }
+      const tokens = q.split(/\s+/).filter((t) => t.length >= 3)
+      const hits = tokens.filter((t) => hay.includes(t)).length
+      return { s, score: hits }
+    })
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score)
+
+  if (scored.length) return scored.slice(0, limit).map((x) => x.s)
+  return suggestions.slice(0, Math.min(3, limit))
 }

@@ -37,6 +37,19 @@ function formatTags(tags: string | null | undefined): string | null {
     .join(', ')
 }
 
+function formatVolumeForEmbed(volume: string | null | undefined): string | null {
+  const raw = volume?.trim()
+  if (!raw) return null
+  const digits = raw.replace(/[^\d]/g, '')
+  const n = Number.parseInt(digits, 10)
+  if (!Number.isFinite(n) || n <= 0) return raw
+  if (n >= 1_000_000) {
+    const mio = (n / 1_000_000).toLocaleString('de-DE', { maximumFractionDigits: 1 })
+    return `${raw} (circa ${mio} Millionen Euro)`
+  }
+  return raw
+}
+
 function formatProjectStatus(status: string | null | undefined): string | null {
   const s = status?.trim().toLowerCase()
   if (!s) return null
@@ -51,7 +64,7 @@ export function buildReferenceEmbeddingText(ref: ReferenceEmbeddingSource): stri
   pushLabeled(lines, 'Kunde/Account', ref.company_name)
   pushLabeled(lines, 'Branche', ref.industry)
   pushLabeled(lines, 'Region', ref.country)
-  pushLabeled(lines, 'Volumen', ref.volume_eur)
+  pushLabeled(lines, 'Volumen', formatVolumeForEmbed(ref.volume_eur))
   pushLabeled(lines, 'Vertragsart', ref.contract_type)
   pushLabeled(lines, 'Projektstatus', formatProjectStatus(ref.project_status))
   pushLabeled(lines, 'Incumbent', ref.incumbent_provider)

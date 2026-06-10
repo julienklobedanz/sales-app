@@ -3,27 +3,24 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Building2, FileText, Loader2, Search } from 'lucide-react'
-import { searchCommandCenterAction } from '@/app/dashboard/command-center/actions'
+import { toast } from 'sonner'
+
+import { searchHomepageSemanticAction } from '@/app/dashboard/command-center/actions'
 import { useRole } from '@/hooks/useRole'
-import { commandCenterSuggestionsForRole } from '@/lib/command-center/suggestions'
+import {
+  commandCenterSuggestionsForRole,
+  filterCommandCenterSuggestions,
+} from '@/lib/command-center/suggestions'
 import {
   loadCommandRecents,
   type CommandRecentItem,
   type CommandRecentKind,
 } from '@/lib/command-center/recents'
 import { firstNameFromFullName, relativeTimeDe } from '@/lib/command-center/format'
-import {
-  emptyCommandSearchGroups,
-  type CommandSearchGroups,
-  type CommandSearchResult,
-} from '@/lib/command-center/global-search'
-import { hrefForCommandSearchResult } from '@/lib/command-center/search-navigation'
+import type { HomepageSemanticReferenceHit } from '@/lib/command-center/homepage-semantic-types'
 import { hrefForGlobalSearchResult } from '@/lib/command-center/global-search'
-import { pushCommandRecent } from '@/lib/command-center/push-recent'
-import { getNdaAgreementDownloadUrl } from '@/app/dashboard/accounts/nda-actions'
-import { getComplianceDocumentDownloadUrl } from '@/app/dashboard/settings/compliance-actions'
-import { CommandCenterSearchResults } from '@/components/dashboard/command-center-search-results'
-import { cn } from '@/lib/utils'
+import { CommandCenterReferenceResults } from '@/components/dashboard/command-center-reference-results'
+import { Button } from '@/components/ui/button'
 
 function recentTitle(item: CommandRecentItem) {
   if (item.kind === 'reference' && item.accountName?.trim()) {
@@ -37,29 +34,6 @@ function RecentIcon({ kind }: { kind: CommandRecentKind }) {
   return <FileText className="size-4 shrink-0 text-slate-500" aria-hidden />
 }
 
-function pushRecentForResult(item: CommandSearchResult) {
-  if (item.kind === 'reference') {
-    pushCommandRecent({
-      kind: 'reference',
-      id: item.id,
-      title: item.title,
-      accountName: item.accountName,
-    })
-    return
-  }
-  if (item.kind === 'account') {
-    pushCommandRecent({ kind: 'account', id: item.id, title: item.title })
-    return
-  }
-  if (item.kind === 'nda') {
-    pushCommandRecent({ kind: 'account', id: item.companyId, title: item.companyName })
-    return
-  }
-  if (item.kind === 'market_signal') {
-    pushCommandRecent({ kind: 'account', id: item.companyId, title: item.companyName })
-  }
-}
-
 type Props = {
   greetingName: string | null
 }
@@ -69,80 +43,61 @@ export function CommandCenter({ greetingName }: Props) {
   const { role } = useRole()
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const [query, setQuery] = useState('')
-  const [focused, setFocused] = useState(false)
+  const [draft, setDraft] = useState('')
+  const [submittedQuery, setSubmittedQuery] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [groups, setGroups] = useState<CommandSearchGroups>(emptyCommandSearchGroups)
+  const [hits, setHits] = useState<HomepageSemanticReferenceHit[] | null>(null)
   const [recents, setRecents] = useState<CommandRecentItem[]>(() => loadCommandRecents())
   const [nowMs] = useState(() => Date.now())
 
   const firstName = firstNameFromFullName(greetingName)
-  const suggestions = useMemo(() => commandCenterSuggestionsForRole(role), [role])
-  const displayRecents = recents.slice(0, 4)
-  const showEmptyPulseCaret = focused && query.length === 0
-  const showResultsPanel = focused && query.trim().length > 0
+  const allSuggestions = useMemo(() => commandCenterSuggestionsForRole(role), [role])
+  const visibleSuggestions = useMemo(
+    () => filterCommandCenterSuggestions(allSuggestions, draft),
+    [allSuggestions, draft]
+  )
 
-  const refreshRecents = useCallback(() => {
-    setRecents(loadCommandRecents())
-  }, [])
+  const hasSubmitted = submittedQuery !== null
+  const displayRecents = !hasSubmitted ? recents.slice(0, 4) : []
 
   useEffect(() => {
     inputRef.current?.focus()
   }, [])
 
-  useEffect(() => {
-    const q = query.trim()
-    if (!q) return
-
-    let cancelled = false
-    const handle = window.setTimeout(async () => {
-      setLoading(true)
-      const next = await searchCommandCenterAction(q)
-      if (!cancelled) {
-        setGroups(next)
-        setLoading(false)
-      }
-    }, 220)
-
-    return () => {
-      cancelled = true
-      window.clearTimeout(handle)
+  const runSearch = useCallback(async (raw: string) => {
+    const q = raw.trim()
+    if (!q) {
+      toast.error('Bitte eine Suchanfrage eingeben.')
+      return
     }
-  }, [query])
 
-  function applySuggestion(text: string) {
-    setQuery(text)
-    inputRef.current?.focus()
-  }
+    setDraft(q)
+    setSubmittedQuery(q)
+    setLoading(true)
+    setHits(null)
 
-  async function selectResult(item: CommandSearchResult) {
-    if (item.kind === 'nda' && item.hasFile) {
-      const dl = await getNdaAgreementDownloadUrl(item.id, item.companyId)
-      if (dl.success) {
-        window.open(dl.url, '_blank', 'noopener,noreferrer')
-      }
-    }
-    if (item.kind === 'certificate' && item.hasFile) {
-      const dl = await getComplianceDocumentDownloadUrl(item.id)
-      if (dl.success) {
-        window.open(dl.url, '_blank', 'noopener,noreferrer')
-        pushRecentForResult(item)
-        refreshRecents()
-        setFocused(false)
-        setQuery('')
-        setGroups(emptyCommandSearchGroups())
-        setLoading(false)
+    try {
+      const result = await searchHomepageSemanticAction(q)
+      if (!result.success) {
+        toast.error(result.error)
+        setHits([])
         return
       }
+      setHits(result.hits)
+    } finally {
+      setLoading(false)
     }
+  }, [])
 
-    pushRecentForResult(item)
-    refreshRecents()
-    setFocused(false)
-    setQuery('')
-    setGroups(emptyCommandSearchGroups())
-    setLoading(false)
-    router.push(hrefForCommandSearchResult(item))
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    void runSearch(draft)
+  }
+
+  function applySuggestion(text: string, submit = true) {
+    setDraft(text)
+    inputRef.current?.focus()
+    if (submit) void runSearch(text)
   }
 
   function openRecent(item: CommandRecentItem) {
@@ -150,91 +105,80 @@ export function CommandCenter({ greetingName }: Props) {
   }
 
   return (
-    <div className="flex min-h-[min(70vh,640px)] flex-col">
+    <div className="flex min-h-[min(70vh,640px)] flex-col pb-16">
       <div className="mx-auto mt-12 flex w-full max-w-3xl flex-col items-center px-4 text-center sm:mt-16 md:mt-20">
         <h2 className="mb-6 text-xl font-medium tracking-tight text-slate-800">
           Wie kann RefStack dir heute helfen, {firstName}?
         </h2>
 
-        <div className="relative w-full">
-          <div
-            className={cn(
-              'flex w-full items-center gap-2 rounded-2xl border border-slate-200 bg-white py-3.5 pl-3 pr-4 shadow-md transition-all duration-200',
-              focused && 'border-slate-300 ring-2 ring-slate-950/10'
-            )}
-          >
-            <Search className="ml-1 size-5 shrink-0 text-slate-400" aria-hidden />
-            <div className="relative min-w-0 flex-1">
-              {showEmptyPulseCaret ? (
-                <span
-                  className="command-center-caret pointer-events-none absolute left-0 top-1/2 z-10 -translate-y-1/2"
-                  aria-hidden
-                />
-              ) : null}
+        <form onSubmit={handleSubmit} className="w-full">
+          <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-stretch">
+            <div className="flex min-w-0 flex-1 items-center gap-2 rounded-2xl border border-slate-200 bg-white py-3.5 pl-3 pr-4 shadow-md transition-all focus-within:border-slate-300 focus-within:ring-2 focus-within:ring-slate-950/10">
+              <Search className="ml-1 size-5 shrink-0 text-slate-400" aria-hidden />
               <input
                 ref={inputRef}
-                type="text"
-                value={query}
-                onChange={(e) => {
-                  const v = e.target.value
-                  setQuery(v)
-                  if (!v.trim()) {
-                    setGroups(emptyCommandSearchGroups())
-                    setLoading(false)
-                  }
-                }}
-                onFocus={() => setFocused(true)}
-                onBlur={() => {
-                  window.setTimeout(() => setFocused(false), 180)
-                }}
-                placeholder="Semantische Suche: Referenzen, NDAs, RFPs, Marktsignale…"
-                className={cn(
-                  'relative z-[1] w-full min-w-0 bg-transparent text-sm leading-5 text-slate-800 outline-none placeholder:text-slate-400',
-                  showEmptyPulseCaret && 'caret-transparent'
-                )}
+                type="search"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                placeholder="Referenzen in eigenen Worten suchen …"
+                className="w-full min-w-0 bg-transparent text-sm leading-5 text-slate-800 outline-none placeholder:text-slate-400"
                 autoComplete="off"
                 spellCheck={false}
-                aria-label="Globale Suche"
-                role="combobox"
-                aria-expanded={showResultsPanel}
-                aria-controls="command-center-results"
+                aria-label="Semantische Referenzsuche"
+                enterKeyHint="search"
               />
             </div>
-            {loading && query.trim() ? (
-              <Loader2 className="size-4 shrink-0 animate-spin text-slate-400" aria-hidden />
-            ) : null}
-          </div>
-
-          {showResultsPanel ? (
-            <div
-              id="command-center-results"
-              role="listbox"
-              className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl animate-in fade-in-50 slide-in-from-top-1 duration-150"
+            <Button
+              type="submit"
+              size="lg"
+              className="h-auto shrink-0 rounded-2xl px-6 py-3.5"
+              disabled={loading || !draft.trim()}
             >
-              <CommandCenterSearchResults
-                query={query}
-                loading={loading}
-                groups={groups}
-                onSelect={(item) => void selectResult(item)}
-              />
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
+                  Suche …
+                </>
+              ) : (
+                'Suchen'
+              )}
+            </Button>
+          </div>
+        </form>
+
+        {visibleSuggestions.length > 0 ? (
+          <div className="mt-5 w-full text-left">
+            <p className="mb-2 text-center text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              {draft.trim() ? 'Vorschläge' : 'Beispielanfragen'}
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-2.5">
+              {visibleSuggestions.map((s) => (
+                <button
+                  key={s.query}
+                  type="button"
+                  onClick={() => applySuggestion(s.query, true)}
+                  className="cursor-pointer rounded-full border border-slate-200/60 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100"
+                >
+                  {s.label}
+                </button>
+              ))}
             </div>
+          </div>
+        ) : null}
+      </div>
+
+      {hasSubmitted ? (
+        <div className="mx-auto mt-10 w-full max-w-3xl px-4 sm:mt-12">
+          {loading ? (
+            <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500">
+              <Loader2 className="size-5 animate-spin" aria-hidden />
+              Semantische Suche läuft …
+            </div>
+          ) : hits ? (
+            <CommandCenterReferenceResults query={submittedQuery!} hits={hits} />
           ) : null}
         </div>
-
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-2.5">
-          {suggestions.map((s) => (
-            <button
-              key={s.query}
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => applySuggestion(s.query)}
-              className="cursor-pointer rounded-full border border-slate-200/60 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100"
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      ) : null}
 
       {displayRecents.length > 0 ? (
         <div className="mx-auto mt-10 w-full max-w-3xl px-4 sm:mt-12">
