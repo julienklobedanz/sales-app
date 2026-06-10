@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Building2, FileText, Loader2, Search } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { searchCommandCenterAction } from '@/app/dashboard/command-center/actions'
 import { useRole } from '@/hooks/useRole'
 import { commandCenterSuggestionsForRole } from '@/lib/command-center/suggestions'
 import {
@@ -14,7 +14,6 @@ import {
 import { firstNameFromFullName, relativeTimeDe } from '@/lib/command-center/format'
 import {
   emptyCommandSearchGroups,
-  searchCommandCenter,
   type CommandSearchGroups,
   type CommandSearchResult,
 } from '@/lib/command-center/global-search'
@@ -68,7 +67,6 @@ type Props = {
 export function CommandCenter({ greetingName }: Props) {
   const router = useRouter()
   const { role } = useRole()
-  const supabase = useMemo(() => createClient(), [])
   const inputRef = useRef<HTMLInputElement>(null)
 
   const [query, setQuery] = useState('')
@@ -99,18 +97,18 @@ export function CommandCenter({ greetingName }: Props) {
     let cancelled = false
     const handle = window.setTimeout(async () => {
       setLoading(true)
-      const next = await searchCommandCenter(supabase, q)
+      const next = await searchCommandCenterAction(q)
       if (!cancelled) {
         setGroups(next)
         setLoading(false)
       }
-    }, 180)
+    }, 220)
 
     return () => {
       cancelled = true
       window.clearTimeout(handle)
     }
-  }, [query, supabase])
+  }, [query])
 
   function applySuggestion(text: string) {
     setQuery(text)
@@ -189,7 +187,7 @@ export function CommandCenter({ greetingName }: Props) {
                 onBlur={() => {
                   window.setTimeout(() => setFocused(false), 180)
                 }}
-                placeholder="Suche nach NDAs, Referenzen, RFPs, Marktsignale…"
+                placeholder="Semantische Suche: Referenzen, NDAs, RFPs, Marktsignale…"
                 className={cn(
                   'relative z-[1] w-full min-w-0 bg-transparent text-sm leading-5 text-slate-800 outline-none placeholder:text-slate-400',
                   showEmptyPulseCaret && 'caret-transparent'

@@ -4,6 +4,61 @@ import OpenAI from 'https://esm.sh/openai@4'
 
 type Payload = { reference_id?: string }
 
+/** Spiegel von lib/references/reference-embedding-text.ts (Deno kann @/lib nicht importieren). */
+type ReferenceEmbeddingSource = {
+  title?: string | null
+  industry?: string | null
+  customer_challenge?: string | null
+  our_solution?: string | null
+  summary?: string | null
+  volume_eur?: string | null
+  tags?: string | null
+  country?: string | null
+  contract_type?: string | null
+  incumbent_provider?: string | null
+  competitors?: string | null
+  project_status?: string | null
+  company_name?: string | null
+}
+
+function buildReferenceEmbeddingText(ref: ReferenceEmbeddingSource): string {
+  const lines: string[] = []
+  const labeled = (label: string, value: string | null | undefined) => {
+    const t = value?.trim()
+    if (t) lines.push(`${label}: ${t}`)
+  }
+  const plain = (value: string | null | undefined) => {
+    const t = value?.trim()
+    if (t) lines.push(t)
+  }
+
+  labeled('Kunde/Account', ref.company_name)
+  labeled('Branche', ref.industry)
+  labeled('Region', ref.country)
+  labeled('Volumen', ref.volume_eur)
+  labeled('Vertragsart', ref.contract_type)
+  const ps = ref.project_status?.trim().toLowerCase()
+  if (ps === 'active') labeled('Projektstatus', 'Aktiv')
+  else if (ps === 'completed') labeled('Projektstatus', 'Abgeschlossen')
+  else if (ref.project_status?.trim()) labeled('Projektstatus', ref.project_status)
+  labeled('Incumbent', ref.incumbent_provider)
+  labeled('Wettbewerb', ref.competitors)
+
+  const tags = ref.tags
+    ?.split(/[,;]+/)
+    .map((t) => t.trim())
+    .filter(Boolean)
+    .join(', ')
+  if (tags) lines.push(`Tags: ${tags}`)
+
+  plain(ref.title)
+  if (ref.customer_challenge?.trim()) lines.push(`Herausforderung:\n${ref.customer_challenge.trim()}`)
+  if (ref.our_solution?.trim()) lines.push(`Lösung:\n${ref.our_solution.trim()}`)
+  if (ref.summary?.trim()) lines.push(`Zusammenfassung:\n${ref.summary.trim()}`)
+
+  return lines.join('\n\n')
+}
+
 serve(async (req) => {
   const payload = (await req.json().catch(() => ({}))) as Payload
   const reference_id = payload.reference_id?.toString()
@@ -27,7 +82,6 @@ serve(async (req) => {
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     const openaiKey = Deno.env.get('OPENAI_API_KEY')
     if (!supabaseUrl || !serviceRoleKey || !openaiKey) {
-      // Best-effort: Fehlerstatus in DB hinterlegen (hilft beim Debuggen).
       try {
         if (supabaseUrl && serviceRoleKey && reference_id) {
           const supabaseForError = createClient(supabaseUrl, serviceRoleKey, {
@@ -42,7 +96,7 @@ serve(async (req) => {
             .eq('id', reference_id)
         }
       } catch {
-        // ignore - wir möchten nicht, dass ein Error-Update den eigentlichen Fehler maskiert
+        // ignore
       }
 
       return new Response(
@@ -61,7 +115,23 @@ serve(async (req) => {
 
     const { data: ref, error: refErr } = await supabase
       .from('references')
-      .select('title, customer_challenge, our_solution, summary, industry')
+      .select(
+        `
+        title,
+        industry,
+        customer_challenge,
+        our_solution,
+        summary,
+        volume_eur,
+        tags,
+        country,
+        contract_type,
+        incumbent_provider,
+        competitors,
+        project_status,
+        companies ( name )
+      `
+      )
       .eq('id', reference_id)
       .single()
 
@@ -76,15 +146,28 @@ serve(async (req) => {
       })
     }
 
-    const parts = [
-      ref.title,
-      ref.industry,
-      ref.customer_challenge,
-      ref.our_solution,
-      ref.summary,
-    ].filter((x) => typeof x === 'string' && x.trim().length > 0) as string[]
+    const companyRaw = ref.companies as { name?: string } | { name?: string }[] | null
+    const companyName = Array.isArray(companyRaw)
+      ? companyRaw[0]?.name
+      : companyRaw?.name
 
-    if (!parts.length) {
+    const text = buildReferenceEmbeddingText({
+      title: ref.title,
+      industry: ref.industry,
+      customer_challenge: ref.customer_challenge,
+      our_solution: ref.our_solution,
+      summary: ref.summary,
+      volume_eur: ref.volume_eur,
+      tags: ref.tags,
+      country: ref.country,
+      contract_type: ref.contract_type,
+      incumbent_provider: ref.incumbent_provider,
+      competitors: ref.competitors,
+      project_status: ref.project_status,
+      company_name: companyName ?? null,
+    })
+
+    if (!text.trim()) {
       await supabase
         .from('references')
         .update({
@@ -98,8 +181,6 @@ serve(async (req) => {
         headers: { 'Content-Type': 'application/json' },
       })
     }
-
-    const text = parts.join('\n\n')
 
     const embeddingResponse = await openai.embeddings.create({
       model: 'text-embedding-3-small',
@@ -138,4 +219,3 @@ serve(async (req) => {
     )
   }
 })
-

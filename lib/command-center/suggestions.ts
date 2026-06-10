@@ -6,9 +6,18 @@ export type CommandCenterSuggestion = {
 }
 
 const SALES_SUGGESTIONS: CommandCenterSuggestion[] = [
-  { label: '📜 NDA Accenture', query: 'NDA Accenture' },
-  { label: '🏆 SAP Migration Cases', query: 'SAP Migration' },
-  { label: '📁 Logistik AG öffnen', query: 'Logistik AG' },
+  {
+    label: '☁️ Cloud-Migration mit Governance',
+    query: 'Cloud Landing Zone, Migration und Governance für Enterprise',
+  },
+  {
+    label: '🔒 Zero Trust & Compliance',
+    query: 'Zero Trust, SIEM und Audit-Anforderungen im Finanzsektor',
+  },
+  {
+    label: '📊 Datenplattform & BI',
+    query: 'Daten-Silos abbauen, Lakehouse und Self-Service BI',
+  },
 ]
 
 const ADMIN_SUGGESTIONS: CommandCenterSuggestion[] = [

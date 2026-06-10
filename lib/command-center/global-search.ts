@@ -36,6 +36,8 @@ export type CommandSearchResult =
       title: string
       accountName: string | null
       industry: string | null
+      /** Cosinus-Ähnlichkeit 0–1 (semantische Suche). */
+      similarity?: number
     }
   | {
       kind: 'market_signal'
@@ -79,10 +81,10 @@ export type CommandSearchGroups = {
 }
 
 export const COMMAND_SEARCH_GROUP_ORDER: (keyof CommandSearchGroups)[] = [
+  'references',
   'accounts',
   'rfps',
   'ndas',
-  'references',
   'marketSignals',
   'contacts',
   'certificates',
@@ -204,9 +206,15 @@ export function dedupeAccountSearchResults(
   return [...byName.values()]
 }
 
+export type SearchCommandCenterOptions = {
+  /** Semantische Referenz-Treffer; wenn gesetzt, entfällt ILIKE auf references. */
+  referenceHits?: Extract<CommandSearchResult, { kind: 'reference' }>[]
+}
+
 export async function searchCommandCenter(
   supabase: SupabaseClient,
-  rawQuery: string
+  rawQuery: string,
+  options?: SearchCommandCenterOptions
 ): Promise<CommandSearchGroups> {
   const q = rawQuery.trim()
   if (!q) return emptyCommandSearchGroups()
@@ -214,7 +222,8 @@ export async function searchCommandCenter(
   const likePat = `%${sanitizeIlikeUserInput(q)}%`
   if (!sanitizeIlikeUserInput(q)) return emptyCommandSearchGroups()
 
-  const refOr = buildIlikeOrFilter(['title', 'summary', 'industry'], q)
+  const useSemanticReferences = options?.referenceHits !== undefined
+  const refOr = useSemanticReferences ? null : buildIlikeOrFilter(['title', 'summary', 'industry'], q)
   const deskOr = buildIlikeOrFilter(['project_name', 'customer_name'], q)
   const ndaOr = buildIlikeOrFilter(['title', 'notes'], q)
   const contactOr = buildIlikeOrFilter(['first_name', 'last_name', 'role'], q)
@@ -319,15 +328,19 @@ export async function searchCommandCenter(
     })
   }
 
-  for (const row of refsRes.data ?? []) {
-    const co = companyFromJoin(row.companies)
-    groups.references.push({
-      kind: 'reference',
-      id: String(row.id),
-      title: String(row.title ?? ''),
-      accountName: co?.name ?? null,
-      industry: (row.industry as string | null) ?? null,
-    })
+  if (useSemanticReferences) {
+    groups.references.push(...(options!.referenceHits ?? []))
+  } else {
+    for (const row of refsRes.data ?? []) {
+      const co = companyFromJoin(row.companies)
+      groups.references.push({
+        kind: 'reference',
+        id: String(row.id),
+        title: String(row.title ?? ''),
+        accountName: co?.name ?? null,
+        industry: (row.industry as string | null) ?? null,
+      })
+    }
   }
 
   for (const row of execRes.data ?? []) {

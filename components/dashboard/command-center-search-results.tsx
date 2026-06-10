@@ -150,13 +150,18 @@ function SearchResultRow({ item }: { item: CommandSearchResult }) {
             </ResultIconWrap>
             <span className="min-w-0 truncate">
               <span className="font-medium text-slate-900">{item.title}</span>
-              {item.industry ? (
+              {item.accountName ? (
+                <span className="text-slate-500"> — {item.accountName}</span>
+              ) : item.industry ? (
                 <span className="text-slate-500"> ({item.industry})</span>
-              ) : item.accountName ? (
-                <span className="text-slate-500"> ({item.accountName})</span>
               ) : null}
             </span>
           </span>
+          {typeof item.similarity === 'number' && item.similarity > 0 ? (
+            <Badge variant="secondary" className="shrink-0 text-[10px] font-medium tabular-nums">
+              {Math.round(item.similarity * 100)} %
+            </Badge>
+          ) : null}
         </>
       )
     case 'market_signal':

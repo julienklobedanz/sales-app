@@ -1,12 +1,8 @@
 /**
- * KAN-22: Backfill-Script für Referenz-Embeddings.
+ * Backfill für Referenz-Embeddings (erweiterter Index-Text inkl. Kunde, Volumen, Tags, …).
  *
- * Einmalig ausführen, um alle Referenzen mit embedding IS NULL zu vektorisieren
- * (title + industry + customer_challenge + our_solution + summary → text-embedding-3-small).
- * Idempotent: nur NULL-Einträge werden befüllt. Referenzen ohne Textinhalt bleiben NULL.
- *
- * Abhängigkeit: KAN-21 (pgvector-Spalte references.embedding muss existieren).
- * Optional: KAN-23 (references.embedding_updated_at, references.embedding_error).
+ * Standard: nur embedding IS NULL.
+ * REINDEX_ALL=1: alle Referenzen neu vektorisieren (nach Embedding-Erweiterung).
  *
  * Voraussetzungen:
  * - SUPABASE_URL (oder NEXT_PUBLIC_SUPABASE_URL)
@@ -15,9 +11,12 @@
  *
  * Ausführung:
  *   npx ts-node --require dotenv/config scripts/backfill-embeddings.ts dotenv_config_path=.env.local
+ *   REINDEX_ALL=1 npx ts-node --require dotenv/config scripts/backfill-embeddings.ts dotenv_config_path=.env.local
  */
 
 import { createClient } from '@supabase/supabase-js'
+
+import { buildReferenceEmbeddingText } from '../lib/references/reference-embedding-text'
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -36,6 +35,8 @@ if (!OPENAI_API_KEY) {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
+const REINDEX_ALL = process.env.REINDEX_ALL === '1' || process.env.REINDEX_ALL === 'true'
+
 type RefRow = {
   id: string
   title: string | null
@@ -43,15 +44,51 @@ type RefRow = {
   customer_challenge: string | null
   our_solution: string | null
   industry: string | null
+  volume_eur: string | null
+  tags: string | null
+  country: string | null
+  contract_type: string | null
+  incumbent_provider: string | null
+  competitors: string | null
+  project_status: string | null
+  companies: { name: string } | { name: string }[] | null
 }
 
-async function fetchBatch(limit: number): Promise<RefRow[]> {
-  const { data, error } = await supabase
+async function fetchBatch(limit: number, afterId: string | null): Promise<RefRow[]> {
+  let q = supabase
     .from('references')
-    .select('id, title, summary, customer_challenge, our_solution, industry')
-    .is('embedding', null)
-    .is('embedding_error', null)
+    .select(
+      `
+      id,
+      title,
+      summary,
+      customer_challenge,
+      our_solution,
+      industry,
+      volume_eur,
+      tags,
+      country,
+      contract_type,
+      incumbent_provider,
+      competitors,
+      project_status,
+      companies ( name )
+    `
+    )
+    .order('id', { ascending: true })
     .limit(limit)
+
+  if (afterId) {
+    q = q.gt('id', afterId)
+  }
+
+  if (!REINDEX_ALL) {
+    q = q.is('embedding', null).is('embedding_error', null)
+  } else {
+    q = q.is('embedding_error', null)
+  }
+
+  const { data, error } = await q
 
   if (error) {
     throw error
@@ -85,32 +122,49 @@ const BATCH_SIZE = 100 // max pro Request (OpenAI/Spec)
 
 async function run() {
   let processed = 0
-  console.log('KAN-22 Backfill: Starte Verarbeitung (nur Einträge mit embedding IS NULL)…')
+  console.log(
+    REINDEX_ALL
+      ? 'Backfill: REINDEX_ALL — alle Referenzen werden neu vektorisiert…'
+      : 'Backfill: Starte Verarbeitung (nur Einträge mit embedding IS NULL)…'
+  )
+
+  let reindexCursor: string | null = null
 
   while (true) {
-    const batch = await fetchBatch(BATCH_SIZE)
+    const batch = await fetchBatch(BATCH_SIZE, REINDEX_ALL ? reindexCursor : null)
     if (!batch.length) {
-      console.log('Fertig – keine weiteren Referenzen ohne Embedding.')
+      console.log(
+        REINDEX_ALL
+          ? 'Fertig – alle Referenzen verarbeitet.'
+          : 'Fertig – keine weiteren Referenzen ohne Embedding.'
+      )
       break
+    }
+
+    if (REINDEX_ALL) {
+      reindexCursor = batch[batch.length - 1]?.id ?? reindexCursor
     }
 
     console.log(`Verarbeite Batch mit ${batch.length} Referenzen…`)
 
     const inputs = batch.map((r) => {
-      const parts = [
-        r.title,
-        r.industry,
-        r.customer_challenge,
-        r.our_solution,
-        r.summary,
-      ]
-        .filter((p): p is string => !!p && p.trim().length > 0)
-        .map((p) => p.trim())
-
-      if (!parts.length) {
-        return ''
-      }
-      return parts.join('\n\n')
+      const companyRaw = r.companies
+      const companyName = Array.isArray(companyRaw) ? companyRaw[0]?.name : companyRaw?.name
+      return buildReferenceEmbeddingText({
+        title: r.title,
+        industry: r.industry,
+        customer_challenge: r.customer_challenge,
+        our_solution: r.our_solution,
+        summary: r.summary,
+        volume_eur: r.volume_eur,
+        tags: r.tags,
+        country: r.country,
+        contract_type: r.contract_type,
+        incumbent_provider: r.incumbent_provider,
+        competitors: r.competitors,
+        project_status: r.project_status,
+        company_name: companyName ?? null,
+      })
     })
 
     // Einige Referenzen könnten leere Texte haben → diese werden markiert, damit sie nicht erneut gezogen werden
