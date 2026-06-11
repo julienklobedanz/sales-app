@@ -9,6 +9,10 @@ import { Search, UserPlus } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { setChampionWatchlistState, setCompanyWatchlistState } from '@/app/dashboard/market-signals/actions'
+import {
+  CompanySegmentSwitch,
+  type CompanyWatchSegment,
+} from '@/app/dashboard/market-signals/manage/company-segment-switch'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
@@ -32,6 +36,12 @@ type ManageCompany = {
   name: string
   logoUrl: string | null
   isFollowing: boolean
+  accountStatus: string | null
+}
+
+function isBestandskunde(accountStatus: string | null): boolean {
+  const s = String(accountStatus ?? '').trim()
+  return s === 'active_customer' || s === 'former_customer' || s === 'at_risk'
 }
 
 type WatchedStakeholder = {
@@ -56,6 +66,7 @@ export function MarketSignalsManageClient({
   const initialTab = searchParams.get('tab') === 'executives' ? 'executives' : 'companies'
   const [activeTab, setActiveTab] = useState(initialTab)
   const [query, setQuery] = useState('')
+  const [companySegment, setCompanySegment] = useState<CompanyWatchSegment>('bestand')
   const [stakeholderQuery, setStakeholderQuery] = useState('')
   const [rows, setRows] = useState(companies)
   const [stakeholderRows, setStakeholderRows] = useState(watchedStakeholders)
@@ -66,10 +77,13 @@ export function MarketSignalsManageClient({
   const [isPending, startTransition] = useTransition()
 
   const filteredCompanies = useMemo(() => {
+    const segmentFiltered = rows.filter((row) =>
+      companySegment === 'bestand' ? isBestandskunde(row.accountStatus) : !isBestandskunde(row.accountStatus)
+    )
     const q = query.trim().toLowerCase()
-    if (!q) return rows
-    return rows.filter((row) => row.name.toLowerCase().includes(q))
-  }, [query, rows])
+    if (!q) return segmentFiltered
+    return segmentFiltered.filter((row) => row.name.toLowerCase().includes(q))
+  }, [companySegment, query, rows])
 
   const filteredStakeholders = useMemo(() => {
     const q = stakeholderQuery.trim().toLowerCase()
@@ -189,23 +203,34 @@ export function MarketSignalsManageClient({
           </TabsList>
 
           <TabsContent value="companies" className="mt-0 space-y-4">
-            <div className="relative max-w-md">
-              <AppIcon
-                icon={SearchIcon}
-                size={16}
-                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"
-              />
-              <Input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Accounts durchsuchen"
-                className="h-10 rounded-xl border-border/70 bg-card pl-10"
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="relative w-full max-w-md sm:flex-1">
+                <AppIcon
+                  icon={SearchIcon}
+                  size={16}
+                  className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
+                <Input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Accounts durchsuchen"
+                  className="h-10 rounded-xl border-border/70 bg-card pl-10"
+                />
+              </div>
+
+              <CompanySegmentSwitch
+                value={companySegment}
+                onChange={setCompanySegment}
               />
             </div>
 
             {filteredCompanies.length === 0 ? (
               <p className="rounded-xl border border-dashed border-border/70 bg-muted/20 px-4 py-10 text-center text-sm text-muted-foreground">
-                Keine Accounts gefunden.
+                {query.trim()
+                  ? 'Keine Accounts gefunden.'
+                  : companySegment === 'bestand'
+                    ? 'Keine Bestandskunden in RefStack — legen Sie Accounts mit Status „Aktiver Kunde“, „Ehemaliger Kunde“ oder „Account at Risk“ an.'
+                    : 'Keine Neukunden in RefStack — Targets und Accounts ohne Kundenstatus erscheinen hier.'}
               </p>
             ) : (
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">

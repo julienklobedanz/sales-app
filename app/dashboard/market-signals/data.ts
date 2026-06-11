@@ -1,6 +1,9 @@
 import 'server-only'
 
+import { isMissingEnrichmentColumnsError } from '@/lib/market-signals/enrichment-db'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+
+export type MarketSignalCategory = 'people' | 'finance' | 'strategy'
 
 export type ExecutiveTrackingRow = {
   id: string
@@ -14,6 +17,9 @@ export type ExecutiveTrackingRow = {
   detectedAt: string
   eventKind: 'role_change' | 'news_mention'
   sourceUrl: string | null
+  signalCategory: MarketSignalCategory | null
+  insightSignalFact: string | null
+  insightWhyNow: string | null
 }
 
 export type AccountNewsRow = {
@@ -27,6 +33,9 @@ export type AccountNewsRow = {
   sourceUrl: string | null
   publishedOn: string
   segment: 'customer' | 'prospect'
+  signalCategory: MarketSignalCategory | null
+  insightSignalFact: string | null
+  insightWhyNow: string | null
 }
 
 export type MarketSignalsCompanyOption = {
@@ -67,6 +76,66 @@ function normalizeChampionKey(raw: string | null | undefined) {
     .toLowerCase()
     .replace(/\s+/g, ' ')
 }
+
+function parseSignalCategory(raw: unknown): MarketSignalCategory | null {
+  const v = String(raw ?? '').trim().toLowerCase()
+  if (v === 'people' || v === 'finance' || v === 'strategy') return v
+  return null
+}
+
+const EXEC_EVENTS_SELECT_WITH_ENRICHMENT = `
+  id,
+  person_name,
+  person_title_before,
+  person_title_after,
+  change_summary,
+  detected_at,
+  company_id,
+  event_kind,
+  source_url,
+  signal_category,
+  insight_signal_fact,
+  insight_why_now,
+  companies ( name, logo_url )
+`
+
+const EXEC_EVENTS_SELECT_BASE = `
+  id,
+  person_name,
+  person_title_before,
+  person_title_after,
+  change_summary,
+  detected_at,
+  company_id,
+  event_kind,
+  source_url,
+  companies ( name, logo_url )
+`
+
+const ACCOUNT_NEWS_SELECT_WITH_ENRICHMENT = `
+  id,
+  body,
+  source_label,
+  source_url,
+  published_on,
+  segment,
+  company_id,
+  signal_category,
+  insight_signal_fact,
+  insight_why_now,
+  companies ( name, logo_url )
+`
+
+const ACCOUNT_NEWS_SELECT_BASE = `
+  id,
+  body,
+  source_label,
+  source_url,
+  published_on,
+  segment,
+  company_id,
+  companies ( name, logo_url )
+`
 
 function normalizeDealStatus(raw: unknown) {
   const s = String(raw ?? '').trim()
@@ -194,48 +263,52 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
     }))
     .filter((d) => d.id && d.companyId)
 
-  const { data: execRows, error: execErr } = await supabase
+  let execRows: Record<string, unknown>[] | null = null
+  const execWithEnrichment = await supabase
     .from('market_signal_executive_events')
-    .select(
-      `
-      id,
-      person_name,
-      person_title_before,
-      person_title_after,
-      change_summary,
-      detected_at,
-      company_id,
-      event_kind,
-      source_url,
-      companies ( name, logo_url )
-    `
-    )
+    .select(EXEC_EVENTS_SELECT_WITH_ENRICHMENT)
     .order('detected_at', { ascending: false })
     .limit(100)
 
-  if (execErr) {
-    console.error('[market-signals] executive_events', execErr.message)
+  if (!execWithEnrichment.error) {
+    execRows = (execWithEnrichment.data ?? []) as Record<string, unknown>[]
+  } else if (isMissingEnrichmentColumnsError(execWithEnrichment.error.message)) {
+    const execBase = await supabase
+      .from('market_signal_executive_events')
+      .select(EXEC_EVENTS_SELECT_BASE)
+      .order('detected_at', { ascending: false })
+      .limit(100)
+    if (execBase.error) {
+      console.error('[market-signals] executive_events', execBase.error.message)
+    } else {
+      execRows = (execBase.data ?? []) as Record<string, unknown>[]
+    }
+  } else {
+    console.error('[market-signals] executive_events', execWithEnrichment.error.message)
   }
 
-  const { data: newsRows, error: newsErr } = await supabase
+  let newsRows: Record<string, unknown>[] | null = null
+  const newsWithEnrichment = await supabase
     .from('market_signal_account_news')
-    .select(
-      `
-      id,
-      body,
-      source_label,
-      source_url,
-      published_on,
-      segment,
-      company_id,
-      companies ( name, logo_url )
-    `
-    )
+    .select(ACCOUNT_NEWS_SELECT_WITH_ENRICHMENT)
     .order('published_on', { ascending: false })
     .limit(100)
 
-  if (newsErr) {
-    console.error('[market-signals] account_news', newsErr.message)
+  if (!newsWithEnrichment.error) {
+    newsRows = (newsWithEnrichment.data ?? []) as Record<string, unknown>[]
+  } else if (isMissingEnrichmentColumnsError(newsWithEnrichment.error.message)) {
+    const newsBase = await supabase
+      .from('market_signal_account_news')
+      .select(ACCOUNT_NEWS_SELECT_BASE)
+      .order('published_on', { ascending: false })
+      .limit(100)
+    if (newsBase.error) {
+      console.error('[market-signals] account_news', newsBase.error.message)
+    } else {
+      newsRows = (newsBase.data ?? []) as Record<string, unknown>[]
+    }
+  } else {
+    console.error('[market-signals] account_news', newsWithEnrichment.error.message)
   }
 
   if (followingCompanyIds.length === 0) {
@@ -278,6 +351,9 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
       detectedAt: String(row.detected_at ?? ''),
       eventKind: ek === 'news_mention' ? 'news_mention' : 'role_change',
       sourceUrl: (row.source_url as string | null) ?? null,
+      signalCategory: parseSignalCategory(row.signal_category),
+      insightSignalFact: (row.insight_signal_fact as string | null) ?? null,
+      insightWhyNow: (row.insight_why_now as string | null) ?? null,
     }
   })
 
@@ -297,6 +373,9 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
       sourceUrl: (row.source_url as string | null) ?? null,
       publishedOn: String(row.published_on ?? ''),
       segment: seg === 'prospect' ? 'prospect' : 'customer',
+      signalCategory: parseSignalCategory(row.signal_category),
+      insightSignalFact: (row.insight_signal_fact as string | null) ?? null,
+      insightWhyNow: (row.insight_why_now as string | null) ?? null,
     }
   })
 

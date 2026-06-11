@@ -3,6 +3,10 @@
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
+import {
+  runMarketSignalEnrichmentBackfill,
+  type BackfillSignalEnrichmentResult,
+} from '@/lib/market-signals/backfill-signal-enrichment'
 import { runCompanyNewsIngest } from '@/lib/market-signals/ingest-company-news'
 import { runExecutiveIntelIngest } from '@/lib/market-signals/ingest-executive-intel'
 import { notifyInstantMarketSignalsAfterIngest } from '@/lib/market-signals/market-signals-instant-alerts'
@@ -588,6 +592,68 @@ export async function triggerMarketSignalsIngestForMyOrg(args?: {
 /** @deprecated Alias – nutze triggerMarketSignalsIngestForMyOrg */
 export async function triggerCompanyNewsIngestForMyOrg() {
   return triggerMarketSignalsIngestForMyOrg()
+}
+
+export type BackfillMarketSignalEnrichmentResult =
+  | ({ success: true } & BackfillSignalEnrichmentResult)
+  | { success: false; error: string }
+
+/** Bestehende RSS-Zeilen ohne insight_* per LLM/heuristisch anreichern (Org-Scope). */
+export async function backfillMarketSignalEnrichmentForMyOrg(args?: {
+  maxNews?: number
+  maxExecutives?: number
+  removeIrrelevant?: boolean
+}): Promise<BackfillMarketSignalEnrichmentResult> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id, role')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
+  const role = String((profile as { role?: string | null } | null)?.role ?? '')
+  if (!orgId) return { success: false, error: 'Keine Organisation gefunden.' }
+  if (role !== 'admin' && role !== 'account_manager' && role !== 'sales') {
+    return { success: false, error: 'Insights nachladen ist für Admin, Account Manager und Sales verfügbar.' }
+  }
+
+  const admin = createServiceRoleSupabaseClient()
+  if (!admin) {
+    return {
+      success: false,
+      error:
+        'SUPABASE_SERVICE_ROLE_KEY fehlt. Lokal in .env.local setzen und Dev-Server neu starten.',
+    }
+  }
+
+  const result = await runMarketSignalEnrichmentBackfill(admin, {
+    organizationId: orgId,
+    maxNews: args?.maxNews ?? 60,
+    maxExecutives: args?.maxExecutives ?? 60,
+    pauseMsBetweenItems: 350,
+    removeIrrelevant: args?.removeIrrelevant ?? true,
+  })
+
+  void writeAuditLog({
+    orgId,
+    action: 'market_signals_enrichment_backfill',
+    entityId: orgId,
+    actionDetails: {
+      ...result,
+      at: new Date().toISOString(),
+    },
+  })
+
+  revalidatePath(ROUTES.marketSignals)
+  revalidatePath(ROUTES.marketSignalsManage)
+
+  return { success: true, ...result }
 }
 
 export async function requestReferenceApprovalForSignal(args: {

@@ -1,5 +1,7 @@
 import { createHash } from 'crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { isMissingEnrichmentColumnsError, stripEnrichmentFields } from '@/lib/market-signals/enrichment-db'
+import { enrichSignal } from '@/lib/market-signals/enrich-signal-with-llm'
 import { buildCompanyNewsRssQuery, fetchGoogleNewsRssItems } from '@/lib/market-signals/google-news-rss'
 
 export type CompanyNewsIngestCompanyRow = {
@@ -147,7 +149,14 @@ export async function runCompanyNewsIngest(
           const segment = segmentFromAccountStatus(company.account_status)
           const body = item.title.trim()
           if (body.length < 8) continue
-          const { error: insErr } = await supabase.from('market_signal_account_news').insert({
+
+          const enrichment = await enrichSignal({
+            title: body,
+            companyName: company.name,
+          })
+          if (!enrichment.is_relevant) continue
+
+          const insertPayload = {
             company_id: company.id,
             body,
             source_label: item.sourceLabel?.trim() || 'Google News',
@@ -156,8 +165,15 @@ export async function runCompanyNewsIngest(
             source_url: item.link,
             content_hash: hash,
             ingest_source: 'google_news_rss',
+            signal_category: enrichment.signal_category,
+            insight_signal_fact: enrichment.insight_signal_fact,
+            insight_why_now: enrichment.insight_why_now,
             created_by: null,
-          })
+          }
+          let insErr = (await supabase.from('market_signal_account_news').insert(insertPayload)).error
+          if (insErr && isMissingEnrichmentColumnsError(insErr.message)) {
+            insErr = (await supabase.from('market_signal_account_news').insert(stripEnrichmentFields(insertPayload))).error
+          }
           if (insErr) {
             const code = (insErr as { code?: string }).code
             if (code !== '23505' && !/duplicate key|unique constraint/i.test(insErr.message)) {

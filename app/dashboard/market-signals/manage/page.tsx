@@ -8,6 +8,7 @@ type CompanyRow = {
   name: string
   logo_url: string | null
   is_favorite: boolean | null
+  account_status: string | null
 }
 
 type ChampionWatchRow = {
@@ -34,7 +35,7 @@ export default async function MarketSignalsManagePage() {
 
   const { data } = await supabase
     .from('companies')
-    .select('id,name,logo_url,is_favorite')
+    .select('id,name,logo_url,is_favorite,account_status')
     .eq('organization_id', orgId)
     .order('name')
 
@@ -84,6 +85,7 @@ export default async function MarketSignalsManagePage() {
     name: row.name ?? 'Unbekannt',
     logoUrl: row.logo_url ?? null,
     isFollowing: Boolean(row.is_favorite),
+    accountStatus: row.account_status ?? null,
   }))
 
   const watchedStakeholders = ((championWatchRows ?? []) as ChampionWatchRow[]).map((row) => ({

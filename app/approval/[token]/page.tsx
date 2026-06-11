@@ -196,6 +196,10 @@ export default async function ApprovalPage({
   const referenceGiverTitle =
     typeof row.approval_reference_giver_title === 'string' ? row.approval_reference_giver_title.trim() : ''
 
+  const companyName = company?.name?.trim() ?? ''
+  const industryLabel = formatIndustryDisplay(row.industry as string | null)
+  const referenceSubtitle = [companyName, industryLabel].filter(Boolean).join(' · ')
+
   const suggestedQuote = suggestApprovalQuote({
     orgName,
     proposedQuote: proposedQuote || null,
@@ -222,22 +226,27 @@ export default async function ApprovalPage({
           <h1 className="text-3xl font-semibold tracking-tight" style={{ color: primary }}>
             {row.title}
           </h1>
+          {referenceSubtitle ? (
+            <p className="text-sm text-muted-foreground">{referenceSubtitle}</p>
+          ) : null}
           {approved ? (
             <p className="text-sm text-muted-foreground">
               Sie haben diese Referenz bereits freigegeben. Hier können Sie Ihre Anmerkungen und
               Freigabe-Umfang jederzeit anpassen.
             </p>
-          ) : requester ? (
-            <p className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">{requester}</span> bittet Sie um Freigabe
-              dieser Referenz.
-            </p>
           ) : (
-            <p className="text-sm text-muted-foreground">Bitte prüfen Sie die Referenz und entscheiden Sie.</p>
+            <p className="text-sm text-muted-foreground">
+              {requester ? (
+                <>
+                  <span className="font-medium text-foreground">{requester}</span> bittet Sie um Freigabe
+                  dieser Referenz.{' '}
+                </>
+              ) : (
+                <>Bitte prüfen Sie die Referenz und entscheiden Sie. </>
+              )}
+              <ApprovalDelegateDialog token={token} />
+            </p>
           )}
-          <div className="flex justify-center">
-            <ApprovalDelegateDialog token={token} />
-          </div>
         </header>
 
         <ApprovalCaseDataBar items={caseDataItems} referenceTitle={row.title} />

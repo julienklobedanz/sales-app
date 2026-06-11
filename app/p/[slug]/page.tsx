@@ -219,8 +219,6 @@ export default async function PublicPortfolioPage({
             {result.references.map((ref) => {
               const kpis = kpisForPublicReference(ref, { max: 3 })
               const kpisInDetails = kpis.filter((k) => !PUBLIC_PORTFOLIO_KPI_DETAIL_DEDUPE.has(k.label))
-              const quoteApproved = ref.approval_quote_approved?.trim()
-              const quoteGiver = ref.approval_reference_giver_name?.trim()
               return (
                 <article key={ref.id} className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
                   <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -259,26 +257,6 @@ export default async function PublicPortfolioPage({
                           </div>
                         ) : null}
                       </div>
-
-                      {quoteApproved || quoteGiver ? (
-                        <Card className="border-border/70">
-                          <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-semibold">
-                              Stimme zur Zusammenarbeit
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent className="text-sm text-muted-foreground">
-                            {quoteApproved ? (
-                              <p className="leading-relaxed italic text-foreground/90">
-                                „{quoteApproved}“
-                              </p>
-                            ) : null}
-                            {quoteGiver ? (
-                              <p className="mt-2 text-xs font-medium text-foreground">{quoteGiver}</p>
-                            ) : null}
-                          </CardContent>
-                        </Card>
-                      ) : null}
 
                       {ref.customer_challenge || ref.our_solution ? (
                         <div className="flex w-full flex-col gap-4">

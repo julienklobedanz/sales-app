@@ -460,6 +460,8 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
         personTitleBefore?: string | null
         personTitleAfter?: string | null
         changeSummaryRaw?: string
+        insightSignalFact?: string | null
+        insightWhyNow?: string | null
       }
     | {
         kind: 'news'
@@ -477,6 +479,8 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
         listTitleRest: string
         categoryBadge: 'people' | 'finance' | 'strategy'
         personName?: string
+        insightSignalFact?: string | null
+        insightWhyNow?: string | null
       }
   type GroupCompany = { id: string; name: string; logoUrl: string | null }
 
@@ -670,11 +674,13 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
         sourceSummary: summarizeSourceText(roleFact),
         listTitlePrefix: row.personName || 'Person',
         listTitleRest: isPress ? `${row.companyName} · Executive in den Medien` : `${row.companyName} · Executive Tracking`,
-        categoryBadge: 'people',
+        categoryBadge: row.signalCategory ?? 'people',
         personName: row.personName,
         personTitleBefore: row.personTitleBefore,
         personTitleAfter: row.personTitleAfter,
         changeSummaryRaw: row.changeSummary,
+        insightSignalFact: row.insightSignalFact,
+        insightWhyNow: row.insightWhyNow,
       }
     })
     const newsItems: InboxItem[] = model.news.map((row) => {
@@ -705,8 +711,10 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
           new RegExp(`^${String(row.companyName || 'Unternehmen').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*•\\s*`),
           ''
         ),
-        categoryBadge: inferNewsCategory(row.body),
+        categoryBadge: row.signalCategory ?? inferNewsCategory(row.body),
         personName: undefined,
+        insightSignalFact: row.insightSignalFact,
+        insightWhyNow: row.insightWhyNow,
       }
     })
 
@@ -1171,16 +1179,20 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
   )
 
   const insightWhyNow = useMemo(() => {
+    const stored = selected?.insightWhyNow?.trim()
+    if (stored) return stored.replace(/^Signal:\s*/i, '')
     const raw =
       signalIntelligence?.insight.why_now?.trim() ||
       executiveSummaryBullets.slice(1).join(' ').trim() ||
       executiveSummaryBullets[0]?.trim() ||
       ''
     return raw.replace(/^Signal:\s*/i, '')
-  }, [executiveSummaryBullets, signalIntelligence])
+  }, [executiveSummaryBullets, selected?.insightWhyNow, signalIntelligence])
 
   const embeddedSignalHook = useMemo(() => {
     if (!selected) return null
+    const storedFact = selected.insightSignalFact?.trim()
+    if (storedFact) return storedFact
     return extractEmbeddedSignalHook({
       signalKind: selected.kind,
       newsBody: selected.kind === 'news' ? selected.body : undefined,
@@ -1208,6 +1220,8 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
 
   const signalEvidenceText = useMemo(() => {
     if (!selected) return ''
+    const storedFact = selected.insightSignalFact?.trim()
+    if (storedFact) return storedFact
     if (selected.kind === 'news') return String(selected.body || selected.sourceSummary || '').trim()
     return (
       signalIntelligence?.insight.signal_fact ||
@@ -1291,6 +1305,8 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
       signalKind: selected?.kind ?? 'news',
       companyName: selected?.companyName ?? '',
       summarySnippet: (
+        selected?.insightWhyNow ??
+        selected?.insightSignalFact ??
         signalIntelligence?.insight.why_now ??
         signalIntelligence?.insight.signal_fact ??
         selected?.sourceSummary ??

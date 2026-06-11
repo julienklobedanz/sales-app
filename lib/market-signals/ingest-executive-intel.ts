@@ -1,5 +1,7 @@
 import { createHash } from 'crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { isMissingEnrichmentColumnsError, stripEnrichmentFields } from '@/lib/market-signals/enrichment-db'
+import { enrichSignal } from '@/lib/market-signals/enrich-signal-with-llm'
 import { fetchGoogleNewsRssItems, type GoogleNewsRssItem } from '@/lib/market-signals/google-news-rss'
 
 function normalizeChampionKey(raw: string | null | undefined) {
@@ -232,12 +234,20 @@ export async function runExecutiveIntelIngest(
           for (const item of items) {
             const title = item.title.trim()
             if (title.length < 10) continue
+
+            const enrichment = await enrichSignal({
+              title,
+              companyName: rssCompanyName || companyNameFromDb,
+              personName: w.personName,
+            })
+            if (!enrichment.is_relevant) continue
+
             const hash = intelContentHash(companyId, w.personKey, item.link)
             const detectedAt = item.pubDate && Number.isFinite(item.pubDate.getTime())
               ? item.pubDate.toISOString()
               : new Date().toISOString()
 
-            const { error: insErr } = await supabase.from('market_signal_executive_events').insert({
+            const insertPayload = {
               company_id: companyId,
               person_name: w.personName,
               person_title_before: null,
@@ -247,8 +257,15 @@ export async function runExecutiveIntelIngest(
               event_kind: 'news_mention',
               source_url: item.link,
               content_hash: hash,
+              signal_category: enrichment.signal_category,
+              insight_signal_fact: enrichment.insight_signal_fact,
+              insight_why_now: enrichment.insight_why_now,
               created_by: null,
-            })
+            }
+            let insErr = (await supabase.from('market_signal_executive_events').insert(insertPayload)).error
+            if (insErr && isMissingEnrichmentColumnsError(insErr.message)) {
+              insErr = (await supabase.from('market_signal_executive_events').insert(stripEnrichmentFields(insertPayload))).error
+            }
             if (insErr) {
               const code = (insErr as { code?: string }).code
               if (code !== '23505' && !/duplicate key|unique constraint/i.test(insErr.message)) {

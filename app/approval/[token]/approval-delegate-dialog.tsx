@@ -51,7 +51,7 @@ export function ApprovalDelegateDialog({ token }: { token: string }) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <p className="text-sm text-muted-foreground">
+      <>
         Nicht zuständig?{' '}
         <DialogTrigger asChild>
           <button
@@ -61,7 +61,7 @@ export function ApprovalDelegateDialog({ token }: { token: string }) {
             An einen Kollegen weiterleiten
           </button>
         </DialogTrigger>
-      </p>
+      </>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Freigabe delegieren</DialogTitle>

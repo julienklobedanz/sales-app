@@ -80,9 +80,6 @@ export function ShowcaseSingleReference({
     { label: 'Projektende', value: end },
   ]
 
-  const quoteApproved = reference.approval_quote_approved?.trim()
-  const quoteGiver = reference.approval_reference_giver_name?.trim()
-
   return (
     <div className="min-h-screen bg-muted/20 pb-24">
       <div className="mx-auto max-w-7xl px-4 py-8">
@@ -115,20 +112,6 @@ export function ShowcaseSingleReference({
 
         <div className="grid grid-cols-1 gap-8 py-8 lg:grid-cols-12">
           <div className="space-y-6 lg:col-span-8">
-            {quoteApproved || quoteGiver ? (
-              <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-                <h3 className="mb-3 text-base font-semibold text-foreground">Stimme zur Zusammenarbeit</h3>
-                {quoteApproved ? (
-                  <p className="border-l-2 border-primary/30 pl-4 text-sm italic leading-relaxed text-foreground/90">
-                    „{quoteApproved}“
-                  </p>
-                ) : null}
-                {quoteGiver ? (
-                  <p className="mt-3 text-xs font-medium text-muted-foreground">{quoteGiver}</p>
-                ) : null}
-              </section>
-            ) : null}
-
             <ShowcaseReferenceContent
               summary={reference.summary}
               challenge={reference.customer_challenge}
