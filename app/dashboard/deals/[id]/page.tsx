@@ -13,6 +13,7 @@ import { DealStatusBadge } from '@/components/deal-status-badge'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
+import { formatIndustryDisplay } from '@/lib/constants/industries'
 import { formatDealVolume } from '@/lib/format'
 
 export const dynamic = 'force-dynamic'
@@ -114,7 +115,7 @@ export default async function DealDetailPage({
                 <DealStatusBadge status={deal.status} />
               </h1>
               {deal.industry ? (
-                <p className="text-sm text-muted-foreground">{deal.industry}</p>
+                <p className="text-sm text-muted-foreground">{formatIndustryDisplay(deal.industry)}</p>
               ) : null}
             </div>
           </div>

@@ -99,7 +99,8 @@ import { TableRowAlign } from '@/components/table/table-row-align'
 import { toast } from 'sonner'
 import { BULK_IMPORT_MAX_FILES } from '@/lib/references/bulk-import-limits'
 import { copyTableRowsSelected } from '@/lib/copy'
-import type { OrgDateDisplayFormat } from '@/lib/format'
+import { MASTER_INDUSTRIES, getIndustryLabelDe, resolveIndustryId } from '@/lib/constants/industries'
+import { parseReferenceVolume, type OrgDateDisplayFormat } from '@/lib/format'
 // --- Konstanten & Hilfsfunktionen ---
 
 const STATUS_LABELS: Record<string, string> = {
@@ -135,6 +136,7 @@ const COLUMN_KEYS = [
   'company',
   'title',
   'industry',
+  'volume_eur',
   'status',
   'project_status',
   'updated_at',
@@ -149,6 +151,7 @@ const DEFAULT_VISIBLE: Record<(typeof COLUMN_KEYS)[number], boolean> = {
   company: true,
   title: true,
   industry: true,
+  volume_eur: false,
   status: true,
   project_status: false,
   updated_at: false,
@@ -165,6 +168,7 @@ const COLUMN_LABELS: Record<(typeof COLUMN_KEYS)[number], string> = {
   title: 'Titel',
   tags: 'Tags',
   industry: 'Industrie',
+  volume_eur: 'Volumen',
   country: 'HQ',
   project_status: 'Projektstatus',
   project_start: 'Projektstart',
@@ -175,7 +179,28 @@ const COLUMN_LABELS: Record<(typeof COLUMN_KEYS)[number], string> = {
 }
 
 const COLUMN_ORDER_STORAGE_KEY = 'dashboard-overview-column-order-v1'
+const COLUMN_VISIBLE_STORAGE_KEY = 'dashboard-overview-column-visible-v1'
 const EVIDENCE_SHOW_EXPIRED_CERTS_KEY = 'evidence-compliance-show-expired-v1'
+
+function loadVisibleColumnsFromStorage(): Record<(typeof COLUMN_KEYS)[number], boolean> {
+  if (typeof window === 'undefined') return { ...DEFAULT_VISIBLE }
+  try {
+    const raw = localStorage.getItem(COLUMN_VISIBLE_STORAGE_KEY)
+    if (!raw) return { ...DEFAULT_VISIBLE }
+    const parsed = JSON.parse(raw) as unknown
+    if (!parsed || typeof parsed !== 'object') return { ...DEFAULT_VISIBLE }
+    const result = { ...DEFAULT_VISIBLE }
+    for (const key of COLUMN_KEYS) {
+      const value = (parsed as Record<string, unknown>)[key]
+      if (typeof value === 'boolean') {
+        result[key] = value
+      }
+    }
+    return result
+  } catch {
+    return { ...DEFAULT_VISIBLE }
+  }
+}
 
 function loadColumnOrderFromStorage(): ReferenceColumnKey[] {
   if (typeof window === 'undefined') return [...COLUMN_KEYS] as ReferenceColumnKey[]
@@ -284,7 +309,7 @@ export function DashboardOverview({
   const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false)
   const [visibleColumns, setVisibleColumns] = useState<
     Record<(typeof COLUMN_KEYS)[number], boolean>
-  >(DEFAULT_VISIBLE)
+  >(loadVisibleColumnsFromStorage)
   const [columnOrder, setColumnOrder] = useState<ReferenceColumnKey[]>(() =>
     loadColumnOrderFromStorage()
   )
@@ -491,6 +516,18 @@ export function DashboardOverview({
     }
   }, [columnOrder])
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(COLUMN_VISIBLE_STORAGE_KEY, JSON.stringify(visibleColumns))
+    } catch {
+      /* ignore */
+    }
+  }, [visibleColumns])
+
+  const resetVisibleColumns = useCallback(() => {
+    setVisibleColumns({ ...DEFAULT_VISIBLE })
+  }, [])
+
   const orderedVisibleColumnKeys = useMemo(
     () => columnOrder.filter((k) => visibleColumns[k]),
     [columnOrder, visibleColumns]
@@ -593,17 +630,11 @@ export function DashboardOverview({
   }, [initialReferences, companies, companyIndustryById])
 
   const filterOptions = useMemo(() => {
-    const industries = new Set<string>()
     const countries = new Set<string>()
     const projectStatuses = new Set<string>()
     const companies = new Set<string>()
     const tags = new Set<string>()
     for (const r of initialReferences) {
-      const refIndustry =
-        String(r.industry ?? '').trim() ||
-        (r.company_id ? companyIndustryById.get(r.company_id) : '') ||
-        ''
-      if (refIndustry) industries.add(refIndustry)
       if (r.country) countries.add(r.country)
       if (r.project_status) projectStatuses.add(r.project_status)
       if (r.company_name) companies.add(r.company_name)
@@ -617,7 +648,7 @@ export function DashboardOverview({
     }
     return {
       statuses: [...REFERENCE_TABLE_STATUS_FILTERS],
-      industries: Array.from(industries).sort(),
+      industries: MASTER_INDUSTRIES.map((item) => item.id),
       countries: Array.from(countries).sort(),
       projectStatuses: Array.from(projectStatuses).sort(),
       companies: Array.from(companies).sort((a, b) => a.localeCompare(b, 'de')),
@@ -632,7 +663,17 @@ export function DashboardOverview({
       case 'company': return (ref.company_name ?? '').toLowerCase()
       case 'title': return (ref.title ?? '').toLowerCase()
       case 'tags': return (ref.tags ?? '').toLowerCase()
-      case 'industry': return (ref.industry ?? '').toLowerCase()
+      case 'industry': {
+        const raw =
+          String(ref.industry ?? '').trim() ||
+          (ref.company_id ? companyIndustryById.get(ref.company_id) : '') ||
+          ''
+        return getIndustryLabelDe(raw).toLowerCase() || raw.toLowerCase()
+      }
+      case 'volume_eur': {
+        const parsed = parseReferenceVolume(ref.volume_eur)
+        return parsed ? Number(parsed.amountDigits) : 0
+      }
       case 'country': return (ref.country ?? '').toLowerCase()
       case 'project_status': return ref.project_status ?? ''
       case 'project_start': return ref.project_start ? new Date(ref.project_start).getTime() : 0
@@ -684,7 +725,13 @@ export function DashboardOverview({
       })
     }
     if (industryFilter !== 'all') {
-      list = list.filter((r) => (r.industry ?? '') === industryFilter)
+      list = list.filter((r) => {
+        const raw =
+          String(r.industry ?? '').trim() ||
+          (r.company_id ? companyIndustryById.get(r.company_id) : '') ||
+          ''
+        return resolveIndustryId(raw) === industryFilter
+      })
     }
     if (countryFilter !== 'all') {
       list = list.filter((r) => (r.country ?? '') === countryFilter)
@@ -833,6 +880,7 @@ export function DashboardOverview({
           columnOrder={columnOrder}
           visibleColumns={visibleColumns}
           onVisibleColumnsChange={setVisibleColumns}
+          onResetVisibleColumns={resetVisibleColumns}
           columnLabels={COLUMN_LABELS}
           onImportClick={() => {
             setBulkImportGroups([])

@@ -89,6 +89,7 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/signup') ||
     request.nextUrl.pathname.startsWith(ROUTES.onboarding) ||
     request.nextUrl.pathname.startsWith(ROUTES.approvalPrefix) ||
+    request.nextUrl.pathname.startsWith(ROUTES.internalApprovalPrefix) ||
     request.nextUrl.pathname.startsWith('/p/')
 
   if (!user && !isAuthRoute) {

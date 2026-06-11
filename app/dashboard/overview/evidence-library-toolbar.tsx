@@ -4,6 +4,8 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
@@ -102,6 +104,7 @@ type Props = {
   onVisibleColumnsChange: (
     updater: (prev: Record<string, boolean>) => Record<string, boolean>
   ) => void
+  onResetVisibleColumns: () => void
   columnLabels: Record<string, string>
   onImportClick: () => void
   onCreateReferenceClick: () => void
@@ -127,6 +130,7 @@ export function EvidenceLibraryToolbar({
   columnOrder,
   visibleColumns,
   onVisibleColumnsChange,
+  onResetVisibleColumns,
   columnLabels,
   onImportClick,
   onCreateReferenceClick,
@@ -251,6 +255,16 @@ export function EvidenceLibraryToolbar({
                   {columnLabels[column]}
                 </DropdownMenuCheckboxItem>
               ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="justify-center text-xs text-muted-foreground"
+                onSelect={(e) => {
+                  e.preventDefault()
+                  onResetVisibleColumns()
+                }}
+              >
+                Zurücksetzen
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

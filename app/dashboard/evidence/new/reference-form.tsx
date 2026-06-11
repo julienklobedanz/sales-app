@@ -59,6 +59,8 @@ import {
   MagicImportDropzone,
   type ReferenceFormCompany,
 } from './reference-form-fields'
+import { IndustrySelect } from '@/components/forms/industry-select'
+import { resolveIndustryId } from '@/lib/constants/industries'
 import { AppIcon } from '@/lib/icons'
 import { ROUTES } from '@/lib/routes'
 import {
@@ -118,19 +120,6 @@ function looksLikeProxyOrNetworkFailure(message: string): boolean {
     (m.includes('body') && (m.includes('large') || m.includes('limit')))
   )
 }
-
-const INDUSTRIES = [
-  'Finanzdienstleistungen & Versicherung',
-  'Handel & Konsumgüter',
-  'Industrie & Automotive',
-  'Technologie, Medien & Telekommunikation',
-  'Energie, Rohstoffe & Versorgung',
-  'Gesundheitswesen & Life Sciences',
-  'Öffentlicher Sektor & Bildung',
-  'Beratung & Logistik',
-  'Reise, Transport & Gastgewerbe',
-  'Sonstige',
-]
 
 const COUNTRIES = [
   'Deutschland',
@@ -296,7 +285,7 @@ export function ReferenceForm({
   const [companyId, setCompanyId] = useState(initialData?.company_id ?? '')
   const [title, setTitle] = useState(initialData?.title ?? '')
   const [summary, setSummary] = useState(initialData?.summary ?? '')
-  const [industry, setIndustry] = useState(initialData?.industry ?? '')
+  const [industry, setIndustry] = useState(() => resolveIndustryId(initialData?.industry ?? ''))
   const [country, setCountry] = useState(initialData?.country ?? '')
   const [headquarters, setHeadquarters] = useState('')
   const [brandfetchLogoUrl, setBrandfetchLogoUrl] = useState('')
@@ -419,7 +408,7 @@ export function ReferenceForm({
       if (!result.success) return
       const co = result.company
       setEditCompanyName(co.companyName)
-      if (co.industry) setIndustry(co.industry)
+      if (co.industry) setIndustry(resolveIndustryId(co.industry))
       if (co.website_url) setWebsite(co.website_url)
       if (co.headquarters) {
         setCountry(co.headquarters)
@@ -477,7 +466,7 @@ export function ReferenceForm({
         setEnrichedCompany(null)
         setNewCompanyName(result.company_name)
         setWebsite(result.website_url ?? '')
-        setIndustry(result.industry ?? '')
+        setIndustry(resolveIndustryId(result.industry ?? ''))
         setCountry(result.country ?? '')
         setHeadquarters(result.headquarters ?? '')
         setEmployeeCount(
@@ -770,7 +759,7 @@ export function ReferenceForm({
         const d = result.data
         if (d.title != null) setTitle(d.title)
         if (d.summary != null) setSummary(d.summary)
-        if (d.industry != null) setIndustry(d.industry)
+        if (d.industry != null) setIndustry(resolveIndustryId(d.industry))
         if (d.volume_eur != null) {
           const parsedVolume = parseReferenceVolume(d.volume_eur)
           if (parsedVolume) {
@@ -1000,22 +989,11 @@ export function ReferenceForm({
               <div className="space-y-2">
                 <OptionalLabel>Industrie</OptionalLabel>
                 <input type="hidden" name="industry" value={industry} />
-                <Select
-                  value={industry || undefined}
+                <IndustrySelect
+                  value={industry}
                   onValueChange={setIndustry}
                   disabled={submitting}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Auswählen …" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {INDUSTRIES.map((ind) => (
-                      <SelectItem key={ind} value={ind}>
-                        {ind}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                />
               </div>
 
               <div className="space-y-2">

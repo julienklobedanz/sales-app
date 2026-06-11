@@ -6,6 +6,7 @@ import { embedTextWithOpenAI } from '@/lib/embeddings-openai'
 import { rpcMatchReferences } from '@/lib/match-references-rpc'
 
 import type { ExtractedRfpRequirement } from '@/lib/rfp-requirements'
+import { formatIndustryDisplay } from '@/lib/constants/industries'
 
 const MATCH_THRESHOLD = 0.55
 const MATCH_COUNT = 8
@@ -37,7 +38,7 @@ type DealContext = {
 function buildQueryText(deal: DealContext | null, requirement: ExtractedRfpRequirement): string {
   const parts = [
     deal?.title ? `Deal: ${deal.title}` : null,
-    deal?.industry ? `Branche: ${deal.industry}` : null,
+    deal?.industry ? `Branche: ${formatIndustryDisplay(deal.industry)}` : null,
     deal?.volume ? `Volumen: ${deal.volume}` : null,
     requirement.category ? `Kategorie: ${requirement.category}` : null,
     `Anforderung:\n${requirement.text}`,

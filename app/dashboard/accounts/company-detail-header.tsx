@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { ArrowLeftIcon, Building2, Globe, MapPinIcon, Pencil, Users } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import type { CompanyDetailCompany } from './company-detail-types'
+import { formatIndustryDisplay } from '@/lib/constants/industries'
 import { formatEmployeeCountDeDisplay } from '@/lib/format'
 import { accountsListHref } from '@/lib/accounts/accounts-list-view'
 import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
@@ -44,7 +45,7 @@ export function CompanyDetailHeader({
             {company.industry && (
               <span className="inline-flex items-center gap-1">
                 <AppIcon icon={Building2} size={14} />
-                {company.industry}
+                {formatIndustryDisplay(company.industry)}
               </span>
             )}
             {employeeLabel && (

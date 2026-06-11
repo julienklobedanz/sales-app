@@ -26,6 +26,7 @@ import {
 } from '@/app/dashboard/evidence/new/actions'
 import { displayHostFromUrl, normalizeWebsiteForSave } from './account-company-helpers'
 import { PARTNER_CATEGORY_OPTIONS, type PartnerCategory } from '@/lib/accounts/company-entity'
+import { resolveIndustryId } from '@/lib/constants/industries'
 import { CompanyNameSuggestField } from './components/company-name-suggest-field'
 
 export function CreatePartnerDialog({
@@ -87,7 +88,7 @@ export function CreatePartnerDialog({
       lastAutoQueryRef.current = normalized
       setName(enriched.company_name?.trim() || query)
       setWebsiteUrl(displayHostFromUrl(enriched.website_url))
-      setIndustry(enriched.industry ?? '')
+      setIndustry(resolveIndustryId(enriched.industry ?? ''))
       setHeadquarters(enriched.headquarters?.trim() || enriched.country?.trim() || '')
       setLogoUrl(enriched.logo_url ?? '')
     })
@@ -113,7 +114,7 @@ export function CreatePartnerDialog({
       lastAutoQueryRef.current = res.company_name.trim().toLowerCase()
       setName(res.company_name)
       setWebsiteUrl(displayHostFromUrl(res.website_url))
-      setIndustry(res.industry ?? '')
+      setIndustry(resolveIndustryId(res.industry ?? ''))
       setHeadquarters(res.headquarters?.trim() || res.country?.trim() || '')
       setLogoUrl(res.logo_url ?? '')
       toast.success('Daten übernommen.')

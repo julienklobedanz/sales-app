@@ -1,3 +1,5 @@
+import { formatIndustryDisplay } from '@/lib/constants/industries'
+
 /**
  * Kanonischer Text für Referenz-Embeddings (Index + Backfill + Edge Function spiegeln diese Struktur).
  */
@@ -62,7 +64,7 @@ export function buildReferenceEmbeddingText(ref: ReferenceEmbeddingSource): stri
   const lines: string[] = []
 
   pushLabeled(lines, 'Kunde/Account', ref.company_name)
-  pushLabeled(lines, 'Branche', ref.industry)
+  pushLabeled(lines, 'Branche', formatIndustryDisplay(ref.industry) || ref.industry)
   pushLabeled(lines, 'Region', ref.country)
   pushLabeled(lines, 'Volumen', formatVolumeForEmbed(ref.volume_eur))
   pushLabeled(lines, 'Vertragsart', ref.contract_type)

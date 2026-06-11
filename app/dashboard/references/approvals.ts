@@ -117,14 +117,10 @@ async function sendClientApprovalEmail(args: {
   const patch: {
     approval_token: string
     customer_approval_status: string
-    approval_internal_status: string
-    approval_internal_reviewed_at: string
     approval_internal_reviewer_id?: string
   } = {
     approval_token: newToken,
     customer_approval_status: 'pending',
-    approval_internal_status: 'approved_internal',
-    approval_internal_reviewed_at: new Date().toISOString(),
   }
   if (args.internalReviewerId) {
     patch.approval_internal_reviewer_id = args.internalReviewerId
@@ -332,6 +328,17 @@ async function notifyInternalReferenceCoordinatorAboutPendingReview(args: {
 
   if (!email.toLowerCase().includes('@')) return
 
+  const { data: refTokenRow } = await args.supabase
+    .from('references')
+    .select('approval_internal_review_token')
+    .eq('id', args.referenceId)
+    .maybeSingle()
+  const internalToken = (
+    refTokenRow as { approval_internal_review_token?: string | null } | null
+  )?.approval_internal_review_token
+  const approveUrl = internalToken
+    ? `${getAppOrigin()}${ROUTES.internalApproval(internalToken)}`
+    : `${getAppOrigin()}${ROUTES.evidence.detail(args.referenceId)}`
   const detailUrl = `${getAppOrigin()}${ROUTES.evidence.detail(args.referenceId)}`
   const who = args.requesterName.trim()
     ? `<p><strong>${escapeHtml(args.requesterName.trim())}</strong> hat eine Kundenfreigabe zur internen Prüfung eingereicht.</p>`
@@ -352,8 +359,13 @@ async function notifyInternalReferenceCoordinatorAboutPendingReview(args: {
         <p>Referenz: <strong>${escapeHtml(args.referenceTitle)}</strong><br/>
         Account: <strong>${escapeHtml(args.accountCompanyName)}</strong></p>
         ${messageBlock}
-        <p>Bitte in RefStack prüfen und bei Bedarf die interne Freigabe erteilen (Vier-Augen), danach Versand an den Kunden:</p>
-        <p><a href="${escapeHtml(detailUrl)}">Zur Referenz</a></p>
+        <p>Bitte bestätigen Sie zuerst die interne Freigabe. Erst danach können Sie in RefStack die Kundenfreigabe vorbereiten:</p>
+        <p style="margin:20px 0;"><a href="${escapeHtml(approveUrl)}"
+          style="display:inline-block;background:#0f172a;color:#fff;padding:12px 20px;text-decoration:none;border-radius:6px;font-weight:600;">
+          Intern freigeben
+        </a></p>
+        <p style="font-size:13px;color:#64748b;">Referenz in RefStack öffnen:<br/>
+        <a href="${escapeHtml(detailUrl)}" style="color:#2563eb;">${escapeHtml(detailUrl)}</a></p>
       `,
     })
   } catch (e) {
@@ -513,12 +525,15 @@ export async function submitForApprovalImpl(
     (options?.ownerName?.trim() ? options.ownerName.trim() : null) ??
     (requesterName.trim() ? requesterName.trim() : null)
 
+  const internalReviewToken = crypto.randomUUID()
+
   const { error: updateError } = await supabase
     .from('references')
     .update({
       approval_token: null,
       customer_approval_status: null,
       approval_internal_status: 'pending_internal',
+      approval_internal_review_token: internalReviewToken,
       approval_message: options?.message?.trim() ? options.message.trim() : null,
       approval_contact_id: resolvedRecipient.approvalContactId,
       approval_external_contact_id: resolvedRecipient.approvalExternalContactId,
@@ -644,12 +659,23 @@ export async function approveInternalAndSendImpl(
   const { data: row, error } = await supabase
     .from('references')
     .select(
-      `id, title, status, company_id, contact_id, customer_contact_id, approval_contact_id, approval_external_contact_id, customer_approval_status, approval_reference_status_snapshot, approval_requested_by, companies(name)`
+      `id, title, status, company_id, contact_id, customer_contact_id, approval_contact_id, approval_external_contact_id, customer_approval_status, approval_internal_status, approval_reference_status_snapshot, approval_requested_by, companies(name)`
     )
     .eq('id', referenceId)
     .single()
   if (error || !row) return { success: false, error: 'Referenz nicht gefunden.' }
-  const ref = row as unknown as ReferenceApprovalRow
+  const ref = row as unknown as ReferenceApprovalRow & {
+    approval_internal_status?: string | null
+  }
+
+  const internalStatus = String(ref.approval_internal_status ?? '').toLowerCase()
+  if (internalStatus !== 'approved_internal') {
+    return {
+      success: false,
+      error:
+        'Bitte zuerst die interne Freigabe über den Link in der E-Mail bestätigen, bevor die Kundenfreigabe vorbereitet werden kann.',
+    }
+  }
   const company =
     Array.isArray(ref.companies) && ref.companies.length > 0
       ? (ref.companies[0] as { name?: string })
@@ -735,11 +761,6 @@ export async function approveInternalAndSendImpl(
   }
 
   await logEventForCurrentOrg({
-    eventType: 'internal_approval_decided',
-    referenceId,
-    payload: { decision: 'approved_internal' },
-  })
-  await logEventForCurrentOrg({
     eventType: 'customer_approval_requested',
     referenceId,
     payload: {},
@@ -783,6 +804,7 @@ export async function withdrawApprovalRequestImpl(referenceId: string): Promise<
       approval_token: null,
       customer_approval_status: null,
       approval_internal_status: 'withdrawn_internal',
+      approval_internal_review_token: null,
       approval_requested_at: null,
       approval_contact_id: null,
       approval_external_contact_id: null,

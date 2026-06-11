@@ -10,6 +10,7 @@ import {
 } from '@/lib/accounts/company-account-status'
 import type { PartnerCategory } from '@/lib/accounts/company-entity'
 import { enrichBulkImportRowFromBrandfetch } from '@/lib/accounts/resolve-company-for-import'
+import { formatIndustryDisplay, resolveIndustryId } from '@/lib/constants/industries'
 
 export type { CompanyAccountStatusValue } from '@/lib/accounts/company-account-status'
 
@@ -242,7 +243,7 @@ function normalizeTags(tags: string | null | undefined): Set<string> {
 }
 
 function normalizeIndustry(s: string | null | undefined): string {
-  return (s ?? '').trim().toLowerCase()
+  return resolveIndustryId(s)
 }
 
 /** Region/Country aus HQ-String oder Land extrahieren (normalisiert für Vergleich) */
@@ -1218,7 +1219,7 @@ export async function getRecommendedReferencesForAccount(
     .select('company_goals:main_goals')
     .eq('company_id', companyId)
     .maybeSingle()
-  const companyIndustry = (company?.industry ?? '').trim().toLowerCase()
+  const companyIndustry = normalizeIndustry(company?.industry ?? null)
   const goalsTags: string[] = (strategy?.company_goals ?? '')
     .split(/[\s,;]+/)
     .map((t: string) => t.trim().toLowerCase())
@@ -1248,7 +1249,7 @@ export async function getRecommendedReferencesForAccount(
     matchReasons: RecommendedReference['matchReasons']
   }[] = []
   for (const r of refRows) {
-    const refIndustry = (r.industry as string ?? '').trim().toLowerCase()
+    const refIndustry = normalizeIndustry(r.industry as string | null)
     const refTagSet = normalizeTags(r.tags as string | null)
     const industryMatch = !!companyIndustry && companyIndustry === refIndustry
     const tagMatch =
@@ -1310,7 +1311,7 @@ export async function generateOnePagerHtml(
   const refList = refs.map((r: CompanyRefRow) => r.title).join(', ') || '—'
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>One-Pager ${escapeHtml(company.name)}</title><style>body{font-family:system-ui,sans-serif;max-width:800px;margin:2rem auto;padding:0 1rem;line-height:1.5;} h1{font-size:1.5rem;} h2{font-size:1.1rem;margin-top:1.5rem;} ul{margin:0.25rem 0;} .meta{color:#666;font-size:0.9rem;}</style></head><body>
 <h1>${escapeHtml(company.name)}</h1>
-<p class="meta">${escapeHtml(company.industry ?? '')}</p>
+<p class="meta">${escapeHtml(formatIndustryDisplay(company.industry) || '')}</p>
 <h2>Unternehmensziele</h2>
 <p>${escapeHtml(goals) || '—'}</p>
 <h2>Value Proposition (Warum gewinnen wir hier?)</h2>

@@ -22,6 +22,7 @@ import { DraggableColumnHead } from "@/components/table/draggable-column-head"
 import { ROUTES } from "@/lib/routes"
 import {
   formatReferenceDate,
+  formatReferenceVolumeCompact,
   normalizeOrgDateDisplayFormat,
   type OrgDateDisplayFormat,
 } from "@/lib/format"
@@ -31,6 +32,7 @@ import {
   ArrowUpDown,
   Filter,
 } from "@hugeicons/core-free-icons"
+import { formatIndustryDisplay, getIndustryLabelDe } from "@/lib/constants/industries"
 import { AppIcon } from "@/lib/icons"
 import Link from "next/link"
 
@@ -41,6 +43,7 @@ export type ReferenceColumnKey =
   | "company"
   | "title"
   | "industry"
+  | "volume_eur"
   | "status"
   | "project_status"
   | "updated_at"
@@ -256,6 +259,35 @@ export function renderReferenceColumnHeader(
           </button>
         </DraggableColumnHead>
       )
+    case "volume_eur":
+      return (
+        <DraggableColumnHead
+          {...dragProps}
+          className="text-right"
+          contentAlign="end"
+        >
+          <button
+            type="button"
+            className="ml-auto flex items-center gap-0.5 hover:opacity-80"
+            onClick={() => handleSort("volume_eur")}
+          >
+            {COLUMN_LABELS.volume_eur}
+            {sortKey === "volume_eur" ? (
+              sortDir === "asc" ? (
+                <AppIcon icon={ArrowUp} size={14} className="text-primary" />
+              ) : (
+                <AppIcon icon={ArrowDown} size={14} className="text-primary" />
+              )
+            ) : (
+              <AppIcon
+                icon={ArrowUpDown}
+                size={14}
+                className="text-muted-foreground"
+              />
+            )}
+          </button>
+        </DraggableColumnHead>
+      )
     case "industry":
       return (
         <DraggableColumnHead {...dragProps}>
@@ -294,14 +326,14 @@ export function renderReferenceColumnHeader(
                 {["all", ...filterOptions.industries]
                   .filter((value) => {
                     if (!industrySearch.trim()) return true
-                    const label = value === "all" ? "Alle" : value
+                    const label = value === "all" ? "Alle" : getIndustryLabelDe(value)
                     return label
                       .toLowerCase()
                       .includes(industrySearch.trim().toLowerCase())
                   })
                   .map((value) => {
                     const isAll = value === "all"
-                    const label = isAll ? "Alle" : value
+                    const label = isAll ? "Alle" : getIndustryLabelDe(value)
                     const selected = industryFilter === value
                     return (
                       <button
@@ -906,16 +938,28 @@ export function renderReferenceColumnCell(
       )
     }
     case "industry": {
-      const industry =
+      const industryRaw =
         String(ref.industry ?? '').trim() ||
         companyIndustryById.get(ref.company_id) ||
         ''
+      const industry = formatIndustryDisplay(industryRaw)
       return (
         <TableDataCell className="text-muted-foreground">
           <span className="truncate leading-none">{industry}</span>
         </TableDataCell>
       )
     }
+    case "volume_eur":
+      return (
+        <TableDataCell
+          className="text-right text-muted-foreground text-sm tabular-nums"
+          alignClassName="justify-end"
+        >
+          <span className="leading-none">
+            {formatReferenceVolumeCompact(ref.volume_eur) || ''}
+          </span>
+        </TableDataCell>
+      )
     case "status":
       return (
         <TableDataCell>

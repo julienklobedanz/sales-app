@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/command'
 import { Badge } from '@/components/ui/badge'
 import { CompanyLogo } from '@/components/ui/company-logo'
+import { formatIndustryDisplay } from '@/lib/constants/industries'
 import {
   COMMAND_SEARCH_GROUP_LABELS,
   COMMAND_SEARCH_GROUP_ORDER,
@@ -153,7 +154,7 @@ function SearchResultRow({ item }: { item: CommandSearchResult }) {
               {item.accountName ? (
                 <span className="text-slate-500"> — {item.accountName}</span>
               ) : item.industry ? (
-                <span className="text-slate-500"> ({item.industry})</span>
+                <span className="text-slate-500"> ({formatIndustryDisplay(item.industry)})</span>
               ) : null}
             </span>
           </span>

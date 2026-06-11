@@ -6,6 +6,7 @@ import {
   getPublicPortfolioShareOwner,
   incrementPortfolioViews,
 } from '../actions'
+import { formatIndustryDisplay } from '@/lib/constants/industries'
 import { formatDateUtcDe, formatReferenceVolume } from '@/lib/format'
 import { formatContractTypeDisplay } from '@/lib/references/contract-type'
 import { formatProjectEndWithDurationDe } from '@/lib/references/reference-duration-months'
@@ -243,7 +244,7 @@ export default async function PublicPortfolioPage({
                             </h2>
                             <p className="mt-1 text-sm text-muted-foreground">
                               {ref.company_name}
-                              {ref.industry ? ` · ${ref.industry}` : ''}
+                              {ref.industry ? ` · ${formatIndustryDisplay(ref.industry)}` : ''}
                               {ref.country?.trim() ? ` · ${ref.country.trim()}` : ''}
                             </p>
                           </div>

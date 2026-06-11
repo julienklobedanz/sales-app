@@ -17,6 +17,7 @@ import {
   Users,
 } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
+import { formatIndustryDisplay } from '@/lib/constants/industries'
 import { formatEmployeeCountDeDisplay, formatReferenceDate, formatReferenceVolume, normalizeOrgDateDisplayFormat } from '@/lib/format'
 import { formatContractTypeDisplay } from '@/lib/references/contract-type'
 import { deleteReferenceFromDetailPage } from './actions'
@@ -274,7 +275,7 @@ export default async function EvidenceDetailPage({
   const isAnonymizedView = qs?.view === 'anonymized'
   const companyName = company?.name ?? null
   const headerCompany = isAnonymizedView ? 'Kunde' : companyName
-  const industryLabel = anonymizeText(ref.industry ?? null, companyName)
+  const industryLabel = anonymizeText(formatIndustryDisplay(ref.industry) || null, companyName)
   const refEmployeeRaw = ref.employee_count ?? company?.employee_count ?? null
   const employeeMetaLabel =
     typeof refEmployeeRaw === 'number' && Number.isFinite(refEmployeeRaw)
@@ -783,8 +784,8 @@ export default async function EvidenceDetailPage({
                 canStartApproval={canStartApproval}
                 canInternalApprove={
                   (role === 'admin' || role === 'account_manager') &&
-                  ((internalStatus === 'pending_internal' && !staleInternalPending) ||
-                    internalStatus === 'withdrawn_internal')
+                  internalStatus === 'approved_internal' &&
+                  !staleInternalPending
                 }
                 defaultAccountManagerEmail={defaultAccountManagerEmail}
                 autoOpenApprovalDialog={autoOpenApprovalDialog}

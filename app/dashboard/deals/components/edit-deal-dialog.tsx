@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { Pencil } from "@hugeicons/core-free-icons"
 
@@ -22,6 +22,8 @@ import { Textarea } from "@/components/ui/textarea"
 
 import { DEAL_STATUS_LABELS, type DealStatus, type DealWithReferences } from "../types"
 import { updateDeal } from "../actions"
+import { IndustrySelect } from "@/components/forms/industry-select"
+import { resolveIndustryId } from "@/lib/constants/industries"
 import { COPY } from "@/lib/copy"
 
 const EDITABLE_DEAL_STATUSES: DealStatus[] = ["open", "rfp", "negotiation", "withdrawn", "archived"]
@@ -43,7 +45,7 @@ export function EditDealDialog({
 
   const [title, setTitle] = useState(deal.title)
   const [companyId, setCompanyId] = useState(deal.company_id ?? "")
-  const [industry, setIndustry] = useState(deal.industry ?? "")
+  const [industry, setIndustry] = useState(() => resolveIndustryId(deal.industry ?? ""))
   const [volume, setVolume] = useState(deal.volume ?? "")
   const [status, setStatus] = useState<DealStatus>(deal.status)
   const [expiry, setExpiry] = useState(deal.expiry_date ?? "")
@@ -52,6 +54,11 @@ export function EditDealDialog({
   const [smId, setSmId] = useState(deal.sales_manager_id ?? "")
   const [requirements, setRequirements] = useState(deal.requirements_text ?? "")
 
+  useEffect(() => {
+    if (!open) return
+    setIndustry(resolveIndustryId(deal.industry ?? ""))
+  }, [open, deal.industry])
+
   async function submit() {
     setSaving(true)
     try {
@@ -59,7 +66,7 @@ export function EditDealDialog({
         id: deal.id,
         title,
         company_id: companyId || null,
-        industry: industry.trim() || null,
+        industry: industry || null,
         volume: volume.trim() || null,
         status,
         expiry_date: expiry || null,
@@ -120,7 +127,12 @@ export function EditDealDialog({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="deal-industry">Branche</Label>
-              <Input id="deal-industry" value={industry} onChange={(e) => setIndustry(e.target.value)} />
+              <IndustrySelect
+                id="deal-industry"
+                value={industry}
+                onValueChange={setIndustry}
+                disabled={saving}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="deal-volume">Volumen</Label>

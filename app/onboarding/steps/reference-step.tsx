@@ -4,6 +4,7 @@ import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import type { ExtractedReferenceData } from "@/app/dashboard/evidence/new/types"
+import { formatIndustryDisplay } from "@/lib/constants/industries"
 
 export function ReferenceStep({
   onContinue,
@@ -105,7 +106,7 @@ export function ReferenceStep({
           </div>
           <div className="text-sm">
             <div className="text-muted-foreground">Branche</div>
-            <div className="font-medium">{preview.industry || "—"}</div>
+            <div className="font-medium">{formatIndustryDisplay(preview.industry) || "—"}</div>
           </div>
           <div className="text-sm">
             <div className="text-muted-foreground">Zusammenfassung</div>

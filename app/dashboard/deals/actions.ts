@@ -7,6 +7,7 @@ import { Resend } from 'resend'
 import { getAppOrigin } from '@/lib/env/app-origin'
 import { resolveReferenceManagerEmail } from '@/lib/reference-manager-email'
 import * as XLSX from 'xlsx'
+import { formatIndustryDisplay, resolveIndustryId } from '@/lib/constants/industries'
 import type { DealRow, DealStatus, DealWithReferences } from './types'
 
 const LEGACY_STATUS_MAP: Record<string, DealStatus> = {
@@ -420,8 +421,11 @@ export async function getMatchingReferencesForDeals(
   for (const dealId of dealIds) {
     const industry = dealIndustries[dealId] ?? null
     const linked = linkedByDeal[dealId] ?? new Set<string>()
-    const matching = industry
-      ? refList.filter((r) => r.industry === industry && !linked.has(r.id))
+    const dealIndustryId = resolveIndustryId(industry)
+    const matching = dealIndustryId
+      ? refList.filter(
+          (r) => resolveIndustryId(r.industry) === dealIndustryId && !linked.has(r.id)
+        )
       : []
     result[dealId] = { count: matching.length, suggestions: matching.slice(0, 3) }
   }
@@ -758,7 +762,7 @@ export async function submitReferenceRequest(
           <p><strong>Von:</strong> ${requesterName} (${user.email})</p>
           <p><strong>Deal:</strong> ${deal.title}</p>
           ${deal.company_name ? `<p><strong>Unternehmen:</strong> ${deal.company_name}</p>` : ''}
-          ${deal.industry ? `<p><strong>Branche:</strong> ${deal.industry}</p>` : ''}
+          ${deal.industry ? `<p><strong>Branche:</strong> ${formatIndustryDisplay(deal.industry)}</p>` : ''}
           ${deal.volume ? `<p><strong>Volumen:</strong> ${deal.volume}</p>` : ''}
           <p><strong>Nachricht:</strong></p>
           <pre style="white-space: pre-wrap; background: #f5f5f5; padding: 12px;">${message || '—'}</pre>

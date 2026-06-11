@@ -49,6 +49,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { formatIndustryDisplay } from '@/lib/constants/industries'
 import { diffMonthsUtc, formatReferenceDate, formatNumberDe, formatReferenceVolume, normalizeOrgDateDisplayFormat, type OrgDateDisplayFormat } from '@/lib/format'
 import { formatContractTypeDisplay } from '@/lib/references/contract-type'
 import { AppIcon } from '@/lib/icons'
@@ -307,7 +308,7 @@ export function ReferenceDetailSheet({
                               <AppIcon icon={Building2} size={12} /> Industrie
                             </span>
                             <p className={`pl-4 text-xs font-medium ${selectedRef.industry ? 'text-foreground' : 'text-muted-foreground'}`}>
-                              {selectedRef.industry || '—'}
+                              {formatIndustryDisplay(selectedRef.industry) || '—'}
                             </p>
                           </div>
                           <div className="space-y-0.5">

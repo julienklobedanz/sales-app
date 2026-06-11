@@ -17,6 +17,7 @@ import { Loader } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { createCompany } from '@/app/dashboard/accounts/actions'
 import { COPY } from '@/lib/copy'
+import { IndustrySelect } from '@/components/forms/industry-select'
 import { normalizeWebsiteForSave } from '@/app/dashboard/accounts/account-company-helpers'
 
 export function DealQuickAccountDialog({
@@ -95,11 +96,10 @@ export function DealQuickAccountDialog({
           </div>
           <div className="grid gap-2">
             <Label htmlFor="quick-account-industry">Branche</Label>
-            <Input
+            <IndustrySelect
               id="quick-account-industry"
               value={industry}
-              onChange={(e) => setIndustry(e.target.value)}
-              placeholder="z. B. Automotive"
+              onValueChange={setIndustry}
               disabled={pending}
             />
           </div>

@@ -29,15 +29,29 @@ describe('resolveReferenceReadinessState', () => {
     expect(s.showWithdraw).toBe(false)
   })
 
-  it('pending internal → internal_start', () => {
+  it('pending internal → internal_start (wait for AM email)', () => {
     const s = resolveReferenceReadinessState({
       ...base,
       internalApprovalStatus: 'pending_internal',
       approvalRequestedAt: '2026-01-01T00:00:00Z',
     })
     expect(s.phase).toBe('internal_start')
+    expect(s.showPrimaryStart).toBe(false)
     expect(s.showMagicLink).toBe(false)
-    expect(s.showWithdraw).toBe(false)
+    expect(s.showWithdraw).toBe(true)
+  })
+
+  it('approved internal after workflow → prepare_customer', () => {
+    const s = resolveReferenceReadinessState({
+      ...base,
+      internalApprovalStatus: 'approved_internal',
+      approvalRequestedAt: '2026-01-01T00:00:00Z',
+    })
+    expect(s.phase).toBe('prepare_customer')
+    expect(s.badge.label).toBe('Intern freigegeben')
+    expect(s.showPrimaryStart).toBe(true)
+    expect(s.showMagicLink).toBe(false)
+    expect(s.showWithdraw).toBe(true)
   })
 
   it('customer pending → amber withdraw only', () => {

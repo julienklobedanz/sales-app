@@ -2,6 +2,7 @@ import { Building2, Globe } from '@hugeicons/core-free-icons'
 
 import { ApprovalCaseDataBar } from '@/app/approval/[token]/approval-case-data-bar'
 import { AppIcon } from '@/lib/icons'
+import { formatIndustryDisplay } from '@/lib/constants/industries'
 import { formatDateUtcDe, formatReferenceVolume } from '@/lib/format'
 import { formatProjectEndWithDurationDe } from '@/lib/references/reference-duration-months'
 import type { PublicReference } from '../actions'
@@ -66,7 +67,7 @@ export function ShowcaseSingleReference({
   const caseDataItems = [
     {
       label: 'Branche',
-      value: reference.industry ?? '—',
+      value: formatIndustryDisplay(reference.industry) || '—',
       icon: <AppIcon icon={Building2} size={14} />,
     },
     {
@@ -102,7 +103,7 @@ export function ShowcaseSingleReference({
           </h1>
           <p className="text-sm text-muted-foreground">
             {reference.company_name}
-            {reference.industry ? ` · ${reference.industry}` : ''}
+            {reference.industry ? ` · ${formatIndustryDisplay(reference.industry)}` : ''}
           </p>
         </header>
 

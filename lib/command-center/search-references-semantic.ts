@@ -3,7 +3,11 @@ import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import type { CommandSearchResult } from '@/lib/command-center/global-search'
-import { enrichHomepageSemanticQuery } from '@/lib/command-center/homepage-semantic-query'
+import {
+  enrichHomepageSemanticQuery,
+  parseVolumeConstraintFromQuery,
+  referenceVolumeMatchesConstraint,
+} from '@/lib/command-center/homepage-semantic-query'
 import type { HomepageSemanticReferenceHit } from '@/lib/command-center/homepage-semantic-types'
 import { embedTextWithOpenAI } from '@/lib/embeddings-openai'
 import { rpcMatchReferences } from '@/lib/match-references-rpc'
@@ -50,14 +54,23 @@ export async function searchHomepageReferencesSemantic(
   const trimmed = params.query.trim()
   if (!trimmed) return { ok: true, hits: [] }
 
+  const volumeConstraint = parseVolumeConstraintFromQuery(trimmed)
+  const matchCount = params.matchCount ?? HOME_SEMANTIC_MATCH_COUNT
+  const fetchCount = volumeConstraint ? Math.max(matchCount * 4, 36) : matchCount
+
   const { rows, error } = await runSemanticMatch({
     ...params,
     embedInput: enrichHomepageSemanticQuery(trimmed),
+    matchCount: fetchCount,
   })
 
   if (error) return { ok: false, error }
 
-  const baseHits: HomepageSemanticReferenceHit[] = rows.map((r) => {
+  const matchedRows = volumeConstraint
+    ? rows.filter((r) => referenceVolumeMatchesConstraint(r.volume_eur, volumeConstraint))
+    : rows
+
+  const baseHits: HomepageSemanticReferenceHit[] = matchedRows.slice(0, matchCount).map((r) => {
     const summary = r.summary?.trim() ?? null
     const title = r.title ?? ''
     const volRaw = r.volume_eur?.trim() ?? null

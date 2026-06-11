@@ -93,6 +93,9 @@ function parseAnalysisSnapshot(
       customerName: partial.customerName ?? customerName ?? fallback.customerName,
       icpFitLabel: partial.icpFitLabel ?? fallback.icpFitLabel,
       icpSummary: partial.icpSummary ?? fallback.icpSummary,
+      benchmarkRisk:
+        partial.benchmarkRisk ??
+        (fillEnrichmentFromFallback ? fallback.benchmarkRisk : undefined),
       executiveBriefing: mergeExecutiveBriefingFields(
         partial.executiveBriefing,
         fallback.executiveBriefing,

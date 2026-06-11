@@ -228,8 +228,8 @@ export function ReferenceReadinessActions({
 
   const primaryIsRequest =
     readiness.phase === 'request_approval' && canStartApproval && readiness.showPrimaryStart
-  const primaryIsInternal =
-    readiness.phase === 'internal_start' && canInternalApprove && readiness.showPrimaryStart
+  const primaryIsPrepareCustomer =
+    readiness.phase === 'prepare_customer' && canInternalApprove && readiness.showPrimaryStart
   const primaryIsWithdrawnRestart =
     readiness.phase === 'withdrawn' && readiness.showPrimaryStart
 
@@ -260,13 +260,15 @@ export function ReferenceReadinessActions({
         </div>
       ) : null}
 
-      {readiness.phase === 'internal_start' && !canInternalApprove ? (
+      {readiness.phase === 'internal_start' ? (
         <p className="max-w-sm text-center text-xs leading-relaxed text-muted-foreground">
-          Interne Prüfung ausstehend — der Account Manager bereitet die Kundenfreigabe vor.
+          {canInternalApprove
+            ? 'Bitte bestätigen Sie zuerst die interne Freigabe über den Button „Intern freigeben“ in Ihrer E-Mail. Danach können Sie hier die Kundenfreigabe vorbereiten.'
+            : 'Interne Freigabe ausstehend — der Account Manager muss den Link in der E-Mail bestätigen, bevor die Kundenfreigabe vorbereitet werden kann.'}
         </p>
       ) : null}
 
-      {primaryIsInternal ? (
+      {primaryIsPrepareCustomer ? (
         <Button
           type="button"
           variant="default"
@@ -279,28 +281,16 @@ export function ReferenceReadinessActions({
       ) : null}
 
       {primaryIsWithdrawnRestart ? (
-        canInternalApprove ? (
-          <Button
-            type="button"
-            variant="default"
-            className="w-full max-w-sm transition-opacity duration-200"
-            onClick={openInternalApproveDialog}
-            disabled={pending}
-          >
-            Freigabe erneut starten
-          </Button>
-        ) : (
-          <div className="w-full max-w-sm transition-opacity duration-200">
-            <RequestApprovalDialog
-              referenceId={referenceId}
-              defaultAccountManagerEmail={defaultAccountManagerEmail}
-              triggerId="reference-readiness-withdrawn-restart-trigger"
-              triggerVariant="default"
-              triggerClassName="w-full"
-              triggerLabel="Freigabe erneut starten"
-            />
-          </div>
-        )
+        <div className="w-full max-w-sm transition-opacity duration-200">
+          <RequestApprovalDialog
+            referenceId={referenceId}
+            defaultAccountManagerEmail={defaultAccountManagerEmail}
+            triggerId="reference-readiness-withdrawn-restart-trigger"
+            triggerVariant="default"
+            triggerClassName="w-full"
+            triggerLabel="Freigabe erneut starten"
+          />
+        </div>
       ) : null}
 
       {readiness.showMagicLink ? (

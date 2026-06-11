@@ -2,11 +2,11 @@ import type {
   ExtractedReferenceData,
   ExtractDataFromDocumentResult,
 } from '@/app/dashboard/evidence/new/types'
+import { MASTER_INDUSTRIES, resolveIndustryId } from '@/lib/constants/industries'
 import { parseReferenceHeuristicsFromText } from '@/lib/references/heuristic-reference-extract'
 import { clampNarrativeTextNullable } from '@/lib/references/reference-narrative-limits'
 
-const INDUSTRIES_LIST =
-  'Financial Services & Insurance, Retail & Consumer Goods (CPG), Manufacturing & Automotive, Technology, Media & Telecom (TMT), Energy, Resources & Utilities, Healthcare & Life Sciences, Public Sector & Education, Professional Services & Logistics, Travel, Transport & Hospitality, Sonstige'
+const INDUSTRY_IDS_LIST = MASTER_INDUSTRIES.map((item) => item.id).join(', ')
 
 async function extractTextFromPdf(buffer: Buffer): Promise<string> {
   const { extractPdfPlainTextWithOcrFallback } = await import('@/lib/pdf-text-extract')
@@ -88,13 +88,13 @@ async function extractWithLLM(documentText: string): Promise<ExtractedReferenceD
 
   const prompt = `Extrahiere aus dem folgenden Referenzdokument-Text strukturierte Daten. Antworte NUR mit einem gültigen JSON-Objekt, ohne zusätzlichen Text.
 
-Erlaubte Werte für "industry" (genau einer): ${INDUSTRIES_LIST}
+Erlaubte Werte für "industry" (genau EINE dieser IDs, exakt so geschrieben): ${INDUSTRY_IDS_LIST}
 
 JSON-Schema:
 {
   "title": "string oder null",
   "summary": "sehr kurze Zusammenfassung (max. 2 Sätze) oder null",
-  "industry": "einer der erlaubten Industrien oder null",
+  "industry": "genau eine der erlaubten ID-Strings oder null — KEIN Freitext, KEINE Langlabels",
   "volume_eur": "string z.B. '5M' oder '500000' oder null",
   "employee_count": Zahl oder null,
   "tags": ["tag1", "tag2"],
@@ -122,7 +122,7 @@ Dokumenttext (Ausschnitt):
         {
           role: 'system',
           content:
-            'Du extrahierst aus deutschen Consulting-Case-Studies kompakte, strukturierte Referenzdaten für ein Sales-Tool. Antworte immer nur mit gültigem JSON.',
+            'Du extrahierst aus deutschen Consulting-Case-Studies kompakte, strukturierte Referenzdaten für ein Sales-Tool. Antworte immer nur mit gültigem JSON. Für "industry" gib ausschließlich eine der vorgegebenen ID-Strings zurück (fin, ret, man, tech, media, energy, health, pub, log, cons, prop, other) — niemals Branchennamen oder Freitext.',
         },
         { role: 'user', content: prompt },
       ],
@@ -168,7 +168,11 @@ Dokumenttext (Ausschnitt):
     title: typeof parsed.title === 'string' ? parsed.title : null,
     summary:
       typeof parsed.summary === 'string' ? clampNarrativeTextNullable(parsed.summary) : null,
-    industry: typeof parsed.industry === 'string' ? parsed.industry : null,
+    industry: (() => {
+      if (typeof parsed.industry !== 'string') return null
+      const id = resolveIndustryId(parsed.industry.trim())
+      return id || null
+    })(),
     volume_eur: typeof parsed.volume_eur === 'string' ? parsed.volume_eur : null,
     employee_count:
       typeof parsed.employee_count === 'number' ? parsed.employee_count : null,

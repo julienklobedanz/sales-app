@@ -6,6 +6,7 @@ import {
   formatEmployeeCountDeDisplay,
   formatNumberDe,
   formatReferenceDate,
+  formatReferenceVolumeCompact,
   parseGermanEmployeeCountInput,
 } from './format'
 
@@ -54,6 +55,24 @@ describe('formatNumberDe', () => {
 
   it('fällt bei NaN auf Original zurück', () => {
     expect(formatNumberDe('abc')).toBe('abc')
+  })
+})
+
+describe('formatReferenceVolumeCompact', () => {
+  it('liefert leer für ungültige Werte', () => {
+    expect(formatReferenceVolumeCompact(null)).toBe('')
+    expect(formatReferenceVolumeCompact('')).toBe('')
+  })
+
+  it('kürzt Millionen und Tausender für Tabellen', () => {
+    expect(formatReferenceVolumeCompact('EUR 1200000')).toBe('€ 1.2M')
+    expect(formatReferenceVolumeCompact('€ 800000')).toBe('€ 800k')
+    expect(formatReferenceVolumeCompact('20000000')).toBe('€ 20M')
+    expect(formatReferenceVolumeCompact('1500000')).toBe('€ 1.5M')
+  })
+
+  it('lässt kleine Beträge ungekürzt', () => {
+    expect(formatReferenceVolumeCompact('500')).toBe('€ 500')
   })
 })
 

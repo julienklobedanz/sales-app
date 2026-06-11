@@ -10,6 +10,7 @@ import {
 import type { PdfOrgBranding, PdfReference, PdfTemplate } from './types'
 import { anonymizeReferenceForOutput } from './anonymization'
 import { normalizeTextForPdfFlow } from './normalize-for-pdf'
+import { formatIndustryDisplay } from '@/lib/constants/industries'
 import { formatReferenceVolume } from '@/lib/format'
 import { formatContractTypeDisplay } from '@/lib/references/contract-type'
 import { formatProjectStatusDe } from '@/lib/public-portfolio/kpis-for-reference'
@@ -236,7 +237,7 @@ function keyFacts(reference: PdfReference): { label: string; value: string }[] {
     formatProjectStatusDe(reference.project_status) ||
     factValue(reference.project_status)
   return [
-    { label: 'Branche', value: factValue(reference.industry) },
+    { label: 'Branche', value: factValue(formatIndustryDisplay(reference.industry)) },
     { label: 'Land', value: factValue(reference.country) },
     { label: 'Volumen', value: formatReferenceVolume(reference.volume_eur) || '—' },
     { label: 'Vertragsart', value: factValue(formatContractTypeDisplay(reference.contract_type)) },
@@ -260,7 +261,7 @@ function resolveHeaderLogo(reference: PdfReference, org: PdfOrgBranding, templat
 
 function buildSubtitle(reference: PdfReference): string {
   const company = factValue(reference.company_name, '')
-  const industry = factValue(reference.industry, '')
+  const industry = factValue(formatIndustryDisplay(reference.industry), '')
   if (company && industry) return `${company} — ${industry}`
   return company || industry || '—'
 }

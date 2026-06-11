@@ -1,4 +1,5 @@
 import PptxGenJS from 'pptxgenjs'
+import { formatIndustryDisplay } from '@/lib/constants/industries'
 import { formatProjectStatusDe } from '@/lib/public-portfolio/kpis-for-reference'
 
 /** PptxGenJS LAYOUT_16x9 — 10" × 5.625" */
@@ -280,7 +281,8 @@ export function resolveStatusPill(
 }
 
 function buildSubline(input: ReferenceOnepagerPptxInput): string {
-  return [input.companyName, input.industry, input.country].filter(Boolean).join(' · ') || '—'
+  const industry = formatIndustryDisplay(input.industry)
+  return [input.companyName, industry, input.country].filter(Boolean).join(' · ') || '—'
 }
 
 type FactRow = { label: string; value: string }

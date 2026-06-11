@@ -28,6 +28,7 @@ import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 import { useRole } from '@/hooks/useRole'
+import { IndustrySelect } from '@/components/forms/industry-select'
 import { DealQuickAccountDialog } from './deal-quick-account-dialog'
 import {
   CompanyCombobox,
@@ -77,6 +78,7 @@ export function DealForm({
   const [isPublic, setIsPublic] = useState(true)
   const [accountManagerId, setAccountManagerId] = useState<string>('')
   const [salesManagerId, setSalesManagerId] = useState<string>('')
+  const [industry, setIndustry] = useState('')
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -99,6 +101,7 @@ export function DealForm({
     formData.set('is_public', isPublic ? 'true' : 'false')
     formData.set('account_manager_id', accountManagerId || '')
     formData.set('sales_manager_id', salesManagerId || '')
+    formData.set('industry', industry)
     const result = await createDeal(formData)
     setPending(false)
     if (result.success && result.id) {
@@ -182,7 +185,12 @@ export function DealForm({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="industry">Branche</Label>
-              <Input id="industry" name="industry" placeholder="z. B. Automotive" disabled={pending} />
+              <IndustrySelect
+                id="industry"
+                value={industry}
+                onValueChange={setIndustry}
+                disabled={pending}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="volume">Volumen *</Label>

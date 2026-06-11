@@ -4,6 +4,31 @@ import OpenAI from 'https://esm.sh/openai@4'
 
 type Payload = { reference_id?: string }
 
+/** Spiegel von lib/constants/industries.ts — Deno kann @/lib nicht importieren. */
+const INDUSTRY_LABEL_DE: Record<string, string> = {
+  fin: 'Finanzdienstleistungen & Versicherung',
+  ret: 'Handel & Konsumgüter',
+  man: 'Industrie & Automotive',
+  tech: 'Software, Tech & Telekommunikation',
+  media: 'Medien, Marketing & Unterhaltung',
+  energy: 'Energie, Versorgung & Rohstoffe',
+  health: 'Gesundheitswesen, Life Sciences & Chemie',
+  pub: 'Öffentlicher Sektor & Bildung',
+  log: 'Logistik, Transport & Aviation',
+  cons: 'Beratung & Professional Services',
+  prop: 'Immobilien & Bauwirtschaft',
+  other: 'Sonstige',
+}
+
+function formatIndustryForEmbed(value: string | null | undefined): string | undefined {
+  const raw = value?.trim()
+  if (!raw) return undefined
+  if (INDUSTRY_LABEL_DE[raw]) return INDUSTRY_LABEL_DE[raw]
+  const byLabel = Object.entries(INDUSTRY_LABEL_DE).find(([, label]) => label === raw)
+  if (byLabel) return byLabel[1]
+  return raw
+}
+
 /** Spiegel von lib/references/reference-embedding-text.ts (Deno kann @/lib nicht importieren). */
 type ReferenceEmbeddingSource = {
   title?: string | null
@@ -33,7 +58,7 @@ function buildReferenceEmbeddingText(ref: ReferenceEmbeddingSource): string {
   }
 
   labeled('Kunde/Account', ref.company_name)
-  labeled('Branche', ref.industry)
+  labeled('Branche', formatIndustryForEmbed(ref.industry))
   labeled('Region', ref.country)
   labeled('Volumen', ref.volume_eur)
   labeled('Vertragsart', ref.contract_type)

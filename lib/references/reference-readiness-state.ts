@@ -5,6 +5,7 @@ import { effectiveCustomerApprovalStatus } from '@/lib/references/effective-cust
 export type ReferenceReadinessPhase =
   | 'request_approval'
   | 'internal_start'
+  | 'prepare_customer'
   | 'pending_customer'
   | 'approved'
   | 'withdrawn'
@@ -213,10 +214,25 @@ export function resolveReferenceReadinessState(
         label: 'Interne Freigabe ausstehend',
         className: 'border-sky-200 bg-sky-50 text-sky-800',
       },
+      showPrimaryStart: false,
+      showMagicLink: false,
+      showRegenerateLink: false,
+      showWithdraw: true,
+      showStaleHint: false,
+    }
+  }
+
+  if (internal === 'approved_internal' && workflowStarted) {
+    return {
+      phase: 'prepare_customer',
+      badge: {
+        label: 'Intern freigegeben',
+        className: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+      },
       showPrimaryStart: input.canInternalApprove,
       showMagicLink: false,
       showRegenerateLink: false,
-      showWithdraw: false,
+      showWithdraw: true,
       showStaleHint: false,
     }
   }

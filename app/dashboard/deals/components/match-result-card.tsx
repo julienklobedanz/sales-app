@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { CompanyLogo } from '@/components/ui/company-logo'
 import { AppIcon } from '@/lib/icons'
 import { ROUTES } from '@/lib/routes'
+import { formatIndustryDisplay } from '@/lib/constants/industries'
 import { formatReferenceVolume } from '@/lib/format'
 import { MatchScoreCircle } from '@/components/match/match-score-circle'
 import type { MatchReferenceHit } from '@/app/dashboard/actions'
@@ -83,7 +84,10 @@ export function MatchResultCard({
   }
 
   const companyName = hit.companyName?.trim() || null
-  const meta = [hit.industry?.trim() || null, hit.volumeEur ? formatReferenceVolume(hit.volumeEur) || '—' : null]
+  const meta = [
+    formatIndustryDisplay(hit.industry) || null,
+    hit.volumeEur ? formatReferenceVolume(hit.volumeEur) || '—' : null,
+  ]
     .filter(Boolean)
     .join(' · ')
 

@@ -19,6 +19,9 @@ export const ROUTES = {
   approval: (token: string) => `/approval/${token}`,
   /** Prefix für Middleware (öffentliche Routen) */
   approvalPrefix: '/approval',
+  /** Interne AM-Freigabe aus E-Mail */
+  internalApproval: (token: string) => `/internal-approval/${token}`,
+  internalApprovalPrefix: '/internal-approval',
   accounts: '/dashboard/accounts',
   accountsDetail: (id: string) => `/dashboard/accounts/${id}`,
   accountsCreate: '/dashboard/accounts?create=1',

@@ -33,6 +33,8 @@ import {
   accountStatusFromDb,
   type AccountStatusFormValue,
 } from '@/lib/accounts/company-account-status'
+import { IndustrySelect } from '@/components/forms/industry-select'
+import { resolveIndustryId } from '@/lib/constants/industries'
 import { formatThousandsDots, parseThousandsDotsToInt } from '@/lib/format'
 
 export function EditAccountDialog({
@@ -64,7 +66,7 @@ export function EditAccountDialog({
     setName(company.name)
     setWebsiteUrl(displayHostFromUrl(company.website_url))
     setLogoUrl(company.logo_url ?? '')
-    setIndustry(company.industry ?? '')
+    setIndustry(resolveIndustryId(company.industry ?? ''))
     setHeadquarters(company.headquarters ?? '')
     setEmployeeCount(
       company.employee_count != null && !Number.isNaN(company.employee_count)
@@ -115,7 +117,7 @@ export function EditAccountDialog({
       setName(enriched.company_name?.trim() || query)
       setWebsiteUrl(displayHostFromUrl(enriched.website_url))
       setLogoUrl(enriched.logo_url ?? '')
-      setIndustry(enriched.industry ?? '')
+      setIndustry(resolveIndustryId(enriched.industry ?? ''))
       setHeadquarters(enriched.headquarters?.trim() || enriched.country?.trim() || '')
       setEmployeeCount(
         enriched.employee_count != null ? formatThousandsDots(String(enriched.employee_count)) : ''
@@ -204,11 +206,10 @@ export function EditAccountDialog({
 
           <div className="grid gap-2">
             <Label htmlFor="edit-account-industry">Branche</Label>
-            <Input
+            <IndustrySelect
               id="edit-account-industry"
               value={industry}
-              onChange={(e) => setIndustry(e.target.value)}
-              placeholder="z. B. Manufacturing"
+              onValueChange={setIndustry}
               disabled={pending || enriching}
             />
           </div>

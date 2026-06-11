@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+import { analyzeBenchmarkRisk } from '@/lib/deal-desk/benchmark-risk-analysis'
 import { analyzeDealDeskRisks } from '@/lib/deal-desk/deal-desk-risk-analysis'
 import { enrichRedFlagsWithDocuments } from '@/lib/deal-desk/red-flag-document-match'
 import { extractExecutiveBriefingFromRfp } from '@/lib/deal-desk/executive-briefing-extract'
@@ -452,9 +453,10 @@ export async function POST(req: NextRequest) {
     requirements: extracted.requirements,
   })
 
-  const [riskResult, briefingResult] = await Promise.all([
+  const [riskResult, briefingResult, benchmarkRiskResult] = await Promise.all([
     analyzeDealDeskRisks(apiKey, mergedText, projectName, fileNames),
     extractExecutiveBriefingFromRfp(apiKey, mergedText, projectName),
+    analyzeBenchmarkRisk(apiKey, mergedText, fileNames),
   ])
 
   if ('error' in riskResult) {
@@ -469,6 +471,13 @@ export async function POST(req: NextRequest) {
       return finishWithMockQuotaFallback()
     }
     return fail(briefingResult.error, 422)
+  }
+
+  if ('error' in benchmarkRiskResult) {
+    if (isQuotaError(benchmarkRiskResult.error)) {
+      return finishWithMockQuotaFallback()
+    }
+    return fail(benchmarkRiskResult.error, 422)
   }
 
   const { data: projectDocs } = await supabase
@@ -495,6 +504,7 @@ export async function POST(req: NextRequest) {
     coverage,
     risk: { ...riskResult, redFlags: linkedRedFlags },
     executiveBriefing: briefingResult,
+    benchmarkRisk: benchmarkRiskResult,
     timelineItems,
     organizationId: orgId,
     supabase,

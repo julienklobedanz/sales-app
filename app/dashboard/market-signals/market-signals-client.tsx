@@ -8,6 +8,7 @@ import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { Building2, ExternalLink as ExternalLinkLucide } from 'lucide-react'
 import { buildSalesforceTaskUrl } from '@/lib/crm/salesforce'
+import { formatIndustryDisplay } from '@/lib/constants/industries'
 import {
   Calendar,
   CopyCheckIcon,
@@ -1081,9 +1082,9 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
       return `Match-Grund: Executive-Wechsel und Stakeholder-Kontext passen zum Case "${reference.title}".`
     }
     if (selected?.categoryBadge === 'finance') {
-      return `Match-Grund: Ähnlicher Anwendungsfall in finanziell getriebener Transformation (${reference.industry ?? 'Branche'}).`
+      return `Match-Grund: Ähnlicher Anwendungsfall in finanziell getriebener Transformation (${formatIndustryDisplay(reference.industry) || 'Branche'}).`
     }
-    return `Match-Grund: Ähnlicher Anwendungsfall: Compliance-/Strategie-Umsetzung in ${reference.industry ?? 'vergleichbarem Kontext'}.`
+    return `Match-Grund: Ähnlicher Anwendungsfall: Compliance-/Strategie-Umsetzung in ${formatIndustryDisplay(reference.industry) || 'vergleichbarem Kontext'}.`
   }
 
   useEffect(() => {

@@ -161,6 +161,38 @@ export function formatReferenceVolume(value: string | null | undefined): string 
   return `${symbol} ${formatNumberDe(parsed.amountDigits)}`
 }
 
+function trimCompactDecimal(value: string): string {
+  return value.replace(/\.0$/, '')
+}
+
+function formatCompactVolumeAmount(amount: number): string {
+  const n = Math.abs(amount)
+  if (n >= 1_000_000_000) {
+    return `${trimCompactDecimal((n / 1_000_000_000).toFixed(1))}B`
+  }
+  if (n >= 1_000_000) {
+    return `${trimCompactDecimal((n / 1_000_000).toFixed(1))}M`
+  }
+  if (n >= 1_000) {
+    const thousands = n / 1_000
+    if (thousands >= 100 || Number.isInteger(thousands)) {
+      return `${Math.round(thousands)}k`
+    }
+    return `${trimCompactDecimal(thousands.toFixed(1))}k`
+  }
+  return String(Math.round(n))
+}
+
+/** Kompakte Darstellung für Tabellen (z. B. „€ 1.2M“, „€ 800k“). */
+export function formatReferenceVolumeCompact(value: string | null | undefined): string {
+  const parsed = parseReferenceVolume(value)
+  if (!parsed) return ''
+  const amount = Number(parsed.amountDigits)
+  if (!Number.isFinite(amount) || amount <= 0) return ''
+  const symbol = VOLUME_SYMBOL_BY_CODE[parsed.currencyCode] ?? '€'
+  return `${symbol} ${formatCompactVolumeAmount(amount)}`
+}
+
 /**
  * Deal-Volumen (`deals.volume`): Tausenderpunkte + Währung (de-DE, z. B. „1.500.000 €“).
  * Für Tabellen und Detailansichten — einheitlich statt Rohwert aus der DB.

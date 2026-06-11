@@ -89,7 +89,7 @@ export function customerApprovalScopeToDbPatch(
     approval_scope_anonymous_mention: scope.approvalType === 'anonymous',
     approval_scope_logo_use: isNamed && scope.namentlichPublic,
     approval_scope_press_release: isNamed && scope.namentlichPublic,
-    approval_scope_reference_call: isNamed && scope.referenceCallsEnabled,
+    approval_scope_reference_call: scope.referenceCallsEnabled,
     approval_scope_confidential_sales: isNamed && scope.namentlichConfidential,
     approval_reference_call_frequency:
       isNamed && scope.referenceCallsEnabled ? scope.referenceCallFrequency : null,

@@ -6,8 +6,12 @@ import { writeAuditLog } from '@/lib/audit/log-audit'
 import {
   ReferencePdfDocument,
 } from '@/app/dashboard/references/pdf/template'
-import type { PdfOrgBranding, PdfReference, PdfTemplate } from '@/app/dashboard/references/pdf/types'
+import type { PdfOrgBranding, PdfReference } from '@/app/dashboard/references/pdf/types'
 import { computeReferenceDurationMonths } from '@/lib/references/reference-duration-months'
+import {
+  parsePdfExportSettings,
+  resolvePdfTemplate,
+} from '@/lib/references/pdf-export-settings'
 
 export const runtime = 'nodejs'
 
@@ -17,25 +21,6 @@ function sanitizeFileName(text: string): string {
     .replace(/[^\w.-]/g, '_')
     .replace(/_+/g, '_')
     .slice(0, 80)
-}
-
-function parseTemplate(raw: string | null): PdfTemplate {
-  if (raw === 'detail' || raw === 'anonymized') return raw
-  return 'one_pager'
-}
-
-function parseExportSettings(raw: unknown): { pdf_layout?: PdfTemplate; pdf_logo_enabled?: boolean } {
-  if (!raw || typeof raw !== 'object') return {}
-  const obj = raw as Record<string, unknown>
-  const layout = obj.pdf_layout
-  const logo = obj.pdf_logo_enabled
-  return {
-    pdf_layout:
-      layout === 'detail' || layout === 'anonymized' || layout === 'one_pager'
-        ? (layout as PdfTemplate)
-        : undefined,
-    pdf_logo_enabled: typeof logo === 'boolean' ? logo : undefined,
-  }
 }
 
 export async function GET(req: NextRequest) {
@@ -113,11 +98,8 @@ export async function GET(req: NextRequest) {
     .eq('id', profile.organization_id)
     .single()
 
-  const exportSettings = parseExportSettings(org?.export_settings)
-  const template =
-    templateParam === null || templateParam === ''
-      ? exportSettings.pdf_layout ?? 'one_pager'
-      : parseTemplate(templateParam)
+  const exportSettings = parsePdfExportSettings(org?.export_settings)
+  const template = resolvePdfTemplate(templateParam, exportSettings)
 
   const company = Array.isArray(row.companies) ? row.companies[0] : row.companies
   const reference: PdfReference = {

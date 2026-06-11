@@ -7,6 +7,7 @@ import type {
   DealDeskSmeTask,
   DealDeskTimelineItem,
 } from '@/lib/deal-desk/mock-analysis'
+import type { BenchmarkRiskAnalysis } from '@/lib/deal-desk/benchmark-risk'
 import type { DealDeskRiskAnalysisResult } from '@/lib/deal-desk/deal-desk-risk-analysis'
 import type { DealDeskExecutiveBriefingFields } from '@/lib/deal-desk/executive-briefing-fields'
 import type { RfpCoverageRow } from '@/lib/rfp-coverage'
@@ -101,6 +102,7 @@ export async function mapRfpAnalysisToDealDeskSnapshot(params: {
   coverage: RfpCoverageRow[]
   risk: DealDeskRiskAnalysisResult
   executiveBriefing: DealDeskExecutiveBriefingFields
+  benchmarkRisk: BenchmarkRiskAnalysis
   timelineItems: DealDeskTimelineItem[]
   organizationId: string
   supabase: SupabaseClient
@@ -113,6 +115,7 @@ export async function mapRfpAnalysisToDealDeskSnapshot(params: {
     coverage,
     risk,
     executiveBriefing,
+    benchmarkRisk,
     timelineItems,
     organizationId,
     supabase,
@@ -192,6 +195,7 @@ export async function mapRfpAnalysisToDealDeskSnapshot(params: {
     winProbabilityBreakdown: winBreakdown,
     icpFitLabel: risk.icpFitLabel,
     icpSummary,
+    benchmarkRisk,
     executiveBriefing,
     redFlags: risk.redFlags,
     draftRows,

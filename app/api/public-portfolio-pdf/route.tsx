@@ -3,9 +3,14 @@ import { renderToBuffer } from '@react-pdf/renderer'
 import {
   getPublicPortfolio,
   getPublicPortfolioBranding,
-  getPublicPortfolioShareOwner,
 } from '@/app/p/actions'
-import { PublicPortfolioOnePagerDocument } from '@/app/p/pdf/public-portfolio-one-pager'
+import {
+  ReferencePdfBundleDocument,
+  ReferencePdfDocument,
+} from '@/app/dashboard/references/pdf/template'
+import { mapPublicReferenceToPdfReference } from '@/lib/public-portfolio/map-public-reference-to-pdf'
+import { resolvePublicPdfExportContext } from '@/lib/public-portfolio/resolve-public-pdf-export-context'
+import { resolvePdfTemplate } from '@/lib/references/pdf-export-settings'
 
 export const runtime = 'nodejs'
 
@@ -24,53 +29,51 @@ export async function GET(req: NextRequest) {
   }
 
   const result = await getPublicPortfolio(slug)
-  if (!result.found) {
+  if (!result.found || result.references.length === 0) {
     return NextResponse.json({ error: 'Nicht verfügbar.' }, { status: 404 })
   }
 
   const branding = await getPublicPortfolioBranding(slug)
-  const shareOwner = await getPublicPortfolioShareOwner(slug)
-
-  const workspaceName = branding.found ? branding.name : 'RefStack Workspace'
-  const primaryColor = branding.found ? branding.primary_color : '#2563EB'
-
-  const singleTitle =
-    result.references.length === 1 ? (result.references[0]?.title ?? null) : null
-  const headerCountry =
-    result.references.length === 1
-      ? (result.references[0]?.country?.trim() ? result.references[0].country.trim() : null)
-      : null
-  const countrySuffix = headerCountry ? ` - (${headerCountry})` : ''
-  const headerSubtitle = singleTitle
-    ? `Projektdetails ${workspaceName} - ${singleTitle}${countrySuffix}`
-    : `Projektdetails ${workspaceName}${countrySuffix}`
-
-  const contactName = shareOwner.found ? shareOwner.name : 'RefStack Team'
-  const contactRole = shareOwner.found ? shareOwner.position : 'Ansprechpartner'
-  const contactEmail = shareOwner.found ? shareOwner.email : null
-  const contactPhone = shareOwner.found ? shareOwner.phone : null
-  const contactBits = [contactName, contactRole, contactEmail, contactPhone].filter(Boolean)
-  const contactLine = `Kontakt: ${contactBits.join(' · ')}`
-
-  const buffer = await renderToBuffer(
-    <PublicPortfolioOnePagerDocument
-      workspaceName={workspaceName}
-      headerSubtitle={headerSubtitle}
-      primaryColor={primaryColor}
-      references={result.references}
-      contactLine={contactLine}
-    />
+  const firstReferenceId = result.references[0]?.id ?? null
+  const { branding: pdfBranding, exportSettings } = await resolvePublicPdfExportContext(
+    branding,
+    firstReferenceId
   )
 
-  const titlePart = singleTitle ? sanitizeFileName(singleTitle) : 'referenzportfolio'
-  const filename = `${titlePart}_RefStack.pdf`
+  const template = resolvePdfTemplate(req.nextUrl.searchParams.get('template'), exportSettings)
+  const references = result.references.map(mapPublicReferenceToPdfReference)
+  const exportedAtLabel = new Date().toLocaleDateString('de-DE', { dateStyle: 'long' })
+
+  const buffer =
+    references.length === 1
+      ? await renderToBuffer(
+          ReferencePdfDocument({
+            reference: references[0]!,
+            org: pdfBranding,
+            template,
+            exportedAtLabel,
+          })
+        )
+      : await renderToBuffer(
+          ReferencePdfBundleDocument({
+            references,
+            org: pdfBranding,
+            template,
+            exportedAtLabel,
+          })
+        )
+
+  const fileName =
+    references.length === 1
+      ? `${sanitizeFileName(references[0]!.company_name || 'Account')}_${sanitizeFileName(references[0]!.title || 'Referenz')}_RefStack.pdf`
+      : `${sanitizeFileName(pdfBranding.name)}_Portfolio_${references.length}.pdf`
 
   return new NextResponse(Buffer.from(buffer), {
     status: 200,
     headers: {
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="${filename}"`,
-      'Cache-Control': 'private, no-store',
+      'Content-Disposition': `attachment; filename="${fileName}"`,
+      'Cache-Control': 'no-store',
     },
   })
 }

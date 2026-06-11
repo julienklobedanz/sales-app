@@ -30,6 +30,8 @@ import {
   ACCOUNT_STATUS_FORM_OPTIONS,
   type AccountStatusFormValue,
 } from '@/lib/accounts/company-account-status'
+import { IndustrySelect } from '@/components/forms/industry-select'
+import { resolveIndustryId } from '@/lib/constants/industries'
 import { formatThousandsDots, parseThousandsDotsToInt } from '@/lib/format'
 
 export function CreateAccountDialog({
@@ -97,7 +99,7 @@ export function CreateAccountDialog({
       lastAutoQueryRef.current = normalized
       setName(enriched.company_name?.trim() || query)
       setWebsiteUrl(displayHostFromUrl(enriched.website_url))
-      setIndustry(enriched.industry ?? '')
+      setIndustry(resolveIndustryId(enriched.industry ?? ''))
       setHeadquarters(enriched.headquarters?.trim() || enriched.country?.trim() || '')
       setEmployeeCount(
         enriched.employee_count != null ? formatThousandsDots(String(enriched.employee_count)) : ''
@@ -127,7 +129,7 @@ export function CreateAccountDialog({
       lastAutoQueryRef.current = res.company_name.trim().toLowerCase()
       setName(res.company_name)
       setWebsiteUrl(displayHostFromUrl(res.website_url))
-      setIndustry(res.industry ?? '')
+      setIndustry(resolveIndustryId(res.industry ?? ''))
       setHeadquarters(res.headquarters?.trim() || res.country?.trim() || '')
       setEmployeeCount(
         res.employee_count != null ? formatThousandsDots(String(res.employee_count)) : ''
@@ -215,11 +217,10 @@ export function CreateAccountDialog({
 
           <div className="grid gap-2">
             <Label htmlFor="account-industry">Branche</Label>
-            <Input
+            <IndustrySelect
               id="account-industry"
               value={industry}
-              onChange={(e) => setIndustry(e.target.value)}
-              placeholder="z. B. Manufacturing"
+              onValueChange={setIndustry}
               disabled={pending || enriching}
             />
           </div>

@@ -53,6 +53,12 @@ import {
 import { AppIcon } from '@/lib/icons'
 import { CompanyLogo } from '@/components/ui/company-logo'
 import { bulkCreateCompaniesFromSheet, deleteCompanyWithData, toggleCompanyFavorite } from './actions'
+import {
+  formatIndustryDisplay,
+  getIndustryLabelDe,
+  MASTER_INDUSTRIES,
+  resolveIndustryId,
+} from '@/lib/constants/industries'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 import { formatEmployeeCountDeDisplay } from '@/lib/format'
@@ -207,14 +213,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
     [companiesWithFavoriteState, entityKind]
   )
 
-  const uniqueIndustries = useMemo(() => {
-    const set = new Set<string>()
-    for (const c of companiesForEntity) {
-      const v = String(c.industry ?? '').trim()
-      if (v) set.add(v)
-    }
-    return [...set].sort((a, b) => a.localeCompare(b, 'de'))
-  }, [companiesForEntity])
+  const industryFilterOptions = MASTER_INDUSTRIES
 
   const filtersActive =
     filterIndustry !== '__all__' || filterEmployeeBand !== 'any' || filterReferences !== 'any'
@@ -226,8 +225,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
       list = list.filter((c) => c.is_favorite)
     }
     if (filterIndustry !== '__all__') {
-      const want = filterIndustry.trim().toLowerCase()
-      list = list.filter((c) => String(c.industry ?? '').trim().toLowerCase() === want)
+      list = list.filter((c) => resolveIndustryId(c.industry) === filterIndustry)
     }
     if (filterEmployeeBand !== 'any') {
       const band = filterEmployeeBand
@@ -251,7 +249,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
       ? list
       : list.filter((c) => {
       const name = (c.name ?? '').toLowerCase()
-      const industry = (c.industry ?? '').toLowerCase()
+      const industry = formatIndustryDisplay(c.industry).toLowerCase()
       return name.includes(q) || industry.includes(q)
       })
     return [...searched].sort((a, b) => {
@@ -400,9 +398,9 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__all__">Alle Branchen</SelectItem>
-                      {uniqueIndustries.map((ind) => (
-                        <SelectItem key={ind} value={ind}>
-                          {ind}
+                      {industryFilterOptions.map((ind) => (
+                        <SelectItem key={ind.id} value={ind.id}>
+                          {ind.labelDe}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -628,7 +626,9 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
                         {company.industry && (
                           <div className="flex items-center gap-1.5">
                             <AppIcon icon={Building2} size={14} className="shrink-0" />
-                            <span className="max-w-[150px] truncate">{company.industry}</span>
+                            <span className="max-w-[150px] truncate">
+                              {formatIndustryDisplay(company.industry)}
+                            </span>
                           </div>
                         )}
                         {employeeLabel(company.employee_count) && (

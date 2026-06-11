@@ -1,3 +1,5 @@
+import { formatIndustryDisplay } from '@/lib/constants/industries'
+
 /** Epic 5: Ausgabeformate für KI-Entwurf (Wireframe §15). */
 export type KiEntwurfOutputFormat = 'email_snippet' | 'proposal_passage' | 'elevator_pitch'
 
@@ -54,7 +56,7 @@ export function buildKiEntwurfUserPrompt(params: {
     '### Referenz (Inhalt)',
     `Titel: ${reference.title}`,
     reference.companyName ? `Account / Kunde: ${reference.companyName}` : null,
-    reference.industry ? `Branche: ${reference.industry}` : null,
+    reference.industry ? `Branche: ${formatIndustryDisplay(reference.industry)}` : null,
     reference.summary ? `Kurzbeschreibung:\n${reference.summary}` : null,
     reference.customerChallenge ? `Herausforderung des Kunden:\n${reference.customerChallenge}` : null,
     reference.ourSolution ? `Unsere Lösung:\n${reference.ourSolution}` : null,

@@ -1,4 +1,5 @@
 import type { PublicReference } from '@/app/p/actions'
+import { formatIndustryDisplay } from '@/lib/constants/industries'
 import { formatReferenceVolume } from '@/lib/format'
 import { formatContractTypeDisplay } from '@/lib/references/contract-type'
 
@@ -73,7 +74,7 @@ export function kpisForPublicReference(
     })
   }
 
-  const industry = ref.industry?.trim()
+  const industry = formatIndustryDisplay(ref.industry)
   if (industry) {
     candidates.push({ label: 'Branche', value: industry, weight: 62 })
   }

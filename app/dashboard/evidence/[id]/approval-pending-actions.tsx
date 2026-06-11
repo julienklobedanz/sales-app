@@ -71,7 +71,9 @@ export function ApprovalPendingActions({
   const disableResend = pending || !isClientPending
   const disableCopy = pending || !isClientPending
   const disableWithdraw = pending || !isClientPending
-  const disableInternalApprove = pending || !isInternalPending || !canInternalApprove
+  const isInternallyApproved = internalStatus === 'approved_internal'
+  const disableInternalApprove =
+    pending || !isInternallyApproved || isClientPending || !canInternalApprove
 
   const canConfirmRecipient = canSubmitApprovalRecipient({
     query: contactQuery,

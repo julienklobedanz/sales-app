@@ -46,6 +46,7 @@ import {
 } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { projectToWorkspaceState } from '@/lib/deal-desk/project-mapper'
+import { BenchmarkRiskMetric } from '@/app/dashboard/deal-desk/components/benchmark-risk-metric'
 import { recommendationBadgeClass } from '@/lib/deal-desk/hero-key-takeaways'
 import { resolveBidEnrichment } from '@/lib/deal-desk/deal-desk-bid-enrichment'
 import { resolveBidOverviewMeta } from '@/lib/deal-desk/bid-overview-meta'
@@ -894,6 +895,7 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
                   <Card className="relative flex flex-col gap-0 overflow-hidden rounded-xl border border-slate-200/80 bg-white py-0 shadow-sm">
                     <div className="absolute right-6 top-6 z-10">
                       <ExecutiveBriefingDialog
+                        projectId={activeProject.id}
                         projectName={activeProject.projectName || 'RFP'}
                         analysis={analysis}
                         redFlags={redFlags}
@@ -934,6 +936,9 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
                             <Badge className="rounded border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 shadow-none">
                               {analysis.icpFitLabel}
                             </Badge>
+                            {analysis.benchmarkRisk ? (
+                              <BenchmarkRiskMetric analysis={analysis.benchmarkRisk} />
+                            ) : null}
                           </div>
                           <h3 className="text-base font-semibold text-slate-900">
                             Strategischer Cloud- &amp; SAP-Match

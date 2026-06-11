@@ -5,6 +5,7 @@ import { embedTextWithOpenAI } from '@/lib/embeddings-openai'
 import { rpcMatchReferences } from '@/lib/match-references-rpc'
 import { snippetFromSummary } from '@/lib/match-reference-snippet'
 import { logEvent } from '@/lib/events/log-event'
+import { formatIndustryDisplay } from '@/lib/constants/industries'
 
 import type {
   MatchReferenceHit,
@@ -69,7 +70,7 @@ export async function matchReferencesImpl(
 
     const parts = [
       deal.title ? `Deal: ${deal.title}` : null,
-      deal.industry ? `Branche: ${deal.industry}` : null,
+      deal.industry ? `Branche: ${formatIndustryDisplay(deal.industry)}` : null,
       deal.volume ? `Volumen: ${deal.volume}` : null,
       `Anfrage:\n${raw}`,
     ].filter(Boolean)

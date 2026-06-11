@@ -1,5 +1,7 @@
 /** Demo-Daten für Deal Desk — ersetzen durch API-Pipeline bei Live-Betrieb. */
 
+import type { BenchmarkRiskAnalysis } from '@/lib/deal-desk/benchmark-risk'
+import { buildBenchmarkRiskAnalysis } from '@/lib/deal-desk/benchmark-risk'
 import type { DealDeskExecutiveBriefingFields } from '@/lib/deal-desk/executive-briefing-fields'
 import {
   computeDeliveryWinProbability,
@@ -77,6 +79,7 @@ export type DealDeskMockAnalysis = {
   winProbabilityBreakdown?: WinProbabilityBreakdown
   icpFitLabel: string
   icpSummary: string
+  benchmarkRisk?: BenchmarkRiskAnalysis
   executiveBriefing?: DealDeskExecutiveBriefingFields
   redFlags: DealDeskRedFlag[]
   timelineItems: DealDeskTimelineItem[]
@@ -345,6 +348,20 @@ export function buildMockDealDeskAnalysis(fileNames: string[]): DealDeskMockAnal
     winProbabilityBreakdown,
     icpFitLabel: 'Starker ICP-Fit',
     icpSummary: `${DEMO_EXECUTIVE_BRIEFING.strategicAssessment ?? ''}${multiDocHint}`,
+    benchmarkRisk: buildBenchmarkRiskAnalysis([
+      {
+        id: 'extreme_price_focus',
+        evidence: 'Vergabekriterien: Preis 75 %, technisches Konzept 25 %.',
+      },
+      {
+        id: 'aggressive_deadline',
+        evidence: 'Abgabefrist 8 Kalendertage nach Veröffentlichung bei Enterprise-Scope.',
+      },
+      {
+        id: 'recycled_old_document',
+        evidence: 'Metadaten und Anhang verweisen auf Frist 2019 sowie Vorlage „RFP_2020_final“.',
+      },
+    ]),
     executiveBriefing: { ...DEMO_EXECUTIVE_BRIEFING },
     redFlags,
     timelineItems: (() => {

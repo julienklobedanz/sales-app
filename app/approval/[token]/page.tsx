@@ -7,6 +7,7 @@ import {
 } from '@/components/ui/card'
 import { Building2, Globe } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
+import { formatIndustryDisplay } from '@/lib/constants/industries'
 import { formatDateUtcDe, formatReferenceVolume } from '@/lib/format'
 import { formatProjectEndWithDurationDe } from '@/lib/references/reference-duration-months'
 import { ApprovalDecisionForm } from './approval-decision-form'
@@ -15,6 +16,7 @@ import { ApprovalReferenceSections } from './approval-reference-sections'
 import { ApprovalDelegateDialog } from './approval-delegate-dialog'
 import { customerApprovalScopeFromDb } from '@/lib/references/customer-approval-scope'
 import { effectiveCustomerApprovalStatus } from '@/lib/references/effective-customer-approval'
+import { suggestApprovalQuote } from '@/lib/references/suggest-approval-quote'
 
 function InvalidLink() {
   return (
@@ -57,7 +59,6 @@ export default async function ApprovalPage({
       project_status,
       project_start,
       project_end,
-      approval_message,
       approval_requester_name,
       approval_owner_name,
       approval_expires_at,
@@ -135,9 +136,6 @@ export default async function ApprovalPage({
   }
 
   const requester = typeof row.approval_requester_name === 'string' ? row.approval_requester_name.trim() : ''
-  const message = typeof row.approval_message === 'string' ? row.approval_message.trim() : ''
-  const scopeNamedAvailable = approved ? true : !!row.approval_scope_named_mention
-  const scopeAnonymousAvailable = approved ? true : !!row.approval_scope_anonymous_mention
   const extraScopeItems = [
     row.approval_scope_reference_call ? 'Referenz-Call' : null,
     row.approval_scope_logo_use ? 'Logo-Nutzung' : null,
@@ -162,7 +160,7 @@ export default async function ApprovalPage({
   const caseDataItems = [
     {
       label: 'Branche',
-      value: row.industry ?? '—',
+      value: formatIndustryDisplay(row.industry as string | null) || '—',
       icon: <AppIcon icon={Building2} size={14} />,
     },
     {
@@ -198,6 +196,14 @@ export default async function ApprovalPage({
   const referenceGiverTitle =
     typeof row.approval_reference_giver_title === 'string' ? row.approval_reference_giver_title.trim() : ''
 
+  const suggestedQuote = suggestApprovalQuote({
+    orgName,
+    proposedQuote: proposedQuote || null,
+    summary: row.summary as string | null,
+    customerChallenge: row.customer_challenge as string | null,
+    ourSolution: row.our_solution as string | null,
+  })
+
   return (
     <div className="min-h-screen bg-muted/20">
       <div className="mx-auto max-w-7xl px-4 py-8">
@@ -232,40 +238,12 @@ export default async function ApprovalPage({
           <div className="flex justify-center">
             <ApprovalDelegateDialog token={token} />
           </div>
-          {message ? (
-            <div className="mx-auto max-w-2xl rounded-xl border border-border bg-card p-4 text-left text-sm text-foreground whitespace-pre-wrap shadow-sm">
-              {message}
-            </div>
-          ) : null}
-          {(row.approval_owner_name || row.approval_expires_at || isExpired) ? (
-            <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-center gap-x-6 gap-y-1 text-xs text-muted-foreground">
-              {row.approval_owner_name ? (
-                <span>
-                  <span className="font-medium text-foreground">Verantwortlich:</span>{' '}
-                  {row.approval_owner_name}
-                </span>
-              ) : null}
-              {row.approval_expires_at ? (
-                <span>
-                  <span className="font-medium text-foreground">Antwort bis:</span>{' '}
-                  {formatDateUtcDe(String(row.approval_expires_at))}
-                </span>
-              ) : null}
-              {isExpired && inGrace ? (
-                <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-amber-700">
-                  Karenzzeit aktiv
-                </span>
-              ) : null}
-            </div>
-          ) : null}
         </header>
 
         <ApprovalCaseDataBar items={caseDataItems} referenceTitle={row.title} />
 
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-12">
           <section className="space-y-4 lg:col-span-7">
-            <h2 className="text-lg font-semibold text-foreground">Referenz-Vorschau</h2>
-
             <ApprovalReferenceSections
               summary={row.summary}
               challenge={row.customer_challenge}
@@ -296,9 +274,7 @@ export default async function ApprovalPage({
                 mode={approved ? 'approved' : 'pending'}
                 referenceTitle={row.title}
                 orgName={orgName}
-                companyName={company?.name}
-                scopeNamedAvailable={scopeNamedAvailable}
-                scopeAnonymousAvailable={scopeAnonymousAvailable}
+                suggestedQuote={suggestedQuote}
                 initialApprovedQuote={initialApprovedQuote}
                 initialComment={initialComment}
                 initialScope={initialScope}
