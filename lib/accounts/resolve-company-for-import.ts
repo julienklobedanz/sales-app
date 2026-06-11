@@ -327,7 +327,7 @@ async function syncCompanyWithBrandfetch(
       .from('references')
       .update({ industry })
       .eq('company_id', companyId)
-      .or('industry.is.null,industry.eq.')
+      .is('deleted_at', null)
   }
 
   return toResolved(companyId, updated)
