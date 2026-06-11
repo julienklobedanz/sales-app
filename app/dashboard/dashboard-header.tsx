@@ -305,7 +305,7 @@ export function DashboardHeader({
         if (!cancelled) {
           setDynamicCrumbs([
             { label: COPY.pages.marketSignals, href: ROUTES.marketSignals },
-            { label: 'Watchlist verwalten' },
+            { label: 'Marktsignale einrichten' },
           ])
         }
         return

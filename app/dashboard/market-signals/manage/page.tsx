@@ -10,21 +10,11 @@ type CompanyRow = {
   is_favorite: boolean | null
 }
 
-type ExecutiveRow = {
-  person_name: string | null
-  company_id: string | null
-  companies: { name?: string | null } | Array<{ name?: string | null }> | null
-}
-
 type ChampionWatchRow = {
   person_key: string
-}
-
-function normalizeChampionKey(raw: string | null | undefined) {
-  return String(raw ?? '')
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, ' ')
+  person_name: string
+  company_name: string | null
+  created_at: string
 }
 
 export default async function MarketSignalsManagePage() {
@@ -32,7 +22,7 @@ export default async function MarketSignalsManagePage() {
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) return <MarketSignalsManageClient companies={[]} champions={[]} />
+  if (!user) return <MarketSignalsManageClient companies={[]} watchedStakeholders={[]} />
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -40,7 +30,7 @@ export default async function MarketSignalsManagePage() {
     .eq('id', user.id)
     .maybeSingle()
   const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
-  if (!orgId) return <MarketSignalsManageClient companies={[]} champions={[]} />
+  if (!orgId) return <MarketSignalsManageClient companies={[]} watchedStakeholders={[]} />
 
   const { data } = await supabase
     .from('companies')
@@ -50,7 +40,7 @@ export default async function MarketSignalsManagePage() {
 
   const { data: execRows } = await supabase
     .from('market_signal_executive_events')
-    .select('person_name,company_id,companies(name)')
+    .select('company_id')
     .order('detected_at', { ascending: false })
     .limit(500)
 
@@ -84,8 +74,9 @@ export default async function MarketSignalsManagePage() {
 
   const { data: championWatchRows } = await supabase
     .from('market_signal_champion_watchlist')
-    .select('person_key')
+    .select('person_key, person_name, company_name, created_at')
     .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
     .limit(500)
 
   const companies = ((data ?? []) as CompanyRow[]).map((row) => ({
@@ -95,38 +86,12 @@ export default async function MarketSignalsManagePage() {
     isFollowing: Boolean(row.is_favorite),
   }))
 
-  const championWatchSet = new Set(
-    ((championWatchRows ?? []) as ChampionWatchRow[])
-      .map((row) => normalizeChampionKey(row.person_key))
-      .filter(Boolean)
-  )
+  const watchedStakeholders = ((championWatchRows ?? []) as ChampionWatchRow[]).map((row) => ({
+    key: row.person_key,
+    personName: row.person_name,
+    companyName: row.company_name?.trim() || null,
+    createdAt: row.created_at,
+  }))
 
-  const championsByKey = new Map<string, { key: string; personName: string; companyName: string | null; detectedCount: number }>()
-  for (const row of (execRows ?? []) as ExecutiveRow[]) {
-    const personName = String(row.person_name ?? '').trim()
-    if (!personName) continue
-    const key = normalizeChampionKey(personName)
-    if (!key) continue
-    const companyRaw = Array.isArray(row.companies) ? row.companies[0] : row.companies
-    const companyName = String(companyRaw?.name ?? '').trim() || null
-    const existing = championsByKey.get(key)
-    if (!existing) {
-      championsByKey.set(key, { key, personName, companyName, detectedCount: 1 })
-      continue
-    }
-    championsByKey.set(key, {
-      ...existing,
-      detectedCount: existing.detectedCount + 1,
-      companyName: existing.companyName ?? companyName,
-    })
-  }
-  const champions = Array.from(championsByKey.values())
-    .map((item) => ({ ...item, isFollowing: championWatchSet.has(item.key) }))
-    .sort((a, b) => {
-      if (a.isFollowing !== b.isFollowing) return a.isFollowing ? -1 : 1
-      if (a.detectedCount !== b.detectedCount) return b.detectedCount - a.detectedCount
-      return a.personName.localeCompare(b.personName, 'de')
-    })
-
-  return <MarketSignalsManageClient companies={companies} champions={champions} />
+  return <MarketSignalsManageClient companies={companies} watchedStakeholders={watchedStakeholders} />
 }

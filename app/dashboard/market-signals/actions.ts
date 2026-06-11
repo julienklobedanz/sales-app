@@ -351,7 +351,11 @@ export async function setCompanyWatchlistState(companyId: string, isFollowing: b
   return { success: true as const }
 }
 
-export async function setChampionWatchlistState(personName: string, isFollowing: boolean) {
+export async function setChampionWatchlistState(
+  personName: string,
+  isFollowing: boolean,
+  companyName?: string | null
+) {
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
@@ -362,14 +366,19 @@ export async function setChampionWatchlistState(personName: string, isFollowing:
   if (!trimmed) return { success: false as const, error: 'Champion-Name fehlt' }
   const key = normalizeChampionKey(trimmed)
   if (!key) return { success: false as const, error: 'Champion-Name fehlt' }
+  const company = String(companyName ?? '').trim() || null
 
   if (isFollowing) {
-    const { error } = await supabase.from('market_signal_champion_watchlist').insert({
-      user_id: user.id,
-      person_key: key,
-      person_name: trimmed,
-    })
-    if (error && !String(error.message ?? '').toLowerCase().includes('duplicate key')) {
+    const { error } = await supabase.from('market_signal_champion_watchlist').upsert(
+      {
+        user_id: user.id,
+        person_key: key,
+        person_name: trimmed,
+        company_name: company,
+      },
+      { onConflict: 'user_id,person_key' }
+    )
+    if (error) {
       return { success: false as const, error: error.message }
     }
   } else {
@@ -512,8 +521,7 @@ export async function triggerMarketSignalsIngestForMyOrg(args?: {
   if (role !== 'admin' && role !== 'account_manager' && role !== 'sales') {
     return { success: false, error: 'Signale abrufen ist für Admin, Account Manager und Sales verfügbar.' }
   }
-  const ingestMode: 'all_accounts' | 'focus_only' =
-    args?.ingestMode ?? (role === 'admin' ? 'all_accounts' : 'focus_only')
+  const ingestMode: 'all_accounts' | 'focus_only' = args?.ingestMode ?? 'focus_only'
 
   const admin = createServiceRoleSupabaseClient()
   if (!admin) {

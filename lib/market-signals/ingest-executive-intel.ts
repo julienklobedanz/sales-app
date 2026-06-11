@@ -13,8 +13,15 @@ function intelContentHash(companyId: string, personKey: string, articleUrl: stri
   return createHash('sha256').update(`${companyId}|${personKey}|${articleUrl}`, 'utf8').digest('hex')
 }
 
+function normalizeCompanyMatchKey(name: string | null | undefined): string {
+  return String(name ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+}
+
 /** Breite Suche: Person + Firma (Google News Index). */
-function rssQueryPersonAndCompany(personName: string, companyName: string): string {
+export function rssQueryPersonAndCompany(personName: string, companyName: string): string {
   const p = personName.trim()
   const c = companyName.trim()
   if (!p) return ''
@@ -80,7 +87,7 @@ export async function runExecutiveIntelIngest(
 
   const { data: watchRaw, error: watchErr } = await supabase
     .from('market_signal_champion_watchlist')
-    .select('person_key, person_name, user_id')
+    .select('person_key, person_name, company_name, user_id')
     .limit(4000)
 
   if (watchErr) {
@@ -104,20 +111,33 @@ export async function runExecutiveIntelIngest(
     if (id && oid) orgByUser.set(id, oid)
   }
 
-  type Watched = { orgId: string; personKey: string; personName: string }
+  type Watched = {
+    orgId: string
+    personKey: string
+    personName: string
+    watchlistCompanyName: string | null
+  }
   const watchedByOrg = new Map<string, Map<string, Watched>>()
 
   for (const row of watchRaw ?? []) {
     const uid = String((row as { user_id?: string }).user_id ?? '')
     const personKey = normalizeChampionKey((row as { person_key?: string }).person_key ?? '')
     const personName = String((row as { person_name?: string }).person_name ?? '').trim()
+    const watchlistCompanyName = String((row as { company_name?: string | null }).company_name ?? '').trim() || null
     if (!personKey || !personName) continue
     const orgId = orgByUser.get(uid)
     if (!orgId) continue
     if (options?.organizationId && orgId !== options.organizationId) continue
     if (!watchedByOrg.has(orgId)) watchedByOrg.set(orgId, new Map())
     const m = watchedByOrg.get(orgId)!
-    if (!m.has(personKey)) m.set(personKey, { orgId, personKey, personName })
+    const existing = m.get(personKey)
+    if (!existing) {
+      m.set(personKey, { orgId, personKey, personName, watchlistCompanyName })
+      continue
+    }
+    if (watchlistCompanyName && !existing.watchlistCompanyName) {
+      m.set(personKey, { ...existing, watchlistCompanyName })
+    }
   }
 
   const controller = new AbortController()
@@ -127,8 +147,35 @@ export async function runExecutiveIntelIngest(
     for (const [orgId, peopleMap] of watchedByOrg) {
       const people = Array.from(peopleMap.values()).slice(0, maxPeople)
 
-      const { data: orgCompanies } = await supabase.from('companies').select('id').eq('organization_id', orgId)
-      const allowedCompanyIds = new Set((orgCompanies ?? []).map((c) => String((c as { id?: string }).id ?? '')))
+      const { data: orgCompanies } = await supabase
+        .from('companies')
+        .select('id, name')
+        .eq('organization_id', orgId)
+      const orgCompanyList = (orgCompanies ?? []).map((c) => ({
+        id: String((c as { id?: string }).id ?? ''),
+        name: String((c as { name?: string | null }).name ?? '').trim(),
+      }))
+      const allowedCompanyIds = new Set(orgCompanyList.map((c) => c.id).filter(Boolean))
+      const companyIdByNormalizedName = new Map<string, string>()
+      for (const company of orgCompanyList) {
+        const key = normalizeCompanyMatchKey(company.name)
+        if (key && !companyIdByNormalizedName.has(key)) {
+          companyIdByNormalizedName.set(key, company.id)
+        }
+      }
+
+      function resolveCompanyIdByWatchlistName(companyName: string | null | undefined): string | null {
+        const key = normalizeCompanyMatchKey(companyName)
+        if (!key) return null
+        const exact = companyIdByNormalizedName.get(key)
+        if (exact) return exact
+        for (const company of orgCompanyList) {
+          const n = normalizeCompanyMatchKey(company.name)
+          if (!n) continue
+          if (n.includes(key) || key.includes(n)) return company.id
+        }
+        return null
+      }
 
       const stakeholderCompanyByKey = new Map<string, string>()
       if (allowedCompanyIds.size > 0) {
@@ -165,22 +212,20 @@ export async function runExecutiveIntelIngest(
       for (const w of people) {
         peopleScanned += 1
         const companyId =
-          stakeholderCompanyByKey.get(w.personKey) ?? eventCompanyByKey.get(w.personKey) ?? null
+          resolveCompanyIdByWatchlistName(w.watchlistCompanyName) ??
+          stakeholderCompanyByKey.get(w.personKey) ??
+          eventCompanyByKey.get(w.personKey) ??
+          null
         if (!companyId) {
           skippedNoCompany += 1
           continue
         }
 
-        const { data: coRow } = await supabase
-          .from('companies')
-          .select('name')
-          .eq('id', companyId)
-          .eq('organization_id', orgId)
-          .maybeSingle()
-        const companyName = String((coRow as { name?: string | null } | null)?.name ?? '').trim()
+        const companyNameFromDb = orgCompanyList.find((c) => c.id === companyId)?.name?.trim() ?? ''
+        const rssCompanyName = w.watchlistCompanyName?.trim() || companyNameFromDb
 
         try {
-          const items = await fetchMergedExecutiveArticles(w.personName, companyName, {
+          const items = await fetchMergedExecutiveArticles(w.personName, rssCompanyName, {
             signal: controller.signal,
             maxTotal: 8,
           })

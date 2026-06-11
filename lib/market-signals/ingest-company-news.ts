@@ -55,7 +55,7 @@ export type RunCompanyNewsIngestResult = {
 /**
  * Lädt Google-News-RSS für Firmen im gewählten Ingest-Mode:
  * - all_accounts: alle Accounts der Organisation
- * - focus_only: nur Favoriten + Firmen mit aktivem Deal
+ * - focus_only: nur Favoriten (is_favorite)
  * und legt neue Zeilen in market_signal_account_news an (Dedupe über content_hash).
  */
 export async function runCompanyNewsIngest(
@@ -68,7 +68,7 @@ export async function runCompanyNewsIngest(
     pauseMsBetweenCompanies?: number
   }
 ): Promise<RunCompanyNewsIngestResult> {
-  const ingestMode = options?.ingestMode ?? 'all_accounts'
+  const ingestMode = options?.ingestMode ?? 'focus_only'
   const maxCompanies = Math.min(200, Math.max(1, options?.maxCompanies ?? 60))
   const perCompanyMax = Math.min(20, Math.max(1, options?.perCompanyMaxArticles ?? 8))
   const pauseMs = Math.max(0, options?.pauseMsBetweenCompanies ?? 400)
@@ -109,11 +109,9 @@ export async function runCompanyNewsIngest(
   const candidates =
     ingestMode === 'all_accounts'
       ? ((allCompanies ?? []) as CompanyNewsIngestCompanyRow[] & { is_favorite?: boolean }[])
-      : ((allCompanies ?? []).filter((row) => {
-          const id = String((row as { id?: string }).id ?? '')
-          const fav = Boolean((row as { is_favorite?: boolean | null }).is_favorite)
-          return fav || dealCompanyIds.has(id)
-        }) as CompanyNewsIngestCompanyRow[] & { is_favorite?: boolean }[])
+      : ((allCompanies ?? []).filter((row) =>
+          Boolean((row as { is_favorite?: boolean | null }).is_favorite)
+        ) as CompanyNewsIngestCompanyRow[] & { is_favorite?: boolean }[])
 
   const seen = new Set<string>()
   const uniqueList: CompanyNewsIngestCompanyRow[] = []

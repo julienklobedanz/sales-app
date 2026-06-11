@@ -44,7 +44,7 @@ export async function GET(request: Request) {
   const ingestSince = new Date().toISOString()
 
   const news = await runCompanyNewsIngest(admin, {
-    ingestMode: 'all_accounts',
+    ingestMode: 'focus_only',
     maxCompanies: Number.isFinite(maxCompanies) ? maxCompanies : 60,
   })
 

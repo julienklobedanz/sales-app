@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useId, useMemo, useRef, useState, useTransition } from 'react'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
-import { Building2, ExternalLink as ExternalLinkLucide } from 'lucide-react'
+import { Building2, ExternalLink as ExternalLinkLucide, Newspaper, Radar } from 'lucide-react'
 import { buildSalesforceTaskUrl } from '@/lib/crm/salesforce'
 import { formatIndustryDisplay } from '@/lib/constants/industries'
 import {
@@ -385,6 +385,35 @@ function computeSignalIcpScore(input: {
   return Math.min(95, Math.max(52, score))
 }
 
+function MarketSignalsSetupEmptyPanel() {
+  return (
+    <div className="flex flex-col items-center justify-center p-12 py-24 text-center">
+      <div className="mb-4 rounded-2xl bg-violet-50 p-3">
+        <Radar className="size-12 text-violet-500" strokeWidth={1.25} aria-hidden />
+      </div>
+      <h2 className="mb-2 text-xl font-semibold text-gray-900">Deine Marktsignale sind bereit.</h2>
+      <p className="mb-6 max-w-md text-sm text-gray-500">
+        Wähle deine Ziel-Unternehmen aus und füge deine Stakeholder hinzu, um Live-Insights zu
+        erhalten.
+      </p>
+      <div className="flex flex-wrap items-center justify-center gap-3">
+        <Link
+          href={ROUTES.marketSignalsManage}
+          className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-700"
+        >
+          Unternehmen hinzufügen
+        </Link>
+        <Link
+          href={`${ROUTES.marketSignalsManage}?tab=executives`}
+          className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+        >
+          Stakeholder hinzufügen
+        </Link>
+      </div>
+    </div>
+  )
+}
+
 export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }) {
   type IntroTone = 'challenging' | 'advisory' | 'concise'
   type InboxCategory = 'all' | 'people' | 'company'
@@ -749,49 +778,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
     [visibleItems]
   )
 
-  const trendingAccounts = useMemo(() => {
-    const stats = new Map<
-      string,
-      { companyId: string; companyName: string; companyLogoUrl: string | null; count: number; latestTs: number }
-    >()
-    for (const row of model.executives) {
-      const ts = new Date(row.detectedAt).getTime()
-      const existing = stats.get(row.companyId)
-      if (!existing) {
-        stats.set(row.companyId, {
-          companyId: row.companyId,
-          companyName: row.companyName,
-          companyLogoUrl: row.companyLogoUrl,
-          count: 1,
-          latestTs: Number.isFinite(ts) ? ts : 0,
-        })
-        continue
-      }
-      existing.count += 1
-      if (Number.isFinite(ts) && ts > existing.latestTs) existing.latestTs = ts
-      stats.set(row.companyId, existing)
-    }
-    for (const row of model.news) {
-      const ts = new Date(row.publishedOn).getTime()
-      const existing = stats.get(row.companyId)
-      if (!existing) {
-        stats.set(row.companyId, {
-          companyId: row.companyId,
-          companyName: row.companyName,
-          companyLogoUrl: row.companyLogoUrl,
-          count: 1,
-          latestTs: Number.isFinite(ts) ? ts : 0,
-        })
-        continue
-      }
-      existing.count += 1
-      if (Number.isFinite(ts) && ts > existing.latestTs) existing.latestTs = ts
-      stats.set(row.companyId, existing)
-    }
-    return Array.from(stats.values())
-      .sort((a, b) => (b.count !== a.count ? b.count - a.count : b.latestTs - a.latestTs))
-      .slice(0, 3)
-  }, [model.executives, model.news])
+  const isInboxEmpty = groupedVisibleItems.length === 0
 
   const grouped = useMemo(() => {
     const buckets: Record<string, InboxGroup[]> = { Heute: [], Gestern: [], Ältere: [] }
@@ -1586,8 +1573,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
         <ResizablePanelGroup direction="horizontal">
           <ResizablePanel defaultSize={30} minSize={22} className="min-w-0">
             <div className="flex h-full min-h-0 flex-col overflow-hidden bg-muted/30">
-              <div className="flex h-12 items-center justify-between bg-card px-2 pb-1">
-                <p className="text-sm font-semibold text-foreground">Inbox</p>
+              <div className="flex h-12 items-center justify-end bg-card px-2 pb-1">
                 <div className="flex items-center gap-0.5">
                   <p className="mr-1 text-xs tabular-nums text-muted-foreground">{groupedVisibleItems.length} Signale</p>
                   <DropdownMenu>
@@ -1608,15 +1594,15 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                         Marktsignale verwalten
                       </DropdownMenuLabel>
                       <DropdownMenuItem asChild className="cursor-pointer">
-                        <Link href={`${ROUTES.marketSignalsManage}?view=champions`} className="flex items-center gap-2">
+                        <Link href={`${ROUTES.marketSignalsManage}?tab=executives`} className="flex items-center gap-2">
                           <AppIcon icon={Sparkles} size={16} className={MS_TOOLBAR_ICON_CLASS} />
-                          Executives verwalten
+                          Stakeholder / Executives
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild className="cursor-pointer">
                         <Link href={ROUTES.marketSignalsManage} className="flex items-center gap-2">
                           <AppIcon icon={StarIcon} size={16} className={MS_TOOLBAR_ICON_CLASS} />
-                          Watchlist verwalten
+                          Unternehmen überwachen
                         </Link>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -1662,7 +1648,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                     className="h-7 flex-1 text-xs"
                     onClick={() => setInboxCategory('company')}
                   >
-                    Account
+                    Accounts
                   </Button>
                 </div>
                 <div className="mt-2 flex items-center gap-1.5">
@@ -1730,12 +1716,13 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                   </TooltipProvider>
                 </div>
               </div>
-              <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-2 [scrollbar-gutter:stable] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-muted-foreground/35 [&::-webkit-scrollbar]:w-2">
-                {groupedVisibleItems.length === 0 ? (
-                  <div className="flex h-full items-center justify-center px-6 text-center">
-                    <div className="max-w-sm">
-                      <p className="text-sm font-semibold text-foreground">You&apos;re all caught up</p>
-                      <p className="mt-1 text-xs text-muted-foreground">Keine neuen Signale in deiner Watchlist.</p>
+              <div className="flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto p-2 [scrollbar-gutter:stable] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-muted-foreground/35 [&::-webkit-scrollbar]:w-2">
+                {isInboxEmpty ? (
+                  <div className="flex flex-1 flex-col items-center justify-center px-4 py-8 text-center">
+                    <Newspaper className="size-5 text-muted-foreground/55" strokeWidth={1.5} aria-hidden />
+                    <p className="mt-2 text-xs text-muted-foreground">Keine aktiven Signale</p>
+                    <div className="mt-4 w-full lg:hidden">
+                      <MarketSignalsSetupEmptyPanel />
                     </div>
                   </div>
                 ) : (
@@ -1873,47 +1860,19 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
               <div className="h-full">
                 {!selected ? (
                   <div className="flex h-full items-center justify-center px-6 text-center">
-                    <div className="max-w-sm">
-                      {groupedVisibleItems.length === 0 ? (
-                        <>
-                          <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
-                            <CheckIcon className="size-5" />
-                          </div>
-                          <p className="mt-3 text-sm font-semibold text-foreground">Inbox Zero erreicht</p>
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            Stark! Keine offenen Signale mehr. Hier sind die Top Trending Accounts als nächster Fokus.
-                          </p>
-                          <div className="mt-4 space-y-2 text-left">
-                            {trendingAccounts.length === 0 ? (
-                              <div className="rounded-lg border border-border bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
-                                Aktuell keine Trending Accounts verfügbar.
-                              </div>
-                            ) : (
-                              trendingAccounts.map((account) => (
-                                <Link
-                                  key={account.companyId}
-                                  href={ROUTES.accountsDetail(account.companyId)}
-                                  className="flex items-center justify-between gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2 text-xs text-foreground/85 hover:bg-muted"
-                                >
-                                  <span className="truncate font-medium text-foreground">{account.companyName}</span>
-                                  <span className="shrink-0 text-muted-foreground">{account.count} Signale</span>
-                                </Link>
-                              ))
-                            )}
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-muted text-foreground/85">
-                            <AppIcon icon={Sparkles} size={16} className={MS_TOOLBAR_ICON_CLASS} />
-                          </div>
-                          <p className="mt-3 text-sm font-semibold text-foreground">Kein Signal ausgewählt</p>
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            Wähle ein Signal aus, um Details und passende Referenzen zu sehen.
-                          </p>
-                        </>
-                      )}
-                    </div>
+                    {isInboxEmpty ? (
+                      <MarketSignalsSetupEmptyPanel />
+                    ) : (
+                      <div className="max-w-sm">
+                        <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-muted text-foreground/85">
+                          <AppIcon icon={Sparkles} size={16} className={MS_TOOLBAR_ICON_CLASS} />
+                        </div>
+                        <p className="mt-3 text-sm font-semibold text-foreground">Kein Signal ausgewählt</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          Wähle ein Signal aus, um Details und passende Referenzen zu sehen.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="flex h-full min-h-0 flex-col">
