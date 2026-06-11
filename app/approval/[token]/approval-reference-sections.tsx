@@ -1,11 +1,28 @@
 'use client'
 
 import { BidOverviewCollapsibleCard } from '@/app/dashboard/deal-desk/components/bid-overview-collapsible-card'
+import {
+  formatShowcaseNarrativeForDisplay,
+  parseShowcaseBulletItems,
+} from '@/lib/references/narrative-normalize'
+
+const NARRATIVE_BODY_CLASS = 'w-full max-w-none text-sm leading-relaxed text-muted-foreground'
 
 function SectionBody({ text }: { text: string }) {
-  return (
-    <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">{text}</p>
-  )
+  const formatted = formatShowcaseNarrativeForDisplay(text)
+  const bullets = parseShowcaseBulletItems(formatted)
+
+  if (bullets) {
+    return (
+      <ul className={`${NARRATIVE_BODY_CLASS} list-disc space-y-2 pl-5`}>
+        {bullets.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
+    )
+  }
+
+  return <p className={`${NARRATIVE_BODY_CLASS} whitespace-pre-wrap`}>{formatted}</p>
 }
 
 export function ApprovalReferenceSections({

@@ -110,8 +110,8 @@ export function ShowcaseSingleReference({
           revokeMode={revokeMode}
         />
 
-        <div className="grid grid-cols-1 gap-8 py-8 lg:grid-cols-12">
-          <div className="space-y-6 lg:col-span-8">
+        <div className="grid grid-cols-1 gap-8 py-8 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
+          <div className="min-w-0 space-y-6">
             <ShowcaseReferenceContent
               summary={reference.summary}
               challenge={reference.customer_challenge}

@@ -251,8 +251,8 @@ export default async function ApprovalPage({
 
         <ApprovalCaseDataBar items={caseDataItems} referenceTitle={row.title} />
 
-        <div className="grid grid-cols-1 gap-12 lg:grid-cols-12">
-          <section className="space-y-4 lg:col-span-7">
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,2fr)_minmax(300px,1fr)]">
+          <section className="min-w-0 space-y-4">
             <ApprovalReferenceSections
               summary={row.summary}
               challenge={row.customer_challenge}
@@ -273,7 +273,7 @@ export default async function ApprovalPage({
             ) : null}
           </section>
 
-          <aside className="lg:col-span-5">
+          <aside className="min-w-0">
             <div className="sticky top-6 rounded-2xl border border-border bg-card p-6 shadow-sm">
               <h2 className="mb-6 text-lg font-semibold text-foreground">
                 {approved ? 'Ihre Freigabe' : 'Ihre Entscheidung'}

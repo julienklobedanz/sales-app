@@ -59,7 +59,7 @@ export function ShowcaseProjectDetails({
   const websiteRaw = reference.website?.trim()
 
   return (
-    <aside className="lg:col-span-4">
+    <aside className="min-w-0">
       <div className="sticky top-32 rounded-2xl border border-border bg-card p-6 shadow-sm">
         <h3 className="mb-4 font-semibold text-foreground">Projektdetails</h3>
 
