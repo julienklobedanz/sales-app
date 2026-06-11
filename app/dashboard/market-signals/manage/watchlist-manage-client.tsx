@@ -114,6 +114,12 @@ export function MarketSignalsManageClient({
       if (!result.success) {
         setRows((prev) => prev.map((row) => (row.id === companyId ? { ...row, isFollowing: !nextValue } : row)))
         toast.error(result.error ?? 'Watchlist konnte nicht aktualisiert werden')
+        return
+      }
+      if (nextValue) {
+        toast.message(
+          'Account wird überwacht. In Marktsignale einmal „Feeds abrufen“ (↻) — Signale kommen aus Google News.'
+        )
       }
     })
   }

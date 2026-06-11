@@ -2,7 +2,13 @@ import { createHash } from 'crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { isMissingEnrichmentColumnsError, stripEnrichmentFields } from '@/lib/market-signals/enrichment-db'
 import { enrichSignal } from '@/lib/market-signals/enrich-signal-with-llm'
-import { buildCompanyNewsRssQuery, fetchGoogleNewsRssItems } from '@/lib/market-signals/google-news-rss'
+import { fetchGoogleNewsRssItems } from '@/lib/market-signals/google-news-rss'
+import {
+  buildSalesFocusedCompanyNewsRssQuery,
+  isLowValueRssTitle,
+  isRssPubDateWithinDays,
+  RSS_MAX_AGE_DAYS_DEFAULT,
+} from '@/lib/market-signals/sales-signal-relevance'
 
 export type CompanyNewsIngestCompanyRow = {
   id: string
@@ -67,12 +73,14 @@ export async function runCompanyNewsIngest(
     ingestMode?: 'all_accounts' | 'focus_only'
     maxCompanies?: number
     perCompanyMaxArticles?: number
+    maxAgeDays?: number
     pauseMsBetweenCompanies?: number
   }
 ): Promise<RunCompanyNewsIngestResult> {
   const ingestMode = options?.ingestMode ?? 'focus_only'
   const maxCompanies = Math.min(200, Math.max(1, options?.maxCompanies ?? 60))
-  const perCompanyMax = Math.min(20, Math.max(1, options?.perCompanyMaxArticles ?? 8))
+  const perCompanyMax = Math.min(8, Math.max(1, options?.perCompanyMaxArticles ?? 5))
+  const maxAgeDays = Math.min(90, Math.max(7, options?.maxAgeDays ?? RSS_MAX_AGE_DAYS_DEFAULT))
   const pauseMs = Math.max(0, options?.pauseMsBetweenCompanies ?? 400)
   const errors: string[] = []
   let articlesInserted = 0
@@ -137,18 +145,22 @@ export async function runCompanyNewsIngest(
   try {
     for (const company of uniqueList) {
       const host = hostFromWebsiteUrl(company.website_url)
-      const q = buildCompanyNewsRssQuery(company.name, host)
+      const q = buildSalesFocusedCompanyNewsRssQuery(company.name, host)
       if (!q) continue
       try {
         const items = await fetchGoogleNewsRssItems(q, {
           signal: controller.signal,
-          maxItems: perCompanyMax,
+          maxItems: Math.min(20, perCompanyMax * 4),
         })
+        let insertedForCompany = 0
         for (const item of items) {
+          if (insertedForCompany >= perCompanyMax) break
           const hash = contentHash(company.id, item.link)
           const segment = segmentFromAccountStatus(company.account_status)
           const body = item.title.trim()
           if (body.length < 8) continue
+          if (isLowValueRssTitle(body)) continue
+          if (!isRssPubDateWithinDays(item.pubDate, maxAgeDays)) continue
 
           const enrichment = await enrichSignal({
             title: body,
@@ -181,6 +193,7 @@ export async function runCompanyNewsIngest(
             }
           } else {
             articlesInserted += 1
+            insertedForCompany += 1
           }
         }
       } catch (e) {

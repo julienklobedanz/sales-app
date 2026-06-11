@@ -9,6 +9,7 @@ import {
 } from '@/lib/market-signals/backfill-signal-enrichment'
 import { runCompanyNewsIngest } from '@/lib/market-signals/ingest-company-news'
 import { runExecutiveIntelIngest } from '@/lib/market-signals/ingest-executive-intel'
+import { prepareMarketSignalsFeedRefresh } from '@/lib/market-signals/purge-market-signals'
 import { notifyInstantMarketSignalsAfterIngest } from '@/lib/market-signals/market-signals-instant-alerts'
 import { ROUTES } from '@/lib/routes'
 import { writeAuditLog } from '@/lib/audit/log-audit'
@@ -489,6 +490,11 @@ export async function getDecisionMakerCandidates(args: {
 export type TriggerMarketSignalsIngestResult =
   | {
       success: true
+      refreshFeeds: boolean
+      purge?: {
+        accountNewsDeleted: number
+        executiveDeleted: number
+      }
       news: {
         companiesScanned: number
         articlesInserted: number
@@ -506,6 +512,8 @@ export type TriggerMarketSignalsIngestResult =
 /** Company Updates + Exec-Presse-Signale (Google News RSS, kein Scraping). */
 export async function triggerMarketSignalsIngestForMyOrg(args?: {
   ingestMode?: 'all_accounts' | 'focus_only'
+  /** Manueller Refresh: RSS-Zeilen für Favoriten zurücksetzen und neu abrufen. */
+  refreshFeeds?: boolean
 }): Promise<TriggerMarketSignalsIngestResult> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -526,6 +534,7 @@ export async function triggerMarketSignalsIngestForMyOrg(args?: {
     return { success: false, error: 'Signale abrufen ist für Admin, Account Manager und Sales verfügbar.' }
   }
   const ingestMode: 'all_accounts' | 'focus_only' = args?.ingestMode ?? 'focus_only'
+  const refreshFeeds = args?.refreshFeeds === true
 
   const admin = createServiceRoleSupabaseClient()
   if (!admin) {
@@ -538,11 +547,21 @@ export async function triggerMarketSignalsIngestForMyOrg(args?: {
 
   const ingestSince = new Date().toISOString()
 
+  let purge: { accountNewsDeleted: number; executiveDeleted: number } | undefined
+  if (refreshFeeds) {
+    try {
+      purge = await prepareMarketSignalsFeedRefresh(admin, orgId)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      return { success: false, error: `Feed-Refresh konnte nicht vorbereitet werden: ${msg}` }
+    }
+  }
+
   const news = await runCompanyNewsIngest(admin, {
     organizationId: orgId,
     ingestMode,
     maxCompanies: 40,
-    perCompanyMaxArticles: 8,
+    perCompanyMaxArticles: 5,
   })
 
   const executives = await runExecutiveIntelIngest(admin, {
@@ -560,6 +579,8 @@ export async function triggerMarketSignalsIngestForMyOrg(args?: {
     entityId: orgId,
     actionDetails: {
       mode: ingestMode,
+      refreshFeeds,
+      purge,
       newsCompaniesScanned: news.companiesScanned,
       newsInserted: news.articlesInserted,
       newsErrors: news.errors.length,
@@ -575,6 +596,8 @@ export async function triggerMarketSignalsIngestForMyOrg(args?: {
   revalidatePath(ROUTES.home)
   return {
     success: true,
+    refreshFeeds,
+    purge,
     news: {
       companiesScanned: news.companiesScanned,
       articlesInserted: news.articlesInserted,

@@ -3,6 +3,11 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { isMissingEnrichmentColumnsError, stripEnrichmentFields } from '@/lib/market-signals/enrichment-db'
 import { enrichSignal } from '@/lib/market-signals/enrich-signal-with-llm'
 import { fetchGoogleNewsRssItems, type GoogleNewsRssItem } from '@/lib/market-signals/google-news-rss'
+import {
+  isLowValueRssTitle,
+  isRssPubDateWithinDays,
+  RSS_MAX_AGE_DAYS_DEFAULT,
+} from '@/lib/market-signals/sales-signal-relevance'
 
 function normalizeChampionKey(raw: string | null | undefined) {
   return String(raw ?? '')
@@ -234,6 +239,8 @@ export async function runExecutiveIntelIngest(
           for (const item of items) {
             const title = item.title.trim()
             if (title.length < 10) continue
+            if (isLowValueRssTitle(title)) continue
+            if (!isRssPubDateWithinDays(item.pubDate, RSS_MAX_AGE_DAYS_DEFAULT)) continue
 
             const enrichment = await enrichSignal({
               title,

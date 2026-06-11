@@ -1,5 +1,10 @@
 import { MARKET_SIGNAL_INTELLIGENCE_SYSTEM_PROMPT } from '@/lib/market-signals/signal-intelligence-prompt'
 import {
+  hasSalesTriggerHint,
+  isLowValueRssTitle,
+  irrelevantEnrichment,
+} from '@/lib/market-signals/sales-signal-relevance'
+import {
   buildSalesWhyNow,
   extractEmbeddedSignalHook,
   formatRoleChangeFact,
@@ -149,7 +154,8 @@ Antworte NUR mit JSON (kein Markdown, keine Code-Fences):
 }
 
 Regeln für dieses RSS-Ingest-Format:
-- is_relevant=false bei reinem PR ohne Vertriebsbezug (Sport, Wetter, allgemeine Markenwerbung, irrelevante Branchennews).
+- is_relevant=false IMMER bei: Stellenanzeigen (m/w/d), Recruiting, Karriere-Seiten, Praktika, Facility/Instandhaltung ohne strategischen Kontext, Employer Branding, Sport/Unterhaltung, generisches PR.
+- is_relevant=true nur bei echten Vertriebs-Triggern, z. B.: Führungswechsel (CEO/CTO/CIO), Werkseröffnung/Expansion/Investition, M&A/Partnerschaft, Quartalszahlen/Budget, Digitalisierung/Strategie, große Aufträge, Standort-/Markteintritt.
 - signal_category: people bei Personal/Führungswechsel; finance bei Finanzen, M&A, Budget, Quartalszahlen; strategy bei Strategie, Produkt, Expansion, Digitalisierung.
 - insight_signal_fact: knackiges Kurzfazit für UI-Label (max. 2 Sätze).
 - insight_why_now: analytischer Zweizeiler für den Vertriebler (max. 2–3 Sätze, harte Vertriebslogik wie im System-Prompt).`
@@ -211,15 +217,33 @@ export async function enrichSignal(input: EnrichSignalInput): Promise<SignalEnri
     return { ...buildHeuristicSignalEnrichment(input), is_relevant: false }
   }
 
+  if (isLowValueRssTitle(title)) {
+    return irrelevantEnrichment()
+  }
+
   const apiKey = process.env.OPENAI_API_KEY?.trim()
   if (!apiKey) {
-    return buildHeuristicSignalEnrichment(input)
+    const heuristic = buildHeuristicSignalEnrichment(input)
+    if (!personName && !hasSalesTriggerHint(title)) {
+      return { ...heuristic, is_relevant: false }
+    }
+    return heuristic
   }
 
   try {
     const llm = await callOpenAiEnrichment(apiKey, input, fallbackCategory)
     if (!llm) {
-      return buildHeuristicSignalEnrichment(input)
+      const heuristic = buildHeuristicSignalEnrichment(input)
+      if (!personName && !hasSalesTriggerHint(title)) {
+        return { ...heuristic, is_relevant: false }
+      }
+      return heuristic
+    }
+    if (!llm.is_relevant) {
+      return { ...llm, enrichment_source: 'llm' }
+    }
+    if (!personName && !hasSalesTriggerHint(title)) {
+      return { ...llm, is_relevant: false, enrichment_source: 'llm' }
     }
     return { ...llm, enrichment_source: 'llm' }
   } catch (err) {

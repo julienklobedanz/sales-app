@@ -385,7 +385,51 @@ function computeSignalIcpScore(input: {
   return Math.min(95, Math.max(52, score))
 }
 
-function MarketSignalsSetupEmptyPanel() {
+function MarketSignalsSetupEmptyPanel({
+  hasWatchlist,
+  canFetchFeeds,
+  fetchPending,
+  onFetchFeeds,
+}: {
+  hasWatchlist: boolean
+  canFetchFeeds: boolean
+  fetchPending: boolean
+  onFetchFeeds?: () => void
+}) {
+  if (hasWatchlist) {
+    return (
+      <div className="flex flex-col items-center justify-center p-12 py-24 text-center">
+        <div className="mb-4 rounded-2xl bg-violet-50 p-3">
+          <Radar className="size-12 text-violet-500" strokeWidth={1.25} aria-hidden />
+        </div>
+        <h2 className="mb-2 text-xl font-semibold text-gray-900">Watchlist aktiv — Feeds laden</h2>
+        <p className="mb-6 max-w-md text-sm text-gray-500">
+          Du überwachst bereits Accounts. Marktsignale kommen aus Google-News-RSS und werden nicht
+          automatisch beim Umschalten der Watchlist geladen — einmal „Feeds abrufen“ starten.
+        </p>
+        {canFetchFeeds && onFetchFeeds ? (
+          <button
+            type="button"
+            disabled={fetchPending}
+            onClick={onFetchFeeds}
+            className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-700 disabled:opacity-60"
+          >
+            {fetchPending ? (
+              <AppIcon icon={Loader} size={16} className="animate-spin" aria-hidden />
+            ) : (
+              <AppIcon icon={RefreshCw} size={16} aria-hidden />
+            )}
+            {fetchPending ? 'Feeds werden geladen…' : 'Feeds jetzt abrufen'}
+          </button>
+        ) : (
+          <p className="max-w-sm text-xs text-muted-foreground">
+            Bitte als Admin, Account Manager oder Sales anmelden, um Feeds manuell zu laden.
+          </p>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col items-center justify-center p-12 py-24 text-center">
       <div className="mb-4 rounded-2xl bg-violet-50 p-3">
@@ -438,6 +482,8 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
     }
   }, [router])
   const canRunNewsIngest = isAdmin || isAccountManager || isSales
+  const hasWatchlist = model.followingCompanyIds.length > 0
+  const autoIngestAttempted = useRef(false)
   const [nowTs] = useState(() => new Date().getTime())
   const [onlyFocusAccounts, setOnlyFocusAccounts] = useState(true)
 
@@ -1379,9 +1425,10 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
     }
   }, [selected?.id, selectedGroup?.key, introTone, introDraftRequested, introDraftRunId])
 
-  function runManualNewsIngest() {
+  function runManualNewsIngest(options?: { silent?: boolean; refreshFeeds?: boolean }) {
+    const refreshFeeds = options?.refreshFeeds !== false
     startNewsIngest(async () => {
-      const result = await triggerMarketSignalsIngestForMyOrg()
+      const result = await triggerMarketSignalsIngestForMyOrg({ refreshFeeds })
       if (!result.success) {
         toast.error(explainIngestError(result.error))
         return
@@ -1390,15 +1437,35 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
       const ee = result.executives.errors.length
       if (ne > 0) console.warn('[market-signals ingest / news]', result.news.errors)
       if (ee > 0) console.warn('[market-signals ingest / executives]', result.executives.errors)
-      toast.success(
-        `Signale: ${result.news.articlesInserted} Company Updates · ${result.executives.signalsInserted} Exec Updates` +
-          (result.executives.skippedNoCompany > 0
-            ? ` (${result.executives.skippedNoCompany} Exec. ohne Account-Zuordnung übersprungen)`
-            : '')
-      )
+      const inserted = result.news.articlesInserted + result.executives.signalsInserted
+      if (!options?.silent || inserted > 0) {
+        if (inserted > 0) {
+          toast.success(
+            `Feeds aktualisiert: ${result.news.articlesInserted} Company Updates · ${result.executives.signalsInserted} Exec Updates` +
+              (result.executives.skippedNoCompany > 0
+                ? ` (${result.executives.skippedNoCompany} Exec. ohne Account-Zuordnung übersprungen)`
+                : '')
+          )
+        } else if (refreshFeeds) {
+          toast.success(
+            `Feeds durchsucht (${result.news.companiesScanned} Accounts). Aktuell keine neuen Sales-Signale in den letzten 30 Tagen.`
+          )
+        } else {
+          toast.success('Keine neuen relevanten Signale in den Feeds gefunden.')
+        }
+      }
       router.refresh()
     })
   }
+
+  useEffect(() => {
+    if (autoIngestAttempted.current) return
+    if (!canRunNewsIngest) return
+    if (!hasWatchlist) return
+    if (model.news.length > 0 || model.executives.length > 0) return
+    autoIngestAttempted.current = true
+    runManualNewsIngest({ silent: true, refreshFeeds: false })
+  }, [canRunNewsIngest, hasWatchlist, model.executives.length, model.news.length])
 
   const outreachDraftTargetName =
     decisionCandidates[0]?.fullName?.split(/\s+/)[0] ?? 'Kontakt'
@@ -1736,9 +1803,36 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                 {isInboxEmpty ? (
                   <div className="flex flex-1 flex-col items-center justify-center px-4 py-8 text-center">
                     <Newspaper className="size-5 text-muted-foreground/55" strokeWidth={1.5} aria-hidden />
-                    <p className="mt-2 text-xs text-muted-foreground">Keine aktiven Signale</p>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {newsIngestPending
+                        ? 'Feeds werden geladen…'
+                        : hasWatchlist
+                          ? 'Noch keine Signale — Feeds abrufen'
+                          : 'Keine aktiven Signale'}
+                    </p>
+                    {hasWatchlist && canRunNewsIngest ? (
+                      <button
+                        type="button"
+                        disabled={newsIngestPending}
+                        onClick={() => runManualNewsIngest()}
+                        className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-border/70 bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60 disabled:opacity-60"
+                      >
+                        <AppIcon
+                          icon={newsIngestPending ? Loader : RefreshCw}
+                          size={14}
+                          className={newsIngestPending ? 'animate-spin text-muted-foreground' : MS_TOOLBAR_ICON_CLASS}
+                          aria-hidden
+                        />
+                        Feeds jetzt abrufen
+                      </button>
+                    ) : null}
                     <div className="mt-4 w-full lg:hidden">
-                      <MarketSignalsSetupEmptyPanel />
+                      <MarketSignalsSetupEmptyPanel
+                        hasWatchlist={hasWatchlist}
+                        canFetchFeeds={canRunNewsIngest}
+                        fetchPending={newsIngestPending}
+                        onFetchFeeds={() => runManualNewsIngest()}
+                      />
                     </div>
                   </div>
                 ) : (
@@ -1877,7 +1971,12 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
                 {!selected ? (
                   <div className="flex h-full items-center justify-center px-6 text-center">
                     {isInboxEmpty ? (
-                      <MarketSignalsSetupEmptyPanel />
+                      <MarketSignalsSetupEmptyPanel
+                        hasWatchlist={hasWatchlist}
+                        canFetchFeeds={canRunNewsIngest}
+                        fetchPending={newsIngestPending}
+                        onFetchFeeds={() => runManualNewsIngest()}
+                      />
                     ) : (
                       <div className="max-w-sm">
                         <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-muted text-foreground/85">
