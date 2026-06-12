@@ -4,6 +4,17 @@ export type ResendRecipientResolution = {
   originalTo: string
 }
 
+/** Entwicklung: E-Mail-Versand überspringen, Freigabe-Flow trotzdem abschließen. */
+export function shouldMockResendSend(): boolean {
+  return (
+    process.env.NODE_ENV === 'development' && process.env.RESEND_MOCK_SUCCESS === 'true'
+  )
+}
+
+export function isResendSandboxRecipientError(message: string): boolean {
+  return /only send testing emails to your own email/i.test(message)
+}
+
 /**
  * In Entwicklung optional alle Resend-Mails an eine verifizierte Test-Adresse leiten
  * (RESEND_DEV_OVERRIDE_TO in .env.local).

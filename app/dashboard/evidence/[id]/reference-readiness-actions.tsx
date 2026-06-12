@@ -209,7 +209,11 @@ export function ReferenceReadinessActions({
         return
       }
       setChangeRequestsDismissed(true)
-      if (result.devRedirected && result.originalRecipientEmail) {
+      if (result.emailMocked) {
+        toast.success(
+          'Freigabe erneut angefragt — Testmodus: E-Mail nicht gesendet, Ablauf ansonsten abgeschlossen.'
+        )
+      } else if (result.devRedirected && result.originalRecipientEmail) {
         toast.success(
           `Freigabe erneut angefragt — E-Mail an ${result.recipientEmail} gesendet (Dev-Umleitung von ${result.originalRecipientEmail}).`
         )

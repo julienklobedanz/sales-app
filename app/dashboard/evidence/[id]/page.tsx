@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getExistingShareForReference, toggleFavorite } from '@/app/dashboard/actions'
 import {
   Building2,
+  Calendar,
   Globe,
   LinkIcon,
   MapPinIcon,
@@ -632,14 +633,13 @@ export default async function EvidenceDetailPage({
 
           {role === 'sales' ? (
             <Card className="border-border/70">
-              <CardHeader>
-                <CardTitle className="text-base">Letzte Ereignisse</CardTitle>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs uppercase tracking-wider text-slate-950 dark:text-slate-100 inline-flex items-center gap-1.5">
+                  <AppIcon icon={Calendar} size={14} className="text-muted-foreground" />
+                  Letzte Ereignisse
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <p className="text-xs text-muted-foreground">
-                  Nur Freigaben, Kundenlinks, Exporte, interne Prüfung und Deal‑Ergebnisse — keine
-                  Seitenaufrufe, Such‑Matches oder KI‑Entwürfe.
-                </p>
+              <CardContent>
                 <ReferenceActivitiesTimeline items={referenceActivities} />
               </CardContent>
             </Card>
@@ -647,14 +647,13 @@ export default async function EvidenceDetailPage({
             <>
               {filesCard}
               <Card className="border-border/70">
-                <CardHeader>
-                  <CardTitle className="text-base">Letzte Ereignisse</CardTitle>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xs uppercase tracking-wider text-slate-950 dark:text-slate-100 inline-flex items-center gap-1.5">
+                    <AppIcon icon={Calendar} size={14} className="text-muted-foreground" />
+                    Letzte Ereignisse
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-xs text-muted-foreground">
-                    Nur Freigaben, Kundenlinks, Exporte, interne Prüfung und Deal‑Ergebnisse — keine
-                    Seitenaufrufe, Such‑Matches oder KI‑Entwürfe.
-                  </p>
+                <CardContent>
                   <ReferenceActivitiesTimeline items={referenceActivities} />
                 </CardContent>
               </Card>

@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { resolveResendRecipient } from './resend-dev-override'
+import {
+  isResendSandboxRecipientError,
+  resolveResendRecipient,
+  shouldMockResendSend,
+} from './resend-dev-override'
 
 describe('resolveResendRecipient', () => {
   const originalEnv = process.env
@@ -27,5 +31,22 @@ describe('resolveResendRecipient', () => {
     const result = resolveResendRecipient('alex.stoepel@web.de')
     expect(result.to).toBe('alex.stoepel@web.de')
     expect(result.devRedirected).toBe(false)
+  })
+
+  it('detects resend sandbox recipient errors', () => {
+    expect(
+      isResendSandboxRecipientError(
+        'You can only send testing emails to your own email address (test@example.com).'
+      )
+    ).toBe(true)
+  })
+
+  it('enables mock send in development when configured', () => {
+    process.env = {
+      ...originalEnv,
+      NODE_ENV: 'development',
+      RESEND_MOCK_SUCCESS: 'true',
+    }
+    expect(shouldMockResendSend()).toBe(true)
   })
 })

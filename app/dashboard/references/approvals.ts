@@ -16,7 +16,11 @@ import { hasActiveCustomerApprovalWorkflow } from '@/lib/references/effective-cu
 import { isApprovalRecipientEmail } from '@/lib/references/approval-recipient-input'
 import { referenceHasOpenCustomerChangeRequests } from '@/lib/references/approval-change-requests'
 import { deriveReferenceGiverNameFromEmail } from '@/lib/references/derive-reference-giver-name-from-email'
-import { resolveResendRecipient } from '@/lib/email/resend-dev-override'
+import {
+  isResendSandboxRecipientError,
+  resolveResendRecipient,
+  shouldMockResendSend,
+} from '@/lib/email/resend-dev-override'
 
 function referenceGiverNameFromRecipientEmail(email: string): string | null {
   return deriveReferenceGiverNameFromEmail(email)
@@ -998,6 +1002,7 @@ export type RequestCustomerApprovalAgainResult =
   | {
       success: true
       emailSent: boolean
+      emailMocked?: boolean
       recipientEmail: string
       devRedirected?: boolean
       originalRecipientEmail?: string
@@ -1111,40 +1116,59 @@ export async function requestCustomerApprovalAgainAfterChangesImpl(
   }
 
   const approvalUrl = `${getAppOrigin()}/approval/${token}`
-  const resend = getResend()
-  if (!resend) {
-    return { success: false, error: 'E-Mail-Versand ist nicht konfiguriert (RESEND_API_KEY).' }
-  }
-
   const recipient = resolveResendRecipient(contactEmail)
   const fromAddress = process.env.RESEND_FROM?.trim() || 'Refstack <onboarding@resend.dev>'
+  let emailMocked = false
 
-  try {
-    const { error: sendError } = await resend.emails.send({
-      from: fromAddress,
-      to: recipient.to,
-      subject: `Aktualisierte Referenz zur Freigabe: ${companyName}`,
-      html: buildFollowUpApprovalAfterChangesEmailHtml({
-        firstName,
-        companyName,
-        refTitle: ref.title,
-        approvalUrl,
-      }),
-    })
-    if (sendError) {
-      console.error('[requestCustomerApprovalAgainAfterChanges] send failed:', sendError)
-      const hint =
-        process.env.NODE_ENV === 'development'
-          ? ' Mit onboarding@resend.dev sind nur verifizierte Empfänger möglich — RESEND_DEV_OVERRIDE_TO in .env.local setzen.'
-          : ''
-      return {
-        success: false,
-        error: `E-Mail konnte nicht gesendet werden: ${sendError.message}.${hint}`,
-      }
+  if (shouldMockResendSend()) {
+    console.warn(
+      '[requestCustomerApprovalAgainAfterChanges] RESEND_MOCK_SUCCESS — E-Mail nicht gesendet (Dev-Test).'
+    )
+    emailMocked = true
+  } else {
+    const resend = getResend()
+    if (!resend) {
+      return { success: false, error: 'E-Mail-Versand ist nicht konfiguriert (RESEND_API_KEY).' }
     }
-  } catch (e) {
-    console.error('[requestCustomerApprovalAgainAfterChanges] send failed:', e)
-    return { success: false, error: 'E-Mail konnte nicht gesendet werden.' }
+
+    try {
+      const { error: sendError } = await resend.emails.send({
+        from: fromAddress,
+        to: recipient.to,
+        subject: `Aktualisierte Referenz zur Freigabe: ${companyName}`,
+        html: buildFollowUpApprovalAfterChangesEmailHtml({
+          firstName,
+          companyName,
+          refTitle: ref.title,
+          approvalUrl,
+        }),
+      })
+      if (sendError) {
+        if (
+          process.env.NODE_ENV === 'development' &&
+          isResendSandboxRecipientError(sendError.message)
+        ) {
+          console.warn(
+            '[requestCustomerApprovalAgainAfterChanges] Resend-Sandbox blockiert — in Dev als erfolgreich behandelt.',
+            sendError.message
+          )
+          emailMocked = true
+        } else {
+          console.error('[requestCustomerApprovalAgainAfterChanges] send failed:', sendError)
+          const hint =
+            process.env.NODE_ENV === 'development'
+              ? ' Für Tests: RESEND_MOCK_SUCCESS=true oder RESEND_DEV_OVERRIDE_TO=julien.klobedanz@gmail.com in .env.local.'
+              : ''
+          return {
+            success: false,
+            error: `E-Mail konnte nicht gesendet werden: ${sendError.message}.${hint}`,
+          }
+        }
+      }
+    } catch (e) {
+      console.error('[requestCustomerApprovalAgainAfterChanges] send failed:', e)
+      return { success: false, error: 'E-Mail konnte nicht gesendet werden.' }
+    }
   }
 
   const { error: clearCommentError } = await supabase
@@ -1170,7 +1194,8 @@ export async function requestCustomerApprovalAgainAfterChangesImpl(
   revalidatePath(ROUTES.evidence.root)
   return {
     success: true,
-    emailSent: true,
+    emailSent: !emailMocked,
+    emailMocked,
     recipientEmail: recipient.to,
     devRedirected: recipient.devRedirected,
     originalRecipientEmail: recipient.devRedirected ? recipient.originalTo : undefined,
