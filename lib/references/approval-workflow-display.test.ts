@@ -30,6 +30,14 @@ describe('approval-workflow-display', () => {
     ).toBe('Maria AM')
   })
 
+  it('derives coordinator display name from email', () => {
+    expect(
+      resolveApprovalCoordinatorDisplay({
+        coordinatorEmail: 'julien.klobedanz@gmail.com',
+      })
+    ).toBe('Julien Klobedanz')
+  })
+
   it('builds customer intro with person or org fallback', () => {
     expect(
       resolveCustomerApprovalIntro({

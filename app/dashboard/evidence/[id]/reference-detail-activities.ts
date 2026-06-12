@@ -20,6 +20,7 @@ const TIMELINE_EVENT_TYPES = [
   'deal_withdrawn',
   'reference_helped',
   'approval_delegated',
+  'customer_access_revoked',
 ] as const
 
 function formatChangesNeededDetail(
@@ -124,6 +125,20 @@ function mapRowToActivity(
             ? `Nach Anpassung der Änderungswünsche an ${recipient} gesendet.`
             : 'Nach Anpassung der Änderungswünsche erneut per E-Mail angefragt.'
           : 'E-Mail an Kundenkontakt ausgelöst (oder vorbereitet).',
+      }
+    }
+    case 'customer_access_revoked': {
+      const reason =
+        typeof payload.reason === 'string' && payload.reason.trim() ? payload.reason.trim() : null
+      const details =
+        typeof payload.details === 'string' && payload.details.trim() ? payload.details.trim() : null
+      return {
+        id: row.id,
+        at: row.created_at,
+        title: 'Zugriff vom Kunden gesperrt',
+        detail: details
+          ? `${reason ?? 'Sperrung'} — ${details}`
+          : reason ?? 'Kunde hat den öffentlichen Zugriff vorübergehend gesperrt.',
       }
     }
     case 'approval_delegated': {

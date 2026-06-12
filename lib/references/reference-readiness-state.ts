@@ -1,4 +1,17 @@
 import { effectiveCustomerApprovalStatus } from '@/lib/references/effective-customer-approval'
+import {
+  approvedScopeBadge,
+  resolveInternalWorkflowBadge,
+  resolvePreWorkflowCardBadge,
+  type ApprovalBadge,
+} from '@/lib/references/reference-approval-display'
+
+export {
+  approvedScopeBadge,
+  resolveFreigabestatusCardBadges,
+  resolveWorkflowStatusBadges,
+  type ApprovalBadge as WorkflowStatusBadge,
+} from '@/lib/references/reference-approval-display'
 
 /** UI-Zustände der Freigabestatus-Card (Detailansicht). */
 
@@ -13,10 +26,7 @@ export type ReferenceReadinessPhase =
   | 'expired'
   | 'idle'
 
-export type ReadinessBadge = {
-  label: string
-  className: string
-}
+export type ReadinessBadge = ApprovalBadge
 
 export type ReferenceReadinessStateInput = {
   referenceStatus: string
@@ -44,61 +54,6 @@ export type ReferenceReadinessState = {
   showRegenerateLink: boolean
   showWithdraw: boolean
   showStaleHint: boolean
-}
-
-function approvedScopeBadge(input: ReferenceReadinessStateInput): ReadinessBadge {
-  const named = input.approvalScopeNamedMention ?? true
-  const anonymous = input.approvalScopeAnonymousMention ?? true
-  const refCall = input.approvalScopeReferenceCall ?? false
-  const confidential = input.approvalScopeConfidentialSales ?? false
-  const publicMarketing = input.approvalScopeLogoUse ?? false
-
-  if (input.referenceIsInternalOnly) {
-    return {
-      label: 'Nur intern nutzbar',
-      className: 'border-emerald-200/80 bg-emerald-50 text-emerald-800',
-    }
-  }
-
-  if (!named && anonymous) {
-    return {
-      label: 'Anonym freigegeben',
-      className: 'border-amber-200 bg-amber-50 text-amber-900',
-    }
-  }
-
-  if (refCall && named) {
-    return {
-      label: 'Freigabe mit Ref. Calls',
-      className: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-    }
-  }
-
-  if (confidential && !publicMarketing && named) {
-    return {
-      label: 'Freigabe ohne Ref. Calls',
-      className: 'border-sky-200 bg-sky-50 text-sky-900',
-    }
-  }
-
-  if (publicMarketing && named) {
-    return {
-      label: 'Vollständig freigegeben',
-      className: 'border-emerald-200/80 bg-emerald-50 text-emerald-800',
-    }
-  }
-
-  if (named) {
-    return {
-      label: 'Namentlich freigegeben',
-      className: 'border-emerald-200/80 bg-emerald-50 text-emerald-800',
-    }
-  }
-
-  return {
-    label: 'Freigegeben',
-    className: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-  }
 }
 
 export function resolveReferenceReadinessState(
@@ -131,13 +86,12 @@ export function resolveReferenceReadinessState(
     }
   }
 
-  if (internal === 'withdrawn_internal') {
+  const workflowStarted = Boolean(input.approvalRequestedAt?.trim())
+
+  if (internal === 'withdrawn_internal' && workflowStarted) {
     return {
       phase: 'withdrawn',
-      badge: {
-        label: 'Anfrage widerrufen',
-        className: 'border-slate-200 bg-slate-100 text-slate-600',
-      },
+      badge: resolveInternalWorkflowBadge(internal),
       showPrimaryStart: input.canStartApproval,
       showMagicLink: false,
       showRegenerateLink: false,
@@ -205,15 +159,22 @@ export function resolveReferenceReadinessState(
     }
   }
 
-  const workflowStarted = Boolean(input.approvalRequestedAt?.trim())
+  if (internal === 'rejected_internal' && workflowStarted) {
+    return {
+      phase: 'rejected',
+      badge: resolveInternalWorkflowBadge(internal),
+      showPrimaryStart: input.canStartApproval,
+      showMagicLink: false,
+      showRegenerateLink: false,
+      showWithdraw: false,
+      showStaleHint: false,
+    }
+  }
 
   if (internal === 'pending_internal' && workflowStarted) {
     return {
       phase: 'internal_start',
-      badge: {
-        label: 'Interne Freigabe ausstehend',
-        className: 'border-sky-200 bg-sky-50 text-sky-800',
-      },
+      badge: resolveInternalWorkflowBadge(internal),
       showPrimaryStart: false,
       showMagicLink: false,
       showRegenerateLink: false,
@@ -225,10 +186,7 @@ export function resolveReferenceReadinessState(
   if (internal === 'approved_internal' && workflowStarted) {
     return {
       phase: 'prepare_customer',
-      badge: {
-        label: 'Intern freigegeben',
-        className: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-      },
+      badge: resolveInternalWorkflowBadge(internal),
       showPrimaryStart: input.canInternalApprove,
       showMagicLink: false,
       showRegenerateLink: false,
@@ -240,10 +198,10 @@ export function resolveReferenceReadinessState(
   if (input.canStartApproval && status === 'draft') {
     return {
       phase: 'request_approval',
-      badge: {
-        label: 'Entwurf',
-        className: 'border-slate-200 bg-slate-100 text-slate-700',
-      },
+      badge: resolvePreWorkflowCardBadge({
+        referenceStatus: status,
+        canStartApproval: true,
+      }),
       showPrimaryStart: true,
       showMagicLink: false,
       showRegenerateLink: false,
@@ -255,10 +213,10 @@ export function resolveReferenceReadinessState(
   if (input.canStartApproval && (status === 'internal_only' || status === 'internal')) {
     return {
       phase: 'request_approval',
-      badge: {
-        label: 'Nur intern',
-        className: 'border-slate-200 bg-slate-100 text-slate-700',
-      },
+      badge: resolvePreWorkflowCardBadge({
+        referenceStatus: status,
+        canStartApproval: true,
+      }),
       showPrimaryStart: true,
       showMagicLink: false,
       showRegenerateLink: false,
@@ -269,10 +227,10 @@ export function resolveReferenceReadinessState(
 
   return {
     phase: 'idle',
-    badge: {
-      label: 'Nicht angefragt',
-      className: 'border-slate-200 bg-slate-100 text-slate-600',
-    },
+    badge: resolvePreWorkflowCardBadge({
+      referenceStatus: status,
+      canStartApproval: false,
+    }),
     showPrimaryStart: false,
     showMagicLink: false,
     showRegenerateLink: false,
@@ -284,98 +242,4 @@ export function resolveReferenceReadinessState(
 export function formatReadinessEmpty(value: string | null | undefined): string | null {
   const t = typeof value === 'string' ? value.trim() : ''
   return t.length > 0 ? t : null
-}
-
-export type WorkflowStatusBadge = ReadinessBadge
-
-/** Getrennte Anzeige Intern vs. Kunde in der Freigabestatus-Card. */
-export function resolveWorkflowStatusBadges(input: {
-  internalApprovalStatus: string
-  customerApprovalStatus: string | null
-  referenceStatus?: string | null
-  approvalRequestedAt: string | null
-  approvalScopeNamedMention?: boolean | null
-  approvalScopeAnonymousMention?: boolean | null
-  approvalScopeReferenceCall?: boolean | null
-  approvalScopeConfidentialSales?: boolean | null
-  approvalScopeLogoUse?: boolean | null
-  referenceIsInternalOnly?: boolean
-}): { internal: WorkflowStatusBadge; customer: WorkflowStatusBadge | null } | null {
-  if (!input.approvalRequestedAt?.trim()) return null
-
-  const internal = input.internalApprovalStatus.toLowerCase()
-  const customer = effectiveCustomerApprovalStatus(
-    input.customerApprovalStatus,
-    input.referenceStatus
-  )
-  const customerRaw = String(input.customerApprovalStatus ?? '').toLowerCase()
-
-  let internalBadge: WorkflowStatusBadge
-  switch (internal) {
-    case 'approved_internal':
-      internalBadge = {
-        label: 'Intern freigegeben',
-        className: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-      }
-      break
-    case 'rejected_internal':
-      internalBadge = {
-        label: 'Intern abgelehnt',
-        className: 'border-red-200 bg-red-50 text-red-700',
-      }
-      break
-    case 'withdrawn_internal':
-      internalBadge = {
-        label: 'Widerrufen',
-        className: 'border-slate-200 bg-slate-100 text-slate-600',
-      }
-      break
-    default:
-      internalBadge = {
-        label: 'Interne Prüfung ausstehend',
-        className: 'border-sky-200 bg-sky-50 text-sky-800',
-      }
-  }
-
-  let customerBadge: WorkflowStatusBadge | null = null
-  if (customer === 'pending') {
-    customerBadge = {
-      label: 'Wartet auf Kundenfreigabe',
-      className: 'border-amber-200 bg-amber-50 text-amber-900',
-    }
-  } else if (customer === 'approved') {
-    customerBadge = approvedScopeBadge({
-      referenceStatus: input.referenceStatus ?? 'external',
-      internalApprovalStatus: internal,
-      customerApprovalStatus: 'approved',
-      approvalRequestedAt: input.approvalRequestedAt,
-      staleInternalPending: false,
-      isApprovalGranted: true,
-      canStartApproval: false,
-      canInternalApprove: false,
-      approvalScopeNamedMention: input.approvalScopeNamedMention ?? null,
-      approvalScopeAnonymousMention: input.approvalScopeAnonymousMention ?? null,
-      approvalScopeReferenceCall: input.approvalScopeReferenceCall ?? null,
-      approvalScopeConfidentialSales: input.approvalScopeConfidentialSales ?? null,
-      approvalScopeLogoUse: input.approvalScopeLogoUse ?? null,
-      referenceIsInternalOnly: input.referenceIsInternalOnly ?? false,
-    })
-  } else if (customer === 'rejected' || customerRaw === 'rejected') {
-    customerBadge = {
-      label: 'Vom Kunden abgelehnt',
-      className: 'border-red-200 bg-red-50 text-red-700',
-    }
-  } else if (customer === 'expired' || customerRaw === 'expired') {
-    customerBadge = {
-      label: 'Kundenfrist abgelaufen',
-      className: 'border-orange-200 bg-orange-50 text-orange-800',
-    }
-  } else if (internal !== 'withdrawn_internal' && internal !== 'rejected_internal') {
-    customerBadge = {
-      label: 'Noch nicht gestartet',
-      className: 'border-slate-200 bg-slate-100 text-slate-600',
-    }
-  }
-
-  return { internal: internalBadge, customer: customerBadge }
 }

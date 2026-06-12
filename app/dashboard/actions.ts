@@ -6,6 +6,7 @@ import {
   resendClientApprovalEmailImpl,
   requestCustomerApprovalAgainAfterChangesImpl,
   updateApprovalRecipientImpl,
+  updateApprovalCoordinatorImpl,
   approveInternalAndSendImpl,
   getApprovalLinkImpl,
   withdrawApprovalRequestImpl,
@@ -334,6 +335,10 @@ export async function updateApprovalRecipient(
   recipient: ApproveInternalRecipientOptions
 ) {
   return updateApprovalRecipientImpl(referenceId, recipient)
+}
+
+export async function updateApprovalCoordinator(referenceId: string, coordinatorEmail: string) {
+  return updateApprovalCoordinatorImpl(referenceId, coordinatorEmail)
 }
 
 export async function getPendingClientApprovals() {

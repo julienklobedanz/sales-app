@@ -5,6 +5,7 @@ export type EffectiveCustomerApproval =
   | 'approved'
   | 'rejected'
   | 'expired'
+  | 'revoked_by_customer'
   | null
 
 export function effectiveCustomerApprovalStatus(
@@ -16,7 +17,8 @@ export function effectiveCustomerApprovalStatus(
     customer === 'pending' ||
     customer === 'approved' ||
     customer === 'rejected' ||
-    customer === 'expired'
+    customer === 'expired' ||
+    customer === 'revoked_by_customer'
   ) {
     return customer
   }

@@ -1,7 +1,11 @@
 'use server'
 
+import { revalidatePath } from 'next/cache'
 import { cookies, headers } from 'next/headers'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
+import { resetReferencesAfterCustomerAccessRevoke } from '@/lib/references/reset-after-customer-access-revoke'
+import { ROUTES } from '@/lib/routes'
 import { publicPortfolioUnlockCookieName } from '@/lib/public-portfolio-cookie'
 import { writeAuditLog } from '@/lib/audit/log-audit'
 import { createHash } from 'crypto'
@@ -358,7 +362,7 @@ const REVOKE_REASON_LABELS: Record<string, string> = {
   other: 'Sonstiges (Bitte angeben)',
 }
 
-/** Showcase-Sperrlink: Zugriff widerrufen inkl. dokumentiertem Grund. */
+/** Showcase-Sperrlink: Zugriff sperren inkl. dokumentiertem Grund. */
 export async function revokePortfolioAccess(params: {
   slug: string
   manageToken?: string | null
@@ -366,9 +370,21 @@ export async function revokePortfolioAccess(params: {
   details?: string
 }): Promise<{ success: boolean }> {
   const reasonLabel = REVOKE_REASON_LABELS[params.reason] ?? params.reason
-  // TODO: Trigger Admin-Notification (Toast/Email) und setze Referenz-Status auf 'Vom Kunden gesperrt'
-  void reasonLabel
-  void params.details
 
-  return deactivatePortfolio(params.slug, params.manageToken)
+  const deactivated = await deactivatePortfolio(params.slug, params.manageToken)
+  if (!deactivated.success) return { success: false }
+
+  const admin = createServiceRoleSupabaseClient()
+  if (admin) {
+    const { referenceIds } = await resetReferencesAfterCustomerAccessRevoke(admin, {
+      slug: params.slug,
+      reasonLabel,
+      details: params.details,
+    })
+    for (const referenceId of referenceIds) {
+      revalidatePath(ROUTES.evidence.detail(referenceId))
+    }
+  }
+
+  return { success: true }
 }

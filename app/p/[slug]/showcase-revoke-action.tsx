@@ -100,10 +100,10 @@ export function ShowcaseRevokeAction({ slug }: { slug: string }) {
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Zugriff auf Referenz widerrufen</DialogTitle>
+            <DialogTitle>Zugriff vorübergehend sperren?</DialogTitle>
             <DialogDescription>
-              Wenn Sie diese Referenz sperren, wird sie sofort für alle Empfänger deaktiviert. Der
-              Workspace-Inhaber wird benachrichtigt.
+              Die Referenz ist für Empfänger des Kundenlinks vorübergehend nicht erreichbar. Ihr
+              Ansprechpartner im Workspace wird informiert und kann die Freigabe erneut anstoßen.
             </DialogDescription>
           </DialogHeader>
 
@@ -152,7 +152,7 @@ export function ShowcaseRevokeAction({ slug }: { slug: string }) {
               onClick={() => void handleRevoke()}
               disabled={loading || !reason}
             >
-              {loading ? 'Wird gesperrt…' : 'Unwiderruflich sperren'}
+              {loading ? 'Wird gesperrt…' : 'Sperren'}
             </Button>
           </DialogFooter>
         </DialogContent>

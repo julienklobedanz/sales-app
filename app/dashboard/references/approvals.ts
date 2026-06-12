@@ -16,6 +16,11 @@ import { hasActiveCustomerApprovalWorkflow } from '@/lib/references/effective-cu
 import { isApprovalRecipientEmail } from '@/lib/references/approval-recipient-input'
 import { referenceHasOpenCustomerChangeRequests } from '@/lib/references/approval-change-requests'
 import { deriveReferenceGiverNameFromEmail } from '@/lib/references/derive-reference-giver-name-from-email'
+import { sendInternalApprovalReviewEmail } from '@/lib/references/internal-approval-email'
+import {
+  canEditInternalApprovalCoordinator,
+  canEditPreCustomerApprovalRecipient,
+} from '@/lib/references/pre-customer-approval-edit'
 import {
   isResendSandboxRecipientError,
   resolveResendRecipient,
@@ -332,9 +337,6 @@ async function notifyInternalReferenceCoordinatorAboutPendingReview(args: {
   accountManagerEmail?: string | null
   message?: string | null
 }): Promise<void> {
-  const resend = getResend()
-  if (!resend) return
-
   let email = String(args.accountManagerEmail ?? '').trim()
   let greeting = 'Hallo,'
 
@@ -372,41 +374,18 @@ async function notifyInternalReferenceCoordinatorAboutPendingReview(args: {
   const internalToken = (
     refTokenRow as { approval_internal_review_token?: string | null } | null
   )?.approval_internal_review_token
-  const approveUrl = internalToken
-    ? `${getAppOrigin()}${ROUTES.internalApproval(internalToken)}`
-    : `${getAppOrigin()}${ROUTES.evidence.detail(args.referenceId)}`
-  const detailUrl = `${getAppOrigin()}${ROUTES.evidence.detail(args.referenceId)}`
-  const who = args.requesterName.trim()
-    ? `<p><strong>${escapeHtml(args.requesterName.trim())}</strong> hat eine Kundenfreigabe zur internen Prüfung eingereicht.</p>`
-    : '<p>Es liegt eine neue Freigabe zur internen Prüfung vor.</p>'
-  const messageBlock =
-    args.message?.trim()
-      ? `<p><strong>Nachricht:</strong><br/>${escapeHtml(args.message.trim()).replace(/\n/g, '<br/>')}</p>`
-      : ''
+  if (!internalToken) return
 
-  try {
-    await resend.emails.send({
-      from: 'Refstack <onboarding@resend.dev>',
-      to: email,
-      subject: `Interne Referenzfreigabe: ${args.accountCompanyName} – ${args.referenceTitle}`,
-      html: `
-        ${greeting}
-        ${who}
-        <p>Referenz: <strong>${escapeHtml(args.referenceTitle)}</strong><br/>
-        Account: <strong>${escapeHtml(args.accountCompanyName)}</strong></p>
-        ${messageBlock}
-        <p>Bitte bestätigen Sie zuerst die interne Freigabe. Erst danach können Sie in RefStack die Kundenfreigabe vorbereiten:</p>
-        <p style="margin:20px 0;"><a href="${escapeHtml(approveUrl)}"
-          style="display:inline-block;background:#0f172a;color:#fff;padding:12px 20px;text-decoration:none;border-radius:6px;font-weight:600;">
-          Intern freigeben
-        </a></p>
-        <p style="font-size:13px;color:#64748b;">Referenz in RefStack öffnen:<br/>
-        <a href="${escapeHtml(detailUrl)}" style="color:#2563eb;">${escapeHtml(detailUrl)}</a></p>
-      `,
-    })
-  } catch (e) {
-    console.error('[notifyInternalReferenceCoordinatorAboutPendingReview]', e)
-  }
+  await sendInternalApprovalReviewEmail({
+    to: email,
+    greeting,
+    referenceTitle: args.referenceTitle,
+    accountCompanyName: args.accountCompanyName,
+    requesterName: args.requesterName,
+    message: args.message,
+    internalReviewToken: internalToken,
+    referenceId: args.referenceId,
+  })
 }
 
 function computeStatusSnapshot(row: ReferenceApprovalRow): string {
@@ -577,7 +556,7 @@ export async function submitForApprovalImpl(
       approval_requested_by: user.id,
       approval_requester_name: requesterName || null,
       approval_coordinator_email: accountManagerEmail,
-      approval_coordinator_name: null,
+      approval_coordinator_name: referenceGiverNameFromRecipientEmail(accountManagerEmail),
       approval_customer_facing_name: null,
       approval_internal_reviewer_id: null,
       approval_internal_reviewed_at: null,
@@ -853,17 +832,34 @@ export async function withdrawApprovalRequestImpl(referenceId: string): Promise<
   await supabase
     .from('references')
     .update({
+      status: restoredStatus,
       approval_token: null,
       customer_approval_status: null,
-      approval_internal_status: 'withdrawn_internal',
+      approval_internal_status: 'pending_internal',
       approval_internal_review_token: null,
+      approval_internal_reviewer_id: null,
+      approval_internal_reviewed_at: null,
+      approval_internal_review_comment: null,
       approval_requested_at: null,
+      approval_requested_by: null,
+      approval_requester_name: null,
+      approval_responded_at: null,
+      approval_comment: null,
       approval_contact_id: null,
       approval_external_contact_id: null,
+      approval_delegated_to_name: null,
+      approval_delegated_to_email: null,
+      approval_message: null,
+      approval_owner_name: null,
+      approval_expires_at: null,
+      approval_grace_until: null,
+      approval_reference_status_snapshot: null,
       approval_coordinator_email: null,
       approval_coordinator_name: null,
       approval_customer_facing_name: null,
-      status: restoredStatus,
+      approval_quote_approved: null,
+      approval_quote_proposed: null,
+      approval_consent_file_url: null,
     })
     .eq('id', referenceId)
   await supabase
@@ -872,6 +868,8 @@ export async function withdrawApprovalRequestImpl(referenceId: string): Promise<
     .eq('reference_id', referenceId)
     .eq('status', 'pending')
   revalidatePath(ROUTES.evidence.detail(referenceId))
+  revalidatePath(ROUTES.evidence.root)
+  revalidatePath(ROUTES.home)
   return { success: true }
 }
 
@@ -1229,6 +1227,8 @@ export async function updateApprovalRecipientImpl(
       customer_contact_id,
       customer_approval_status,
       approval_requested_by,
+      approval_requested_at,
+      approval_internal_status,
       approval_contact_id,
       approval_external_contact_id,
       companies ( name )
@@ -1239,9 +1239,22 @@ export async function updateApprovalRecipientImpl(
 
   if (fetchError || !row) return { success: false, error: 'Referenz nicht gefunden' }
 
-  const ref = row as unknown as ReferenceApprovalRow & { approval_requested_by?: string | null }
+  const ref = row as unknown as ReferenceApprovalRow & {
+    approval_requested_by?: string | null
+    approval_requested_at?: string | null
+    approval_internal_status?: string | null
+  }
 
-  if (!hasActiveCustomerApprovalWorkflow(ref.customer_approval_status, ref.status)) {
+  const preCustomerEdit = canEditPreCustomerApprovalRecipient({
+    customerApprovalStatus: ref.customer_approval_status,
+    approvalRequestedAt: ref.approval_requested_at,
+    internalApprovalStatus: ref.approval_internal_status,
+  })
+
+  if (
+    !hasActiveCustomerApprovalWorkflow(ref.customer_approval_status, ref.status) &&
+    !preCustomerEdit
+  ) {
     return { success: false, error: 'Es liegt keine aktive Kunden-Freigabe vor.' }
   }
 
@@ -1301,4 +1314,108 @@ export async function updateApprovalRecipientImpl(
 
   revalidatePath(ROUTES.evidence.detail(referenceId))
   return { success: true }
+}
+
+export async function updateApprovalCoordinatorImpl(
+  referenceId: string,
+  coordinatorEmail: string
+): Promise<{ success: true; emailSent: boolean } | { success: false; error: string }> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht authentifiziert' }
+
+  const email = coordinatorEmail.trim().toLowerCase()
+  if (!isApprovalRecipientEmail(email)) {
+    return { success: false, error: 'Bitte eine gültige E-Mail-Adresse eingeben.' }
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+  const role = String((profile as { role?: string } | null)?.role ?? '')
+
+  const { data: row, error: fetchError } = await supabase
+    .from('references')
+    .select(
+      `
+      id,
+      title,
+      approval_internal_status,
+      approval_requested_at,
+      approval_requested_by,
+      approval_requester_name,
+      approval_message,
+      companies ( name )
+    `
+    )
+    .eq('id', referenceId)
+    .single()
+
+  if (fetchError || !row) return { success: false, error: 'Referenz nicht gefunden' }
+
+  const ref = row as {
+    id: string
+    title?: string | null
+    approval_internal_status?: string | null
+    approval_requested_at?: string | null
+    approval_requested_by?: string | null
+    approval_requester_name?: string | null
+    approval_message?: string | null
+    companies?: { name?: string } | { name?: string }[] | null
+  }
+
+  if (
+    !canEditInternalApprovalCoordinator({
+      approvalRequestedAt: ref.approval_requested_at,
+      internalApprovalStatus: ref.approval_internal_status,
+    })
+  ) {
+    return { success: false, error: 'Die interne Freigabe kann derzeit nicht umgeleitet werden.' }
+  }
+
+  const canEdit =
+    role === 'admin' ||
+    role === 'account_manager' ||
+    ref.approval_requested_by === user.id
+  if (!canEdit) {
+    return { success: false, error: 'Keine Berechtigung, den intern Verantwortlichen zu ändern.' }
+  }
+
+  const internalReviewToken = crypto.randomUUID()
+  const company =
+    Array.isArray(ref.companies) && ref.companies.length > 0
+      ? ref.companies[0]
+      : (ref.companies as { name?: string } | null)
+  const accountCompanyName = company?.name?.trim() || 'Account'
+  const coordinatorName = referenceGiverNameFromRecipientEmail(email)
+
+  const { error: updateError } = await supabase
+    .from('references')
+    .update({
+      approval_coordinator_email: email,
+      approval_coordinator_name: coordinatorName,
+      approval_internal_review_token: internalReviewToken,
+    })
+    .eq('id', referenceId)
+    .eq('approval_internal_status', 'pending_internal')
+
+  if (updateError) return { success: false, error: updateError.message }
+
+  const emailSent = await sendInternalApprovalReviewEmail({
+    to: email,
+    greeting: coordinatorName ? `Hallo ${coordinatorName},` : 'Hallo,',
+    referenceTitle: String(ref.title ?? 'Referenz'),
+    accountCompanyName,
+    requesterName: String(ref.approval_requester_name ?? '').trim(),
+    message: ref.approval_message,
+    internalReviewToken,
+    referenceId,
+  })
+
+  revalidatePath(ROUTES.evidence.detail(referenceId))
+  return { success: true, emailSent }
 }

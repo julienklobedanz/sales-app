@@ -76,19 +76,20 @@ describe('resolveReferenceReadinessState', () => {
       isApprovalGranted: true,
     })
     expect(s.phase).toBe('approved')
-    expect(s.badge.label).toBe('Namentlich freigegeben')
+    expect(s.badge.label).toBe('Freigabe ohne Ref. Calls')
     expect(s.showMagicLink).toBe(true)
   })
 
-  it('approved with public scope → Vollständig freigegeben', () => {
+  it('approved without ref calls → Freigabe ohne Ref. Calls', () => {
     const s = resolveReferenceReadinessState({
       ...base,
       referenceStatus: 'external',
       customerApprovalStatus: 'approved',
       isApprovalGranted: true,
       approvalScopeLogoUse: true,
+      approvalScopeReferenceCall: false,
     })
-    expect(s.badge.label).toBe('Vollständig freigegeben')
+    expect(s.badge.label).toBe('Freigabe ohne Ref. Calls')
   })
 
   it('approved with confidential scope → Freigabe ohne Ref. Calls', () => {

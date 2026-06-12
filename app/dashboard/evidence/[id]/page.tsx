@@ -37,11 +37,15 @@ import {
 } from '@/lib/references/approval-workflow-display'
 import { resolveCustomerApprovalFollowUpUi } from '@/lib/references/approval-change-requests'
 import {
+  canEditInternalApprovalCoordinator,
+  canEditPreCustomerApprovalRecipient,
+} from '@/lib/references/pre-customer-approval-edit'
+import {
   canStartApprovalWorkflow,
 } from '@/lib/references/approval-workflow'
 import {
   resolveReferenceReadinessState,
-  resolveWorkflowStatusBadges,
+  resolveFreigabestatusCardBadges,
 } from '@/lib/references/reference-readiness-state'
 import { ReferenceViewedTracker } from './reference-viewed-tracker'
 import { getReferenceDetailActivities } from './reference-detail-activities'
@@ -331,8 +335,11 @@ export default async function EvidenceDetailPage({
   const challengeSolutionGridClass = 'grid gap-4 grid-cols-1'
   const internalApproval = String(ref.approval_internal_status ?? '').toLowerCase()
   const isWithdrawnInternal = internalApproval === 'withdrawn_internal'
+  const customerAccessRevoked =
+    String(ref.customer_approval_status ?? '').toLowerCase() === 'revoked_by_customer'
   const isApprovalGranted =
     !isWithdrawnInternal &&
+    !customerAccessRevoked &&
     (String(ref.customer_approval_status ?? '').toLowerCase() === 'approved' ||
       normalizedStatus === 'approved' ||
       normalizedStatus === 'external')
@@ -346,6 +353,7 @@ export default async function EvidenceDetailPage({
       : baseApprovalStatus
   /** DB-Hygiene: Status/Kunde schon freigegeben, aber approval_internal_status hängt noch auf pending_internal. */
   const staleInternalPending =
+    !customerAccessRevoked &&
     internalApproval === 'pending_internal' &&
     (isApprovalGranted ||
       normalizedStatus === 'approved' ||
@@ -378,7 +386,7 @@ export default async function EvidenceDetailPage({
   })
   const autoOpenApprovalDialog = qs.startApproval === '1' || qs.startApproval === 'true'
 
-  const workflowStatusBadges = resolveWorkflowStatusBadges({
+  const workflowStatusBadges = resolveFreigabestatusCardBadges({
     internalApprovalStatus: internalApproval,
     customerApprovalStatus: ref.customer_approval_status,
     referenceStatus: normalizedStatus,
@@ -431,6 +439,15 @@ export default async function EvidenceDetailPage({
     ref.approval_comment,
     { showMagicLink: readinessState.showMagicLink }
   )
+  const canEditPendingCustomerEmail = canEditPreCustomerApprovalRecipient({
+    customerApprovalStatus: ref.customer_approval_status,
+    approvalRequestedAt: ref.approval_requested_at,
+    internalApprovalStatus: internalApproval,
+  })
+  const canEditCoordinatorEmail = canEditInternalApprovalCoordinator({
+    approvalRequestedAt: ref.approval_requested_at,
+    internalApprovalStatus: internalApproval,
+  })
 
   let glossaryFromWorkflow: string[] = []
   if (organizationId) {
@@ -527,6 +544,7 @@ export default async function EvidenceDetailPage({
                   status={ref.status}
                   customerApprovalStatus={ref.customer_approval_status}
                   approvalInternalStatus={ref.approval_internal_status}
+                  approvalRequestedAt={ref.approval_requested_at}
                 />
               </div>
               <h1 className={`${DASHBOARD_PAGE_TITLE_CLASS} break-words`}>
@@ -705,83 +723,65 @@ export default async function EvidenceDetailPage({
             </CardContent>
           </Card>
 
-          <Card className={cn('w-full', role === 'sales' ? 'order-2' : undefined)}>
+          <Card className={cn('w-full min-w-0', role === 'sales' ? 'order-2' : undefined)}>
             <CardHeader>
               <CardTitle className="text-base">Freigabestatus</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 text-sm transition-all duration-200">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-muted-foreground">NDA Deal?</span>
+            <CardContent className="min-w-0 space-y-3 text-sm transition-all duration-200">
+              <div className="min-w-0 space-y-2">
+                <div className="flex min-w-0 items-start justify-between gap-3">
+                  <span className="shrink-0 pt-0.5 text-muted-foreground">Unter NDA?</span>
                   <span
-                    className={`rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors duration-200 ${ndaDealBadgeClass}`}
+                    className={`min-w-0 max-w-[58%] shrink whitespace-normal rounded-full border px-2.5 py-0.5 text-right text-xs font-medium leading-tight transition-colors duration-200 ${ndaDealBadgeClass}`}
                   >
                     {isNdaDeal ? 'Ja' : 'Nein'}
                   </span>
                 </div>
-                {workflowStatusBadges ? (
-                  <>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-muted-foreground">Intern</span>
-                      <span
-                        className={cn(
-                          'rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors duration-200',
-                          workflowStatusBadges.internal.className
-                        )}
-                      >
-                        {workflowStatusBadges.internal.label}
-                      </span>
-                    </div>
-                    {workflowStatusBadges.customer ? (
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-muted-foreground">Kunde</span>
-                        <span
-                          className={cn(
-                            'rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors duration-200',
-                            workflowStatusBadges.customer.className
-                          )}
-                        >
-                          {workflowStatusBadges.customer.label}
-                        </span>
-                      </div>
-                    ) : null}
-                  </>
-                ) : (
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-muted-foreground">{role === 'sales' ? 'Freigabe' : 'Status'}</span>
-                    <span
-                      className={cn(
-                        'rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors duration-200',
-                        readinessState.badge.className
-                      )}
-                    >
-                      {readinessState.badge.label}
-                    </span>
-                  </div>
-                )}
+                <div className="flex min-w-0 items-start justify-between gap-3">
+                  <span className="shrink-0 pt-0.5 text-muted-foreground">Intern</span>
+                  <span
+                    className={cn(
+                      'min-w-0 max-w-[58%] shrink whitespace-normal rounded-full border px-2.5 py-0.5 text-right text-xs font-medium leading-tight transition-colors duration-200',
+                      workflowStatusBadges.internal.className
+                    )}
+                  >
+                    {workflowStatusBadges.internal.label}
+                  </span>
+                </div>
+                <div className="flex min-w-0 items-start justify-between gap-3">
+                  <span className="shrink-0 pt-0.5 text-muted-foreground">Kunde</span>
+                  <span
+                    className={cn(
+                      'min-w-0 max-w-[58%] shrink whitespace-normal rounded-full border px-2.5 py-0.5 text-right text-xs font-medium leading-tight transition-colors duration-200',
+                      workflowStatusBadges.customer.className
+                    )}
+                  >
+                    {workflowStatusBadges.customer.label}
+                  </span>
+                </div>
                 {role !== 'sales' ? (
                   <>
                     {requestedByDisplay ? (
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-muted-foreground">Angefragt von</span>
+                      <div className="flex min-w-0 items-start justify-between gap-3">
+                        <span className="shrink-0 pt-0.5 text-muted-foreground">Angefragt von</span>
                         <ReferenceReadinessValue value={requestedByDisplay} />
                       </div>
                     ) : null}
                     {coordinatorDisplay ? (
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-muted-foreground">Zuständig f. Kundenfreigabe</span>
+                      <div className="flex min-w-0 items-start justify-between gap-3">
+                        <span className="shrink-0 pt-0.5 text-muted-foreground">Accountverantw.</span>
                         <ReferenceReadinessValue value={coordinatorDisplay} />
                       </div>
                     ) : null}
                     {approvingCustomerDisplay ? (
-                      <div className="flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 items-start justify-between gap-3">
                         <span className="shrink-0 pt-0.5 text-muted-foreground">Kunde</span>
                         <ReferenceReadinessValue value={approvingCustomerDisplay} />
                       </div>
                     ) : null}
                     {delegatedRecipientDisplay ? (
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-muted-foreground">Aktueller Empfänger</span>
+                      <div className="flex min-w-0 items-start justify-between gap-3">
+                        <span className="shrink-0 pt-0.5 text-muted-foreground">Aktueller Empfänger</span>
                         <ReferenceReadinessValue value={delegatedRecipientDisplay} />
                       </div>
                     ) : null}
@@ -802,7 +802,8 @@ export default async function EvidenceDetailPage({
                       </div>
                     </div>
                   ) : null}
-                  {ref.approval_quote_approved || ref.approval_quote_proposed ? (
+                  {!customerAccessRevoked &&
+                  (ref.approval_quote_approved || ref.approval_quote_proposed) ? (
                     <div className="space-y-1.5">
                       <p className="text-muted-foreground">Zitat</p>
                       <p className="rounded-md border bg-muted/20 p-2 text-xs">
@@ -834,7 +835,10 @@ export default async function EvidenceDetailPage({
                 referenceContactId={ref.contact_id ?? null}
                 referenceCustomerContactId={ref.customer_contact_id ?? null}
                 hasCustomerChangeRequests={customerApprovalFollowUp.hasOpenChangeRequests}
-                canEditCustomerEmail={customerApprovalFollowUp.canEditCustomerEmail}
+                canEditCustomerEmail={
+                  customerApprovalFollowUp.canEditCustomerEmail || canEditPendingCustomerEmail
+                }
+                canEditCoordinatorEmail={canEditCoordinatorEmail}
                 customerChangeRequestComment={ref.approval_comment}
               />
             </CardContent>

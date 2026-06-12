@@ -29,6 +29,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   approveInternalAndSend,
@@ -36,9 +37,11 @@ import {
   getContactOptionsForReference,
   requestCustomerApprovalAgainAfterChanges,
   resendClientApprovalEmail,
+  updateApprovalCoordinator,
   updateApprovalRecipient,
   withdrawApprovalRequest,
 } from '@/app/dashboard/actions'
+import { isApprovalRecipientEmail } from '@/lib/references/approval-recipient-input'
 import type { ApprovalContactOption } from '@/app/dashboard/references/approval-contacts'
 import type { ApproveInternalRecipientOptions } from '@/app/dashboard/references/approvals'
 import { AppIcon } from '@/lib/icons'
@@ -64,6 +67,7 @@ type Props = {
   referenceCustomerContactId: string | null
   hasCustomerChangeRequests?: boolean
   canEditCustomerEmail?: boolean
+  canEditCoordinatorEmail?: boolean
   customerChangeRequestComment?: string | null
 }
 
@@ -81,6 +85,7 @@ export function ReferenceReadinessActions({
   referenceCustomerContactId,
   hasCustomerChangeRequests = false,
   canEditCustomerEmail = false,
+  canEditCoordinatorEmail = false,
   customerChangeRequestComment = null,
 }: Props) {
   const router = useRouter()
@@ -88,6 +93,8 @@ export function ReferenceReadinessActions({
   const [changeRequestsDismissed, setChangeRequestsDismissed] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editRecipientOpen, setEditRecipientOpen] = useState(false)
+  const [editCoordinatorOpen, setEditCoordinatorOpen] = useState(false)
+  const [coordinatorEmail, setCoordinatorEmail] = useState('')
   const [regenerateOpen, setRegenerateOpen] = useState(false)
   const [loadingContacts, setLoadingContacts] = useState(false)
   const [contacts, setContacts] = useState<ApprovalContactOption[]>([])
@@ -115,6 +122,11 @@ export function ReferenceReadinessActions({
     readiness.showMagicLink &&
     (showRequestApprovalAgain || canEditCustomerEmail || Boolean(visibleChangeRequestComment))
 
+  const showWorkflowRerouteActions =
+    readiness.showWithdraw &&
+    (canEditCustomerEmail || canEditCoordinatorEmail) &&
+    !readiness.showMagicLink
+
   const showActions =
     readiness.showPrimaryStart ||
     readiness.showMagicLink ||
@@ -122,7 +134,8 @@ export function ReferenceReadinessActions({
     readiness.showWithdraw ||
     showShowcaseSection ||
     showCreateShareHint ||
-    showCustomerFollowUpActions
+    showCustomerFollowUpActions ||
+    showWorkflowRerouteActions
 
   if (!showActions && !readiness.showStaleHint) {
     return null
@@ -181,6 +194,35 @@ export function ReferenceReadinessActions({
   function openEditRecipientDialog() {
     setEditRecipientOpen(true)
     void loadContactsForDialog()
+  }
+
+  function openEditCoordinatorDialog() {
+    setCoordinatorEmail('')
+    setEditCoordinatorOpen(true)
+  }
+
+  function onConfirmEditCoordinator() {
+    const email = coordinatorEmail.trim()
+    if (!isApprovalRecipientEmail(email)) {
+      toast.error('Bitte eine gültige E-Mail-Adresse eingeben.')
+      return
+    }
+    startTransition(async () => {
+      const result = await updateApprovalCoordinator(referenceId, email)
+      if (!result.success) {
+        toast.error(result.error)
+        return
+      }
+      setEditCoordinatorOpen(false)
+      if (result.emailSent) {
+        toast.success('Interne Ansprechperson wurde aktualisiert und per E-Mail informiert.')
+      } else {
+        toast.success(
+          'Interne Ansprechperson wurde aktualisiert. E-Mail-Versand nicht möglich — bitte direkt informieren.'
+        )
+      }
+      router.refresh()
+    })
   }
 
   function onConfirmEditRecipient() {
@@ -452,6 +494,17 @@ export function ReferenceReadinessActions({
               Freigabe-Seite öffnen
             </Button>
           )}
+          {readiness.showWithdraw ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={onWithdraw}
+              disabled={pending}
+            >
+              Anfrage widerrufen
+            </Button>
+          ) : null}
         </div>
       ) : null}
 
@@ -469,18 +522,97 @@ export function ReferenceReadinessActions({
         </p>
       ) : null}
 
-      {readiness.showWithdraw ? (
+      {showWorkflowRerouteActions ? (
+        <div className="flex w-full max-w-sm flex-col items-stretch gap-1.5 transition-opacity duration-200">
+          {canEditCoordinatorEmail ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full gap-2"
+              onClick={openEditCoordinatorDialog}
+              disabled={pending}
+            >
+              <AppIcon icon={Pencil} size={16} />
+              Interne Anspr. E-Mail ändern
+            </Button>
+          ) : null}
+          {canEditCustomerEmail && !readiness.showMagicLink ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full gap-2"
+              onClick={openEditRecipientDialog}
+              disabled={pending}
+            >
+              <AppIcon icon={Pencil} size={16} />
+              Kunden E-Mail ändern
+            </Button>
+          ) : null}
+          {readiness.showWithdraw ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={onWithdraw}
+              disabled={pending}
+            >
+              Anfrage widerrufen
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {readiness.showWithdraw && !readiness.showMagicLink && !showWorkflowRerouteActions ? (
         <Button
           type="button"
-          variant="ghost"
-          size="sm"
-          className="mt-1 text-destructive hover:bg-destructive/10 hover:text-destructive transition-opacity duration-200"
+          variant="outline"
+          className="w-full max-w-sm border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive transition-opacity duration-200"
           onClick={onWithdraw}
           disabled={pending}
         >
           Anfrage widerrufen
         </Button>
       ) : null}
+
+      <Dialog open={editCoordinatorOpen} onOpenChange={setEditCoordinatorOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Interne Ansprechperson ändern</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Die neue Person erhält eine E-Mail mit einem Link zur internen Freigabe. Der bisherige
+            interne Freigabe-Link verliert seine Gültigkeit.
+          </p>
+          <div className="grid gap-2 py-2">
+            <Label htmlFor="edit-coordinator-email">E-Mail des Account Managers</Label>
+            <Input
+              id="edit-coordinator-email"
+              type="email"
+              value={coordinatorEmail}
+              onChange={(e) => setCoordinatorEmail(e.target.value)}
+              placeholder="name@firma.de"
+              disabled={pending}
+            />
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setEditCoordinatorOpen(false)}
+              disabled={pending}
+            >
+              Abbrechen
+            </Button>
+            <Button
+              type="button"
+              onClick={onConfirmEditCoordinator}
+              disabled={pending || !isApprovalRecipientEmail(coordinatorEmail.trim())}
+            >
+              Speichern &amp; informieren
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={editRecipientOpen} onOpenChange={setEditRecipientOpen}>
         <DialogContent className="sm:max-w-md">

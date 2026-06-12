@@ -1,3 +1,5 @@
+import { deriveReferenceGiverNameFromEmail } from '@/lib/references/derive-reference-giver-name-from-email'
+
 export function formatApprovalGiverLine(
   name: string | null | undefined,
   title: string | null | undefined
@@ -31,7 +33,8 @@ export function resolveApprovalCoordinatorDisplay(input: {
   if (coordinatorName) return coordinatorName
 
   const coordinatorEmail = String(input.coordinatorEmail ?? '').trim()
-  return coordinatorEmail || null
+  if (!coordinatorEmail) return null
+  return deriveReferenceGiverNameFromEmail(coordinatorEmail) ?? coordinatorEmail
 }
 
 export function resolveCustomerApprovalIntro(input: {
