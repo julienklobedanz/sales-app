@@ -109,6 +109,7 @@ type Props = {
   onImportClick: () => void
   onCreateReferenceClick: () => void
   onUploadCertificateClick: () => void
+  onBulkUploadCertificatesClick?: () => void
   showExpiredCertificates?: boolean
   onShowExpiredCertificatesChange?: (value: boolean) => void
 }
@@ -135,6 +136,7 @@ export function EvidenceLibraryToolbar({
   onImportClick,
   onCreateReferenceClick,
   onUploadCertificateClick,
+  onBulkUploadCertificatesClick,
   showExpiredCertificates = false,
   onShowExpiredCertificatesChange,
 }: Props) {
@@ -331,6 +333,20 @@ export function EvidenceLibraryToolbar({
                   ) : (
                     <EyeOff className="size-4 text-muted-foreground" aria-hidden />
                   )}
+                </Button>
+              </AccountsToolbarTooltip>
+            ) : null}
+            {onBulkUploadCertificatesClick ? (
+              <AccountsToolbarTooltip label="Zertifikate importieren">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="toolbar"
+                  className="shrink-0 px-2.5 hover:bg-muted/70"
+                  onClick={onBulkUploadCertificatesClick}
+                  aria-label="Zertifikate importieren"
+                >
+                  <AppIcon icon={UploadIcon} size={16} className={TOOLBAR_ICON_CLASS} />
                 </Button>
               </AccountsToolbarTooltip>
             ) : null}

@@ -22,8 +22,8 @@ import {
 } from '@hugeicons/core-free-icons'
 
 export const COMPLIANCE_COLUMN_KEYS = [
-  'document_type',
   'title',
+  'document_type',
   'valid_until',
   'status',
   'updated_at',
@@ -104,24 +104,24 @@ export function renderComplianceColumnHeader(
   }
 
   switch (column) {
-    case 'document_type':
+    case 'title':
       return (
         <DraggableColumnHead {...dragProps} className="min-w-[180px]">
           <SortableHeaderButton
-            column="document_type"
-            label={COMPLIANCE_COLUMN_LABELS.document_type}
+            column="title"
+            label={COMPLIANCE_COLUMN_LABELS.title}
             sortKey={sortKey}
             sortDir={sortDir}
             handleSort={handleSort}
           />
         </DraggableColumnHead>
       )
-    case 'title':
+    case 'document_type':
       return (
         <DraggableColumnHead {...dragProps}>
           <SortableHeaderButton
-            column="title"
-            label={COMPLIANCE_COLUMN_LABELS.title}
+            column="document_type"
+            label={COMPLIANCE_COLUMN_LABELS.document_type}
             sortKey={sortKey}
             sortDir={sortDir}
             handleSort={handleSort}
@@ -177,35 +177,36 @@ export function renderComplianceColumnCell(
   const expired = isComplianceDocumentExpired(doc.valid_until)
 
   switch (column) {
-    case 'document_type':
+    case 'title':
       return (
-        <TableDataCell className="text-sm font-medium text-slate-900">
-          <span className="flex items-center gap-3">
+        <TableDataCell className="min-w-[180px] font-medium text-slate-900">
+          <span className="flex min-w-0 items-center gap-3">
             <ComplianceDocumentTypeIcon
               documentType={doc.document_type}
               title={doc.title}
               fileName={doc.file_name}
             />
-            <span className="truncate leading-none">
-              {complianceDocumentTypeLabel(doc.document_type)}
-            </span>
+            {doc.file_storage_path ? (
+              <button
+                type="button"
+                className="min-w-0 flex-1 truncate text-left leading-none hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 rounded-sm"
+                data-compliance-skip-row-click
+                onClick={() => ctx.onOpenPdf(doc)}
+              >
+                {doc.title}
+              </button>
+            ) : (
+              <span className="min-w-0 flex-1 truncate leading-none">{doc.title}</span>
+            )}
           </span>
         </TableDataCell>
       )
-    case 'title':
+    case 'document_type':
       return (
-        <TableDataCell className="font-medium text-slate-900">
-          {doc.file_storage_path ? (
-            <button
-              type="button"
-              className="max-w-full truncate text-left leading-none hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 rounded-sm"
-              onClick={() => ctx.onOpenPdf(doc)}
-            >
-              {doc.title}
-            </button>
-          ) : (
-            <span className="truncate leading-none">{doc.title}</span>
-          )}
+        <TableDataCell className="text-sm font-medium text-slate-900">
+          <span className="truncate leading-none">
+            {complianceDocumentTypeLabel(doc.document_type)}
+          </span>
         </TableDataCell>
       )
     case 'valid_until':
@@ -261,6 +262,7 @@ export function renderComplianceActionsCell(
           size="icon"
           className="size-8 rounded-lg hover:bg-muted/70"
           disabled={!doc.file_storage_path || ctx.resolvingId === doc.id}
+          data-compliance-skip-row-click
           onClick={() => ctx.onDownload(doc)}
           aria-label={`${doc.title} herunterladen`}
         >
@@ -300,7 +302,7 @@ export function getComplianceSortValue(
 export function loadComplianceColumnOrderFromStorage(): ComplianceColumnKey[] {
   if (typeof window === 'undefined') return [...COMPLIANCE_COLUMN_KEYS]
   try {
-    const raw = localStorage.getItem('compliance-documents-column-order-v1')
+    const raw = localStorage.getItem('compliance-documents-column-order-v2')
     if (!raw) return [...COMPLIANCE_COLUMN_KEYS]
     const parsed = JSON.parse(raw) as unknown
     if (!Array.isArray(parsed)) return [...COMPLIANCE_COLUMN_KEYS]

@@ -67,6 +67,7 @@ import { AppIcon } from '@/lib/icons'
 import { BulkImportDialog, type BulkImportGroupItem } from './overview/bulk-import-dialog'
 import { EvidenceLibraryToolbar } from './overview/evidence-library-toolbar'
 import { ComplianceDocumentsTable } from './overview/compliance-documents-table'
+import { ComplianceBulkUploadDialog } from './overview/compliance-bulk-upload-dialog'
 import { ComplianceUploadDialog } from './overview/compliance-upload-dialog'
 import {
   EVIDENCE_LIBRARY_MODE_STORAGE_KEY,
@@ -281,6 +282,7 @@ export function DashboardOverview({
   const [referenceLayout, setReferenceLayout] = useState<'inbox' | 'table'>('table')
   const libraryMode = useEvidenceLibraryMode()
   const [complianceUploadOpen, setComplianceUploadOpen] = useState(false)
+  const [complianceBulkUploadOpen, setComplianceBulkUploadOpen] = useState(false)
   const [showExpiredCertificates, setShowExpiredCertificates] = useState(false)
   const isReferencesLibrary = libraryMode === 'references'
   const isCertificatesLibrary = libraryMode === 'certificates'
@@ -888,6 +890,9 @@ export function DashboardOverview({
           }}
           onCreateReferenceClick={() => setNewRefModalOpen(true)}
           onUploadCertificateClick={() => setComplianceUploadOpen(true)}
+          onBulkUploadCertificatesClick={
+            profile.role === 'admin' ? () => setComplianceBulkUploadOpen(true) : undefined
+          }
           showExpiredCertificates={showExpiredCertificates}
           onShowExpiredCertificatesChange={setShowExpiredCertificates}
         />
@@ -1312,6 +1317,13 @@ export function DashboardOverview({
         <ComplianceUploadDialog
           open={complianceUploadOpen}
           onOpenChange={setComplianceUploadOpen}
+        />
+      )}
+
+      {profile.role === 'admin' && (
+        <ComplianceBulkUploadDialog
+          open={complianceBulkUploadOpen}
+          onOpenChange={setComplianceBulkUploadOpen}
         />
       )}
 

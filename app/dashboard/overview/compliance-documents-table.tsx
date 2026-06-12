@@ -12,6 +12,7 @@ import {
   type ComplianceDocumentAccessUrls,
 } from '@/app/dashboard/settings/compliance-actions'
 import { BulkDeleteComplianceDocumentsDialog } from '@/app/dashboard/overview/bulk-delete-compliance-documents-dialog'
+import { ComplianceDocumentVersionsSheet } from '@/app/dashboard/overview/compliance-document-versions-sheet'
 import {
   COMPLIANCE_COLUMN_KEYS,
   getComplianceSortValue,
@@ -39,13 +40,16 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { TableRowCheckbox } from '@/components/table/table-row-checkbox'
-import { complianceDocumentTypeLabel } from '@/lib/compliance/document-types'
+import {
+  filterComplianceDocumentsForTable,
+  groupComplianceDocumentsForTable,
+} from '@/lib/compliance/compliance-table-rows'
 import { isComplianceDocumentExpired } from '@/lib/compliance/expiry'
 import { AppIcon } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 import { Cancel01Icon, FileDownIcon } from '@hugeicons/core-free-icons'
 
-const COMPLIANCE_COLUMN_ORDER_STORAGE_KEY = 'compliance-documents-column-order-v1'
+const COMPLIANCE_COLUMN_ORDER_STORAGE_KEY = 'compliance-documents-column-order-v2'
 
 type Props = {
   documents: ComplianceDocumentRow[]
@@ -76,6 +80,9 @@ export function ComplianceDocumentsTable({
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null)
   const [sortKey, setSortKey] = useState<ComplianceColumnKey | null>(null)
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+  const [versionsSheetOpen, setVersionsSheetOpen] = useState(false)
+  const [versionsSheetType, setVersionsSheetType] = useState<string | null>(null)
+  const [versionsSheetFocusId, setVersionsSheetFocusId] = useState<string | null>(null)
   const selectAllCheckboxRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
@@ -138,24 +145,11 @@ export function ComplianceDocumentsTable({
   }, [])
 
   const filtered = useMemo(() => {
-    let rows = documents
-    if (!showExpired) {
-      rows = rows.filter((doc) => !isComplianceDocumentExpired(doc.valid_until))
-    }
-    const q = search.trim().toLowerCase()
-    if (q) {
-      rows = rows.filter((doc) => {
-        const hay = [
-          doc.title,
-          complianceDocumentTypeLabel(doc.document_type),
-          doc.file_name,
-        ]
-          .filter(Boolean)
-          .join(' ')
-          .toLowerCase()
-        return hay.includes(q)
-      })
-    }
+    let rows = filterComplianceDocumentsForTable({
+      documents,
+      search,
+      showExpired,
+    })
     if (sortKey) {
       rows = [...rows].sort((a, b) => {
         const va = getComplianceSortValue(a, sortKey)
@@ -183,7 +177,10 @@ export function ComplianceDocumentsTable({
   )
 
   const hiddenExpiredCount = useMemo(
-    () => documents.filter((doc) => isComplianceDocumentExpired(doc.valid_until)).length,
+    () =>
+      groupComplianceDocumentsForTable(documents).filter((doc) =>
+        isComplianceDocumentExpired(doc.valid_until)
+      ).length,
     [documents]
   )
 
@@ -203,6 +200,18 @@ export function ComplianceDocumentsTable({
     el.indeterminate =
       selectedFilteredCount > 0 && selectedFilteredCount < filtered.length
   }, [selectedFilteredCount, filtered.length])
+
+  function openVersionsSheet(doc: ComplianceDocumentRow) {
+    setVersionsSheetType(doc.document_type)
+    setVersionsSheetFocusId(doc.id)
+    setVersionsSheetOpen(true)
+  }
+
+  function handleRowClick(event: React.MouseEvent, doc: ComplianceDocumentRow) {
+    const target = event.target as HTMLElement
+    if (target.closest('[data-compliance-skip-row-click]')) return
+    openVersionsSheet(doc)
+  }
 
   function toggleSelection(docId: string) {
     setSelectedIds((prev) => {
@@ -387,6 +396,16 @@ export function ComplianceDocumentsTable({
         </div>
       ) : null}
 
+      <ComplianceDocumentVersionsSheet
+        open={versionsSheetOpen}
+        onOpenChange={setVersionsSheetOpen}
+        documentType={versionsSheetType}
+        focusDocumentId={versionsSheetFocusId}
+        documents={documents}
+        isAdmin={isAdmin}
+        urlCacheRef={urlCacheRef}
+      />
+
       {isAdmin ? (
         <BulkDeleteComplianceDocumentsDialog
           open={bulkDeleteOpen}
@@ -463,10 +482,16 @@ export function ComplianceDocumentsTable({
                     key={doc.id}
                     className={cn(
                       expired ? 'bg-muted/30 opacity-80' : 'group hover:bg-accent/35',
-                      selectedIds.has(doc.id) && 'bg-accent/25'
+                      selectedIds.has(doc.id) && 'bg-accent/25',
+                      'cursor-pointer'
                     )}
+                    onClick={(event) => handleRowClick(event, doc)}
                   >
-                    <TableCell className="w-[32px] align-middle p-2 pr-0">
+                    <TableCell
+                      className="w-[32px] align-middle p-2 pr-0"
+                      data-compliance-skip-row-click
+                      onClick={(event) => event.stopPropagation()}
+                    >
                       <TableRowCheckbox
                         checked={selectedIds.has(doc.id)}
                         onChange={() => toggleSelection(doc.id)}

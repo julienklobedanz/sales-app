@@ -47,7 +47,7 @@ export function ComplianceDocumentTypeCombobox({
   const inputValue = open ? query : (selected?.label ?? '')
 
   function handleOpenChange(next: boolean) {
-    if (next) setQuery(selected?.label ?? '')
+    if (next) setQuery('')
     setOpen(next)
   }
 
@@ -77,7 +77,7 @@ export function ComplianceDocumentTypeCombobox({
     const next = sortComplianceDocumentTypeOptions([...options, result.type])
     onOptionsChange?.(next)
     onValueChange(result.type.slug)
-    setQuery(result.type.label)
+    setQuery('')
     setOpen(false)
   }
 
@@ -98,8 +98,15 @@ export function ComplianceDocumentTypeCombobox({
               setQuery(e.target.value)
               setOpen(true)
             }}
-            onFocus={() => setOpen(true)}
-            placeholder="Dokumenttyp suchen oder wählen…"
+            onFocus={() => {
+              setQuery('')
+              setOpen(true)
+            }}
+            placeholder={
+              options.length > 0
+                ? 'Dokumenttyp suchen oder wählen…'
+                : 'Dokumenttypen werden geladen…'
+            }
             disabled={disabled}
             className="h-10 rounded-lg border bg-white pr-9 shadow-sm"
             autoComplete="off"
@@ -117,7 +124,11 @@ export function ComplianceDocumentTypeCombobox({
       >
         <Command shouldFilter={false}>
           <CommandList className="max-h-[min(280px,50vh)]">
-            {filtered.length === 0 ? (
+            {options.length === 0 ? (
+              <CommandEmpty className="py-3 text-center text-sm text-muted-foreground">
+                Dokumenttypen werden geladen…
+              </CommandEmpty>
+            ) : filtered.length === 0 ? (
               <CommandEmpty className="py-3 text-center text-sm text-muted-foreground">
                 Kein Treffer
               </CommandEmpty>
@@ -129,7 +140,7 @@ export function ComplianceDocumentTypeCombobox({
                     value={type.slug}
                     onSelect={() => {
                       onValueChange(type.slug)
-                      setQuery(type.label)
+                      setQuery('')
                       setOpen(false)
                     }}
                   >
@@ -141,6 +152,11 @@ export function ComplianceDocumentTypeCombobox({
                       aria-hidden
                     />
                     <span className="truncate">{type.label}</span>
+                    {type.isSystem ? (
+                      <span className="ml-auto text-[10px] uppercase tracking-wide text-muted-foreground">
+                        Standard
+                      </span>
+                    ) : null}
                   </CommandItem>
                 ))}
               </CommandGroup>

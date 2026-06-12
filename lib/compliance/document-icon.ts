@@ -69,12 +69,13 @@ const ISO_NUMBER_DEFAULTS: Record<string, string> = {
   '22301': 'iso_22301',
 }
 
-/** Leitet aus Upload-Metadaten einen ISO-Dokumenttyp-Slug ab. */
+/** Leitet aus Dateiname, Titel und optional PDF-Text einen Dokumenttyp-Slug ab. */
 export function inferComplianceDocumentTypeFromUpload(input: {
   title: string
   fileName: string
+  pdfText?: string
 }): string | null {
-  const hay = `${input.title} ${input.fileName}`.toLowerCase()
+  const hay = `${input.title} ${input.fileName} ${input.pdfText ?? ''}`.toLowerCase()
 
   const numbered = hay.match(/\biso[\s\-_]?(\d{4,5})\b/)
   if (numbered) {
@@ -83,7 +84,26 @@ export function inferComplianceDocumentTypeFromUpload(input: {
   }
 
   if (/\biso[\s\-_]?27k\b/.test(hay)) return 'iso_27001'
+  if (/\biso\s*9001\b/.test(hay)) return 'iso_9001'
+  if (/\biso\s*14001\b/.test(hay)) return 'iso_14001'
+  if (/\biso\s*22301\b/.test(hay)) return 'iso_22301'
   if (/\biso\b/.test(hay)) return 'iso_27001'
+
+  if (/\btisax\b/.test(hay)) return 'tisax'
+  if (/\bsoc\s*2\b/.test(hay) && /type\s*ii\b/.test(hay)) return 'soc_2_type_ii'
+  if (/\bsoc\s*2\b/.test(hay)) return 'soc_2_type_i'
+  if (/\bc5[\s-]?(testat|zertifikat)\b/.test(hay) || /\bbsi\s*c5\b/.test(hay)) {
+    return 'bsi_c5_testat'
+  }
+  if (/\brechenzentrum\b/.test(hay) || /\bdata\s*center\s*cert/i.test(hay)) {
+    return 'rechenzentrum_zertifikat'
+  }
+  if (/\bhandelsregister\b/.test(hay)) return 'handelsregisterauszug'
+  if (/\bhaftpflicht\b/.test(hay)) return 'haftpflichtversicherung'
+  if (/\bcode\s+of\s+conduct\b/.test(hay)) return 'code_of_conduct'
+  if (/\bnachhaltigkeit\b/.test(hay) || /\bsustainability\s+cert/i.test(hay)) {
+    return 'nachhaltigkeitszertifikat'
+  }
 
   return null
 }
