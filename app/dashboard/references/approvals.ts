@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
 import { ROUTES } from '@/lib/routes'
 import { Resend } from 'resend'
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -26,6 +27,15 @@ import {
   resolveResendRecipient,
   shouldMockResendSend,
 } from '@/lib/email/resend-dev-override'
+import { notifyInternalTeamApprovalWithdrawn } from '@/lib/references/approval-workflow-internal-notifications'
+import { markCustomerApprovalEmailSent } from '@/lib/references/customer-approval-reminder'
+import {
+  buildPortfolioSupplementalHtml,
+  buildRefstackEmailHtml,
+  buildReferenceMetaRows,
+  escapeRefstackEmailHtml,
+  getRefstackResendFrom,
+} from '@/lib/email/refstack-email-layout'
 
 function referenceGiverNameFromRecipientEmail(email: string): string | null {
   return deriveReferenceGiverNameFromEmail(email)
@@ -37,29 +47,22 @@ function getResend(): Resend | null {
   return new Resend(key)
 }
 
-function escapeHtml(s: string) {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-}
-
 function buildFollowUpApprovalAfterChangesEmailHtml(args: {
   firstName: string
   companyName: string
   refTitle: string
   approvalUrl: string
 }): string {
-  return `
-          <h1 style="font-size:20px;">Hallo${args.firstName ? ` ${escapeHtml(args.firstName)}` : ''}!</h1>
-          <p>Die Referenz wurde gemäß Ihrer Änderungswünsche angepasst. Bitte prüfen Sie die Referenz noch einmal final und freigeben - vielen Dank!</p>
-          <p>Referenz: <em>"${escapeHtml(args.refTitle)}"</em> (${escapeHtml(args.companyName)})</p>
-          <p style="margin:16px 0;"><a href="${escapeHtml(args.approvalUrl)}"
-            style="display:inline-block;background:#0f172a;color:#fff;padding:12px 20px;text-decoration:none;border-radius:6px;font-weight:600;">
-            Zur Freigabe-Seite
-          </a></p>
-        `
+  const greeting = args.firstName.trim() ? `Hallo ${args.firstName.trim()}!` : 'Hallo!'
+
+  return buildRefstackEmailHtml({
+    audience: 'external',
+    badge: 'Aktualisierte Referenz',
+    greeting,
+    bodyHtml: `<p style="margin:0 0 16px;">Die Referenz wurde gemäß Ihrer Änderungswünsche angepasst. Bitte prüfen Sie die Referenz noch einmal final und freigeben — vielen Dank!</p>`,
+    meta: { rows: buildReferenceMetaRows(args.refTitle, args.companyName) },
+    ctas: [{ label: 'Zur Freigabe-Seite', href: args.approvalUrl }],
+  })
 }
 
 function buildClientApprovalEmailHtml(args: {
@@ -70,32 +73,18 @@ function buildClientApprovalEmailHtml(args: {
   approvalUrl: string
   portfolio: { manageUrl: string; publicPreviewUrl: string } | null
 }): string {
-  const portfolioSection = args.portfolio
-    ? `
-          <hr style="border:none;border-top:1px solid #e2e8f0;margin:28px 0;" />
-          <h2 style="font-size:16px;margin:0 0 12px;">Kundenansicht & Zugriff beenden</h2>
-          <p style="margin:0 0 12px;line-height:1.5;">Mit dem <strong>ersten Link</strong> prüfen und freigeben Sie die Referenz. Der <strong>zweite Link</strong> zeigt dieselbe Kundenansicht – er ist nur für Sie bestimmt: Dort können Sie den öffentlichen Zugriff bei Bedarf <strong>sofort sperren</strong>. Bitte den zweiten Link nicht an Dritte weiterleiten.</p>
-          <p style="margin:0 0 16px;"><a href="${escapeHtml(args.portfolio.manageUrl)}"
-            style="display:inline-block;background:#b45309;color:#fff;padding:12px 20px;text-decoration:none;border-radius:6px;font-weight:600;">
-            Persönlicher Link (mit Sperrrecht)
-          </a></p>
-          <p style="font-size:13px;color:#64748b;margin:0;line-height:1.5;">Öffentliche Kundenansicht ohne Sperrrecht (zum Weitergeben im Unternehmen):<br/>
-          <a href="${escapeHtml(args.portfolio.publicPreviewUrl)}" style="color:#2563eb;word-break:break-all;">${escapeHtml(args.portfolio.publicPreviewUrl)}</a></p>
-        `
-    : ''
+  const greeting = args.firstName.trim() ? `Hallo ${args.firstName.trim()}!` : 'Hallo!'
 
-  return `
-          <h1 style="font-size:20px;">Hallo${args.firstName ? ` ${escapeHtml(args.firstName)}` : ''}!</h1>
-          ${args.requesterBlock}
-          <p>Für das Unternehmen <strong>${escapeHtml(args.companyName)}</strong>:</p>
-          <p><em>"${escapeHtml(args.refTitle)}"</em></p>
-          <p>Bitte öffnen Sie den Link, um die Referenz zu prüfen und zu entscheiden:</p>
-          <p style="margin:16px 0;"><a href="${escapeHtml(args.approvalUrl)}"
-            style="display:inline-block;background:#0f172a;color:#fff;padding:12px 20px;text-decoration:none;border-radius:6px;font-weight:600;">
-            Zur Freigabe-Seite
-          </a></p>
-          ${portfolioSection}
-        `
+  return buildRefstackEmailHtml({
+    audience: 'external',
+    badge: 'Freigabe-Anfrage',
+    greeting,
+    bodyHtml: `${args.requesterBlock}
+      <p style="margin:0 0 16px;">Bitte öffnen Sie den Link, um die Referenz zu prüfen und zu entscheiden:</p>`,
+    meta: { rows: buildReferenceMetaRows(args.refTitle, args.companyName) },
+    ctas: [{ label: 'Zur Freigabe-Seite', href: args.approvalUrl }],
+    supplementalHtml: args.portfolio ? buildPortfolioSupplementalHtml(args.portfolio) : undefined,
+  })
 }
 
 type ReferenceApprovalRow = {
@@ -174,8 +163,8 @@ async function sendClientApprovalEmail(args: {
   if (args.contactEmail && resend && sendMail) {
     const vendorOrg = args.vendorOrgName.trim() || 'uns'
     const requesterBlock = customerFacingName
-      ? `<p><strong>${escapeHtml(customerFacingName)}</strong> von ${escapeHtml(vendorOrg)} bittet Sie um Freigabe dieser Referenz.</p>`
-      : `<p><strong>${escapeHtml(vendorOrg)}</strong> bittet Sie um Freigabe dieser Referenz.</p>`
+      ? `<p style="margin:0 0 16px;"><strong>${escapeRefstackEmailHtml(customerFacingName)}</strong> von ${escapeRefstackEmailHtml(vendorOrg)} bittet Sie um Freigabe dieser Referenz.</p>`
+      : `<p style="margin:0 0 16px;"><strong>${escapeRefstackEmailHtml(vendorOrg)}</strong> bittet Sie um Freigabe dieser Referenz.</p>`
     let portfolio: { manageUrl: string; publicPreviewUrl: string } | null = null
     try {
       portfolio = await getPortfolioManageAndPreviewUrlsForApprovalEmail(args.supabase, args.referenceId)
@@ -185,7 +174,7 @@ async function sendClientApprovalEmail(args: {
     const approvalUrl = `${getAppOrigin()}/approval/${newToken}`
     try {
       await resend.emails.send({
-        from: 'Refstack <onboarding@resend.dev>',
+        from: getRefstackResendFrom(),
         to: args.contactEmail,
         subject: `Freigabe-Anfrage: ${args.companyName} – ${args.ref.title}`,
         html: buildClientApprovalEmailHtml({
@@ -198,6 +187,7 @@ async function sendClientApprovalEmail(args: {
         }),
       })
       emailSent = true
+      await markCustomerApprovalEmailSent(args.supabase, args.referenceId)
     } catch (e) {
       console.error('E-Mail-Versand fehlgeschlagen:', e)
     }
@@ -360,7 +350,7 @@ async function notifyInternalReferenceCoordinatorAboutPendingReview(args: {
 
     email = String(person?.email ?? '').trim()
     if (person?.first_name) {
-      greeting = `Hallo ${escapeHtml(String(person.first_name).trim())},`
+      greeting = `Hallo ${String(person.first_name).trim()},`
     }
   }
 
@@ -819,15 +809,52 @@ export async function withdrawApprovalRequestImpl(referenceId: string): Promise<
   const supabase = await createServerSupabaseClient()
   const { data: refRow } = await supabase
     .from('references')
-    .select('approval_reference_status_snapshot')
+    .select(
+      `
+      title,
+      company_id,
+      approval_reference_status_snapshot,
+      approval_requested_by,
+      approval_coordinator_email,
+      companies ( name )
+    `
+    )
     .eq('id', referenceId)
     .maybeSingle()
+
+  const ref = refRow as {
+    title?: string | null
+    company_id?: string
+    approval_reference_status_snapshot?: string | null
+    approval_requested_by?: string | null
+    approval_coordinator_email?: string | null
+    companies?: { name?: string } | { name?: string }[] | null
+  } | null
+
   const snapshot =
-    typeof (refRow as { approval_reference_status_snapshot?: string | null } | null)
-      ?.approval_reference_status_snapshot === 'string'
-      ? (refRow as { approval_reference_status_snapshot: string }).approval_reference_status_snapshot.trim()
+    typeof ref?.approval_reference_status_snapshot === 'string'
+      ? ref.approval_reference_status_snapshot.trim()
       : ''
   const restoredStatus = snapshot || 'draft'
+
+  const company =
+    Array.isArray(ref?.companies) && ref.companies.length > 0
+      ? ref.companies[0]
+      : (ref?.companies as { name?: string } | null)
+  const companyName = company?.name?.trim() || 'Referenz'
+
+  const admin = createServiceRoleSupabaseClient()
+  if (admin && ref?.company_id) {
+    void notifyInternalTeamApprovalWithdrawn({
+      admin,
+      referenceId,
+      referenceTitle: String(ref.title ?? 'Referenz').trim() || 'Referenz',
+      companyId: String(ref.company_id),
+      companyName,
+      requesterId: ref.approval_requested_by ?? null,
+      coordinatorEmail: ref.approval_coordinator_email ?? null,
+    })
+  }
 
   await supabase
     .from('references')
@@ -857,6 +884,8 @@ export async function withdrawApprovalRequestImpl(referenceId: string): Promise<
       approval_coordinator_email: null,
       approval_coordinator_name: null,
       approval_customer_facing_name: null,
+      approval_customer_last_sent_at: null,
+      approval_customer_reminder_sent_at: null,
       approval_quote_approved: null,
       approval_quote_proposed: null,
       approval_consent_file_url: null,
@@ -1115,7 +1144,7 @@ export async function requestCustomerApprovalAgainAfterChangesImpl(
 
   const approvalUrl = `${getAppOrigin()}/approval/${token}`
   const recipient = resolveResendRecipient(contactEmail)
-  const fromAddress = process.env.RESEND_FROM?.trim() || 'Refstack <onboarding@resend.dev>'
+  const fromAddress = getRefstackResendFrom()
   let emailMocked = false
 
   if (shouldMockResendSend()) {
@@ -1181,6 +1210,10 @@ export async function requestCustomerApprovalAgainAfterChangesImpl(
     }
   }
 
+  if (!emailMocked) {
+    await markCustomerApprovalEmailSent(supabase, referenceId)
+  }
+
   await logEventForCurrentOrg({
     eventType: 'customer_approval_requested',
     referenceId,
@@ -1203,7 +1236,7 @@ export async function requestCustomerApprovalAgainAfterChangesImpl(
 export async function updateApprovalRecipientImpl(
   referenceId: string,
   recipient: ApproveInternalRecipientOptions
-): Promise<{ success: true } | { success: false; error: string }> {
+): Promise<{ success: true; customerEmailSent?: boolean } | { success: false; error: string }> {
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
@@ -1212,7 +1245,7 @@ export async function updateApprovalRecipientImpl(
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, full_name, organization_id')
     .eq('id', user.id)
     .single()
   const role = String((profile as { role?: string } | null)?.role ?? '')
@@ -1221,6 +1254,7 @@ export async function updateApprovalRecipientImpl(
     .from('references')
     .select(
       `
+      title,
       status,
       company_id,
       contact_id,
@@ -1231,6 +1265,8 @@ export async function updateApprovalRecipientImpl(
       approval_internal_status,
       approval_contact_id,
       approval_external_contact_id,
+      approval_customer_facing_name,
+      approval_coordinator_name,
       companies ( name )
     `
     )
@@ -1243,8 +1279,11 @@ export async function updateApprovalRecipientImpl(
     approval_requested_by?: string | null
     approval_requested_at?: string | null
     approval_internal_status?: string | null
+    approval_customer_facing_name?: string | null
+    approval_coordinator_name?: string | null
   }
 
+  const internalStatus = String(ref.approval_internal_status ?? '').toLowerCase()
   const preCustomerEdit = canEditPreCustomerApprovalRecipient({
     customerApprovalStatus: ref.customer_approval_status,
     approvalRequestedAt: ref.approval_requested_at,
@@ -1312,8 +1351,56 @@ export async function updateApprovalRecipientImpl(
     .eq('id', referenceId)
   if (syncErr) return { success: false, error: syncErr.message }
 
+  const shouldSendCustomerEmail =
+    hasActiveCustomerApprovalWorkflow(ref.customer_approval_status, ref.status) ||
+    (preCustomerEdit && internalStatus === 'approved_internal')
+
+  let customerEmailSent = false
+  if (shouldSendCustomerEmail) {
+    const company =
+      Array.isArray(ref.companies) && ref.companies.length > 0
+        ? (ref.companies[0] as { name?: string })
+        : (ref.companies as { name?: string } | null)
+    const companyName = company?.name ?? 'Referenz'
+
+    const orgId = String((profile as { organization_id?: string | null }).organization_id ?? '').trim()
+    let vendorOrgName = companyName
+    if (orgId) {
+      const { data: orgRow } = await supabase
+        .from('organizations')
+        .select('name')
+        .eq('id', orgId)
+        .maybeSingle()
+      vendorOrgName = String(orgRow?.name ?? '').trim() || companyName
+    }
+
+    const customerFacingName =
+      typeof ref.approval_customer_facing_name === 'string' && ref.approval_customer_facing_name.trim()
+        ? ref.approval_customer_facing_name.trim()
+        : typeof (profile as { full_name?: string }).full_name === 'string'
+          ? (profile as { full_name: string }).full_name.trim()
+          : ''
+
+    try {
+      const sent = await sendClientApprovalEmail({
+        supabase,
+        referenceId,
+        ref,
+        customerFacingName,
+        vendorOrgName,
+        contactEmail: resolved.email,
+        firstName: resolved.firstName,
+        companyName,
+        sendResendToCustomer: true,
+      })
+      customerEmailSent = sent.emailSent
+    } catch (e) {
+      console.error('[updateApprovalRecipientImpl] customer email failed:', e)
+    }
+  }
+
   revalidatePath(ROUTES.evidence.detail(referenceId))
-  return { success: true }
+  return { success: true, customerEmailSent }
 }
 
 export async function updateApprovalCoordinatorImpl(

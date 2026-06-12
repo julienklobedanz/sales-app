@@ -9,6 +9,10 @@
       "schedule": "0 6 * * *"
     },
     {
+      "path": "/api/cron/customer-approval-reminder",
+      "schedule": "0 7 * * *"
+    },
+    {
       "path": "/api/cron/brandfetch-accounts",
       "schedule": "0 6 1 */3 *"
     }

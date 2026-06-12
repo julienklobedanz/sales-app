@@ -2,6 +2,8 @@ import 'server-only'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 
+import { notifyInternalTeamInternalApproved } from '@/lib/references/approval-workflow-internal-notifications'
+
 export type ConfirmInternalApprovalResult =
   | {
       ok: true
@@ -65,6 +67,11 @@ export async function confirmInternalApprovalFromToken(
       /* best effort */
     }
   }
+
+  void notifyInternalTeamInternalApproved({
+    admin,
+    referenceId: row.id as string,
+  })
 
   return {
     ok: true,

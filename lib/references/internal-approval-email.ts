@@ -1,15 +1,13 @@
 import { Resend } from 'resend'
 
+import {
+  buildRefstackEmailHtml,
+  buildReferenceMetaRows,
+  escapeRefstackEmailHtml,
+  getRefstackResendFrom,
+} from '@/lib/email/refstack-email-layout'
 import { getAppOrigin } from '@/lib/env/app-origin'
 import { ROUTES } from '@/lib/routes'
-
-function escapeHtml(s: string) {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-}
 
 function getResend(): Resend | null {
   const key = process.env.RESEND_API_KEY
@@ -39,33 +37,36 @@ export async function sendInternalApprovalReviewEmail(
   const greeting = params.greeting?.trim() || 'Hallo,'
   const approveUrl = `${getAppOrigin()}${ROUTES.internalApproval(params.internalReviewToken)}`
   const detailUrl = `${getAppOrigin()}${ROUTES.evidence.detail(params.referenceId)}`
+
   const who = params.requesterName.trim()
-    ? `<p><strong>${escapeHtml(params.requesterName.trim())}</strong> hat eine Kundenfreigabe zur internen Prüfung eingereicht.</p>`
-    : '<p>Es liegt eine neue Freigabe zur internen Prüfung vor.</p>'
+    ? `<p style="margin:0 0 16px;"><strong>${escapeRefstackEmailHtml(params.requesterName.trim())}</strong> hat eine Kundenfreigabe zur internen Prüfung eingereicht.</p>`
+    : '<p style="margin:0 0 16px;">Es liegt eine neue Freigabe zur internen Prüfung vor.</p>'
+
   const messageBlock = params.message?.trim()
-    ? `<p><strong>Nachricht:</strong><br/>${escapeHtml(params.message.trim()).replace(/\n/g, '<br/>')}</p>`
+    ? `<p style="margin:16px 0 0;font-size:14px;line-height:1.5;color:#334155;"><strong>Nachricht:</strong><br/>${escapeRefstackEmailHtml(params.message.trim()).replace(/\n/g, '<br/>')}</p>`
     : ''
+
+  const html = buildRefstackEmailHtml({
+    audience: 'internal',
+    badge: 'Interne Freigabe',
+    greeting,
+    bodyHtml: `${who}
+      <p style="margin:0 0 16px;">Bitte bestätigen Sie die interne Freigabe oder delegieren Sie sie an eine andere Person. Erst danach kann in RefStack die Kundenfreigabe vorbereitet werden.</p>
+      <p style="margin:0;font-size:13px;line-height:1.5;color:#64748b;">Auf der Freigabeseite können Sie die Prüfung bestätigen oder die Verantwortung an eine andere E-Mail-Adresse übergeben.</p>`,
+    meta: {
+      rows: buildReferenceMetaRows(params.referenceTitle, params.accountCompanyName),
+      extraHtml: messageBlock,
+    },
+    ctas: [{ label: 'Zur internen Freigabe', href: approveUrl }],
+    footerLink: { label: 'Referenz in RefStack öffnen:', url: detailUrl },
+  })
 
   try {
     await resend.emails.send({
-      from: 'Refstack <onboarding@resend.dev>',
+      from: getRefstackResendFrom(),
       to,
       subject: `Interne Referenzfreigabe: ${params.accountCompanyName} – ${params.referenceTitle}`,
-      html: `
-        ${greeting}
-        ${who}
-        <p>Referenz: <strong>${escapeHtml(params.referenceTitle)}</strong><br/>
-        Account: <strong>${escapeHtml(params.accountCompanyName)}</strong></p>
-        ${messageBlock}
-        <p>Bitte bestätigen Sie die interne Freigabe oder delegieren Sie sie an eine andere Person. Erst danach kann in RefStack die Kundenfreigabe vorbereitet werden.</p>
-        <p style="margin:20px 0;"><a href="${escapeHtml(approveUrl)}"
-          style="display:inline-block;background:#0f172a;color:#fff;padding:12px 20px;text-decoration:none;border-radius:6px;font-weight:600;">
-          Zur internen Freigabe
-        </a></p>
-        <p style="font-size:13px;color:#64748b;">Auf der Freigabeseite können Sie die Prüfung bestätigen oder die Verantwortung an eine andere E-Mail-Adresse übergeben.</p>
-        <p style="font-size:13px;color:#64748b;">Referenz in RefStack öffnen:<br/>
-        <a href="${escapeHtml(detailUrl)}" style="color:#2563eb;">${escapeHtml(detailUrl)}</a></p>
-      `,
+      html,
     })
     return true
   } catch (e) {

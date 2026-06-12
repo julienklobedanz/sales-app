@@ -1,6 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { randomUUID } from 'crypto'
 
+import { notifyInternalTeamCustomerAccessRevoked } from '@/lib/references/approval-workflow-internal-notifications'
+
 export type CustomerAccessRevokeParams = {
   slug: string
   reasonLabel: string
@@ -77,6 +79,15 @@ export async function resetReferencesAfterCustomerAccessRevoke(
     if (eventError) {
       console.error('[resetReferencesAfterCustomerAccessRevoke] event log failed:', eventError.message)
     }
+  }
+
+  for (const referenceId of referenceIds) {
+    void notifyInternalTeamCustomerAccessRevoked({
+      admin,
+      referenceId,
+      reasonLabel: params.reasonLabel,
+      details: params.details,
+    })
   }
 
   await admin

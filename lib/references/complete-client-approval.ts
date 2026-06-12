@@ -5,6 +5,11 @@ import {
 } from '@/lib/references/customer-approval-scope'
 import { sendClientApprovalConfirmationEmail } from '@/lib/references/client-approval-confirmation-email'
 import { effectiveCustomerApprovalStatus } from '@/lib/references/effective-customer-approval'
+import {
+  notifyInternalTeamCustomerApproved,
+  notifyInternalTeamCustomerChangesNeeded,
+  notifyInternalTeamCustomerRejected,
+} from '@/lib/references/approval-workflow-internal-notifications'
 
 export type CompleteClientApprovalParams = {
   token: string
@@ -178,6 +183,12 @@ export async function completeClientApprovalWithAdmin(
       return { success: false, error: eventError.message }
     }
 
+    void notifyInternalTeamCustomerChangesNeeded({
+      admin,
+      referenceId: ref.id,
+      comment,
+    })
+
     return { success: true }
   }
 
@@ -232,6 +243,18 @@ export async function completeClientApprovalWithAdmin(
 
   if (eventError) {
     return { success: false, error: eventError.message }
+  }
+
+  if (!isUpdate) {
+    if (approved) {
+      void notifyInternalTeamCustomerApproved({ admin, referenceId: ref.id })
+    } else if (rejected) {
+      void notifyInternalTeamCustomerRejected({
+        admin,
+        referenceId: ref.id,
+        comment: params.comment,
+      })
+    }
   }
 
   let confirmationEmailSent = false

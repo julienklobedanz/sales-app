@@ -4,8 +4,8 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
 import { completeClientApprovalWithAdmin } from '@/lib/references/complete-client-approval'
 import type { CustomerApprovalScopeSelection } from '@/lib/references/customer-approval-scope'
-import { getAppOrigin } from '@/lib/env/app-origin'
 import { formatApprovalGiverLine } from '@/lib/references/approval-workflow-display'
+import { sendClientApprovalDelegationEmail } from '@/lib/references/client-approval-delegation-email'
 
 export type CompleteClientApprovalResult =
   | { success: true; confirmationEmailSent?: boolean }
@@ -38,13 +38,62 @@ export async function delegateClientApproval(params: {
   const token = params.token.trim()
   const email = params.delegateEmail.trim().toLowerCase()
   if (!email.includes('@')) return { success: false, error: 'Ungültige E-Mail.' }
+
   const { data: ref } = await supabase
     .from('references')
     .select(
-      'id, title, organization_id, approval_reference_giver_name, approval_reference_giver_title'
+      `
+      id,
+      title,
+      organization_id,
+      approval_token,
+      approval_reference_giver_name,
+      approval_reference_giver_title,
+      approval_customer_facing_name,
+      approval_coordinator_name,
+      companies ( name )
+    `
     )
     .eq('approval_token', token)
     .maybeSingle()
+
+  if (!ref) return { success: false, error: 'Link ungültig.' }
+
+  const refRow = ref as {
+    id?: string
+    title?: string | null
+    organization_id?: string | null
+    approval_token?: string | null
+    approval_reference_giver_name?: string | null
+    approval_reference_giver_title?: string | null
+    approval_customer_facing_name?: string | null
+    approval_coordinator_name?: string | null
+    companies?: { name?: string } | { name?: string }[] | null
+  }
+
+  const previousContactName =
+    formatApprovalGiverLine(
+      refRow.approval_reference_giver_name,
+      refRow.approval_reference_giver_title
+    ) ?? 'Ihrem bisherigen Ansprechpartner'
+
+  const company =
+    Array.isArray(refRow.companies) && refRow.companies.length > 0
+      ? refRow.companies[0]
+      : (refRow.companies as { name?: string } | null)
+  const companyName = company?.name?.trim() || 'Referenz'
+
+  let vendorOrgName = companyName
+  const orgId = String(refRow.organization_id ?? '').trim()
+  if (orgId) {
+    const { data: orgRow } = await supabase
+      .from('organizations')
+      .select('name')
+      .eq('id', orgId)
+      .maybeSingle()
+    vendorOrgName = String(orgRow?.name ?? '').trim() || companyName
+  }
+
   const { error } = await supabase
     .from('references')
     .update({
@@ -54,13 +103,7 @@ export async function delegateClientApproval(params: {
     .eq('approval_token', token)
   if (error) return { success: false, error: error.message }
 
-  const refRow = ref as {
-    id?: string
-    organization_id?: string
-    approval_reference_giver_name?: string | null
-    approval_reference_giver_title?: string | null
-  } | null
-  if (refRow?.id && refRow.organization_id) {
+  if (refRow.id && refRow.organization_id) {
     const admin = createServiceRoleSupabaseClient()
     if (admin) {
       const { error: eventError } = await admin.from('evidence_events').insert({
@@ -70,31 +113,25 @@ export async function delegateClientApproval(params: {
         payload: {
           delegate_name: params.delegateName?.trim() || null,
           delegate_email: email,
-          from_giver: formatApprovalGiverLine(
-            refRow.approval_reference_giver_name,
-            refRow.approval_reference_giver_title
-          ),
+          from_giver: previousContactName,
         },
         created_by: null,
       })
       if (eventError) console.error('[delegateClientApproval] event log failed:', eventError.message)
     }
   }
-  try {
-    const { Resend } = await import('resend')
-    const key = process.env.RESEND_API_KEY?.trim()
-    if (key) {
-      const resend = new Resend(key)
-      const baseUrl = getAppOrigin()
-      await resend.emails.send({
-        from: 'Refstack <onboarding@resend.dev>',
-        to: email,
-        subject: `Delegierte Freigabe: ${(ref as { title?: string } | null)?.title ?? 'Referenz'}`,
-        html: `<p>Sie wurden als zuständiger Ansprechpartner für eine Referenz-Freigabe benannt.</p><p><a href="${baseUrl}/approval/${token}">Zur Freigabe</a></p>`,
-      })
-    }
-  } catch {
-    // best effort mail
-  }
+
+  void sendClientApprovalDelegationEmail({
+    to: email,
+    delegateFirstName: params.delegateName,
+    previousContactName,
+    companyName,
+    referenceTitle: String(refRow.title ?? 'Referenz'),
+    approvalToken: token,
+    customerFacingName: refRow.approval_customer_facing_name,
+    coordinatorName: refRow.approval_coordinator_name,
+    vendorOrgName,
+  })
+
   return { success: true }
 }

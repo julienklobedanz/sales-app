@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('server-only', () => ({}))
+vi.mock('@/lib/references/approval-workflow-internal-notifications', () => ({
+  notifyInternalTeamInternalApproved: vi.fn().mockResolvedValue(true),
+}))
 
 import { confirmInternalApprovalFromToken } from './complete-internal-approval'
 
