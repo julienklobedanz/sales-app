@@ -4,6 +4,8 @@ import { toggleFavoriteImpl } from '@/app/dashboard/references/favorites'
 import {
   submitForApprovalImpl,
   resendClientApprovalEmailImpl,
+  requestCustomerApprovalAgainAfterChangesImpl,
+  updateApprovalRecipientImpl,
   approveInternalAndSendImpl,
   getApprovalLinkImpl,
   withdrawApprovalRequestImpl,
@@ -321,6 +323,17 @@ export async function markAllNotificationReads(eventIds: string[]) {
 
 export async function resendClientApprovalEmail(referenceId: string) {
   return resendClientApprovalEmailImpl(referenceId)
+}
+
+export async function requestCustomerApprovalAgainAfterChanges(referenceId: string) {
+  return requestCustomerApprovalAgainAfterChangesImpl(referenceId)
+}
+
+export async function updateApprovalRecipient(
+  referenceId: string,
+  recipient: ApproveInternalRecipientOptions
+) {
+  return updateApprovalRecipientImpl(referenceId, recipient)
 }
 
 export async function getPendingClientApprovals() {

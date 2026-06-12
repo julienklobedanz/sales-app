@@ -16,7 +16,9 @@ import { ApprovalReferenceSections } from './approval-reference-sections'
 import { ApprovalDelegateDialog } from './approval-delegate-dialog'
 import { customerApprovalScopeFromDb } from '@/lib/references/customer-approval-scope'
 import { effectiveCustomerApprovalStatus } from '@/lib/references/effective-customer-approval'
-import { suggestApprovalQuote } from '@/lib/references/suggest-approval-quote'
+import { resolveApprovalQuoteSuggestion } from '@/lib/references/generate-approval-quote'
+import { resolveCustomerApprovalIntro } from '@/lib/references/approval-workflow-display'
+import { deriveReferenceGiverNameFromEmail } from '@/lib/references/derive-reference-giver-name-from-email'
 
 function InvalidLink() {
   return (
@@ -60,6 +62,8 @@ export default async function ApprovalPage({
       project_start,
       project_end,
       approval_requester_name,
+      approval_coordinator_name,
+      approval_customer_facing_name,
       approval_owner_name,
       approval_expires_at,
       approval_scope_named_mention,
@@ -75,6 +79,9 @@ export default async function ApprovalPage({
       approval_reference_call_frequency,
       approval_reference_giver_name,
       approval_reference_giver_title,
+      approval_delegated_to_email,
+      approval_contact_id,
+      approval_external_contact_id,
       companies (
         name,
         organization_id
@@ -135,7 +142,15 @@ export default async function ApprovalPage({
     return <InvalidLink />
   }
 
-  const requester = typeof row.approval_requester_name === 'string' ? row.approval_requester_name.trim() : ''
+  const customerIntro = resolveCustomerApprovalIntro({
+    customerFacingName:
+      typeof row.approval_customer_facing_name === 'string'
+        ? row.approval_customer_facing_name
+        : null,
+    coordinatorName:
+      typeof row.approval_coordinator_name === 'string' ? row.approval_coordinator_name : null,
+    orgName,
+  })
   const extraScopeItems = [
     row.approval_scope_reference_call ? 'Referenz-Call' : null,
     row.approval_scope_logo_use ? 'Logo-Nutzung' : null,
@@ -191,8 +206,33 @@ export default async function ApprovalPage({
         approval_reference_call_frequency: row.approval_reference_call_frequency,
       })
     : undefined
-  const referenceGiverName =
+  let referenceGiverName =
     typeof row.approval_reference_giver_name === 'string' ? row.approval_reference_giver_name.trim() : ''
+  if (!referenceGiverName) {
+    let recipientEmail = ''
+    const delegatedEmail =
+      typeof row.approval_delegated_to_email === 'string' ? row.approval_delegated_to_email.trim() : ''
+    if (delegatedEmail.includes('@')) {
+      recipientEmail = delegatedEmail
+    } else if (typeof row.approval_external_contact_id === 'string') {
+      const { data: ext } = await supabase
+        .from('external_contacts')
+        .select('email')
+        .eq('id', row.approval_external_contact_id)
+        .maybeSingle()
+      recipientEmail = typeof ext?.email === 'string' ? ext.email.trim() : ''
+    } else if (typeof row.approval_contact_id === 'string') {
+      const { data: person } = await supabase
+        .from('contact_persons')
+        .select('email')
+        .eq('id', row.approval_contact_id)
+        .maybeSingle()
+      recipientEmail = typeof person?.email === 'string' ? person.email.trim() : ''
+    }
+    if (recipientEmail.includes('@')) {
+      referenceGiverName = deriveReferenceGiverNameFromEmail(recipientEmail) ?? ''
+    }
+  }
   const referenceGiverTitle =
     typeof row.approval_reference_giver_title === 'string' ? row.approval_reference_giver_title.trim() : ''
 
@@ -200,9 +240,11 @@ export default async function ApprovalPage({
   const industryLabel = formatIndustryDisplay(row.industry as string | null)
   const referenceSubtitle = [companyName, industryLabel].filter(Boolean).join(' · ')
 
-  const suggestedQuote = suggestApprovalQuote({
+  const suggestedQuote = await resolveApprovalQuoteSuggestion({
     orgName,
+    referenceTitle: row.title as string | null,
     proposedQuote: proposedQuote || null,
+    savedQuote: approved ? savedQuote || null : null,
     summary: row.summary as string | null,
     customerChallenge: row.customer_challenge as string | null,
     ourSolution: row.our_solution as string | null,
@@ -236,13 +278,16 @@ export default async function ApprovalPage({
             </p>
           ) : (
             <p className="text-sm text-muted-foreground">
-              {requester ? (
+              {customerIntro.mode === 'person' ? (
                 <>
-                  <span className="font-medium text-foreground">{requester}</span> bittet Sie um Freigabe
-                  dieser Referenz.{' '}
+                  <span className="font-medium text-foreground">{customerIntro.personName}</span> von{' '}
+                  {customerIntro.orgName} bittet Sie um Freigabe dieser Referenz.{' '}
                 </>
               ) : (
-                <>Bitte prüfen Sie die Referenz und entscheiden Sie. </>
+                <>
+                  <span className="font-medium text-foreground">{customerIntro.orgName}</span> bittet Sie
+                  um Freigabe dieser Referenz.{' '}
+                </>
               )}
               <ApprovalDelegateDialog token={token} />
             </p>

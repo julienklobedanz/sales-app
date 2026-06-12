@@ -30,6 +30,12 @@ import { ShareLinkButton } from './share-link-button'
 import { ReferenceReadinessActions } from './reference-readiness-actions'
 import { ReferenceReadinessValue } from './reference-readiness-value'
 import {
+  formatApprovalDelegatedRecipientLine,
+  formatApprovalGiverLine,
+  resolveApprovalCoordinatorDisplay,
+} from '@/lib/references/approval-workflow-display'
+import { resolveCustomerApprovalFollowUpUi } from '@/lib/references/approval-change-requests'
+import {
   canStartApprovalWorkflow,
 } from '@/lib/references/approval-workflow'
 import {
@@ -122,6 +128,10 @@ export default async function EvidenceDetailPage({
       customer_contact_id,
       customer_approval_status,
       approval_owner_name,
+      approval_requester_name,
+      approval_coordinator_email,
+      approval_coordinator_name,
+      approval_customer_facing_name,
       approval_requested_at,
       approval_expires_at,
       approval_scope_named_mention,
@@ -136,9 +146,12 @@ export default async function EvidenceDetailPage({
       approval_external_contact_id,
       approval_reference_giver_name,
       approval_reference_giver_title,
+      approval_delegated_to_name,
+      approval_delegated_to_email,
       approval_competitor_blacklist,
       approval_quote_proposed,
       approval_quote_approved,
+      approval_comment,
       approval_consent_file_url,
       anonymized_from_id,
       tags,
@@ -182,6 +195,10 @@ export default async function EvidenceDetailPage({
     customer_contact_id: string | null
     customer_approval_status: string | null
     approval_owner_name: string | null
+    approval_requester_name: string | null
+    approval_coordinator_email: string | null
+    approval_coordinator_name: string | null
+    approval_customer_facing_name: string | null
     approval_requested_at: string | null
     approval_expires_at: string | null
     approval_scope_named_mention: boolean | null
@@ -196,9 +213,12 @@ export default async function EvidenceDetailPage({
     approval_external_contact_id: string | null
     approval_reference_giver_name: string | null
     approval_reference_giver_title: string | null
+    approval_delegated_to_name: string | null
+    approval_delegated_to_email: string | null
     approval_competitor_blacklist: string[] | null
     approval_quote_proposed: string | null
     approval_quote_approved: string | null
+    approval_comment: string | null
     approval_consent_file_url: string | null
     anonymized_from_id: string | null
     created_at: string | null
@@ -389,11 +409,27 @@ export default async function EvidenceDetailPage({
 
   const existingShare = await getExistingShareForReference(id)
 
-  const ownerDisplay =
-    (ref.approval_owner_name ?? '').trim() || null
-  const expiresDisplay = ref.approval_expires_at
-    ? formatReferenceDate(ref.approval_expires_at, orgDateFmt)
-    : null
+  const requestedByDisplay = (ref.approval_requester_name ?? ref.approval_owner_name ?? '').trim() || null
+  const coordinatorDisplay = resolveApprovalCoordinatorDisplay({
+    customerFacingName: ref.approval_customer_facing_name,
+    coordinatorName: ref.approval_coordinator_name,
+    coordinatorEmail: ref.approval_coordinator_email,
+  })
+  const approvingCustomerDisplay = formatApprovalGiverLine(
+    ref.approval_reference_giver_name,
+    ref.approval_reference_giver_title
+  )
+  const delegatedRecipientDisplay = formatApprovalDelegatedRecipientLine(
+    ref.approval_delegated_to_name,
+    ref.approval_delegated_to_email
+  )
+  const customerApprovalFollowUp = await resolveCustomerApprovalFollowUpUi(
+    supabase,
+    id,
+    ref.customer_approval_status,
+    ref.approval_comment,
+    { showMagicLink: readinessState.showMagicLink }
+  )
 
   let glossaryFromWorkflow: string[] = []
   if (organizationId) {
@@ -726,14 +762,28 @@ export default async function EvidenceDetailPage({
                 )}
                 {role !== 'sales' ? (
                   <>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-muted-foreground">Verantwortlich</span>
-                      <ReferenceReadinessValue value={ownerDisplay} />
-                    </div>
-                    {readinessState.phase === 'pending_customer' && expiresDisplay ? (
+                    {requestedByDisplay ? (
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-muted-foreground">Antwortfrist (Referenzgeber)</span>
-                        <ReferenceReadinessValue value={expiresDisplay} />
+                        <span className="text-muted-foreground">Angefragt von</span>
+                        <ReferenceReadinessValue value={requestedByDisplay} />
+                      </div>
+                    ) : null}
+                    {coordinatorDisplay ? (
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-muted-foreground">Zuständig f. Kundenfreigabe</span>
+                        <ReferenceReadinessValue value={coordinatorDisplay} />
+                      </div>
+                    ) : null}
+                    {approvingCustomerDisplay ? (
+                      <div className="flex items-start justify-between gap-3">
+                        <span className="shrink-0 pt-0.5 text-muted-foreground">Kunde</span>
+                        <ReferenceReadinessValue value={approvingCustomerDisplay} />
+                      </div>
+                    ) : null}
+                    {delegatedRecipientDisplay ? (
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-muted-foreground">Aktueller Empfänger</span>
+                        <ReferenceReadinessValue value={delegatedRecipientDisplay} />
                       </div>
                     ) : null}
                   </>
@@ -761,15 +811,6 @@ export default async function EvidenceDetailPage({
                       </p>
                     </div>
                   ) : null}
-                  {ref.approval_reference_giver_name ? (
-                    <div className="space-y-1">
-                      <p className="text-muted-foreground">Referenz-Geber</p>
-                      <p className="text-sm font-medium">
-                        {ref.approval_reference_giver_name}
-                        {ref.approval_reference_giver_title ? ` · ${ref.approval_reference_giver_title}` : ''}
-                      </p>
-                    </div>
-                  ) : null}
                   {ref.approval_consent_file_url ? (
                     <a className="text-xs text-blue-600 underline" href={ref.approval_consent_file_url} target="_blank" rel="noreferrer">
                       Consent-Dokument ansehen
@@ -793,6 +834,9 @@ export default async function EvidenceDetailPage({
                 approvalExternalContactId={ref.approval_external_contact_id ?? null}
                 referenceContactId={ref.contact_id ?? null}
                 referenceCustomerContactId={ref.customer_contact_id ?? null}
+                hasCustomerChangeRequests={customerApprovalFollowUp.hasOpenChangeRequests}
+                canEditCustomerEmail={customerApprovalFollowUp.canEditCustomerEmail}
+                customerChangeRequestComment={ref.approval_comment}
               />
             </CardContent>
           </Card>

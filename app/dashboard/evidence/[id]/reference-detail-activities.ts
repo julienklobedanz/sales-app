@@ -19,14 +19,27 @@ const TIMELINE_EVENT_TYPES = [
   'deal_lost',
   'deal_withdrawn',
   'reference_helped',
+  'approval_delegated',
 ] as const
 
-function mapRowToActivity(row: {
-  id: string
-  created_at: string
-  event_type: string
-  payload: unknown
-}): ReferenceActivityItem {
+function formatChangesNeededDetail(
+  comment: string | null,
+  giverName: string | null
+): string {
+  if (!comment) return 'Anpassungen vor Freigabe angefragt.'
+  if (giverName) return `(${giverName}): ${comment}`
+  return comment
+}
+
+function mapRowToActivity(
+  row: {
+    id: string
+    created_at: string
+    event_type: string
+    payload: unknown
+  },
+  context?: { fallbackGiverName?: string | null }
+): ReferenceActivityItem {
   const payload =
     row.payload && typeof row.payload === 'object' && !Array.isArray(row.payload)
       ? (row.payload as Record<string, unknown>)
@@ -66,20 +79,76 @@ function mapRowToActivity(row: {
         title: 'Als hilfreich markiert',
         detail: 'Im Deal-Kontext als hilfreich gewertet.',
       }
-    case 'reference_approval_responded':
+    case 'reference_approval_responded': {
+      const decision = String(payload.decision ?? '')
+      if (decision === 'changes_needed') {
+        const comment =
+          typeof payload.comment === 'string' && payload.comment.trim()
+            ? payload.comment.trim()
+            : null
+        const giverName =
+          (typeof payload.reference_giver_name === 'string' && payload.reference_giver_name.trim()) ||
+          context?.fallbackGiverName?.trim() ||
+          null
+        return {
+          id: row.id,
+          at: row.created_at,
+          title: 'Änderungswünsche vom Kunden',
+          detail: formatChangesNeededDetail(comment, giverName),
+        }
+      }
       return {
         id: row.id,
         at: row.created_at,
         title: 'Kundenfreigabe entschieden',
-        detail: 'Antwort über den Freigabe-Link.',
+        detail:
+          decision === 'approved'
+            ? 'Referenz freigegeben.'
+            : decision === 'rejected'
+              ? 'Freigabe abgelehnt.'
+              : 'Antwort über den Freigabe-Link.',
       }
-    case 'customer_approval_requested':
+    }
+    case 'customer_approval_requested': {
+      const afterChanges = payload.after_changes === true
+      const recipient =
+        typeof payload.recipient_email === 'string' && payload.recipient_email.trim()
+          ? payload.recipient_email.trim()
+          : null
       return {
         id: row.id,
         at: row.created_at,
-        title: 'Kundenfreigabe angefragt',
-        detail: 'E-Mail an Kundenkontakt ausgelöst (oder vorbereitet).',
+        title: afterChanges ? 'Freigabe erneut angefragt' : 'Kundenfreigabe angefragt',
+        detail: afterChanges
+          ? recipient
+            ? `Nach Anpassung der Änderungswünsche an ${recipient} gesendet.`
+            : 'Nach Anpassung der Änderungswünsche erneut per E-Mail angefragt.'
+          : 'E-Mail an Kundenkontakt ausgelöst (oder vorbereitet).',
       }
+    }
+    case 'approval_delegated': {
+      const delegateName =
+        typeof payload.delegate_name === 'string' && payload.delegate_name.trim()
+          ? payload.delegate_name.trim()
+          : null
+      const delegateEmail =
+        typeof payload.delegate_email === 'string' && payload.delegate_email.trim()
+          ? payload.delegate_email.trim()
+          : null
+      const fromGiver =
+        typeof payload.from_giver === 'string' && payload.from_giver.trim()
+          ? payload.from_giver.trim()
+          : null
+      const who = delegateName ?? delegateEmail ?? 'neuer Ansprechpartner'
+      return {
+        id: row.id,
+        at: row.created_at,
+        title: 'Freigabe delegiert',
+        detail: fromGiver
+          ? `${fromGiver} hat die Freigabe an ${who} weitergeleitet.`
+          : `Freigabe an ${who} weitergeleitet.`,
+      }
+    }
     case 'internal_approval_decided':
       return {
         id: row.id,
@@ -149,7 +218,21 @@ export async function getReferenceDetailActivities(referenceId: string): Promise
     return []
   }
 
+  const { data: refRow } = await supabase
+    .from('references')
+    .select('approval_reference_giver_name')
+    .eq('id', referenceId)
+    .maybeSingle()
+
+  const fallbackGiverName =
+    typeof refRow?.approval_reference_giver_name === 'string'
+      ? refRow.approval_reference_giver_name.trim()
+      : null
+
   return (data ?? []).map((row) =>
-    mapRowToActivity(row as { id: string; created_at: string; event_type: string; payload: unknown })
+    mapRowToActivity(
+      row as { id: string; created_at: string; event_type: string; payload: unknown },
+      { fallbackGiverName }
+    )
   )
 }

@@ -809,7 +809,6 @@ export function DashboardOverview({
     [filteredReferences, selectedRefIds]
   )
   const selectedCount = selectedRefs.length
-  const selectedRefLabel = `${selectedCount} Referenz${selectedCount === 1 ? '' : 'en'}`
   useEffect(() => {
     const el = selectAllCheckboxRef.current
     if (!el) return
@@ -900,7 +899,6 @@ export function DashboardOverview({
         {isReferencesLibrary ? (
           <ReferencesBulkActionsBar
             selectedCount={selectedRefIds.size}
-            selectedRefLabel={selectedRefLabel}
             showSalesActions={profile.role === 'sales'}
             showAdminDelete={profile.role === 'admin'}
             onClearSelection={() => setSelectedRefIds(new Set())}

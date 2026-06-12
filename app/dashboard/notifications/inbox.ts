@@ -69,12 +69,20 @@ function mapEventToCopy(eventType: string, row: EventRowForCopy): InboxCandidate
 
   if (eventType === 'reference_approval_responded') {
     const decision = String(payload.decision ?? '')
+    const comment =
+      typeof payload.comment === 'string' && payload.comment.trim()
+        ? payload.comment.trim()
+        : ''
     const text =
       decision === 'approved'
         ? `„${refTitle}“ wurde vom Kunden freigegeben.`
         : decision === 'rejected'
           ? `„${refTitle}“ wurde vom Kunden abgelehnt.`
-          : `Antwort zu „${refTitle}“.`
+          : decision === 'changes_needed'
+            ? comment
+              ? `„${refTitle}“: Änderungswünsche — „${comment.length > 80 ? `${comment.slice(0, 80)}…` : comment}“`
+              : `„${refTitle}“: Der Kunde wünscht Anpassungen vor der Freigabe.`
+            : `Antwort zu „${refTitle}“.`
     return {
       id: `approval:${row.id}`,
       title: 'Kunden-Freigabe',

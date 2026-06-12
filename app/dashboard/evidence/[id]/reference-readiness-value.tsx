@@ -3,5 +3,5 @@ export function ReferenceReadinessValue({ value }: { value: string | null | unde
   if (!text) {
     return <span className="font-medium text-muted-foreground">—</span>
   }
-  return <span className="font-medium text-right">{text}</span>
+  return <span className="min-w-0 font-medium text-right leading-snug">{text}</span>
 }

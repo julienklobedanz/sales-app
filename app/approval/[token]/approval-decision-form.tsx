@@ -1,7 +1,13 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -20,9 +26,11 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import {
+  quickChoiceGrantsApproval,
   quickChoiceToScope,
   scopeToQuickChoice,
   type QuickApprovalChoice,
+  type QuickApprovalChoiceValue,
 } from '@/lib/references/quick-approval-choice'
 import type { CustomerApprovalScopeSelection } from '@/lib/references/customer-approval-scope'
 
@@ -52,11 +60,17 @@ export function ApprovalDecisionForm({
   const isApprovedMode = mode === 'approved'
   const workspaceLabel = orgName.trim() || 'unserem Partner'
 
-  const initialChoice: QuickApprovalChoice = initialScope
-    ? scopeToQuickChoice(initialScope)
-    : 'named'
+  const initialChoice: QuickApprovalChoiceValue = initialScope
+    ? scopeToQuickChoice(
+        initialScope,
+        isApprovedMode ? undefined : { hasChangeRequest: Boolean(initialComment.trim()) }
+      )
+    : initialComment.trim()
+      ? 'changes_needed'
+      : 'named'
 
-  const [choice, setChoice] = useState<QuickApprovalChoice>(initialChoice)
+  const [choice, setChoice] = useState<QuickApprovalChoiceValue>(initialChoice)
+  const choiceManuallyChangedRef = useRef(false)
   const [referenceCallsEnabled, setReferenceCallsEnabled] = useState(
     () => initialScope?.referenceCallsEnabled ?? false
   )
@@ -69,18 +83,47 @@ export function ApprovalDecisionForm({
   const [consentForwarding, setConsentForwarding] = useState(isApprovedMode)
   const [consentRelease, setConsentRelease] = useState(isApprovedMode)
   const [loading, setLoading] = useState(false)
-  const [done, setDone] = useState<'approved' | 'rejected' | 'updated' | null>(null)
+  const [done, setDone] = useState<'approved' | 'rejected' | 'updated' | 'changes_needed' | null>(
+    null
+  )
   const [confirmationEmailSent, setConfirmationEmailSent] = useState(false)
 
-  const grantsApproval = choice !== 'none'
+  const grantsApproval = quickChoiceGrantsApproval(choice)
+  const isChangesNeeded = choice === 'changes_needed'
   const showQuote = choice === 'named'
   const scope = useMemo(
     () => quickChoiceToScope(choice, referenceCallsEnabled),
     [choice, referenceCallsEnabled]
   )
   const canApprove = grantsApproval && consentRelease && consentForwarding
+  const canReject = Boolean(comment.trim())
+  const isNoneChoice = choice === 'none'
 
-  async function submit(decision: 'approved' | 'rejected') {
+  function handleChoiceChange(next: QuickApprovalChoiceValue) {
+    choiceManuallyChangedRef.current = true
+    setChoice(next)
+  }
+
+  function handleCommentChange(value: string) {
+    setComment(value)
+    if (value.trim() && !choiceManuallyChangedRef.current && choice !== 'none') {
+      setChoice('changes_needed')
+    }
+  }
+
+  const hasChoice = choice !== null
+
+  async function submit(decision: 'approved' | 'rejected' | 'changes_needed') {
+    if (decision === 'changes_needed' || decision === 'rejected') {
+      if (!comment.trim()) {
+        toast.error(
+          decision === 'rejected'
+            ? 'Bitte geben Sie einen Grund für die Ablehnung in „Änderungswünsche“ an.'
+            : 'Bitte beschreiben Sie Ihre Änderungswünsche.'
+        )
+        return
+      }
+    }
     if (decision === 'approved') {
       if (!scope) return
       if (!consentRelease || !consentForwarding) {
@@ -109,13 +152,19 @@ export function ApprovalDecisionForm({
           toast.error('Der Server ist nicht korrekt konfiguriert. Bitte wenden Sie sich an Ihren Ansprechpartner.')
         } else if (result.error === 'org_missing') {
           toast.error('Die Organisation zur Referenz konnte nicht ermittelt werden.')
+        } else if (result.error === 'comment_required') {
+          toast.error('Bitte beschreiben Sie Ihre Änderungswünsche.')
         } else {
           toast.error('Die Entscheidung konnte nicht gespeichert werden.')
         }
         return
       }
       setConfirmationEmailSent(result.confirmationEmailSent === true)
-      setDone(isApprovedMode ? 'updated' : decision)
+      if (decision === 'changes_needed') {
+        setDone('changes_needed')
+      } else {
+        setDone(isApprovedMode ? 'updated' : decision)
+      }
     } catch {
       toast.error('Die Entscheidung konnte nicht gespeichert werden.')
     } finally {
@@ -129,16 +178,20 @@ export function ApprovalDecisionForm({
         <p className="text-lg font-semibold text-foreground">
           {done === 'updated'
             ? 'Ihre Änderungen wurden gespeichert.'
-            : done === 'approved'
-              ? 'Vielen Dank — die Referenz wurde freigegeben.'
-              : 'Vielen Dank — die Referenz wurde abgelehnt.'}
+            : done === 'changes_needed'
+              ? 'Ihre Änderungswünsche wurden übermittelt.'
+              : done === 'approved'
+                ? 'Vielen Dank — die Referenz wurde freigegeben.'
+                : 'Vielen Dank — die Referenz wurde abgelehnt.'}
         </p>
         <p className="text-sm text-muted-foreground">
-          {done === 'updated' || done === 'approved'
-            ? confirmationEmailSent
-              ? 'Sie erhalten in Kürze eine Bestätigungs-E-Mail mit Ihrem persönlichen Freigabe- und Sperrlink.'
-              : 'Der Ansprechpartner bei uns wurde informiert.'
-            : 'Sie können dieses Fenster schließen. Der Ansprechpartner bei uns wurde informiert.'}
+          {done === 'changes_needed'
+            ? 'Der Ansprechpartner bei uns passt die Referenz an und meldet sich bei Ihnen.'
+            : done === 'updated' || done === 'approved'
+              ? confirmationEmailSent
+                ? 'Sie erhalten in Kürze eine Bestätigungs-E-Mail mit Ihrem persönlichen Freigabe- und Sperrlink.'
+                : 'Der Ansprechpartner bei uns wurde informiert.'
+              : 'Sie können dieses Fenster schließen. Der Ansprechpartner bei uns wurde informiert.'}
         </p>
         <p className="pt-2 text-xs text-muted-foreground">{referenceTitle}</p>
       </div>
@@ -147,9 +200,11 @@ export function ApprovalDecisionForm({
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2 sm:items-end">
         <div className="space-y-2">
-          <Label htmlFor="reference-giver-name">Name des Referenzgebers</Label>
+          <Label htmlFor="reference-giver-name" className="block min-h-5 leading-5">
+            Name
+          </Label>
           <Input
             id="reference-giver-name"
             value={referenceGiverName}
@@ -159,7 +214,9 @@ export function ApprovalDecisionForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="reference-giver-title">Ihre Position</Label>
+          <Label htmlFor="reference-giver-title" className="block min-h-5 leading-5">
+            Position
+          </Label>
           <Input
             id="reference-giver-title"
             value={referenceGiverTitle}
@@ -170,18 +227,16 @@ export function ApprovalDecisionForm({
         </div>
       </div>
 
-      <ApprovalQuickChoice value={choice} disabled={loading} onChange={setChoice} />
+      <ApprovalQuickChoice value={choice} disabled={loading} onChange={handleChoiceChange} />
 
       <div className="space-y-2">
-        <ApprovalOptionalLabel htmlFor="approval-comment">
-          Ihre Änderungswünsche und Kommentare
-        </ApprovalOptionalLabel>
+        <ApprovalOptionalLabel htmlFor="approval-comment">Änderungswünsche</ApprovalOptionalLabel>
         <Textarea
           id="approval-comment"
           value={comment}
-          onChange={(e) => setComment(e.target.value)}
+          onChange={(e) => handleCommentChange(e.target.value)}
           rows={2}
-          placeholder="Optional — nur wenn Sie etwas anpassen möchten …"
+          placeholder="Falls Sie Änderungen wünschen."
           className="min-h-[72px] resize-y"
           disabled={loading}
         />
@@ -191,7 +246,7 @@ export function ApprovalDecisionForm({
         <div className="space-y-2">
           <ApprovalOptionalLabel htmlFor="approved-quote">Ihr Zitat</ApprovalOptionalLabel>
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Vorschlag aus Ihrer Referenz — bitte bei Bedarf anpassen oder übernehmen.
+            KI-Vorschlag in 1–2 Sätzen — bitte bei Bedarf anpassen.
           </p>
           <Textarea
             id="approved-quote"
@@ -258,7 +313,17 @@ export function ApprovalDecisionForm({
       ) : null}
 
       <div className="space-y-3 border-t border-border pt-6">
-        {grantsApproval ? (
+        {isChangesNeeded ? (
+          <Button
+            type="button"
+            variant="default"
+            className="h-11 w-full gap-2 bg-amber-600 text-base font-semibold hover:bg-amber-600/90"
+            disabled={loading || !comment.trim()}
+            onClick={() => void submit('changes_needed')}
+          >
+            Änderungswünsche senden
+          </Button>
+        ) : grantsApproval ? (
           <Button
             type="button"
             variant="default"
@@ -269,31 +334,32 @@ export function ApprovalDecisionForm({
             <CheckIcon className="size-[18px]" />
             {isApprovedMode ? 'Änderungen speichern' : 'Freigabe rechtssicher erteilen'}
           </Button>
-        ) : (
-          <Button
-            type="button"
-            variant="outline"
-            className="h-11 w-full text-base font-medium"
-            disabled={loading}
-            onClick={() => void submit('rejected')}
-          >
-            Keine Freigabe bestätigen
-          </Button>
-        )}
-
-        {!isApprovedMode && grantsApproval ? (
-          <Button
-            type="button"
-            variant="link"
-            className="h-auto w-full text-destructive/80 hover:text-destructive"
-            disabled={loading}
-            onClick={() => void submit('rejected')}
-          >
-            Ablehnen
-          </Button>
+        ) : isNoneChoice ? (
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="block w-full">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-11 w-full border-red-200 text-base font-medium text-red-700 hover:bg-red-50 disabled:pointer-events-auto"
+                    disabled={loading || !canReject}
+                    onClick={() => void submit('rejected')}
+                  >
+                    Freigabe ablehnen
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              {!canReject ? (
+                <TooltipContent side="top" className="max-w-xs text-center">
+                  Bitte geben Sie in „Änderungswünsche“ einen Grund für die Ablehnung an.
+                </TooltipContent>
+              ) : null}
+            </Tooltip>
+          </TooltipProvider>
         ) : null}
 
-        {!isApprovedMode ? (
+        {!isApprovedMode && hasChoice ? (
           <p className="text-center text-[10px] leading-relaxed text-muted-foreground">
             Mit dem Klick bestätigen Sie die Nutzung gemäß des oben gewählten Freigabe-Typs.{' '}
             <Popover>

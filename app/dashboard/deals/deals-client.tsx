@@ -25,14 +25,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { ExternalLink, FolderOpen } from 'lucide-react'
+import { TableBulkActionsBar } from '@/components/table/table-bulk-actions-bar'
 
 type StatusFilterValue = 'all' | DealStatus
 const DEAL_COLUMNS_STORAGE_KEY = 'refstack:deals:column-order'
@@ -346,55 +340,32 @@ export function DealsClientContent({
 
   return (
     <div className="space-y-3.5">
-      {selectedDealIds.length ? (
-        <div className="fixed bottom-6 left-1/2 z-50 w-[min(720px,calc(100vw-24px))] -translate-x-1/2">
-          <div className="flex items-center justify-between rounded-lg border bg-background/95 px-4 py-3 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/75">
-            <div className="text-sm text-muted-foreground">
-              {selectedDealIds.length} ausgewählt
-            </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="toolbar">
-                  Aktionen
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Bulk-Aktionen</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  disabled={selectedDealIds.length !== 1}
-                  onSelect={(e) => {
-                    e.preventDefault()
-                    const id = selectedDealIds[0]
-                    if (id) router.push(`/dashboard/deals/${id}`)
-                  }}
-                >
-                  Öffnen
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  disabled={selectedDealIds.length !== 1}
-                  onSelect={(e) => {
-                    e.preventDefault()
-                    const id = selectedDealIds[0]
-                    if (id) window.open(`/dashboard/deals/${id}`, '_blank', 'noopener,noreferrer')
-                  }}
-                >
-                  In neuem Tab öffnen
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onSelect={(e) => {
-                    e.preventDefault()
-                    setSelectedDealIds([])
-                  }}
-                >
-                  Auswahl aufheben
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      ) : null}
+      <TableBulkActionsBar
+        selectedCount={selectedDealIds.length}
+        onClearSelection={() => setSelectedDealIds([])}
+        actions={[
+          {
+            id: 'open',
+            label: 'Öffnen',
+            icon: FolderOpen,
+            disabled: selectedDealIds.length !== 1,
+            onClick: () => {
+              const id = selectedDealIds[0]
+              if (id) router.push(`/dashboard/deals/${id}`)
+            },
+          },
+          {
+            id: 'open-new-tab',
+            label: 'Neuer Tab',
+            icon: ExternalLink,
+            disabled: selectedDealIds.length !== 1,
+            onClick: () => {
+              const id = selectedDealIds[0]
+              if (id) window.open(`/dashboard/deals/${id}`, '_blank', 'noopener,noreferrer')
+            },
+          },
+        ]}
+      />
       <AppDataTable
         tableVariant="deals"
         columns={columns}

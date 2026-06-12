@@ -14,6 +14,13 @@ import { ensureApprovalRecipientFromInputImpl } from '@/app/dashboard/references
 import { canStartApprovalWorkflow } from '@/lib/references/approval-workflow'
 import { hasActiveCustomerApprovalWorkflow } from '@/lib/references/effective-customer-approval'
 import { isApprovalRecipientEmail } from '@/lib/references/approval-recipient-input'
+import { referenceHasOpenCustomerChangeRequests } from '@/lib/references/approval-change-requests'
+import { deriveReferenceGiverNameFromEmail } from '@/lib/references/derive-reference-giver-name-from-email'
+import { resolveResendRecipient } from '@/lib/email/resend-dev-override'
+
+function referenceGiverNameFromRecipientEmail(email: string): string | null {
+  return deriveReferenceGiverNameFromEmail(email)
+}
 
 function getResend(): Resend | null {
   const key = process.env.RESEND_API_KEY
@@ -27,6 +34,23 @@ function escapeHtml(s: string) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
+}
+
+function buildFollowUpApprovalAfterChangesEmailHtml(args: {
+  firstName: string
+  companyName: string
+  refTitle: string
+  approvalUrl: string
+}): string {
+  return `
+          <h1 style="font-size:20px;">Hallo${args.firstName ? ` ${escapeHtml(args.firstName)}` : ''}!</h1>
+          <p>Die Referenz wurde gemäß Ihrer Änderungswünsche angepasst. Bitte prüfen Sie die Referenz noch einmal final und freigeben - vielen Dank!</p>
+          <p>Referenz: <em>"${escapeHtml(args.refTitle)}"</em> (${escapeHtml(args.companyName)})</p>
+          <p style="margin:16px 0;"><a href="${escapeHtml(args.approvalUrl)}"
+            style="display:inline-block;background:#0f172a;color:#fff;padding:12px 20px;text-decoration:none;border-radius:6px;font-weight:600;">
+            Zur Freigabe-Seite
+          </a></p>
+        `
 }
 
 function buildClientApprovalEmailHtml(args: {
@@ -102,7 +126,9 @@ async function sendClientApprovalEmail(args: {
   supabase: SupabaseClient
   referenceId: string
   ref: ReferenceApprovalRow
-  requesterName: string
+  /** AM-Name für Kundenkommunikation (nicht der interne Anfragende). */
+  customerFacingName: string
+  vendorOrgName: string
   contactEmail: string
   firstName: string
   companyName: string
@@ -114,13 +140,18 @@ async function sendClientApprovalEmail(args: {
   sendResendToCustomer?: boolean
 }): Promise<{ success: boolean; token: string; emailSent: boolean }> {
   const newToken = crypto.randomUUID()
+  const customerFacingName = args.customerFacingName.trim()
   const patch: {
     approval_token: string
     customer_approval_status: string
     approval_internal_reviewer_id?: string
+    approval_customer_facing_name?: string | null
+    approval_coordinator_name?: string | null
   } = {
     approval_token: newToken,
     customer_approval_status: 'pending',
+    approval_customer_facing_name: customerFacingName || null,
+    approval_coordinator_name: customerFacingName || null,
   }
   if (args.internalReviewerId) {
     patch.approval_internal_reviewer_id = args.internalReviewerId
@@ -132,9 +163,10 @@ async function sendClientApprovalEmail(args: {
   const sendMail = args.sendResendToCustomer === true
   let emailSent = false
   if (args.contactEmail && resend && sendMail) {
-    const requesterBlock = args.requesterName
-      ? `<p><strong>${escapeHtml(args.requesterName)}</strong> bittet Sie um Freigabe dieser Referenz.</p>`
-      : '<p>Es liegt eine Freigabe-Anfrage für diese Referenz vor.</p>'
+    const vendorOrg = args.vendorOrgName.trim() || 'uns'
+    const requesterBlock = customerFacingName
+      ? `<p><strong>${escapeHtml(customerFacingName)}</strong> von ${escapeHtml(vendorOrg)} bittet Sie um Freigabe dieser Referenz.</p>`
+      : `<p><strong>${escapeHtml(vendorOrg)}</strong> bittet Sie um Freigabe dieser Referenz.</p>`
     let portfolio: { manageUrl: string; publicPreviewUrl: string } | null = null
     try {
       portfolio = await getPortfolioManageAndPreviewUrlsForApprovalEmail(args.supabase, args.referenceId)
@@ -540,6 +572,9 @@ export async function submitForApprovalImpl(
       approval_requested_at: new Date().toISOString(),
       approval_requested_by: user.id,
       approval_requester_name: requesterName || null,
+      approval_coordinator_email: accountManagerEmail,
+      approval_coordinator_name: null,
+      approval_customer_facing_name: null,
       approval_internal_reviewer_id: null,
       approval_internal_reviewed_at: null,
       approval_reference_status_snapshot: snapshot,
@@ -645,7 +680,7 @@ export async function approveInternalAndSendImpl(
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('role, full_name')
+    .select('role, full_name, organization_id')
     .eq('id', user.id)
     .maybeSingle()
   if (profileError || !profile) {
@@ -724,6 +759,7 @@ export async function approveInternalAndSendImpl(
       .update({
         approval_contact_id: resolved.approvalContactId,
         approval_external_contact_id: resolved.approvalExternalContactId,
+        approval_reference_giver_name: referenceGiverNameFromRecipientEmail(contactEmail),
       })
       .eq('id', referenceId)
     if (syncErr) return { success: false, error: syncErr.message }
@@ -732,7 +768,7 @@ export async function approveInternalAndSendImpl(
     return { success: false, error: msg }
   }
 
-  const requesterName =
+  const customerFacingName =
     typeof (profile as { full_name?: string }).full_name === 'string'
       ? (profile as { full_name: string }).full_name.trim()
       : ''
@@ -741,13 +777,25 @@ export async function approveInternalAndSendImpl(
     return { success: false, error: 'Bitte eine gültige E-Mail-Adresse für den Kundenkontakt angeben.' }
   }
 
+  const orgId = String((profile as { organization_id?: string | null }).organization_id ?? '').trim()
+  let vendorOrgName = company_name
+  if (orgId) {
+    const { data: orgRow } = await supabase
+      .from('organizations')
+      .select('name')
+      .eq('id', orgId)
+      .maybeSingle()
+    vendorOrgName = String(orgRow?.name ?? '').trim() || company_name
+  }
+
   let customerEmailSent = false
   try {
     const sent = await sendClientApprovalEmail({
       supabase,
       referenceId,
       ref,
-      requesterName,
+      customerFacingName,
+      vendorOrgName,
       contactEmail,
       firstName,
       companyName: company_name,
@@ -808,6 +856,9 @@ export async function withdrawApprovalRequestImpl(referenceId: string): Promise<
       approval_requested_at: null,
       approval_contact_id: null,
       approval_external_contact_id: null,
+      approval_coordinator_email: null,
+      approval_coordinator_name: null,
+      approval_customer_facing_name: null,
       status: restoredStatus,
     })
     .eq('id', referenceId)
@@ -864,10 +915,14 @@ export async function resendClientApprovalEmailImpl(referenceId: string) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, full_name')
     .eq('id', user.id)
     .single()
   const role = String((profile as { role?: string } | null)?.role ?? '')
+  const resenderName =
+    typeof (profile as { full_name?: string } | null)?.full_name === 'string'
+      ? (profile as { full_name: string }).full_name.trim()
+      : ''
 
   const { data: row, error: fetchError } = await supabase
     .from('references')
@@ -910,14 +965,20 @@ export async function resendClientApprovalEmailImpl(referenceId: string) {
 
   const newToken = crypto.randomUUID()
 
+  const tokenPatch: Record<string, unknown> = {
+    approval_token: newToken,
+    approval_requested_at: new Date().toISOString(),
+    customer_approval_status: 'pending',
+    approval_responded_at: null,
+  }
+  if (resenderName) {
+    tokenPatch.approval_customer_facing_name = resenderName
+    tokenPatch.approval_coordinator_name = resenderName
+  }
+
   const { error: updateError } = await supabase
     .from('references')
-    .update({
-      approval_token: newToken,
-      approval_requested_at: new Date().toISOString(),
-      customer_approval_status: 'pending',
-      approval_responded_at: null,
-    })
+    .update(tokenPatch)
     .eq('id', referenceId)
 
   if (updateError) throw new Error(updateError.message)
@@ -931,4 +992,288 @@ export async function resendClientApprovalEmailImpl(referenceId: string) {
   revalidatePath(ROUTES.home)
   revalidatePath(ROUTES.evidence.detail(referenceId))
   revalidatePath(ROUTES.evidence.root)
+}
+
+export type RequestCustomerApprovalAgainResult =
+  | {
+      success: true
+      emailSent: boolean
+      recipientEmail: string
+      devRedirected?: boolean
+      originalRecipientEmail?: string
+    }
+  | { success: false; error: string }
+
+/** Nach Änderungswünschen: E-Mail mit bestehendem Freigabe-Link erneut an den Kunden senden. */
+export async function requestCustomerApprovalAgainAfterChangesImpl(
+  referenceId: string
+): Promise<RequestCustomerApprovalAgainResult> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht authentifiziert' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, organization_id')
+    .eq('id', user.id)
+    .single()
+  const role = String((profile as { role?: string } | null)?.role ?? '')
+
+  const { data: row, error: fetchError } = await supabase
+    .from('references')
+    .select(
+      `
+      title,
+      status,
+      company_id,
+      contact_id,
+      customer_contact_id,
+      customer_approval_status,
+      approval_token,
+      approval_requested_by,
+      approval_contact_id,
+      approval_external_contact_id,
+      approval_delegated_to_name,
+      approval_delegated_to_email,
+      approval_comment,
+      companies ( name )
+    `
+    )
+    .eq('id', referenceId)
+    .single()
+
+  if (fetchError || !row) return { success: false, error: 'Referenz nicht gefunden' }
+
+  const ref = row as unknown as ReferenceApprovalRow & {
+    approval_token?: string | null
+    approval_requested_by?: string | null
+    approval_delegated_to_name?: string | null
+    approval_delegated_to_email?: string | null
+    approval_comment?: string | null
+  }
+
+  if (!hasActiveCustomerApprovalWorkflow(ref.customer_approval_status, ref.status)) {
+    return { success: false, error: 'Es liegt keine aktive Kunden-Freigabe vor.' }
+  }
+
+  const hasChanges = await referenceHasOpenCustomerChangeRequests(
+    supabase,
+    referenceId,
+    ref.customer_approval_status,
+    ref.approval_comment
+  )
+  if (!hasChanges) {
+    return { success: false, error: 'Es liegen keine offenen Änderungswünsche vom Kunden vor.' }
+  }
+
+  const canSend =
+    role === 'admin' ||
+    role === 'account_manager' ||
+    ref.approval_requested_by === user.id
+  if (!canSend) {
+    return { success: false, error: 'Keine Berechtigung, die Freigabe erneut anzufragen.' }
+  }
+
+  const token = typeof ref.approval_token === 'string' ? ref.approval_token.trim() : ''
+  if (!token) return { success: false, error: 'Noch kein Freigabelink verfügbar.' }
+
+  const company =
+    Array.isArray(ref.companies) && ref.companies.length > 0
+      ? (ref.companies[0] as { name?: string })
+      : (ref.companies as { name?: string } | null)
+  const companyName = company?.name ?? 'Referenz'
+
+  let contactEmail: string
+  let firstName: string
+  const delegatedEmail =
+    typeof ref.approval_delegated_to_email === 'string' ? ref.approval_delegated_to_email.trim() : ''
+  if (delegatedEmail.includes('@')) {
+    contactEmail = delegatedEmail
+    firstName =
+      typeof ref.approval_delegated_to_name === 'string' ? ref.approval_delegated_to_name.trim() : ''
+  } else {
+    try {
+      const resolved = await resolveContactForApproval(
+        supabase,
+        ref,
+        ref.company_id,
+        {},
+        { requireRecipientEmail: true }
+      )
+      contactEmail = resolved.email
+      firstName = resolved.firstName
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Kein gültiger Empfänger für die Freigabe.'
+      return { success: false, error: msg }
+    }
+  }
+
+  const approvalUrl = `${getAppOrigin()}/approval/${token}`
+  const resend = getResend()
+  if (!resend) {
+    return { success: false, error: 'E-Mail-Versand ist nicht konfiguriert (RESEND_API_KEY).' }
+  }
+
+  const recipient = resolveResendRecipient(contactEmail)
+  const fromAddress = process.env.RESEND_FROM?.trim() || 'Refstack <onboarding@resend.dev>'
+
+  try {
+    const { error: sendError } = await resend.emails.send({
+      from: fromAddress,
+      to: recipient.to,
+      subject: `Aktualisierte Referenz zur Freigabe: ${companyName}`,
+      html: buildFollowUpApprovalAfterChangesEmailHtml({
+        firstName,
+        companyName,
+        refTitle: ref.title,
+        approvalUrl,
+      }),
+    })
+    if (sendError) {
+      console.error('[requestCustomerApprovalAgainAfterChanges] send failed:', sendError)
+      const hint =
+        process.env.NODE_ENV === 'development'
+          ? ' Mit onboarding@resend.dev sind nur verifizierte Empfänger möglich — RESEND_DEV_OVERRIDE_TO in .env.local setzen.'
+          : ''
+      return {
+        success: false,
+        error: `E-Mail konnte nicht gesendet werden: ${sendError.message}.${hint}`,
+      }
+    }
+  } catch (e) {
+    console.error('[requestCustomerApprovalAgainAfterChanges] send failed:', e)
+    return { success: false, error: 'E-Mail konnte nicht gesendet werden.' }
+  }
+
+  const { error: clearCommentError } = await supabase
+    .from('references')
+    .update({ approval_comment: null })
+    .eq('id', referenceId)
+  if (clearCommentError) {
+    console.error('[requestCustomerApprovalAgainAfterChanges] clear comment:', clearCommentError.message)
+    return {
+      success: false,
+      error: 'E-Mail wurde gesendet, aber die Änderungswünsche konnten nicht zurückgesetzt werden.',
+    }
+  }
+
+  await logEventForCurrentOrg({
+    eventType: 'customer_approval_requested',
+    referenceId,
+    payload: { after_changes: true, recipient_email: contactEmail },
+  })
+
+  revalidatePath(ROUTES.home)
+  revalidatePath(ROUTES.evidence.detail(referenceId))
+  revalidatePath(ROUTES.evidence.root)
+  return {
+    success: true,
+    emailSent: true,
+    recipientEmail: recipient.to,
+    devRedirected: recipient.devRedirected,
+    originalRecipientEmail: recipient.devRedirected ? recipient.originalTo : undefined,
+  }
+}
+
+export async function updateApprovalRecipientImpl(
+  referenceId: string,
+  recipient: ApproveInternalRecipientOptions
+): Promise<{ success: true } | { success: false; error: string }> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht authentifiziert' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+  const role = String((profile as { role?: string } | null)?.role ?? '')
+
+  const { data: row, error: fetchError } = await supabase
+    .from('references')
+    .select(
+      `
+      status,
+      company_id,
+      contact_id,
+      customer_contact_id,
+      customer_approval_status,
+      approval_requested_by,
+      approval_contact_id,
+      approval_external_contact_id,
+      companies ( name )
+    `
+    )
+    .eq('id', referenceId)
+    .single()
+
+  if (fetchError || !row) return { success: false, error: 'Referenz nicht gefunden' }
+
+  const ref = row as unknown as ReferenceApprovalRow & { approval_requested_by?: string | null }
+
+  if (!hasActiveCustomerApprovalWorkflow(ref.customer_approval_status, ref.status)) {
+    return { success: false, error: 'Es liegt keine aktive Kunden-Freigabe vor.' }
+  }
+
+  const canEdit =
+    role === 'admin' ||
+    role === 'account_manager' ||
+    ref.approval_requested_by === user.id
+  if (!canEdit) {
+    return { success: false, error: 'Keine Berechtigung, den Kundenkontakt zu ändern.' }
+  }
+
+  let recipientOpts: SubmitForApprovalOptions = {
+    contactId: recipient?.contactId,
+    externalContactId: recipient?.externalContactId,
+  }
+
+  if (recipient?.recipientEmail?.trim() && !recipient.contactId && !recipient.externalContactId) {
+    const ensured = await ensureApprovalRecipientFromInputImpl(
+      supabase,
+      referenceId,
+      recipient.recipientEmail.trim()
+    )
+    if ('error' in ensured) {
+      return { success: false, error: ensured.error }
+    }
+    recipientOpts = {
+      contactId: ensured.contactId ?? undefined,
+      externalContactId: ensured.externalContactId ?? undefined,
+    }
+  }
+
+  let resolved: ResolvedApprovalRecipient
+  try {
+    resolved = await resolveContactForApproval(
+      supabase,
+      ref,
+      ref.company_id,
+      recipientOpts,
+      { requireRecipientEmail: true }
+    )
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Kein gültiger Empfänger für die Freigabe.'
+    return { success: false, error: msg }
+  }
+
+  const { error: syncErr } = await supabase
+    .from('references')
+    .update({
+      approval_contact_id: resolved.approvalContactId,
+      approval_external_contact_id: resolved.approvalExternalContactId,
+      approval_delegated_to_name: null,
+      approval_delegated_to_email: null,
+      approval_reference_giver_name: referenceGiverNameFromRecipientEmail(resolved.email),
+    })
+    .eq('id', referenceId)
+  if (syncErr) return { success: false, error: syncErr.message }
+
+  revalidatePath(ROUTES.evidence.detail(referenceId))
+  return { success: true }
 }

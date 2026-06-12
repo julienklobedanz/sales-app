@@ -3,6 +3,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { isApprovalRecipientEmail } from '@/lib/references/approval-recipient-input'
+import { deriveReferenceGiverNameFromEmail } from '@/lib/references/derive-reference-giver-name-from-email'
 
 export type ApprovalContactOption = {
   id: string
@@ -145,9 +146,11 @@ export async function ensureApprovalRecipientFromInputImpl(
     return { contactId: existingPerson.id as string, externalContactId: null }
   }
 
+  const derivedName = deriveReferenceGiverNameFromEmail(email)
+  const nameParts = derivedName?.split(/\s+/).filter(Boolean) ?? []
   const localPart = email.split('@')[0]?.trim() || 'kontakt'
-  const firstName = localPart.slice(0, 80) || 'Kontakt'
-  const lastName = 'Referenz'
+  const firstName = nameParts[0] ?? (localPart.slice(0, 80) || 'Kontakt')
+  const lastName = nameParts.slice(1).join(' ') || 'Referenz'
 
   const { data: created, error: createErr } = await supabase
     .from('external_contacts')

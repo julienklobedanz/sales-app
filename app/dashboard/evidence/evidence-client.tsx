@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
+import { Download, Link2, Trash2 } from "lucide-react"
 import { CirclePlus, SlidersHorizontal } from "@hugeicons/core-free-icons"
 
 import type { ReferenceRow } from "@/app/dashboard/actions"
@@ -10,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { evidenceColumns } from "./columns"
 import { EvidenceDataTable } from "./data-table"
 import { AppIcon } from "@/lib/icons"
+import { TableBulkActionsBar } from "@/components/table/table-bulk-actions-bar"
 import { ToolbarSearchField } from "@/components/ui/toolbar-search-field"
 import { COPY } from "@/lib/copy"
 import { ROUTES } from "@/lib/routes"
@@ -92,33 +94,34 @@ export function EvidenceClient({
         </Card>
       ) : (
         <div className="space-y-4">
-          {selectedIds.length ? (
-            <div className="fixed bottom-6 left-1/2 z-50 w-[min(720px,calc(100vw-24px))] -translate-x-1/2">
-              <div className="flex items-center justify-between rounded-lg border bg-background/95 px-4 py-3 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/75">
-                <div className="text-sm text-muted-foreground">
-                  {selectedIds.length} ausgewählt
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="toolbar" className="hover:bg-muted/70">
-                      Aktionen
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Bulk-Aktionen</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem disabled>PDF exportieren</DropdownMenuItem>
-                    <DropdownMenuItem disabled>Portfolio erstellen</DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem disabled={isSales}>Anonymisieren</DropdownMenuItem>
-                    <DropdownMenuItem disabled={isSales} className="text-destructive focus:text-destructive">
-                      Löschen
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-          ) : null}
+          <TableBulkActionsBar
+            selectedCount={selectedIds.length}
+            onClearSelection={() => setSelectedIds([])}
+            actions={[
+              {
+                id: "download",
+                label: "Herunterladen",
+                icon: Download,
+                disabled: true,
+                onClick: () => undefined,
+              },
+              {
+                id: "portfolio",
+                label: "Portfolio",
+                icon: Link2,
+                disabled: true,
+                onClick: () => undefined,
+              },
+              {
+                id: "delete",
+                label: "Löschen",
+                icon: Trash2,
+                variant: "destructive",
+                disabled: isSales,
+                onClick: () => undefined,
+              },
+            ]}
+          />
 
           <EvidenceDataTable
             columns={evidenceColumns()}

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { ExternalLink, LinkIcon } from '@hugeicons/core-free-icons'
+import { ExternalLink, LinkIcon, Pencil, Send } from '@hugeicons/core-free-icons'
 import { ChevronDown } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -34,7 +34,9 @@ import {
   approveInternalAndSend,
   getApprovalLink,
   getContactOptionsForReference,
+  requestCustomerApprovalAgainAfterChanges,
   resendClientApprovalEmail,
+  updateApprovalRecipient,
   withdrawApprovalRequest,
 } from '@/app/dashboard/actions'
 import type { ApprovalContactOption } from '@/app/dashboard/references/approval-contacts'
@@ -60,6 +62,9 @@ type Props = {
   approvalExternalContactId: string | null
   referenceContactId: string | null
   referenceCustomerContactId: string | null
+  hasCustomerChangeRequests?: boolean
+  canEditCustomerEmail?: boolean
+  customerChangeRequestComment?: string | null
 }
 
 export function ReferenceReadinessActions({
@@ -74,10 +79,15 @@ export function ReferenceReadinessActions({
   approvalExternalContactId,
   referenceContactId,
   referenceCustomerContactId,
+  hasCustomerChangeRequests = false,
+  canEditCustomerEmail = false,
+  customerChangeRequestComment = null,
 }: Props) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
+  const [changeRequestsDismissed, setChangeRequestsDismissed] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [editRecipientOpen, setEditRecipientOpen] = useState(false)
   const [regenerateOpen, setRegenerateOpen] = useState(false)
   const [loadingContacts, setLoadingContacts] = useState(false)
   const [contacts, setContacts] = useState<ApprovalContactOption[]>([])
@@ -94,13 +104,25 @@ export function ReferenceReadinessActions({
   const showCreateShareHint =
     readiness.phase === 'approved' && !existingSharePath?.trim()
 
+  const visibleChangeRequestComment =
+    !changeRequestsDismissed && customerChangeRequestComment?.trim()
+      ? customerChangeRequestComment.trim()
+      : null
+  const showRequestApprovalAgain =
+    hasCustomerChangeRequests && !changeRequestsDismissed
+
+  const showCustomerFollowUpActions =
+    readiness.showMagicLink &&
+    (showRequestApprovalAgain || canEditCustomerEmail || Boolean(visibleChangeRequestComment))
+
   const showActions =
     readiness.showPrimaryStart ||
     readiness.showMagicLink ||
     readiness.showRegenerateLink ||
     readiness.showWithdraw ||
     showShowcaseSection ||
-    showCreateShareHint
+    showCreateShareHint ||
+    showCustomerFollowUpActions
 
   if (!showActions && !readiness.showStaleHint) {
     return null
@@ -154,6 +176,48 @@ export function ReferenceReadinessActions({
   function openInternalApproveDialog() {
     setDialogOpen(true)
     void loadContactsForDialog()
+  }
+
+  function openEditRecipientDialog() {
+    setEditRecipientOpen(true)
+    void loadContactsForDialog()
+  }
+
+  function onConfirmEditRecipient() {
+    const recipient = buildRecipientPayload()
+    if (!recipient) {
+      toast.error('Bitte E-Mail-Adresse eingeben oder einen Kontakt mit E-Mail auswählen.')
+      return
+    }
+    startTransition(async () => {
+      const result = await updateApprovalRecipient(referenceId, recipient)
+      if (!result.success) {
+        toast.error(result.error)
+        return
+      }
+      setEditRecipientOpen(false)
+      toast.success('Kunden-E-Mail wurde aktualisiert.')
+      router.refresh()
+    })
+  }
+
+  function onRequestApprovalAgain() {
+    startTransition(async () => {
+      const result = await requestCustomerApprovalAgainAfterChanges(referenceId)
+      if (!result.success) {
+        toast.error(result.error)
+        return
+      }
+      setChangeRequestsDismissed(true)
+      if (result.devRedirected && result.originalRecipientEmail) {
+        toast.success(
+          `Freigabe erneut angefragt — E-Mail an ${result.recipientEmail} gesendet (Dev-Umleitung von ${result.originalRecipientEmail}).`
+        )
+      } else {
+        toast.success(`Freigabe erneut angefragt — E-Mail an ${result.recipientEmail} gesendet.`)
+      }
+      router.refresh()
+    })
   }
 
   function onConfirmInternalApprove() {
@@ -293,14 +357,47 @@ export function ReferenceReadinessActions({
         </div>
       ) : null}
 
+      {visibleChangeRequestComment ? (
+        <div className="w-full max-w-sm space-y-1.5 text-sm">
+          <p className="text-muted-foreground">Änderungswünsche des Kunden</p>
+          <p className="whitespace-pre-wrap rounded-md border border-amber-200/60 bg-amber-50/50 p-2 text-xs text-amber-950">
+            {visibleChangeRequestComment}
+          </p>
+        </div>
+      ) : null}
+
       {readiness.showMagicLink ? (
         <div className="flex w-full max-w-sm flex-col items-stretch gap-1.5 transition-opacity duration-200">
           <p className="text-center text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
             {readiness.phase === 'pending_customer' ? 'Kunden-Freigabe' : 'Freigabe-Link'}
           </p>
+          {showRequestApprovalAgain ? (
+            <Button
+              type="button"
+              variant="default"
+              className="w-full gap-2"
+              onClick={() => onRequestApprovalAgain()}
+              disabled={pending}
+            >
+              <AppIcon icon={Send} size={16} />
+              Freigabe erneut anfragen
+            </Button>
+          ) : null}
+          {canEditCustomerEmail ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full gap-2"
+              onClick={openEditRecipientDialog}
+              disabled={pending}
+            >
+              <AppIcon icon={Pencil} size={16} />
+              Kunden E-Mail ändern
+            </Button>
+          ) : null}
           <Button
             type="button"
-            variant="default"
+            variant={showRequestApprovalAgain ? 'outline' : 'default'}
             className="w-full gap-2"
             onClick={() => onCopyApprovalLink()}
             disabled={pending}
@@ -380,6 +477,52 @@ export function ReferenceReadinessActions({
           Anfrage widerrufen
         </Button>
       ) : null}
+
+      <Dialog open={editRecipientOpen} onOpenChange={setEditRecipientOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Kunden E-Mail ändern</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Der neue Kontakt erhält künftige Freigabe-E-Mails. Der Freigebende Kunde wird aus der
+            E-Mail-Adresse abgeleitet. Eine bestehende Delegation wird zurückgesetzt.
+          </p>
+          <div className="grid gap-2 py-2">
+            <Label htmlFor="edit-approval-recipient">Kontakt (Name oder E-Mail)</Label>
+            <ApprovalContactSuggestField
+              id="edit-approval-recipient"
+              contacts={contacts}
+              loading={loadingContacts}
+              disabled={pending}
+              value={contactQuery}
+              selected={selectedContact}
+              onValueChange={setContactQuery}
+              onSelectContact={(c) => {
+                setSelectedContact(c)
+                setContactQuery(c.email ?? c.label)
+              }}
+              onClearSelection={() => setSelectedContact(null)}
+            />
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setEditRecipientOpen(false)}
+              disabled={pending}
+            >
+              Abbrechen
+            </Button>
+            <Button
+              type="button"
+              onClick={onConfirmEditRecipient}
+              disabled={pending || loadingContacts || !canConfirmRecipient}
+            >
+              Speichern
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-md">

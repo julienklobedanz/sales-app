@@ -8,7 +8,7 @@ import { effectiveCustomerApprovalStatus } from '@/lib/references/effective-cust
 
 export type CompleteClientApprovalParams = {
   token: string
-  decision: 'approved' | 'rejected'
+  decision: 'approved' | 'rejected' | 'changes_needed'
   comment?: string
   approvedQuote?: string
   consentFileUrl?: string
@@ -35,6 +35,7 @@ type ReferenceApprovalRow = {
   approval_external_contact_id: string | null
   approval_delegated_to_email: string | null
   approval_delegated_to_name: string | null
+  approval_reference_giver_name?: string | null
   companies?: { name?: string } | { name?: string }[] | null
 }
 
@@ -73,6 +74,7 @@ export async function completeClientApprovalWithAdmin(
       approval_external_contact_id,
       approval_delegated_to_email,
       approval_delegated_to_name,
+      approval_reference_giver_name,
       companies ( name )
     `
     )
@@ -124,7 +126,60 @@ export async function completeClientApprovalWithAdmin(
 
   const snapshot = ref.approval_reference_status_snapshot?.trim()
   const approved = params.decision === 'approved'
+  const rejected = params.decision === 'rejected'
+  const changesNeeded = params.decision === 'changes_needed'
+
+  if (rejected && !params.comment?.trim()) {
+    return { success: false, error: 'comment_required' }
+  }
   const scopePatch = approved && params.scope ? customerApprovalScopeToDbPatch(params.scope) : {}
+
+  if (changesNeeded) {
+    if (!isPending) {
+      return { success: false, error: 'already_decided' }
+    }
+    const comment = params.comment?.trim()
+    if (!comment) {
+      return { success: false, error: 'comment_required' }
+    }
+
+    const { error: updateError } = await admin
+      .from('references')
+      .update({
+        approval_comment: comment,
+        approval_reference_giver_name: params.referenceGiverName?.trim() || null,
+        approval_reference_giver_title: params.referenceGiverTitle?.trim() || null,
+      })
+      .eq('id', ref.id)
+
+    if (updateError) {
+      return { success: false, error: updateError.message }
+    }
+
+    const referenceGiverName =
+      params.referenceGiverName?.trim() ||
+      ref.approval_reference_giver_name?.trim() ||
+      null
+
+    const { error: eventError } = await admin.from('evidence_events').insert({
+      organization_id: orgId,
+      reference_id: ref.id,
+      event_type: 'reference_approval_responded',
+      payload: {
+        decision: 'changes_needed',
+        comment,
+        is_update: false,
+        reference_giver_name: referenceGiverName,
+      },
+      created_by: ref.approval_requested_by,
+    })
+
+    if (eventError) {
+      return { success: false, error: eventError.message }
+    }
+
+    return { success: true }
+  }
 
   const updatePatch: Record<string, unknown> = {
     approval_comment: params.comment?.trim() || null,

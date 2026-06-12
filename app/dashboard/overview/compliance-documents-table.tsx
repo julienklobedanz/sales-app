@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Trash2 } from 'lucide-react'
+import { Download, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import type { ComplianceDocumentRow } from '@/app/dashboard/settings/compliance-actions'
@@ -24,14 +24,6 @@ import {
 } from '@/app/dashboard/overview/compliance-table-column-renders'
 import { Button } from '@/components/ui/button'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import {
   Table,
   TableBody,
   TableCell,
@@ -39,15 +31,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { TableBulkActionsBar } from '@/components/table/table-bulk-actions-bar'
 import { TableRowCheckbox } from '@/components/table/table-row-checkbox'
 import {
   filterComplianceDocumentsForTable,
   groupComplianceDocumentsForTable,
 } from '@/lib/compliance/compliance-table-rows'
 import { isComplianceDocumentExpired } from '@/lib/compliance/expiry'
-import { AppIcon } from '@/lib/icons'
 import { cn } from '@/lib/utils'
-import { Cancel01Icon, FileDownIcon } from '@hugeicons/core-free-icons'
 
 const COMPLIANCE_COLUMN_ORDER_STORAGE_KEY = 'compliance-documents-column-order-v2'
 
@@ -346,55 +337,30 @@ export function ComplianceDocumentsTable({
   }
 
   const selectedCount = selectedIds.size
-  const selectedLabel = `${selectedCount} Zertifikat${selectedCount === 1 ? '' : 'e'}`
 
   return (
     <>
-      {selectedCount > 0 ? (
-        <div className="fixed bottom-6 left-1/2 z-50 w-[min(720px,calc(100vw-24px))] -translate-x-1/2">
-          <div className="flex items-center justify-between rounded-lg border bg-background/95 px-4 py-3 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/75">
-            <div className="text-sm text-muted-foreground">{selectedCount} ausgewählt</div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" disabled={bulkDownloading}>
-                  Aktionen
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-[260px]">
-                <DropdownMenuLabel>Bulk-Aktionen</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  disabled={bulkDownloading}
-                  onSelect={(e: Event) => {
-                    e.preventDefault()
-                    void handleBulkDownload()
-                  }}
-                >
-                  <AppIcon icon={FileDownIcon} size={16} className="mr-2" />
-                  {selectedLabel} herunterladen
-                </DropdownMenuItem>
-                {isAdmin ? (
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
-                    onSelect={(e: Event) => {
-                      e.preventDefault()
-                      setBulkDeleteOpen(true)
-                    }}
-                  >
-                    <Trash2 className="mr-2 size-4" aria-hidden />
-                    Ausgewählte löschen
-                  </DropdownMenuItem>
-                ) : null}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => setSelectedIds(new Set())}>
-                  <AppIcon icon={Cancel01Icon} size={16} className="mr-2 text-muted-foreground" />
-                  Auswahl aufheben
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      ) : null}
+      <TableBulkActionsBar
+        selectedCount={selectedCount}
+        onClearSelection={() => setSelectedIds(new Set())}
+        actions={[
+          {
+            id: 'download',
+            label: 'Herunterladen',
+            icon: Download,
+            disabled: bulkDownloading,
+            onClick: () => void handleBulkDownload(),
+          },
+          {
+            id: 'delete',
+            label: 'Löschen',
+            icon: Trash2,
+            variant: 'destructive',
+            hidden: !isAdmin,
+            onClick: () => setBulkDeleteOpen(true),
+          },
+        ]}
+      />
 
       <ComplianceDocumentVersionsSheet
         open={versionsSheetOpen}
