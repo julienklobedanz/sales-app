@@ -66,6 +66,7 @@ import { useRole } from '@/hooks/useRole'
 import { CreateAccountDialog } from './create-account-dialog'
 import { CreatePartnerDialog } from './create-partner-dialog'
 import { CompaniesImportDialog } from './components/companies-import-dialog'
+import { AccountsOnboardingEmptyState } from './components/accounts-onboarding-empty-state'
 import { EntityKindSwitch } from './components/entity-kind-switch'
 import { AccountSortSwitch } from './components/account-sort-switch'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -271,6 +272,17 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
 
   const isPartnerView = entityKind === 'partner'
 
+  const previewOnboarding =
+    process.env.NODE_ENV === 'development' && searchParams.get('previewOnboarding') === '1'
+
+  const showAccountsOnboarding =
+    (previewOnboarding && !isPartnerView) ||
+    (!isPartnerView &&
+      companiesForEntity.length === 0 &&
+      !search.trim() &&
+      !filtersActive &&
+      !favoritesOnly)
+
   function companyHref(companyId: string, opts?: { edit?: boolean }) {
     let href = accountsDetailHref(companyId, isPartnerView ? 'partner' : 'account')
     if (opts?.edit) {
@@ -289,6 +301,17 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
 
   return (
     <TooltipProvider delayDuration={300}>
+    {showAccountsOnboarding ? (
+      <>
+        <AccountsOnboardingEmptyState
+          onCreateManual={() => setCreateOpen(true)}
+          canCreateManual={canManage}
+        />
+        {canManage ? (
+          <CreateAccountDialog open={createOpen} onOpenChange={setCreateOpen} />
+        ) : null}
+      </>
+    ) : (
     <div className="space-y-5 rounded-3xl bg-muted/10 p-4 md:p-6">
       <div className="w-full">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -715,6 +738,9 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
         </div>
       )}
 
+    </div>
+    )}
+
       <AlertDialog
         open={!!deleteTarget}
         onOpenChange={(open) => {
@@ -761,7 +787,6 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
     </TooltipProvider>
   )
 }
