@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers'
+import { Suspense } from 'react'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
@@ -221,7 +222,8 @@ export default async function SettingsPage() {
 
   return (
     <div className="flex flex-col space-y-6">
-      <SettingsTabs
+      <Suspense fallback={<div className="h-96 animate-pulse rounded-xl bg-muted/40" />}>
+        <SettingsTabs
         devRolePreviewEnabled={isDevRolePreviewEnabled()}
         roleSwitcher={{ serverRole, previewRole }}
         profile={{
@@ -277,7 +279,8 @@ export default async function SettingsPage() {
           externalAccountId: hubspotStatus.externalAccountId,
           lastSyncAt: hubspotStatus.lastSyncAt,
         }}
-      />
+        />
+      </Suspense>
     </div>
   )
 }

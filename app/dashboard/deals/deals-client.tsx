@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useMemo, useState, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ToolbarSearchField } from '@/components/ui/toolbar-search-field'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -27,6 +27,9 @@ import {
 } from '@/components/ui/select'
 import { ExternalLink, FolderOpen } from 'lucide-react'
 import { TableBulkActionsBar } from '@/components/table/table-bulk-actions-bar'
+import { CrmOnboardingEmptyState } from '@/app/dashboard/components/crm-onboarding-empty-state'
+import { CrmImportPreviewDialog } from '@/app/dashboard/accounts/components/crm-import-preview-dialog'
+import { useRole } from '@/hooks/useRole'
 
 type StatusFilterValue = 'all' | DealStatus
 const DEAL_COLUMNS_STORAGE_KEY = 'refstack:deals:column-order'
@@ -50,6 +53,9 @@ type Props = {
   deals: DealRow[]
   companies: { id: string; name: string }[]
   orgProfiles: { id: string; full_name: string | null }[]
+  hubspotConfigured?: boolean
+  hubspotConnected?: boolean
+  canConnectCrm?: boolean
 }
 
 function isExpiringIn30Days(dateStr: string | null): boolean {
@@ -67,11 +73,18 @@ export function DealsClientContent({
   deals,
   companies,
   orgProfiles,
+  hubspotConfigured = false,
+  hubspotConnected = false,
+  canConnectCrm = false,
 }: Props) {
   const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const { isAdmin, isAccountManager } = useRole()
   const [importing, setImporting] = useState(false)
   const xlsxInputRef = useRef<HTMLInputElement>(null)
   const [createOpen, setCreateOpen] = useState(false)
+  const [crmImportOpen, setCrmImportOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilterValue>('all')
   const [selectedDealIds, setSelectedDealIds] = useState<string[]>([])
@@ -86,6 +99,41 @@ export function DealsClientContent({
     'account_manager_name',
     'sales_manager_name',
   ])
+
+  useLayoutEffect(() => {
+    const connected = searchParams.get('crm_connected')
+    const provider = searchParams.get('crm_provider')
+    const shouldImport = searchParams.get('crm_import') === '1'
+
+    if (shouldImport && canConnectCrm && hubspotConnected) {
+      setCrmImportOpen(true)
+      const params = new URLSearchParams(searchParams.toString())
+      params.delete('crm_import')
+      const queryString = params.toString()
+      router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false })
+    }
+
+    if (connected === 'success' && provider === 'hubspot') {
+      toast.success('HubSpot erfolgreich verbunden.')
+      if (shouldImport && canConnectCrm) {
+        setCrmImportOpen(true)
+      }
+      const params = new URLSearchParams(searchParams.toString())
+      params.delete('crm_connected')
+      params.delete('crm_provider')
+      params.delete('crm_import')
+      const queryString = params.toString()
+      router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false })
+    } else if (connected === 'error' && provider === 'hubspot') {
+      toast.error('HubSpot-Verbindung fehlgeschlagen.')
+      const params = new URLSearchParams(searchParams.toString())
+      params.delete('crm_connected')
+      params.delete('crm_provider')
+      params.delete('crm_import')
+      const queryString = params.toString()
+      router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false })
+    }
+  }, [searchParams, pathname, router, canConnectCrm, hubspotConnected])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -137,6 +185,10 @@ export function DealsClientContent({
       return hay.includes(q)
     })
   }, [deals, query, statusFilter])
+
+  const filtersActive = statusFilter !== 'all'
+  const showDealsOnboarding =
+    deals.length === 0 && !query.trim() && !filtersActive
 
   const columns = useMemo<ColumnDef<DealRow>[]>(() => {
     return [
@@ -338,6 +390,47 @@ export function DealsClientContent({
     ]
   }, [])
 
+  const createDealDialog = (
+    <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+      <DialogContent className="max-h-[90vh] min-h-[60vh] overflow-y-auto w-[calc(100vw-2rem)] max-w-[90vw] lg:max-w-7xl gap-0 border-0 px-6 py-6 md:px-12 md:py-10 lg:px-16 lg:py-12">
+        <div className="flex flex-col items-center w-full max-w-full">
+          <DialogHeader className="w-full max-w-4xl mx-auto px-0 pb-4">
+            <DialogTitle>Deal anlegen</DialogTitle>
+          </DialogHeader>
+          <div className="w-full max-w-4xl">
+            <DealForm companies={companies} orgProfiles={orgProfiles} />
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+
+  if (showDealsOnboarding) {
+    return (
+      <>
+        <CrmOnboardingEmptyState
+          variant="deals"
+          onCreateManual={() => setCreateOpen(true)}
+          canCreateManual={isAdmin || isAccountManager}
+          hubspotConfigured={hubspotConfigured}
+          hubspotConnected={hubspotConnected}
+          canConnectCrm={canConnectCrm}
+          onHubSpotClick={() => {
+            if (hubspotConnected) {
+              setCrmImportOpen(true)
+            } else {
+              window.location.href = '/api/integrations/hubspot/connect'
+            }
+          }}
+        />
+        {createDealDialog}
+        {canConnectCrm ? (
+          <CrmImportPreviewDialog open={crmImportOpen} onOpenChange={setCrmImportOpen} />
+        ) : null}
+      </>
+    )
+  }
+
   return (
     <div className="space-y-3.5">
       <TableBulkActionsBar
@@ -464,18 +557,10 @@ export function DealsClientContent({
         )}
         showViewOptions
       />
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="max-h-[90vh] min-h-[60vh] overflow-y-auto w-[calc(100vw-2rem)] max-w-[90vw] lg:max-w-7xl gap-0 border-0 px-6 py-6 md:px-12 md:py-10 lg:px-16 lg:py-12">
-          <div className="flex flex-col items-center w-full max-w-full">
-            <DialogHeader className="w-full max-w-4xl mx-auto px-0 pb-4">
-              <DialogTitle>Deal anlegen</DialogTitle>
-            </DialogHeader>
-            <div className="w-full max-w-4xl">
-              <DealForm companies={companies} orgProfiles={orgProfiles} />
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {createDealDialog}
+      {canConnectCrm ? (
+        <CrmImportPreviewDialog open={crmImportOpen} onOpenChange={setCrmImportOpen} />
+      ) : null}
     </div>
   )
 }

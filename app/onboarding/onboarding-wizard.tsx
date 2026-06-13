@@ -1,8 +1,9 @@
-"use client"
+'use client'
 
-import * as React from "react"
-import { useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import * as React from 'react'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Stepper } from "./steps/stepper"
 import { WorkspaceStep, type WorkspaceStepValue } from "./steps/workspace-step"
 import { ReferenceStep } from "./steps/reference-step"
@@ -67,7 +68,7 @@ export function OnboardingWizard({
     })
     setSavingWorkspace(false)
     if (!res.success) {
-      alert(res.error)
+      toast.error(res.error)
       return
     }
     next()
@@ -80,7 +81,7 @@ export function OnboardingWizard({
     const res = await extractReferencePreview(file)
     setExtracting(false)
     if (!res.success) {
-      alert(res.error)
+      toast.error(res.error)
       return
     }
     setReferencePreview(res.preview)
@@ -92,7 +93,7 @@ export function OnboardingWizard({
     const res = await saveOnboardingReference(referenceFile, referencePreview)
     setSavingReference(false)
     if (!res.success) {
-      alert(res.error)
+      toast.error(res.error)
       return
     }
     next()
@@ -109,7 +110,7 @@ export function OnboardingWizard({
       const res = await sendTeamInvites(valid)
       if (!res.success) {
         setSending(false)
-        alert(res.error)
+        toast.error(res.error)
         return
       }
     }

@@ -359,6 +359,13 @@ export function CompaniesGrid({
           onConnectHubSpot={() => {
             window.location.href = '/api/integrations/hubspot/connect'
           }}
+          onHubSpotClick={() => {
+            if (hubspotConnected) {
+              setCrmImportOpen(true)
+            } else {
+              window.location.href = '/api/integrations/hubspot/connect'
+            }
+          }}
         />
         {canManage ? (
           <CreateAccountDialog open={createOpen} onOpenChange={setCreateOpen} />

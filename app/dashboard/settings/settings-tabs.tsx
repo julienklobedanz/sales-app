@@ -1,7 +1,8 @@
 'use client'
 
 import Image from 'next/image'
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
 import type { AppRole } from '@/hooks/useRole'
@@ -137,6 +138,21 @@ export function SettingsTabs({
   }
 }) {
   const [activeTab, setActiveTab] = useState<'profile' | 'workspace' | 'team' | 'integrations' | 'workflow' | 'admin'>('profile')
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    if (
+      tab === 'profile' ||
+      tab === 'workspace' ||
+      tab === 'team' ||
+      tab === 'integrations' ||
+      tab === 'workflow' ||
+      tab === 'admin'
+    ) {
+      setActiveTab(tab)
+    }
+  }, [searchParams])
   type WorkflowSimulationItem = {
     day: number
     label: string

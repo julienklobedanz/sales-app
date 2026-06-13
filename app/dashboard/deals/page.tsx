@@ -4,6 +4,8 @@ import { ROUTES } from '@/lib/routes'
 import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 import { getDeals } from './actions'
 import { DealsClientContent } from './deals-client'
+import { getOrganizationCrmConnectionPublicStatus } from '@/lib/crm/connections'
+import { isHubSpotConfigured } from '@/lib/crm/hubspot/config'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,12 +18,19 @@ export default async function DealsPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('organization_id')
+    .select('organization_id, role')
     .eq('id', user.id)
     .single()
 
   const orgId = profile?.organization_id
   if (!orgId) redirect(ROUTES.onboarding)
+
+  const isAdmin = profile.role === 'admin'
+  const hubspotConfigured = isHubSpotConfigured()
+  const hubspotStatus =
+    isAdmin
+      ? await getOrganizationCrmConnectionPublicStatus(supabase, orgId, 'hubspot')
+      : { connected: false, externalAccountId: null, lastSyncAt: null }
 
   const [deals, companiesRes, orgProfilesRes] = await Promise.all([
     getDeals(),
@@ -37,13 +46,18 @@ export default async function DealsPage() {
       .order('full_name', { ascending: true }),
   ])
 
+  const showTitle = deals.length > 0
+
   return (
     <div className="space-y-6">
-      <h1 className={DASHBOARD_PAGE_TITLE_CLASS}>Deals</h1>
+      {showTitle ? <h1 className={DASHBOARD_PAGE_TITLE_CLASS}>Deals</h1> : null}
       <DealsClientContent
         deals={deals}
         companies={(companiesRes.data ?? []) as { id: string; name: string }[]}
         orgProfiles={(orgProfilesRes.data ?? []) as { id: string; full_name: string | null }[]}
+        hubspotConfigured={hubspotConfigured}
+        hubspotConnected={hubspotStatus.connected}
+        canConnectCrm={isAdmin && hubspotConfigured}
       />
     </div>
   )
