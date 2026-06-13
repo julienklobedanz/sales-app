@@ -5,18 +5,19 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { AppIcon } from '@/lib/icons'
 import { DatabaseSyncIcon, Wifi01Icon } from '@hugeicons/core-free-icons'
 import type { AccountDealRow } from './actions'
-import { buildSalesforceOpportunityUrl } from '@/lib/crm/salesforce'
+import { buildCrmDealUrl, dealHasCrmSync } from '@/lib/crm/deal-links'
 import { ROUTES } from '@/lib/routes'
 import { formatDealVolume } from '@/lib/format'
 
 export function CompanyDetailPipelineTab({
   activeDeals,
+  hubspotPortalId = null,
 }: {
   activeDeals: AccountDealRow[]
+  hubspotPortalId?: string | null
 }) {
-  // Salesforce-Integration ist optional. Sobald `salesforce_opportunity_id` gesetzt ist, gilt der Deal als CRM-gesynct.
-  const hasCrm = activeDeals.some((d) => Boolean((d as unknown as { salesforce_opportunity_id?: string | null }).salesforce_opportunity_id))
-  const hasLocal = activeDeals.some((d) => !((d as unknown as { salesforce_opportunity_id?: string | null }).salesforce_opportunity_id))
+  const hasCrm = activeDeals.some((d) => dealHasCrmSync(d))
+  const hasLocal = activeDeals.some((d) => !dealHasCrmSync(d))
   const pipelineSource: 'live' | 'local' | 'mixed' = hasCrm && hasLocal ? 'mixed' : hasCrm ? 'live' : 'local'
 
   return (
@@ -65,20 +66,21 @@ export function CompanyDetailPipelineTab({
                     <TableCell className="text-muted-foreground">{d.expiry_date ?? '—'}</TableCell>
                     <TableCell className="text-muted-foreground">
                       {(() => {
-                        const oppId = (d as unknown as { salesforce_opportunity_id?: string | null })
-                          .salesforce_opportunity_id
-                        const sfUrl = buildSalesforceOpportunityUrl({ opportunityId: oppId })
-                        if (sfUrl) {
+                        const crmLink = buildCrmDealUrl(d, { hubspotPortalId })
+                        if (crmLink && crmLink.href !== '#') {
                           return (
                             <a
-                              href={sfUrl}
+                              href={crmLink.href}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-primary underline-offset-2 hover:underline"
                             >
-                              Salesforce
+                              {crmLink.label}
                             </a>
                           )
+                        }
+                        if (crmLink) {
+                          return crmLink.label
                         }
                         return 'Lokal'
                       })()}
@@ -93,4 +95,3 @@ export function CompanyDetailPipelineTab({
     </div>
   )
 }
-

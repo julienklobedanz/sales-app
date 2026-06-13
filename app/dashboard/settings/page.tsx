@@ -7,6 +7,8 @@ import { DEV_ROLE_COOKIE, isDevRolePreviewEnabled, parseAppRoleCookie } from '@/
 import { DEFAULT_DIGEST_LOCAL_TIME, DEFAULT_DIGEST_TIMEZONE } from '@/lib/market-signals/digest-schedule'
 import { getTeamMembers } from './invite-actions'
 import { SettingsTabs } from './settings-tabs'
+import { getOrganizationCrmConnectionPublicStatus } from '@/lib/crm/connections'
+import { isHubSpotConfigured } from '@/lib/crm/hubspot/config'
 
 type AuditLogRow = {
   id: string
@@ -195,6 +197,12 @@ export default async function SettingsPage() {
     ? parseAppRoleCookie(cookieStore.get(DEV_ROLE_COOKIE)?.value)
     : null
   const serverRole = (profileRow?.role ?? 'sales') as AppRole
+  const isAdmin = serverRole === 'admin'
+  const hubspotConfigured = isHubSpotConfigured()
+  const hubspotStatus =
+    isAdmin && organizationId
+      ? await getOrganizationCrmConnectionPublicStatus(supabase, organizationId, 'hubspot')
+      : { connected: false, externalAccountId: null, lastSyncAt: null }
   const auditLogs: AuditLogRow[] =
     serverRole === 'admin' && organizationId
       ? (
@@ -262,6 +270,13 @@ export default async function SettingsPage() {
         }}
         teamMembers={teamMembers}
         auditLogs={auditLogs}
+        hubspotIntegration={{
+          configured: hubspotConfigured,
+          connected: hubspotStatus.connected,
+          canManage: isAdmin,
+          externalAccountId: hubspotStatus.externalAccountId,
+          lastSyncAt: hubspotStatus.lastSyncAt,
+        }}
       />
     </div>
   )

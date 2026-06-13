@@ -30,6 +30,7 @@ Dieses Runbook deckt die noch offenen, zielumgebungsabhängigen Punkte aus der t
 - `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID_PRO`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_BILLING_RETURN_URL` (Stretch)
 - `CRON_SECRET`
 - `NEXT_PUBLIC_SALESFORCE_INSTANCE_URL` (Deeplinks statt generischem Login)
+- `HUBSPOT_CLIENT_ID`, `HUBSPOT_CLIENT_SECRET` (HubSpot CRM Sync — siehe `docs/hubspot-crm-sync-setup.md`)
 
 ### Automatischer Check
 In der jeweiligen Runtime (Staging/Prod Shell):

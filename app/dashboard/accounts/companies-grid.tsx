@@ -67,6 +67,7 @@ import { CreateAccountDialog } from './create-account-dialog'
 import { CreatePartnerDialog } from './create-partner-dialog'
 import { CompaniesImportDialog } from './components/companies-import-dialog'
 import { AccountsOnboardingEmptyState } from './components/accounts-onboarding-empty-state'
+import { CrmImportPreviewDialog } from './components/crm-import-preview-dialog'
 import { EntityKindSwitch } from './components/entity-kind-switch'
 import { AccountSortSwitch } from './components/account-sort-switch'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -107,7 +108,17 @@ export type CompanyCard = {
   signal_count?: number | null
 }
 
-export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
+export function CompaniesGrid({
+  companies,
+  hubspotConfigured = false,
+  hubspotConnected = false,
+  canConnectCrm = false,
+}: {
+  companies: CompanyCard[]
+  hubspotConfigured?: boolean
+  hubspotConnected?: boolean
+  canConnectCrm?: boolean
+}) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -120,6 +131,7 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
   const [createOpen, setCreateOpen] = useState(false)
   const [createPartnerOpen, setCreatePartnerOpen] = useState(false)
   const [importDialogOpen, setImportDialogOpen] = useState(false)
+  const [crmImportOpen, setCrmImportOpen] = useState(false)
   const [importing, setImporting] = useState(false)
   const [sortMode, setSortMode] = useState<'activity' | 'az'>('activity')
   const [filterOpen, setFilterOpen] = useState(false)
@@ -132,6 +144,41 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
   const [favoriteSaving, setFavoriteSaving] = useState<Record<string, boolean>>({})
   const { isAdmin, isAccountManager } = useRole()
   const canManage = isAdmin || isAccountManager
+
+  useLayoutEffect(() => {
+    const connected = searchParams.get('crm_connected')
+    const provider = searchParams.get('crm_provider')
+    const shouldImport = searchParams.get('crm_import') === '1'
+
+    if (shouldImport && canConnectCrm && hubspotConnected) {
+      setCrmImportOpen(true)
+      const params = new URLSearchParams(searchParams.toString())
+      params.delete('crm_import')
+      const query = params.toString()
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
+    }
+
+    if (connected === 'success' && provider === 'hubspot') {
+      toast.success('HubSpot erfolgreich verbunden.')
+      if (shouldImport && canConnectCrm) {
+        setCrmImportOpen(true)
+      }
+      const params = new URLSearchParams(searchParams.toString())
+      params.delete('crm_connected')
+      params.delete('crm_provider')
+      params.delete('crm_import')
+      const query = params.toString()
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
+    } else if (connected === 'error' && provider === 'hubspot') {
+      toast.error('HubSpot-Verbindung fehlgeschlagen.')
+      const params = new URLSearchParams(searchParams.toString())
+      params.delete('crm_connected')
+      params.delete('crm_provider')
+      params.delete('crm_import')
+      const query = params.toString()
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
+    }
+  }, [searchParams, pathname, router, canConnectCrm, hubspotConnected])
 
   useLayoutEffect(() => {
     syncAccountsListViewFromUrl(parseAccountsListView(searchParams))
@@ -306,6 +353,12 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
         <AccountsOnboardingEmptyState
           onCreateManual={() => setCreateOpen(true)}
           canCreateManual={canManage}
+          hubspotConfigured={hubspotConfigured}
+          hubspotConnected={hubspotConnected}
+          canConnectCrm={canConnectCrm}
+          onConnectHubSpot={() => {
+            window.location.href = '/api/integrations/hubspot/connect'
+          }}
         />
         {canManage ? (
           <CreateAccountDialog open={createOpen} onOpenChange={setCreateOpen} />
@@ -787,6 +840,9 @@ export function CompaniesGrid({ companies }: { companies: CompanyCard[] }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {canConnectCrm ? (
+        <CrmImportPreviewDialog open={crmImportOpen} onOpenChange={setCrmImportOpen} />
+      ) : null}
     </TooltipProvider>
   )
 }

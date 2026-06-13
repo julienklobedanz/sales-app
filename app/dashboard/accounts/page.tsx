@@ -3,6 +3,8 @@ import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
 import { CompaniesGrid } from './companies-grid'
 import { resolveNdaDisplayStatus, type NdaDisplayStatus } from '@/lib/accounts/company-entity'
+import { getOrganizationCrmConnectionPublicStatus } from '@/lib/crm/connections'
+import { isHubSpotConfigured } from '@/lib/crm/hubspot/config'
 
 type CompanyRow = {
   id: string
@@ -28,7 +30,7 @@ export default async function AccountsPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('organization_id')
+    .select('organization_id, role')
     .eq('id', user.id)
     .single()
 
@@ -256,9 +258,21 @@ export default async function AccountsPage() {
         : null,
     })) ?? []
 
+  const isAdmin = profile.role === 'admin'
+  const hubspotConfigured = isHubSpotConfigured()
+  const hubspotStatus =
+    isAdmin && profile.organization_id
+      ? await getOrganizationCrmConnectionPublicStatus(supabase, profile.organization_id, 'hubspot')
+      : { connected: false, externalAccountId: null, lastSyncAt: null }
+
   return (
     <div className="flex flex-col space-y-6">
-      <CompaniesGrid companies={enrichedCompanies} />
+      <CompaniesGrid
+        companies={enrichedCompanies}
+        hubspotConfigured={hubspotConfigured}
+        hubspotConnected={hubspotStatus.connected}
+        canConnectCrm={isAdmin && hubspotConfigured}
+      />
     </div>
   )
 }

@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { getSalesforceInstanceUrl } from '@/lib/crm/salesforce'
+import { HubSpotIntegrationCard } from './hubspot-integration-card'
 import { StickySaveBar } from './sticky-save-bar'
 import {
   AlertDialog,
@@ -63,6 +64,7 @@ export function SettingsTabs({
   org,
   teamMembers,
   auditLogs,
+  hubspotIntegration,
 }: {
   devRolePreviewEnabled?: boolean
   roleSwitcher: {
@@ -126,6 +128,13 @@ export function SettingsTabs({
     timestamp: string
     user_id: string | null
   }>
+  hubspotIntegration?: {
+    configured: boolean
+    connected: boolean
+    canManage: boolean
+    externalAccountId: string | null
+    lastSyncAt: string | null
+  }
 }) {
   const [activeTab, setActiveTab] = useState<'profile' | 'workspace' | 'team' | 'integrations' | 'workflow' | 'admin'>('profile')
   type WorkflowSimulationItem = {
@@ -1041,18 +1050,20 @@ export function SettingsTabs({
 
       <TabsContent value="integrations">
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          <HubSpotIntegrationCard
+            cardClassName={CARD_CLASS}
+            configured={hubspotIntegration?.configured ?? false}
+            connected={hubspotIntegration?.connected ?? false}
+            canManage={hubspotIntegration?.canManage ?? false}
+            externalAccountId={hubspotIntegration?.externalAccountId ?? null}
+            lastSyncAt={hubspotIntegration?.lastSyncAt ?? null}
+          />
           {[
             {
               key: 'Salesforce',
               desc: 'Synchronisiere Opportunities und Pipeline-Daten.',
               logo: 'https://logo.clearbit.com/salesforce.com',
               href: getSalesforceInstanceUrl(),
-            },
-            {
-              key: 'HubSpot',
-              desc: 'Verbinde CRM-Kontakte und Deal-Daten mit RefStack.',
-              logo: 'https://logo.clearbit.com/hubspot.com',
-              href: 'https://app.hubspot.com/login',
             },
             {
               key: 'Google News',

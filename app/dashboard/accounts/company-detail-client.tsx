@@ -44,6 +44,7 @@ export function CompanyDetailClient({
   externalContacts: initialExternalContacts,
   references,
   activeDeals,
+  hubspotPortalId = null,
   marketSignals,
   initialEditOpen,
   ndaAgreements,
@@ -458,7 +459,7 @@ export function CompanyDetailClient({
         </TabsContent>
 
         <TabsContent value="pipeline" className="mt-2">
-          <CompanyDetailPipelineTab activeDeals={activeDeals} />
+          <CompanyDetailPipelineTab activeDeals={activeDeals} hubspotPortalId={hubspotPortalId} />
         </TabsContent>
 
         <TabsContent value="proof_points" className="mt-2">

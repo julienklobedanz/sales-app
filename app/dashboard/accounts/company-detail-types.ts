@@ -33,6 +33,7 @@ export type CompanyDetailClientProps = {
   externalContacts: ExternalContactRow[]
   references: CompanyRefRow[]
   activeDeals: AccountDealRow[]
+  hubspotPortalId?: string | null
   marketSignals: {
     championMoves: Array<{
       id: string

@@ -12,6 +12,7 @@ import {
 } from '../actions'
 import { getNdaAgreementsByCompanyId } from '../nda-actions'
 import { fetchExternalContactsForCompany } from '@/lib/accounts/external-contacts-fetch'
+import { getHubSpotPortalIdForOrganization } from '@/lib/crm/connections'
 
 export default async function CompanyDetailPage({
   params,
@@ -67,6 +68,7 @@ export default async function CompanyDetailPage({
     activeDeals,
     externalContactsResult,
     ndaResult,
+    hubspotPortalId,
   ] = await Promise.all([
     getCompanyStrategy(id),
     getStakeholders(id),
@@ -75,6 +77,7 @@ export default async function CompanyDetailPage({
     getActiveDealsByCompanyId(id),
     getExternalContactsSafe(),
     getNdaAgreementsByCompanyId(id),
+    orgId ? getHubSpotPortalIdForOrganization(orgId) : Promise.resolve(null),
   ])
 
   const ndaAgreements = ndaResult.success ? ndaResult.rows : []
@@ -142,6 +145,7 @@ export default async function CompanyDetailPage({
           externalContacts={(externalContactsResult ?? []) as ExternalContactRow[]}
           references={references}
           activeDeals={activeDeals}
+          hubspotPortalId={hubspotPortalId}
           marketSignals={marketSignals}
           initialEditOpen={initialEditOpen}
           ndaAgreements={ndaAgreements}

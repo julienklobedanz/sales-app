@@ -9,6 +9,8 @@ type CrmIntegration = {
   backgroundColor: string
   logoSrc: string
   variant: 'brand' | 'light'
+  enabled?: boolean
+  connected?: boolean
 }
 
 const CRM_INTEGRATIONS: CrmIntegration[] = [
@@ -25,6 +27,7 @@ const CRM_INTEGRATIONS: CrmIntegration[] = [
     backgroundColor: '#FE4802',
     logoSrc: '/brands/hubspot.png',
     variant: 'brand',
+    enabled: true,
   },
   {
     id: 'pipedrive',
@@ -52,14 +55,17 @@ const CRM_INTEGRATIONS: CrmIntegration[] = [
 const actionButtonClass =
   'box-border h-14 w-full max-w-md rounded-xl border border-transparent px-4 shadow-sm font-medium flex items-center gap-3 transition-all'
 
-const crmButtonClass = `${actionButtonClass} opacity-50 pointer-events-none cursor-not-allowed`
+const disabledCrmButtonClass = `${actionButtonClass} opacity-50 pointer-events-none cursor-not-allowed`
 
-/** Platzhalter rechts — gleiche Breite wie „Demnächst“-Badge für symmetrisches Layout */
 const badgeSpacerClass = 'shrink-0 px-2 py-0.5 text-xs font-medium opacity-0 pointer-events-none select-none'
 
 type AccountsOnboardingEmptyStateProps = {
   onCreateManual: () => void
   canCreateManual?: boolean
+  hubspotConfigured?: boolean
+  hubspotConnected?: boolean
+  canConnectCrm?: boolean
+  onConnectHubSpot?: () => void
 }
 
 function CrmLogo({
@@ -106,9 +112,29 @@ function SoonBadge({ variant }: { variant: 'brand' | 'light' }) {
   )
 }
 
+function ConnectedBadge({ variant }: { variant: 'brand' | 'light' }) {
+  if (variant === 'light') {
+    return (
+      <span className="shrink-0 rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
+        Verbunden
+      </span>
+    )
+  }
+
+  return (
+    <span className="shrink-0 rounded-md bg-white/20 px-2 py-0.5 text-xs font-medium text-white">
+      Verbunden
+    </span>
+  )
+}
+
 export function AccountsOnboardingEmptyState({
   onCreateManual,
   canCreateManual = true,
+  hubspotConfigured = false,
+  hubspotConnected = false,
+  canConnectCrm = false,
+  onConnectHubSpot,
 }: AccountsOnboardingEmptyStateProps) {
   return (
     <div className="flex min-h-[70vh] w-full flex-col items-center justify-center p-8">
@@ -124,21 +150,34 @@ export function AccountsOnboardingEmptyState({
       <div className="flex w-full max-w-md flex-col gap-3">
         {CRM_INTEGRATIONS.map((integration) => {
           const isLight = integration.variant === 'light'
+          const isHubSpot = integration.id === 'hubspot'
+          const hubSpotActive =
+            isHubSpot && hubspotConfigured && canConnectCrm && Boolean(onConnectHubSpot)
+          const isDisabled = !hubSpotActive
 
           return (
             <button
               key={integration.id}
               type="button"
-              disabled
-              aria-disabled
-              className={`${crmButtonClass} ${isLight ? 'border-gray-200 text-gray-800' : 'text-white'}`}
+              disabled={isDisabled}
+              aria-disabled={isDisabled}
+              onClick={hubSpotActive ? onConnectHubSpot : undefined}
+              className={`${isDisabled ? disabledCrmButtonClass : `${actionButtonClass} text-white hover:brightness-105`} ${isLight ? 'border-gray-200 text-gray-800' : ''}`}
               style={{ backgroundColor: integration.backgroundColor }}
             >
               <CrmLogo src={integration.logoSrc} alt="" variant={integration.variant} />
               <span className="min-w-0 flex-1 text-center text-sm leading-tight line-clamp-2">
                 {integration.label}
               </span>
-              <SoonBadge variant={integration.variant} />
+              {hubSpotActive && hubspotConnected ? (
+                <ConnectedBadge variant={integration.variant} />
+              ) : hubSpotActive ? (
+                <span className="shrink-0 rounded-md bg-white/20 px-2 py-0.5 text-xs font-medium text-white">
+                  Verbinden
+                </span>
+              ) : (
+                <SoonBadge variant={integration.variant} />
+              )}
             </button>
           )
         })}
