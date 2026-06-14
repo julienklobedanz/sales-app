@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -94,6 +94,7 @@ import {
 import { ReferenceDetailSheet } from './overview/reference-detail-sheet'
 import { ReferencesOverviewBrandfetchSync } from './overview/references-overview-brandfetch-sync'
 import { ReferencesBulkActionsBar } from './overview/references-bulk-actions-bar'
+import { EvidenceOnboardingEmptyState } from '@/app/dashboard/evidence/components/evidence-onboarding-empty-state'
 import { FilterMenuCheckboxOption } from '@/components/table/filter-menu-checkbox-option'
 import { TableRowCheckbox } from '@/components/table/table-row-checkbox'
 import { TableRowAlign } from '@/components/table/table-row-align'
@@ -263,6 +264,7 @@ export function DashboardOverview({
   complianceDocuments?: ComplianceDocumentRow[]
 }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [search, setSearch] = useState('')
   const [certificateSearch, setCertificateSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>(initialStatusFilter)
@@ -856,6 +858,74 @@ export function DashboardOverview({
         : new URL(shareUrl, window.location.origin).toString()
     await navigator.clipboard.writeText(absoluteUrl)
     toast.success('Kundenlink kopiert.')
+  }
+
+  const canCreateReference =
+    profile.role === 'admin' || profile.role === 'account_manager'
+  const filtersActive =
+    Boolean(search.trim()) ||
+    statusFilter !== 'all' ||
+    favoritesOnly ||
+    companyFilter !== 'all' ||
+    tagsFilter !== 'all' ||
+    industryFilter !== 'all' ||
+    countryFilter !== 'all' ||
+    projectStatusFilter !== 'all'
+  const showEvidenceOnboarding =
+    isReferencesLibrary &&
+    ((process.env.NODE_ENV === 'development' &&
+      searchParams.get('previewOnboarding') === '1') ||
+      (initialReferences.length === 0 && !filtersActive))
+
+  if (showEvidenceOnboarding) {
+    const isAdmin = profile.role === 'admin'
+
+    const handleEmptyStateUpload = (files: File[]) => {
+      if (!isAdmin) {
+        toast.info('Bulk-Import ist nur für Admins verfügbar. Nutze „Ref. manuell erstellen“.')
+        return
+      }
+      setBulkImportGroups([])
+      addBulkImportFiles(files)
+      setBulkImportOpen(true)
+    }
+
+    return (
+      <>
+        <EvidenceOnboardingEmptyState
+          canCreate={canCreateReference}
+          onUploadFiles={isAdmin ? handleEmptyStateUpload : undefined}
+          onCreateManual={isAdmin ? () => setNewRefModalOpen(true) : undefined}
+        />
+        {isAdmin ? (
+          <>
+            <NewReferenceDialog
+              open={newRefModalOpen}
+              onOpenChange={setNewRefModalOpen}
+              companies={companies}
+              contacts={contacts}
+              externalContacts={externalContacts}
+            />
+            <BulkImportDialog
+              open={bulkImportOpen}
+              onOpenChange={(open) => {
+                if (!open) setBulkImportLoading(false)
+                setBulkImportOpen(open)
+              }}
+              loading={bulkImportLoading}
+              onLoadingChange={setBulkImportLoading}
+              groups={bulkImportGroups}
+              setGroups={setBulkImportGroups}
+              dropRef={bulkImportDropRef}
+              addFiles={addBulkImportFiles}
+              removeFile={removeBulkImportFile}
+              moveFileToGroup={moveFileToGroup}
+              setGroupName={setBulkImportGroupName}
+            />
+          </>
+        ) : null}
+      </>
+    )
   }
 
   return (

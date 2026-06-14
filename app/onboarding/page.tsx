@@ -2,9 +2,13 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
+import { Suspense } from 'react'
 import { OnboardingWizard } from './onboarding-wizard'
+import { isHubSpotConfigured } from '@/lib/crm/hubspot/config'
 
-type Props = { searchParams: Promise<{ invite?: string }> }
+type Props = {
+  searchParams: Promise<{ invite?: string; crm_connected?: string; crm_provider?: string }>
+}
 
 export default async function OnboardingPage({ searchParams }: Props) {
   const supabase = await createServerSupabaseClient()
@@ -35,15 +39,26 @@ export default async function OnboardingPage({ searchParams }: Props) {
     }
   }
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .maybeSingle()
+
   const meta = (user.user_metadata ?? {}) as { full_name?: string }
   const initialFullName = typeof meta.full_name === 'string' ? meta.full_name.trim() : ''
 
   return (
-    <OnboardingWizard
-      inviteToken={inviteToken}
-      inviteOrganizationName={inviteOrganizationName}
-      inviteRole={inviteRole}
-      initialFullName={initialFullName}
-    />
+    <Suspense fallback={<div className="min-h-screen animate-pulse bg-zinc-100/50" />}>
+      <OnboardingWizard
+        inviteToken={inviteToken}
+        inviteOrganizationName={inviteOrganizationName}
+        inviteRole={inviteRole}
+        initialFullName={initialFullName}
+        userEmail={user.email ?? ''}
+        hubspotConfigured={isHubSpotConfigured()}
+        hasOrganization={Boolean(profile?.organization_id)}
+      />
+    </Suspense>
   )
 }

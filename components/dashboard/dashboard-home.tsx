@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { CheckCircle2, Circle, HelpCircle, X } from 'lucide-react'
 
 import { CommandCenter } from '@/components/dashboard/command-center'
@@ -67,8 +68,15 @@ export function DashboardHome({
   userRegisteredAt,
   progress,
 }: DashboardHomeProps) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
   const [dismissed, setDismissed] = useState(false)
   const [helpExpanded, setHelpExpanded] = useState(false)
+  const [welcomeDismissed, setWelcomeDismissed] = useState(false)
+
+  const welcomeFromWizard = searchParams.get('welcome') === '1' && !welcomeDismissed
 
   useEffect(() => {
     try {
@@ -85,11 +93,26 @@ export function DashboardHome({
     [userRegisteredAt]
   )
 
-  const showFullChecklist = isBrandNew && !dismissed && withinThreeDays
-  const showFloatingHelp = isBrandNew && dismissed && withinThreeDays
+  const showFullChecklist =
+    isBrandNew && withinThreeDays && (!dismissed || welcomeFromWizard)
+  const showFloatingHelp = isBrandNew && dismissed && withinThreeDays && !welcomeFromWizard
   const showCommandCenter = !showFullChecklist
 
+  function cleanWelcomeParam() {
+    if (searchParams.get('welcome') !== '1') return
+    const params = new URLSearchParams(searchParams.toString())
+    params.delete('welcome')
+    const query = params.toString()
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
+  }
+
   function dismissChecklist() {
+    if (welcomeFromWizard) {
+      setWelcomeDismissed(true)
+      cleanWelcomeParam()
+      return
+    }
+
     setDismissed(true)
     setHelpExpanded(false)
     try {

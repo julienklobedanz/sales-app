@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useLayoutEffect, useTransition } from 'react'
+import { useState, useMemo, useLayoutEffect, useTransition, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
@@ -84,6 +84,8 @@ import {
 } from '@/lib/accounts/accounts-list-view-store'
 import { type CompanyEntityKind, type NdaDisplayStatus, partnerCategoryLabel } from '@/lib/accounts/company-entity'
 import { NdaStatusBadge } from './components/nda-status-badge'
+import { useCrmOAuthCallback } from '@/hooks/use-crm-oauth-callback'
+import { getHubSpotConnectHref } from '@/lib/crm/hubspot/oauth-return'
 import { toast } from 'sonner'
 
 export type CompanyCard = {
@@ -145,40 +147,13 @@ export function CompaniesGrid({
   const { isAdmin, isAccountManager } = useRole()
   const canManage = isAdmin || isAccountManager
 
-  useLayoutEffect(() => {
-    const connected = searchParams.get('crm_connected')
-    const provider = searchParams.get('crm_provider')
-    const shouldImport = searchParams.get('crm_import') === '1'
+  const openCrmImport = useCallback(() => setCrmImportOpen(true), [])
 
-    if (shouldImport && canConnectCrm && hubspotConnected) {
-      setCrmImportOpen(true)
-      const params = new URLSearchParams(searchParams.toString())
-      params.delete('crm_import')
-      const query = params.toString()
-      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
-    }
-
-    if (connected === 'success' && provider === 'hubspot') {
-      toast.success('HubSpot erfolgreich verbunden.')
-      if (shouldImport && canConnectCrm) {
-        setCrmImportOpen(true)
-      }
-      const params = new URLSearchParams(searchParams.toString())
-      params.delete('crm_connected')
-      params.delete('crm_provider')
-      params.delete('crm_import')
-      const query = params.toString()
-      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
-    } else if (connected === 'error' && provider === 'hubspot') {
-      toast.error('HubSpot-Verbindung fehlgeschlagen.')
-      const params = new URLSearchParams(searchParams.toString())
-      params.delete('crm_connected')
-      params.delete('crm_provider')
-      params.delete('crm_import')
-      const query = params.toString()
-      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
-    }
-  }, [searchParams, pathname, router, canConnectCrm, hubspotConnected])
+  useCrmOAuthCallback({
+    canConnectCrm,
+    hubspotConnected,
+    onOpenImport: openCrmImport,
+  })
 
   useLayoutEffect(() => {
     syncAccountsListViewFromUrl(parseAccountsListView(searchParams))
@@ -357,13 +332,13 @@ export function CompaniesGrid({
           hubspotConnected={hubspotConnected}
           canConnectCrm={canConnectCrm}
           onConnectHubSpot={() => {
-            window.location.href = '/api/integrations/hubspot/connect'
+            window.location.href = getHubSpotConnectHref('accounts')
           }}
           onHubSpotClick={() => {
             if (hubspotConnected) {
               setCrmImportOpen(true)
             } else {
-              window.location.href = '/api/integrations/hubspot/connect'
+              window.location.href = getHubSpotConnectHref('accounts')
             }
           }}
         />

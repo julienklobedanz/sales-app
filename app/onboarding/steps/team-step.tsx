@@ -1,18 +1,25 @@
-"use client"
+'use client'
 
-import * as React from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { COPY } from "@/lib/copy"
+import * as React from 'react'
 
-export type InviteRole = "sales" | "account_manager" | "admin"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { ONBOARDING_MAX_TEAM_INVITES } from '../onboarding-steps'
+
+export type InviteRole = 'sales' | 'admin'
 
 export type TeamInviteRow = {
   email: string
   role: InviteRole
 }
+
+const fieldClass =
+  'w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-sm text-gray-900 shadow-sm transition-all focus:border-transparent focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600'
 
 export function TeamStep({
   invites,
@@ -30,74 +37,70 @@ export function TeamStep({
   disabled?: boolean
 }) {
   return (
-    <div className="space-y-6">
-      <div className="space-y-1">
-        <div className="text-lg font-semibold tracking-tight">Schritt 3: Team einladen (optional)</div>
-        <div className="text-sm text-muted-foreground">
-          Lade bis zu 3 Personen per E-Mail ein. Einladungen werden per Resend verschickt (falls konfiguriert).
-        </div>
-      </div>
-
-      <div className="space-y-4">
+    <div className="flex flex-col gap-4">
+      <div className="space-y-3">
         {invites.map((row, idx) => (
-          <div key={idx} className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            <div className="md:col-span-2 space-y-2">
-              <Label htmlFor={`invite_email_${idx}`}>E-Mail</Label>
-              <Input
-                id={`invite_email_${idx}`}
-                value={row.email}
-                onChange={(e) => {
-                  const next = invites.slice()
-                  next[idx] = { ...row, email: e.target.value }
-                  onChange(next)
-                }}
-                placeholder="name@firma.de"
-                disabled={disabled || sending}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor={`invite_role_${idx}`}>Rolle</Label>
-              <Select
-                value={row.role}
-                onValueChange={(v) => {
-                  const next = invites.slice()
-                  next[idx] = { ...row, role: v as InviteRole }
-                  onChange(next)
-                }}
-                disabled={disabled || sending}
-              >
-                <SelectTrigger id={`invite_role_${idx}`} className="w-full">
-                  <SelectValue placeholder="Bitte auswählen…" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="account_manager">{COPY.roles.accountManager}</SelectItem>
-                  <SelectItem value="sales">Sales</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div key={idx} className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_120px]">
+            <input
+              id={`invite_email_${idx}`}
+              value={row.email}
+              onChange={(e) => {
+                const next = invites.slice()
+                next[idx] = { ...row, email: e.target.value }
+                onChange(next)
+              }}
+              placeholder="name@firma.de"
+              disabled={disabled || sending}
+              type="email"
+              className={fieldClass}
+            />
+            <Select
+              value={row.role}
+              onValueChange={(v) => {
+                const next = invites.slice()
+                next[idx] = { ...row, role: v as InviteRole }
+                onChange(next)
+              }}
+              disabled={disabled || sending}
+            >
+              <SelectTrigger className={fieldClass}>
+                <SelectValue placeholder="Rolle" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="sales">Sales</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         ))}
 
-        <Button
+        <button
           type="button"
-          variant="outline"
-          disabled={disabled || sending || invites.length >= 3}
-          onClick={() => onChange([...invites, { email: "", role: "account_manager" }])}
+          disabled={disabled || sending || invites.length >= ONBOARDING_MAX_TEAM_INVITES}
+          onClick={() => onChange([...invites, { email: '', role: 'sales' }])}
+          className="text-sm font-medium text-gray-500 transition-colors hover:text-gray-800 disabled:opacity-40"
         >
-          + Weitere
-        </Button>
+          + Weitere einladen
+        </button>
       </div>
 
-      <div className="flex justify-between gap-2">
-        <Button type="button" variant="ghost" onClick={onSkip} disabled={disabled || sending}>
-          Überspringen → Dashboard
-        </Button>
-        <Button type="button" onClick={onFinish} disabled={disabled || sending}>
-          {sending ? "Einladungen senden…" : "Einladungen senden"}
-        </Button>
-      </div>
+      <button
+        type="button"
+        onClick={onFinish}
+        disabled={disabled || sending}
+        className="flex w-full items-center justify-center rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-md transition-all hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {sending ? 'Einladungen senden…' : 'Onboarding abschließen'}
+      </button>
+
+      <button
+        type="button"
+        onClick={onSkip}
+        disabled={disabled || sending}
+        className="text-center text-sm text-gray-400 transition-colors hover:text-gray-600 disabled:opacity-40"
+      >
+        Diesen Schritt überspringen
+      </button>
     </div>
   )
 }
-

@@ -47,7 +47,7 @@ SUPABASE_SERVICE_ROLE_KEY=...
 | `HUBSPOT_CLIENT_ID` | OAuth Client ID aus der HubSpot-App |
 | `HUBSPOT_CLIENT_SECRET` | OAuth Client Secret (nur Server) |
 | `NEXT_PUBLIC_APP_URL` | Basis-URL für Redirect-URI und Callback (lokal z. B. `http://localhost:3000`, Prod eure Domain) |
-| `SUPABASE_SERVICE_ROLE_KEY` | Tokens werden serverseitig über Service Role geschrieben/gelesen — **nicht** ans Frontend |
+| `SUPABASE_SERVICE_ROLE_KEY` | Tokens werden serverseitig über Service Role geschrieben/gelesen — **Pflicht für CRM-Sync**, nicht nur optional |
 
 Kopie-Vorlage: siehe `.env.example` (Abschnitt „HubSpot CRM Sync“).
 
@@ -85,7 +85,9 @@ Die Redirect-URI muss **bytegenau** mit `NEXT_PUBLIC_APP_URL` + `/api/integratio
 |---|--------|-----------|
 | 1 | Als **Admin** einloggen | Sales / Account Manager: kein Connect, API → 403 |
 | 2 | **Settings → Integrationen → HubSpot → Verbindung einrichten** | Redirect zu HubSpot OAuth |
-| 2b | Alternativ: **Accounts-Empty-State** → HubSpot-Button | Gleicher OAuth-Flow |
+| 2b | Alternativ: **Accounts-Empty-State** → HubSpot-Button | Gleicher OAuth-Flow; Rückkehr zu `/dashboard/accounts` |
+| 2c | Alternativ: **Deals-Empty-State** → HubSpot-Button | OAuth-Flow; Rückkehr zu `/dashboard/deals` |
+| 2d | Alternativ: **Settings → Integrationen → HubSpot** | OAuth-Flow; Rückkehr zu `/dashboard/settings?tab=integrations` |
 | 3 | OAuth abschließen | Redirect zu `/dashboard/accounts?crm_connected=success&crm_import=1` |
 | 4 | **Import-Dialog** öffnet sich | Liste: Accounts mit offenen Opportunities |
 | 5 | Accounts auswählen → **Importieren** | Toast mit Anzahl; Seite aktualisiert |
@@ -100,8 +102,11 @@ http://localhost:3000/dashboard/accounts?previewOnboarding=1
 
 **Manueller Import** (nach bereits erfolgter Verbindung):
 
-- Settings → HubSpot → „Accounts importieren“, oder  
-- `/dashboard/accounts?crm_import=1`
+- Settings → HubSpot → „Accounts importieren“ (öffnet Import-Dialog in Settings), oder  
+- `/dashboard/accounts?crm_import=1`, oder  
+- `/dashboard/deals?crm_import=1`
+
+**OAuth-Rückkehr (`returnTo`):** Connect-URL akzeptiert `?returnTo=accounts|deals|settings` (Standard: `accounts`).
 
 **Verbindung trennen:** Settings → HubSpot → „Verbindung trennen“
 

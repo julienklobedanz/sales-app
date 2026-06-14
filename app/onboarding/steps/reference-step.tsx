@@ -29,15 +29,7 @@ export function ReferenceStep({
   const canContinue = Boolean(preview) && !busy
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-1">
-        <div className="text-lg font-semibold tracking-tight">Schritt 2: Erste Referenz</div>
-        <div className="text-sm text-muted-foreground">
-          Optional: PDF/DOCX/PPTX hochladen. Die KI extrahiert die Felder – mit &quot;Weiter&quot; wird die Referenz
-          wie unter Evidence angelegt und das Dokument gespeichert.
-        </div>
-      </div>
-
+    <div className="space-y-4">
       <div
         className={cn(
           "rounded-lg border-2 border-dashed p-6 transition-colors",

@@ -1,5 +1,6 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { Suspense } from 'react'
 import { ROUTES } from '@/lib/routes'
 import { DashboardHome } from '@/components/dashboard/dashboard-home'
 
@@ -86,16 +87,18 @@ export default async function DashboardPage() {
   const isBrandNew = accountCount === 0 && referenceCount === 0
 
   return (
-    <DashboardHome
-      greetingName={profile.full_name as string | null}
-      isBrandNew={isBrandNew}
-      userRegisteredAt={user.created_at}
-      progress={{
-        hasAccounts: accountCount > 0,
-        hasReferences: referenceCount > 0,
-        hasTeamInvites: memberCount > 1 || pendingInviteCount > 0,
-        hasMarketSignals: signalCount > 0 || favoriteAccountCount > 0,
-      }}
-    />
+    <Suspense fallback={<div className="mx-auto mt-12 h-64 max-w-xl animate-pulse rounded-2xl bg-muted/40" />}>
+      <DashboardHome
+        greetingName={profile.full_name as string | null}
+        isBrandNew={isBrandNew}
+        userRegisteredAt={user.created_at}
+        progress={{
+          hasAccounts: accountCount > 0,
+          hasReferences: referenceCount > 0,
+          hasTeamInvites: memberCount > 1 || pendingInviteCount > 0,
+          hasMarketSignals: signalCount > 0 || favoriteAccountCount > 0,
+        }}
+      />
+    </Suspense>
   )
 }

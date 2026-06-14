@@ -2,11 +2,14 @@
 
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
 
+import { CrmImportPreviewDialog } from '@/app/dashboard/accounts/components/crm-import-preview-dialog'
 import { Button } from '@/components/ui/button'
 import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useCrmOAuthCallback } from '@/hooks/use-crm-oauth-callback'
+import { getHubSpotConnectHref } from '@/lib/crm/hubspot/oauth-return'
 import { AppIcon } from '@/lib/icons'
 import { PlugSocketIcon, Tick01Icon } from '@hugeicons/core-free-icons'
 
@@ -29,6 +32,15 @@ export function HubSpotIntegrationCard({
 }: HubSpotIntegrationCardProps) {
   const router = useRouter()
   const [pending, setPending] = useState(false)
+  const [crmImportOpen, setCrmImportOpen] = useState(false)
+
+  const openCrmImport = useCallback(() => setCrmImportOpen(true), [])
+
+  useCrmOAuthCallback({
+    canConnectCrm: canManage,
+    hubspotConnected: connected,
+    onOpenImport: openCrmImport,
+  })
 
   async function handleDisconnect() {
     setPending(true)
@@ -102,7 +114,7 @@ export function HubSpotIntegrationCard({
                 size="sm"
                 className="w-full justify-center"
                 disabled={pending}
-                onClick={() => router.push('/dashboard/accounts?crm_import=1')}
+                onClick={() => setCrmImportOpen(true)}
               >
                 Accounts importieren
               </Button>
@@ -119,13 +131,17 @@ export function HubSpotIntegrationCard({
             </div>
           ) : (
             <Button type="button" variant="outline" size="sm" className="w-full justify-center" asChild>
-              <a href="/api/integrations/hubspot/connect">Verbindung einrichten</a>
+              <a href={getHubSpotConnectHref('settings')}>Verbindung einrichten</a>
             </Button>
           )
         ) : !canManage ? (
           <p className="text-xs text-slate-500">Nur Administratoren können CRM-Verbindungen verwalten.</p>
         ) : null}
       </CardContent>
+
+      {canManage && connected ? (
+        <CrmImportPreviewDialog open={crmImportOpen} onOpenChange={setCrmImportOpen} />
+      ) : null}
     </div>
   )
 }

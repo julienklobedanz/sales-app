@@ -4,6 +4,8 @@
  */
 export const ROUTES = {
   home: '/dashboard',
+  /** Dashboard mit erzwungener Erste-Schritte-Checkliste (nach Onboarding-Wizard). */
+  homeWelcome: '/dashboard?welcome=1',
   login: '/login',
   register: '/register',
   forgotPassword: '/forgot-password',

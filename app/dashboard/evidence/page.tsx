@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers'
+import { Suspense } from 'react'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
@@ -87,17 +88,19 @@ export default async function EvidenceHubPage() {
   const complianceDocuments = complianceListed.success ? complianceListed.rows : []
 
   return (
-    <DashboardOverview
-      references={references}
-      totalCount={dashboard.totalCount}
-      deletedCount={dashboard.deletedCount}
-      profile={{ full_name: profile.full_name, role: effectiveRole }}
-      companies={companiesResult.data ?? []}
-      contacts={contactsResult.data ?? []}
-      externalContacts={externalContactsResult.data ?? []}
-      orgDateDisplayFormat={orgDateDisplayFormat}
-      complianceDocuments={complianceDocuments}
-    />
+    <Suspense fallback={<div className="min-h-[70vh] animate-pulse rounded-xl bg-muted/40" />}>
+      <DashboardOverview
+        references={references}
+        totalCount={dashboard.totalCount}
+        deletedCount={dashboard.deletedCount}
+        profile={{ full_name: profile.full_name, role: effectiveRole }}
+        companies={companiesResult.data ?? []}
+        contacts={contactsResult.data ?? []}
+        externalContacts={externalContactsResult.data ?? []}
+        orgDateDisplayFormat={orgDateDisplayFormat}
+        complianceDocuments={complianceDocuments}
+      />
+    </Suspense>
   )
 }
 

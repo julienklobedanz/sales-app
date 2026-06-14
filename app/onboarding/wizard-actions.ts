@@ -79,11 +79,13 @@ export async function finalizeWorkspaceAndProfile(params: {
       ? params.role
       : null
 
+  let finalRole: 'sales' | 'account_manager' | 'admin'
   if (!joinedViaInvite && !chosenRole) {
-    return { success: false, error: 'Bitte deine Rolle auswählen.' }
+    finalRole = 'admin'
+  } else {
+    finalRole = joinedViaInvite ? inviteRole : chosenRole!
   }
 
-  const finalRole = joinedViaInvite ? inviteRole : chosenRole!
   const nameTrim = params.fullName.trim()
   if (!nameTrim) {
     return { success: false, error: 'Bitte deinen vollständigen Namen eingeben.' }
@@ -251,7 +253,7 @@ export async function sendTeamInvites(
       role: i.role === 'admin' ? 'admin' : 'sales',
     }))
     .filter((i) => i.email.length > 0)
-    .slice(0, 3)
+    .slice(0, 10)
 
   for (const inv of unique) {
     const res = await inviteByEmail(inv.email, inv.role)

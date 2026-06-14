@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ToolbarSearchField } from '@/components/ui/toolbar-search-field'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -30,6 +30,8 @@ import { TableBulkActionsBar } from '@/components/table/table-bulk-actions-bar'
 import { CrmOnboardingEmptyState } from '@/app/dashboard/components/crm-onboarding-empty-state'
 import { CrmImportPreviewDialog } from '@/app/dashboard/accounts/components/crm-import-preview-dialog'
 import { useRole } from '@/hooks/useRole'
+import { useCrmOAuthCallback } from '@/hooks/use-crm-oauth-callback'
+import { getHubSpotConnectHref } from '@/lib/crm/hubspot/oauth-return'
 
 type StatusFilterValue = 'all' | DealStatus
 const DEAL_COLUMNS_STORAGE_KEY = 'refstack:deals:column-order'
@@ -78,8 +80,6 @@ export function DealsClientContent({
   canConnectCrm = false,
 }: Props) {
   const router = useRouter()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
   const { isAdmin, isAccountManager } = useRole()
   const [importing, setImporting] = useState(false)
   const xlsxInputRef = useRef<HTMLInputElement>(null)
@@ -100,40 +100,13 @@ export function DealsClientContent({
     'sales_manager_name',
   ])
 
-  useLayoutEffect(() => {
-    const connected = searchParams.get('crm_connected')
-    const provider = searchParams.get('crm_provider')
-    const shouldImport = searchParams.get('crm_import') === '1'
+  const openCrmImport = useCallback(() => setCrmImportOpen(true), [])
 
-    if (shouldImport && canConnectCrm && hubspotConnected) {
-      setCrmImportOpen(true)
-      const params = new URLSearchParams(searchParams.toString())
-      params.delete('crm_import')
-      const queryString = params.toString()
-      router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false })
-    }
-
-    if (connected === 'success' && provider === 'hubspot') {
-      toast.success('HubSpot erfolgreich verbunden.')
-      if (shouldImport && canConnectCrm) {
-        setCrmImportOpen(true)
-      }
-      const params = new URLSearchParams(searchParams.toString())
-      params.delete('crm_connected')
-      params.delete('crm_provider')
-      params.delete('crm_import')
-      const queryString = params.toString()
-      router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false })
-    } else if (connected === 'error' && provider === 'hubspot') {
-      toast.error('HubSpot-Verbindung fehlgeschlagen.')
-      const params = new URLSearchParams(searchParams.toString())
-      params.delete('crm_connected')
-      params.delete('crm_provider')
-      params.delete('crm_import')
-      const queryString = params.toString()
-      router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false })
-    }
-  }, [searchParams, pathname, router, canConnectCrm, hubspotConnected])
+  useCrmOAuthCallback({
+    canConnectCrm,
+    hubspotConnected,
+    onOpenImport: openCrmImport,
+  })
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -419,7 +392,7 @@ export function DealsClientContent({
             if (hubspotConnected) {
               setCrmImportOpen(true)
             } else {
-              window.location.href = '/api/integrations/hubspot/connect'
+              window.location.href = getHubSpotConnectHref('deals')
             }
           }}
         />

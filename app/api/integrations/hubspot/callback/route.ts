@@ -3,28 +3,34 @@ import { NextResponse } from 'next/server'
 
 import { getAppOrigin } from '@/lib/env/app-origin'
 import { upsertOrganizationCrmConnection } from '@/lib/crm/connections'
-import { ROUTES } from '@/lib/routes'
 import { requireCrmAdmin } from '@/lib/crm/require-crm-admin'
 import {
   exchangeHubSpotAuthorizationCode,
   HUBSPOT_OAUTH_STATE_COOKIE,
 } from '@/lib/crm/hubspot/oauth'
+import {
+  buildHubSpotOAuthCallbackPath,
+  HUBSPOT_OAUTH_RETURN_COOKIE,
+  parseHubSpotOAuthReturnTo,
+} from '@/lib/crm/hubspot/oauth-return'
 
-function redirectWithStatus(status: 'success' | 'error') {
-  const url = new URL(ROUTES.accounts, getAppOrigin())
-  url.searchParams.set('crm_connected', status)
-  url.searchParams.set('crm_provider', 'hubspot')
-  if (status === 'success') {
-    url.searchParams.set('crm_import', '1')
-  }
-  return NextResponse.redirect(url.toString())
+function redirectWithStatus(status: 'success' | 'error', returnTo: ReturnType<typeof parseHubSpotOAuthReturnTo>) {
+  return NextResponse.redirect(
+    `${getAppOrigin()}${buildHubSpotOAuthCallbackPath(returnTo, status)}`
+  )
 }
 
 export async function GET(request: Request) {
+  const cookieStore = await cookies()
+  const returnTo = parseHubSpotOAuthReturnTo(
+    cookieStore.get(HUBSPOT_OAUTH_RETURN_COOKIE)?.value
+  )
+  cookieStore.set(HUBSPOT_OAUTH_RETURN_COOKIE, '', { path: '/', maxAge: 0 })
+
   try {
     const guard = await requireCrmAdmin()
     if (!guard.ok) {
-      return redirectWithStatus('error')
+      return redirectWithStatus('error', returnTo)
     }
 
     const url = new URL(request.url)
@@ -33,21 +39,20 @@ export async function GET(request: Request) {
     const oauthError = url.searchParams.get('error')?.trim()
 
     if (oauthError || !code || !state) {
-      return redirectWithStatus('error')
+      return redirectWithStatus('error', returnTo)
     }
 
-    const cookieStore = await cookies()
     const expectedState = cookieStore.get(HUBSPOT_OAUTH_STATE_COOKIE)?.value?.trim()
     cookieStore.set(HUBSPOT_OAUTH_STATE_COOKIE, '', { path: '/', maxAge: 0 })
 
     if (!expectedState || expectedState !== state) {
-      return redirectWithStatus('error')
+      return redirectWithStatus('error', returnTo)
     }
 
     const tokens = await exchangeHubSpotAuthorizationCode(code)
     if (!tokens.success) {
       console.error('[hubspot/callback] token exchange failed:', tokens.error)
-      return redirectWithStatus('error')
+      return redirectWithStatus('error', returnTo)
     }
 
     const saved = await upsertOrganizationCrmConnection(guard.ctx.supabase, {
@@ -62,12 +67,12 @@ export async function GET(request: Request) {
 
     if (!saved.success) {
       console.error('[hubspot/callback] save failed:', saved.error)
-      return redirectWithStatus('error')
+      return redirectWithStatus('error', returnTo)
     }
 
-    return redirectWithStatus('success')
+    return redirectWithStatus('success', returnTo)
   } catch (error) {
     console.error('[hubspot/callback]', error)
-    return redirectWithStatus('error')
+    return redirectWithStatus('error', returnTo)
   }
 }
