@@ -10,7 +10,7 @@ import {
 } from './components/onboarding-shell'
 import { WorkspaceStep, type WorkspaceStepValue } from './steps/workspace-step'
 import { CrmConnectStep } from './steps/crm-connect-step'
-import { TeamStep, type TeamInviteRow } from './steps/team-step'
+import { TeamStep, type TeamInviteRow, createDefaultInviteRows, normalizeTeamInvitesOnBack } from './steps/team-step'
 import { finalizeWorkspaceAndProfile, sendTeamInvites } from './wizard-actions'
 import {
   ONBOARDING_BRAND_META,
@@ -63,7 +63,7 @@ export function OnboardingWizard({
     organizationName: inviteOrganizationName ?? guessedCompany,
   })
 
-  const [invites, setInvites] = React.useState<TeamInviteRow[]>([{ email: '', role: 'sales' }])
+  const [invites, setInvites] = React.useState<TeamInviteRow[]>(() => createDefaultInviteRows())
   const [sending, setSending] = React.useState(false)
   const [savingWorkspace, setSavingWorkspace] = React.useState(false)
 
@@ -129,6 +129,11 @@ export function OnboardingWizard({
     if (nextStep < 0 || nextStep >= ONBOARDING_STEP_COUNT) return
     if (nextStep > 0 && !workspaceCompleted) return
     if (nextStep === step) return
+
+    if (step === 2 && nextStep < 2) {
+      setInvites((current) => normalizeTeamInvitesOnBack(current))
+    }
+
     runTransition('forward', nextStep)
   }
 

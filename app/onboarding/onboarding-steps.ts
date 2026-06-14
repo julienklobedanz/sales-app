@@ -41,3 +41,4 @@ export const ONBOARDING_BRAND_META = [
 ] as const
 
 export const ONBOARDING_MAX_TEAM_INVITES = 10
+export const ONBOARDING_DEFAULT_TEAM_INVITES = 3
