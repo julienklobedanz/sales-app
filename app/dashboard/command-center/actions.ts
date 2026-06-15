@@ -6,6 +6,8 @@ import {
   type CommandSearchGroups,
 } from '@/lib/command-center/global-search'
 import type { HomepageSemanticSearchResult } from '@/lib/command-center/homepage-semantic-types'
+import type { HomepageUniversalSearchResult } from '@/lib/command-center/homepage-universal-types'
+import { searchHomepageBuckets } from '@/lib/command-center/search-homepage-buckets'
 import {
   searchHomepageReferencesSemantic,
   searchReferencesSemanticLegacy,
@@ -72,6 +74,48 @@ export async function searchHomepageSemanticAction(
   }
 
   return { success: true, query: q, hits: semantic.hits }
+}
+
+/**
+ * Homepage: Universal-Suche (semantische Referenzen + Keyword-Buckets).
+ */
+export async function searchHomepageUniversalAction(
+  rawQuery: string
+): Promise<HomepageUniversalSearchResult> {
+  const q = rawQuery.trim()
+  if (!q) {
+    return { success: false, query: '', error: 'Bitte eine Suchanfrage eingeben.' }
+  }
+
+  const auth = await loadSearchAuth()
+  if (!auth) {
+    return { success: false, query: q, error: 'Nicht angemeldet oder keine Organisation.' }
+  }
+
+  const apiKey = process.env.OPENAI_API_KEY
+
+  const [semanticResult, groups] = await Promise.all([
+    apiKey
+      ? searchHomepageReferencesSemantic({
+          supabase: auth.supabase,
+          apiKey,
+          query: q,
+          organizationId: auth.orgId,
+          salesVisibleOnly: auth.salesVisibleOnly,
+        })
+      : Promise.resolve({ ok: false as const, error: 'OPENAI_API_KEY fehlt' }),
+    searchHomepageBuckets(auth.supabase, q),
+  ])
+
+  const referenceHits = semanticResult.ok ? semanticResult.hits : []
+  const semanticWarning =
+    !apiKey
+      ? 'Semantische Referenzsuche ist deaktiviert (OPENAI_API_KEY fehlt).'
+      : !semanticResult.ok
+        ? semanticResult.error
+        : undefined
+
+  return { success: true, query: q, referenceHits, groups, semanticWarning }
 }
 
 /**

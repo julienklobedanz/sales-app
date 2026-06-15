@@ -69,6 +69,15 @@ export type CommandSearchResult =
       validUntilLine: string
       hasFile: boolean
     }
+  | {
+      kind: 'reference_document'
+      id: string
+      fileName: string
+      referenceId: string
+      referenceTitle: string
+      companyName: string | null
+      hasFile: boolean
+    }
 
 export type CommandSearchGroups = {
   accounts: CommandSearchResult[]
@@ -104,14 +113,14 @@ export function sanitizeIlikeUserInput(q: string): string {
   return q.trim().replace(/[%_\\]/g, '')
 }
 
-function buildIlikeOrFilter(columns: string[], raw: string): string | null {
+export function buildIlikeOrFilter(columns: string[], raw: string): string | null {
   const safe = sanitizeIlikeUserInput(raw)
   if (!safe) return null
   const pat = `%${safe}%`
   return columns.map((col) => `${col}.ilike.${pat}`).join(',')
 }
 
-function companyFromJoin(raw: unknown): { name: string; logoUrl: string | null } | null {
+export function companyFromJoin(raw: unknown): { name: string; logoUrl: string | null } | null {
   const c = Array.isArray(raw) ? raw[0] : raw
   if (!c || typeof c !== 'object') return null
   const name = String((c as { name?: string }).name ?? '').trim()
@@ -447,7 +456,7 @@ type NdaSearchRow = {
   companies: unknown
 }
 
-async function fetchNdaSearchRows(
+export async function fetchNdaSearchRows(
   supabase: SupabaseClient,
   ndaOr: string | null,
   likePat: string

@@ -19,6 +19,8 @@ export function hrefForCommandSearchResult(result: CommandSearchResult): string 
       return ROUTES.home
     case 'certificate':
       return ROUTES.settings
+    case 'reference_document':
+      return ROUTES.evidence.detail(result.referenceId)
     default:
       return ROUTES.home
   }

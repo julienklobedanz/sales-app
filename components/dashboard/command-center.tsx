@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import { Building2, FileText, Loader2, Search } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { searchHomepageSemanticAction } from '@/app/dashboard/command-center/actions'
+import { searchHomepageUniversalAction } from '@/app/dashboard/command-center/actions'
+import { CommandCenterHomepageResults } from '@/components/dashboard/command-center-homepage-results'
 import { useRole } from '@/hooks/useRole'
 import {
   commandCenterSuggestionsForRole,
@@ -17,9 +18,12 @@ import {
   type CommandRecentKind,
 } from '@/lib/command-center/recents'
 import { firstNameFromFullName, relativeTimeDe } from '@/lib/command-center/format'
-import type { HomepageSemanticReferenceHit } from '@/lib/command-center/homepage-semantic-types'
 import { hrefForGlobalSearchResult } from '@/lib/command-center/global-search'
-import { CommandCenterReferenceResults } from '@/components/dashboard/command-center-reference-results'
+import {
+  emptyHomepageSearchGroups,
+  type HomepageSearchGroups,
+} from '@/lib/command-center/homepage-universal-types'
+import type { HomepageSemanticReferenceHit } from '@/lib/command-center/homepage-semantic-types'
 import { Button } from '@/components/ui/button'
 
 function recentTitle(item: CommandRecentItem) {
@@ -38,6 +42,11 @@ type Props = {
   greetingName: string | null
 }
 
+type SearchState = {
+  referenceHits: HomepageSemanticReferenceHit[]
+  groups: HomepageSearchGroups
+} | null
+
 export function CommandCenter({ greetingName }: Props) {
   const router = useRouter()
   const { role } = useRole()
@@ -46,7 +55,7 @@ export function CommandCenter({ greetingName }: Props) {
   const [draft, setDraft] = useState('')
   const [submittedQuery, setSubmittedQuery] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [hits, setHits] = useState<HomepageSemanticReferenceHit[] | null>(null)
+  const [searchState, setSearchState] = useState<SearchState>(null)
   const [recents, setRecents] = useState<CommandRecentItem[]>(() => loadCommandRecents())
   const [nowMs] = useState(() => Date.now())
 
@@ -74,16 +83,19 @@ export function CommandCenter({ greetingName }: Props) {
     setDraft(q)
     setSubmittedQuery(q)
     setLoading(true)
-    setHits(null)
+    setSearchState(null)
 
     try {
-      const result = await searchHomepageSemanticAction(q)
+      const result = await searchHomepageUniversalAction(q)
       if (!result.success) {
         toast.error(result.error)
-        setHits([])
+        setSearchState({ referenceHits: [], groups: emptyHomepageSearchGroups() })
         return
       }
-      setHits(result.hits)
+      if (result.semanticWarning) {
+        toast.message(result.semanticWarning)
+      }
+      setSearchState({ referenceHits: result.referenceHits, groups: result.groups })
     } finally {
       setLoading(false)
     }
@@ -120,11 +132,11 @@ export function CommandCenter({ greetingName }: Props) {
                 type="search"
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
-                placeholder="Referenzen in eigenen Worten suchen …"
+                placeholder="RefStack durchsuchen …"
                 className="w-full min-w-0 bg-transparent text-sm leading-5 text-slate-800 outline-none placeholder:text-slate-400"
                 autoComplete="off"
                 spellCheck={false}
-                aria-label="Semantische Referenzsuche"
+                aria-label="Universal-Suche"
                 enterKeyHint="search"
               />
             </div>
@@ -172,10 +184,14 @@ export function CommandCenter({ greetingName }: Props) {
           {loading ? (
             <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500">
               <Loader2 className="size-5 animate-spin" aria-hidden />
-              Semantische Suche läuft …
+              Suche läuft …
             </div>
-          ) : hits ? (
-            <CommandCenterReferenceResults query={submittedQuery!} hits={hits} />
+          ) : searchState ? (
+            <CommandCenterHomepageResults
+              query={submittedQuery!}
+              referenceHits={searchState.referenceHits}
+              groups={searchState.groups}
+            />
           ) : null}
         </div>
       ) : null}

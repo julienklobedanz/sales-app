@@ -1,7 +1,7 @@
 'use client'
 
 import { Linkedin01Icon } from '@hugeicons/core-free-icons'
-import { Folder, Loader2, ShieldCheck, TrendingUp, Trophy } from 'lucide-react'
+import { FileText, Folder, Loader2, ShieldCheck, TrendingUp, Trophy } from 'lucide-react'
 
 import { ComplianceDocumentTypeIcon } from '@/app/dashboard/overview/compliance-document-type-icon'
 import { AppIcon } from '@/lib/icons'
@@ -88,7 +88,7 @@ export function CommandCenterSearchResults({ query, loading, groups, onSelect }:
   )
 }
 
-function SearchResultRow({ item }: { item: CommandSearchResult }) {
+export function SearchResultRow({ item }: { item: CommandSearchResult }) {
   switch (item.kind) {
     case 'account':
       return (
@@ -222,6 +222,24 @@ function SearchResultRow({ item }: { item: CommandSearchResult }) {
             <span className="min-w-0 truncate font-medium text-slate-900">{item.title}</span>
           </span>
           <span className="shrink-0 text-xs text-slate-500">{item.validUntilLine}</span>
+        </>
+      )
+    case 'reference_document':
+      return (
+        <>
+          <span className="flex min-w-0 items-center gap-3">
+            <ResultIconWrap>
+              <FileText className="size-4 text-sky-600" aria-hidden />
+            </ResultIconWrap>
+            <span className="min-w-0 truncate text-left">
+              <span className="font-medium text-slate-900">{item.fileName}</span>
+              <span className="text-slate-500">
+                {' '}
+                — {item.referenceTitle}
+                {item.companyName ? ` (${item.companyName})` : ''}
+              </span>
+            </span>
+          </span>
         </>
       )
     default:

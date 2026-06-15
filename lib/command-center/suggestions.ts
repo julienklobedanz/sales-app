@@ -34,6 +34,14 @@ const SALES_SUGGESTIONS: CommandCenterSuggestion[] = [
     label: '🔗 CRM & MDM',
     query: 'CRM und MDM Harmonisierung mit Datenqualität',
   },
+  {
+    label: '📜 ISO 27001 Zertifikat',
+    query: 'ISO 27001 Zertifikat',
+  },
+  {
+    label: '📰 News zu Favoriten-Accounts',
+    query: 'News',
+  },
 ]
 
 const ADMIN_SUGGESTIONS: CommandCenterSuggestion[] = [
