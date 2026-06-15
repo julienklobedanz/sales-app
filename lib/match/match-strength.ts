@@ -14,7 +14,7 @@ const BANDS: Array<{
 }> = [
   { min: 0.65, tier: 'excellent', labelShort: 'Sehr hoch', ariaLabel: 'Sehr hohe Relevanz' },
   { min: 0.55, tier: 'good', labelShort: 'Hoch', ariaLabel: 'Hohe Relevanz' },
-  { min: 0.48, tier: 'moderate', labelShort: 'Gut', ariaLabel: 'Gute Relevanz' },
+  { min: 0.42, tier: 'moderate', labelShort: 'Gut', ariaLabel: 'Gute Relevanz' },
 ]
 
 const LOW_BAND: MatchStrengthDisplay = {

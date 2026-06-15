@@ -3,6 +3,7 @@
  *
  * Standard: nur embedding IS NULL.
  * REINDEX_ALL=1: alle Referenzen neu vektorisieren (nach Embedding-Erweiterung).
+ * REINDEX_IDS=id1,id2: nur diese UUIDs neu vektorisieren.
  *
  * Voraussetzungen:
  * - SUPABASE_URL (oder NEXT_PUBLIC_SUPABASE_URL)
@@ -36,6 +37,10 @@ if (!OPENAI_API_KEY) {
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
 const REINDEX_ALL = process.env.REINDEX_ALL === '1' || process.env.REINDEX_ALL === 'true'
+const REINDEX_IDS = (process.env.REINDEX_IDS ?? '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean)
 
 type RefRow = {
   id: string
@@ -78,14 +83,21 @@ async function fetchBatch(limit: number, afterId: string | null): Promise<RefRow
     .order('id', { ascending: true })
     .limit(limit)
 
-  if (afterId) {
+  if (REINDEX_IDS.length > 0) {
+    q = q.in('id', REINDEX_IDS).is('embedding_error', null)
+    if (afterId) {
+      q = q.gt('id', afterId)
+    }
+  } else if (afterId) {
     q = q.gt('id', afterId)
   }
 
-  if (!REINDEX_ALL) {
-    q = q.is('embedding', null).is('embedding_error', null)
-  } else {
-    q = q.is('embedding_error', null)
+  if (REINDEX_IDS.length === 0) {
+    if (!REINDEX_ALL) {
+      q = q.is('embedding', null).is('embedding_error', null)
+    } else {
+      q = q.is('embedding_error', null)
+    }
   }
 
   const { data, error } = await q
@@ -123,15 +135,17 @@ const BATCH_SIZE = 100 // max pro Request (OpenAI/Spec)
 async function run() {
   let processed = 0
   console.log(
-    REINDEX_ALL
-      ? 'Backfill: REINDEX_ALL — alle Referenzen werden neu vektorisiert…'
-      : 'Backfill: Starte Verarbeitung (nur Einträge mit embedding IS NULL)…'
+    REINDEX_IDS.length > 0
+      ? `Backfill: REINDEX_IDS — ${REINDEX_IDS.length} Referenz(en) werden neu vektorisiert…`
+      : REINDEX_ALL
+        ? 'Backfill: REINDEX_ALL — alle Referenzen werden neu vektorisiert…'
+        : 'Backfill: Starte Verarbeitung (nur Einträge mit embedding IS NULL)…'
   )
 
   let reindexCursor: string | null = null
 
   while (true) {
-    const batch = await fetchBatch(BATCH_SIZE, REINDEX_ALL ? reindexCursor : null)
+    const batch = await fetchBatch(BATCH_SIZE, REINDEX_ALL || REINDEX_IDS.length > 0 ? reindexCursor : null)
     if (!batch.length) {
       console.log(
         REINDEX_ALL
@@ -141,7 +155,7 @@ async function run() {
       break
     }
 
-    if (REINDEX_ALL) {
+    if (REINDEX_ALL || REINDEX_IDS.length > 0) {
       reindexCursor = batch[batch.length - 1]?.id ?? reindexCursor
     }
 

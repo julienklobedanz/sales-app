@@ -14,7 +14,7 @@ import { rpcMatchReferences } from '@/lib/match-references-rpc'
 import { snippetFromSummary } from '@/lib/match-reference-snippet'
 import { fetchCompanyFieldsForReferenceIds } from '@/lib/references/enrich-match-hits-company'
 
-export const HOME_SEMANTIC_MATCH_THRESHOLD = 0.48
+export const HOME_SEMANTIC_MATCH_THRESHOLD = 0.42
 export const HOME_SEMANTIC_MATCH_COUNT = 12
 
 type SemanticSearchParams = {

@@ -33,9 +33,9 @@ describe('getMatchStrength', () => {
     expect(s.tier).toBe('low')
   })
 
-  it('maps high similarity to Sehr hoch', () => {
-    const s = getMatchStrength(0.68)
-    expect(s.labelShort).toBe('Sehr hoch')
-    expect(s.tier).toBe('excellent')
+  it('maps scores at homepage threshold to Gut', () => {
+    const s = getMatchStrength(0.43, { rank: 1, gapToNext: 0.18 })
+    expect(s.labelShort).toBe('Hoch')
+    expect(s.tier).toBe('good')
   })
 })
