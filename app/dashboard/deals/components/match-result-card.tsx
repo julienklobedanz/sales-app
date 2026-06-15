@@ -12,6 +12,7 @@ import { ROUTES } from '@/lib/routes'
 import { formatIndustryDisplay } from '@/lib/constants/industries'
 import { formatReferenceVolume } from '@/lib/format'
 import { MatchScoreCircle } from '@/components/match/match-score-circle'
+import { getMatchStrength } from '@/lib/match/match-strength'
 import type { MatchReferenceHit } from '@/app/dashboard/actions'
 import { createSharedPortfolio } from '@/app/dashboard/actions'
 import { addReferenceToDealWithScore } from '../actions'
@@ -24,6 +25,8 @@ export function MatchResultCard({
   dealContext,
   alreadyLinked,
   onLinked,
+  rank,
+  gapToNext,
 }: {
   hit: MatchReferenceHit
   /** Ohne Deal: keine Verknüpfung „In Deal übernehmen“. */
@@ -32,6 +35,10 @@ export function MatchResultCard({
   dealContext?: string | null
   alreadyLinked: boolean
   onLinked: () => void
+  /** 1-basierter Rang in der Ergebnisliste (für Match-Stärke). */
+  rank?: number
+  /** Abstand zum nächsten Treffer — nur für Platz 1 relevant. */
+  gapToNext?: number | null
 }) {
   const [pdfOpen, setPdfOpen] = useState(false)
   const [kiOpen, setKiOpen] = useState(false)
@@ -91,6 +98,8 @@ export function MatchResultCard({
     .filter(Boolean)
     .join(' · ')
 
+  const matchStrength = getMatchStrength(hit.similarity, { rank, gapToNext })
+
   return (
     <div className="rounded-xl border bg-card p-4 shadow-sm">
       <div className="space-y-2">
@@ -121,7 +130,7 @@ export function MatchResultCard({
               ) : null}
             </div>
           </div>
-          <MatchScoreCircle key={`${hit.id}-${hit.similarity}`} similarity01={hit.similarity} />
+          <MatchScoreCircle key={`${hit.id}-${hit.similarity}`} strength={matchStrength} />
         </div>
 
         {hit.snippet ? (

@@ -100,7 +100,7 @@ export function MatchSmartClient({ initialDeal }: { initialDeal: DealWithReferen
 
         {matches && matches.length > 0 ? (
           <div className="space-y-3">
-            {matches.map((m) => (
+            {matches.map((m, index) => (
               <MatchResultCard
                 key={m.id}
                 hit={m}
@@ -108,6 +108,12 @@ export function MatchSmartClient({ initialDeal }: { initialDeal: DealWithReferen
                 dealContext={dealContext}
                 alreadyLinked={initialDeal ? linkedIds.has(m.id) : false}
                 onLinked={afterLinked}
+                rank={index + 1}
+                gapToNext={
+                  index === 0 && matches.length > 1
+                    ? matches[0]!.similarity - matches[1]!.similarity
+                    : null
+                }
               />
             ))}
           </div>

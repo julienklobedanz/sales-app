@@ -104,7 +104,7 @@ export function DealMatchSection({ deal }: { deal: DealWithReferences }) {
 
         {matches && matches.length > 0 ? (
           <div className="space-y-3">
-            {matches.map((m) => (
+            {matches.map((m, index) => (
               <MatchResultCard
                 key={m.id}
                 hit={m}
@@ -112,6 +112,12 @@ export function DealMatchSection({ deal }: { deal: DealWithReferences }) {
                 dealContext={dealContextForKi}
                 alreadyLinked={linkedIds.has(m.id)}
                 onLinked={() => router.refresh()}
+                rank={index + 1}
+                gapToNext={
+                  index === 0 && matches.length > 1
+                    ? matches[0]!.similarity - matches[1]!.similarity
+                    : null
+                }
               />
             ))}
           </div>

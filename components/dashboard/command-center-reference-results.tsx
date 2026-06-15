@@ -36,6 +36,9 @@ export function CommandCenterReferenceResults({ query, hits }: Props) {
     )
   }
 
+  const gapToNext =
+    hits.length > 1 ? hits[0]!.similarity - hits[1]!.similarity : null
+
   return (
     <div className="space-y-4">
       <p className="text-sm text-slate-600">
@@ -43,9 +46,15 @@ export function CommandCenterReferenceResults({ query, hits }: Props) {
         {hits.length === 1 ? 'Referenz' : 'Referenzen'} für „{query}“
       </p>
       <ul className="space-y-3">
-        {hits.map((hit) => (
+        {hits.map((hit, index) => (
           <li key={hit.id}>
-            <MatchResultCard hit={toMatchHit(hit)} alreadyLinked={false} onLinked={() => {}} />
+            <MatchResultCard
+              hit={toMatchHit(hit)}
+              alreadyLinked={false}
+              onLinked={() => {}}
+              rank={index + 1}
+              gapToNext={index === 0 ? gapToNext : null}
+            />
           </li>
         ))}
       </ul>
