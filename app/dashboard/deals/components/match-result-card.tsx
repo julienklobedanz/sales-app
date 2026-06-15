@@ -11,6 +11,7 @@ import { AppIcon } from '@/lib/icons'
 import { ROUTES } from '@/lib/routes'
 import { formatIndustryDisplay } from '@/lib/constants/industries'
 import { formatReferenceVolume } from '@/lib/format'
+import { cn } from '@/lib/utils'
 import { MatchScoreCircle } from '@/components/match/match-score-circle'
 import { getMatchStrength } from '@/lib/match/match-strength'
 import type { MatchReferenceHit } from '@/app/dashboard/actions'
@@ -27,6 +28,7 @@ export function MatchResultCard({
   onLinked,
   rank,
   gapToNext,
+  variant = 'card',
 }: {
   hit: MatchReferenceHit
   /** Ohne Deal: keine Verknüpfung „In Deal übernehmen“. */
@@ -39,6 +41,8 @@ export function MatchResultCard({
   rank?: number
   /** Abstand zum nächsten Treffer — nur für Platz 1 relevant. */
   gapToNext?: number | null
+  /** `embedded`: Zeile in zusammenhängender Homepage-Gruppen-Karte. */
+  variant?: 'card' | 'embedded'
 }) {
   const [pdfOpen, setPdfOpen] = useState(false)
   const [kiOpen, setKiOpen] = useState(false)
@@ -101,7 +105,11 @@ export function MatchResultCard({
   const matchStrength = getMatchStrength(hit.similarity, { rank, gapToNext })
 
   return (
-    <div className="rounded-xl border bg-card p-4 shadow-sm">
+    <div
+      className={cn(
+        variant === 'embedded' ? 'px-4 py-2.5' : 'rounded-xl border bg-card p-4 shadow-sm'
+      )}
+    >
       <div className="space-y-2">
         <div className="flex items-start justify-between gap-4">
           <div className="flex min-w-0 flex-1 gap-3">

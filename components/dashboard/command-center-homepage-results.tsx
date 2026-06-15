@@ -47,6 +47,27 @@ function toMatchHit(hit: HomepageSemanticReferenceHit): MatchReferenceHit {
   }
 }
 
+function HomepageGroupSection({
+  label,
+  count,
+  children,
+}: {
+  label: string
+  count: number
+  children: React.ReactNode
+}) {
+  if (count === 0) return null
+
+  return (
+    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <p className={SECTION_HEADING_CLASS}>
+        {label} ({count})
+      </p>
+      {children}
+    </section>
+  )
+}
+
 function HomepageBucketSection({
   label,
   count,
@@ -61,10 +82,7 @@ function HomepageBucketSection({
   if (!items.length) return null
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <p className={SECTION_HEADING_CLASS}>
-        {label} ({count})
-      </p>
+    <HomepageGroupSection label={label} count={count}>
       <ul>
         {items.map((item) => (
           <li key={`${item.kind}:${item.id}`}>
@@ -74,7 +92,7 @@ function HomepageBucketSection({
           </li>
         ))}
       </ul>
-    </section>
+    </HomepageGroupSection>
   )
 }
 
@@ -109,14 +127,12 @@ export function CommandCenterHomepageResults({ query, referenceHits, groups }: P
       </p>
 
       {referenceHits.length > 0 ? (
-        <section className="space-y-3">
-          <p className={SECTION_HEADING_CLASS + ' rounded-t-2xl border border-slate-200'}>
-            Referenzen ({referenceHits.length})
-          </p>
-          <ul className="space-y-3">
+        <HomepageGroupSection label="Referenzen" count={referenceHits.length}>
+          <ul>
             {referenceHits.map((hit, index) => (
-              <li key={hit.id}>
+              <li key={hit.id} className="border-b border-slate-100 last:border-b-0">
                 <MatchResultCard
+                  variant="embedded"
                   hit={toMatchHit(hit)}
                   alreadyLinked={false}
                   onLinked={() => {}}
@@ -126,7 +142,7 @@ export function CommandCenterHomepageResults({ query, referenceHits, groups }: P
               </li>
             ))}
           </ul>
-        </section>
+        </HomepageGroupSection>
       ) : null}
 
       <HomepageBucketSection
