@@ -145,7 +145,39 @@ export function MatchResultCard({
           <p className="text-left text-sm text-muted-foreground line-clamp-2 whitespace-pre-wrap">{hit.snippet}</p>
         ) : null}
 
-        <div className="flex flex-wrap justify-start gap-1.5 pt-1">
+        {variant === 'embedded' ? (
+          <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 pt-1">
+            <div className="flex flex-wrap gap-1.5">
+              <Button type="button" variant="outline" size="sm" className="h-8 text-xs" onClick={() => setPdfOpen(true)}>
+                <AppIcon icon={FileText} size={14} className="mr-1" />
+                PDF exportieren
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs"
+                disabled={shareLoading}
+                onClick={() => void handleShare()}
+              >
+                {shareLoading ? (
+                  <AppIcon icon={Loader} size={14} className="mr-1 animate-spin" />
+                ) : (
+                  <AppIcon icon={LinkIcon} size={14} className="mr-1" />
+                )}
+                Link erstellen
+              </Button>
+              <Button type="button" variant="outline" size="sm" className="h-8 text-xs" onClick={() => setKiOpen(true)}>
+                <AppIcon icon={Sparkles} size={14} className="mr-1" />
+                KI-Entwurf
+              </Button>
+            </div>
+            <Button type="button" variant="secondary" size="sm" className="h-8 shrink-0 text-xs" asChild>
+              <Link href={ROUTES.evidence.detail(hit.id)}>→ Details</Link>
+            </Button>
+          </div>
+        ) : (
+          <div className="flex flex-wrap justify-start gap-1.5 pt-1">
             <Button type="button" variant="outline" size="sm" className="h-8 text-xs" onClick={() => setPdfOpen(true)}>
               <AppIcon icon={FileText} size={14} className="mr-1" />
               PDF exportieren
@@ -186,7 +218,8 @@ export function MatchResultCard({
                 {alreadyLinked ? 'Bereits im Deal' : 'In Deal übernehmen'}
               </Button>
             ) : null}
-        </div>
+          </div>
+        )}
       </div>
 
       <PdfExportDialog
