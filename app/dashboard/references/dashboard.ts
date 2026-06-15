@@ -28,6 +28,21 @@ export async function getDashboardDataImpl(onlyFavorites = false) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  if (!user) {
+    return { references: [], totalCount: 0, deletedCount: 0 }
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  const orgId = profile?.organization_id ?? null
+  if (!orgId) {
+    return { references: [], totalCount: 0, deletedCount: 0 }
+  }
+
   // Relation per FK-Constraint-Name (Supabase: Table Editor → references → Beziehungen).
   const fullSelect = `
       id,
@@ -67,6 +82,7 @@ export async function getDashboardDataImpl(onlyFavorites = false) {
   const result = await supabase
     .from('references')
     .select(fullSelect)
+    .eq('organization_id', orgId)
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
 
@@ -97,6 +113,7 @@ export async function getDashboardDataImpl(onlyFavorites = false) {
     const fallback = await supabase
       .from('references')
       .select(fullSelectNoRelations)
+      .eq('organization_id', orgId)
       .is('deleted_at', null)
       .order('created_at', { ascending: false })
     if (!fallback.error) {
@@ -110,6 +127,7 @@ export async function getDashboardDataImpl(onlyFavorites = false) {
     const withDeletedColumn = await supabase
       .from('references')
       .select(fullSelectNoRelations + ', deleted_at')
+      .eq('organization_id', orgId)
       .order('created_at', { ascending: false })
     if (!withDeletedColumn.error && withDeletedColumn.data) {
       const data = withDeletedColumn.data as unknown as Record<string, unknown>[]
@@ -123,6 +141,7 @@ export async function getDashboardDataImpl(onlyFavorites = false) {
     const noDeletedFilter = await supabase
       .from('references')
       .select(fullSelectNoRelations)
+      .eq('organization_id', orgId)
       .order('created_at', { ascending: false })
     if (!noDeletedFilter.error) {
       rows = noDeletedFilter.data
@@ -135,6 +154,7 @@ export async function getDashboardDataImpl(onlyFavorites = false) {
     const minimal = await supabase
       .from('references')
       .select(fullSelectMinimal)
+      .eq('organization_id', orgId)
       .order('created_at', { ascending: false })
     if (!minimal.error) {
       rows = minimal.data
@@ -269,6 +289,7 @@ export async function getDashboardDataImpl(onlyFavorites = false) {
   const deletedResult = await supabase
     .from('references')
     .select('id', { count: 'exact', head: true })
+    .eq('organization_id', orgId)
     .not('deleted_at', 'is', null)
   if (!deletedResult.error) {
     deletedCount = deletedResult.count ?? 0
@@ -283,6 +304,19 @@ export async function getDashboardDataImpl(onlyFavorites = false) {
 
 export async function getDeletedReferencesImpl() {
   const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return []
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  const orgId = profile?.organization_id ?? null
+  if (!orgId) return []
 
   const { data, error } = await supabase
     .from('references')
@@ -293,6 +327,7 @@ export async function getDeletedReferencesImpl() {
         companies ( name )
       `
     )
+    .eq('organization_id', orgId)
     .not('deleted_at', 'is', null)
     .order('created_at', { ascending: false })
 

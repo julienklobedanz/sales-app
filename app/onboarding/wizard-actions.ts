@@ -52,25 +52,44 @@ export async function finalizeWorkspaceAndProfile(params: {
     }
   }
 
-  // Kein Invite: org anlegen
+  // Kein Invite: bestehende Org beibehalten oder neu anlegen
   if (!organizationId) {
-    const name = params.organizationName.trim()
-    if (!name) return { success: false, error: 'Bitte Arbeitsbereich-Namen eingeben.' }
-    const { data: newOrgId, error: orgError } = await supabase.rpc('create_organization', {
-      org_name: name,
-    })
-    if (orgError || !newOrgId) {
-      console.error(orgError)
-      return { success: false, error: 'Fehler beim Anlegen des Arbeitsbereichs.' }
-    }
-    organizationId = newOrgId as string
+    const { data: existingProfile } = await supabase
+      .from('profiles')
+      .select('organization_id')
+      .eq('id', user.id)
+      .maybeSingle()
 
-    // Logo direkt in organizations.logo_url (Data URL), wie in Settings-Action
-    if (params.logoDataUrl) {
-      await supabase
-        .from('organizations')
-        .update({ logo_url: params.logoDataUrl, updated_at: new Date().toISOString() })
-        .eq('id', organizationId)
+    const existingOrgId = existingProfile?.organization_id?.trim() || null
+    if (existingOrgId) {
+      organizationId = existingOrgId
+      const orgUpdate: { updated_at: string; name?: string; logo_url?: string } = {
+        updated_at: new Date().toISOString(),
+      }
+      const name = params.organizationName.trim()
+      if (name) orgUpdate.name = name
+      if (params.logoDataUrl) orgUpdate.logo_url = params.logoDataUrl
+      if (orgUpdate.name || orgUpdate.logo_url) {
+        await supabase.from('organizations').update(orgUpdate).eq('id', existingOrgId)
+      }
+    } else {
+      const name = params.organizationName.trim()
+      if (!name) return { success: false, error: 'Bitte Arbeitsbereich-Namen eingeben.' }
+      const { data: newOrgId, error: orgError } = await supabase.rpc('create_organization', {
+        org_name: name,
+      })
+      if (orgError || !newOrgId) {
+        console.error(orgError)
+        return { success: false, error: 'Fehler beim Anlegen des Arbeitsbereichs.' }
+      }
+      organizationId = newOrgId as string
+
+      if (params.logoDataUrl) {
+        await supabase
+          .from('organizations')
+          .update({ logo_url: params.logoDataUrl, updated_at: new Date().toISOString() })
+          .eq('id', organizationId)
+      }
     }
   }
 
