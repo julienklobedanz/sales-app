@@ -23,6 +23,8 @@ import {
   splitFullName,
 } from './onboarding-utils'
 import { ROUTES } from '@/lib/routes'
+import { humanizeTeamInviteEmailError } from '@/lib/email/team-invite-email'
+import { COPY } from '@/lib/copy'
 
 const TRANSITION_MS = 480
 const COMPLETE_MS = 520
@@ -182,6 +184,44 @@ export function OnboardingWizard({
           toast.error(res.error)
           return
         }
+
+        if (res.invited === 0) {
+          runTransition('complete', null, complete)
+          return
+        }
+
+        if (res.emailsSent === res.invited) {
+          toast.success(
+            res.emailsSent === 1
+              ? '1 Einladung wurde per E-Mail versendet.'
+              : `${res.emailsSent} Einladungen wurden per E-Mail versendet.`
+          )
+        } else if (res.emailsSent > 0) {
+          toast.warning(
+            `${res.emailsSent} von ${res.invited} Einladungen per E-Mail versendet.`,
+            {
+              description:
+                'Die übrigen Einladungen sind gespeichert. Links können Sie unter Einstellungen → Team kopieren.',
+              duration: 14_000,
+            }
+          )
+        } else {
+          const firstFailure = res.failures[0]
+          toast.warning(COPY.settings.teamInviteSavedEmailFailed, {
+            description: humanizeTeamInviteEmailError(firstFailure?.emailError),
+            duration: 14_000,
+            action: firstFailure
+              ? {
+                  label: COPY.settings.teamInviteCopyLink,
+                  onClick: () => {
+                    void navigator.clipboard.writeText(firstFailure.fallbackInviteLink)
+                    toast.success(COPY.settings.teamInviteLinkCopied)
+                  },
+                }
+              : undefined,
+          })
+        }
+
         runTransition('complete', null, complete)
       })
     },

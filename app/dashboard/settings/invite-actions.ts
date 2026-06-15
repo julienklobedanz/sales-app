@@ -3,29 +3,17 @@
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
-import { Resend } from 'resend'
 import { getAppOrigin } from '@/lib/env/app-origin'
+import { sendTeamInviteEmail } from '@/lib/email/team-invite-email'
 
 const INVITE_VALID_DAYS = 7
 
-function getResend(): Resend | null {
-  const key = process.env.RESEND_API_KEY?.trim()
-  if (!key) return null
-  return new Resend(key)
-}
-
-function inviteFromAddress(): string {
-  const from = process.env.RESEND_FROM?.trim()
-  if (from) return from
-  return 'Refstack <onboarding@resend.dev>'
-}
-
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
+function formatInviteExpiresAt(expiresAt: Date): string {
+  return expiresAt.toLocaleDateString('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
 }
 
 export type CreateInviteResult =
@@ -142,57 +130,23 @@ export async function inviteByEmail(
   const inviteLink = `${origin}${ROUTES.register}?invite=${token}`
   const inviterName = profile?.full_name || user.email || 'Ein Teammitglied'
   const orgName = org?.name ?? 'Refstack'
+  const expiresAtLabel = formatInviteExpiresAt(expiresAt)
 
-  const resend = getResend()
-  if (!resend) {
+  const emailResult = await sendTeamInviteEmail({
+    to: normalizedEmail,
+    inviterName,
+    orgName,
+    role,
+    inviteLink,
+    expiresAtLabel,
+  })
+
+  if (!emailResult.sent) {
     return {
       success: true,
       emailSent: false,
       fallbackInviteLink: inviteLink,
-      emailError:
-        'RESEND_API_KEY fehlt in der Server-Umgebung (z. B. .env.local / Vercel). Ohne Key wird keine E-Mail gesendet.',
-    }
-  }
-
-  try {
-    const { error: sendError } = await resend.emails.send({
-      from: inviteFromAddress(),
-      to: normalizedEmail,
-      subject: `Einladung zu ${orgName}`,
-      html: `
-          <h1>Team-Einladung</h1>
-          <p><strong>${escapeHtml(inviterName)}</strong> lädt dich ein, dem Arbeitsbereich <strong>${escapeHtml(orgName)}</strong> beizutreten.</p>
-          <table role="presentation" border="0" cellpadding="0" cellspacing="0">
-            <tr>
-              <td style="border-radius: 6px; background: #111827;">
-                <a href="${inviteLink}" target="_blank" rel="noopener noreferrer"
-                  style="display: inline-block; padding: 10px 20px; color: #ffffff; text-decoration: none; font-weight: 600;">
-                  Jetzt beitreten
-                </a>
-              </td>
-            </tr>
-          </table>
-          <p style="color: #666; font-size: 12px;">Falls der Button nicht funktioniert, diesen Link im Browser öffnen:<br /><a href="${inviteLink}" target="_blank" rel="noopener noreferrer">${inviteLink}</a></p>
-          <p style="color: #666; font-size: 12px;">Der Link ist 7 Tage gültig.</p>
-        `,
-    })
-    if (sendError) {
-      console.error('[inviteByEmail] Resend API:', sendError)
-      return {
-        success: true,
-        emailSent: false,
-        fallbackInviteLink: inviteLink,
-        emailError: sendError.message,
-      }
-    }
-  } catch (e) {
-    console.error('[inviteByEmail] Resend error:', e)
-    const msg = e instanceof Error ? e.message : String(e)
-    return {
-      success: true,
-      emailSent: false,
-      fallbackInviteLink: inviteLink,
-      emailError: msg,
+      emailError: emailResult.error,
     }
   }
 
@@ -268,11 +222,12 @@ export async function resendInviteEmail(params: {
   const parsed = inviteDataRaw as unknown
   const invite =
     parsed && typeof parsed === 'object'
-      ? (parsed as { email?: string | null; token?: string | null })
+      ? (parsed as { email?: string | null; token?: string | null; role?: string | null })
       : null
 
   const email = invite?.email?.trim().toLowerCase() || ''
   const token = invite?.token?.trim() || ''
+  const inviteRole = invite?.role === 'admin' ? 'admin' : 'sales'
   if (!email || !token) {
     return { success: false, error: 'Einladung nicht gefunden oder abgelaufen.' }
   }
@@ -282,56 +237,31 @@ export async function resendInviteEmail(params: {
   const inviterName = profile?.full_name || user.email || 'Ein Teammitglied'
   const orgName = org?.name ?? 'Refstack'
 
-  const resend = getResend()
-  if (!resend) {
-    return {
-      success: true,
-      emailSent: false,
-      fallbackInviteLink: inviteLink,
-      emailError:
-        'RESEND_API_KEY fehlt in der Server-Umgebung (z. B. .env.local / Vercel). Ohne Key wird keine E-Mail gesendet.',
-    }
-  }
+  const { data: inviteExpiry } = await supabase
+    .from('organization_invites')
+    .select('expires_at')
+    .eq('id', params.inviteId)
+    .maybeSingle()
 
-  try {
-    const { error: sendError } = await resend.emails.send({
-      from: inviteFromAddress(),
-      to: email,
-      subject: `Einladung zu ${orgName}`,
-      html: `
-          <h1>Team-Einladung</h1>
-          <p><strong>${escapeHtml(inviterName)}</strong> lädt dich ein, dem Arbeitsbereich <strong>${escapeHtml(orgName)}</strong> beizutreten.</p>
-          <table role="presentation" border="0" cellpadding="0" cellspacing="0">
-            <tr>
-              <td style="border-radius: 6px; background: #111827;">
-                <a href="${inviteLink}" target="_blank" rel="noopener noreferrer"
-                  style="display: inline-block; padding: 10px 20px; color: #ffffff; text-decoration: none; font-weight: 600;">
-                  Jetzt beitreten
-                </a>
-              </td>
-            </tr>
-          </table>
-          <p style="color: #666; font-size: 12px;">Falls der Button nicht funktioniert, diesen Link im Browser öffnen:<br /><a href="${inviteLink}" target="_blank" rel="noopener noreferrer">${inviteLink}</a></p>
-          <p style="color: #666; font-size: 12px;">Der Link ist 7 Tage gültig.</p>
-        `,
-    })
-    if (sendError) {
-      console.error('[resendInviteEmail] Resend API:', sendError)
-      return {
-        success: true,
-        emailSent: false,
-        fallbackInviteLink: inviteLink,
-        emailError: sendError.message,
-      }
-    }
-  } catch (e) {
-    console.error('[resendInviteEmail] Resend error:', e)
-    const msg = e instanceof Error ? e.message : String(e)
+  const expiresAt = inviteExpiry?.expires_at
+    ? new Date(String(inviteExpiry.expires_at))
+    : new Date(Date.now() + INVITE_VALID_DAYS * 24 * 60 * 60 * 1000)
+
+  const emailResult = await sendTeamInviteEmail({
+    to: email,
+    inviterName,
+    orgName,
+    role: inviteRole,
+    inviteLink,
+    expiresAtLabel: formatInviteExpiresAt(expiresAt),
+  })
+
+  if (!emailResult.sent) {
     return {
       success: true,
       emailSent: false,
       fallbackInviteLink: inviteLink,
-      emailError: msg,
+      emailError: emailResult.error,
     }
   }
 

@@ -44,6 +44,7 @@ import {
 } from './invite-actions'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
+import { humanizeTeamInviteEmailError } from '@/lib/email/team-invite-email'
 
 type InviteRole = 'admin' | 'sales'
 
@@ -64,16 +65,6 @@ function deriveDisplayNameFromEmail(email: string) {
   if (!parts.length) return 'Ausstehend'
   if (parts.length === 1) return titleCaseWord(parts[0])
   return `${titleCaseWord(parts[0])} ${titleCaseWord(parts[1])}`.trim()
-}
-
-function humanizeInviteEmailError(raw: string | undefined) {
-  const msg = String(raw ?? '').trim()
-  if (!msg) return COPY.settings.teamInviteSavedEmailMissingKey
-  if (/api key is invalid/i.test(msg) || /invalid api key/i.test(msg)) {
-    return 'Einladung ist gespeichert, aber der E-Mail-Versand ist aktuell nicht korrekt konfiguriert.'
-  }
-  if (/RESEND_API_KEY/i.test(msg)) return COPY.settings.teamInviteSavedEmailMissingKey
-  return msg
 }
 
 export function SettingsTeamCard({
@@ -112,7 +103,7 @@ export function SettingsTeamCard({
       toast.success(COPY.settings.teamInviteEmailSent)
     } else {
       toast.warning(COPY.settings.teamInviteSavedEmailFailed, {
-        description: humanizeInviteEmailError(result.emailError),
+        description: humanizeTeamInviteEmailError(result.emailError),
         duration: 14_000,
         action: {
           label: COPY.settings.teamInviteCopyLink,
@@ -189,7 +180,7 @@ export function SettingsTeamCard({
       return
     }
     toast.warning(COPY.settings.teamInviteSavedEmailFailed, {
-      description: result.emailError ?? COPY.settings.teamInviteSavedEmailMissingKey,
+      description: humanizeTeamInviteEmailError(result.emailError),
       duration: 14_000,
       action: {
         label: COPY.settings.teamInviteCopyLink,

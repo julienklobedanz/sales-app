@@ -242,7 +242,15 @@ export async function saveOnboardingReference(
   return { success: true, referenceId }
 }
 
-export type SendInvitesResult = { success: true } | { success: false; error: string }
+export type SendInvitesResult =
+  | {
+      success: true
+      invited: number
+      emailsSent: number
+      emailsFailed: number
+      failures: Array<{ email: string; emailError?: string; fallbackInviteLink: string }>
+    }
+  | { success: false; error: string }
 
 export async function sendTeamInvites(
   invites: Array<{ email: string; role: 'sales' | 'account_manager' | 'admin' }>
@@ -255,10 +263,35 @@ export async function sendTeamInvites(
     .filter((i) => i.email.length > 0)
     .slice(0, 10)
 
+  if (!unique.length) {
+    return { success: true, invited: 0, emailsSent: 0, emailsFailed: 0, failures: [] }
+  }
+
+  let emailsSent = 0
+  let emailsFailed = 0
+  const failures: Array<{ email: string; emailError?: string; fallbackInviteLink: string }> = []
+
   for (const inv of unique) {
     const res = await inviteByEmail(inv.email, inv.role)
     if (!res.success) return res
+    if (res.emailSent) {
+      emailsSent += 1
+    } else {
+      emailsFailed += 1
+      failures.push({
+        email: inv.email,
+        emailError: res.emailError,
+        fallbackInviteLink: res.fallbackInviteLink,
+      })
+    }
   }
-  return { success: true }
+
+  return {
+    success: true,
+    invited: unique.length,
+    emailsSent,
+    emailsFailed,
+    failures,
+  }
 }
 
