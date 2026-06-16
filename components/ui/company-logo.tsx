@@ -9,6 +9,10 @@ import { cn } from '@/lib/utils'
 import { requestCompanyBrandfetchRetry } from '@/lib/accounts/company-brandfetch-retry-client'
 import { refreshCompanyBrandfetchOnLogoIssue } from '@/app/dashboard/references/sync-company-brandfetch'
 
+/** Einheitlicher Logo-Container — kein dynamischer Dark-Mode-Rahmen (vermeidet schwarze Boxen bei einzelnen Marken). */
+export const COMPANY_LOGO_CONTAINER_CLASS =
+  'relative overflow-hidden border border-border/50 bg-muted/35'
+
 type CompanyLogoProps = {
   src?: string | null
   alt?: string
@@ -18,52 +22,6 @@ type CompanyLogoProps = {
   fallbackIconSize?: number
   /** Bei fehlendem/defektem Logo: Brandfetch-Nachzug (Logo + HQ, Website, Mitarbeiter, Branche). */
   companyId?: string | null
-}
-
-function shouldUseDarkBackground(image: HTMLImageElement): boolean {
-  const width = image.naturalWidth
-  const height = image.naturalHeight
-  if (!width || !height) return false
-
-  const sample = 32
-  const canvas = document.createElement('canvas')
-  canvas.width = sample
-  canvas.height = sample
-  const context = canvas.getContext('2d', { willReadFrequently: true })
-  if (!context) return false
-
-  try {
-    context.clearRect(0, 0, sample, sample)
-    context.drawImage(image, 0, 0, sample, sample)
-    const pixels = context.getImageData(0, 0, sample, sample).data
-
-    let opaque = 0
-    let whiteLike = 0
-
-    for (let i = 0; i < pixels.length; i += 4) {
-      const r = pixels[i] ?? 0
-      const g = pixels[i + 1] ?? 0
-      const b = pixels[i + 2] ?? 0
-      const a = pixels[i + 3] ?? 0
-
-      if (a < 28) continue
-      opaque += 1
-
-      const max = Math.max(r, g, b)
-      const min = Math.min(r, g, b)
-      const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
-      const saturation = max === 0 ? 0 : (max - min) / max
-
-      if (luminance > 236 && saturation < 0.12) {
-        whiteLike += 1
-      }
-    }
-
-    if (opaque < 40) return false
-    return whiteLike / opaque > 0.82
-  } catch {
-    return false
-  }
 }
 
 function LogoFallback({
@@ -82,7 +40,7 @@ function LogoFallback({
   return (
     <div
       className={cn(
-        'flex items-center justify-center border bg-gradient-to-br from-blue-500/90 to-violet-500/85 text-white',
+        'flex items-center justify-center border border-border/50 bg-gradient-to-br from-blue-500/90 to-violet-500/85 text-white',
         containerClassName
       )}
     >
@@ -107,7 +65,6 @@ export function CompanyLogo({
   const router = useRouter()
   const [localSrc, setLocalSrc] = useState<string | null>(() => String(srcProp ?? '').trim() || null)
   const [imageFailed, setImageFailed] = useState(false)
-  const [darkBackground, setDarkBackground] = useState(false)
   const mountedRetry = useRef(false)
 
   useEffect(() => {
@@ -146,9 +103,8 @@ export function CompanyLogo({
     runBrandfetchRetry(localSrc)
   }, [companyId, localSrc, imageFailed, runBrandfetchRetry])
 
-  const handleImageLoad = useCallback((event: React.SyntheticEvent<HTMLImageElement>) => {
+  const handleImageLoad = useCallback(() => {
     setImageFailed(false)
-    setDarkBackground(shouldUseDarkBackground(event.currentTarget))
   }, [])
 
   const handleImageError = useCallback(() => {
@@ -170,14 +126,7 @@ export function CompanyLogo({
   }
 
   return (
-    <div
-      className={cn(
-        'relative overflow-hidden border bg-muted transition-colors',
-        darkBackground &&
-          'border-slate-800/60 bg-gradient-to-b from-slate-800 via-[#172033] to-slate-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]',
-        containerClassName
-      )}
-    >
+    <div className={cn(COMPANY_LOGO_CONTAINER_CLASS, containerClassName)}>
       <Image
         src={localSrc!}
         alt={alt}
