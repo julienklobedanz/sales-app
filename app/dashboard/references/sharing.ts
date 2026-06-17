@@ -9,6 +9,10 @@ import { parseOrgPublicLinkPolicy } from '@/lib/organization-link-policy'
 import { writeAuditLog } from '@/lib/audit/log-audit'
 import { getAppOrigin } from '@/lib/env/app-origin'
 import { sendCustomerSperrlinkEmail } from '@/lib/references/customer-sperrlink-email'
+import {
+  buildCustomerManageUrl,
+  getPublicPreviewUrlForReference,
+} from '@/lib/references/customer-manage-url'
 import { hasActiveCustomerApprovalWorkflow } from '@/lib/references/effective-customer-approval'
 
 import type { ReferenceRow } from '@/app/dashboard/actions'
@@ -208,32 +212,6 @@ export async function createSharedPortfolioImpl(
     return { success: false, error: error.message }
   }
   return { success: false, error: 'Slug-Kollision. Bitte erneut versuchen.' }
-}
-
-export async function getPublicPreviewUrlForReference(
-  supabase: SupabaseClient,
-  referenceId: string
-): Promise<string | null> {
-  const id = String(referenceId ?? '').trim()
-  if (!id) return null
-
-  const { data: rows } = await supabase
-    .from('shared_portfolios')
-    .select('slug')
-    .eq('is_active', true)
-    .contains('reference_ids', [id])
-    .limit(1)
-
-  const slug = (rows?.[0] as { slug?: string } | undefined)?.slug
-  if (!slug) return null
-  return `${getAppOrigin()}/p/${encodeURIComponent(slug)}`
-}
-
-export function buildCustomerManageUrl(publicPreviewUrl: string, manageToken: string): string {
-  const u = new URL(publicPreviewUrl)
-  u.searchParams.set('manage', manageToken)
-  u.searchParams.set('mode', 'revoke')
-  return u.toString()
 }
 
 async function notifyCustomerOfSperrlink(
