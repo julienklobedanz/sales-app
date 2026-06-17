@@ -17,19 +17,25 @@ export function ReferenceStatusWithHint({
   customerApprovalStatus,
   approvalInternalStatus,
   approvalRequestedAt,
+  approvalScopeNamedMention,
+  approvalScopeAnonymousMention,
   className,
 }: {
   status: string | null | undefined
   customerApprovalStatus?: string | null
   approvalInternalStatus?: string | null
   approvalRequestedAt?: string | null
+  approvalScopeNamedMention?: boolean | null
+  approvalScopeAnonymousMention?: boolean | null
   className?: string
 }) {
   const explanation = getReferenceStatusExplanation(
     status,
     customerApprovalStatus,
     approvalInternalStatus,
-    approvalRequestedAt
+    approvalRequestedAt,
+    approvalScopeNamedMention,
+    approvalScopeAnonymousMention
   )
   return (
     <div className={cn('inline-flex items-center gap-1', className)}>
@@ -38,6 +44,8 @@ export function ReferenceStatusWithHint({
         customerApprovalStatus={customerApprovalStatus}
         approvalInternalStatus={approvalInternalStatus}
         approvalRequestedAt={approvalRequestedAt}
+        approvalScopeNamedMention={approvalScopeNamedMention}
+        approvalScopeAnonymousMention={approvalScopeAnonymousMention}
       />
       <TooltipProvider delayDuration={200}>
         <Tooltip>

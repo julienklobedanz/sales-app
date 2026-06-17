@@ -100,6 +100,8 @@ export type ReferenceRow = {
   deal_link_count?: number
   /** Kunden-Freigabe (Epic 10): pending / approved / rejected */
   customer_approval_status?: string | null
+  approval_scope_named_mention?: boolean | null
+  approval_scope_anonymous_mention?: boolean | null
 }
 
 export type GetDashboardDataResult = {
@@ -217,9 +219,22 @@ export async function getExistingShareForReference(referenceId: string): Promise
 
 /** Neues ?manage=-Geheimnis für bestehenden Kundenlink (macht alten Sperr-Link ungültig). */
 export async function resetSharedPortfolioManageToken(
+  referenceId: string,
+  options?: { notifyCustomer?: boolean }
+): Promise<
+  | { success: true; manageToken: string; customerEmailSent?: boolean }
+  | { success: false; error: string }
+> {
+  return resetSharedPortfolioManageTokenImpl(referenceId, options)
+}
+
+export async function getCustomerApprovalRecipientEmail(
   referenceId: string
-): Promise<{ success: true; manageToken: string } | { success: false; error: string }> {
-  return resetSharedPortfolioManageTokenImpl(referenceId)
+): Promise<string | null> {
+  const { getCustomerApprovalRecipientEmailImpl } = await import(
+    '@/lib/references/client-approval-confirmation-email'
+  )
+  return getCustomerApprovalRecipientEmailImpl(referenceId)
 }
 
 export async function updateShareLinkSecurity(

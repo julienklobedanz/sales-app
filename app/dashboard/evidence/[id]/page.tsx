@@ -43,6 +43,8 @@ import {
 import {
   canStartApprovalWorkflow,
 } from '@/lib/references/approval-workflow'
+import { isStaleInternalPending } from '@/lib/references/stale-internal-pending'
+import { isReferenceVisibleToSales } from '@/lib/references/sales-reference-visibility'
 import {
   resolveReferenceReadinessState,
   resolveFreigabestatusCardBadges,
@@ -249,16 +251,7 @@ export default async function EvidenceDetailPage({
   const ref = row as unknown as ReferenceDetailRow
 
   const normalizedStatus = String(ref.status ?? '').toLowerCase()
-  if (
-    role === 'sales' &&
-    !(
-      normalizedStatus === 'approved' ||
-      normalizedStatus === 'internal_only' ||
-      normalizedStatus === 'anonymized' ||
-      normalizedStatus === 'external' ||
-      normalizedStatus === 'internal'
-    )
-  ) {
+  if (role === 'sales' && !isReferenceVisibleToSales(normalizedStatus)) {
     notFound()
   }
 
@@ -351,16 +344,13 @@ export default async function EvidenceDetailPage({
     baseApprovalStatus === 'approved' && expiresMs && expiresMs < nowMs && graceMs && graceMs >= nowMs
       ? 'expired'
       : baseApprovalStatus
-  /** DB-Hygiene: Status/Kunde schon freigegeben, aber approval_internal_status hängt noch auf pending_internal. */
-  const staleInternalPending =
-    !customerAccessRevoked &&
-    internalApproval === 'pending_internal' &&
-    (isApprovalGranted ||
-      normalizedStatus === 'approved' ||
-      normalizedStatus === 'external' ||
-      normalizedStatus === 'anonymized' ||
-      normalizedStatus === 'internal_only' ||
-      normalizedStatus === 'internal')
+  const staleInternalPending = isStaleInternalPending({
+    internalApprovalStatus: internalApproval,
+    customerApprovalStatus: ref.customer_approval_status,
+    referenceStatus: normalizedStatus,
+    approvalRequestedAt: ref.approval_requested_at,
+    customerAccessRevoked,
+  })
 
   /** Referenz-Stufe (Sales-Sicht, Portfolio): unabhängig vom Kunden-Freigabe-Workflow. */
   const referenceIsInternalOnly =
@@ -545,6 +535,8 @@ export default async function EvidenceDetailPage({
                   customerApprovalStatus={ref.customer_approval_status}
                   approvalInternalStatus={ref.approval_internal_status}
                   approvalRequestedAt={ref.approval_requested_at}
+                  approvalScopeNamedMention={ref.approval_scope_named_mention}
+                  approvalScopeAnonymousMention={ref.approval_scope_anonymous_mention}
                 />
               </div>
               <h1 className={`${DASHBOARD_PAGE_TITLE_CLASS} break-words`}>

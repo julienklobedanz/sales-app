@@ -5,32 +5,76 @@ import {
   resolveCustomerWorkflowBadge,
   resolveFreigabestatusCardBadges,
   resolveInternalWorkflowBadge,
+  resolvePostCustomerApprovalTitleBadge,
+  resolvePortfolioTitleBadge,
   resolveReferenceTitleBadge,
   resolveWorkflowStatusBadges,
 } from './reference-approval-display'
 import { resolveReferenceReadinessState } from './reference-readiness-state'
 
 describe('reference-approval-display', () => {
-  it('title badge reflects internal review pending', () => {
+  it('title badge stays Intern during internal review on internal_only', () => {
     expect(
       resolveReferenceTitleBadge({
-        referenceStatus: 'draft',
+        referenceStatus: 'internal_only',
         internalApprovalStatus: 'pending_internal',
         customerApprovalStatus: null,
         approvalRequestedAt: '2026-01-01T00:00:00Z',
       }).label
-    ).toBe('Interne Prüfung ausstehend')
+    ).toBe('Intern')
   })
 
-  it('title badge reflects prepare customer phase', () => {
+  it('title badge stays Intern while waiting for customer', () => {
     expect(
       resolveReferenceTitleBadge({
-        referenceStatus: 'draft',
+        referenceStatus: 'internal_only',
         internalApprovalStatus: 'approved_internal',
-        customerApprovalStatus: null,
+        customerApprovalStatus: 'pending',
         approvalRequestedAt: '2026-01-01T00:00:00Z',
       }).label
-    ).toBe('Intern freigegeben')
+    ).toBe('Intern')
+  })
+
+  it('title badge shows Extern freigegeben after named customer approval', () => {
+    expect(
+      resolveReferenceTitleBadge({
+        referenceStatus: 'external',
+        internalApprovalStatus: 'approved_internal',
+        customerApprovalStatus: 'approved',
+        approvalScopeNamedMention: true,
+        approvalScopeAnonymousMention: false,
+      }).label
+    ).toBe('Extern freigegeben')
+  })
+
+  it('title badge shows Anonymisiert after anonymous-only customer approval', () => {
+    expect(
+      resolveReferenceTitleBadge({
+        referenceStatus: 'external',
+        customerApprovalStatus: 'approved',
+        approvalScopeNamedMention: false,
+        approvalScopeAnonymousMention: true,
+      }).label
+    ).toBe('Anonymisiert')
+  })
+
+  it('post-customer badge helpers', () => {
+    expect(
+      resolvePostCustomerApprovalTitleBadge({
+        approvalScopeNamedMention: true,
+        approvalScopeAnonymousMention: false,
+      }).label
+    ).toBe('Extern freigegeben')
+    expect(
+      resolvePostCustomerApprovalTitleBadge({
+        approvalScopeNamedMention: false,
+        approvalScopeAnonymousMention: true,
+      }).label
+    ).toBe('Anonymisiert')
+  })
+
+  it('portfolio title badge for internal_only', () => {
+    expect(resolvePortfolioTitleBadge('internal_only').label).toBe('Intern')
   })
 
   it('title badge shows revoked by customer', () => {
@@ -66,11 +110,11 @@ describe('reference-approval-display', () => {
     ).toBe('Entwurf')
   })
 
-  it('workflow badges for internal_start', () => {
+  it('workflow badges for internal_start (Freigabestatus card unchanged)', () => {
     const badges = resolveWorkflowStatusBadges({
       internalApprovalStatus: 'pending_internal',
       customerApprovalStatus: null,
-      referenceStatus: 'draft',
+      referenceStatus: 'internal_only',
       approvalRequestedAt: '2026-01-01T00:00:00Z',
     })
     expect(badges?.internal.label).toBe('Interne Prüfung ausstehend')
@@ -92,14 +136,14 @@ describe('reference-approval-display', () => {
     expect(resolveInternalWorkflowBadge('rejected_internal').label).toBe('Intern abgelehnt')
   })
 
-  it('explanation for internal review pending', () => {
+  it('explanation for internal_only during workflow points to Freigabestatus card', () => {
     expect(
       getReferenceApprovalExplanation({
-        referenceStatus: 'draft',
+        referenceStatus: 'internal_only',
         internalApprovalStatus: 'pending_internal',
         approvalRequestedAt: '2026-01-01T00:00:00Z',
       })
-    ).toContain('Interne Freigabe ausstehend')
+    ).toContain('Freigabestatus-Card')
   })
 
   it('readiness state aligns with internal rejected', () => {

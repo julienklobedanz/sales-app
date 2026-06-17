@@ -129,4 +129,19 @@ describe('resolveReferenceReadinessState', () => {
     expect(s.badge.label).toBe('Anonym freigegeben')
     expect(s.badge.className).toContain('amber')
   })
+
+  it('internal_only with can start → request_approval (no stale magic link)', () => {
+    const s = resolveReferenceReadinessState({
+      ...base,
+      referenceStatus: 'internal_only',
+      internalApprovalStatus: 'pending_internal',
+      approvalRequestedAt: null,
+      canStartApproval: true,
+      referenceIsInternalOnly: true,
+    })
+    expect(s.phase).toBe('request_approval')
+    expect(s.showPrimaryStart).toBe(true)
+    expect(s.showMagicLink).toBe(false)
+    expect(s.showStaleHint).toBe(false)
+  })
 })

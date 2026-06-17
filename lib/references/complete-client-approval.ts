@@ -262,9 +262,9 @@ export async function completeClientApprovalWithAdmin(
     confirmationEmailSent = await sendClientApprovalConfirmationEmail({
       admin,
       referenceId: ref.id,
+      organizationId: (ref as { organization_id?: string | null }).organization_id,
       refTitle: ref.title,
       companyName: companyNameFromRow(ref),
-      approvalToken: token,
       isUpdate,
       recipient: {
         approval_contact_id: ref.approval_contact_id,

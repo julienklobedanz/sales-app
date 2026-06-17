@@ -10,6 +10,7 @@ import { DEV_ROLE_COOKIE, isDevRolePreviewEnabled, parseAppRoleCookie } from '@/
 import type { AppRole } from '@/hooks/useRole'
 import { normalizeOrgDateDisplayFormat } from '@/lib/format'
 import { listComplianceDocuments } from '@/app/dashboard/settings/compliance-actions'
+import { filterReferencesForSales } from '@/lib/references/sales-reference-visibility'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,7 +40,7 @@ export default async function EvidenceHubPage() {
 
   let references =
     effectiveRole === 'sales'
-      ? dashboard.references.filter((r) => r.status === 'approved' || r.status === 'internal_only')
+      ? filterReferencesForSales(dashboard.references)
       : dashboard.references
 
   const companyIdsNeedingEnrich = [
@@ -58,9 +59,7 @@ export default async function EvidenceHubPage() {
     const refreshed = await getDashboardData(false)
     references =
       effectiveRole === 'sales'
-        ? refreshed.references.filter(
-            (r) => r.status === 'approved' || r.status === 'internal_only'
-          )
+        ? filterReferencesForSales(refreshed.references)
         : refreshed.references
   }
 

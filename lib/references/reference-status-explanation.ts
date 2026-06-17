@@ -10,13 +10,17 @@ export function getReferenceStatusExplanation(
   status: string | null | undefined,
   customerApprovalStatus?: string | null,
   approvalInternalStatus?: string | null,
-  approvalRequestedAt?: string | null
+  approvalRequestedAt?: string | null,
+  approvalScopeNamedMention?: boolean | null,
+  approvalScopeAnonymousMention?: boolean | null
 ): string {
   const input: ReferenceTitleBadgeInput = {
     referenceStatus: status,
     customerApprovalStatus,
     internalApprovalStatus: approvalInternalStatus,
     approvalRequestedAt,
+    approvalScopeNamedMention,
+    approvalScopeAnonymousMention,
   }
   return getReferenceApprovalExplanation(input)
 }

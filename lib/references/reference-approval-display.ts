@@ -32,11 +32,67 @@ export type PreWorkflowCardInput = {
   canStartApproval: boolean
 }
 
-export type ReferenceTitleBadgeInput = {
+export type ReferenceTitleBadgeInput = ApprovedScopeInput & {
   referenceStatus?: string | null
   internalApprovalStatus?: string | null
   customerApprovalStatus?: string | null
   approvalRequestedAt?: string | null
+}
+
+/** Portfolio-Stufe für Titel-Kapsel (unabhängig vom laufenden Freigabe-Workflow). */
+export function resolvePortfolioTitleBadge(referenceStatus: string | null | undefined): ApprovalBadge {
+  const status = normalizeReferenceStatus(referenceStatus)
+
+  if (status === 'internal_only') {
+    return {
+      label: 'Intern',
+      className: 'border-slate-200 bg-slate-100/90 text-slate-700',
+    }
+  }
+
+  if (status === 'anonymized') {
+    return {
+      label: 'Anonymisiert',
+      className: 'border-slate-200 bg-slate-50 text-slate-800',
+    }
+  }
+
+  if (status === 'approved') {
+    return {
+      label: 'Extern freigegeben',
+      className: 'border-blue-200 bg-blue-500/10 text-blue-800',
+    }
+  }
+
+  if (status === 'pending') {
+    return {
+      label: 'Freigabe ausstehend',
+      className: 'border-amber-200 bg-amber-50 text-amber-900',
+    }
+  }
+
+  return {
+    label: 'Entwurf',
+    className: 'border-slate-200 bg-slate-50 text-slate-800',
+  }
+}
+
+/** Titel-Kapsel nach abgeschlossener Kundenfreigabe (Scope). */
+export function resolvePostCustomerApprovalTitleBadge(input: ApprovedScopeInput): ApprovalBadge {
+  const named = input.approvalScopeNamedMention ?? true
+  const anonymous = input.approvalScopeAnonymousMention ?? true
+
+  if (!named && anonymous) {
+    return {
+      label: 'Anonymisiert',
+      className: 'border-slate-200 bg-slate-50 text-slate-800',
+    }
+  }
+
+  return {
+    label: 'Extern freigegeben',
+    className: 'border-blue-200 bg-blue-500/10 text-blue-800',
+  }
 }
 
 export function approvedScopeBadge(input: ApprovedScopeInput): ApprovalBadge {
@@ -238,7 +294,7 @@ function normalizeReferenceStatus(raw: string | null | undefined) {
   return 'draft'
 }
 
-/** Titel-Badge und Listen — spiegelt den Freigabe-Workflow wider. */
+/** Titel-Badge und Listen — Portfolio-Stufe; Workflow nur bei Abschluss/Fehler. */
 export function resolveReferenceTitleBadge(input: ReferenceTitleBadgeInput): ApprovalBadge {
   const internal = String(input.internalApprovalStatus ?? '').toLowerCase()
   const customerRaw = String(input.customerApprovalStatus ?? '').toLowerCase()
@@ -284,59 +340,15 @@ export function resolveReferenceTitleBadge(input: ReferenceTitleBadgeInput): App
     }
   }
 
-  if (customer === 'pending' || customerRaw === 'pending') {
-    return {
-      label: 'Freigabe ausstehend',
-      className: 'border-amber-200 bg-amber-50 text-amber-900',
-    }
+  if (customer === 'approved' || customerRaw === 'approved') {
+    return resolvePostCustomerApprovalTitleBadge(input)
   }
 
-  if (customer === 'approved' || referenceStatus === 'approved') {
-    return {
-      label: 'Freigegeben',
-      className: 'border-blue-200 bg-blue-500/10 text-blue-800',
-    }
+  if (referenceStatus === 'approved') {
+    return resolvePortfolioTitleBadge('approved')
   }
 
-  if (workflowStarted && internal === 'pending_internal') {
-    return {
-      label: 'Interne Prüfung ausstehend',
-      className: 'border-sky-200 bg-sky-50 text-sky-800',
-    }
-  }
-
-  if (workflowStarted && internal === 'approved_internal') {
-    return {
-      label: 'Intern freigegeben',
-      className: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-    }
-  }
-
-  if (referenceStatus === 'internal_only') {
-    return {
-      label: 'Intern',
-      className: 'border-slate-200 bg-slate-100/90 text-slate-700',
-    }
-  }
-
-  if (referenceStatus === 'anonymized') {
-    return {
-      label: 'Anonymisiert',
-      className: 'border-slate-200 bg-slate-50 text-slate-800',
-    }
-  }
-
-  if (referenceStatus === 'pending') {
-    return {
-      label: 'Freigabe ausstehend',
-      className: 'border-amber-200 bg-amber-50 text-amber-900',
-    }
-  }
-
-  return {
-    label: 'Entwurf',
-    className: 'border-slate-200 bg-slate-50 text-slate-800',
-  }
+  return resolvePortfolioTitleBadge(input.referenceStatus)
 }
 
 export function getReferenceApprovalExplanation(input: ReferenceTitleBadgeInput): string {
@@ -369,24 +381,20 @@ export function getReferenceApprovalExplanation(input: ReferenceTitleBadgeInput)
     return 'Die interne Freigabe wurde abgelehnt. Der Workflow kann bei Bedarf neu gestartet werden.'
   }
 
-  if (customer === 'pending' || customerRaw === 'pending') {
-    return 'Kundenfreigabe: Der Kunde bearbeitet die Freigabe oder sie steht noch aus. Die Referenz ist noch nicht für die externe Nutzung freigegeben.'
+  if (customer === 'approved' || customerRaw === 'approved') {
+    const badge = resolvePostCustomerApprovalTitleBadge(input)
+    if (badge.label === 'Anonymisiert') {
+      return 'Anonymisiert: Kundenname und Logo sind entfernt – typisch für öffentliche Case Studies ohne konkrete Benennung.'
+    }
+    return 'Extern freigegeben: Vom Kunden freigegeben – geeignet für Pitches und Kundenunterlagen gemäß vereinbartem Nutzungsumfang.'
   }
 
-  if (customer === 'approved' || referenceStatus === 'approved') {
-    return 'Extern freigegeben: Vom Kunden und intern freigegeben – geeignet für Pitches und Kundenunterlagen gemäß vereinbartem Nutzungsumfang.'
-  }
-
-  if (workflowStarted && internal === 'pending_internal') {
-    return 'Interne Freigabe ausstehend: Der Account Manager muss die interne Prüfung bestätigen, bevor die Kundenfreigabe vorbereitet werden kann.'
-  }
-
-  if (workflowStarted && internal === 'approved_internal') {
-    return 'Intern freigegeben: Als Nächstes kann die Kundenfreigabe vorbereitet und der Magic Link versendet werden.'
+  if (referenceStatus === 'approved') {
+    return 'Extern freigegeben: Offiziell für Sales-Pitches und Kundenunterlagen freigegeben.'
   }
 
   if (referenceStatus === 'internal_only') {
-    return 'Nur intern: Verifiziert, sensible Angaben (z. B. Namen, Preise) dürfen das Haus nicht verlassen.'
+    return 'Nur intern: Verifiziert, sensible Angaben (z. B. Namen, Preise) dürfen das Haus nicht verlassen. Der Freigabe-Fortschritt steht in der Freigabestatus-Card.'
   }
 
   if (referenceStatus === 'anonymized') {

@@ -39,7 +39,7 @@ export function canStartApprovalWorkflow(params: {
   }
 
   if (params.role === 'admin' || params.role === 'account_manager') {
-    return status === 'draft'
+    return status === 'draft' || status === 'internal_only' || status === 'internal'
   }
 
   return false

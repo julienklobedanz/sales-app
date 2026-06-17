@@ -13,7 +13,8 @@ import { getPortfolioManageAndPreviewUrlsForApprovalEmail } from '@/app/dashboar
 import { parseOrgPublicLinkPolicy } from '@/lib/organization-link-policy'
 import { ensureApprovalRecipientFromInputImpl } from '@/app/dashboard/references/approval-contacts'
 import { canStartApprovalWorkflow } from '@/lib/references/approval-workflow'
-import { hasActiveCustomerApprovalWorkflow } from '@/lib/references/effective-customer-approval'
+import { effectiveCustomerApprovalStatus, hasActiveCustomerApprovalWorkflow } from '@/lib/references/effective-customer-approval'
+import { isStaleInternalPending } from '@/lib/references/stale-internal-pending'
 import { isApprovalRecipientEmail } from '@/lib/references/approval-recipient-input'
 import { referenceHasOpenCustomerChangeRequests } from '@/lib/references/approval-change-requests'
 import { deriveReferenceGiverNameFromEmail } from '@/lib/references/derive-reference-giver-name-from-email'
@@ -453,12 +454,12 @@ export async function submitForApprovalImpl(
   const customerApproval = String(ref.customer_approval_status ?? '')
   const isApprovalGranted =
     customerApproval === 'approved' || refStatus === 'approved' || refStatus === 'external'
-  const staleInternalPending =
-    internalApproval === 'pending_internal' &&
-    (isApprovalGranted ||
-      refStatus === 'anonymized' ||
-      refStatus === 'internal_only' ||
-      refStatus === 'internal')
+  const staleInternalPending = isStaleInternalPending({
+    internalApprovalStatus: internalApproval,
+    customerApprovalStatus: ref.customer_approval_status,
+    referenceStatus: refStatus,
+    approvalRequestedAt: (ref as { approval_requested_at?: string | null }).approval_requested_at,
+  })
 
   if (
     !canStartApprovalWorkflow({
@@ -797,11 +798,23 @@ export async function getApprovalLinkImpl(referenceId: string): Promise<string |
   const supabase = await createServerSupabaseClient()
   const { data } = await supabase
     .from('references')
-    .select('approval_token')
+    .select('approval_token, customer_approval_status, status')
     .eq('id', referenceId)
     .maybeSingle()
-  const token = (data as { approval_token?: string | null } | null)?.approval_token
+  const row = data as {
+    approval_token?: string | null
+    customer_approval_status?: string | null
+    status?: string | null
+  } | null
+  const token = row?.approval_token
   if (!token) return null
+
+  const effective = effectiveCustomerApprovalStatus(
+    row?.customer_approval_status,
+    row?.status
+  )
+  if (effective !== 'pending' && effective !== 'approved') return null
+
   return `${getAppOrigin()}/approval/${token}`
 }
 

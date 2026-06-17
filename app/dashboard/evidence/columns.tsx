@@ -67,6 +67,8 @@ export function evidenceColumns(): ColumnDef<ReferenceRow>[] {
         <ReferenceStatusBadge
           status={row.original.status}
           customerApprovalStatus={row.original.customer_approval_status}
+          approvalScopeNamedMention={row.original.approval_scope_named_mention}
+          approvalScopeAnonymousMention={row.original.approval_scope_anonymous_mention}
         />
       ),
     },

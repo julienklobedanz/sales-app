@@ -6,6 +6,8 @@ type Props = {
   customerApprovalStatus?: string | null
   approvalInternalStatus?: string | null
   approvalRequestedAt?: string | null
+  approvalScopeNamedMention?: boolean | null
+  approvalScopeAnonymousMention?: boolean | null
   className?: string
 }
 
@@ -22,6 +24,7 @@ const darkVariants: Record<string, string> = {
   'Freigabe ausstehend':
     'dark:border-amber-800/60 dark:bg-amber-950/35 dark:text-amber-100',
   Freigegeben: 'dark:border-blue-800/60 dark:bg-blue-950/40 dark:text-blue-200',
+  'Extern freigegeben': 'dark:border-blue-800/60 dark:bg-blue-950/40 dark:text-blue-200',
   'Interne Prüfung ausstehend':
     'dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-100',
   'Intern freigegeben':
@@ -36,6 +39,8 @@ export function ReferenceStatusBadge({
   customerApprovalStatus,
   approvalInternalStatus,
   approvalRequestedAt,
+  approvalScopeNamedMention,
+  approvalScopeAnonymousMention,
   className,
 }: Props) {
   const badge = resolveReferenceTitleBadge({
@@ -43,6 +48,8 @@ export function ReferenceStatusBadge({
     customerApprovalStatus,
     internalApprovalStatus: approvalInternalStatus,
     approvalRequestedAt,
+    approvalScopeNamedMention,
+    approvalScopeAnonymousMention,
   })
 
   return (

@@ -8,6 +8,8 @@ import { logEvent } from '@/lib/events/log-event'
 import { parseOrgPublicLinkPolicy } from '@/lib/organization-link-policy'
 import { writeAuditLog } from '@/lib/audit/log-audit'
 import { getAppOrigin } from '@/lib/env/app-origin'
+import { sendCustomerSperrlinkEmail } from '@/lib/references/customer-sperrlink-email'
+import { hasActiveCustomerApprovalWorkflow } from '@/lib/references/effective-customer-approval'
 
 import type { ReferenceRow } from '@/app/dashboard/actions'
 
@@ -208,6 +210,95 @@ export async function createSharedPortfolioImpl(
   return { success: false, error: 'Slug-Kollision. Bitte erneut versuchen.' }
 }
 
+export async function getPublicPreviewUrlForReference(
+  supabase: SupabaseClient,
+  referenceId: string
+): Promise<string | null> {
+  const id = String(referenceId ?? '').trim()
+  if (!id) return null
+
+  const { data: rows } = await supabase
+    .from('shared_portfolios')
+    .select('slug')
+    .eq('is_active', true)
+    .contains('reference_ids', [id])
+    .limit(1)
+
+  const slug = (rows?.[0] as { slug?: string } | undefined)?.slug
+  if (!slug) return null
+  return `${getAppOrigin()}/p/${encodeURIComponent(slug)}`
+}
+
+export function buildCustomerManageUrl(publicPreviewUrl: string, manageToken: string): string {
+  const u = new URL(publicPreviewUrl)
+  u.searchParams.set('manage', manageToken)
+  u.searchParams.set('mode', 'revoke')
+  return u.toString()
+}
+
+async function notifyCustomerOfSperrlink(
+  supabase: SupabaseClient,
+  referenceId: string,
+  manageUrl: string,
+  isNewLink: boolean
+): Promise<boolean> {
+  const { data: ref } = await supabase
+    .from('references')
+    .select(
+      `
+      title,
+      status,
+      organization_id,
+      customer_approval_status,
+      approval_contact_id,
+      approval_external_contact_id,
+      approval_delegated_to_email,
+      approval_delegated_to_name,
+      companies ( name )
+    `
+    )
+    .eq('id', referenceId)
+    .maybeSingle()
+
+  if (!ref) return false
+  const row = ref as {
+    title?: string
+    status?: string
+    organization_id?: string | null
+    customer_approval_status?: string | null
+    approval_contact_id?: string | null
+    approval_external_contact_id?: string | null
+    approval_delegated_to_email?: string | null
+    approval_delegated_to_name?: string | null
+    companies?: { name?: string } | { name?: string }[] | null
+  }
+
+  if (!hasActiveCustomerApprovalWorkflow(row.customer_approval_status, row.status)) {
+    return false
+  }
+
+  const company =
+    Array.isArray(row.companies) && row.companies.length > 0
+      ? row.companies[0]
+      : (row.companies as { name?: string } | null)
+  const companyName = company?.name?.trim() || 'Referenz'
+
+  return sendCustomerSperrlinkEmail({
+    admin: supabase,
+    organizationId: row.organization_id,
+    refTitle: String(row.title ?? 'Referenz'),
+    companyName,
+    manageUrl,
+    isNewLink,
+    recipient: {
+      approval_contact_id: row.approval_contact_id ?? null,
+      approval_external_contact_id: row.approval_external_contact_id ?? null,
+      approval_delegated_to_email: row.approval_delegated_to_email ?? null,
+      approval_delegated_to_name: row.approval_delegated_to_name ?? null,
+    },
+  })
+}
+
 /**
  * Für Freigabe-E-Mails: öffentliche Kunden-URL + frischer ?manage=-Sperrlink.
  * Bestehendes Portfolio: rotiert nur das Manage-Geheimnis (Slug bleibt).
@@ -247,7 +338,7 @@ export async function getPortfolioManageAndPreviewUrlsForApprovalEmail(
       return null
     }
     const publicPreviewUrl = `${origin}/p/${encodeURIComponent(slug)}`
-    const manageUrl = `${publicPreviewUrl}?manage=${encodeURIComponent(payload.token)}&mode=revoke`
+    const manageUrl = buildCustomerManageUrl(publicPreviewUrl, payload.token)
     return { manageUrl, publicPreviewUrl }
   }
 
@@ -255,10 +346,8 @@ export async function getPortfolioManageAndPreviewUrlsForApprovalEmail(
   if (!created.success || !created.manageToken) return null
   const path = created.url.startsWith('/') ? created.url : `/${created.url}`
   const publicPreviewUrl = `${origin}${path}`
-  const u = new URL(publicPreviewUrl)
-  u.searchParams.set('manage', created.manageToken)
-  u.searchParams.set('mode', 'revoke')
-  return { manageUrl: u.toString(), publicPreviewUrl }
+  const manageUrl = buildCustomerManageUrl(publicPreviewUrl, created.manageToken)
+  return { manageUrl, publicPreviewUrl }
 }
 
 export async function getExistingShareForReferenceImpl(
@@ -311,8 +400,12 @@ export async function getExistingShareForReferenceImpl(
 }
 
 export async function resetSharedPortfolioManageTokenImpl(
-  referenceId: string
-): Promise<{ success: true; manageToken: string } | { success: false; error: string }> {
+  referenceId: string,
+  options?: { notifyCustomer?: boolean }
+): Promise<
+  | { success: true; manageToken: string; customerEmailSent?: boolean }
+  | { success: false; error: string }
+> {
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
@@ -327,7 +420,17 @@ export async function resetSharedPortfolioManageTokenImpl(
   if (!payload?.success || !payload.token) {
     return { success: false, error: payload?.error ?? 'Sperr-Link konnte nicht erzeugt werden.' }
   }
-  return { success: true, manageToken: payload.token }
+
+  let customerEmailSent = false
+  if (options?.notifyCustomer) {
+    const previewUrl = await getPublicPreviewUrlForReference(supabase, referenceId)
+    if (previewUrl) {
+      const manageUrl = buildCustomerManageUrl(previewUrl, payload.token)
+      customerEmailSent = await notifyCustomerOfSperrlink(supabase, referenceId, manageUrl, true)
+    }
+  }
+
+  return { success: true, manageToken: payload.token, customerEmailSent }
 }
 
 export async function updateShareLinkSecurityByReferenceImpl(

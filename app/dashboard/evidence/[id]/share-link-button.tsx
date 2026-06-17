@@ -27,9 +27,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { AppIcon } from '@/lib/icons'
 import {
   createSharedPortfolio,
+  getCustomerApprovalRecipientEmail,
   getExistingShareForReference,
   resetSharedPortfolioManageToken,
   updateShareLinkSecurity,
@@ -111,6 +122,8 @@ export function ShareLinkButton({
   const [manageUrl, setManageUrl] = useState<string | null>(null)
   const [hasCustomerManageToken, setHasCustomerManageToken] = useState(false)
   const [issuingManage, setIssuingManage] = useState(false)
+  const [sperrlinkConfirmOpen, setSperrlinkConfirmOpen] = useState(false)
+  const [customerEmailForSperrlink, setCustomerEmailForSperrlink] = useState<string | null>(null)
 
   useEffect(() => {
     return () => {
@@ -200,6 +213,53 @@ export function ShareLinkButton({
     } catch {
       toast.error('Kopieren fehlgeschlagen')
     }
+  }
+
+  async function issueManageToken(notifyCustomer: boolean) {
+    if (!url) return
+    setIssuingManage(true)
+    try {
+      const res = await resetSharedPortfolioManageToken(referenceId, { notifyCustomer })
+      if (!res.success) {
+        toast.error(res.error)
+        return
+      }
+      setManageUrl(buildManageUrl(url, res.manageToken))
+      setHasCustomerManageToken(true)
+      if (notifyCustomer) {
+        if (res.customerEmailSent) {
+          toast.success('Neuer Sperrlink erzeugt', {
+            description: `E-Mail an ${customerEmailForSperrlink ?? 'den Kunden'} gesendet.`,
+          })
+        } else {
+          toast.success('Neuer Sperrlink erzeugt', {
+            description: 'E-Mail konnte nicht gesendet werden (z. B. fehlender Resend-Key).',
+          })
+        }
+      } else {
+        toast.success(
+          hasCustomerManageToken
+            ? 'Neuer Sperr-Link erzeugt (alter ist ungültig).'
+            : 'Sperr-Link eingerichtet.'
+        )
+      }
+    } finally {
+      setIssuingManage(false)
+      setSperrlinkConfirmOpen(false)
+    }
+  }
+
+  async function onRequestManageToken() {
+    if (!url) return
+    if (hasCustomerManageToken) {
+      const email = await getCustomerApprovalRecipientEmail(referenceId)
+      if (email?.includes('@')) {
+        setCustomerEmailForSperrlink(email)
+        setSperrlinkConfirmOpen(true)
+        return
+      }
+    }
+    await issueManageToken(false)
   }
 
   async function copyToClipboard(link: string) {
@@ -515,26 +575,7 @@ export function ShareLinkButton({
                       variant="secondary"
                       className="gap-1.5"
                       disabled={issuingManage || !url}
-                      onClick={async () => {
-                        if (!url) return
-                        setIssuingManage(true)
-                        try {
-                          const res = await resetSharedPortfolioManageToken(referenceId)
-                          if (!res.success) {
-                            toast.error(res.error)
-                            return
-                          }
-                          setManageUrl(buildManageUrl(url, res.manageToken))
-                          setHasCustomerManageToken(true)
-                          toast.success(
-                            hasCustomerManageToken
-                              ? 'Neuer Sperr-Link erzeugt (alter ist ungültig).'
-                              : 'Sperr-Link eingerichtet.',
-                          )
-                        } finally {
-                          setIssuingManage(false)
-                        }
-                      }}
+                      onClick={() => void onRequestManageToken()}
                     >
                       {issuingManage ? (
                         <AppIcon icon={Loader} size={14} className="animate-spin" />
@@ -652,6 +693,31 @@ export function ShareLinkButton({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={sperrlinkConfirmOpen} onOpenChange={setSperrlinkConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Neuen Sperrlink erzeugen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Es wird ein neuer Sperrlink generiert und automatisch per Mail an deinen Kunden{' '}
+              <span className="font-medium text-foreground">{customerEmailForSperrlink}</span>{' '}
+              geschickt. Möchtest du fortfahren?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={issuingManage}>Nein</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={issuingManage}
+              onClick={(e) => {
+                e.preventDefault()
+                void issueManageToken(true)
+              }}
+            >
+              Ja
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

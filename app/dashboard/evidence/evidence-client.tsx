@@ -15,6 +15,7 @@ import { TableBulkActionsBar } from "@/components/table/table-bulk-actions-bar"
 import { ToolbarSearchField } from "@/components/ui/toolbar-search-field"
 import { COPY } from "@/lib/copy"
 import { ROUTES } from "@/lib/routes"
+import { isReferenceVisibleToSales } from "@/lib/references/sales-reference-visibility"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -57,6 +58,7 @@ export function EvidenceClient({
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase()
     return references.filter((r) => {
+      if (!isReferenceVisibleToSales(r.status) && isSales) return false
       if (status !== "all" && r.status !== status) return false
       if (!q) return true
       return normalizeHaystack(r).includes(q)
@@ -152,12 +154,10 @@ export function EvidenceClient({
                       { key: "all", label: "Alle" },
                       { key: "approved", label: "Freigegeben" },
                       { key: "internal_only", label: "Intern" },
+                      { key: "anonymized", label: "Anonymisiert" },
                       ...(isSales
                         ? []
-                        : [
-                            { key: "draft", label: "Entwurf" },
-                            { key: "anonymized", label: "Anonymisiert" },
-                          ]),
+                        : [{ key: "draft", label: "Entwurf" }]),
                     ] as Array<{ key: StatusFilter; label: string }>).map((opt) => (
                       <DropdownMenuCheckboxItem
                         key={opt.key}

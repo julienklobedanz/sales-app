@@ -189,7 +189,7 @@ export function ApprovalDecisionForm({
             ? 'Der Ansprechpartner bei uns passt die Referenz an und meldet sich bei Ihnen.'
             : done === 'updated' || done === 'approved'
               ? confirmationEmailSent
-                ? 'Sie erhalten in Kürze eine Bestätigungs-E-Mail mit Ihrem persönlichen Freigabe- und Sperrlink.'
+                ? 'Sie erhalten in Kürze eine Bestätigungs-E-Mail mit Ihrem persönlichen Kontroll-Link (Sperrlink).'
                 : 'Der Ansprechpartner bei uns wurde informiert.'
               : 'Sie können dieses Fenster schließen. Der Ansprechpartner bei uns wurde informiert.'}
         </p>

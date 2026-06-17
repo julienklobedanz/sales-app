@@ -966,6 +966,8 @@ export function renderReferenceColumnCell(
           <ReferenceStatusBadge
             status={ref.status}
             customerApprovalStatus={ref.customer_approval_status}
+            approvalScopeNamedMention={ref.approval_scope_named_mention}
+            approvalScopeAnonymousMention={ref.approval_scope_anonymous_mention}
           />
         </TableDataCell>
       )

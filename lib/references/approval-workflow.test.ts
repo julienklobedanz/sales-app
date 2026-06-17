@@ -50,6 +50,18 @@ describe('canStartApprovalWorkflow', () => {
     ).toBe(true)
   })
 
+  it('allows admin on internal_only when idle', () => {
+    expect(
+      canStartApprovalWorkflow({
+        ...base,
+        role: 'admin',
+        referenceStatus: 'internal_only',
+        internalApprovalStatus: 'pending_internal',
+        approvalRequestedAt: null,
+      })
+    ).toBe(true)
+  })
+
   it('allows admin to restart after withdraw even when reference status is external', () => {
     expect(
       canStartApprovalWorkflow({

@@ -34,6 +34,7 @@ import type {
 } from './actions'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
+import { isReferenceVisibleToSales } from '@/lib/references/sales-reference-visibility'
 import { cn } from '@/lib/utils'
 import {
   createSharedPortfolio,
@@ -693,7 +694,7 @@ export function DashboardOverview({
   const filteredReferences = useMemo(() => {
     let list = referencesWithLocalFavorites
     if (profile.role === 'sales') {
-      list = list.filter((r) => r.status !== 'draft')
+      list = list.filter((r) => isReferenceVisibleToSales(r.status))
     }
     if (favoritesOnly) {
       list = list.filter((r) => r.is_favorited)
