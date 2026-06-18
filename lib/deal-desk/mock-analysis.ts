@@ -220,6 +220,31 @@ export const DEMO_SAMPLE_RED_FLAGS: DealDeskRedFlag[] = [
   },
 ]
 
+/** Leere Analyse — kein stiller Mock im Produktivpfad. */
+export function buildEmptyDealDeskAnalysis(
+  fileNames: string[],
+  customerName?: string | null,
+  winProbability?: number | null
+): DealDeskMockAnalysis {
+  const primary = fileNames[0] ?? 'RFP-Paket'
+  const docLabel =
+    fileNames.length === 1
+      ? primary
+      : `${primary} + ${fileNames.length - 1} weitere`
+  return {
+    documentName: docLabel,
+    documentNames: fileNames.length > 0 ? [...fileNames] : ['RFP-Paket'],
+    customerName: customerName?.trim() || 'Unbekannt',
+    winProbability: winProbability ?? 0,
+    icpFitLabel: '—',
+    icpSummary: 'Noch keine KI-Analyse verfügbar.',
+    redFlags: [],
+    timelineItems: [],
+    draftRows: [],
+    smeTasks: [],
+  }
+}
+
 /** Demo-/Fallback-Analyse mit den drei Beispiel-Red-Flags. */
 export function buildDemoDealDeskAnalysis(fileNames: string[]): DealDeskMockAnalysis {
   const analysis = buildMockDealDeskAnalysis(fileNames)

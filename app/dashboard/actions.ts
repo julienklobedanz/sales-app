@@ -26,7 +26,7 @@ import { getRequestsImpl, reviewRequestImpl } from '@/app/dashboard/references/a
 import {
   cleanupCompanyDomainNamesImpl,
   mergeDuplicateCompaniesImpl,
-} from '@/app/dashboard/companies/maintenance'
+} from '@/app/dashboard/accounts/maintenance'
 import { updateUserRoleImpl } from '@/app/dashboard/settings/user-role'
 import { matchReferencesImpl } from '@/app/dashboard/references/match'
 import { getDashboardDataImpl, getDeletedReferencesImpl } from '@/app/dashboard/references/dashboard'
@@ -371,6 +371,7 @@ export async function reviewRequest(
   return reviewRequestImpl(approvalId, decision)
 }
 
+/** @deprecated Transitorisch — nutzt system_role/function_role; siehe updateUserRoleImpl. */
 export async function updateUserRole(role: 'admin' | 'sales') {
   return updateUserRoleImpl(role)
 }

@@ -7,6 +7,8 @@ import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
 import { ROUTES } from '@/lib/routes'
 import { validatePasswordPolicy } from '@/lib/security/password-policy'
 import { getAppOrigin } from '@/lib/env/app-origin'
+import { parseInviteRoleDimensions } from '@/lib/roles/invite-roles'
+import { legacyAppRoleFrom, legacyRoleToDimensions } from '@/lib/roles/legacy-mapping'
 
 export type SignUpResult = {
   error?: string
@@ -113,19 +115,21 @@ export async function signUp(formData: FormData): Promise<SignUpResult> {
         invite_token: inviteToken,
       })
 
-      const parsed = inviteData as { organization_id?: string; role?: string } | null
+      const parsed = inviteData as {
+        organization_id?: string
+        role?: string
+        system_role?: string
+        function_role?: string
+      } | null
       const organizationId = parsed?.organization_id ?? null
       if (!inviteError && organizationId) {
-        const roleRaw = (parsed?.role ?? 'sales').toString()
-        const role =
-          roleRaw === 'admin' || roleRaw === 'sales' || roleRaw === 'account_manager'
-            ? roleRaw
-            : 'sales'
+        const inviteRoles = parseInviteRoleDimensions(parsed ?? {})
 
         await supabase.from('profiles').upsert({
           id: data.user?.id,
           organization_id: organizationId,
-          role,
+          system_role: inviteRoles.systemRole,
+          function_role: inviteRoles.functionRole,
           full_name: fullName,
         })
         redirect(ROUTES.home)

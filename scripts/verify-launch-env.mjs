@@ -79,6 +79,11 @@ printGroup('Required for launch baseline', REQUIRED)
 printGroup('Recommended for core product flows', RECOMMENDED)
 printGroup('Optional depending on enabled features', OPTIONAL_BY_SCOPE)
 
+console.log(
+  '\nHubSpot CRM Sync (optional): HUBSPOT_CLIENT_ID + HUBSPOT_CLIENT_SECRET + SUPABASE_SERVICE_ROLE_KEY'
+)
+console.log('Setup: docs/hubspot-crm-sync-setup.md')
+
 const missingRequired = REQUIRED.filter((key) => !isSet(key))
 if (missingRequired.length > 0) {
   console.error('\nMissing required launch environment variables:')

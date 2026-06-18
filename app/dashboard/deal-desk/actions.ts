@@ -40,16 +40,20 @@ function isMissingArchivedColumnError(message: string | undefined): boolean {
 
 async function fetchDealDeskProjectRows(
   supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
-  orgId: string
+  orgId: string,
+  opts?: { dealId?: string }
 ): Promise<
   | { rows: DealDeskProjectRow[]; error: null }
   | { rows: null; error: string }
 > {
-  const withArchive = await supabase
+  const withArchiveQuery = supabase
     .from('deal_desk_projects')
     .select(DEAL_DESK_PROJECT_SELECT_WITH_ARCHIVE)
     .eq('organization_id', orgId)
-    .order('created_at', { ascending: false })
+  const withArchive = await (opts?.dealId
+    ? withArchiveQuery.eq('deal_id', opts.dealId)
+    : withArchiveQuery
+  ).order('created_at', { ascending: false })
 
   if (!withArchive.error) {
     return { rows: (withArchive.data ?? []) as DealDeskProjectRow[], error: null }
@@ -59,11 +63,14 @@ async function fetchDealDeskProjectRows(
     return { rows: null, error: withArchive.error.message }
   }
 
-  const legacy = await supabase
+  const legacyQuery = supabase
     .from('deal_desk_projects')
     .select(DEAL_DESK_PROJECT_SELECT_LEGACY)
     .eq('organization_id', orgId)
-    .order('created_at', { ascending: false })
+  const legacy = await (opts?.dealId
+    ? legacyQuery.eq('deal_id', opts.dealId)
+    : legacyQuery
+  ).order('created_at', { ascending: false })
 
   if (legacy.error) {
     return { rows: null, error: legacy.error.message }
@@ -251,6 +258,30 @@ export async function listDealDeskProjects(): Promise<
   return { success: true, projects }
 }
 
+export async function listDealDeskProjectsByDealId(
+  dealId: string
+): Promise<{ success: true; projects: DealDeskProject[] } | { success: false; error: string }> {
+  const auth = await getDeskAuth()
+  if ('error' in auth) return { success: false, error: auth.error }
+
+  const { supabase, orgId } = auth
+  const fetched = await fetchDealDeskProjectRows(supabase, orgId, { dealId })
+  if (fetched.error || !fetched.rows) {
+    return { success: false, error: fetched.error ?? 'Projekte konnten nicht geladen werden.' }
+  }
+
+  const ownerIds = fetched.rows.map((r) => r.created_by).filter((id): id is string => Boolean(id))
+  const ownersByUserId = await loadProjectOwnersByUserIds(supabase, ownerIds)
+
+  const projects: DealDeskProject[] = []
+  for (const row of fetched.rows) {
+    const docs = await loadProjectDocuments(supabase, row.id, orgId)
+    projects.push(rowToDealDeskProject(row, docs, ownersByUserId))
+  }
+
+  return { success: true, projects }
+}
+
 export async function getDealDeskProject(
   projectId: string
 ): Promise<{ success: true; project: DealDeskProject } | { success: false; error: string }> {
@@ -278,21 +309,27 @@ export async function getDealDeskProject(
 export async function createDealDeskProjectAction(input: {
   projectName: string
   fileNames: string[]
+  dealId?: string
 }): Promise<{ success: true; projectId: string } | { success: false; error: string }> {
   const auth = await getDeskAuth()
   if ('error' in auth) return { success: false, error: auth.error }
 
   const { supabase, orgId, user } = auth
 
+  const insertPayload: Record<string, unknown> = {
+    organization_id: orgId,
+    created_by: user.id,
+    project_name: input.projectName.trim() || 'Neues Projekt',
+    analysis_status: 'pending',
+    workspace_state: defaultWorkspaceState(),
+  }
+  if (input.dealId) {
+    insertPayload.deal_id = input.dealId
+  }
+
   const { data, error } = await supabase
     .from('deal_desk_projects')
-    .insert({
-      organization_id: orgId,
-      created_by: user.id,
-      project_name: input.projectName.trim() || 'Neues Projekt',
-      analysis_status: 'pending',
-      workspace_state: defaultWorkspaceState(),
-    })
+    .insert(insertPayload)
     .select('id')
     .single()
 
@@ -723,7 +760,7 @@ export async function runDealDeskDemoAnalyzeAction(): Promise<
   const { buildDemoDealDeskAnalysis } = await import('@/lib/deal-desk/mock-analysis')
   const { defaultWorkspaceState } = await import('@/lib/deal-desk/workspace-state')
   const analysis = buildDemoDealDeskAnalysis(DEMO_SEED_FILE_NAMES)
-  const workspace = defaultWorkspaceState(analysis.redFlags)
+  const workspace = defaultWorkspaceState(analysis.redFlags, { useDemoBidTeam: true })
 
   await auth.supabase
     .from('deal_desk_projects')

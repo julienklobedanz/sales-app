@@ -12,8 +12,8 @@ import {
 import type { DealDeskTimelineItem } from './mock-analysis'
 
 const timeline: DealDeskTimelineItem[] = [
-  { id: '1', title: 'Q&A / Rückfragenfrist', dueDate: '2026-06-12', dueTime: '13:00' },
-  { id: '2', title: 'Angebotsabgabe (Deadline)', dueDate: '2026-06-19' },
+  { id: '1', title: 'Q&A / Rückfragenfrist', dueDate: '2026-06-20', dueTime: '13:00' },
+  { id: '2', title: 'Angebotsabgabe (Deadline)', dueDate: '2026-06-25' },
 ]
 
 describe('formatBidVolumeDisplay', () => {
@@ -40,7 +40,7 @@ describe('resolveNextRfpDeadline', () => {
   it('picks earliest upcoming deadline', () => {
     const now = new Date('2026-06-01T12:00:00')
     const next = resolveNextRfpDeadline(timeline, null, now)
-    expect(next?.dateDe).toBe('12.06.2026')
+    expect(next?.dateDe).toBe('20.06.2026')
     expect(next?.timeDe).toBe('13:00 Uhr')
     expect(next?.detail).toBe('Q&A')
   })
@@ -73,7 +73,7 @@ describe('resolveBidOverviewMeta', () => {
     expect(meta.volumeIsAiEstimate).toBe(true)
     expect(meta.ownerName).toBe('Alex Stern')
     expect(meta.ownerAvatarUrl).toBe('https://example.com/a.jpg')
-    expect(meta.nextDeadlineDate).toBe('12.06.2026')
+    expect(meta.nextDeadlineDate).toBe('20.06.2026')
     expect(meta.nextDeadlineTime).toBe('13:00 Uhr')
     expect(meta.location).toBe('Berlin, DE')
     expect(meta.ownerInitials.length).toBeGreaterThan(0)

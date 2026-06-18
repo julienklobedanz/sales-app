@@ -65,6 +65,7 @@ import {
   deleteDealDeskProjectAction,
   getDealDeskProject,
   listDealDeskProjects,
+  listDealDeskProjectsByDealId,
   logDealDeskSmeRouteAction,
   removeDealDeskDocumentAction,
   resetDealDeskDemoForOrg,
@@ -107,6 +108,7 @@ const ACCEPT_ATTR =
 type TabKey = 'decision' | 'draft' | 'sme' | 'incubator'
 
 const DESK_LAYOUT_CLASS = 'mx-auto w-full max-w-6xl space-y-6'
+const DESK_LAYOUT_EMBEDDED_CLASS = 'w-full space-y-6'
 const TAB_PANEL_CLASS =
   'mt-2 w-full outline-none focus-visible:outline-none data-[state=inactive]:hidden'
 
@@ -177,7 +179,15 @@ function mergePendingFiles(existing: File[], incoming: File[]): File[] {
   return next
 }
 
-export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: boolean }) {
+export function DealDeskClient({
+  runDemoOnMount = false,
+  dealId,
+  embedded = false,
+}: {
+  runDemoOnMount?: boolean
+  dealId?: string
+  embedded?: boolean
+}) {
   const searchParams = useSearchParams()
   const inputRef = useRef<HTMLInputElement>(null)
   const skipPersistRef = useRef(true)
@@ -200,6 +210,8 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
     () => projects.filter((p) => p.archivedAt),
     [projects]
   )
+
+  const deskLayoutClass = embedded ? DESK_LAYOUT_EMBEDDED_CLASS : DESK_LAYOUT_CLASS
 
   const activeProject =
     projects.find((p) => p.id === activeProjectId) ??
@@ -248,7 +260,9 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
   useEffect(() => {
     void (async () => {
       setLoadingDesk(true)
-      const listRes = await listDealDeskProjects()
+      const listRes = dealId
+        ? await listDealDeskProjectsByDealId(dealId)
+        : await listDealDeskProjects()
       if (listRes.success) {
         setProjects(listRes.projects)
         const firstActive = listRes.projects.find((p) => !p.archivedAt) ?? null
@@ -264,7 +278,7 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
       }
       skipPersistRef.current = false
       setLoadingDesk(false)
-      if (runDemoOnMount && listRes.success && listRes.projects.length === 0) {
+      if (runDemoOnMount && !dealId && listRes.success && listRes.projects.length === 0) {
         const demo = await runDealDeskDemoAnalyzeAction()
         if (demo.success) {
           await reloadProject(demo.projectId)
@@ -273,7 +287,7 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
         }
       }
     })()
-  }, [runDemoOnMount, reloadProject])
+  }, [runDemoOnMount, reloadProject, dealId])
 
   useEffect(() => {
     if (loadingDesk) return
@@ -331,6 +345,7 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
       const created = await createDealDeskProjectAction({
         projectName: defaultProjectNameFromFiles(fileNames),
         fileNames,
+        dealId,
       })
       if (!created.success) {
         toast.error(created.error)
@@ -356,6 +371,9 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
         const json = (await res.json()) as AnalyzeApiResult
 
         if (!res.ok || !json.success) {
+          if (json.warning) {
+            toast.warning(json.warning, { duration: 14_000 })
+          }
           showAnalysisErrorToast(json.error ?? 'Analyse fehlgeschlagen.', json.isScanLikely)
           await reloadProject(created.projectId)
           setActiveProjectId(created.projectId)
@@ -386,7 +404,7 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
         setAnalyzeStatus(null)
       }
     },
-    [analyzing, reloadProject]
+    [analyzing, reloadProject, dealId]
   )
 
   const rerunAnalysis = useCallback(
@@ -402,6 +420,9 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
         const json = (await res.json()) as AnalyzeApiResult
 
         if (!res.ok || !json.success) {
+          if (json.warning) {
+            toast.warning(json.warning, { duration: 14_000 })
+          }
           showAnalysisErrorToast(json.error ?? 'Erneute Analyse fehlgeschlagen.', json.isScanLikely)
           await reloadProject(projectId)
           return
@@ -464,6 +485,9 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
         const json = (await res.json()) as AnalyzeApiResult
 
         if (!res.ok || !json.success) {
+          if (json.warning) {
+            toast.warning(json.warning, { duration: 14_000 })
+          }
           showAnalysisErrorToast(json.error ?? 'Dokumente konnten nicht hinzugefügt werden.', json.isScanLikely)
           await reloadProject(projectId)
           return
@@ -783,7 +807,7 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
 
   if (loadingDesk) {
     return (
-      <div className={cn(DESK_LAYOUT_CLASS, 'flex min-h-[320px] items-center justify-center')}>
+      <div className={cn(deskLayoutClass, 'flex min-h-[320px] items-center justify-center')}>
         <Loader2 className="size-8 animate-spin text-muted-foreground" aria-hidden />
       </div>
     )
@@ -810,8 +834,8 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
 
   if (showUploadSurface) {
     return (
-      <div className={cn(DESK_LAYOUT_CLASS, 'space-y-4')}>
-        {projectSwitcher}
+      <div className={cn(deskLayoutClass, 'space-y-4')}>
+        {!embedded ? projectSwitcher : null}
         {activeProjects.length === 0 && projects.length > 0 ? (
           <div className="rounded-lg border border-amber-200/80 bg-amber-50/80 px-4 py-3 text-sm text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100">
             Alle RFPs sind archiviert. Laden Sie ein neues RFP hoch oder stellen Sie ein Projekt im Archiv
@@ -825,7 +849,7 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
 
   if (!activeProject) {
     return (
-      <div className={cn(DESK_LAYOUT_CLASS, 'flex min-h-[320px] items-center justify-center')}>
+      <div className={cn(deskLayoutClass, 'flex min-h-[320px] items-center justify-center')}>
         <Loader2 className="size-8 animate-spin text-muted-foreground" aria-hidden />
       </div>
     )
@@ -841,7 +865,7 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
   const bidEnrichment = resolveBidEnrichment(analysis)
 
   return (
-    <div className={cn(DESK_LAYOUT_CLASS, 'pb-8')}>
+    <div className={cn(deskLayoutClass, 'pb-8')}>
       <DealDeskProjectHeader
         activeProjects={activeProjects}
         archivedProjects={archivedProjects}
@@ -1098,7 +1122,11 @@ export function DealDeskClient({ runDemoOnMount = false }: { runDemoOnMount?: bo
           </TabsContent>
 
           <TabsContent value="incubator" forceMount className={TAB_PANEL_CLASS}>
-            <ReferenceIncubatorTab projectId={activeProject.id} analysis={analysis} />
+            <ReferenceIncubatorTab
+              projectId={activeProject.id}
+              analysis={analysis}
+              isDemoMode={activeProject.showDemoBadge}
+            />
           </TabsContent>
         </div>
       </Tabs>

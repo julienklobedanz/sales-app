@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
-import { Key01Icon, Mail01Icon, Shield } from '@hugeicons/core-free-icons'
+import { Mail01Icon, Shield } from '@hugeicons/core-free-icons'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -17,8 +16,6 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { AppIcon } from '@/lib/icons'
-import { createAuthBrowserClient } from '@/lib/supabase/client'
-import { ROUTES } from '@/lib/routes'
 import { sendMagicLinkSignIn, startSsoSignIn } from '@/app/login/actions'
 
 type AuthAlternativeSignInProps = {
@@ -34,16 +31,14 @@ export function AuthAlternativeSignIn({
   disabled = false,
   getEmail,
 }: AuthAlternativeSignInProps) {
-  const router = useRouter()
   const [ssoOpen, setSsoOpen] = useState(false)
   const [ssoDomain, setSsoDomain] = useState('')
   const [ssoError, setSsoError] = useState<string | null>(null)
   const [magicLinkSent, setMagicLinkSent] = useState(false)
   const [isMagicPending, startMagicTransition] = useTransition()
   const [isSsoPending, startSsoTransition] = useTransition()
-  const [isPasskeyPending, startPasskeyTransition] = useTransition()
 
-  const isBusy = disabled || isMagicPending || isSsoPending || isPasskeyPending
+  const isBusy = disabled || isMagicPending || isSsoPending
 
   function handleMagicLink() {
     const email = getEmail().trim()
@@ -95,34 +90,6 @@ export function AuthAlternativeSignIn({
     })
   }
 
-  function handlePasskey() {
-    startPasskeyTransition(async () => {
-      try {
-        const supabase = createAuthBrowserClient()
-        const { data, error } = await supabase.auth.signInWithPasskey()
-
-        if (error) {
-          if (error.message.toLowerCase().includes('cancel')) {
-            return
-          }
-          toast.error(
-            error.message.includes('experimental') || error.message.includes('passkey')
-              ? 'Passkey-Anmeldung ist noch nicht aktiviert. Bitte E-Mail und Passwort nutzen.'
-              : error.message
-          )
-          return
-        }
-
-        if (data.session) {
-          router.push(inviteToken ? `${ROUTES.onboarding}?invite=${encodeURIComponent(inviteToken)}` : ROUTES.home)
-          router.refresh()
-        }
-      } catch {
-        toast.error('Passkey-Anmeldung konnte nicht gestartet werden.')
-      }
-    })
-  }
-
   return (
     <>
       {magicLinkSent ? (
@@ -134,8 +101,8 @@ export function AuthAlternativeSignIn({
       <div
         className={
           ssoEnabled
-            ? 'grid grid-cols-1 gap-1.5 sm:grid-cols-3'
-            : 'grid grid-cols-1 gap-1.5 sm:grid-cols-2'
+            ? 'grid grid-cols-1 gap-1.5 sm:grid-cols-2'
+            : 'grid grid-cols-1 gap-1.5'
         }
       >
         {ssoEnabled ? (
@@ -163,16 +130,6 @@ export function AuthAlternativeSignIn({
         >
           <AppIcon icon={Mail01Icon} size={15} className="text-zinc-400" />
           {isMagicPending ? 'Wird gesendet …' : 'Magic Link'}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          className="h-8 w-full rounded-md gap-1 px-2 py-2 text-xs font-normal text-muted-foreground"
-          disabled={isBusy}
-          onClick={handlePasskey}
-        >
-          <AppIcon icon={Key01Icon} size={15} className="text-zinc-400" />
-          {isPasskeyPending ? 'Wird geprüft …' : 'Passkey'}
         </Button>
       </div>
 

@@ -110,7 +110,27 @@ async function downloadKitPdf(path: string, title: string) {
   }
 }
 
-function PdfTemplates() {
+function PdfTemplates({ isDemoMode }: { isDemoMode: boolean }) {
+  if (!isDemoMode) {
+    return (
+      <Card className="rounded-xl border border-slate-200/80 bg-white shadow-sm">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <div className="flex size-8 items-center justify-center rounded-lg bg-blue-50">
+              <FileText className="size-4 text-blue-600" aria-hidden />
+            </div>
+            <div>
+              <CardTitle className="text-sm">PDF Templates</CardTitle>
+              <CardDescription className="text-xs">
+                Vorlagen stehen nach einer echten KI-Analyse zur Verfügung.
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+    )
+  }
+
   return (
     <Card className="rounded-xl border border-slate-200/80 bg-white shadow-sm">
       <CardHeader className="pb-3">
@@ -259,9 +279,11 @@ function HarvestResult({
 export function ReferenceIncubatorTab({
   projectId,
   analysis,
+  isDemoMode = false,
 }: {
   projectId: string
   analysis: DealDeskMockAnalysis
+  isDemoMode?: boolean
 }) {
   const [phase, setPhase] = useState<'idle' | 'loading' | 'done'>('idle')
   const [harvest, setHarvest] = useState<ReferenceIncubatorHarvest | null>(null)
@@ -309,7 +331,7 @@ export function ReferenceIncubatorTab({
 
       <aside className="flex min-w-0 flex-col gap-4 lg:col-span-5">
         <LegalTemplates />
-        <PdfTemplates />
+        <PdfTemplates isDemoMode={isDemoMode} />
       </aside>
 
       <div className="min-w-0 lg:col-span-7">

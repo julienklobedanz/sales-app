@@ -1,8 +1,57 @@
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { isDevRolePreviewEnabled, parseAppRoleCookie } from './dev-role-preview'
+import {
+  DEV_ROLE_PRESETS,
+  formatDevRolePreviewCookie,
+  isDevRolePreviewEnabled,
+  parseAppRoleCookie,
+  parseDevRolePreviewCookie,
+} from './dev-role-preview'
 
-describe('parseAppRoleCookie', () => {
+describe('parseDevRolePreviewCookie', () => {
+  it('accepts system:function format', () => {
+    expect(parseDevRolePreviewCookie('admin:sales_rep')).toEqual({
+      systemRole: 'admin',
+      functionRole: 'sales_rep',
+    })
+    expect(parseDevRolePreviewCookie('member:account_manager')).toEqual({
+      systemRole: 'member',
+      functionRole: 'account_manager',
+    })
+  })
+
+  it('accepts legacy single-role cookies', () => {
+    expect(parseDevRolePreviewCookie('admin')).toEqual({
+      systemRole: 'admin',
+      functionRole: 'sales_leader',
+    })
+    expect(parseDevRolePreviewCookie('account_manager')).toEqual({
+      systemRole: 'member',
+      functionRole: 'account_manager',
+    })
+    expect(parseDevRolePreviewCookie('sales')).toEqual({
+      systemRole: 'member',
+      functionRole: 'sales_rep',
+    })
+  })
+
+  it('rejects unknown values', () => {
+    expect(parseDevRolePreviewCookie('')).toBeNull()
+    expect(parseDevRolePreviewCookie('superadmin:sales_rep')).toBeNull()
+    expect(parseDevRolePreviewCookie('admin:unknown')).toBeNull()
+  })
+})
+
+describe('formatDevRolePreviewCookie', () => {
+  it('round-trips with parse', () => {
+    for (const preset of DEV_ROLE_PRESETS) {
+      const cookie = formatDevRolePreviewCookie(preset)
+      expect(parseDevRolePreviewCookie(cookie)).toEqual(preset)
+    }
+  })
+})
+
+describe('parseAppRoleCookie (deprecated)', () => {
   it('accepts known roles', () => {
     expect(parseAppRoleCookie('admin')).toBe('admin')
     expect(parseAppRoleCookie('sales')).toBe('sales')

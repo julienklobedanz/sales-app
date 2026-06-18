@@ -10,6 +10,8 @@ import type { DealDeskMockAnalysis } from '@/lib/deal-desk/mock-analysis'
 import { ReferenceForm } from '../../new/reference-form'
 import type { ReferenceFormInitialData } from '../../new/reference-form'
 import { DASHBOARD_PAGE_SUBTITLE_CLASS, DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
+import { userCanEditReference } from '@/lib/roles/reference-access'
 
 export const maxDuration = 180
 
@@ -29,12 +31,14 @@ export default async function EditReferencePage({
 
   const { data: me } = await supabase
     .from('profiles')
-    .select('role, organization_id')
+    .select('role, organization_id, system_role, function_role, capabilities')
     .eq('id', user.id)
     .single()
   if (!me) redirect(ROUTES.onboarding)
-  const role = (me as { role?: 'admin' | 'sales' | 'account_manager' }).role ?? 'sales'
-  if (role === 'sales' && !fromDeskId) redirect(ROUTES.evidence.detail(id))
+  const roles = parseProfileRoles(me)
+  if (!fromDeskId && !userCanEditReference(roles.functionRole, roles.systemRole, roles.capabilities)) {
+    redirect(ROUTES.evidence.detail(id))
+  }
 
   // 1. Referenz laden (mit contact_id)
   const { data: row, error } = await supabase
@@ -75,7 +79,7 @@ export default async function EditReferencePage({
   }
 
   // Ownership-Gating: AM darf nur eigene Referenzen bearbeiten, Admin alle.
-  if (role === 'account_manager') {
+  if (roles.functionRole === 'account_manager') {
     const createdBy = (row as unknown as { created_by?: string | null }).created_by ?? null
     if (!createdBy || createdBy !== user.id) {
       redirect(ROUTES.evidence.detail(id))

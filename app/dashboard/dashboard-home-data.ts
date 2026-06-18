@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { AppRole } from '@/hooks/useRole'
+import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
+import { legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
 import { matchReferences } from '@/app/dashboard/actions'
 import { getDeals } from '@/app/dashboard/deals/actions'
 import type { DealRow, DealStatus } from '@/app/dashboard/deals/types'
@@ -63,14 +64,9 @@ export type SalesRepDashboardModel = {
     href: string | null
   }>
   pipelineImpact: {
-    outreachDone: number
-    outreachTarget: number
-    meetingsDone: number
-    meetingsTarget: number
-    opportunitiesDone: number
-    opportunitiesTarget: number
-    winRatePercent: number
-    winRateDeltaPercent: number
+    winRateAvailable: boolean
+    winRatePercent: number | null
+    closedDealsCount: number
   }
   strategicAccounts: Array<{
     companyId: string
@@ -305,15 +301,21 @@ export async function loadSalesRepDashboardData(
   let liveIntent: SalesRepDashboardModel['liveIntent'] = []
   let strategicAccounts: SalesRepDashboardModel['strategicAccounts'] = []
 
+  const closedDeals = allDeals.filter(
+    (d) => d.sales_manager_id === userId && (d.status === 'won' || d.status === 'lost')
+  )
+  const wonCount = closedDeals.filter((d) => d.status === 'won').length
+  const closedDealsCount = closedDeals.length
+  const minClosedForWinRate = 3
+  const winRateAvailable = closedDealsCount >= minClosedForWinRate
+  const winRatePercent = winRateAvailable
+    ? Math.round((wonCount / closedDealsCount) * 100)
+    : null
+
   const pipelineImpact: SalesRepDashboardModel['pipelineImpact'] = {
-    outreachDone: Math.min(activeDeals.length * 3, 42),
-    outreachTarget: 50,
-    meetingsDone: Math.min(Math.max(1, Math.round(activeDeals.length * 0.8)), 12),
-    meetingsTarget: 12,
-    opportunitiesDone: Math.min(Math.max(1, Math.round(activeDeals.length * 0.3)), 5),
-    opportunitiesTarget: 5,
-    winRatePercent: 14,
-    winRateDeltaPercent: 2,
+    winRateAvailable,
+    winRatePercent,
+    closedDealsCount,
   }
   if (orgId) {
     const [signalReadRows, execRows, newsRows, intentRows] = await Promise.all([
@@ -1264,7 +1266,8 @@ export async function loadAdminDashboardData(
 }
 
 export async function loadDashboardHomeForRole(
-  role: AppRole,
+  systemRole: SystemRole,
+  functionRole: FunctionRole,
   supabase: SupabaseClient,
   userId: string,
   fullName: string | null
@@ -1273,10 +1276,11 @@ export async function loadDashboardHomeForRole(
   | { role: 'account_manager'; data: AccountManagerDashboardModel }
   | { role: 'admin'; data: AdminDashboardModel }
 > {
-  if (role === 'sales') {
+  const appRole = legacyAppRoleFrom(systemRole, functionRole)
+  if (appRole === 'sales') {
     return { role: 'sales', data: await loadSalesRepDashboardData(supabase, userId, fullName) }
   }
-  if (role === 'account_manager') {
+  if (appRole === 'account_manager') {
     return { role: 'account_manager', data: await loadAccountManagerDashboardData(supabase, userId, fullName) }
   }
   return { role: 'admin', data: await loadAdminDashboardData(supabase, fullName) }

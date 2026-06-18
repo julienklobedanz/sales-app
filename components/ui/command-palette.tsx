@@ -145,13 +145,13 @@ export function CommandPalette() {
         visible: false,
       },
       {
-        key: "deal-desk",
-        label: "Deal Desk öffnen",
-        searchKeywords: "rfp bid deal desk ausschreibung upload",
-        icon: <AppIcon icon={Upload} size={16} />,
+        key: "deals",
+        label: "Deals öffnen",
+        searchKeywords: "deals rfp bid ausschreibung ki analyse",
+        icon: <AppIcon icon={Handshake} size={16} />,
         onSelect: () => {
           setOpen(false)
-          router.push(ROUTES.dealDesk)
+          router.push(ROUTES.deals.root)
         },
         visible: true,
       },

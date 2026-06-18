@@ -16,7 +16,7 @@ export async function seedDealDeskDemoProject(
   const analysis = buildDemoDealDeskAnalysis(DEMO_SEED_FILE_NAMES)
   analysis.customerName = 'Logistik AG Schweiz'
 
-  const workspace = defaultWorkspaceState(analysis.redFlags)
+  const workspace = defaultWorkspaceState(analysis.redFlags, { useDemoBidTeam: true })
 
   const { data, error } = await supabase
     .from('deal_desk_projects')

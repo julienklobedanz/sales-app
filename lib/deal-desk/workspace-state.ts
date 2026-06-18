@@ -16,7 +16,8 @@ export type DealDeskWorkspaceState = {
 }
 
 export function defaultWorkspaceState(
-  redFlags: DealDeskRedFlag[] = []
+  redFlags: DealDeskRedFlag[] = [],
+  opts?: { useDemoBidTeam?: boolean }
 ): DealDeskWorkspaceState {
   return {
     redFlags: redFlags.map((f) => ({ ...f })),
@@ -24,13 +25,17 @@ export function defaultWorkspaceState(
     smeAssignments: {},
     smeCustomExperts: [],
     decision: null,
-    bidTeam: DEFAULT_BID_TEAM.map((b) => ({ ...b })),
+    bidTeam: opts?.useDemoBidTeam ? DEFAULT_BID_TEAM.map((b) => ({ ...b })) : [],
   }
 }
 
-export function parseWorkspaceState(raw: unknown, fallbackRedFlags: DealDeskRedFlag[] = []): DealDeskWorkspaceState {
+export function parseWorkspaceState(
+  raw: unknown,
+  fallbackRedFlags: DealDeskRedFlag[] = [],
+  opts?: { useDemoBidTeam?: boolean }
+): DealDeskWorkspaceState {
   if (!raw || typeof raw !== 'object') {
-    return defaultWorkspaceState(fallbackRedFlags)
+    return defaultWorkspaceState(fallbackRedFlags, opts)
   }
   const o = raw as Record<string, unknown>
   const redFlagsRaw = Array.isArray(o.redFlags) ? (o.redFlags as DealDeskRedFlag[]) : []
@@ -48,7 +53,12 @@ export function parseWorkspaceState(raw: unknown, fallbackRedFlags: DealDeskRedF
   const decision =
     o.decision === 'go' || o.decision === 'no-bid' ? o.decision : null
   const bidTeamRaw = Array.isArray(o.bidTeam) ? (o.bidTeam as BidTeamAssignment[]) : []
-  const bidTeam = bidTeamRaw.length > 0 ? bidTeamRaw : DEFAULT_BID_TEAM
+  const bidTeam =
+    bidTeamRaw.length > 0
+      ? bidTeamRaw
+      : opts?.useDemoBidTeam
+        ? DEFAULT_BID_TEAM
+        : []
   return {
     redFlags: redFlags.map((f) => ({ ...f })),
     smeRoutes: { ...smeRoutes },

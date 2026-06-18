@@ -7,6 +7,8 @@ import { ArrowLeftIcon } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
+import { userCanCreateReference } from '@/lib/roles/reference-access'
 
 export const maxDuration = 180
 
@@ -19,12 +21,14 @@ export default async function NewReferencePage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, organization_id')
+    .select('role, organization_id, system_role, function_role, capabilities')
     .eq('id', user.id)
     .single()
   if (!profile) redirect(ROUTES.onboarding)
-  const role = (profile as { role?: 'admin' | 'sales' | 'account_manager' }).role ?? 'sales'
-  if (role === 'sales') redirect(ROUTES.evidence.root)
+  const roles = parseProfileRoles(profile)
+  if (!userCanCreateReference(roles.functionRole, roles.systemRole, roles.capabilities)) {
+    redirect(ROUTES.evidence.root)
+  }
 
   // 1. Firmen laden (inkl. logo_url für Anzeige bei Auswahl)
   const { data: companies } = await supabase

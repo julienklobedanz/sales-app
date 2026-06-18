@@ -16,6 +16,11 @@ import { ToolbarSearchField } from "@/components/ui/toolbar-search-field"
 import { COPY } from "@/lib/copy"
 import { ROUTES } from "@/lib/routes"
 import { isReferenceVisibleToSales } from "@/lib/references/sales-reference-visibility"
+import type { Capability, FunctionRole, SystemRole } from "@/lib/roles/capabilities"
+import {
+  isSalesAppView,
+  userCanCreateReference,
+} from "@/lib/roles/reference-access"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -42,13 +47,17 @@ function normalizeHaystack(r: ReferenceRow) {
 
 export function EvidenceClient({
   references,
-  role,
+  systemRole,
+  functionRole,
+  capabilities = {},
 }: {
   references: ReferenceRow[]
-  role: "admin" | "sales" | "account_manager"
+  systemRole: SystemRole
+  functionRole: FunctionRole
+  capabilities?: Partial<Record<Capability, boolean>>
 }) {
-  const isSales = role === "sales"
-  const canCreate = role === "admin" || role === "account_manager"
+  const isSales = isSalesAppView(systemRole, functionRole)
+  const canCreate = userCanCreateReference(functionRole, systemRole, capabilities)
   const hasAny = references.length > 0
 
   const [query, setQuery] = React.useState("")

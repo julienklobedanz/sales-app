@@ -8,8 +8,8 @@ import {
 
 describe('team-invite-email', () => {
   it('formats invite role labels', () => {
-    expect(formatTeamInviteRoleLabel('admin')).toBe('Admin')
-    expect(formatTeamInviteRoleLabel('sales')).toBe('Sales')
+    expect(formatTeamInviteRoleLabel('admin', 'sales_leader')).toBe('Administrator · Sales Lead')
+    expect(formatTeamInviteRoleLabel('member', 'sales_rep')).toBe('Mitglied · Vertrieb')
   })
 
   it('builds branded html with invite link and meta', () => {
@@ -17,7 +17,8 @@ describe('team-invite-email', () => {
       to: 'new@example.com',
       inviterName: 'Alex Admin',
       orgName: 'Acme GmbH',
-      role: 'sales',
+      systemRole: 'member',
+      functionRole: 'sales_rep',
       inviteLink: 'https://app.refstack.test/register?invite=abc',
       expiresAtLabel: '03.06.2026',
     })

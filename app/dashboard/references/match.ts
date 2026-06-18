@@ -1,10 +1,11 @@
 'use server'
 
+import { loadReferenceVisibilityForUser } from '@/lib/roles/load-reference-visibility'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { embedTextWithOpenAI } from '@/lib/embeddings-openai'
 import { rpcMatchReferences } from '@/lib/match-references-rpc'
 import { snippetFromSummary } from '@/lib/match-reference-snippet'
-import { logEvent } from '@/lib/events/log-event'
+import { logReferenceMatched } from '@/lib/events/log-reference-matched'
 import { formatIndustryDisplay } from '@/lib/constants/industries'
 
 import type {
@@ -40,19 +41,13 @@ export async function matchReferencesImpl(
     return { success: false, error: 'Nicht angemeldet.' }
   }
 
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('organization_id, role')
-    .eq('id', user.id)
-    .single()
-
-  if (profileError || !profile?.organization_id) {
+  const visibility = await loadReferenceVisibilityForUser(supabase, user.id)
+  if (!visibility) {
     return { success: false, error: 'Keine Organisation zugeordnet.' }
   }
 
-  const orgId = profile.organization_id as string
-  const role = (profile as { role?: string }).role ?? 'sales'
-  const salesVisibleOnly = role === 'sales'
+  const orgId = visibility.organizationId
+  const salesVisibleOnly = visibility.salesVisibleOnly
 
   let queryText = raw
 
@@ -123,18 +118,13 @@ export async function matchReferencesImpl(
     matches = await rerankMatchHitsWithGpt(apiKey, queryText, matches)
   }
 
-  void logEvent({
+  void logReferenceMatched({
     organizationId: orgId,
-    eventType: 'reference_matched',
-    payload: {
-      match_count: matches.length,
-      has_deal_context: Boolean(dealId),
-      rerank: Boolean(options?.rerank),
-      match_threshold: matchThreshold,
-      matched_reference_ids: matches.map((m) => m.id),
-    },
+    matchedReferenceIds: matches.map((m) => m.id),
+    source: dealId ? 'deal_context' : 'match_page',
     dealId: dealId ?? null,
-    referenceId: null,
+    rerank: Boolean(options?.rerank),
+    matchThreshold,
   })
 
   return { success: true, matches }

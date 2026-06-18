@@ -3,8 +3,12 @@ import { Suspense } from 'react'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
-import type { AppRole } from '@/hooks/useRole'
-import { DEV_ROLE_COOKIE, isDevRolePreviewEnabled, parseAppRoleCookie } from '@/lib/dev-role-preview'
+import { DEV_ROLE_COOKIE, isDevRolePreviewEnabled, parseDevRolePreviewCookie } from '@/lib/dev-role-preview'
+import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
+import { legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
+import { isSalesAppView } from '@/lib/roles/reference-access'
+import { parseRolesPermissionsSettings } from '@/lib/roles/roles-permissions-settings'
 import { DEFAULT_DIGEST_LOCAL_TIME, DEFAULT_DIGEST_TIMEZONE } from '@/lib/market-signals/digest-schedule'
 import { getTeamMembers } from './invite-actions'
 import { SettingsTabs } from './settings-tabs'
@@ -154,8 +158,18 @@ function parseOrganizationWorkflowSettings(raw: unknown): {
   }
 }
 
-function parseOrganizationApiSettings(raw: unknown): { apiKeyMask: string; useWorkspaceBranding: boolean } {
-  if (!raw || typeof raw !== 'object') return { apiKeyMask: 'sk_live_************************', useWorkspaceBranding: false }
+function parseOrganizationApiSettings(raw: unknown): {
+  apiKeyMask: string
+  useWorkspaceBranding: boolean
+  rolesPermissions: ReturnType<typeof parseRolesPermissionsSettings>
+} {
+  if (!raw || typeof raw !== 'object') {
+    return {
+      apiKeyMask: 'sk_live_************************',
+      useWorkspaceBranding: false,
+      rolesPermissions: parseRolesPermissionsSettings(null),
+    }
+  }
   const obj = raw as Record<string, unknown>
   return {
     apiKeyMask:
@@ -163,6 +177,7 @@ function parseOrganizationApiSettings(raw: unknown): { apiKeyMask: string; useWo
         ? obj.workspace_key_mask.trim()
         : 'sk_live_************************',
     useWorkspaceBranding: typeof obj.use_workspace_branding === 'boolean' ? obj.use_workspace_branding : false,
+    rolesPermissions: parseRolesPermissionsSettings(obj.roles_permissions),
   }
 }
 
@@ -194,18 +209,18 @@ export default async function SettingsPage() {
   const teamMembers = await getTeamMembers()
 
   const cookieStore = await cookies()
-  const previewRole = isDevRolePreviewEnabled()
-    ? parseAppRoleCookie(cookieStore.get(DEV_ROLE_COOKIE)?.value)
+  const serverRoles = parseProfileRoles(profileRow)
+  const previewRoles = isDevRolePreviewEnabled()
+    ? parseDevRolePreviewCookie(cookieStore.get(DEV_ROLE_COOKIE)?.value)
     : null
-  const serverRole = (profileRow?.role ?? 'sales') as AppRole
-  const isAdmin = serverRole === 'admin'
+  const isAdmin = isSystemAdmin(serverRoles.systemRole)
   const hubspotConfigured = isHubSpotConfigured()
   const hubspotStatus =
     isAdmin && organizationId
       ? await getOrganizationCrmConnectionPublicStatus(supabase, organizationId, 'hubspot')
       : { connected: false, externalAccountId: null, lastSyncAt: null }
   const auditLogs: AuditLogRow[] =
-    serverRole === 'admin' && organizationId
+    isAdmin && organizationId
       ? (
           await supabase
             .from('audit_logs')
@@ -220,12 +235,23 @@ export default async function SettingsPage() {
   const [firstName = '', ...rest] = fullName.trim().split(/\s+/)
   const lastName = rest.join(' ') ?? ''
 
+  const apiSettingsParsed = parseOrganizationApiSettings(
+    (orgRow as { api_settings?: unknown } | null)?.api_settings
+  )
+
   return (
     <div className="flex flex-col space-y-6">
       <Suspense fallback={<div className="h-96 animate-pulse rounded-xl bg-muted/40" />}>
         <SettingsTabs
         devRolePreviewEnabled={isDevRolePreviewEnabled()}
-        roleSwitcher={{ serverRole, previewRole }}
+        roleSwitcher={{
+          serverRoles: {
+            systemRole: serverRoles.systemRole,
+            functionRole: serverRoles.functionRole,
+          },
+          previewRoles,
+          isServerAdmin: isAdmin,
+        }}
         profile={{
           userEmail: user.email ?? '',
           firstName,
@@ -233,12 +259,7 @@ export default async function SettingsPage() {
           avatarUrl: (profileRow as { avatar_url?: string | null })?.avatar_url ?? null,
           bookingUrl: (profileRow as { booking_url?: string | null })?.booking_url ?? null,
           phone: (profileRow as { phone?: string | null })?.phone ?? null,
-          profileRole:
-            profileRow?.role === 'admin' ||
-            profileRow?.role === 'sales' ||
-            profileRow?.role === 'account_manager'
-              ? profileRow.role
-              : 'sales',
+          profileRole: legacyAppRoleFrom(serverRoles.systemRole, serverRoles.functionRole),
           notificationSettings: parseProfileNotificationSettings(
             (profileRow as { notification_settings?: unknown } | null)?.notification_settings
           ),
@@ -263,9 +284,10 @@ export default async function SettingsPage() {
           subscriptionId: orgRow?.stripe_subscription_id ?? null,
           subdomain:
             (orgRow as { subdomain?: string | null } | null)?.subdomain ?? '',
-          apiSettings: parseOrganizationApiSettings(
-            (orgRow as { api_settings?: unknown } | null)?.api_settings
-          ),
+          apiSettings: {
+            apiKeyMask: apiSettingsParsed.apiKeyMask,
+            useWorkspaceBranding: apiSettingsParsed.useWorkspaceBranding,
+          },
           workflowSettings: parseOrganizationWorkflowSettings(
             (orgRow as { workflow_settings?: unknown } | null)?.workflow_settings
           ),
@@ -279,6 +301,7 @@ export default async function SettingsPage() {
           externalAccountId: hubspotStatus.externalAccountId,
           lastSyncAt: hubspotStatus.lastSyncAt,
         }}
+        rolesPermissions={apiSettingsParsed.rolesPermissions}
         />
       </Suspense>
     </div>

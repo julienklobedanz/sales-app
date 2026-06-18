@@ -32,6 +32,8 @@ export const ROUTES = {
     new: '/dashboard/deals/new',
     requestNew: '/dashboard/deals/request/new',
     detail: (id: string) => `/dashboard/deals/${id}`,
+    detailTab: (id: string, tab: 'overview' | 'desk' = 'overview') =>
+      tab === 'overview' ? `/dashboard/deals/${id}` : `/dashboard/deals/${id}?tab=${tab}`,
   },
   evidence: {
     root: '/dashboard/evidence',
@@ -67,4 +69,5 @@ export const LEGACY_REDIRECTS = [
   { source: '/dashboard/new', destination: ROUTES.evidence.new, permanent: true },
   { source: '/dashboard/edit/:id', destination: '/dashboard/evidence/:id/edit', permanent: true },
   { source: '/dashboard/concepts/inbox-references', destination: ROUTES.evidence.root, permanent: true },
+  { source: '/dashboard/deal-desk', destination: ROUTES.deals.root, permanent: false },
 ] as const

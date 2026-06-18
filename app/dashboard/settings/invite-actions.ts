@@ -5,6 +5,15 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { getAppOrigin } from '@/lib/env/app-origin'
 import { sendTeamInviteEmail } from '@/lib/email/team-invite-email'
+import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
+import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
+import {
+  DEFAULT_INVITE_ROLES,
+  legacyRoleForRpc,
+  parseInviteRoleDimensions,
+  type InviteRoleDimensions,
+} from '@/lib/roles/invite-roles'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
 
 const INVITE_VALID_DAYS = 7
 
@@ -48,6 +57,8 @@ export async function createInvite(): Promise<CreateInviteResult> {
     token,
     invited_by: user.id,
     expires_at: expiresAt.toISOString(),
+    system_role: DEFAULT_INVITE_ROLES.systemRole,
+    function_role: DEFAULT_INVITE_ROLES.functionRole,
   })
 
   if (error) {
@@ -77,7 +88,7 @@ export type InviteByEmailResult =
 
 export async function inviteByEmail(
   email: string,
-  role: 'admin' | 'sales' = 'sales'
+  roles: InviteRoleDimensions = DEFAULT_INVITE_ROLES
 ): Promise<InviteByEmailResult> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -111,13 +122,15 @@ export async function inviteByEmail(
   const expiresAt = new Date()
   expiresAt.setDate(expiresAt.getDate() + INVITE_VALID_DAYS)
 
-  // RPC statt .insert(): PostgREST-Schema-Cache kennt ggf. Spalte `role` nicht,
-  // obwohl sie in Postgres existiert – die Funktion schreibt direkt in die Tabelle.
+  const legacyRole = legacyRoleForRpc(roles.systemRole, roles.functionRole)
+
   const { error: rpcError } = await supabase.rpc('create_organization_invite', {
     p_email: normalizedEmail,
     p_token: token,
-    p_role: role,
+    p_role: legacyRole,
     p_expires_at: expiresAt.toISOString(),
+    p_system_role: roles.systemRole,
+    p_function_role: roles.functionRole,
   })
 
   if (rpcError) {
@@ -136,7 +149,8 @@ export async function inviteByEmail(
     to: normalizedEmail,
     inviterName,
     orgName,
-    role,
+    systemRole: roles.systemRole,
+    functionRole: roles.functionRole,
     inviteLink,
     expiresAtLabel,
   })
@@ -159,7 +173,8 @@ export type UpdatePendingInviteRoleResult =
 
 export async function updatePendingInviteRole(params: {
   inviteId: string
-  role: 'admin' | 'sales'
+  systemRole: SystemRole
+  functionRole: FunctionRole
 }): Promise<UpdatePendingInviteRoleResult> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -167,9 +182,13 @@ export async function updatePendingInviteRole(params: {
   } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Nicht angemeldet.' }
 
+  const legacyRole = legacyRoleForRpc(params.systemRole, params.functionRole)
+
   const { error } = await supabase.rpc('update_organization_invite_role', {
     p_invite_id: params.inviteId,
-    p_role: params.role,
+    p_role: legacyRole,
+    p_system_role: params.systemRole,
+    p_function_role: params.functionRole,
   })
   if (error) return { success: false, error: error.message }
   revalidatePath(ROUTES.settings)
@@ -222,12 +241,22 @@ export async function resendInviteEmail(params: {
   const parsed = inviteDataRaw as unknown
   const invite =
     parsed && typeof parsed === 'object'
-      ? (parsed as { email?: string | null; token?: string | null; role?: string | null })
+      ? (parsed as {
+          email?: string | null
+          token?: string | null
+          role?: string | null
+          system_role?: string | null
+          function_role?: string | null
+        })
       : null
 
   const email = invite?.email?.trim().toLowerCase() || ''
   const token = invite?.token?.trim() || ''
-  const inviteRole = invite?.role === 'admin' ? 'admin' : 'sales'
+  const inviteRoles = parseInviteRoleDimensions({
+    system_role: invite?.system_role,
+    function_role: invite?.function_role,
+    role: invite?.role,
+  })
   if (!email || !token) {
     return { success: false, error: 'Einladung nicht gefunden oder abgelaufen.' }
   }
@@ -251,7 +280,8 @@ export async function resendInviteEmail(params: {
     to: email,
     inviterName,
     orgName,
-    role: inviteRole,
+    systemRole: inviteRoles.systemRole,
+    functionRole: inviteRoles.functionRole,
     inviteLink,
     expiresAtLabel: formatInviteExpiresAt(expiresAt),
   })
@@ -274,10 +304,8 @@ export type TeamMemberRow = {
   name: string | null
   status: 'active' | 'pending'
   isSelf?: boolean
-  /** Nur aktive Mitglieder; bei Einladungen siehe inviteRole */
-  role?: 'admin' | 'sales' | null
-  /** Nur ausstehende Einladungen */
-  inviteRole?: 'admin' | 'sales' | null
+  systemRole: SystemRole
+  functionRole: FunctionRole
 }
 
 export async function getTeamMembers(): Promise<TeamMemberRow[]> {
@@ -299,7 +327,7 @@ export async function getTeamMembers(): Promise<TeamMemberRow[]> {
   const [profilesResult, invitesRpc] = await Promise.all([
     supabase
       .from('profiles')
-      .select('id, full_name, email, role')
+      .select('id, full_name, email, role, system_role, function_role')
       .eq('organization_id', organizationId),
     supabase.rpc('list_organization_pending_invites'),
   ])
@@ -310,16 +338,18 @@ export async function getTeamMembers(): Promise<TeamMemberRow[]> {
       full_name?: string | null
       email?: string | null
       role?: string | null
+      system_role?: string | null
+      function_role?: string | null
     }
-    const r = row.role
-    const role = r === 'admin' ? 'admin' : r === 'sales' ? 'sales' : null
+    const roles = parseInviteRoleDimensions(row)
     return {
       id: row.id,
       email: row.email ?? '',
       name: row.full_name ?? null,
       status: 'active' as const,
       isSelf: row.id === user.id,
-      role,
+      systemRole: roles.systemRole,
+      functionRole: roles.functionRole,
     }
   })
 
@@ -331,17 +361,23 @@ export async function getTeamMembers(): Promise<TeamMemberRow[]> {
   const pendingRows = Array.isArray(rawPending) ? rawPending : []
 
   const pending: TeamMemberRow[] = pendingRows.flatMap((row) => {
-    const i = row as { id?: string; email?: string | null; role?: string | null }
+    const i = row as {
+      id?: string
+      email?: string | null
+      role?: string | null
+      system_role?: string | null
+      function_role?: string | null
+    }
     if (!i?.id) return []
-    const r = i.role
-    const inviteRole = r === 'admin' ? 'admin' : 'sales'
+    const roles = parseInviteRoleDimensions(i)
     return [
       {
         id: i.id,
         email: i.email ?? '',
         name: null,
         status: 'pending' as const,
-        inviteRole,
+        systemRole: roles.systemRole,
+        functionRole: roles.functionRole,
       },
     ]
   })
@@ -364,12 +400,14 @@ export async function removeMember(params: {
 
   const { data: myProfile } = await supabase
     .from('profiles')
-    .select('organization_id, role')
+    .select('organization_id, role, system_role, function_role')
     .eq('id', user.id)
     .single()
 
   const organizationId = myProfile?.organization_id
   if (!organizationId) return { success: false, error: 'Keine Organisation zugeordnet.' }
+
+  const myRoles = parseProfileRoles(myProfile ?? {})
 
   if (params.inviteId) {
     const { error } = await supabase
@@ -383,7 +421,7 @@ export async function removeMember(params: {
   }
 
   if (params.profileId) {
-    const isAdmin = myProfile?.role === 'admin'
+    const isAdmin = isSystemAdmin(myRoles.systemRole)
     const isSelf = params.profileId === user.id
     if (!isAdmin && !isSelf) {
       return { success: false, error: 'Nur Admins können andere Mitglieder entfernen.' }
@@ -405,7 +443,8 @@ export type UpdateMemberRoleResult = { success: true } | { success: false; error
 
 export async function updateMemberRole(params: {
   profileId: string
-  role: 'admin' | 'sales'
+  systemRole: SystemRole
+  functionRole: FunctionRole
 }): Promise<UpdateMemberRoleResult> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -415,25 +454,24 @@ export async function updateMemberRole(params: {
 
   const { data: myProfile } = await supabase
     .from('profiles')
-    .select('organization_id, role')
+    .select('organization_id, role, system_role, function_role')
     .eq('id', user.id)
     .single()
 
   const organizationId = myProfile?.organization_id
   if (!organizationId) return { success: false, error: 'Keine Organisation zugeordnet.' }
 
-  if (myProfile?.role !== 'admin') {
+  const myRoles = parseProfileRoles(myProfile ?? {})
+  if (!isSystemAdmin(myRoles.systemRole)) {
     return { success: false, error: 'Nur Admins können Rollen ändern.' }
-  }
-
-  const role = params.role
-  if (!['admin', 'sales'].includes(role)) {
-    return { success: false, error: 'Ungültige Rolle.' }
   }
 
   const { error } = await supabase
     .from('profiles')
-    .update({ role })
+    .update({
+      system_role: params.systemRole,
+      function_role: params.functionRole,
+    })
     .eq('id', params.profileId)
     .eq('organization_id', organizationId)
 

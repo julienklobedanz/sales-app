@@ -3,6 +3,8 @@
 import { cookies } from 'next/headers'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
+import { legacyRoleToDimensions } from '@/lib/roles/legacy-mapping'
+import { parseInviteRoleDimensions } from '@/lib/roles/invite-roles'
 import { redirect } from 'next/navigation'
 
 export async function completeOnboarding(formData: FormData) {
@@ -18,6 +20,7 @@ export async function completeOnboarding(formData: FormData) {
     roleRaw === 'sales' || roleRaw === 'admin' || roleRaw === 'account_manager'
       ? roleRaw
       : 'sales'
+  const roleDims = legacyRoleToDimensions(role)
   const fullName = formData.get('full_name') as string
   const organizationName =
     (formData.get('organization_name') as string)?.trim() || 'Mein Unternehmen'
@@ -28,13 +31,20 @@ export async function completeOnboarding(formData: FormData) {
 
   // Einladung prüfen: gültiger Token → Organisation aus Einladung nutzen
   let organizationId: string | null = null
+  let inviteDims = roleDims
   if (inviteToken) {
     const { data: inviteData } = await supabase.rpc('get_invite_by_token', {
       invite_token: inviteToken,
     })
-    const parsed = inviteData as { organization_id?: string } | null
+    const parsed = inviteData as {
+      organization_id?: string
+      role?: string | null
+      system_role?: string | null
+      function_role?: string | null
+    } | null
     if (parsed?.organization_id) {
       organizationId = parsed.organization_id
+      inviteDims = parseInviteRoleDimensions(parsed)
       ;(await cookies()).set('invite_token', '', { path: '/', maxAge: 0 })
     }
   }
@@ -66,7 +76,8 @@ export async function completeOnboarding(formData: FormData) {
   const { error } = await supabase.from('profiles').upsert({
     id: user.id,
     organization_id: organizationId,
-    role,
+    system_role: inviteDims.systemRole,
+    function_role: inviteDims.functionRole,
     full_name: fullName,
   })
 

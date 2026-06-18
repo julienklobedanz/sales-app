@@ -2,19 +2,39 @@
 
 import * as React from "react"
 
-export type AppRole = "admin" | "sales" | "account_manager"
+import type { Capability, FunctionRole, SystemRole } from "@/lib/roles/capabilities"
+import { hasCapability } from "@/lib/roles/legacy-mapping"
+import { legacyAppRoleFrom } from "@/lib/roles/legacy-mapping"
+import type { AppRole } from "@/lib/roles/types"
+
+export type { AppRole, SystemRole, FunctionRole, Capability }
 
 export type RoleContextValue = {
+  systemRole: SystemRole
+  functionRole: FunctionRole
+  capabilities: Partial<Record<Capability, boolean>>
+  /** Abgeleitete Legacy-Rolle — Übergangsphase, deprecated */
   role: AppRole
 }
 
 const RoleContext = React.createContext<RoleContextValue | null>(null)
 
 export function RoleProvider({
-  role,
+  systemRole,
+  functionRole,
+  capabilities = {},
   children,
-}: React.PropsWithChildren<{ role: AppRole }>) {
-  return <RoleContext.Provider value={{ role }}>{children}</RoleContext.Provider>
+}: React.PropsWithChildren<{
+  systemRole: SystemRole
+  functionRole: FunctionRole
+  capabilities?: Partial<Record<Capability, boolean>>
+}>) {
+  const role = legacyAppRoleFrom(systemRole, functionRole)
+  return (
+    <RoleContext.Provider value={{ systemRole, functionRole, capabilities, role }}>
+      {children}
+    </RoleContext.Provider>
+  )
 }
 
 export function useRole() {
@@ -22,9 +42,11 @@ export function useRole() {
   if (!ctx) {
     throw new Error("useRole must be used within a RoleProvider.")
   }
-  const isAdmin = ctx.role === "admin"
-  const isAccountManager = ctx.role === "account_manager"
-  const isSales = ctx.role === "sales"
-  return { ...ctx, isAdmin, isAccountManager, isSales }
+  const isOwner = ctx.systemRole === "owner"
+  const isAdmin = ctx.systemRole === "owner" || ctx.systemRole === "admin"
+  const isSales = ctx.functionRole === "sales_rep"
+  const isAccountManager = ctx.functionRole === "account_manager"
+  const can = (cap: Capability) =>
+    hasCapability(ctx.functionRole, ctx.systemRole, ctx.capabilities, cap)
+  return { ...ctx, isOwner, isAdmin, isAccountManager, isSales, can }
 }
-

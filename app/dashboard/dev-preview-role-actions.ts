@@ -2,8 +2,12 @@
 
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
-import type { AppRole } from '@/hooks/useRole'
-import { DEV_ROLE_COOKIE, isDevRolePreviewEnabled } from '@/lib/dev-role-preview'
+import {
+  DEV_ROLE_COOKIE,
+  formatDevRolePreviewCookie,
+  isDevRolePreviewEnabled,
+  type DevRolePreview,
+} from '@/lib/dev-role-preview'
 import { ROUTES } from '@/lib/routes'
 
 function revalidateDashboardRole() {
@@ -14,13 +18,13 @@ export type SetDevPreviewRoleResult =
   | { ok: true }
   | { ok: false; error: string }
 
-export async function setDevPreviewRole(role: AppRole): Promise<SetDevPreviewRoleResult> {
+export async function setDevPreviewRole(preview: DevRolePreview): Promise<SetDevPreviewRoleResult> {
   if (!isDevRolePreviewEnabled()) {
     return { ok: false, error: 'Rollen-Vorschau ist in dieser Umgebung deaktiviert.' }
   }
   try {
     const jar = await cookies()
-    jar.set(DEV_ROLE_COOKIE, role, {
+    jar.set(DEV_ROLE_COOKIE, formatDevRolePreviewCookie(preview), {
       path: '/',
       maxAge: 60 * 60 * 24 * 30,
       sameSite: 'lax',

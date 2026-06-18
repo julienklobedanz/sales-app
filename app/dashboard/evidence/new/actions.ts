@@ -676,6 +676,7 @@ export async function createReference(
       project_start: project_start || null,
       project_end: project_end || null,
       is_nda_deal,
+      created_by: user.id,
     })
     .select('id')
     .single()

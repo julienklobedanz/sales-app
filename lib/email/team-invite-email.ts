@@ -6,6 +6,8 @@ import {
   getRefstackResendFrom,
   type RefstackEmailMetaRow,
 } from '@/lib/email/refstack-email-layout'
+import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
+import { formatRoleDimensionsLabel } from '@/lib/roles/invite-roles'
 
 function getResend(): Resend | null {
   const key = process.env.RESEND_API_KEY?.trim()
@@ -13,8 +15,11 @@ function getResend(): Resend | null {
   return new Resend(key)
 }
 
-export function formatTeamInviteRoleLabel(role: 'admin' | 'sales'): string {
-  return role === 'admin' ? 'Admin' : 'Sales'
+export function formatTeamInviteRoleLabel(
+  systemRole: SystemRole,
+  functionRole: FunctionRole
+): string {
+  return formatRoleDimensionsLabel(systemRole, functionRole)
 }
 
 export function humanizeTeamInviteEmailError(message?: string | null): string {
@@ -35,7 +40,8 @@ export type TeamInviteEmailParams = {
   to: string
   inviterName: string
   orgName: string
-  role: 'admin' | 'sales'
+  systemRole: SystemRole
+  functionRole: FunctionRole
   inviteLink: string
   expiresAtLabel: string
 }
@@ -46,7 +52,10 @@ export function buildTeamInviteEmailHtml(params: TeamInviteEmailParams): string 
 
   const metaRows: RefstackEmailMetaRow[] = [
     { label: 'Arbeitsbereich', value: org },
-    { label: 'Rolle', value: formatTeamInviteRoleLabel(params.role) },
+    {
+      label: 'Rolle',
+      value: formatTeamInviteRoleLabel(params.systemRole, params.functionRole),
+    },
     { label: 'Eingeladen von', value: inviter },
     { label: 'Gültig bis', value: params.expiresAtLabel },
   ]

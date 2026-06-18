@@ -1,9 +1,21 @@
-import type { AppRole } from '@/hooks/useRole'
+import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
+import {
+  legacyAppRoleFrom,
+  legacyRoleToDimensions,
+} from '@/lib/roles/legacy-mapping'
+import type { AppRole } from '@/lib/roles/types'
 
-/** Cookie für die in der Oberfläche gewählte Rolle (wirkt zusammen mit `profiles.role` im Layout). */
+/** Cookie für die in der Oberfläche gewählte Rolle (wirkt zusammen mit Profil im Layout). */
 export const DEV_ROLE_COOKIE = 'refstack_dev_role'
 
-/** Rollen-Vorschau nur in Development (oder explizit per `NEXT_PUBLIC_ENABLE_DEV_ROLE_PREVIEW=1`). */
+export type DevRolePreview = {
+  systemRole: SystemRole
+  functionRole: FunctionRole
+}
+
+const SYSTEM_ROLE_SET = new Set<SystemRole>(['owner', 'admin', 'member', 'viewer'])
+const FUNCTION_ROLE_SET = new Set<FunctionRole>(['sales_rep', 'account_manager', 'sales_leader'])
+
 export function isDevRolePreviewEnabled(): boolean {
   const flag = process.env.NEXT_PUBLIC_ENABLE_DEV_ROLE_PREVIEW?.trim()
   if (flag === '1') return true
@@ -11,8 +23,48 @@ export function isDevRolePreviewEnabled(): boolean {
   return process.env.NODE_ENV !== 'production'
 }
 
-export function parseAppRoleCookie(value: string | undefined): AppRole | null {
+function parseDimensionToken(value: string, allowed: Set<string>): string | null {
+  const v = value.trim()
+  return allowed.has(v) ? v : null
+}
+
+/** Neues Format: `system:function` (z. B. `admin:sales_leader`). Legacy: `admin` | `sales` | `account_manager`. */
+export function parseDevRolePreviewCookie(value: string | undefined): DevRolePreview | null {
   if (!value) return null
-  if (value === 'admin' || value === 'sales' || value === 'account_manager') return value
+
+  if (value.includes(':')) {
+    const [systemRaw, functionRaw] = value.split(':')
+    const systemRole = parseDimensionToken(systemRaw ?? '', SYSTEM_ROLE_SET) as SystemRole | null
+    const functionRole = parseDimensionToken(functionRaw ?? '', FUNCTION_ROLE_SET) as FunctionRole | null
+    if (systemRole && functionRole) {
+      return { systemRole, functionRole }
+    }
+    return null
+  }
+
+  if (value === 'admin' || value === 'sales' || value === 'account_manager') {
+    return legacyRoleToDimensions(value)
+  }
+
   return null
 }
+
+/** @deprecated Nutze parseDevRolePreviewCookie — liefert abgeleitete Legacy-Rolle für Notifications. */
+export function parseAppRoleCookie(value: string | undefined): AppRole | null {
+  const preview = parseDevRolePreviewCookie(value)
+  if (!preview) return null
+  return legacyAppRoleFrom(preview.systemRole, preview.functionRole)
+}
+
+export function formatDevRolePreviewCookie(preview: DevRolePreview): string {
+  return `${preview.systemRole}:${preview.functionRole}`
+}
+
+export const DEV_ROLE_PRESETS: DevRolePreview[] = [
+  { systemRole: 'owner', functionRole: 'sales_leader' },
+  { systemRole: 'admin', functionRole: 'sales_leader' },
+  { systemRole: 'admin', functionRole: 'account_manager' },
+  { systemRole: 'member', functionRole: 'sales_rep' },
+  { systemRole: 'member', functionRole: 'account_manager' },
+  { systemRole: 'member', functionRole: 'sales_leader' },
+]

@@ -13,6 +13,8 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { logEventForCurrentOrg } from '@/lib/events/log-event'
 import { clampNarrativeTextNullable } from '@/lib/references/reference-narrative-limits'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
+import { userCanAnonymizeReference } from '@/lib/roles/reference-access'
 
 /** Einmal pro Detail-Ansicht: Referenz geöffnet (Epic 15). */
 export async function logReferenceViewed(referenceId: string) {
@@ -200,15 +202,15 @@ export async function createAnonymizedReferenceVersion(id: string): Promise<Anon
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('organization_id, role')
+    .select('organization_id, role, system_role, function_role, capabilities')
     .eq('id', user.id)
     .single()
 
   if (!profile?.organization_id) {
     return { success: false, error: 'Kein Workspace gefunden.' }
   }
-  const role = (profile.role as string | null) ?? 'sales'
-  if (role === 'sales') {
+  const roles = parseProfileRoles(profile)
+  if (!userCanAnonymizeReference(roles.functionRole, roles.systemRole, roles.capabilities)) {
     return { success: false, error: 'Keine Berechtigung für diese Aktion.' }
   }
 

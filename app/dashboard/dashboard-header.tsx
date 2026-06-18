@@ -7,13 +7,11 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import {
   Bell,
-  Briefcase,
   LogOut,
   MailOpen,
   Moon,
   SearchIcon,
   SettingsIcon,
-  Shield,
   Sun,
 } from '@hugeicons/core-free-icons'
 import { SidebarTrigger } from '@/components/ui/sidebar'
@@ -40,7 +38,8 @@ import {
 } from '@/components/ui/breadcrumb'
 import { useCommandPalette } from '@/hooks/useCommandPalette'
 import { useHydrated } from '@/hooks/use-hydrated'
-import { type AppRole } from '@/hooks/useRole'
+import { type AppRole, useRole } from '@/hooks/useRole'
+import { DEV_ROLE_PRESETS, type DevRolePreview } from '@/lib/dev-role-preview'
 import { createClient } from '@/lib/supabase/client'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
@@ -123,6 +122,7 @@ export function DashboardHeader({
 
   const { resolvedTheme, setTheme } = useTheme()
   const { setOpen } = useCommandPalette()
+  const { systemRole, functionRole } = useRole()
   const [roleSwitchPending, startRoleSwitch] = useTransition()
   const [notifications, setNotifications] =
     useState<DashboardNotificationItem[]>(initialNotifications)
@@ -195,9 +195,9 @@ export function DashboardHeader({
     router.push(ROUTES.login)
   }
 
-  function selectDevRole(role: AppRole) {
+  function selectDevRole(preview: DevRolePreview) {
     startRoleSwitch(async () => {
-      const res = await setDevPreviewRole(role)
+      const res = await setDevPreviewRole(preview)
       if (!res.ok) {
         toast.error(res.error ?? 'Rolle konnte nicht gesetzt werden.')
         return
@@ -637,22 +637,21 @@ export function DashboardHeader({
                 <DropdownMenuLabel className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                   {COPY.roleSwitcher.profileMenuSectionTitle}
                 </DropdownMenuLabel>
-                <DropdownMenuItem
-                  disabled={roleSwitchPending}
-                  onSelect={() => selectDevRole('admin')}
-                  className={cn('cursor-pointer', userRole === 'admin' && 'bg-accent font-medium')}
-                >
-                  <AppIcon icon={Shield} size={16} className="shrink-0" />
-                  {COPY.roleSwitcher.roleMarketingAdmin}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  disabled={roleSwitchPending}
-                  onSelect={() => selectDevRole('sales')}
-                  className={cn('cursor-pointer', userRole === 'sales' && 'bg-accent font-medium')}
-                >
-                  <AppIcon icon={Briefcase} size={16} className="shrink-0" />
-                  {COPY.roleSwitcher.roleSalesRep}
-                </DropdownMenuItem>
+                {DEV_ROLE_PRESETS.map((preset) => {
+                  const active =
+                    preset.systemRole === systemRole && preset.functionRole === functionRole
+                  const label = `${COPY.roleDimensions.systemRoles[preset.systemRole]} · ${COPY.roleDimensions.functionRoles[preset.functionRole]}`
+                  return (
+                    <DropdownMenuItem
+                      key={`${preset.systemRole}:${preset.functionRole}`}
+                      disabled={roleSwitchPending}
+                      onSelect={() => selectDevRole(preset)}
+                      className={cn('cursor-pointer', active && 'bg-accent font-medium')}
+                    >
+                      {label}
+                    </DropdownMenuItem>
+                  )
+                })}
                 <DropdownMenuSeparator />
               </>
             ) : null}

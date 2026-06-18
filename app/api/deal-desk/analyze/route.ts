@@ -11,11 +11,15 @@ import { extractRfpPlainTextFromFile } from '@/lib/extract-rfp-plain-text'
 import { buildRfpCoverageReport } from '@/lib/rfp-coverage'
 import { extractRequirementsFromRfpText } from '@/lib/rfp-requirements'
 import { isOpenAiQuotaErrorMessage } from '@/lib/openai-api-errors'
+import { loadReferenceVisibilityForUser } from '@/lib/roles/load-reference-visibility'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { extractTimelineFromRfpText } from '@/lib/rfp-timeline'
 
 const OPENAI_QUOTA_MOCK_WARNING =
   'OpenAI-Kontingent erschöpft — Demo-Analyse wurde geladen. Bitte Guthaben unter platform.openai.com/account/billing prüfen.'
+
+const MISSING_OPENAI_KEY_MESSAGE =
+  'KI-Analyse ist deaktiviert (OPENAI_API_KEY fehlt).'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -45,21 +49,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: 'Nicht angemeldet.' }, { status: 401 })
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id, role')
-    .eq('id', user.id)
-    .maybeSingle()
-
-  if (!profile?.organization_id) {
+  const visibility = await loadReferenceVisibilityForUser(supabase, user.id)
+  if (!visibility) {
     return NextResponse.json(
       { success: false, error: 'Onboarding unvollständig — keine Organisation.' },
       { status: 403 }
     )
   }
 
-  const orgId = profile.organization_id as string
-  const salesVisibleOnly = (profile.role as string) === 'sales'
+  const orgId = visibility.organizationId
+  const salesVisibleOnly = visibility.salesVisibleOnly
   const apiKey = process.env.OPENAI_API_KEY
 
   let formData: FormData
@@ -198,7 +197,7 @@ export async function POST(req: NextRequest) {
     const mock = buildDemoDealDeskAnalysis(
       fileNames.length > 0 ? fileNames : ['RFP-Paket']
     )
-    const workspace = defaultWorkspaceState(mock.redFlags)
+    const workspace = defaultWorkspaceState(mock.redFlags, { useDemoBidTeam: true })
     await supabase
       .from('deal_desk_projects')
       .update({
@@ -392,27 +391,23 @@ export async function POST(req: NextRequest) {
   const projectName = (project.project_name as string) || 'RFP-Projekt'
 
   if (!apiKey) {
-    const mock = buildDemoDealDeskAnalysis(fileNames)
-    const workspace = defaultWorkspaceState(mock.redFlags)
     await supabase
       .from('deal_desk_projects')
       .update({
-        analysis_status: 'completed',
-        analysis_snapshot: mock,
-        analysis_source: 'mock',
-        workspace_state: workspace,
-        win_probability: mock.winProbability,
-        customer_name: mock.customerName,
-        error_message: null,
+        analysis_status: 'failed',
+        error_message: MISSING_OPENAI_KEY_MESSAGE,
       })
       .eq('id', projectId)
 
-    return NextResponse.json({
-      success: true,
-      projectId,
-      source: 'mock',
-      extractionUsedOcr,
-    })
+    return NextResponse.json(
+      {
+        success: false,
+        projectId,
+        error: MISSING_OPENAI_KEY_MESSAGE,
+        warning: MISSING_OPENAI_KEY_MESSAGE,
+      },
+      { status: 503 }
+    )
   }
 
   if (textParts.length === 0) {

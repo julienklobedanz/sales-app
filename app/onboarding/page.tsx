@@ -24,18 +24,13 @@ export default async function OnboardingPage({ searchParams }: Props) {
   }
 
   let inviteOrganizationName: string | null = null
-  let inviteRole: 'admin' | 'sales' | 'account_manager' | null = null
   if (inviteToken) {
     const { data } = await supabase.rpc('get_invite_by_token', {
       invite_token: inviteToken,
     })
-    const parsed = data as { organization_name?: string; role?: string | null } | null
+    const parsed = data as { organization_name?: string } | null
     if (parsed?.organization_name) {
       inviteOrganizationName = parsed.organization_name
-    }
-    const r = parsed?.role
-    if (r === 'admin' || r === 'sales' || r === 'account_manager') {
-      inviteRole = r
     }
   }
 
@@ -53,7 +48,6 @@ export default async function OnboardingPage({ searchParams }: Props) {
       <OnboardingWizard
         inviteToken={inviteToken}
         inviteOrganizationName={inviteOrganizationName}
-        inviteRole={inviteRole}
         initialFullName={initialFullName}
         userEmail={user.email ?? ''}
         hubspotConfigured={isHubSpotConfigured()}

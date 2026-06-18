@@ -1,17 +1,10 @@
 'use server'
 
-import {
-  emptyCommandSearchGroups,
-  searchCommandCenter,
-  type CommandSearchGroups,
-} from '@/lib/command-center/global-search'
 import type { HomepageSemanticSearchResult } from '@/lib/command-center/homepage-semantic-types'
 import type { HomepageUniversalSearchResult } from '@/lib/command-center/homepage-universal-types'
 import { searchHomepageBuckets } from '@/lib/command-center/search-homepage-buckets'
-import {
-  searchHomepageReferencesSemantic,
-  searchReferencesSemanticLegacy,
-} from '@/lib/command-center/search-references-semantic'
+import { searchHomepageReferencesSemantic } from '@/lib/command-center/search-references-semantic'
+import { loadReferenceVisibilityForUser } from '@/lib/roles/load-reference-visibility'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
 async function loadSearchAuth() {
@@ -21,18 +14,13 @@ async function loadSearchAuth() {
   } = await supabase.auth.getUser()
   if (!user) return null
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id, role')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile?.organization_id) return null
+  const visibility = await loadReferenceVisibilityForUser(supabase, user.id)
+  if (!visibility) return null
 
   return {
     supabase,
-    orgId: profile.organization_id as string,
-    salesVisibleOnly: ((profile as { role?: string }).role ?? 'sales') === 'sales',
+    orgId: visibility.organizationId,
+    salesVisibleOnly: visibility.salesVisibleOnly,
   }
 }
 
@@ -116,34 +104,4 @@ export async function searchHomepageUniversalAction(
         : undefined
 
   return { success: true, query: q, referenceHits, groups, semanticWarning }
-}
-
-/**
- * Legacy: gemischte Keyword-Suche (Command Palette o. Ä.).
- */
-export async function searchCommandCenterAction(rawQuery: string): Promise<CommandSearchGroups> {
-  const q = rawQuery.trim()
-  if (!q) return emptyCommandSearchGroups()
-
-  const auth = await loadSearchAuth()
-  if (!auth) return emptyCommandSearchGroups()
-
-  const apiKey = process.env.OPENAI_API_KEY
-  if (!apiKey) {
-    return searchCommandCenter(auth.supabase, q)
-  }
-
-  const semantic = await searchReferencesSemanticLegacy({
-    supabase: auth.supabase,
-    apiKey,
-    query: q,
-    organizationId: auth.orgId,
-    salesVisibleOnly: auth.salesVisibleOnly,
-  })
-
-  if (!semantic.ok) {
-    return searchCommandCenter(auth.supabase, q)
-  }
-
-  return searchCommandCenter(auth.supabase, q, { referenceHits: semantic.hits })
 }

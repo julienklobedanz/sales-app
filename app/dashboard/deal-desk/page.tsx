@@ -1,48 +1,46 @@
 export const dynamic = 'force-dynamic'
 
-import { Suspense } from 'react'
-import { Loader2 } from 'lucide-react'
 import { redirect } from 'next/navigation'
 
 import { ROUTES } from '@/lib/routes'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { DealDeskClient } from './deal-desk-client'
-
-function DealDeskLoading() {
-  return (
-    <div className="mx-auto flex min-h-[320px] w-full max-w-6xl items-center justify-center">
-      <Loader2 className="size-8 animate-spin text-muted-foreground" aria-hidden />
-    </div>
-  )
-}
 
 export default async function DealDeskPage({
   searchParams,
 }: {
-  searchParams: Promise<{ demo?: string }>
+  searchParams: Promise<{ demo?: string; project?: string }>
 }) {
   const sp = await searchParams
-  const runDemoOnMount = sp.demo === '1'
+  const projectId = sp.project?.trim()
 
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect(ROUTES.login)
+  if (projectId) {
+    const supabase = await createServerSupabaseClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', user.id)
+        .maybeSingle()
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', user.id)
-    .maybeSingle()
+      const orgId = profile?.organization_id
+      if (orgId) {
+        const { data: project } = await supabase
+          .from('deal_desk_projects')
+          .select('deal_id')
+          .eq('id', projectId)
+          .eq('organization_id', orgId)
+          .maybeSingle()
 
-  if (!profile?.organization_id) {
-    redirect(ROUTES.onboarding)
+        const dealId = (project as { deal_id?: string | null } | null)?.deal_id
+        if (dealId) {
+          redirect(ROUTES.deals.detailTab(dealId, 'desk'))
+        }
+      }
+    }
   }
 
-  return (
-    <Suspense fallback={<DealDeskLoading />}>
-      <DealDeskClient runDemoOnMount={runDemoOnMount} />
-    </Suspense>
-  )
+  redirect(ROUTES.deals.root)
 }

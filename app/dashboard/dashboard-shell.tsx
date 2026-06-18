@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Briefcase, Handshake } from 'lucide-react'
+import { Handshake } from 'lucide-react'
 import {
   Building2,
   FileText,
@@ -11,6 +11,7 @@ import {
   GalleryHorizontalEndIcon,
   HeadsetIcon,
   Send,
+  Sparkles,
   TrendingUp,
 } from '@hugeicons/core-free-icons'
 import {
@@ -30,7 +31,7 @@ import { DashboardHeader } from './dashboard-header'
 import { SupportTicketModal } from '@/components/dashboard/SupportTicketModal'
 import { SupportChannelsDialog } from '@/components/dashboard/SupportChannelsDialog'
 import { type User } from '@supabase/supabase-js'
-import { RoleProvider, type AppRole } from '@/hooks/useRole'
+import { RoleProvider, type AppRole, type Capability, type FunctionRole, type SystemRole } from '@/hooks/useRole'
 import { CommandPalette } from '@/components/ui/command-palette'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
@@ -47,6 +48,9 @@ import type { DashboardNotificationItem } from './actions'
 export type Profile = {
   full_name: string | null
   role: AppRole
+  systemRole: SystemRole
+  functionRole: FunctionRole
+  capabilities: Partial<Record<Capability, boolean>>
 }
 
 export function DashboardShell({
@@ -88,7 +92,7 @@ export function DashboardShell({
     router.prefetch(ROUTES.accounts)
     router.prefetch(ROUTES.evidence.root)
     router.prefetch(ROUTES.marketSignals)
-    router.prefetch(ROUTES.dealDesk)
+    router.prefetch(ROUTES.deals.root)
     router.prefetch(ROUTES.match)
     router.prefetch(ROUTES.request)
     router.prefetch(ROUTES.settings)
@@ -123,7 +127,12 @@ export function DashboardShell({
     : undefined
 
   return (
-    <RoleProvider key={profile.role} role={profile.role}>
+    <RoleProvider
+      key={`${profile.systemRole}:${profile.functionRole}`}
+      systemRole={profile.systemRole}
+      functionRole={profile.functionRole}
+      capabilities={profile.capabilities}
+    >
       <div style={brandingStyle}>
         <SidebarProvider
           defaultOpen={!forceCollapsed}
@@ -173,6 +182,26 @@ export function DashboardShell({
                         />
                       </span>
                       <span className="relative z-10">{COPY.pages.dashboard}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname?.startsWith(ROUTES.match)}
+                    tooltip={COPY.nav.match}
+                    className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-gradient-to-b data-[active=true]:from-blue-600 data-[active=true]:to-blue-700 data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] data-[active=true]:hover:translate-x-0"
+                  >
+                    <Link href={ROUTES.match} className="flex items-center gap-2.5">
+                      <span className="relative z-10">
+                        <AppIcon
+                          icon={Sparkles}
+                          size={16}
+                          strokeWidth={pathname?.startsWith(ROUTES.match) ? 2.5 : 2}
+                        />
+                      </span>
+                      <span className="relative z-10">{COPY.nav.match}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -232,25 +261,6 @@ export function DashboardShell({
                         />
                       </span>
                       <span className="relative z-10">{COPY.nav.deals}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname?.startsWith(ROUTES.dealDesk)}
-                    tooltip={COPY.nav.dealDesk}
-                    className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-gradient-to-b data-[active=true]:from-blue-600 data-[active=true]:to-blue-700 data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] data-[active=true]:hover:translate-x-0"
-                  >
-                    <Link href={ROUTES.dealDesk} className="flex items-center gap-2.5">
-                      <span className="relative z-10">
-                        <Briefcase
-                          className="size-4 shrink-0"
-                          strokeWidth={pathname?.startsWith(ROUTES.dealDesk) ? 2.5 : 2}
-                        />
-                      </span>
-                      <span className="relative z-10">{COPY.nav.dealDesk}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

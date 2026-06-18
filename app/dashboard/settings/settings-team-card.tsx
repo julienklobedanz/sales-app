@@ -45,8 +45,14 @@ import {
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
 import { humanizeTeamInviteEmailError } from '@/lib/email/team-invite-email'
-
-type InviteRole = 'admin' | 'sales'
+import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
+import {
+  DEFAULT_INVITE_ROLES,
+  INVITE_FUNCTION_ROLE_OPTIONS,
+  INVITE_SYSTEM_ROLE_OPTIONS,
+  formatRoleDimensionsLabel,
+  type InviteRoleDimensions,
+} from '@/lib/roles/invite-roles'
 
 function titleCaseWord(word: string) {
   const w = word.trim()
@@ -67,6 +73,55 @@ function deriveDisplayNameFromEmail(email: string) {
   return `${titleCaseWord(parts[0])} ${titleCaseWord(parts[1])}`.trim()
 }
 
+function RoleSelects({
+  systemRole,
+  functionRole,
+  disabled,
+  onChange,
+}: {
+  systemRole: SystemRole
+  functionRole: FunctionRole
+  disabled?: boolean
+  onChange: (next: InviteRoleDimensions) => void
+}) {
+  return (
+    <div className="flex flex-col gap-2 sm:flex-row">
+      <Select
+        value={systemRole}
+        onValueChange={(v) => onChange({ systemRole: v as SystemRole, functionRole })}
+        disabled={disabled}
+      >
+        <SelectTrigger className="h-8 w-full bg-background sm:w-[150px]">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {INVITE_SYSTEM_ROLE_OPTIONS.map((role) => (
+            <SelectItem key={role} value={role}>
+              {COPY.roleDimensions.systemRoles[role]}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select
+        value={functionRole}
+        onValueChange={(v) => onChange({ systemRole, functionRole: v as FunctionRole })}
+        disabled={disabled}
+      >
+        <SelectTrigger className="h-8 w-full bg-background sm:w-[170px]">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {INVITE_FUNCTION_ROLE_OPTIONS.map((role) => (
+            <SelectItem key={role} value={role}>
+              {COPY.roleDimensions.functionRoles[role]}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+}
+
 export function SettingsTeamCard({
   initialMembers,
 }: {
@@ -79,7 +134,7 @@ export function SettingsTeamCard({
     return copy
   })
   const [email, setEmail] = useState('')
-  const [inviteRole, setInviteRole] = useState<InviteRole>('sales')
+  const [inviteRoles, setInviteRoles] = useState<InviteRoleDimensions>(DEFAULT_INVITE_ROLES)
   const [invitePending, setInvitePending] = useState(false)
   const [removingId, setRemovingId] = useState<string | null>(null)
   const [rolePendingId, setRolePendingId] = useState<string | null>(null)
@@ -93,7 +148,7 @@ export function SettingsTeamCard({
       return
     }
     setInvitePending(true)
-    const result = await inviteByEmail(trimmed, inviteRole)
+    const result = await inviteByEmail(trimmed, inviteRoles)
     setInvitePending(false)
     if (!result.success) {
       toast.error(result.error)
@@ -136,25 +191,20 @@ export function SettingsTeamCard({
     }
   }
 
-  async function handleRoleChange(m: TeamMemberRow, nextRole: InviteRole) {
-    if (m.status !== 'active') return
+  async function handleRoleChange(m: TeamMemberRow, nextRoles: InviteRoleDimensions) {
     setRolePendingId(m.id)
-    const result = await updateMemberRole({ profileId: m.id, role: nextRole })
-    setRolePendingId(null)
-    if (!result.success) {
-      toast.error(result.error)
-      return
-    }
-    toast.success('Rolle aktualisiert.')
-    router.refresh()
-    const next = await getTeamMembers()
-    setMembers(next)
-  }
-
-  async function handlePendingRoleChange(m: TeamMemberRow, nextRole: InviteRole) {
-    if (m.status !== 'pending') return
-    setRolePendingId(m.id)
-    const result = await updatePendingInviteRole({ inviteId: m.id, role: nextRole })
+    const result =
+      m.status === 'active'
+        ? await updateMemberRole({
+            profileId: m.id,
+            systemRole: nextRoles.systemRole,
+            functionRole: nextRoles.functionRole,
+          })
+        : await updatePendingInviteRole({
+            inviteId: m.id,
+            systemRole: nextRoles.systemRole,
+            functionRole: nextRoles.functionRole,
+          })
     setRolePendingId(null)
     if (!result.success) {
       toast.error(result.error)
@@ -209,18 +259,11 @@ export function SettingsTeamCard({
               autoComplete="email"
             />
           </div>
-          <Select
-            value={inviteRole}
-            onValueChange={(v) => setInviteRole(v as InviteRole)}
-          >
-            <SelectTrigger className="w-full bg-background sm:w-[200px]">
-              <SelectValue placeholder="Rolle" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="sales">Sales</SelectItem>
-              <SelectItem value="admin">Admin</SelectItem>
-            </SelectContent>
-          </Select>
+          <RoleSelects
+            systemRole={inviteRoles.systemRole}
+            functionRole={inviteRoles.functionRole}
+            onChange={setInviteRoles}
+          />
           <Button
             type="submit"
             className="gap-2"
@@ -272,30 +315,15 @@ export function SettingsTeamCard({
                       {m.email || '—'}
                     </TableCell>
                     <TableCell>
-                      <Select
-                        value={
-                          (m.status === 'active'
-                            ? (m.role === 'admin' ? 'admin' : 'sales')
-                            : (m.inviteRole ?? 'sales')) as InviteRole
-                        }
-                        onValueChange={(v) => {
-                          const nextRole = v as InviteRole
-                          if (m.status === 'active') {
-                            void handleRoleChange(m, nextRole)
-                          } else {
-                            void handlePendingRoleChange(m, nextRole)
-                          }
-                        }}
+                      <RoleSelects
+                        systemRole={m.systemRole}
+                        functionRole={m.functionRole}
                         disabled={rolePendingId === m.id || (m.status === 'active' && m.isSelf)}
-                      >
-                        <SelectTrigger className="h-8 w-[190px] bg-background">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="sales">Sales</SelectItem>
-                          <SelectItem value="admin">Admin</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        onChange={(nextRoles) => void handleRoleChange(m, nextRoles)}
+                      />
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {formatRoleDimensionsLabel(m.systemRole, m.functionRole)}
+                      </p>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="inline-flex items-center gap-2">

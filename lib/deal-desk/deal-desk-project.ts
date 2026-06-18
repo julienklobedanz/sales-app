@@ -62,7 +62,8 @@ export function createDealDeskProject(
       opts?.analysisSource === 'mock' ? { 's-1': { ...DEMO_SME_PREVIEW_ASSIGNMENT } } : {},
     smeCustomExperts: [],
     decision: null,
-    bidTeam: DEFAULT_BID_TEAM.map((b) => ({ ...b })),
+    bidTeam:
+      opts?.analysisSource === 'mock' ? DEFAULT_BID_TEAM.map((b) => ({ ...b })) : [],
     analysisStatus: opts?.analysisStatus ?? 'completed',
     analysisSource: opts?.analysisSource ?? 'mock',
     errorMessage: null,

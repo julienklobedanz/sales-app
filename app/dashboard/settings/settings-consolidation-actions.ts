@@ -103,9 +103,22 @@ export async function updateWorkspaceAdminSettings(input: {
     return { success: false, error: 'Subdomain-Format ungültig.' }
   }
 
+  const { data: orgRow, error: readErr } = await supabase
+    .from('organizations')
+    .select('api_settings')
+    .eq('id', organizationId)
+    .single()
+  if (readErr) return { success: false, error: readErr.message }
+
+  const prevApi =
+    orgRow?.api_settings && typeof orgRow.api_settings === 'object'
+      ? (orgRow.api_settings as Record<string, unknown>)
+      : {}
+
   const updates = {
     subdomain: normalizedSubdomain || null,
     api_settings: {
+      ...prevApi,
       workspace_key_mask: input.apiKeyMask.trim() || null,
       use_workspace_branding: Boolean(input.useWorkspaceBranding),
     },

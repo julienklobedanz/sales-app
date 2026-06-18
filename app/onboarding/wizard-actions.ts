@@ -12,6 +12,9 @@ import {
   createReference,
 } from '@/app/dashboard/evidence/new/actions'
 import { isValidSalesPhone, salesContactValidationMessage } from '@/lib/profile/sales-contact'
+import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
+import { legacyAppRoleFrom, legacyRoleToDimensions } from '@/lib/roles/legacy-mapping'
+import { parseInviteRoleDimensions } from '@/lib/roles/invite-roles'
 
 export type FinalizeWorkspaceResult =
   | { success: true }
@@ -37,17 +40,22 @@ export async function finalizeWorkspaceAndProfile(params: {
   // Invite: Organisation und Rolle aus Token (Rolle wird bei E-Mail-Einladung gesetzt)
   let organizationId: string | null = null
   let joinedViaInvite = false
-  let inviteRole: 'sales' | 'account_manager' | 'admin' = 'sales'
+  let inviteSystemRole: SystemRole = 'member'
+  let inviteFunctionRole: FunctionRole = 'sales_rep'
   if (inviteToken) {
     const { data } = await supabase.rpc('get_invite_by_token', { invite_token: inviteToken })
-    const parsed = data as { organization_id?: string; role?: string | null } | null
+    const parsed = data as {
+      organization_id?: string
+      role?: string | null
+      system_role?: string | null
+      function_role?: string | null
+    } | null
     if (parsed?.organization_id) {
       organizationId = parsed.organization_id
       joinedViaInvite = true
-      const r = parsed.role
-      if (r === 'admin' || r === 'sales' || r === 'account_manager') {
-        inviteRole = r
-      }
+      const inviteRoles = parseInviteRoleDimensions(parsed)
+      inviteSystemRole = inviteRoles.systemRole
+      inviteFunctionRole = inviteRoles.functionRole
       ;(await cookies()).set('invite_token', '', { path: '/', maxAge: 0 })
     }
   }
@@ -93,17 +101,25 @@ export async function finalizeWorkspaceAndProfile(params: {
     }
   }
 
-  const chosenRole =
+  const chosenDims =
     params.role === 'admin' || params.role === 'sales' || params.role === 'account_manager'
-      ? params.role
+      ? legacyRoleToDimensions(params.role)
       : null
 
-  let finalRole: 'sales' | 'account_manager' | 'admin'
-  if (!joinedViaInvite && !chosenRole) {
-    finalRole = 'admin'
+  let finalSystemRole: SystemRole
+  let finalFunctionRole: FunctionRole
+  if (!joinedViaInvite && !chosenDims) {
+    finalSystemRole = 'admin'
+    finalFunctionRole = 'sales_leader'
+  } else if (joinedViaInvite) {
+    finalSystemRole = inviteSystemRole
+    finalFunctionRole = inviteFunctionRole
   } else {
-    finalRole = joinedViaInvite ? inviteRole : chosenRole!
+    finalSystemRole = chosenDims!.systemRole
+    finalFunctionRole = chosenDims!.functionRole
   }
+
+  const finalLegacyRole = legacyAppRoleFrom(finalSystemRole, finalFunctionRole)
 
   const nameTrim = params.fullName.trim()
   if (!nameTrim) {
@@ -112,7 +128,7 @@ export async function finalizeWorkspaceAndProfile(params: {
 
   const phoneTrim = params.phone.trim()
   const salesMsg = salesContactValidationMessage()
-  if (finalRole === 'sales') {
+  if (finalLegacyRole === 'sales') {
     if (!user.email?.trim()) {
       return { success: false, error: salesMsg.email }
     }
@@ -124,7 +140,8 @@ export async function finalizeWorkspaceAndProfile(params: {
   const upsertPayload: Record<string, unknown> = {
     id: user.id,
     organization_id: organizationId,
-    role: finalRole,
+    system_role: finalSystemRole,
+    function_role: finalFunctionRole,
     full_name: nameTrim,
     phone: phoneTrim.length ? phoneTrim : null,
   }
@@ -275,10 +292,11 @@ export async function sendTeamInvites(
   invites: Array<{ email: string; role: 'sales' | 'account_manager' | 'admin' }>
 ): Promise<SendInvitesResult> {
   const unique = invites
-    .map((i): { email: string; role: 'admin' | 'sales' } => ({
-      email: i.email.trim().toLowerCase(),
-      role: i.role === 'admin' ? 'admin' : 'sales',
-    }))
+    .map((i) => {
+      const email = i.email.trim().toLowerCase()
+      const dims = legacyRoleToDimensions(i.role)
+      return { email, systemRole: dims.systemRole, functionRole: dims.functionRole }
+    })
     .filter((i) => i.email.length > 0)
     .slice(0, 10)
 
@@ -291,7 +309,10 @@ export async function sendTeamInvites(
   const failures: Array<{ email: string; emailError?: string; fallbackInviteLink: string }> = []
 
   for (const inv of unique) {
-    const res = await inviteByEmail(inv.email, inv.role)
+    const res = await inviteByEmail(inv.email, {
+      systemRole: inv.systemRole,
+      functionRole: inv.functionRole,
+    })
     if (!res.success) return res
     if (res.emailSent) {
       emailsSent += 1

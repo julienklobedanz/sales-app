@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { extractPlainTextFromFile } from '@/lib/extract-document-plain-text'
 import { buildRfpCoverageReport } from '@/lib/rfp-coverage'
 import { extractRequirementsFromRfpText } from '@/lib/rfp-requirements'
+import { loadReferenceVisibilityForUser } from '@/lib/roles/load-reference-visibility'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
@@ -26,22 +27,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: 'Nicht angemeldet.' }, { status: 401 })
   }
 
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('organization_id, role')
-    .eq('id', user.id)
-    .single()
-
-  if (profileError || !profile?.organization_id) {
+  const visibility = await loadReferenceVisibilityForUser(supabase, user.id)
+  if (!visibility) {
     return NextResponse.json(
       { success: false, error: 'Keine Organisation zugeordnet.' },
       { status: 403 }
     )
   }
 
-  const orgId = profile.organization_id as string
-  const role = (profile as { role?: string }).role ?? 'sales'
-  const salesVisibleOnly = role === 'sales'
+  const orgId = visibility.organizationId
+  const salesVisibleOnly = visibility.salesVisibleOnly
 
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) {

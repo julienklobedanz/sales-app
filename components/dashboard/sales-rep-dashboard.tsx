@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useMemo, useState, useTransition } from 'react'
 import { toast } from 'sonner'
-import { BellRing, Building2, CalendarClock, ChevronRight, Flame, Mail, Search, Target, TrendingUp, UserRound } from 'lucide-react'
+import { BellRing, Building2, ChevronRight, Flame, Search, TrendingUp, UserRound } from 'lucide-react'
 import { logMarketSignalQuickAction } from '@/app/dashboard/market-signals/actions'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -177,37 +177,25 @@ export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
         <Card className="border-border shadow-sm">
           <CardHeader className="pb-3">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">3. My Pipeline Impact</p>
-            <CardTitle className="text-lg">Wochenziel-Tracking</CardTitle>
+            <CardTitle className="text-lg">Win-Rate</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {([
-              ['Outreach', pipelineImpact.outreachDone, pipelineImpact.outreachTarget, <Mail key="mail" className="h-4 w-4 text-blue-600" />],
-              ['Meetings', pipelineImpact.meetingsDone, pipelineImpact.meetingsTarget, <CalendarClock key="calendar" className="h-4 w-4 text-amber-600" />],
-              ['Opps', pipelineImpact.opportunitiesDone, pipelineImpact.opportunitiesTarget, <Target key="target" className="h-4 w-4 text-emerald-600" />],
-            ] as const).map(([label, done, target, icon]) => {
-              const pct = Math.max(0, Math.min(100, Math.round((done / Math.max(target, 1)) * 100)))
-              return (
-                <div key={label} className="space-y-1.5">
-                  <div className="flex items-center justify-between gap-2 text-sm">
-                    <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
-                      {icon}
-                      {label}
-                    </span>
-                    <span className="text-muted-foreground tabular-nums">
-                      {done}/{target}
-                    </span>
-                  </div>
-                  <div className="h-2 rounded-full bg-muted">
-                    <div className="h-full rounded-full bg-blue-600 transition-all" style={{ width: `${pct}%` }} />
-                  </div>
-                </div>
-              )
-            })}
-            <div className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-sm">
-              <span className="font-medium text-foreground">Win-Rate:</span>{' '}
-              <span className="tabular-nums">{pipelineImpact.winRatePercent}%</span>{' '}
-              <span className="text-emerald-600">(+{pipelineImpact.winRateDeltaPercent}%)</span>
-            </div>
+            {pipelineImpact.winRateAvailable && pipelineImpact.winRatePercent != null ? (
+              <div className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-sm">
+                <span className="font-medium text-foreground">Win-Rate:</span>{' '}
+                <span className="tabular-nums">{pipelineImpact.winRatePercent}%</span>
+                <span className="ml-2 text-muted-foreground">
+                  ({pipelineImpact.closedDealsCount} abgeschlossene Deals)
+                </span>
+              </div>
+            ) : (
+              <div className="rounded-md border border-dashed border-border/70 bg-muted/20 px-3 py-3 text-sm text-muted-foreground">
+                Zu wenige abgeschlossene Deals für eine valide Quote
+                {pipelineImpact.closedDealsCount > 0
+                  ? ` (${pipelineImpact.closedDealsCount} von mindestens 3).`
+                  : '.'}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

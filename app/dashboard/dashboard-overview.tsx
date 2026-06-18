@@ -85,7 +85,7 @@ import { AccountsToolbarTooltip } from '@/app/dashboard/accounts/components/acco
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { ShareLinkDialog } from './overview/share-link-dialog'
 import { BulkDeleteReferencesDialog } from './overview/bulk-delete-references-dialog'
-import { InboxReferencesConceptClient } from '@/app/dashboard/concepts/inbox-references/client'
+import { InboxReferencesConceptClient } from '@/app/dashboard/overview/inbox-references/client'
 import { TrashDialog } from './overview/trash-dialog'
 import {
   renderReferenceColumnCell,

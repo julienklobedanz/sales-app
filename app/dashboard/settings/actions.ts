@@ -5,6 +5,9 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { validatePasswordPolicy } from '@/lib/security/password-policy'
 import { isValidSalesPhone, salesContactValidationMessage } from '@/lib/profile/sales-contact'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
+import { legacyRoleToDimensions } from '@/lib/roles/legacy-mapping'
+import { isSalesAppView } from '@/lib/roles/reference-access'
 
 function normalizeHttpsBookingUrl(raw: string | null | undefined): string | null {
   const t = raw?.trim() ?? ''
@@ -49,11 +52,11 @@ export async function updateProfile(formData: FormData) {
 
   const { data: profileRow } = await supabase
     .from('profiles')
-    .select('role, phone')
+    .select('role, phone, system_role, function_role, capabilities')
     .eq('id', user.id)
     .single()
 
-  const currentRole = (profileRow?.role as string) ?? 'sales'
+  const parsedRoles = parseProfileRoles(profileRow ?? {})
   const existingPhone = String((profileRow as { phone?: string | null })?.phone ?? '').trim()
 
   const firstName = formData.get('firstName')?.toString()?.trim()
@@ -66,7 +69,9 @@ export async function updateProfile(formData: FormData) {
     roleField === 'admin' || roleField === 'sales' || roleField === 'account_manager'
       ? roleField
       : undefined
-  const effectiveRole = role ?? currentRole
+  const effectiveRoles = role
+    ? legacyRoleToDimensions(role)
+    : { systemRole: parsedRoles.systemRole, functionRole: parsedRoles.functionRole }
   const avatarDataUrlRaw = formData.get('avatarDataUrl')?.toString() ?? undefined
   const avatarDataUrl =
     avatarDataUrlRaw !== undefined ? avatarDataUrlRaw.trim() || null : undefined
@@ -80,7 +85,7 @@ export async function updateProfile(formData: FormData) {
   const phoneTrim = phoneRaw.trim()
   const phoneAfterUpdate = formData.has('phone') ? phoneTrim : existingPhone
 
-  if (effectiveRole === 'sales') {
+  if (isSalesAppView(effectiveRoles.systemRole, effectiveRoles.functionRole)) {
     const msg = salesContactValidationMessage()
     if (!user.email?.trim()) {
       return { error: msg.email }
@@ -93,8 +98,11 @@ export async function updateProfile(formData: FormData) {
   const updates: Record<string, unknown> = {}
 
   if (fullName !== undefined && fullName !== '') updates.full_name = fullName
-  if (role && (role === 'admin' || role === 'sales' || role === 'account_manager')) {
+  if (role) {
+    const dims = legacyRoleToDimensions(role)
     updates.role = role
+    updates.system_role = dims.systemRole
+    updates.function_role = dims.functionRole
   }
   if (formData.has('bookingUrl')) {
     updates.booking_url = bookingUrlNormalized

@@ -13,6 +13,7 @@ import { embedTextWithOpenAI } from '@/lib/embeddings-openai'
 import { rpcMatchReferences } from '@/lib/match-references-rpc'
 import { snippetFromSummary } from '@/lib/match-reference-snippet'
 import { fetchCompanyFieldsForReferenceIds } from '@/lib/references/enrich-match-hits-company'
+import { logReferenceMatched } from '@/lib/events/log-reference-matched'
 
 export const HOME_SEMANTIC_MATCH_THRESHOLD = 0.42
 export const HOME_SEMANTIC_MATCH_COUNT = 12
@@ -104,6 +105,13 @@ export async function searchHomepageReferencesSemantic(
     }
   })
 
+  void logReferenceMatched({
+    organizationId: params.organizationId,
+    matchedReferenceIds: hits.map((h) => h.id),
+    source: 'homepage',
+    matchThreshold: params.matchThreshold ?? HOME_SEMANTIC_MATCH_THRESHOLD,
+  })
+
   return { ok: true, hits }
 }
 
@@ -134,6 +142,13 @@ export async function searchReferencesSemanticLegacy(
     industry: r.industry ?? null,
     similarity: typeof r.similarity === 'number' ? r.similarity : 0,
   }))
+
+  void logReferenceMatched({
+    organizationId: params.organizationId,
+    matchedReferenceIds: hits.map((h) => h.id),
+    source: 'command',
+    matchThreshold: params.matchThreshold ?? 0.52,
+  })
 
   return { ok: true, hits }
 }

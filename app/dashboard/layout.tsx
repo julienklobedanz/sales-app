@@ -1,7 +1,13 @@
 import { cookies } from 'next/headers'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import type { AppRole } from '@/hooks/useRole'
-import { DEV_ROLE_COOKIE, isDevRolePreviewEnabled, parseAppRoleCookie } from '@/lib/dev-role-preview'
+import {
+  DEV_ROLE_COOKIE,
+  isDevRolePreviewEnabled,
+  parseDevRolePreviewCookie,
+} from '@/lib/dev-role-preview'
+import { legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
 import { DashboardShell } from './dashboard-shell'
@@ -42,11 +48,14 @@ export default async function DashboardLayout({
   }
 
   const cookieStore = await cookies()
-  const previewRole = isDevRolePreviewEnabled()
-    ? parseAppRoleCookie(cookieStore.get(DEV_ROLE_COOKIE)?.value)
+  const serverRoles = parseProfileRoles(profile as Parameters<typeof parseProfileRoles>[0])
+  const previewRoles = isDevRolePreviewEnabled()
+    ? parseDevRolePreviewCookie(cookieStore.get(DEV_ROLE_COOKIE)?.value)
     : null
-  const serverRole = profile.role as AppRole
-  const effectiveRole: AppRole = previewRole ?? serverRole
+  const effectiveSystemRole = previewRoles?.systemRole ?? serverRoles.systemRole
+  const effectiveFunctionRole = previewRoles?.functionRole ?? serverRoles.functionRole
+  const effectiveCapabilities = serverRoles.capabilities
+  const effectiveRole: AppRole = legacyAppRoleFrom(effectiveSystemRole, effectiveFunctionRole)
 
   const initialNotifications = await getInboxNotificationsForLayout(user.id, effectiveRole)
 
@@ -72,7 +81,13 @@ export default async function DashboardLayout({
   return (
     <DashboardShell
       user={user}
-      profile={{ ...profile, role: effectiveRole }}
+      profile={{
+        ...profile,
+        role: effectiveRole,
+        systemRole: effectiveSystemRole,
+        functionRole: effectiveFunctionRole,
+        capabilities: effectiveCapabilities,
+      }}
       initialNotifications={initialNotifications}
       workspaceBranding={workspaceBranding}
       devRolePreviewEnabled={isDevRolePreviewEnabled()}

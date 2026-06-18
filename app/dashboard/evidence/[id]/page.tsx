@@ -44,7 +44,15 @@ import {
   canStartApprovalWorkflow,
 } from '@/lib/references/approval-workflow'
 import { isStaleInternalPending } from '@/lib/references/stale-internal-pending'
-import { isReferenceVisibleToSales } from '@/lib/references/sales-reference-visibility'
+import {
+  canApproveInternalReference,
+  canManageReferencesAsAdmin,
+  isReferenceStatusAccessibleToUser,
+  isSalesAppView,
+  resolveReferenceVisibilityScope,
+} from '@/lib/roles/reference-access'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
+import { parseRolesPermissionsSettings } from '@/lib/roles/roles-permissions-settings'
 import {
   resolveReferenceReadinessState,
   resolveFreigabestatusCardBadges,
@@ -61,6 +69,7 @@ import { normalizeNarrativeText } from '@/lib/references/narrative-normalize'
 import { getReferenceAssetsImpl } from '@/app/dashboard/references/assets'
 import { formatProjectEndWithDurationDe } from '@/lib/references/reference-duration-months'
 import { cn } from '@/lib/utils'
+import { legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
 
 export const dynamic = 'force-dynamic'
 
@@ -98,12 +107,14 @@ export default async function EvidenceDetailPage({
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, organization_id, full_name')
+    .select('role, organization_id, full_name, system_role, function_role, capabilities')
     .eq('id', user.id)
     .single()
   if (!profile) redirect(ROUTES.onboarding)
 
-  const role = (profile as { role?: 'admin' | 'sales' | 'account_manager' }).role ?? 'sales'
+  const parsedRoles = parseProfileRoles(profile)
+  const { systemRole, functionRole, capabilities } = parsedRoles
+  const isSalesView = isSalesAppView(systemRole, functionRole)
   const organizationId = (profile as { organization_id?: string | null }).organization_id ?? null
   const requesterDisplayName =
     typeof (profile as { full_name?: string | null }).full_name === 'string'
@@ -111,15 +122,21 @@ export default async function EvidenceDetailPage({
       : ''
 
   let orgDateFmt = normalizeOrgDateDisplayFormat('de-DE')
+  let orgRolesPermissions = null
   if (organizationId) {
     const { data: orgRow } = await supabase
       .from('organizations')
-      .select('date_display_format')
+      .select('date_display_format, api_settings')
       .eq('id', organizationId)
       .maybeSingle()
     orgDateFmt = normalizeOrgDateDisplayFormat(
       (orgRow as { date_display_format?: string | null } | null)?.date_display_format
     )
+    if (orgRow?.api_settings && typeof orgRow.api_settings === 'object') {
+      orgRolesPermissions = parseRolesPermissionsSettings(
+        (orgRow.api_settings as Record<string, unknown>).roles_permissions
+      )
+    }
   }
 
   const { data: row, error } = await supabase
@@ -251,7 +268,13 @@ export default async function EvidenceDetailPage({
   const ref = row as unknown as ReferenceDetailRow
 
   const normalizedStatus = String(ref.status ?? '').toLowerCase()
-  if (role === 'sales' && !isReferenceVisibleToSales(normalizedStatus)) {
+  const visibilityScope = resolveReferenceVisibilityScope({
+    systemRole,
+    functionRole,
+    capabilityOverrides: capabilities,
+    orgRolesPermissions,
+  })
+  if (!isReferenceStatusAccessibleToUser(normalizedStatus, visibilityScope)) {
     notFound()
   }
 
@@ -365,8 +388,10 @@ export default async function EvidenceDetailPage({
     ? 'border-amber-200 bg-amber-50 text-amber-900'
     : 'border-border bg-slate-50 text-slate-700'
 
+  const appRole = legacyAppRoleFrom(systemRole, functionRole)
+
   const canStartApproval = canStartApprovalWorkflow({
-    role,
+    role: appRole,
     referenceStatus: normalizedStatus,
     internalApprovalStatus: internalApproval,
     customerApprovalStatus: ref.customer_approval_status,
@@ -397,7 +422,7 @@ export default async function EvidenceDetailPage({
     staleInternalPending,
     isApprovalGranted,
     canStartApproval,
-    canInternalApprove: role === 'admin' || role === 'account_manager',
+    canInternalApprove: canApproveInternalReference(functionRole, systemRole, capabilities),
     approvalScopeNamedMention: ref.approval_scope_named_mention,
     approvalScopeAnonymousMention: ref.approval_scope_anonymous_mention,
     approvalScopeReferenceCall: ref.approval_scope_reference_call,
@@ -635,13 +660,13 @@ export default async function EvidenceDetailPage({
                   </Card>
                 ) : null}
               </div>
-              {role === 'sales' ? filesCard : null}
+              {isSalesView ? filesCard : null}
             </div>
-          ) : role === 'sales' && filesCard ? (
+          ) : isSalesView && filesCard ? (
             <div className="w-full min-w-0">{filesCard}</div>
           ) : null}
 
-          {role === 'sales' ? (
+          {isSalesView ? (
             <Card className="border-border/70">
               <CardHeader className="pb-2">
                 <CardTitle className="text-xs uppercase tracking-wider text-slate-950 dark:text-slate-100 inline-flex items-center gap-1.5">
@@ -672,7 +697,7 @@ export default async function EvidenceDetailPage({
         </div>
 
         <div className="lg:sticky lg:top-6 space-y-4 h-fit">
-          <Card className={role === 'sales' ? 'order-1' : 'order-1'}>
+          <Card className={isSalesView ? 'order-1' : 'order-1'}>
             <CardHeader>
               <CardTitle className="text-base">Projektdetails</CardTitle>
             </CardHeader>
@@ -715,7 +740,7 @@ export default async function EvidenceDetailPage({
             </CardContent>
           </Card>
 
-          <Card className={cn('w-full min-w-0', role === 'sales' ? 'order-2' : undefined)}>
+          <Card className={cn('w-full min-w-0', isSalesView ? 'order-2' : undefined)}>
             <CardHeader>
               <CardTitle className="text-base">Freigabestatus</CardTitle>
             </CardHeader>
@@ -751,7 +776,7 @@ export default async function EvidenceDetailPage({
                     {workflowStatusBadges.customer.label}
                   </span>
                 </div>
-                {role !== 'sales' ? (
+                {!isSalesView ? (
                   <>
                     {requestedByDisplay ? (
                       <div className="flex min-w-0 items-start justify-between gap-3">
@@ -780,7 +805,7 @@ export default async function EvidenceDetailPage({
                   </>
                 ) : null}
               </div>
-              {role === 'sales' ? null : (
+              {isSalesView ? null : (
                 <>
                   {competitorBlacklist.length ? (
                     <div className="space-y-1.5">
@@ -816,7 +841,7 @@ export default async function EvidenceDetailPage({
                 existingSharePath={existingShare?.url ?? null}
                 canStartApproval={canStartApproval}
                 canInternalApprove={
-                  (role === 'admin' || role === 'account_manager') &&
+                  canApproveInternalReference(functionRole, systemRole, capabilities) &&
                   internalStatus === 'approved_internal' &&
                   !staleInternalPending
                 }
@@ -845,7 +870,7 @@ export default async function EvidenceDetailPage({
                 <PptxOnepagerExportButton referenceId={id} className="w-full gap-2" />
                 <PdfExportDialog referenceId={id} triggerClassName="w-full" />
               </div>
-              {role === 'sales' ? null : (
+              {isSalesView ? null : (
                 <>
                   <ShareLinkButton referenceId={id} triggerClassName="w-full" />
                   <form action={toggleFavorite.bind(null, id)}>
@@ -872,7 +897,7 @@ export default async function EvidenceDetailPage({
                       Bearbeiten
                     </Link>
                   </Button>
-                  {role === 'admin' ? (
+                  {canManageReferencesAsAdmin(systemRole) ? (
                     <form action={deleteReferenceFromDetailPage.bind(null, id)} className="w-full">
                       <Button type="submit" variant="destructive" className="w-full">
                         Löschen
@@ -881,7 +906,7 @@ export default async function EvidenceDetailPage({
                   ) : null}
                 </>
               )}
-              {role === 'sales' ? (
+              {isSalesView ? (
                 <>
                   <ShareLinkButton referenceId={id} triggerClassName="w-full" />
                   <form action={toggleFavorite.bind(null, id)}>

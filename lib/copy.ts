@@ -6,7 +6,7 @@ export const COPY = {
     evidence: 'Referenzen',
     marketSignals: 'Marktsignale',
     dealDesk: 'Deal Desk',
-    match: 'Suche',
+    match: 'Finden',
     settings: 'Einstellungen',
   },
   pages: {
@@ -14,7 +14,7 @@ export const COPY = {
     evidence: 'Referenzen',
     marketSignals: 'Marktsignale',
     dealDesk: 'Deal Desk',
-    match: 'Suche',
+    match: 'Finden',
   },
   misc: {
     matches: 'Treffer',
@@ -41,6 +41,19 @@ export const COPY = {
     salesManager: 'Sales Manager',
     readOnly: 'Nur Lesen',
   },
+  roleDimensions: {
+    systemRoles: {
+      owner: 'Inhaber',
+      admin: 'Administrator',
+      member: 'Mitglied',
+      viewer: 'Betrachter',
+    },
+    functionRoles: {
+      sales_rep: 'Vertrieb',
+      account_manager: 'Account Manager',
+      sales_leader: 'Sales Lead',
+    },
+  },
   settings: {
     accountDeletionNotAvailableHint:
       'Kontolöschung ist aktuell nicht als Self-Service verfügbar.',
@@ -61,6 +74,32 @@ export const COPY = {
     roleSwitcherActiveLabel: 'Rolle in der Oberfläche',
     roleSwitcherPickLabel: 'Als folgende Rolle anzeigen',
     roleSwitcherReset: 'Anzeige zurücksetzen',
+    rolesPermissions: {
+      title: 'Rollen & Rechte',
+      description:
+        'Org-weite Vorgaben für Sichtbarkeit und Freigabe. Ohne Konfiguration gelten die Standardwerte aus dem Rollenmodell.',
+      salesSeesDraftsLabel: 'Vertrieb sieht Entwürfe',
+      salesSeesDraftsHint:
+        'Wenn aktiv, dürfen Vertriebsmitglieder (sales_rep) Entwürfe in der Datenbank sehen — wirkt in RLS und Suche.',
+      visibilityMatrixTitle: 'Sichtbarkeit nach Funktions-Rolle',
+      approvalRoutingLabel: 'Freigabe-Routing',
+      approvalRoutingHint:
+        'Gespeicherte Vorgabe für künftige Workflow-Anbindung. Bestehende Freigabe-Flows bleiben unverändert, bis sie daran angebunden werden.',
+      approvalRouting: {
+        am_direct: 'Account Manager → Kunde',
+        via_rpm: 'Über Reference Program Manager',
+        legal_gate_on_nda: 'Legal-Gate bei NDA',
+      },
+      sensitivityDraft: 'Label Entwurf',
+      sensitivityNda: 'Label NDA',
+      sensitivityConfidential: 'Label vertraulich (Sales)',
+      save: 'Speichern',
+      saveSuccess: 'Rollen & Rechte gespeichert.',
+      capabilities: {
+        see_draft_references: 'Entwürfe sehen',
+        see_confidential_references: 'Vertrauliche Referenzen sehen',
+      },
+    },
   },
   table: {
     empty: 'Keine Ergebnisse.',

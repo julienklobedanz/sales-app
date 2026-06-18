@@ -32,7 +32,6 @@ const COMPLETE_MS = 520
 export function OnboardingWizard({
   inviteToken,
   inviteOrganizationName,
-  inviteRole,
   initialFullName,
   userEmail,
   hubspotConfigured,
@@ -40,7 +39,6 @@ export function OnboardingWizard({
 }: {
   inviteToken: string | null
   inviteOrganizationName: string | null
-  inviteRole: 'admin' | 'sales' | 'account_manager' | null
   initialFullName: string
   userEmail: string
   hubspotConfigured: boolean

@@ -2,6 +2,7 @@ import type { DealDeskMockAnalysis } from '@/lib/deal-desk/mock-analysis'
 import { mergeExecutiveBriefingFields } from '@/lib/deal-desk/executive-briefing-fields'
 import {
   buildDemoDealDeskAnalysis,
+  buildEmptyDealDeskAnalysis,
   buildMockDealDeskAnalysis,
   DEMO_SAMPLE_RED_FLAGS,
 } from '@/lib/deal-desk/mock-analysis'
@@ -104,12 +105,17 @@ function parseAnalysisSnapshot(
     }
   }
   if (documentNames.length > 0) {
-    const mock = buildDemoDealDeskAnalysis(documentNames)
-    if (customerName) mock.customerName = customerName
-    if (winProbability != null) mock.winProbability = winProbability
-    return mock
+    if (fillEnrichmentFromFallback) {
+      const mock = buildDemoDealDeskAnalysis(documentNames)
+      if (customerName) mock.customerName = customerName
+      if (winProbability != null) mock.winProbability = winProbability
+      return mock
+    }
+    return buildEmptyDealDeskAnalysis(documentNames, customerName, winProbability)
   }
-  return buildDemoDealDeskAnalysis(['RFP-Paket'])
+  return fillEnrichmentFromFallback
+    ? buildDemoDealDeskAnalysis(['RFP-Paket'])
+    : buildEmptyDealDeskAnalysis(['RFP-Paket'], customerName, winProbability)
 }
 
 /** Kein echtes API-Ergebnis → Demo-Daten (Mock, Quota-Fallback, fehlgeschlagene Analyse). */
@@ -173,7 +179,8 @@ export function rowToDealDeskProject(
 
   const workspace = parseWorkspaceState(
     row.workspace_state,
-    isDemo ? demoFlags : analysis.redFlags
+    isDemo ? demoFlags : analysis.redFlags,
+    { useDemoBidTeam: isDemo }
   )
 
   let redFlags = workspace.redFlags
