@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { AuthShell } from '@/components/auth-shell'
 import { RegisterForm } from './register-form'
+import { AUTH_BRAND_CONTENT } from '@/lib/auth/brand-content'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
@@ -20,27 +21,27 @@ export default async function RegisterPage({ searchParams }: Props) {
   const inviteToken = params.invite?.trim() || null
   const loginHref = inviteToken
     ? `${ROUTES.login}?invite=${encodeURIComponent(inviteToken)}`
-    : undefined
+    : ROUTES.login
 
   return (
     <AuthShell
-      topRightLink={{ href: ROUTES.login, label: 'Anmelden' }}
-      topRightLinkSearch={inviteToken ? `?invite=${encodeURIComponent(inviteToken)}` : undefined}
+      brandContent={AUTH_BRAND_CONTENT.register}
+      topRightLink={{ href: loginHref, label: 'Anmelden' }}
     >
       <div className="space-y-6">
-        <div className="space-y-2 text-center md:text-left">
-          <h1 className="text-2xl font-semibold tracking-tight">Konto erstellen</h1>
-          <p className="text-sm text-muted-foreground">
+        <div className="space-y-2">
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Konto erstellen</h1>
+          <p className="text-sm text-gray-500">
             {inviteToken
               ? 'Du wurdest eingeladen. Erstelle dein Konto, um dem Team beizutreten.'
               : 'Gib deine E-Mail und ein Passwort ein, um dein Konto zu erstellen.'}
           </p>
         </div>
         <RegisterForm inviteToken={inviteToken} />
-        <p className="text-center text-sm text-muted-foreground md:text-left">
+        <p className="text-sm text-gray-500">
           Bereits ein Konto?{' '}
           <Link
-            href={loginHref ?? ROUTES.login}
+            href={loginHref}
             className="font-medium text-primary underline-offset-4 hover:underline"
           >
             Anmelden

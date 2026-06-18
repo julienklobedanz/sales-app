@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { AuthShell } from '@/components/auth-shell'
 import { LoginForm } from './login-form'
+import { AUTH_BRAND_CONTENT } from '@/lib/auth/brand-content'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
@@ -29,29 +30,31 @@ export default async function LoginPage({ searchParams }: Props) {
   const inviteToken = params.invite?.trim() || null
   const registerHref = inviteToken
     ? `${ROUTES.register}?invite=${encodeURIComponent(inviteToken)}`
-    : undefined
+    : ROUTES.register
 
   return (
-    <AuthShell>
+    <AuthShell brandContent={AUTH_BRAND_CONTENT.login}>
       <div className="space-y-6">
-        <div className="space-y-2 text-center md:text-left">
-          <h1 className="text-2xl font-semibold tracking-tight">Bei Ihrem Konto anmelden</h1>
+        <div className="space-y-2">
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+            Bei Ihrem Konto anmelden
+          </h1>
           {inviteToken ? (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-gray-500">
               Melde dich an, um der Einladung beizutreten.
             </p>
           ) : null}
         </div>
         <LoginForm inviteToken={inviteToken} />
-        <div className="rounded-lg bg-muted/50 px-4 py-3 text-center text-sm text-muted-foreground md:text-left">
+        <p className="text-sm text-gray-500">
           Neu bei RefStack?{' '}
           <Link
-            href={registerHref ?? ROUTES.register}
+            href={registerHref}
             className="font-medium text-primary underline-offset-4 hover:underline"
           >
             Konto erstellen
           </Link>
-        </div>
+        </p>
       </div>
     </AuthShell>
   )

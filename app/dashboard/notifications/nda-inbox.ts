@@ -75,7 +75,7 @@ async function queryNdaInboxRows(
   select: string,
   filterUploadedPdf: boolean
 ) {
-  let q = supabase
+  const base = supabase
     .from('nda_agreements')
     .select(select)
     .eq('organization_id', orgId)
@@ -83,10 +83,10 @@ async function queryNdaInboxRows(
     .in('status', ['active', 'pending'])
 
   if (filterUploadedPdf) {
-    q = q.not('file_storage_path', 'is', null)
+    return base.not('file_storage_path', 'is', null)
   }
 
-  return q
+  return base
 }
 
 function mapInboxRows(raw: unknown, forceTitleNull = false): InboxRow[] {

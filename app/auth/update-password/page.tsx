@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { AuthShell } from '@/components/auth-shell'
+import { AUTH_BRAND_CONTENT } from '@/lib/auth/brand-content'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { UpdatePasswordForm } from './update-password-form'
@@ -17,14 +18,14 @@ export default async function UpdatePasswordPage() {
   }
 
   return (
-    <AuthShell topRightLink={{ href: ROUTES.login, label: 'Anmelden' }}>
+    <AuthShell brandContent={AUTH_BRAND_CONTENT.updatePassword} topRightLink={{ href: ROUTES.login, label: 'Anmelden' }}>
       <div className="space-y-6">
-        <div className="space-y-2 text-center md:text-left">
-          <h1 className="text-2xl font-semibold tracking-tight">Neues Passwort festlegen</h1>
-          <p className="text-sm text-muted-foreground">Wähle ein sicheres Passwort für dein Konto.</p>
+        <div className="space-y-2">
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Neues Passwort festlegen</h1>
+          <p className="text-sm text-gray-500">Wähle ein sicheres Passwort für dein Konto.</p>
         </div>
         <UpdatePasswordForm />
-        <p className="text-center text-sm text-muted-foreground md:text-left">
+        <p className="text-sm text-gray-500">
           <Link
             href={ROUTES.login}
             className="font-medium text-primary underline-offset-4 hover:underline"

@@ -1,14 +1,12 @@
 'use client'
 
-import Image from 'next/image'
 import Link from 'next/link'
+import { useRef } from 'react'
 import { useActionState } from 'react'
-import { toast } from 'sonner'
-import { Key01Icon, Shield } from '@hugeicons/core-free-icons'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { AppIcon } from '@/lib/icons'
+import { AuthAlternativeSignIn } from '@/components/auth-alternative-sign-in'
 import { ROUTES } from '@/lib/routes'
 import { signInWithPassword, type SignInResult } from './actions'
 
@@ -18,6 +16,7 @@ function formAction(_prev: SignInResult | null, formData: FormData) {
 
 export function LoginForm({ inviteToken = null }: { inviteToken?: string | null }) {
   const [state, formActionWithState, isPending] = useActionState(formAction, null)
+  const emailRef = useRef<HTMLInputElement>(null)
 
   return (
     <form action={formActionWithState} className="space-y-4">
@@ -25,6 +24,7 @@ export function LoginForm({ inviteToken = null }: { inviteToken?: string | null 
       <div className="space-y-2">
         <Label htmlFor="email">E-Mail-Adresse</Label>
         <Input
+          ref={emailRef}
           id="email"
           name="email"
           type="email"
@@ -87,44 +87,11 @@ export function LoginForm({ inviteToken = null }: { inviteToken?: string | null 
         <div className="h-px flex-1 bg-border" />
       </div>
 
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          className="h-10 w-full rounded-lg px-2 text-sm font-normal"
-          disabled={isPending}
-          onClick={() => toast.info('Salesforce-Anmeldung folgt in Kürze.')}
-        >
-          <Image
-            src="/brands/salesforce.png"
-            alt=""
-            width={20}
-            height={20}
-            className="mr-1.5 size-5 object-contain"
-          />
-          Salesforce
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          className="h-10 w-full rounded-lg gap-1.5 px-2 text-sm font-normal text-foreground"
-          disabled={isPending}
-          onClick={() => toast.info('Passkey-Anmeldung folgt in Kürze.')}
-        >
-          <AppIcon icon={Key01Icon} size={18} className="text-violet-600" />
-          Passkey
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          className="h-10 w-full rounded-lg gap-1.5 px-2 text-sm font-normal text-foreground"
-          disabled={isPending}
-          onClick={() => toast.info('SSO folgt in Kürze.')}
-        >
-          <AppIcon icon={Shield} size={18} className="text-violet-600" />
-          SSO
-        </Button>
-      </div>
+      <AuthAlternativeSignIn
+        inviteToken={inviteToken}
+        disabled={isPending}
+        getEmail={() => emailRef.current?.value ?? ''}
+      />
     </form>
   )
 }

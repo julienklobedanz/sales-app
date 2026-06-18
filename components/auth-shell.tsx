@@ -1,54 +1,33 @@
 import Link from 'next/link'
 
+import { AuthBrandPanel, type AuthBrandContent } from '@/components/auth-brand-panel'
+
 type AuthShellProps = {
   children: React.ReactNode
-  /** Link oben rechts (z. B. "Anmelden" auf Registrieren); weglassen, wenn nicht nötig */
+  brandContent: AuthBrandContent
+  /** Link oben rechts (z. B. "Anmelden" auf Registrieren) */
   topRightLink?: { href: string; label: string }
-  /** Optional: zusätzliche query params für den Link (z. B. invite) */
-  topRightLinkSearch?: string
 }
 
-export function AuthShell({ children, topRightLink, topRightLinkSearch }: AuthShellProps) {
-  const href =
-    topRightLink &&
-    (topRightLinkSearch ? `${topRightLink.href}${topRightLinkSearch}` : topRightLink.href)
+export function AuthShell({ children, brandContent, topRightLink }: AuthShellProps) {
   return (
-    <div className="min-h-screen grid lg:grid-cols-[0.34fr_0.66fr]">
-      {/* Linke Seite: Branding-Panel (Wireframe §26) */}
-      <div className="hidden lg:flex flex-col justify-between bg-sidebar text-sidebar-foreground border-r border-sidebar-border/60 p-10 xl:p-12">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground text-sm font-black shadow-sm">
-            R
-          </div>
-          <div className="leading-tight">
-            <div className="text-lg font-bold">RefStack</div>
-            <div className="text-sm text-muted-foreground">
-              Know your references. Win more deals.
+    <div className="min-h-screen overflow-hidden bg-zinc-100/50">
+      <div className="grid min-h-screen grid-cols-1 lg:grid-cols-2">
+        <div className="relative flex flex-col items-center justify-center bg-white/75 px-8 py-10 backdrop-blur-xl lg:px-16">
+          {topRightLink ? (
+            <div className="absolute right-4 top-4 md:right-8 md:top-8">
+              <Link
+                href={topRightLink.href}
+                className="text-sm font-medium text-gray-500 underline-offset-4 transition-colors hover:text-gray-900 hover:underline"
+              >
+                {topRightLink.label}
+              </Link>
             </div>
-          </div>
+          ) : null}
+          <div className="w-full max-w-sm">{children}</div>
         </div>
 
-        <div className="max-w-lg">
-          <div className="text-3xl font-semibold tracking-tight">Stop searching, start closing.</div>
-          <p className="mt-3 text-sm font-normal text-muted-foreground">
-            Your space for references, company signals and executive insights.
-          </p>
-        </div>
-      </div>
-
-      {/* Rechte Seite: Formular */}
-      <div className="flex flex-col items-center justify-center p-6 md:p-10 xl:p-12 relative">
-        {topRightLink && href ? (
-          <div className="absolute right-4 top-4 md:right-8 md:top-8">
-            <Link
-              href={href}
-              className="text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-            >
-              {topRightLink.label}
-            </Link>
-          </div>
-        ) : null}
-        <div className="w-full max-w-[520px]">{children}</div>
+        <AuthBrandPanel content={brandContent} />
       </div>
     </div>
   )
