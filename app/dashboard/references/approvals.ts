@@ -458,7 +458,8 @@ export async function submitForApprovalImpl(
     internalApprovalStatus: internalApproval,
     customerApprovalStatus: ref.customer_approval_status,
     referenceStatus: refStatus,
-    approvalRequestedAt: (ref as { approval_requested_at?: string | null }).approval_requested_at,
+    approvalRequestedAt:
+      (ref as { approval_requested_at?: string | null }).approval_requested_at ?? null,
   })
 
   if (
@@ -467,7 +468,8 @@ export async function submitForApprovalImpl(
       referenceStatus: refStatus,
       internalApprovalStatus: internalApproval,
       customerApprovalStatus: ref.customer_approval_status,
-      approvalRequestedAt: (ref as { approval_requested_at?: string | null }).approval_requested_at,
+      approvalRequestedAt:
+        (ref as { approval_requested_at?: string | null }).approval_requested_at ?? null,
       staleInternalPending,
       isApprovalGranted,
     })
