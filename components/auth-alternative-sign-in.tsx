@@ -126,7 +126,7 @@ export function AuthAlternativeSignIn({
   return (
     <>
       {magicLinkSent ? (
-        <p role="status" className="text-sm text-muted-foreground">
+        <p role="status" className="text-xs text-muted-foreground">
           Anmelde-Link gesendet. Bitte Postfach prüfen.
         </p>
       ) : null}
@@ -134,15 +134,15 @@ export function AuthAlternativeSignIn({
       <div
         className={
           ssoEnabled
-            ? 'grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-2'
-            : 'grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-2'
+            ? 'grid grid-cols-1 gap-1.5 sm:grid-cols-3'
+            : 'grid grid-cols-1 gap-1.5 sm:grid-cols-2'
         }
       >
         {ssoEnabled ? (
           <Button
             type="button"
             variant="outline"
-            className="h-10 w-full rounded-lg gap-1.5 px-2 text-sm font-normal text-foreground"
+            className="h-8 w-full rounded-md gap-1 px-2 py-2 text-xs font-normal text-muted-foreground"
             disabled={isBusy}
             onClick={() => {
               setSsoError(null)
@@ -150,28 +150,28 @@ export function AuthAlternativeSignIn({
               setSsoOpen(true)
             }}
           >
-            <AppIcon icon={Shield} size={18} className="text-muted-foreground" />
+            <AppIcon icon={Shield} size={15} className="text-zinc-400" />
             SSO
           </Button>
         ) : null}
         <Button
           type="button"
           variant="outline"
-          className="h-10 w-full rounded-lg gap-1.5 px-2 text-sm font-normal text-foreground"
+          className="h-8 w-full rounded-md gap-1 px-2 py-2 text-xs font-normal text-muted-foreground"
           disabled={isBusy || magicLinkSent}
           onClick={handleMagicLink}
         >
-          <AppIcon icon={Mail01Icon} size={18} className="text-muted-foreground" />
+          <AppIcon icon={Mail01Icon} size={15} className="text-zinc-400" />
           {isMagicPending ? 'Wird gesendet …' : 'Magic Link'}
         </Button>
         <Button
           type="button"
           variant="outline"
-          className="h-10 w-full rounded-lg gap-1.5 px-2 text-sm font-normal text-foreground"
+          className="h-8 w-full rounded-md gap-1 px-2 py-2 text-xs font-normal text-muted-foreground"
           disabled={isBusy}
           onClick={handlePasskey}
         >
-          <AppIcon icon={Key01Icon} size={18} className="text-muted-foreground" />
+          <AppIcon icon={Key01Icon} size={15} className="text-zinc-400" />
           {isPasskeyPending ? 'Wird geprüft …' : 'Passkey'}
         </Button>
       </div>

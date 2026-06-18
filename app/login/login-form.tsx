@@ -19,10 +19,10 @@ export function LoginForm({ inviteToken = null }: { inviteToken?: string | null 
   const emailRef = useRef<HTMLInputElement>(null)
 
   return (
-    <form action={formActionWithState} className="space-y-4">
+    <form action={formActionWithState} className="space-y-3">
       {inviteToken ? <input type="hidden" name="invite_token" value={inviteToken} /> : null}
-      <div className="space-y-2">
-        <Label htmlFor="email">E-Mail-Adresse</Label>
+      <div className="space-y-1.5">
+        <Label htmlFor="email">E-Mail</Label>
         <Input
           ref={emailRef}
           id="email"
@@ -36,14 +36,14 @@ export function LoginForm({ inviteToken = null }: { inviteToken?: string | null 
           className="h-10 rounded-lg"
         />
       </div>
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <div className="flex items-baseline justify-between gap-2">
           <Label htmlFor="password" className="mb-0">
             Passwort
           </Label>
           <Link
             href={ROUTES.forgotPassword}
-            className="shrink-0 text-sm font-medium text-primary underline-offset-4 hover:underline"
+            className="shrink-0 text-xs font-medium text-primary underline-offset-4 hover:underline"
           >
             Passwort vergessen?
           </Link>
@@ -59,14 +59,6 @@ export function LoginForm({ inviteToken = null }: { inviteToken?: string | null 
           className="h-10 rounded-lg"
         />
       </div>
-      <label className="flex cursor-pointer items-start gap-2 text-sm text-muted-foreground">
-        <input
-          type="checkbox"
-          name="remember"
-          className="mt-0.5 size-4 shrink-0 rounded border border-input accent-primary"
-        />
-        <span>Auf diesem Gerät angemeldet bleiben</span>
-      </label>
       {state?.error && (
         <div
           role="alert"
@@ -79,10 +71,10 @@ export function LoginForm({ inviteToken = null }: { inviteToken?: string | null 
         {isPending ? 'Wird angemeldet …' : 'Anmelden'}
       </Button>
 
-      <div className="relative flex items-center gap-3 py-1">
+      <div className="relative flex items-center gap-2 pt-0.5">
         <div className="h-px flex-1 bg-border" />
-        <span className="shrink-0 text-xs text-muted-foreground">
-          Oder melden Sie sich an mit
+        <span className="shrink-0 text-[11px] font-medium tracking-wide text-zinc-400 uppercase">
+          Oder anmelden via
         </span>
         <div className="h-px flex-1 bg-border" />
       </div>
