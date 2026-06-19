@@ -466,7 +466,7 @@ export async function updateStakeholder(
   if (payload.last_contact_at !== undefined) update.last_contact_at = payload.last_contact_at || null
   if (payload.last_interaction_at !== undefined) update.last_interaction_at = payload.last_interaction_at || null
   if (payload.sentiment !== undefined) update.sentiment = payload.sentiment?.trim() || null
-  const { error } = await supabase.from('stakeholders').update(update).eq('id', id)
+  const { error } = await supabase.from('stakeholders').update(asTableUpdate<'stakeholders'>(update)).eq('id', id)
   if (error) return { success: false, error: error.message }
   if (row?.company_id) revalidatePath(ROUTES.accountsDetail(row.company_id))
   return { success: true }
@@ -729,7 +729,7 @@ export async function updateContactPerson(
   if (payload.position !== undefined) update.position = payload.position?.trim() || null
   if (payload.company_id !== undefined) update.company_id = payload.company_id || null
   if (payload.last_interaction_at !== undefined) update.last_interaction_at = payload.last_interaction_at || null
-  const { error } = await supabase.from('contact_persons').update(update).eq('id', id)
+  const { error } = await supabase.from('contact_persons').update(asTableUpdate<'contact_persons'>(update)).eq('id', id)
   if (error) return { success: false, error: error.message }
   if (row?.company_id) revalidatePath(ROUTES.accountsDetail(row.company_id))
   return { success: true }
