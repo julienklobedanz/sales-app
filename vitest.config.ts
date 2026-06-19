@@ -8,12 +8,15 @@ export default defineConfig({
     },
   },
   test: {
+    name: 'unit',
     environment: 'node',
     include: ['**/*.test.ts'],
+    exclude: ['**/*.integration.test.ts', 'node_modules', '.next'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
-      include: ['lib/**/*.ts', 'lib/**/*.tsx'],
+      include: ['lib/**/*.ts', 'lib/**/*.tsx', 'app/**/*.ts', 'app/**/*.tsx'],
+      exclude: ['**/*.test.ts', '**/*.integration.test.ts'],
     },
   },
 })

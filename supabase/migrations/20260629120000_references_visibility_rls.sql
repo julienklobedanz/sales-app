@@ -206,6 +206,7 @@ GRANT EXECUTE ON FUNCTION public.current_user_effective_capability(text) TO auth
 -- 3) Scoped SELECT-Policy
 -- ---------------------------------------------------------------------------
 DROP POLICY IF EXISTS "Users see references of own org" ON public.references;
+DROP POLICY IF EXISTS "Users see references of own org (scoped)" ON public.references;
 
 CREATE POLICY "Users see references of own org (scoped)"
   ON public.references FOR SELECT

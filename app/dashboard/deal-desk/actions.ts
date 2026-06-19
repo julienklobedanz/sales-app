@@ -28,7 +28,6 @@ import {
   persistNormalizedWorkspace,
 } from '@/lib/deal-desk/workspace-persistence'
 import { asJson, asTableInsert, asTableUpdate } from '@/lib/supabase/db-types'
-import { looseSelect } from '@/lib/supabase/loose-select'
 import { ROUTES } from '@/lib/routes'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { profileCanManageOrgData } from '@/lib/roles/profile-guards'
@@ -36,15 +35,8 @@ import { parseProfileRoles } from '@/lib/roles/profile-roles'
 
 const DESK_PATH = ROUTES.dealDesk
 
-const DEAL_DESK_PROJECT_SELECT_WITH_ARCHIVE =
+const DEAL_DESK_PROJECT_SELECT =
   'id, organization_id, project_name, customer_name, analysis_status, analysis_snapshot, analysis_source, win_probability, error_message, deal_id, archived_at, created_by, created_at, updated_at'
-
-const DEAL_DESK_PROJECT_SELECT_LEGACY =
-  'id, organization_id, project_name, customer_name, analysis_status, analysis_snapshot, analysis_source, win_probability, error_message, deal_id, created_by, created_at, updated_at'
-
-function isMissingArchivedColumnError(message: string | undefined): boolean {
-  return Boolean(message && /archived_at/i.test(message))
-}
 
 async function fetchDealDeskProjectRows(
   supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
@@ -54,43 +46,20 @@ async function fetchDealDeskProjectRows(
   | { rows: DealDeskProjectRow[]; error: null }
   | { rows: null; error: string }
 > {
-  const withArchiveQuery = supabase
+  const query = supabase
     .from('deal_desk_projects')
-    .select(looseSelect(DEAL_DESK_PROJECT_SELECT_WITH_ARCHIVE))
+    .select(DEAL_DESK_PROJECT_SELECT)
     .eq('organization_id', orgId)
-  const withArchive = await (opts?.dealId
-    ? withArchiveQuery.eq('deal_id', opts.dealId)
-    : withArchiveQuery
-  ).order('created_at', { ascending: false })
+  const result = await (opts?.dealId ? query.eq('deal_id', opts.dealId) : query).order(
+    'created_at',
+    { ascending: false }
+  )
 
-  if (!withArchive.error) {
-    return { rows: (withArchive.data ?? []) as unknown as DealDeskProjectRow[], error: null }
+  if (result.error) {
+    return { rows: null, error: result.error.message }
   }
 
-  if (!isMissingArchivedColumnError(withArchive.error.message)) {
-    return { rows: null, error: withArchive.error.message }
-  }
-
-  const legacyQuery = supabase
-    .from('deal_desk_projects')
-    .select(looseSelect(DEAL_DESK_PROJECT_SELECT_LEGACY))
-    .eq('organization_id', orgId)
-  const legacy = await (opts?.dealId
-    ? legacyQuery.eq('deal_id', opts.dealId)
-    : legacyQuery
-  ).order('created_at', { ascending: false })
-
-  if (legacy.error) {
-    return { rows: null, error: legacy.error.message }
-  }
-
-  const rows = (legacy.data ?? []).map((row) => ({
-    ...(row as unknown as Omit<DealDeskProjectRow, 'archived_at'>),
-    archived_at: null,
-    created_by: (row as { created_by?: string | null }).created_by ?? null,
-  })) as DealDeskProjectRow[]
-
-  return { rows, error: null }
+  return { rows: (result.data ?? []) as DealDeskProjectRow[], error: null }
 }
 
 async function fetchDealDeskProjectRow(
@@ -101,39 +70,17 @@ async function fetchDealDeskProjectRow(
   | { row: DealDeskProjectRow; error: null }
   | { row: null; error: string }
 > {
-  const withArchive = await supabase
+  const result = await supabase
     .from('deal_desk_projects')
-    .select(looseSelect(DEAL_DESK_PROJECT_SELECT_WITH_ARCHIVE))
+    .select(DEAL_DESK_PROJECT_SELECT)
     .eq('id', projectId)
     .eq('organization_id', orgId)
     .maybeSingle()
 
-  if (!withArchive.error && withArchive.data) {
-    return { row: withArchive.data as unknown as DealDeskProjectRow, error: null }
-  }
+  if (result.error) return { row: null, error: result.error.message }
+  if (!result.data) return { row: null, error: 'Projekt nicht gefunden.' }
 
-  if (withArchive.error && !isMissingArchivedColumnError(withArchive.error.message)) {
-    return { row: null, error: withArchive.error.message }
-  }
-
-  const legacy = await supabase
-    .from('deal_desk_projects')
-    .select(looseSelect(DEAL_DESK_PROJECT_SELECT_LEGACY))
-    .eq('id', projectId)
-    .eq('organization_id', orgId)
-    .maybeSingle()
-
-  if (legacy.error) return { row: null, error: legacy.error.message }
-  if (!legacy.data) return { row: null, error: 'Projekt nicht gefunden.' }
-
-  return {
-    row: {
-      ...(legacy.data as unknown as Omit<DealDeskProjectRow, 'archived_at'>),
-      archived_at: null,
-      created_by: (legacy.data as { created_by?: string | null }).created_by ?? null,
-    },
-    error: null,
-  }
+  return { row: result.data as DealDeskProjectRow, error: null }
 }
 
 async function loadProjectOwnersByUserIds(
@@ -407,22 +354,11 @@ export async function setDealDeskProjectArchivedAction(
 
   const { error } = await supabase
     .from('deal_desk_projects')
-    .update(
-      asTableUpdate<'deal_desk_projects'>({
-        archived_at: archived ? new Date().toISOString() : null,
-      })
-    )
+    .update({ archived_at: archived ? new Date().toISOString() : null })
     .eq('id', projectId)
     .eq('organization_id', orgId)
 
   if (error) {
-    if (isMissingArchivedColumnError(error.message)) {
-      return {
-        success: false,
-        error:
-          'Archiv-Funktion benötigt ein Datenbank-Update. Bitte Migration ausführen: supabase db push',
-      }
-    }
     return { success: false, error: error.message }
   }
   revalidatePath(DESK_PATH)

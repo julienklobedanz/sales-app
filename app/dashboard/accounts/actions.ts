@@ -4,13 +4,15 @@ import { revalidatePath } from 'next/cache'
 import { ROUTES } from '@/lib/routes'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { asJson, asTableInsert, asTableUpdate } from '@/lib/supabase/db-types'
-import { looseSelect } from '@/lib/supabase/loose-select'
 import * as XLSX from 'xlsx'
 import {
   normalizeCompanyAccountStatus,
   type CompanyAccountStatusValue,
 } from '@/lib/accounts/company-account-status'
 import type { PartnerCategory } from '@/lib/accounts/company-entity'
+import {
+  parseCompaniesImportRow,
+} from '@/lib/accounts/companies-import-parse'
 import { enrichBulkImportRowFromBrandfetch } from '@/lib/accounts/resolve-company-for-import'
 import { formatIndustryDisplay, resolveIndustryId } from '@/lib/constants/industries'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
@@ -210,15 +212,10 @@ export async function upsertRoadmapProject(
     updated_at: new Date().toISOString(),
   }
   if (payload.id) {
-    const { error } = await supabase
-      .from('company_roadmap_projects')
-      .update(asTableUpdate<'company_roadmap_projects'>(row))
-      .eq('id', payload.id)
+    const { error } = await supabase.from('company_roadmap_projects').update(row).eq('id', payload.id)
     if (error) return { success: false, error: error.message }
   } else {
-    const { error } = await supabase
-      .from('company_roadmap_projects')
-      .insert(asTableInsert<'company_roadmap_projects'>(row))
+    const { error } = await supabase.from('company_roadmap_projects').insert(row)
     if (error) return { success: false, error: error.message }
   }
   revalidatePath(ROUTES.accountsDetail(companyId))
@@ -276,11 +273,11 @@ export async function getRecommendedReferences(
   const supabase = await createServerSupabaseClient()
   const { data: project } = await supabase
     .from('company_roadmap_projects')
-    .select(looseSelect('company_id, tags'))
+    .select('company_id, tags')
     .eq('id', projectId)
     .single()
-  if (!project || !('company_id' in project) || !project.company_id) return []
-  const projectCompanyId = String((project as { company_id: string }).company_id)
+  if (!project?.company_id) return []
+  const projectCompanyId = project.company_id
 
   const { data: company } = await supabase
     .from('companies')
@@ -289,9 +286,7 @@ export async function getRecommendedReferences(
     .single()
   const companyIndustry = normalizeIndustry(company?.industry ?? null)
   const companyHeadquarters = company?.headquarters ?? null
-  const projectTagSet = normalizeTags(
-    ('tags' in project ? (project.tags as string | null) : null) ?? null
-  )
+  const projectTagSet = normalizeTags(project.tags ?? null)
 
   const { data: refRows } = await supabase
     .from('references')
@@ -1005,15 +1000,6 @@ export async function createPartner(payload: {
   }
 }
 
-function normalizePartnerCategoryFromImport(raw: string): PartnerCategory {
-  const t = raw.trim().toLowerCase()
-  if (t === 'sub' || t === 'subunternehmer') return 'sub'
-  if (t === 'tech' || t === 'technologie') return 'tech'
-  if (t === 'legal' || t === 'recht') return 'legal'
-  if (t === 'other' || t === 'sonstiges') return 'other'
-  return 'other'
-}
-
 export async function bulkCreateCompaniesFromSheet(
   fileBuffer: Uint8Array,
   options: { entityKind?: 'account' | 'partner' } = {}
@@ -1064,53 +1050,31 @@ export async function bulkCreateCompaniesFromSheet(
     .eq('entity_kind', entityKind)
   const existingNames = new Set((existingCompanies ?? []).map((c) => String(c.name ?? '').trim().toLowerCase()))
 
-  const pick = (row: Record<string, unknown>, keys: string[]) => {
-    for (const key of keys) {
-      const value = String(row[key] ?? '').trim()
-      if (value) return value
-    }
-    return ''
-  }
-
   let createdCount = 0
   let skippedCount = 0
   let failedCount = 0
 
   for (const row of rows) {
-    const name = pick(row, ['name', 'Name', 'account', 'Account', 'unternehmen', 'Unternehmen'])
-    if (!name) {
+    const parsed = parseCompaniesImportRow(row, entityKind)
+    if (!parsed) {
       skippedCount += 1
       continue
     }
-    const normalizedName = name.toLowerCase()
+    const normalizedName = parsed.name.toLowerCase()
     if (existingNames.has(normalizedName)) {
       skippedCount += 1
       continue
     }
 
-    const employeeRaw = pick(row, ['employee_count', 'Employee Count', 'employees', 'Employees', 'mitarbeiter', 'Mitarbeiter'])
-    const employeeFromSheet = employeeRaw ? Number(employeeRaw.replace(/[^\d]/g, '')) : null
-
     const enriched = await enrichBulkImportRowFromBrandfetch({
-      name,
-      website: pick(row, ['website', 'Website', 'domain', 'Domain']),
-      industry: pick(row, ['industry', 'Industry', 'branche', 'Branche']),
-      headquarters: pick(row, ['headquarters', 'Headquarters', 'hq', 'HQ', 'standort', 'Standort']),
-      employeeCount: Number.isFinite(employeeFromSheet as number) ? employeeFromSheet : null,
+      name: parsed.name,
+      website: parsed.website,
+      industry: parsed.industry,
+      headquarters: parsed.headquarters,
+      employeeCount: parsed.employeeCount,
     })
 
-    const partnerCategoryRaw = pick(row, [
-      'partner_category',
-      'Partner Category',
-      'Kategorie',
-      'kategorie',
-      'category',
-      'Category',
-    ])
-    const partner_category =
-      entityKind === 'partner'
-        ? normalizePartnerCategoryFromImport(partnerCategoryRaw || 'other')
-        : null
+    const partner_category = parsed.partnerCategory
 
     const { error } = await supabase.from('companies').insert({
       organization_id: profile.organization_id,

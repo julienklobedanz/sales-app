@@ -60,9 +60,17 @@ Vollständige Regeln: **`docs/design-system.md`**. Kurz:
 
 ### 3.1 Server Actions (Next.js)
 
-- **Große Einstiegsdateien** (z. B. `app/dashboard/actions.ts`): Öffentliche API als dünne **Wrapper**; Implementierung in **Modulen** (z. B. `app/dashboard/references/*.ts`).
+- **Große Einstiegsdateien** (z. B. `app/dashboard/actions.ts`): Öffentliche API als dünne **Wrapper**; Implementierung in **Modulen** (z. B. `app/dashboard/references/*.ts`, `lib/dashboard-home/*`).
 - **Hinweis aus QC:** Re-Exports von Server Actions aus Submodulen können Build/Turbopack-Probleme machen – **delegieren** (`export async function x() { return xImpl() }`) statt blind re-exporten (Details: `docs/qc-struktur-plan.md`).
 - Rückgaben: Einheitlich **`{ success, error?, … }`** wo im Projekt etabliert; Fehler dem Nutzer per **Toast** o. Ä. sichtbar machen, nicht verschlucken.
+
+### 3.1.1 Observability & Server-Action-Fehler (E6)
+
+- **Logging:** `lib/observability/logger.ts` — strukturierte Einträge (`debug|info|warn|error`) mit Kontext-Feldern (`organizationId`, `userId`, `action`, …). Keine neuen `console.*` in berührten Server-Pfaden; späterer Sink über `setLogSink`.
+- **Sensible Felder** werden automatisch redacted (`api_key`, `password`, …).
+- **Result-Konvention:** `lib/observability/result.ts` — `Result<T> = { ok: true, data } | { ok: false, error }`. Helfer: `ok()`, `err()`, `fail(message, context, cause?)` (loggt **einmal** zentral).
+- **Boy-Scout:** Neue oder migrierte Module (z. B. `lib/dashboard-home/*`, `lib/evidence/approvals-*`) nutzen Logger + `Result` statt verstreutem `console.error` und uneinheitlichen `{ error }`-Returns.
+- **Pure-Funktionen** aus Daten-Modulen in Unit-Tests abdecken (`lib/dashboard-home/dashboard-home-pure.test.ts` als Vorbild).
 
 ### 3.2 „God-Files“ vermeiden
 
@@ -116,7 +124,8 @@ npm run build
 ## 6. Datenbank & Migrationen
 
 - Schemaänderungen: **Supabase-Migrationen** im Repo (`supabase/migrations/`), nicht nur lokal.
-- **Reihenfolge bei Spalten-Änderungen:** zuerst App-Selects/Writes anpassen, `npm run db:types` neu generieren und `npm run typecheck` grün, **dann** Migration deployen.
+- **Reihenfolge bei Spalten-Änderungen:** Migration schreiben → `supabase db push` (Remote) → `npm run db:types` → App-Code → `npm run typecheck`. Details: `docs/schema-sync.md`.
+- **CI:** Job `db-migrations` wendet alle Migrationen gegen Wegwerf-Postgres an (`supabase migration up`).
 - Generierte Typen: `lib/database.types.ts` committen; bei Remote-Schema-Änderung `npm run db:types` (Project-ID in `package.json`).
 - **Service-Role (`createServiceRoleSupabaseClient`):** umgeht RLS — **Default ist der normale Server-Client.** Service-Role nur mit dokumentiertem Grund **und** expliziter Grenze pro Query/Write (Kommentar: „Service-Role weil … / Grenze: …“). Typische Grenzen: gültiges Token, `organization_id` aus Session, Cron-Secret + per-Zeile-org, reine `auth.admin.*`-Operationen.
 - Keine sensiblen Secrets in Code; `.env.local` / geheime Werte nie committen.
@@ -133,6 +142,8 @@ npm run build
 | `docs/qc-struktur-plan.md` | Struktur-Ziele, Refactor-Slices, Server-Action-Hinweise |
 | `docs/refactoring-zusammenfassung.md` | Historische Übersicht Benefits |
 | `docs/ai-coding-agent-guide.md` | **Dieser Guide** – Session-Standard |
+| `docs/schema-sync.md` | Remote-Drift, `supabase link`, CI-Migrations-Gate |
+| `docs/integration-tests.md` | Unit vs. Integration, lokaler Stack, CI-Job |
 
 **Regel:** Keine neuen „Parallel-Dokumente“ für dieselben Regeln anlegen. Bestehende Docs **aktualisieren**, wenn sich Konventionen ändern (z. B. neue Badge-Variant).
 

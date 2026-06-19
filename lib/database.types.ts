@@ -264,6 +264,7 @@ export type Database = {
           id: string
           project_name: string
           status: string | null
+          tags: string | null
           target_date: string | null
           updated_at: string | null
         }
@@ -274,6 +275,7 @@ export type Database = {
           id?: string
           project_name: string
           status?: string | null
+          tags?: string | null
           target_date?: string | null
           updated_at?: string | null
         }
@@ -284,6 +286,7 @@ export type Database = {
           id?: string
           project_name?: string
           status?: string | null
+          tags?: string | null
           target_date?: string | null
           updated_at?: string | null
         }
@@ -518,6 +521,7 @@ export type Database = {
           analysis_snapshot: Json | null
           analysis_source: string | null
           analysis_status: string
+          archived_at: string | null
           bid_decision: string | null
           created_at: string
           created_by: string | null
@@ -529,12 +533,12 @@ export type Database = {
           project_name: string
           updated_at: string
           win_probability: number | null
-          workspace_state: Json
         }
         Insert: {
           analysis_snapshot?: Json | null
           analysis_source?: string | null
           analysis_status?: string
+          archived_at?: string | null
           bid_decision?: string | null
           created_at?: string
           created_by?: string | null
@@ -546,12 +550,12 @@ export type Database = {
           project_name?: string
           updated_at?: string
           win_probability?: number | null
-          workspace_state?: Json
         }
         Update: {
           analysis_snapshot?: Json | null
           analysis_source?: string | null
           analysis_status?: string
+          archived_at?: string | null
           bid_decision?: string | null
           created_at?: string
           created_by?: string | null
@@ -563,7 +567,6 @@ export type Database = {
           project_name?: string
           updated_at?: string
           win_probability?: number | null
-          workspace_state?: Json
         }
         Relationships: [
           {
@@ -1865,6 +1868,8 @@ export type Database = {
           approval_coordinator_email: string | null
           approval_coordinator_name: string | null
           approval_customer_facing_name: string | null
+          approval_customer_last_sent_at: string | null
+          approval_customer_reminder_sent_at: string | null
           approval_delegated_to_email: string | null
           approval_delegated_to_name: string | null
           approval_expires_at: string | null
@@ -1939,6 +1944,8 @@ export type Database = {
           approval_coordinator_email?: string | null
           approval_coordinator_name?: string | null
           approval_customer_facing_name?: string | null
+          approval_customer_last_sent_at?: string | null
+          approval_customer_reminder_sent_at?: string | null
           approval_delegated_to_email?: string | null
           approval_delegated_to_name?: string | null
           approval_expires_at?: string | null
@@ -2013,6 +2020,8 @@ export type Database = {
           approval_coordinator_email?: string | null
           approval_coordinator_name?: string | null
           approval_customer_facing_name?: string | null
+          approval_customer_last_sent_at?: string | null
+          approval_customer_reminder_sent_at?: string | null
           approval_delegated_to_email?: string | null
           approval_delegated_to_name?: string | null
           approval_expires_at?: string | null
@@ -2324,6 +2333,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _migration_profile_is_admin: {
+        Args: { p_user_id: string }
+        Returns: boolean
+      }
       _portfolio_public_access_state: {
         Args: {
           p_row: Database["public"]["Tables"]["shared_portfolios"]["Row"]

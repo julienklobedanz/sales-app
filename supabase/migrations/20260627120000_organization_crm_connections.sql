@@ -56,16 +56,39 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_deals_org_crm_opportunity
 
 ALTER TABLE public.organization_crm_connections ENABLE ROW LEVEL SECURITY;
 
+-- Admin-Check: funktioniert vor und nach dem Rollenmodell (profiles.role vs. system_role).
+CREATE OR REPLACE FUNCTION public._migration_profile_is_admin(p_user_id uuid)
+RETURNS boolean
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'profiles' AND column_name = 'system_role'
+  ) THEN
+    RETURN EXISTS (
+      SELECT 1 FROM public.profiles p
+      WHERE p.id = p_user_id
+        AND p.system_role IN ('owner'::public.system_role, 'admin'::public.system_role)
+    );
+  END IF;
+  RETURN EXISTS (
+    SELECT 1 FROM public.profiles p
+    WHERE p.id = p_user_id AND p.role::text = 'admin'
+  );
+END;
+$$;
+
 DROP POLICY IF EXISTS "Admins read own org crm connections" ON public.organization_crm_connections;
 CREATE POLICY "Admins read own org crm connections"
   ON public.organization_crm_connections FOR SELECT
   TO authenticated
   USING (
     organization_id = public.current_user_organization_id()
-    AND EXISTS (
-      SELECT 1 FROM public.profiles p
-      WHERE p.id = auth.uid() AND p.role = 'admin'
-    )
+    AND public._migration_profile_is_admin(auth.uid())
   );
 
 DROP POLICY IF EXISTS "Admins insert own org crm connections" ON public.organization_crm_connections;
@@ -74,10 +97,7 @@ CREATE POLICY "Admins insert own org crm connections"
   TO authenticated
   WITH CHECK (
     organization_id = public.current_user_organization_id()
-    AND EXISTS (
-      SELECT 1 FROM public.profiles p
-      WHERE p.id = auth.uid() AND p.role = 'admin'
-    )
+    AND public._migration_profile_is_admin(auth.uid())
   );
 
 DROP POLICY IF EXISTS "Admins update own org crm connections" ON public.organization_crm_connections;
@@ -86,17 +106,11 @@ CREATE POLICY "Admins update own org crm connections"
   TO authenticated
   USING (
     organization_id = public.current_user_organization_id()
-    AND EXISTS (
-      SELECT 1 FROM public.profiles p
-      WHERE p.id = auth.uid() AND p.role = 'admin'
-    )
+    AND public._migration_profile_is_admin(auth.uid())
   )
   WITH CHECK (
     organization_id = public.current_user_organization_id()
-    AND EXISTS (
-      SELECT 1 FROM public.profiles p
-      WHERE p.id = auth.uid() AND p.role = 'admin'
-    )
+    AND public._migration_profile_is_admin(auth.uid())
   );
 
 DROP POLICY IF EXISTS "Admins delete own org crm connections" ON public.organization_crm_connections;
@@ -105,8 +119,5 @@ CREATE POLICY "Admins delete own org crm connections"
   TO authenticated
   USING (
     organization_id = public.current_user_organization_id()
-    AND EXISTS (
-      SELECT 1 FROM public.profiles p
-      WHERE p.id = auth.uid() AND p.role = 'admin'
-    )
+    AND public._migration_profile_is_admin(auth.uid())
   );

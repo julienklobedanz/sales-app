@@ -4,18 +4,26 @@ ALTER TABLE public.organization_invites
   ADD COLUMN IF NOT EXISTS system_role public.system_role,
   ADD COLUMN IF NOT EXISTS function_role public.function_role;
 
-UPDATE public.organization_invites
-SET
-  system_role = CASE coalesce(role, 'sales')
-    WHEN 'admin' THEN 'admin'::public.system_role
-    ELSE 'member'::public.system_role
-  END,
-  function_role = CASE coalesce(role, 'sales')
-    WHEN 'admin' THEN 'sales_leader'::public.function_role
-    WHEN 'account_manager' THEN 'account_manager'::public.function_role
-    ELSE 'sales_rep'::public.function_role
-  END
-WHERE system_role IS NULL OR function_role IS NULL;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'organization_invites' AND column_name = 'role'
+  ) THEN
+    UPDATE public.organization_invites
+    SET
+      system_role = CASE coalesce(role, 'sales')
+        WHEN 'admin' THEN 'admin'::public.system_role
+        ELSE 'member'::public.system_role
+      END,
+      function_role = CASE coalesce(role, 'sales')
+        WHEN 'admin' THEN 'sales_leader'::public.function_role
+        WHEN 'account_manager' THEN 'account_manager'::public.function_role
+        ELSE 'sales_rep'::public.function_role
+      END
+    WHERE system_role IS NULL OR function_role IS NULL;
+  END IF;
+END $$;
 
 ALTER TABLE public.organization_invites
   ALTER COLUMN system_role SET DEFAULT 'member'::public.system_role,
@@ -31,25 +39,33 @@ ALTER TABLE public.organization_invites
   ALTER COLUMN system_role SET NOT NULL,
   ALTER COLUMN function_role SET NOT NULL;
 
-CREATE OR REPLACE FUNCTION public.sync_legacy_invite_role()
-RETURNS trigger
-LANGUAGE plpgsql
-AS $$
+DO $$
 BEGIN
-  NEW.role := CASE
-    WHEN NEW.function_role = 'account_manager'::public.function_role THEN 'account_manager'
-    WHEN NEW.system_role IN ('owner'::public.system_role, 'admin'::public.system_role) THEN 'admin'
-    ELSE 'sales'
-  END;
-  RETURN NEW;
-END;
-$$;
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'organization_invites' AND column_name = 'role'
+  ) THEN
+    CREATE OR REPLACE FUNCTION public.sync_legacy_invite_role()
+    RETURNS trigger
+    LANGUAGE plpgsql
+    AS $fn$
+    BEGIN
+      NEW.role := CASE
+        WHEN NEW.function_role = 'account_manager'::public.function_role THEN 'account_manager'
+        WHEN NEW.system_role IN ('owner'::public.system_role, 'admin'::public.system_role) THEN 'admin'
+        ELSE 'sales'
+      END;
+      RETURN NEW;
+    END;
+    $fn$;
 
-DROP TRIGGER IF EXISTS trg_sync_legacy_invite_role ON public.organization_invites;
-CREATE TRIGGER trg_sync_legacy_invite_role
-  BEFORE INSERT OR UPDATE OF system_role, function_role ON public.organization_invites
-  FOR EACH ROW
-  EXECUTE FUNCTION public.sync_legacy_invite_role();
+    DROP TRIGGER IF EXISTS trg_sync_legacy_invite_role ON public.organization_invites;
+    CREATE TRIGGER trg_sync_legacy_invite_role
+      BEFORE INSERT OR UPDATE OF system_role, function_role ON public.organization_invites
+      FOR EACH ROW
+      EXECUTE FUNCTION public.sync_legacy_invite_role();
+  END IF;
+END $$;
 
 CREATE OR REPLACE FUNCTION public.resolve_invite_roles(
   p_role text,
@@ -84,6 +100,21 @@ BEGIN
     ELSE 'sales'
   END;
 END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.legacy_role_from_dimensions(
+  p_system_role public.system_role,
+  p_function_role public.function_role
+)
+RETURNS text
+LANGUAGE sql
+IMMUTABLE
+AS $$
+  SELECT CASE
+    WHEN p_function_role = 'account_manager'::public.function_role THEN 'account_manager'
+    WHEN p_system_role IN ('owner'::public.system_role, 'admin'::public.system_role) THEN 'admin'
+    ELSE 'sales'
+  END
 $$;
 
 CREATE OR REPLACE FUNCTION public.create_organization_invite(
@@ -129,26 +160,43 @@ BEGIN
     o_legacy_role text
   );
 
-  INSERT INTO public.organization_invites (
-    organization_id,
-    email,
-    token,
-    invited_by,
-    role,
-    system_role,
-    function_role,
-    expires_at
-  )
-  VALUES (
-    v_org,
-    lower(trim(p_email)),
-    p_token,
-    v_uid,
-    v_resolved.o_legacy_role,
-    v_resolved.o_system_role,
-    v_resolved.o_function_role,
-    p_expires_at
-  );
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'organization_invites' AND column_name = 'role'
+  ) THEN
+    EXECUTE '
+      INSERT INTO public.organization_invites (
+        organization_id, email, token, invited_by, role, system_role, function_role, expires_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)'
+    USING
+      v_org,
+      lower(trim(p_email)),
+      p_token,
+      v_uid,
+      v_resolved.o_legacy_role,
+      v_resolved.o_system_role,
+      v_resolved.o_function_role,
+      p_expires_at;
+  ELSE
+    INSERT INTO public.organization_invites (
+      organization_id,
+      email,
+      token,
+      invited_by,
+      system_role,
+      function_role,
+      expires_at
+    )
+    VALUES (
+      v_org,
+      lower(trim(p_email)),
+      p_token,
+      v_uid,
+      v_resolved.o_system_role,
+      v_resolved.o_function_role,
+      p_expires_at
+    );
+  END IF;
 END;
 $$;
 
@@ -193,14 +241,29 @@ BEGIN
     o_legacy_role text
   );
 
-  UPDATE public.organization_invites
-  SET
-    role = v_resolved.o_legacy_role,
-    system_role = v_resolved.o_system_role,
-    function_role = v_resolved.o_function_role
-  WHERE id = p_invite_id
-    AND organization_id = v_org
-    AND expires_at > now();
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'organization_invites' AND column_name = 'role'
+  ) THEN
+    EXECUTE '
+      UPDATE public.organization_invites
+      SET role = $1, system_role = $2, function_role = $3
+      WHERE id = $4 AND organization_id = $5 AND expires_at > now()'
+    USING
+      v_resolved.o_legacy_role,
+      v_resolved.o_system_role,
+      v_resolved.o_function_role,
+      p_invite_id,
+      v_org;
+  ELSE
+    UPDATE public.organization_invites
+    SET
+      system_role = v_resolved.o_system_role,
+      function_role = v_resolved.o_function_role
+    WHERE id = p_invite_id
+      AND organization_id = v_org
+      AND expires_at > now();
+  END IF;
 END;
 $$;
 
@@ -216,7 +279,7 @@ BEGIN
   SELECT jsonb_build_object(
     'organization_id', i.organization_id,
     'organization_name', o.name,
-    'role', coalesce(i.role, 'sales'),
+    'role', public.legacy_role_from_dimensions(i.system_role, i.function_role),
     'system_role', i.system_role::text,
     'function_role', i.function_role::text
   ) INTO result
@@ -240,7 +303,7 @@ AS $$
       jsonb_build_object(
         'id', i.id,
         'email', i.email,
-        'role', coalesce(i.role, 'sales'),
+        'role', public.legacy_role_from_dimensions(i.system_role, i.function_role),
         'system_role', i.system_role::text,
         'function_role', i.function_role::text
       )
@@ -263,7 +326,7 @@ AS $$
   SELECT jsonb_build_object(
     'email', i.email,
     'token', i.token,
-    'role', coalesce(i.role, 'sales'),
+    'role', public.legacy_role_from_dimensions(i.system_role, i.function_role),
     'system_role', i.system_role::text,
     'function_role', i.function_role::text
   )
