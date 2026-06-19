@@ -2,8 +2,9 @@
 
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
+import { asTableInsert } from '@/lib/supabase/db-types'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { extractDataFromDocument } from '@/lib/document-extraction'
 import { inviteByEmail } from '@/app/dashboard/settings/invite-actions'
 import type { ExtractedReferenceData } from '@/app/dashboard/evidence/new/types'
@@ -146,7 +147,9 @@ export async function finalizeWorkspaceAndProfile(params: {
     phone: phoneTrim.length ? phoneTrim : null,
   }
 
-  const { error } = await supabase.from('profiles').upsert(upsertPayload)
+  const { error } = await supabase
+    .from('profiles')
+    .upsert(asTableInsert<'profiles'>(upsertPayload))
   if (error) return { success: false, error: error.message }
 
   return { success: true }

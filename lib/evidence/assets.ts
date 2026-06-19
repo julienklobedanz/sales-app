@@ -29,7 +29,7 @@ export async function getReferenceAssetsImpl(referenceId: string): Promise<Refer
     file_name: r.file_name ?? null,
     file_type: r.file_type ?? null,
     category: (r.category as 'sales' | 'contract' | 'other') || 'other',
-    created_at: r.created_at,
+    created_at: r.created_at ?? '',
   }))
 }
 

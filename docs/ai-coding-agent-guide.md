@@ -89,12 +89,13 @@ Vor Abschluss einer relevanten Änderung (immer wenn möglich):
 
 ```bash
 npm run lint
+npm run typecheck
 npm test
 npm run build
 ```
 
 - **Lint-Warnungen** nicht ignorieren, außer es gibt einen dokumentierten Grund (z. B. Library-Limit) und minimalen Scope (`eslint-disable-next-line` mit Kurzkommentar).
-- **Typen:** `any` nicht als Default; bestehende Typen aus `lib/` / Supabase-Generierung nutzen.
+- **Typen:** `any` nicht als Default; generierte Supabase-Typen aus `lib/database.types.ts` nutzen (`Tables<'references'>`, `npm run db:types` nach Schema-Änderungen).
 
 ---
 
@@ -115,6 +116,9 @@ npm run build
 ## 6. Datenbank & Migrationen
 
 - Schemaänderungen: **Supabase-Migrationen** im Repo (`supabase/migrations/`), nicht nur lokal.
+- **Reihenfolge bei Spalten-Änderungen:** zuerst App-Selects/Writes anpassen, `npm run db:types` neu generieren und `npm run typecheck` grün, **dann** Migration deployen.
+- Generierte Typen: `lib/database.types.ts` committen; bei Remote-Schema-Änderung `npm run db:types` (Project-ID in `package.json`).
+- **Service-Role (`createServiceRoleSupabaseClient`):** umgeht RLS — **Default ist der normale Server-Client.** Service-Role nur mit dokumentiertem Grund **und** expliziter Grenze pro Query/Write (Kommentar: „Service-Role weil … / Grenze: …“). Typische Grenzen: gültiges Token, `organization_id` aus Session, Cron-Secret + per-Zeile-org, reine `auth.admin.*`-Operationen.
 - Keine sensiblen Secrets in Code; `.env.local` / geheime Werte nie committen.
 
 *(Security-Härtung und produktive API-Keys sind out of scope dieses Guides, aber Grundlagen gelten.)*
@@ -138,7 +142,7 @@ npm run build
 
 - [ ] Änderung **fokussiert**; keine unnötigen Dateien berührt?
 - [ ] **Design:** Tokens, keine Raw-Farben; Badges/Copy wo passend?
-- [ ] **Lint & Build** grün (wenn im Setup möglich)?
+- [ ] **Lint, Typecheck & Build** grün (wenn im Setup möglich)?
 - [ ] **Server Actions / API** dem bestehenden Muster folgend?
 - [ ] Bei neuen **sichtbaren** Begriffen: `COPY` oder bewusste Ausnahme dokumentiert?
 

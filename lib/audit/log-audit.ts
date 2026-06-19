@@ -1,6 +1,7 @@
 'use server'
 
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { asJson } from '@/lib/supabase/db-types'
 import { maybeSendSecurityAlertMail } from '@/lib/audit/security-alerts'
 
 type AuditLogInput = {
@@ -24,7 +25,7 @@ export async function writeAuditLog(input: AuditLogInput): Promise<void> {
       user_id: userId,
       action: input.action,
       entity_id: input.entityId ?? null,
-      action_details: input.actionDetails ?? {},
+      action_details: asJson(input.actionDetails ?? {}),
     })
     if (error) {
       console.error('[writeAuditLog]', input.action, error.message)

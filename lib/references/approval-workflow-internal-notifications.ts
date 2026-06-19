@@ -52,6 +52,7 @@ type ReferenceNotifyContext = {
   referenceTitle: string
   companyId: string
   companyName: string
+  organizationId: string | null
   requesterId: string | null
   coordinatorEmail: string | null
 }
@@ -67,6 +68,7 @@ export async function loadReferenceNotifyContext(
       id,
       title,
       company_id,
+      organization_id,
       approval_requested_by,
       approval_coordinator_email,
       companies ( name )
@@ -87,6 +89,10 @@ export async function loadReferenceNotifyContext(
     referenceTitle: String(row.title ?? 'Referenz').trim() || 'Referenz',
     companyId: String(row.company_id),
     companyName: String(company?.name ?? '').trim() || 'Referenz',
+    organizationId:
+      typeof (row as { organization_id?: string | null }).organization_id === 'string'
+        ? (row as { organization_id: string }).organization_id
+        : null,
     requesterId: (row as { approval_requested_by?: string | null }).approval_requested_by ?? null,
     coordinatorEmail:
       typeof (row as { approval_coordinator_email?: string | null }).approval_coordinator_email ===
@@ -107,6 +113,7 @@ async function notify(args: {
 }): Promise<boolean> {
   const recipients = await resolveApprovalWorkflowNotifyEmails(args.admin, {
     companyId: args.context.companyId,
+    organizationId: args.context.organizationId,
     requesterId: args.context.requesterId,
     coordinatorEmail: args.context.coordinatorEmail,
   })
@@ -224,6 +231,7 @@ export async function notifyInternalTeamApprovalWithdrawn(args: {
   referenceTitle: string
   companyId: string
   companyName: string
+  organizationId?: string | null
   requesterId: string | null
   coordinatorEmail: string | null
 }): Promise<boolean> {
@@ -232,6 +240,7 @@ export async function notifyInternalTeamApprovalWithdrawn(args: {
     referenceTitle: args.referenceTitle,
     companyId: args.companyId,
     companyName: args.companyName,
+    organizationId: args.organizationId ?? null,
     requesterId: args.requesterId,
     coordinatorEmail: args.coordinatorEmail,
   }
@@ -281,6 +290,7 @@ export async function notifyInternalTeamCustomerApprovalPendingReminder(args: {
   referenceTitle: string
   companyId: string
   companyName: string
+  organizationId?: string | null
   requesterId: string | null
   coordinatorEmail: string | null
   daysWaiting: number
@@ -290,6 +300,7 @@ export async function notifyInternalTeamCustomerApprovalPendingReminder(args: {
     referenceTitle: args.referenceTitle,
     companyId: args.companyId,
     companyName: args.companyName,
+    organizationId: args.organizationId ?? null,
     requesterId: args.requesterId,
     coordinatorEmail: args.coordinatorEmail,
   }

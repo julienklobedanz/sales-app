@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
+import { asReferenceStatus } from '@/lib/supabase/db-types'
 import { ROUTES } from '@/lib/routes'
 import { logEventForCurrentOrg } from '@/lib/events/log-event'
 export type RequestItem = {
@@ -110,7 +111,7 @@ export async function reviewRequestImpl(
 
   const { error: refError } = await supabase
     .from('references')
-    .update({ status: newRefStatus })
+    .update({ status: asReferenceStatus(newRefStatus) })
     .eq('id', approval.reference_id)
 
   if (refError) throw new Error(refError.message)

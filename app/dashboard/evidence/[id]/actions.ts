@@ -9,6 +9,7 @@ import {
   resendClientApprovalEmail,
   withdrawApprovalRequest,
 } from '@/app/dashboard/actions'
+import { asReferenceStatus, asTableInsert } from '@/lib/supabase/db-types'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { logEventForCurrentOrg } from '@/lib/events/log-event'
@@ -265,7 +266,7 @@ export async function createAnonymizedReferenceVersion(id: string): Promise<Anon
     summary: clampNarrativeTextNullable(anonymized.summary),
     industry: row.industry as string | null,
     country: row.country as string | null,
-    status: 'anonymized',
+    status: asReferenceStatus('anonymized'),
     tags: anonymized.tags,
     website: null,
     employee_count: row.employee_count as number | null,
@@ -282,14 +283,13 @@ export async function createAnonymizedReferenceVersion(id: string): Promise<Anon
     project_status: row.project_status as string | null,
     project_start: row.project_start as string | null,
     project_end: row.project_end as string | null,
-    duration_months: row.duration_months as number | null,
     is_nda_deal: true,
     anonymized_from_id: id,
   }
 
   const { data: inserted, error: insertError } = await supabase
     .from('references')
-    .insert(payload)
+    .insert(asTableInsert<'references'>(payload))
     .select('id')
     .single()
 

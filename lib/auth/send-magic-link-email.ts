@@ -22,6 +22,8 @@ export async function sendMagicLinkEmailViaResend(params: {
   inviteToken?: string | null
 }): Promise<SendMagicLinkEmailResult> {
   const resendKey = process.env.RESEND_API_KEY?.trim()
+  // Service-Role weil: auth.admin.generateLink (kein User-Kontext).
+  // Grenze: nur Auth-Operation für die angegebene E-Mail-Adresse.
   const admin = createServiceRoleSupabaseClient()
   if (!admin || !resendKey) {
     return { ok: false, reason: 'not_configured' }

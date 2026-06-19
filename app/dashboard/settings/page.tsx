@@ -196,15 +196,30 @@ export default async function SettingsPage() {
     .single()
 
   const organizationId = profileRow?.organization_id ?? null
-  const { data: orgRow } =
-    organizationId &&
-    (await supabase
+  let orgRow: {
+    id: string
+    name: string
+    logo_url: string | null
+    primary_color: string | null
+    secondary_color: string | null
+    date_display_format: string
+    export_settings: unknown
+    stripe_subscription_id: string | null
+    subscription_status: string | null
+    subdomain: string | null
+    api_settings: unknown
+    workflow_settings: unknown
+  } | null = null
+  if (organizationId) {
+    const { data } = await supabase
       .from('organizations')
       .select(
         'id, name, logo_url, primary_color, secondary_color, date_display_format, export_settings, stripe_subscription_id, subscription_status, subdomain, api_settings, workflow_settings'
       )
       .eq('id', organizationId)
-      .single())
+      .single()
+    orgRow = data
+  }
 
   const teamMembers = await getTeamMembers()
 
@@ -222,13 +237,25 @@ export default async function SettingsPage() {
   const auditLogs: AuditLogRow[] =
     isAdmin && organizationId
       ? (
-          await supabase
+          (await supabase
             .from('audit_logs')
             .select('id, action, entity_id, action_details, timestamp, user_id')
             .eq('org_id', organizationId)
             .order('timestamp', { ascending: false })
-            .limit(200)
-        ).data ?? []
+            .limit(200)).data ?? []
+        ).map((row) => ({
+          id: row.id,
+          action: row.action,
+          entity_id: row.entity_id,
+          action_details:
+            row.action_details &&
+            typeof row.action_details === 'object' &&
+            !Array.isArray(row.action_details)
+              ? (row.action_details as Record<string, unknown>)
+              : null,
+          timestamp: row.timestamp,
+          user_id: row.user_id,
+        }))
       : []
 
   const fullName = profileRow?.full_name ?? ''

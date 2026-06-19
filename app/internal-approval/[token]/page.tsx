@@ -20,6 +20,8 @@ export default async function InternalApprovalPage({
   params: Promise<{ token: string }>
 }) {
   const { token } = await params
+  // Service-Role weil: Seitenkontext für tokenisierten internen Freigabe-Link ohne Login.
+  // Grenze: getInternalApprovalPageContext filtert auf approval_internal_review_token.
   const admin = createServiceRoleSupabaseClient()
 
   if (!admin) {

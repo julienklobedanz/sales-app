@@ -37,7 +37,8 @@ export async function GET(req: NextRequest) {
   const firstReferenceId = result.references[0]?.id ?? null
   const { branding: pdfBranding, exportSettings } = await resolvePublicPdfExportContext(
     branding,
-    firstReferenceId
+    firstReferenceId,
+    result.references.map((r) => r.id)
   )
 
   const template = resolvePdfTemplate(req.nextUrl.searchParams.get('template'), exportSettings)

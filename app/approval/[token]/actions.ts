@@ -21,6 +21,8 @@ export async function completeClientApproval(params: {
   referenceGiverTitle?: string
   scope?: CustomerApprovalScopeSelection
 }): Promise<CompleteClientApprovalResult> {
+  // Service-Role weil: Kunden-Freigabe per Token ohne Login; RLS blockiert anonyme Writes.
+  // Grenze: completeClientApprovalWithAdmin filtert strikt auf approval_token.
   const admin = createServiceRoleSupabaseClient()
   if (!admin) {
     return { success: false, error: 'server_config' }
@@ -104,6 +106,8 @@ export async function delegateClientApproval(params: {
   if (error) return { success: false, error: error.message }
 
   if (refRow.id && refRow.organization_id) {
+    // Service-Role weil: evidence_events-Insert ohne User-Session (delegierter Kunde).
+    // Grenze: organization_id + reference_id aus token-validierter Referenzzeile.
     const admin = createServiceRoleSupabaseClient()
     if (admin) {
       const { error: eventError } = await admin.from('evidence_events').insert({

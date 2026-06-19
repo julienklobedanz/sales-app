@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { EMPTY_EXECUTIVE_BRIEFING } from '@/lib/deal-desk/executive-briefing-fields'
 import {
   deadlineCountdownBadgeClass,
   deadlineRowTitleClass,
@@ -57,6 +58,7 @@ describe('resolveBidOverviewMeta', () => {
     const meta = resolveBidOverviewMeta(
       {
         executiveBriefing: {
+          ...EMPTY_EXECUTIVE_BRIEFING,
           submissionDeadline: '19.06.2026',
           expectedDealVolume: 'ca. 1.2M € TCV',
           projectLocation: 'Berlin, DE',

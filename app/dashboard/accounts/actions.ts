@@ -3,6 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { ROUTES } from '@/lib/routes'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { asJson, asTableInsert } from '@/lib/supabase/db-types'
+import { looseSelect } from '@/lib/supabase/loose-select'
 import * as XLSX from 'xlsx'
 import {
   normalizeCompanyAccountStatus,
@@ -134,7 +136,7 @@ export async function upsertCompanyStrategy(
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createServerSupabaseClient()
   const full = await supabase.from('company_strategies').upsert(
-    {
+    asTableInsert<'company_strategies'>({
       company_id: companyId,
       // DB-Spalten heißen main_goals und competitive_situation
       main_goals: payload.company_goals ?? null,
@@ -143,9 +145,9 @@ export async function upsertCompanyStrategy(
       next_steps: payload.next_steps ?? null,
       value_proposition: payload.value_proposition ?? null,
       metrics_pain: payload.metrics_pain ?? null,
-      mh_assessment: payload.mh_assessment ?? {},
+      mh_assessment: asJson(payload.mh_assessment ?? {}),
       updated_at: new Date().toISOString(),
-    },
+    }),
     { onConflict: 'company_id' }
   )
   if (!full.error) {
@@ -272,19 +274,22 @@ export async function getRecommendedReferences(
   const supabase = await createServerSupabaseClient()
   const { data: project } = await supabase
     .from('company_roadmap_projects')
-    .select('company_id, tags')
+    .select(looseSelect('company_id, tags'))
     .eq('id', projectId)
     .single()
-  if (!project?.company_id) return []
+  if (!project || !('company_id' in project) || !project.company_id) return []
+  const projectCompanyId = String((project as { company_id: string }).company_id)
 
   const { data: company } = await supabase
     .from('companies')
     .select('industry, headquarters')
-    .eq('id', project.company_id)
+    .eq('id', projectCompanyId)
     .single()
   const companyIndustry = normalizeIndustry(company?.industry ?? null)
   const companyHeadquarters = company?.headquarters ?? null
-  const projectTagSet = normalizeTags(project.tags ?? null)
+  const projectTagSet = normalizeTags(
+    ('tags' in project ? (project.tags as string | null) : null) ?? null
+  )
 
   const { data: refRows } = await supabase
     .from('references')
@@ -650,14 +655,15 @@ export async function createContactPerson(
   }
 ): Promise<{ success: boolean; contact?: ContactPersonRow; error?: string }> {
   const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+
   // Einige Deployments verlangen organization_id auf contact_persons.
   const [{ data: company }, { data: profile }] = await Promise.all([
     supabase.from('companies').select('organization_id').eq('id', companyId).single(),
-    supabase
-      .from('profiles')
-      .select('organization_id')
-      .eq('id', (await supabase.auth.getUser()).data.user?.id)
-      .single(),
+    supabase.from('profiles').select('organization_id').eq('id', user.id).single(),
   ])
   const organization_id =
     (company as { organization_id?: string | null } | null)?.organization_id ??
@@ -761,10 +767,15 @@ export type AccountDealRow = {
 
 export async function getActiveDealsByCompanyId(companyId: string): Promise<AccountDealRow[]> {
   const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return []
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('organization_id')
-    .eq('id', (await supabase.auth.getUser()).data.user?.id)
+    .eq('id', user.id)
     .single()
   const orgId = profile?.organization_id
   if (!orgId) return []
@@ -792,10 +803,15 @@ export async function getExpiringDealsByCompanyId(
   companyId: string
 ): Promise<DealSignalRow[]> {
   const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return []
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('organization_id')
-    .eq('id', (await supabase.auth.getUser()).data.user?.id)
+    .eq('id', user.id)
     .single()
   const orgId = profile?.organization_id
   if (!orgId) return []
@@ -1312,8 +1328,13 @@ export async function generateOnePagerHtml(
   const challenges = strategy?.red_flags ?? ''
   const valueProp = (strategy as { value_proposition?: string | null } | null)?.value_proposition ?? ''
   const nextSteps = strategy?.next_steps ?? ''
-  type StakeholderData = { name: string; title?: string | null; role: string; priorities_topics?: string | null }
-  const stakeholderList: StakeholderData[] = stakeholders ?? []
+  type StakeholderData = { name: string; title?: string | null; role: string | null; priorities_topics?: string | null }
+  const stakeholderList: StakeholderData[] = (stakeholders ?? []).map((s) => ({
+    name: s.name,
+    title: s.title,
+    role: s.role,
+    priorities_topics: s.priorities_topics,
+  }))
   const execSummary = stakeholderList.map((s: StakeholderData) => `${s.name}${s.title ? ` (${s.title})` : ''}: ${(s.priorities_topics ?? '').trim() || '—'}`).join('\n')
   const refList = refs.map((r: CompanyRefRow) => r.title).join(', ') || '—'
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>One-Pager ${escapeHtml(company.name)}</title><style>body{font-family:system-ui,sans-serif;max-width:800px;margin:2rem auto;padding:0 1rem;line-height:1.5;} h1{font-size:1.5rem;} h2{font-size:1.1rem;margin-top:1.5rem;} ul{margin:0.25rem 0;} .meta{color:#666;font-size:0.9rem;}</style></head><body>

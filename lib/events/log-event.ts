@@ -1,6 +1,7 @@
 'use server'
 
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { asJson } from '@/lib/supabase/db-types'
 
 export type LogEventParams = {
   organizationId: string
@@ -26,7 +27,7 @@ export async function logEvent(params: LogEventParams): Promise<void> {
     const { error } = await supabase.from('evidence_events').insert({
       organization_id: params.organizationId,
       event_type: params.eventType,
-      payload: params.payload ?? {},
+      payload: asJson(params.payload ?? {}),
       reference_id: params.referenceId ?? null,
       deal_id: params.dealId ?? null,
       created_by: createdBy,

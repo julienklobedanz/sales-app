@@ -88,6 +88,8 @@ export async function GET(request: Request) {
     )
   }
 
+  // Service-Role weil: Digest läuft ohne User-Session; liest Profile org-übergreifend.
+  // Grenze: Bearer CRON_SECRET; loadMarketSignalsDigestForUser pro profile.organization_id.
   const now = new Date()
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000)
   const sinceIso = since.toISOString()

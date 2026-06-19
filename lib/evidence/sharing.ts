@@ -2,6 +2,7 @@
 
 import { createHash, randomBytes } from 'crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { nullToUndefined } from '@/lib/supabase/db-types'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { generatePortfolioSlug } from '@/lib/slug'
 import { logEvent } from '@/lib/events/log-event'
@@ -91,7 +92,6 @@ async function deactivateActiveSharesForReferences(referenceIds: string[]) {
   for (const slug of slugsToDeactivate) {
     const { error: deactivateError } = await supabase.rpc('deactivate_portfolio', {
       p_slug: slug,
-      p_manage_token: null,
     })
     if (deactivateError) {
       console.error('[createSharedPortfolio] deactivate existing slug failed:', slug, deactivateError)
@@ -155,7 +155,7 @@ export async function createSharedPortfolioImpl(
         initialPassword = policy.requirePasswordForNew ? generateSharePassword() : null
         const { error: secErr } = await supabase.rpc('set_shared_portfolio_security', {
           p_slug: slug,
-          p_password_plain: initialPassword,
+          p_password_plain: initialPassword ?? '',
           p_password_remove: false,
           p_expires_at: exp.toISOString(),
           p_clear_expires: false,
@@ -463,9 +463,9 @@ export async function updateShareLinkSecurityByReferenceImpl(
 
   const { data: rpcData, error: rpcErr } = await supabase.rpc('set_shared_portfolio_security', {
     p_slug: slug,
-    p_password_plain: input.passwordPlain,
+    p_password_plain: input.passwordPlain ?? '',
     p_password_remove: input.removePassword,
-    p_expires_at: input.clearExpires ? null : expiresAtIso,
+    p_expires_at: input.clearExpires ? undefined : nullToUndefined(expiresAtIso),
     p_clear_expires: input.clearExpires,
   })
   if (rpcErr) return { success: false, error: rpcErr.message }

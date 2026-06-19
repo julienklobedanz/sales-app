@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { Resend } from 'resend'
+import { asTableInsert } from '@/lib/supabase/db-types'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
 import { ROUTES } from '@/lib/routes'
@@ -28,6 +29,8 @@ async function sendSignupConfirmationViaResend(params: {
   fullName: string
   appOrigin: string
 }): Promise<boolean> {
+  // Service-Role weil: auth.admin.generateLink für Sign-up-Bestätigung.
+  // Grenze: nur Auth-Operation für die registrierte E-Mail.
   const admin = createServiceRoleSupabaseClient()
   const resendKey = process.env.RESEND_API_KEY?.trim()
   if (!admin || !resendKey) return false
@@ -129,16 +132,18 @@ export async function signUp(formData: FormData): Promise<SignUpResult> {
         function_role?: string
       } | null
       const organizationId = parsed?.organization_id ?? null
-      if (!inviteError && organizationId) {
+      if (!inviteError && organizationId && data.user?.id) {
         const inviteRoles = parseInviteRoleDimensions(parsed ?? {})
 
-        await supabase.from('profiles').upsert({
-          id: data.user?.id,
-          organization_id: organizationId,
-          system_role: inviteRoles.systemRole,
-          function_role: inviteRoles.functionRole,
-          full_name: fullName,
-        })
+        await supabase.from('profiles').upsert(
+          asTableInsert<'profiles'>({
+            id: data.user.id,
+            organization_id: organizationId,
+            system_role: inviteRoles.systemRole,
+            function_role: inviteRoles.functionRole,
+            full_name: fullName,
+          })
+        )
         redirect(ROUTES.home)
       }
 

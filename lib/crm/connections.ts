@@ -1,19 +1,13 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
 import type { CrmProvider, OrganizationCrmConnectionRow } from '@/lib/crm/types'
-
-function dbClient(userSupabase: SupabaseClient): SupabaseClient {
-  return createServiceRoleSupabaseClient() ?? userSupabase
-}
 
 export async function getOrganizationCrmConnection(
   userSupabase: SupabaseClient,
   organizationId: string,
   provider: CrmProvider
 ): Promise<OrganizationCrmConnectionRow | null> {
-  const supabase = dbClient(userSupabase)
-  const { data } = await supabase
+  const { data } = await userSupabase
     .from('organization_crm_connections')
     .select('*')
     .eq('organization_id', organizationId)
@@ -56,10 +50,9 @@ export async function upsertOrganizationCrmConnection(
     connectedBy: string
   }
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = dbClient(userSupabase)
   const now = new Date().toISOString()
 
-  const { error } = await supabase.from('organization_crm_connections').upsert(
+  const { error } = await userSupabase.from('organization_crm_connections').upsert(
     {
       organization_id: payload.organizationId,
       provider: payload.provider,
@@ -83,8 +76,7 @@ export async function disconnectOrganizationCrm(
   organizationId: string,
   provider: CrmProvider
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = dbClient(userSupabase)
-  const { error } = await supabase
+  const { error } = await userSupabase
     .from('organization_crm_connections')
     .update({
       status: 'disconnected',
@@ -105,8 +97,7 @@ export async function touchOrganizationCrmLastSync(
   organizationId: string,
   provider: CrmProvider
 ): Promise<void> {
-  const supabase = dbClient(userSupabase)
-  await supabase
+  await userSupabase
     .from('organization_crm_connections')
     .update({
       last_sync_at: new Date().toISOString(),
@@ -126,8 +117,7 @@ export async function updateOrganizationCrmTokens(
     expiresAt: string | null
   }
 ): Promise<void> {
-  const supabase = dbClient(userSupabase)
-  await supabase
+  await userSupabase
     .from('organization_crm_connections')
     .update({
       access_token_enc: tokens.accessToken,
@@ -140,14 +130,12 @@ export async function updateOrganizationCrmTokens(
     .eq('provider', provider)
 }
 
-/** Portal-ID für Deep-Links — nur ID, keine Tokens (Service Role, serverseitig). */
+/** Portal-ID für Deep-Links — nur ID, keine Tokens (RLS: Org-Admin). */
 export async function getHubSpotPortalIdForOrganization(
+  userSupabase: SupabaseClient,
   organizationId: string
 ): Promise<string | null> {
-  const supabase = createServiceRoleSupabaseClient()
-  if (!supabase) return null
-
-  const { data } = await supabase
+  const { data } = await userSupabase
     .from('organization_crm_connections')
     .select('external_account_id')
     .eq('organization_id', organizationId)

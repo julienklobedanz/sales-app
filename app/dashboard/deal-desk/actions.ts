@@ -27,6 +27,8 @@ import {
   loadNormalizedWorkspaceOverlay,
   persistNormalizedWorkspace,
 } from '@/lib/deal-desk/workspace-persistence'
+import { asJson, asTableInsert, asTableUpdate } from '@/lib/supabase/db-types'
+import { looseSelect } from '@/lib/supabase/loose-select'
 import { ROUTES } from '@/lib/routes'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { profileCanManageOrgData } from '@/lib/roles/profile-guards'
@@ -54,7 +56,7 @@ async function fetchDealDeskProjectRows(
 > {
   const withArchiveQuery = supabase
     .from('deal_desk_projects')
-    .select(DEAL_DESK_PROJECT_SELECT_WITH_ARCHIVE)
+    .select(looseSelect(DEAL_DESK_PROJECT_SELECT_WITH_ARCHIVE))
     .eq('organization_id', orgId)
   const withArchive = await (opts?.dealId
     ? withArchiveQuery.eq('deal_id', opts.dealId)
@@ -62,7 +64,7 @@ async function fetchDealDeskProjectRows(
   ).order('created_at', { ascending: false })
 
   if (!withArchive.error) {
-    return { rows: (withArchive.data ?? []) as DealDeskProjectRow[], error: null }
+    return { rows: (withArchive.data ?? []) as unknown as DealDeskProjectRow[], error: null }
   }
 
   if (!isMissingArchivedColumnError(withArchive.error.message)) {
@@ -71,7 +73,7 @@ async function fetchDealDeskProjectRows(
 
   const legacyQuery = supabase
     .from('deal_desk_projects')
-    .select(DEAL_DESK_PROJECT_SELECT_LEGACY)
+    .select(looseSelect(DEAL_DESK_PROJECT_SELECT_LEGACY))
     .eq('organization_id', orgId)
   const legacy = await (opts?.dealId
     ? legacyQuery.eq('deal_id', opts.dealId)
@@ -83,7 +85,7 @@ async function fetchDealDeskProjectRows(
   }
 
   const rows = (legacy.data ?? []).map((row) => ({
-    ...(row as Omit<DealDeskProjectRow, 'archived_at'>),
+    ...(row as unknown as Omit<DealDeskProjectRow, 'archived_at'>),
     archived_at: null,
     created_by: (row as { created_by?: string | null }).created_by ?? null,
   })) as DealDeskProjectRow[]
@@ -101,13 +103,13 @@ async function fetchDealDeskProjectRow(
 > {
   const withArchive = await supabase
     .from('deal_desk_projects')
-    .select(DEAL_DESK_PROJECT_SELECT_WITH_ARCHIVE)
+    .select(looseSelect(DEAL_DESK_PROJECT_SELECT_WITH_ARCHIVE))
     .eq('id', projectId)
     .eq('organization_id', orgId)
     .maybeSingle()
 
   if (!withArchive.error && withArchive.data) {
-    return { row: withArchive.data as DealDeskProjectRow, error: null }
+    return { row: withArchive.data as unknown as DealDeskProjectRow, error: null }
   }
 
   if (withArchive.error && !isMissingArchivedColumnError(withArchive.error.message)) {
@@ -116,7 +118,7 @@ async function fetchDealDeskProjectRow(
 
   const legacy = await supabase
     .from('deal_desk_projects')
-    .select(DEAL_DESK_PROJECT_SELECT_LEGACY)
+    .select(looseSelect(DEAL_DESK_PROJECT_SELECT_LEGACY))
     .eq('id', projectId)
     .eq('organization_id', orgId)
     .maybeSingle()
@@ -126,7 +128,7 @@ async function fetchDealDeskProjectRow(
 
   return {
     row: {
-      ...(legacy.data as Omit<DealDeskProjectRow, 'archived_at'>),
+      ...(legacy.data as unknown as Omit<DealDeskProjectRow, 'archived_at'>),
       archived_at: null,
       created_by: (legacy.data as { created_by?: string | null }).created_by ?? null,
     },
@@ -343,7 +345,7 @@ export async function createDealDeskProjectAction(input: {
 
   const { data, error } = await supabase
     .from('deal_desk_projects')
-    .insert(insertPayload)
+    .insert(asTableInsert<'deal_desk_projects'>(insertPayload))
     .select('id')
     .single()
 
@@ -405,7 +407,11 @@ export async function setDealDeskProjectArchivedAction(
 
   const { error } = await supabase
     .from('deal_desk_projects')
-    .update({ archived_at: archived ? new Date().toISOString() : null })
+    .update(
+      asTableUpdate<'deal_desk_projects'>({
+        archived_at: archived ? new Date().toISOString() : null,
+      })
+    )
     .eq('id', projectId)
     .eq('organization_id', orgId)
 
@@ -488,7 +494,7 @@ export async function removeDealDeskDocumentAction(
     snap.documentName = names[0] ?? 'RFP-Paket'
     await supabase
       .from('deal_desk_projects')
-      .update({ analysis_snapshot: snap })
+      .update({ analysis_snapshot: asJson(snap) })
       .eq('id', projectId)
   }
 

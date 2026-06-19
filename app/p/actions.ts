@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { cookies, headers } from 'next/headers'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { nullToUndefined } from '@/lib/supabase/db-types'
 import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
 import { resetReferencesAfterCustomerAccessRevoke } from '@/lib/references/reset-after-customer-access-revoke'
 import { ROUTES } from '@/lib/routes'
@@ -86,8 +87,10 @@ export async function getPublicPortfolio(
   const token = await getUnlockTokenForSlug(slug)
   const { data, error } = await supabase.rpc('get_public_portfolio', {
     p_slug: slug,
-    p_unlock_token: token,
-    p_manage_token: manageToken && manageToken.length > 0 ? manageToken : null,
+    p_unlock_token: nullToUndefined(token),
+    p_manage_token: nullToUndefined(
+      manageToken && manageToken.length > 0 ? manageToken : undefined
+    ),
   })
   if (error) return { found: false, reason: 'not_found' }
   const payload = data as
@@ -125,13 +128,19 @@ export async function incrementPortfolioViews(slug: string): Promise<void> {
   const supabase = await createServerSupabaseClient()
   const token = await getUnlockTokenForSlug(slug)
   try {
-    await supabase.rpc('increment_portfolio_views', { p_slug: slug, p_unlock_token: token })
+    await supabase.rpc('increment_portfolio_views', {
+      p_slug: slug,
+      p_unlock_token: nullToUndefined(token),
+    })
   } catch (e) {
     // Views-Zähler/Telemetrie soll die öffentliche Seite niemals komplett blockieren.
     console.error('[incrementPortfolioViews] increment_portfolio_views failed:', e)
   }
   try {
-    await supabase.rpc('log_share_link_viewed', { p_slug: slug, p_unlock_token: token })
+    await supabase.rpc('log_share_link_viewed', {
+      p_slug: slug,
+      p_unlock_token: nullToUndefined(token),
+    })
   } catch (e) {
     console.error('[incrementPortfolioViews] log_share_link_viewed failed:', e)
   }
@@ -144,7 +153,7 @@ export async function getPublicPortfolioBranding(
   const token = await getUnlockTokenForSlug(slug)
   const { data, error } = await supabase.rpc('get_public_portfolio_branding', {
     p_slug: slug,
-    p_unlock_token: token,
+    p_unlock_token: nullToUndefined(token),
   })
   if (error) return { found: false }
   const payload = data as {
@@ -171,7 +180,7 @@ export async function getPublicPortfolioShareOwner(
   const token = await getUnlockTokenForSlug(slug)
   const { data, error } = await supabase.rpc('get_public_portfolio_share_owner', {
     p_slug: slug,
-    p_unlock_token: token,
+    p_unlock_token: nullToUndefined(token),
   })
   if (error) return { found: false }
   const payload = data as {
@@ -349,7 +358,9 @@ export async function deactivatePortfolio(
   const supabase = await createServerSupabaseClient()
   const { data, error } = await supabase.rpc('deactivate_portfolio', {
     p_slug: slug,
-    p_manage_token: manageToken && manageToken.length > 0 ? manageToken : null,
+    p_manage_token: nullToUndefined(
+      manageToken && manageToken.length > 0 ? manageToken : undefined
+    ),
   })
   if (error) return { success: false }
   return { success: data === true }
@@ -374,6 +385,8 @@ export async function revokePortfolioAccess(params: {
   const deactivated = await deactivatePortfolio(params.slug, params.manageToken)
   if (!deactivated.success) return { success: false }
 
+  // Service-Role weil: Referenz-Reset nach Kunden-Sperrlink (kein Org-User-Session).
+  // Grenze: slug aus vorher validiertem manage-Token (deactivatePortfolio); Writes nur reference_ids des Slugs.
   const admin = createServiceRoleSupabaseClient()
   if (admin) {
     const { referenceIds } = await resetReferencesAfterCustomerAccessRevoke(admin, {

@@ -15,6 +15,7 @@ import {
   type ApprovalRoutingMode,
   type RolesPermissionsSettings,
 } from '@/lib/roles/roles-permissions-settings'
+import { asJson } from '@/lib/supabase/db-types'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
 type ActionResult = { success: true } | { success: false; error: string }
@@ -129,7 +130,7 @@ export async function updateRolesPermissionsSettings(
   const { error } = await ctx.supabase
     .from('organizations')
     .update({
-      api_settings,
+      api_settings: asJson(api_settings),
       updated_at: new Date().toISOString(),
     })
     .eq('id', ctx.organizationId)

@@ -14,6 +14,8 @@ export async function resolveReferenceManagerEmail(
   const fromEnv = process.env.REFERENCE_MANAGER_EMAIL?.trim()
   if (fromEnv) return fromEnv
 
+  // Service-Role weil: auth.admin.getUserById für Admin-E-Mail ohne Session.
+  // Grenze: profiles-Lookup auf organization_id + system_role owner/admin, dann einzelne User-ID.
   const adminClient = createServiceRoleSupabaseClient()
   if (!adminClient) return null
 

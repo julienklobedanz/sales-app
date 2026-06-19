@@ -38,6 +38,7 @@ type PendingReminderRow = {
   id: string
   title: string | null
   company_id: string
+  organization_id: string | null
   approval_requested_by: string | null
   approval_coordinator_email: string | null
   approval_customer_last_sent_at: string | null
@@ -76,6 +77,7 @@ export async function processCustomerApprovalReminders(
       id,
       title,
       company_id,
+      organization_id,
       approval_requested_by,
       approval_coordinator_email,
       approval_customer_last_sent_at,
@@ -123,6 +125,7 @@ export async function processCustomerApprovalReminders(
       referenceTitle: String(row.title ?? 'Referenz').trim() || 'Referenz',
       companyId: row.company_id,
       companyName,
+      organizationId: row.organization_id ?? null,
       requesterId: row.approval_requested_by,
       coordinatorEmail: row.approval_coordinator_email,
       daysWaiting,

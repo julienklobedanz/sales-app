@@ -15,6 +15,8 @@ export type DelegateInternalApprovalActionResult =
 export async function confirmInternalApprovalAction(
   token: string
 ): Promise<ConfirmInternalApprovalActionResult> {
+  // Service-Role weil: interner Freigabe-Link ohne Dashboard-Session.
+  // Grenze: confirmInternalApprovalFromToken validiert approval_internal_review_token.
   const admin = createServiceRoleSupabaseClient()
   if (!admin) return { success: false, error: 'server_config' }
 
@@ -40,6 +42,8 @@ export async function delegateInternalApprovalAction(
   token: string,
   delegateEmail: string
 ): Promise<DelegateInternalApprovalActionResult> {
+  // Service-Role weil: Delegation per Token-Link ohne Session.
+  // Grenze: delegateInternalApprovalFromToken validiert Token + pending_internal.
   const admin = createServiceRoleSupabaseClient()
   if (!admin) return { success: false, error: 'server_config' }
 

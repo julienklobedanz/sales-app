@@ -22,7 +22,8 @@ const DEFAULT_BRANDING: PdfOrgBranding = {
 
 export async function resolvePublicPdfExportContext(
   branding: PublicPortfolioBranding,
-  referenceId: string | null
+  referenceId: string | null,
+  allowedReferenceIds: string[]
 ): Promise<PublicPdfExportContext> {
   const baseBranding: PdfOrgBranding = branding.found
     ? {
@@ -33,10 +34,12 @@ export async function resolvePublicPdfExportContext(
       }
     : DEFAULT_BRANDING
 
-  if (!referenceId) {
+  if (!referenceId || !allowedReferenceIds.includes(referenceId)) {
     return { branding: baseBranding, exportSettings: {} }
   }
 
+  // Service-Role weil: öffentlicher PDF-Export ohne Login; RLS blockiert Org-Branding.
+  // Grenze: referenceId muss in der freigeschalteten Portfolio-Liste (Token-RPC) enthalten sein.
   const admin = createServiceRoleSupabaseClient()
   if (!admin) {
     return { branding: baseBranding, exportSettings: {} }

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { asReferenceStatus, type ReferenceStatus } from '@/lib/supabase/db-types'
 import { ROUTES } from '@/lib/routes'
 
 import type { ReferenceRow } from '@/app/dashboard/actions'
@@ -118,7 +119,7 @@ export async function updateReferenceImpl(id: string, formData: FormData) {
     country: string | null
     contact_id: string | null
     customer_contact_id: string | null
-    status: string
+    status: ReferenceStatus
     updated_at: string
     file_path?: string
     tags: string | null
@@ -142,7 +143,7 @@ export async function updateReferenceImpl(id: string, formData: FormData) {
     country,
     contact_id: contactId,
     customer_contact_id,
-    status,
+    status: asReferenceStatus(status),
     updated_at: new Date().toISOString(),
     tags,
     website,

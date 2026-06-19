@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
   DEV_ROLE_PRESETS,
@@ -65,33 +65,25 @@ describe('parseAppRoleCookie (deprecated)', () => {
 })
 
 describe('isDevRolePreviewEnabled', () => {
-  const prevNodeEnv = process.env.NODE_ENV
-  const prevFlag = process.env.NEXT_PUBLIC_ENABLE_DEV_ROLE_PREVIEW
-
   afterEach(() => {
-    process.env.NODE_ENV = prevNodeEnv
-    if (prevFlag === undefined) {
-      delete process.env.NEXT_PUBLIC_ENABLE_DEV_ROLE_PREVIEW
-    } else {
-      process.env.NEXT_PUBLIC_ENABLE_DEV_ROLE_PREVIEW = prevFlag
-    }
+    vi.unstubAllEnvs()
   })
 
   it('is disabled in production unless flag is 1', () => {
-    process.env.NODE_ENV = 'production'
+    vi.stubEnv('NODE_ENV', 'production')
     delete process.env.NEXT_PUBLIC_ENABLE_DEV_ROLE_PREVIEW
     expect(isDevRolePreviewEnabled()).toBe(false)
 
-    process.env.NEXT_PUBLIC_ENABLE_DEV_ROLE_PREVIEW = '1'
+    vi.stubEnv('NEXT_PUBLIC_ENABLE_DEV_ROLE_PREVIEW', '1')
     expect(isDevRolePreviewEnabled()).toBe(true)
   })
 
   it('is enabled in development unless flag is 0', () => {
-    process.env.NODE_ENV = 'development'
+    vi.stubEnv('NODE_ENV', 'development')
     delete process.env.NEXT_PUBLIC_ENABLE_DEV_ROLE_PREVIEW
     expect(isDevRolePreviewEnabled()).toBe(true)
 
-    process.env.NEXT_PUBLIC_ENABLE_DEV_ROLE_PREVIEW = '0'
+    vi.stubEnv('NEXT_PUBLIC_ENABLE_DEV_ROLE_PREVIEW', '0')
     expect(isDevRolePreviewEnabled()).toBe(false)
   })
 })

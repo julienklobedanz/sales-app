@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
+import { resolveAuthEmailsByUserIds } from '@/lib/auth/resolve-user-emails'
 import {
   runMarketSignalEnrichmentBackfill,
   type BackfillSignalEnrichmentResult,
@@ -540,6 +541,8 @@ export async function triggerMarketSignalsIngestForMyOrg(args?: {
   const ingestMode: 'all_accounts' | 'focus_only' = args?.ingestMode ?? 'focus_only'
   const refreshFeeds = args?.refreshFeeds === true
 
+  // Service-Role weil: RSS-Ingest/Champion-Watchlist schreibt org-weit ohne User-Session pro Zeile.
+  // Grenze: organizationId aus authentifiziertem Profil; alle Ingest-Aufrufe mit orgId.
   const admin = createServiceRoleSupabaseClient()
   if (!admin) {
     return {
@@ -646,6 +649,8 @@ export async function backfillMarketSignalEnrichmentForMyOrg(args?: {
   const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
   if (!orgId) return { success: false, error: 'Keine Organisation gefunden.' }
 
+  // Service-Role weil: LLM-Backfill liest/schreibt Signale org-weit.
+  // Grenze: organizationId aus authentifiziertem Profil.
   const admin = createServiceRoleSupabaseClient()
   if (!admin) {
     return {
@@ -713,8 +718,7 @@ export async function requestReferenceApprovalForSignal(args: {
   })
 
   const resendKey = process.env.RESEND_API_KEY?.trim()
-  const admin = createServiceRoleSupabaseClient()
-  if (!resendKey || !admin) return { success: true }
+  if (!resendKey) return { success: true }
 
   try {
     const { data: recipients } = await supabase
@@ -727,14 +731,14 @@ export async function requestReferenceApprovalForSignal(args: {
         const { systemRole, functionRole } = parseProfileRoles(r)
         return isSystemAdmin(systemRole) || functionRole === 'account_manager'
       })
-      .map((r) => String((r as { id?: string | null }).id ?? ''))
+      .map((r) => r.id)
       .filter(Boolean)
     if (!ids.length) return { success: true }
 
-    const usersRes = await admin.auth.admin.listUsers({ page: 1, perPage: 200 })
-    const emails = (usersRes.data.users ?? [])
-      .filter((u) => ids.includes(u.id))
-      .map((u) => u.email?.trim() ?? '')
+    // Grenze: nur User-IDs der eigenen Org; E-Mails per auth.admin.getUserById (kein listUsers).
+    const emailByUserId = await resolveAuthEmailsByUserIds(ids)
+    const emails = ids
+      .map((id) => emailByUserId.get(id) ?? '')
       .filter(Boolean)
     if (!emails.length) return { success: true }
 

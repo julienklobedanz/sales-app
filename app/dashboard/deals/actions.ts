@@ -15,6 +15,21 @@ import {
 } from '@/lib/email/refstack-email-layout'
 import type { DealRow, DealStatus, DealWithReferences } from './types'
 
+async function getSessionOrgId(
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>
+): Promise<string | null> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return null
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .single()
+  return profile?.organization_id ?? null
+}
+
 const LEGACY_STATUS_MAP: Record<string, DealStatus> = {
   in_negotiation: 'negotiation',
   rfp_phase: 'rfp',
@@ -50,12 +65,7 @@ function getResend(): Resend | null {
 
 export async function getDeals(): Promise<DealRow[]> {
   const supabase = await createServerSupabaseClient()
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', (await supabase.auth.getUser()).data.user?.id)
-    .single()
-  const orgId = profile?.organization_id
+  const orgId = await getSessionOrgId(supabase)
   if (!orgId) return []
 
   const { data: rows, error } = await supabase
@@ -153,7 +163,7 @@ export async function getDeals(): Promise<DealRow[]> {
       : (r.companies as { name?: string; logo_url?: string | null } | null)
     return {
       id: r.id,
-      title: r.title,
+      title: r.title ?? '',
       company_id: r.company_id ?? null,
       company_name: company?.name ?? null,
       company_logo_url: company?.logo_url ?? null,
@@ -168,7 +178,7 @@ export async function getDeals(): Promise<DealRow[]> {
       sales_manager_name: r.sales_manager_id ? names[r.sales_manager_id] ?? null : null,
       status: normalizeDealStatus(r.status),
       expiry_date: r.expiry_date ?? null,
-      created_at: r.created_at,
+      created_at: r.created_at ?? '',
       updated_at: r.updated_at ?? null,
       linked_refs: linkedRefsMap[r.id] ?? [],
       best_match_score: bestScoreMap[r.id] ?? null,
@@ -191,12 +201,8 @@ export async function getExpiringDeals(): Promise<DealRow[]> {
 
 export async function getDealWithReferences(id: string): Promise<DealWithReferences | null> {
   const supabase = await createServerSupabaseClient()
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', (await supabase.auth.getUser()).data.user?.id)
-    .single()
-  if (!profile?.organization_id) return null
+  const orgId = await getSessionOrgId(supabase)
+  if (!orgId) return null
 
   const { data: deal, error } = await supabase
     .from('deals')
@@ -218,7 +224,7 @@ export async function getDealWithReferences(id: string): Promise<DealWithReferen
       companies ( name )
     `)
     .eq('id', id)
-    .eq('organization_id', profile.organization_id)
+    .eq('organization_id', orgId)
     .single()
 
   if (error || !deal) return null
@@ -285,7 +291,7 @@ export async function getDealWithReferences(id: string): Promise<DealWithReferen
 
   return {
     id: deal.id,
-    title: deal.title,
+    title: deal.title ?? '',
     company_id: deal.company_id ?? null,
     company_name: (company as { name?: string })?.name ?? null,
     industry: deal.industry ?? null,
@@ -299,7 +305,7 @@ export async function getDealWithReferences(id: string): Promise<DealWithReferen
     sales_manager_name: salesManagerName,
     status: normalizeDealStatus(deal.status),
     expiry_date: deal.expiry_date ?? null,
-    created_at: deal.created_at,
+    created_at: deal.created_at ?? '',
     updated_at: deal.updated_at ?? null,
     linked_refs,
     best_match_score,
@@ -381,12 +387,7 @@ export async function getMatchingReferencesForDeals(
   if (dealIds.length === 0) return result
 
   const supabase = await createServerSupabaseClient()
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', (await supabase.auth.getUser()).data.user?.id)
-    .single()
-  const orgId = profile?.organization_id
+  const orgId = await getSessionOrgId(supabase)
   if (!orgId) return result
 
   const { data: deals } = await supabase
@@ -440,12 +441,7 @@ export async function getMatchingReferencesForDeals(
 /** Referenzen der eigenen Org (id, title, company_name) für Verknüpfung mit Deal */
 export async function getReferencesForOrg(): Promise<{ id: string; title: string; company_name: string }[]> {
   const supabase = await createServerSupabaseClient()
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', (await supabase.auth.getUser()).data.user?.id)
-    .single()
-  const orgId = profile?.organization_id
+  const orgId = await getSessionOrgId(supabase)
   if (!orgId) return []
 
   const { data: rows } = await supabase

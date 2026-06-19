@@ -1,6 +1,7 @@
 'use server'
 
 import { Resend } from 'resend'
+import { resolveAuthEmailsByUserIds } from '@/lib/auth/resolve-user-emails'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import {
   buildRefstackEmailHtml,
@@ -85,7 +86,7 @@ export async function maybeSendSecurityAlertMail(ctx: AlertContext): Promise<voi
       supabase.from('organizations').select('name').eq('id', ctx.orgId).single(),
       supabase
         .from('profiles')
-        .select('email, full_name')
+        .select('id, full_name')
         .eq('organization_id', ctx.orgId)
         .in('system_role', ['owner', 'admin']),
     ])
@@ -93,8 +94,11 @@ export async function maybeSendSecurityAlertMail(ctx: AlertContext): Promise<voi
     const failedCount = failedCountRes.count ?? 0
     const rateLimitedCount = rateLimitedCountRes.count ?? 0
     const orgName = orgRes.data?.name ?? 'RefStack Workspace'
-    const recipients = (adminProfilesRes.data ?? [])
-      .map((p) => String(p.email ?? '').trim())
+    const adminProfiles = adminProfilesRes.data ?? []
+    const emailByUserId = await resolveAuthEmailsByUserIds(adminProfiles.map((p) => p.id))
+    const recipients = adminProfiles
+      .map((p) => emailByUserId.get(p.id) ?? '')
+      .map((e) => e.trim())
       .filter((e) => !!e)
     if (!recipients.length) return
 

@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
+import { resolveAuthEmailsByUserIds } from '@/lib/auth/resolve-user-emails'
 import { getAppOrigin } from '@/lib/env/app-origin'
 import { sendTeamInviteEmail } from '@/lib/email/team-invite-email'
 import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
@@ -327,27 +328,23 @@ export async function getTeamMembers(): Promise<TeamMemberRow[]> {
   const [profilesResult, invitesRpc] = await Promise.all([
     supabase
       .from('profiles')
-      .select('id, full_name, email, system_role, function_role')
+      .select('id, full_name, system_role, function_role')
       .eq('organization_id', organizationId),
     supabase.rpc('list_organization_pending_invites'),
   ])
 
+  const emailByUserId = await resolveAuthEmailsByUserIds(
+    (profilesResult.data ?? []).map((p) => p.id)
+  )
+
   const active: TeamMemberRow[] = (profilesResult.data ?? []).map((p) => {
-    const row = p as {
-      id: string
-      full_name?: string | null
-      email?: string | null
-      role?: string | null
-      system_role?: string | null
-      function_role?: string | null
-    }
-    const roles = parseInviteRoleDimensions(row)
+    const roles = parseInviteRoleDimensions(p)
     return {
-      id: row.id,
-      email: row.email ?? '',
-      name: row.full_name ?? null,
+      id: p.id,
+      email: emailByUserId.get(p.id) ?? '',
+      name: p.full_name ?? null,
       status: 'active' as const,
-      isSelf: row.id === user.id,
+      isSelf: p.id === user.id,
       systemRole: roles.systemRole,
       functionRole: roles.functionRole,
     }

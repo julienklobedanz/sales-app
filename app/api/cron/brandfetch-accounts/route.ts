@@ -46,6 +46,8 @@ export async function GET(request: Request) {
     )
   }
 
+  // Service-Role weil: Brandfetch-Refresh org-übergreifend per Cron.
+  // Grenze: Bearer CRON_SECRET; Updates nur pro company.id mit company.organization_id.
   const maxCompanies = Number.parseInt(process.env.BRANDFETCH_ACCOUNTS_CRON_MAX ?? '200', 10)
   const staleAfterDays = Number.parseInt(process.env.BRANDFETCH_ACCOUNTS_STALE_DAYS ?? '90', 10)
 

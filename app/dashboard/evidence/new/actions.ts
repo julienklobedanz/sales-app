@@ -956,11 +956,11 @@ export async function updateExternalContact(
   const { error } = await supabase
     .from('external_contacts')
     .update({
-      first_name: firstName || null,
-      last_name: lastName || null,
-      email: email || null,
-      role: role || null,
-      phone: phone || null,
+      first_name: firstName || undefined,
+      last_name: lastName || undefined,
+      email: email || undefined,
+      role: role || undefined,
+      phone: phone || undefined,
     })
     .eq('id', id)
 

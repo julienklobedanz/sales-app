@@ -38,6 +38,8 @@ export async function GET(request: Request) {
     )
   }
 
+  // Service-Role weil: org-übergreifender News/Exec-Ingest per Cron.
+  // Grenze: Bearer CRON_SECRET; Ingest-Funktionen schreiben pro company.organization_id.
   const maxCompanies = Number.parseInt(process.env.NEWS_INGEST_MAX_COMPANIES ?? '60', 10)
   const maxExecPeople = Number.parseInt(process.env.EXEC_INTEL_MAX_PEOPLE ?? '40', 10)
 

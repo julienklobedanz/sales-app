@@ -34,6 +34,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: false, error: 'Service role nicht verfügbar.' }, { status: 503 })
   }
 
+  // Service-Role weil: org-übergreifender Cron-Scan; Grenze: Bearer CRON_SECRET + Writes pro reference.organization_id.
   const result = await processCustomerApprovalReminders(admin)
   return NextResponse.json({ ok: true, ...result })
 }

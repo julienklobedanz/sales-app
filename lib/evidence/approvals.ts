@@ -2,7 +2,6 @@
 
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
 import { ROUTES } from '@/lib/routes'
 import { Resend } from 'resend'
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -14,6 +13,7 @@ import { parseOrgPublicLinkPolicy } from '@/lib/organization-link-policy'
 import { ensureApprovalRecipientFromInputImpl } from '@/lib/evidence/approval-contacts'
 import { canStartApprovalWorkflow } from '@/lib/references/approval-workflow'
 import { legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
+import { asReferenceStatus } from '@/lib/supabase/db-types'
 import { profileCanManageOrgData } from '@/lib/roles/profile-guards'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { effectiveCustomerApprovalStatus, hasActiveCustomerApprovalWorkflow } from '@/lib/references/effective-customer-approval'
@@ -830,6 +830,7 @@ export async function withdrawApprovalRequestImpl(referenceId: string): Promise<
       `
       title,
       company_id,
+      organization_id,
       approval_reference_status_snapshot,
       approval_requested_by,
       approval_coordinator_email,
@@ -842,6 +843,7 @@ export async function withdrawApprovalRequestImpl(referenceId: string): Promise<
   const ref = refRow as {
     title?: string | null
     company_id?: string
+    organization_id?: string | null
     approval_reference_status_snapshot?: string | null
     approval_requested_by?: string | null
     approval_coordinator_email?: string | null
@@ -860,14 +862,14 @@ export async function withdrawApprovalRequestImpl(referenceId: string): Promise<
       : (ref?.companies as { name?: string } | null)
   const companyName = company?.name?.trim() || 'Referenz'
 
-  const admin = createServiceRoleSupabaseClient()
-  if (admin && ref?.company_id) {
+  if (ref?.company_id) {
     void notifyInternalTeamApprovalWithdrawn({
-      admin,
+      admin: supabase,
       referenceId,
       referenceTitle: String(ref.title ?? 'Referenz').trim() || 'Referenz',
       companyId: String(ref.company_id),
       companyName,
+      organizationId: ref.organization_id ?? null,
       requesterId: ref.approval_requested_by ?? null,
       coordinatorEmail: ref.approval_coordinator_email ?? null,
     })
@@ -876,7 +878,7 @@ export async function withdrawApprovalRequestImpl(referenceId: string): Promise<
   await supabase
     .from('references')
     .update({
-      status: restoredStatus,
+      status: asReferenceStatus(restoredStatus),
       approval_token: null,
       customer_approval_status: null,
       approval_internal_status: 'pending_internal',

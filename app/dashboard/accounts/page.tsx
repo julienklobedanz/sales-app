@@ -38,6 +38,9 @@ export default async function AccountsPage() {
 
   if (!profile) redirect(ROUTES.onboarding)
 
+  const orgId = profile.organization_id
+  if (!orgId) redirect(ROUTES.onboarding)
+
   const extendedSelect =
     'id, name, logo_url, website_url, headquarters, industry, employee_count, is_favorite, entity_kind, partner_category, linked_account_id'
 
@@ -46,7 +49,7 @@ export default async function AccountsPage() {
   const withExtended = await supabase
     .from('companies')
     .select(extendedSelect)
-    .eq('organization_id', profile.organization_id)
+    .eq('organization_id', orgId)
     .order('name')
 
   if (withExtended.error) {
@@ -57,14 +60,14 @@ export default async function AccountsPage() {
         .select(
           'id, name, logo_url, website_url, headquarters, industry, employee_count, is_favorite'
         )
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', orgId)
         .order('name')
 
       if (withFav.error && (withFav.error.message ?? '').includes('is_favorite')) {
         const basic = await supabase
           .from('companies')
           .select('id, name, logo_url, website_url, headquarters, industry, employee_count')
-          .eq('organization_id', profile.organization_id)
+          .eq('organization_id', orgId)
           .order('name')
         companies = (basic.data ?? []).map((c) => ({
           ...c,
@@ -87,7 +90,7 @@ export default async function AccountsPage() {
         .select(
           'id, name, logo_url, website_url, headquarters, industry, employee_count, entity_kind, partner_category, linked_account_id'
         )
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', orgId)
         .order('name')
       companies = (withoutFav.data ?? []).map((c) => ({ ...c, is_favorite: false }))
     } else {
@@ -123,7 +126,7 @@ export default async function AccountsPage() {
     const ndaRes = await supabase
       .from('nda_agreements')
       .select('company_id, status, valid_until, file_storage_path')
-      .eq('organization_id', profile.organization_id)
+      .eq('organization_id', orgId)
       .in('company_id', companyIds)
 
     if (!ndaRes.error) {
@@ -153,7 +156,7 @@ export default async function AccountsPage() {
             .from('deals')
             .select('id, company_id, status')
             .in('company_id', companyIds)
-            .eq('organization_id', profile.organization_id)
+            .eq('organization_id', orgId)
         : Promise.resolve({
             data: [] as { id: string; company_id: string | null; status: string }[] | null,
           }),
@@ -227,6 +230,7 @@ export default async function AccountsPage() {
   }
   const strategyFilledByCompany: Record<string, boolean> = {}
   for (const st of strategyRows.data ?? []) {
+    if (!st.company_id) continue
     const filled = Boolean(
       (st.main_goals ?? '').trim() ||
         (st.red_flags ?? '').trim() ||

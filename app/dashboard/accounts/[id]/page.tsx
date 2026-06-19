@@ -37,6 +37,8 @@ export default async function CompanyDetailPage({
     .single()
   if (!profile) redirect(ROUTES.onboarding)
 
+  const profileOrgId = profile.organization_id
+
   const orgId = profile.organization_id as string | null | undefined
   let organizationName: string | null = null
   if (orgId) {
@@ -55,9 +57,8 @@ export default async function CompanyDetailPage({
   if (!company) notFound()
 
   async function getExternalContactsSafe() {
-    const orgId = profile.organization_id
-    if (!orgId) return []
-    return fetchExternalContactsForCompany(supabase, id, orgId)
+    if (!profileOrgId) return []
+    return fetchExternalContactsForCompany(supabase, id, profileOrgId)
   }
 
   const [
@@ -77,7 +78,7 @@ export default async function CompanyDetailPage({
     getActiveDealsByCompanyId(id),
     getExternalContactsSafe(),
     getNdaAgreementsByCompanyId(id),
-    orgId ? getHubSpotPortalIdForOrganization(orgId) : Promise.resolve(null),
+    orgId ? getHubSpotPortalIdForOrganization(supabase, orgId) : Promise.resolve(null),
   ])
 
   const ndaAgreements = ndaResult.success ? ndaResult.rows : []

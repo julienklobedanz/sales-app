@@ -128,7 +128,7 @@ describe('reference-approval-display', () => {
         customerApprovalStatus: 'approved',
         referenceStatus: 'external',
         approvalScopeReferenceCall: true,
-      }).label
+      })?.label
     ).toBe('Freigabe mit Ref. Calls')
   })
 

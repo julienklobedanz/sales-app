@@ -47,6 +47,8 @@ export async function resolveApprovalEditUrlForManageView(
   const slugTrim = slug.trim()
   if (!tokenTrim || !refId || !slugTrim) return null
 
+  // Service-Role weil: Manage-Token-View ohne Login; RLS blockiert Token-Wiederherstellung.
+  // Grenze: verifyManageTokenForReference (Hash + reference_ids) vor jedem Read/Write.
   const admin = createServiceRoleSupabaseClient()
   if (!admin) return null
 
