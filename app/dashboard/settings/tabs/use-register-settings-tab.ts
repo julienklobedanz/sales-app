@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 
 import type { RegisterSettingsTab, SettingsTabHandlers, SettingsTabId } from './settings-tab-shared'
 
@@ -11,9 +11,19 @@ export function useRegisterSettingsTab(
   partKey = 'default'
 ) {
   const { dirty, pending, save } = handlers
+  const saveRef = useRef(save)
+  saveRef.current = save
 
   useEffect(() => {
-    register(tabId, { dirty, pending, save }, partKey)
+    register(
+      tabId,
+      {
+        dirty,
+        pending,
+        save: () => saveRef.current(),
+      },
+      partKey
+    )
     return () => register(tabId, null, partKey)
-  }, [tabId, dirty, pending, save, register, partKey])
+  }, [tabId, dirty, pending, register, partKey])
 }
