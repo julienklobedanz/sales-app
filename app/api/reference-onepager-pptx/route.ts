@@ -5,6 +5,8 @@ import { writeAuditLog } from '@/lib/audit/log-audit'
 import { buildReferenceOnepagerPptxBuffer } from '@/lib/reference-onepager-pptx'
 import { formatReferenceDate, formatReferenceVolume, normalizeOrgDateDisplayFormat } from '@/lib/format'
 import { formatContractTypeDisplay } from '@/lib/references/contract-type'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
+import { profileIsSalesRestricted } from '@/lib/roles/profile-guards'
 
 export const runtime = 'nodejs'
 
@@ -38,7 +40,7 @@ export async function GET(req: NextRequest) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('organization_id, role')
+    .select('organization_id, system_role, function_role')
     .eq('id', user.id)
     .single()
 
@@ -46,7 +48,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Kein Workspace gefunden.' }, { status: 403 })
   }
 
-  const role = (profile.role as string | null) ?? 'sales'
+  const { systemRole, functionRole } = parseProfileRoles(profile)
 
   const { data: row, error } = await supabase
     .from('references')
@@ -76,9 +78,10 @@ export async function GET(req: NextRequest) {
   }
 
   const normalizedStatus = String(row.status ?? '').toLowerCase()
+  const salesExportStatuses = ['approved', 'internal_only', 'anonymized', 'external', 'internal']
   if (
-    role === 'sales' &&
-    !['approved', 'internal_only', 'anonymized', 'external', 'internal'].includes(normalizedStatus)
+    profileIsSalesRestricted(systemRole, functionRole) &&
+    !salesExportStatuses.includes(normalizedStatus)
   ) {
     return NextResponse.json({ error: 'Keine Berechtigung für diese Referenz.' }, { status: 403 })
   }

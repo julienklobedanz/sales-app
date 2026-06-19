@@ -34,6 +34,8 @@ import type {
 } from './actions'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
+import { isSalesAppView, userCanCreateReference } from '@/lib/roles/reference-access'
+import { isSystemAdmin, legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
 import { isReferenceVisibleToSales } from '@/lib/references/sales-reference-visibility'
 import { cn } from '@/lib/utils'
 import {
@@ -102,8 +104,14 @@ import { TableRowAlign } from '@/components/table/table-row-align'
 import { toast } from 'sonner'
 import { BULK_IMPORT_MAX_FILES } from '@/lib/references/bulk-import-limits'
 import { copyTableRowsSelected } from '@/lib/copy'
-import { MASTER_INDUSTRIES, getIndustryLabelDe, resolveIndustryId } from '@/lib/constants/industries'
 import { parseReferenceVolume, type OrgDateDisplayFormat } from '@/lib/format'
+import { EvidenceProofSegmentSwitch } from '@/components/evidence/evidence-proof-segment-switch'
+import { canViewComplianceEvidenceSegment } from '@/lib/evidence/evidence-proof-segment-access'
+import { MASTER_INDUSTRIES, getIndustryLabelDe, resolveIndustryId } from '@/lib/constants/industries'
+import {
+  matchesReferenceVolumeFilter,
+  type ReferenceVolumeFilter,
+} from '@/lib/references/reference-volume-filter'
 // --- Konstanten & Hilfsfunktionen ---
 
 const STATUS_LABELS: Record<string, string> = {
@@ -274,6 +282,7 @@ export function DashboardOverview({
   const [industryFilter, setIndustryFilter] = useState<string>('all')
   const [countryFilter, setCountryFilter] = useState<string>('all')
   const [projectStatusFilter, setProjectStatusFilter] = useState<string>('all')
+  const [volumeFilter, setVolumeFilter] = useState<ReferenceVolumeFilter>('all')
   const [companySearch, setCompanySearch] = useState('')
   const [tagsSearch, setTagsSearch] = useState('')
   const [industrySearch, setIndustrySearch] = useState('')
@@ -289,6 +298,10 @@ export function DashboardOverview({
   const [showExpiredCertificates, setShowExpiredCertificates] = useState(false)
   const isReferencesLibrary = libraryMode === 'references'
   const isCertificatesLibrary = libraryMode === 'certificates'
+  const canViewComplianceSegment = canViewComplianceEvidenceSegment(
+    profile.systemRole,
+    profile.functionRole
+  )
   const [rowMenuOpenId, setRowMenuOpenId] = useState<string | null>(null)
   const [selectedRef, setSelectedRef] = useState<ReferenceRow | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -340,6 +353,12 @@ export function DashboardOverview({
   const handleLibraryModeChange = useCallback((mode: EvidenceLibraryMode) => {
     setEvidenceLibraryModeOptimistic(mode)
   }, [])
+
+  useEffect(() => {
+    if (!canViewComplianceSegment && libraryMode === 'certificates') {
+      setEvidenceLibraryModeOptimistic('references')
+    }
+  }, [canViewComplianceSegment, libraryMode])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -690,10 +709,12 @@ export function DashboardOverview({
     }
   }
 
+  const salesAppView = isSalesAppView(profile.systemRole, profile.functionRole)
+
   // Client-seitiges Filtering (Sales: draft nie anzeigen; optional nur Favoriten) + Sortierung
   const filteredReferences = useMemo(() => {
     let list = referencesWithLocalFavorites
-    if (profile.role === 'sales') {
+    if (salesAppView) {
       list = list.filter((r) => isReferenceVisibleToSales(r.status))
     }
     if (favoritesOnly) {
@@ -744,6 +765,9 @@ export function DashboardOverview({
     if (projectStatusFilter !== 'all') {
       list = list.filter((r) => (r.project_status ?? '') === projectStatusFilter)
     }
+    if (volumeFilter !== 'all') {
+      list = list.filter((r) => matchesReferenceVolumeFilter(r.volume_eur, volumeFilter))
+    }
     if (sortKey) {
       list = [...list].sort((a, b) => {
         const va = getSortValue(a, sortKey)
@@ -760,7 +784,7 @@ export function DashboardOverview({
     return list
   }, [
     referencesWithLocalFavorites,
-    profile.role,
+    salesAppView,
     search,
     statusFilter,
     companyFilter,
@@ -768,6 +792,7 @@ export function DashboardOverview({
     industryFilter,
     countryFilter,
     projectStatusFilter,
+    volumeFilter,
     favoritesOnly,
     sortKey,
     sortDir,
@@ -861,8 +886,11 @@ export function DashboardOverview({
     toast.success('Kundenlink kopiert.')
   }
 
-  const canCreateReference =
-    profile.role === 'admin' || profile.role === 'account_manager'
+  const canCreateReference = userCanCreateReference(
+    profile.functionRole,
+    profile.systemRole,
+    profile.capabilities
+  )
   const filtersActive =
     Boolean(search.trim()) ||
     statusFilter !== 'all' ||
@@ -871,7 +899,8 @@ export function DashboardOverview({
     tagsFilter !== 'all' ||
     industryFilter !== 'all' ||
     countryFilter !== 'all' ||
-    projectStatusFilter !== 'all'
+    projectStatusFilter !== 'all' ||
+    volumeFilter !== 'all'
   const showEvidenceOnboarding =
     isReferencesLibrary &&
     ((process.env.NODE_ENV === 'development' &&
@@ -879,7 +908,7 @@ export function DashboardOverview({
       (initialReferences.length === 0 && !filtersActive))
 
   if (showEvidenceOnboarding) {
-    const isAdmin = profile.role === 'admin'
+    const isAdmin = isSystemAdmin(profile.systemRole)
 
     const handleEmptyStateUpload = (files: File[]) => {
       if (!isAdmin) {
@@ -934,19 +963,26 @@ export function DashboardOverview({
       <ReferencesOverviewBrandfetchSync companyIds={companyIdsNeedingBrandfetch} />
       {/* Toolbar & Tabelle */}
       <div className="space-y-3.5">
+        {canViewComplianceSegment ? (
+          <EvidenceProofSegmentSwitch
+            value={libraryMode}
+            onChange={handleLibraryModeChange}
+          />
+        ) : null}
         {/* Toolbar: Suche bis zu den Buttons; rechts Favoriten → Status → Spalten → … */}
         <EvidenceLibraryToolbar
           libraryMode={libraryMode}
-          onLibraryModeChange={handleLibraryModeChange}
           referenceLayout={referenceLayout}
           onReferenceLayoutChange={setReferenceLayout}
           searchValue={isReferencesLibrary ? search : certificateSearch}
           onSearchChange={isReferencesLibrary ? setSearch : setCertificateSearch}
-          isAdmin={profile.role === 'admin'}
+          isAdmin={isSystemAdmin(profile.systemRole)}
           favoritesOnly={favoritesOnly}
           onFavoritesOnlyChange={setFavoritesOnly}
           statusFilter={statusFilter}
           onStatusFilterChange={setStatusFilter}
+          volumeFilter={volumeFilter}
+          onVolumeFilterChange={setVolumeFilter}
           statusOptions={filterOptions.statuses}
           statusLabels={STATUS_LABELS}
           columnOrder={columnOrder}
@@ -961,7 +997,7 @@ export function DashboardOverview({
           onCreateReferenceClick={() => setNewRefModalOpen(true)}
           onUploadCertificateClick={() => setComplianceUploadOpen(true)}
           onBulkUploadCertificatesClick={
-            profile.role === 'admin' ? () => setComplianceBulkUploadOpen(true) : undefined
+            isSystemAdmin(profile.systemRole) ? () => setComplianceBulkUploadOpen(true) : undefined
           }
           showExpiredCertificates={showExpiredCertificates}
           onShowExpiredCertificatesChange={setShowExpiredCertificates}
@@ -970,8 +1006,8 @@ export function DashboardOverview({
         {isReferencesLibrary ? (
           <ReferencesBulkActionsBar
             selectedCount={selectedRefIds.size}
-            showSalesActions={profile.role === 'sales'}
-            showAdminDelete={profile.role === 'admin'}
+            showSalesActions={salesAppView}
+            showAdminDelete={isSystemAdmin(profile.systemRole)}
             onClearSelection={() => setSelectedRefIds(new Set())}
             onBulkDelete={() => setBulkDeleteConfirmOpen(true)}
             onCreateSharedPortfolio={async () => {
@@ -1006,7 +1042,7 @@ export function DashboardOverview({
           />
         ) : null}
 
-          {profile.role === 'admin' && (
+          {isSystemAdmin(profile.systemRole) && (
             <BulkDeleteReferencesDialog
               open={bulkDeleteConfirmOpen}
               onOpenChange={setBulkDeleteConfirmOpen}
@@ -1025,7 +1061,7 @@ export function DashboardOverview({
             documents={complianceDocuments}
             search={certificateSearch}
             showExpired={showExpiredCertificates}
-            isAdmin={profile.role === 'admin'}
+            isAdmin={isSystemAdmin(profile.systemRole)}
             onUploadClick={() => setComplianceUploadOpen(true)}
           />
         ) : referenceLayout === 'table' ? (
@@ -1088,6 +1124,8 @@ export function DashboardOverview({
                       setProjectStatusFilter,
                       projectStatusSearch,
                       setProjectStatusSearch,
+                      volumeFilter,
+                      setVolumeFilter,
                       sortKey: sortKey as ReferenceColumnKey | null,
                       sortDir,
                       handleSort: handleSort as (c: ReferenceColumnKey) => void,
@@ -1109,7 +1147,7 @@ export function DashboardOverview({
                     <div className="flex flex-col items-center justify-center gap-3 py-2">
                       <p>Keine Referenzen gefunden.</p>
                       {!search.trim() &&
-                        profile.role === 'admin' && (
+                        isSystemAdmin(profile.systemRole) && (
                           <Button
                             className="mt-1"
                             onClick={() => setNewRefModalOpen(true)}
@@ -1325,7 +1363,7 @@ export function DashboardOverview({
         ) : (
           <InboxReferencesConceptClient
             references={filteredReferences}
-            profileRole={profile.role}
+            profileRole={legacyAppRoleFrom(profile.systemRole, profile.functionRole)}
             externalContacts={externalContacts}
             variant="embedded"
           />
@@ -1371,7 +1409,7 @@ export function DashboardOverview({
         onClose={() => setShareLinkPopoverRef(null)}
       />
 
-      {profile.role === 'admin' && (
+      {isSystemAdmin(profile.systemRole) && (
         <NewReferenceDialog
           open={newRefModalOpen}
           onOpenChange={setNewRefModalOpen}
@@ -1382,21 +1420,21 @@ export function DashboardOverview({
       )}
 
       {/* Bulk-Import-Modal (nur Admin) */}
-      {profile.role === 'admin' && (
+      {isSystemAdmin(profile.systemRole) && (
         <ComplianceUploadDialog
           open={complianceUploadOpen}
           onOpenChange={setComplianceUploadOpen}
         />
       )}
 
-      {profile.role === 'admin' && (
+      {isSystemAdmin(profile.systemRole) && (
         <ComplianceBulkUploadDialog
           open={complianceBulkUploadOpen}
           onOpenChange={setComplianceBulkUploadOpen}
         />
       )}
 
-      {profile.role === 'admin' && (
+      {isSystemAdmin(profile.systemRole) && (
         <BulkImportDialog
           open={bulkImportOpen}
           onOpenChange={(open) => {

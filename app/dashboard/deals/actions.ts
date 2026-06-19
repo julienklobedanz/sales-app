@@ -8,6 +8,11 @@ import { getAppOrigin } from '@/lib/env/app-origin'
 import { resolveReferenceManagerEmail } from '@/lib/reference-manager-email'
 import * as XLSX from 'xlsx'
 import { formatIndustryDisplay, resolveIndustryId } from '@/lib/constants/industries'
+import {
+  buildRefstackEmailHtml,
+  escapeRefstackEmailHtml,
+  getRefstackResendFrom,
+} from '@/lib/email/refstack-email-layout'
 import type { DealRow, DealStatus, DealWithReferences } from './types'
 
 const LEGACY_STATUS_MAP: Record<string, DealStatus> = {
@@ -753,21 +758,32 @@ export async function submitReferenceRequest(
   if (resend) {
     try {
       const requesterName = profile?.full_name ?? user.email ?? 'Ein Nutzer'
+      const dealUrl = `${getAppOrigin()}${ROUTES.deals.detail(dealId)}`
+      const metaRows = [
+        { label: 'Von', value: `${requesterName} (${user.email ?? '—'})` },
+        { label: 'Deal', value: deal.title },
+      ]
+      if (deal.company_name) metaRows.push({ label: 'Unternehmen', value: deal.company_name })
+      if (deal.industry) {
+        metaRows.push({ label: 'Branche', value: formatIndustryDisplay(deal.industry) })
+      }
+      if (deal.volume) metaRows.push({ label: 'Volumen', value: deal.volume })
+
+      const html = buildRefstackEmailHtml({
+        audience: 'internal',
+        badge: 'Referenzbedarf',
+        bodyHtml: `<p style="margin:0 0 16px;">Es wurde ein Referenzbedarf für einen Deal gemeldet.</p>
+          <p style="margin:0 0 8px;font-weight:600;">Nachricht:</p>
+          <p style="margin:0;padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;white-space:pre-wrap;">${escapeRefstackEmailHtml(message || '—')}</p>`,
+        meta: { rows: metaRows },
+        ctas: [{ label: 'Deal in Refstack öffnen', href: dealUrl }],
+      })
+
       await resend.emails.send({
-        from: process.env.RESEND_FROM?.trim() || 'Refstack <onboarding@resend.dev>',
+        from: getRefstackResendFrom(),
         to: toEmail,
         subject: `Referenzbedarf: ${deal.title}`,
-        html: `
-          <h2>Referenzbedarf gemeldet</h2>
-          <p><strong>Von:</strong> ${requesterName} (${user.email})</p>
-          <p><strong>Deal:</strong> ${deal.title}</p>
-          ${deal.company_name ? `<p><strong>Unternehmen:</strong> ${deal.company_name}</p>` : ''}
-          ${deal.industry ? `<p><strong>Branche:</strong> ${formatIndustryDisplay(deal.industry)}</p>` : ''}
-          ${deal.volume ? `<p><strong>Volumen:</strong> ${deal.volume}</p>` : ''}
-          <p><strong>Nachricht:</strong></p>
-          <pre style="white-space: pre-wrap; background: #f5f5f5; padding: 12px;">${message || '—'}</pre>
-          <p><a href="${getAppOrigin()}${ROUTES.deals.detail(dealId)}">Deal in Refstack öffnen</a></p>
-        `,
+        html,
       })
     } catch (e) {
       console.error('Referenzbedarf E-Mail:', e)

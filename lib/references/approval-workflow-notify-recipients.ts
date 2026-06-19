@@ -3,8 +3,8 @@ import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
-
-const NOTIFY_ROLES = new Set(['admin', 'account_manager'])
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
+import { profileCanManageOrgData } from '@/lib/roles/profile-guards'
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase()
@@ -58,12 +58,12 @@ async function resolveRequesterEmail(
 
   const { data: profile } = await admin
     .from('profiles')
-    .select('role, notification_settings')
+    .select('system_role, function_role, notification_settings')
     .eq('id', id)
     .maybeSingle()
 
-  const role = String((profile as { role?: string } | null)?.role ?? '')
-  if (!NOTIFY_ROLES.has(role)) return null
+  const { systemRole, functionRole } = parseProfileRoles(profile)
+  if (!profileCanManageOrgData(systemRole, functionRole)) return null
   if (!wantsApprovalUpdateEmails((profile as { notification_settings?: unknown } | null)?.notification_settings)) {
     return null
   }

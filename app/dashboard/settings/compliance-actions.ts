@@ -8,6 +8,8 @@ import { buildComplianceStorageFileName } from '@/lib/compliance/upload-filename
 import { extractPdfPlainText } from '@/lib/pdf-text-extract'
 import { ROUTES } from '@/lib/routes'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
+import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
 
 export type ComplianceDocumentRow = {
   id: string
@@ -53,11 +55,13 @@ async function getComplianceAuth(): Promise<ComplianceAuth> {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('organization_id, role')
+    .select('organization_id, system_role, function_role')
     .eq('id', user.id)
     .single()
 
   if (!profile?.organization_id) return { error: 'Onboarding unvollständig.' }
+
+  const { systemRole } = parseProfileRoles(profile)
 
   const { data: org } = await supabase
     .from('organizations')
@@ -70,7 +74,7 @@ async function getComplianceAuth(): Promise<ComplianceAuth> {
     orgId: profile.organization_id,
     orgName: String(org?.name ?? '').trim() || 'Organisation',
     userId: user.id,
-    isAdmin: profile.role === 'admin',
+    isAdmin: isSystemAdmin(systemRole),
   }
 }
 

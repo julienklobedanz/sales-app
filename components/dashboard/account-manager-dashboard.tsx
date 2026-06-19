@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { CirclePlus, MailOpen, UploadIcon } from '@hugeicons/core-free-icons'
+import { CirclePlus, UploadIcon } from '@hugeicons/core-free-icons'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { AppIcon } from '@/lib/icons'
@@ -20,32 +20,15 @@ import {
   TableRow,
 } from '@/components/ui/table'
 
-function TrendHint({ delta }: { delta: number }) {
-  const sign = delta > 0 ? '+' : ''
-  const tone =
-    delta > 0
-      ? 'text-emerald-600'
-      : delta < 0
-        ? 'text-rose-600'
-        : 'text-muted-foreground'
-  return <p className={`text-xs font-medium ${tone}`}>{`${sign}${delta} diese Woche`}</p>
-}
-
 export function AccountManagerDashboard({ data }: { data: AccountManagerDashboardModel }) {
-  const {
-    kpis,
-    kpiTrends,
-    pendingApprovalsCount,
-    pendingApprovals,
-    usageWindowDays,
-    usageTotals,
-    usageByReference,
-  } = data
+  const { kpis, pendingApprovalsCount, pendingApprovals, usageByReference } = data
   const [remindingId, setRemindingId] = useState<string | null>(null)
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="h-[62px]" aria-hidden />
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 pb-8">
+      <p className="text-sm text-muted-foreground">
+        Welche Referenzen brauchen deine Aufmerksamkeit?
+      </p>
 
       <div className="flex flex-wrap gap-2">
         <Button asChild variant="default" className="gap-2">
@@ -60,45 +43,33 @@ export function AccountManagerDashboard({ data }: { data: AccountManagerDashboar
             Bulk-Import
           </Link>
         </Button>
-        <Button asChild variant="outline" className="gap-2">
-          <Link href={ROUTES.evidence.root}>
-            <AppIcon icon={MailOpen} size={18} />
-            Freigaben ({pendingApprovalsCount})
-          </Link>
-        </Button>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          { label: 'Gesamt', value: kpis.total },
-          { label: 'Freigegeben', value: kpis.approved },
-          { label: 'Nur intern', value: kpis.internal },
-          { label: 'Entwurf', value: kpis.draft },
-        ].map((k) => (
-          <Card key={k.label} className="border-slate-200 shadow-sm">
-            <CardHeader className="pb-1">
-              <CardDescription>{k.label}</CardDescription>
-              <CardTitle className="text-2xl tabular-nums">{k.value}</CardTitle>
-              <TrendHint
-                delta={
-                  k.label === 'Gesamt'
-                    ? kpiTrends.total
-                    : k.label === 'Freigegeben'
-                      ? kpiTrends.approved
-                      : k.label === 'Nur intern'
-                        ? kpiTrends.internal
-                        : kpiTrends.draft
-                }
-              />
-            </CardHeader>
-          </Card>
-        ))}
-      </div>
+      <Card className="border-border shadow-sm">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Eigene Referenzen nach Status</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {[
+              { label: 'Gesamt', value: kpis.total },
+              { label: 'Freigegeben', value: kpis.approved },
+              { label: 'Nur intern', value: kpis.internal },
+              { label: 'Entwurf', value: kpis.draft },
+            ].map((k) => (
+              <div key={k.label} className="rounded-lg border border-border p-3 text-center">
+                <div className="text-xs text-muted-foreground">{k.label}</div>
+                <div className="text-2xl font-semibold tabular-nums">{k.value}</div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Ausstehende Kunden-Freigaben</CardTitle>
-          <CardDescription>Per E-Mail-Link; Status &quot;pending&quot;.</CardDescription>
+          <CardTitle className="text-base">Ausstehende Freigaben ({pendingApprovalsCount})</CardTitle>
+          <CardDescription>Inkl. Kunden-Änderungswünsche in der Detailansicht.</CardDescription>
         </CardHeader>
         <CardContent>
           {pendingApprovals.length === 0 ? (
@@ -132,17 +103,14 @@ export function AccountManagerDashboard({ data }: { data: AccountManagerDashboar
                         void toast
                           .promise(resendClientApprovalEmail(p.referenceId), {
                             loading: 'Neuer Link wird erzeugt …',
-                            success: 'Neuer Freigabe-Link aktiv — bitte manuell an den Kunden senden.',
-                            error: (e) => (e instanceof Error ? e.message : 'Konnte Link nicht erneuern.'),
+                            success: 'Neuer Freigabe-Link aktiv.',
+                            error: (e) => (e instanceof Error ? e.message : 'Fehler'),
                           })
                           .unwrap()
                           .finally(() => setRemindingId(null))
                       }}
                     >
                       Neuen Link
-                    </Button>
-                    <Button asChild variant="outline" size="sm">
-                      <Link href={ROUTES.evidence.detail(p.referenceId)}>Details</Link>
                     </Button>
                   </div>
                 </li>
@@ -154,38 +122,12 @@ export function AccountManagerDashboard({ data }: { data: AccountManagerDashboar
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Nutzung (Workspace)</CardTitle>
-          <CardDescription>
-            Aggregiert aus dem Audit-Log, letzte {usageWindowDays} Tage (alle Referenzen der
-            Organisation).
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-3 gap-3 text-center">
-            <div className="rounded-md border border-border p-3">
-              <div className="text-xs text-muted-foreground">Detail-Ansichten</div>
-              <div className="text-xl font-semibold tabular-nums">{usageTotals.views}</div>
-            </div>
-            <div className="rounded-md border border-border p-3">
-              <div className="text-xs text-muted-foreground">Shares &amp; Link-Aufrufe</div>
-              <div className="text-xl font-semibold tabular-nums">{usageTotals.shares}</div>
-            </div>
-            <div className="rounded-md border border-border p-3">
-              <div className="text-xs text-muted-foreground">Such-Treffer</div>
-              <div className="text-xl font-semibold tabular-nums">{usageTotals.matches}</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Nutzung deiner Referenzen (Auszug)</CardTitle>
-          <CardDescription>Views, Shares und Matches der letzten {usageWindowDays} Tage.</CardDescription>
+          <CardTitle className="text-base">Nutzung deiner Referenzen</CardTitle>
+          <CardDescription>Views, Shares und Matches (letzte 30 Tage).</CardDescription>
         </CardHeader>
         <CardContent>
           {usageByReference.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Noch keine Nutzungsdaten für deine Referenzen.</p>
+            <p className="text-sm text-muted-foreground">Noch keine Nutzungsdaten.</p>
           ) : (
             <Table>
               <TableHeader>
@@ -197,7 +139,7 @@ export function AccountManagerDashboard({ data }: { data: AccountManagerDashboar
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {usageByReference.map((r) => (
+                {usageByReference.slice(0, 8).map((r) => (
                   <TableRow key={r.id}>
                     <TableCell className="font-medium">
                       <Link href={ROUTES.evidence.detail(r.id)} className="hover:underline">
@@ -214,11 +156,6 @@ export function AccountManagerDashboard({ data }: { data: AccountManagerDashboar
           )}
         </CardContent>
       </Card>
-
-      <p className="text-xs text-muted-foreground">
-        Advocate-Health-Warnungen und Drag&amp;Drop-Import sind für eine spätere Ausbaustufe
-        vorgesehen.
-      </p>
     </div>
   )
 }

@@ -5,7 +5,7 @@ import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
 import { getDashboardData } from '@/app/dashboard/actions'
 import { DashboardOverview } from '@/app/dashboard/dashboard-overview'
-import { enrichReferencedCompaniesMissingBrandfetch } from '@/app/dashboard/references/sync-company-brandfetch'
+import { enrichReferencedCompaniesMissingBrandfetch } from '@/lib/evidence/sync-company-brandfetch'
 import {
   DEV_ROLE_COOKIE,
   isDevRolePreviewEnabled,
@@ -31,7 +31,7 @@ export default async function EvidenceHubPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, role, organization_id, system_role, function_role, capabilities')
+    .select('full_name, organization_id, system_role, function_role, capabilities')
     .eq('id', user.id)
     .single()
 

@@ -3,6 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
+import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
 
 /** Prüft, ob der String wie eine Domain aussieht (z. B. "biontechse.com"). */
 function looksLikeDomain(s: string): boolean {
@@ -40,12 +42,13 @@ export async function mergeDuplicateCompaniesImpl(): Promise<MergeDuplicateCompa
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('organization_id, role')
+    .select('organization_id, system_role, function_role')
     .eq('id', user.id)
     .single()
   const orgId = profile?.organization_id
   if (!orgId) return { success: false, error: 'Keine Organisation zugeordnet.' }
-  if (profile?.role !== 'admin') return { success: false, error: 'Nur für Admins.' }
+  const { systemRole } = parseProfileRoles(profile)
+  if (!isSystemAdmin(systemRole)) return { success: false, error: 'Nur für Admins.' }
 
   const { data: companies, error: fetchErr } = await supabase
     .from('companies')
@@ -111,12 +114,13 @@ export async function cleanupCompanyDomainNamesImpl(): Promise<CleanupCompanyDom
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('organization_id, role')
+    .select('organization_id, system_role, function_role')
     .eq('id', user.id)
     .single()
   const orgId = profile?.organization_id
   if (!orgId) return { success: false, error: 'Keine Organisation zugeordnet.' }
-  if (profile?.role !== 'admin') return { success: false, error: 'Nur für Admins.' }
+  const { systemRole } = parseProfileRoles(profile)
+  if (!isSystemAdmin(systemRole)) return { success: false, error: 'Nur für Admins.' }
 
   const { data: companies, error: fetchErr } = await supabase
     .from('companies')

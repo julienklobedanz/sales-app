@@ -11,6 +11,8 @@ import {
 } from '@/lib/compliance/format'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
+import { legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
 
 export type CommandSearchResult =
   | { kind: 'account'; id: string; title: string; logoUrl: string | null }
@@ -282,7 +284,7 @@ export async function searchCommandCenter(
           .or(contactOr)
           .limit(8)
       : supabase.from('contact_persons').select('id,first_name,last_name,role,company_id,companies(name)').limit(0),
-    supabase.from('profiles').select('id,full_name,role').ilike('full_name', likePat).limit(5),
+    supabase.from('profiles').select('id,full_name,system_role,function_role').ilike('full_name', likePat).limit(5),
     certOr
       ? supabase
           .from('organization_compliance_documents')
@@ -395,11 +397,12 @@ export async function searchCommandCenter(
   for (const row of profilesRes.data ?? []) {
     const name = String(row.full_name ?? '').trim()
     if (!name) continue
+    const { systemRole, functionRole } = parseProfileRoles(row)
     groups.contacts.push({
       kind: 'contact_internal',
       id: String(row.id),
       name,
-      roleLabel: internalRoleLabel(row.role as string),
+      roleLabel: internalRoleLabel(legacyAppRoleFrom(systemRole, functionRole)),
     })
   }
 

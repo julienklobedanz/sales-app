@@ -10,6 +10,8 @@ import {
 } from '@/lib/compliance/document-types'
 import { ROUTES } from '@/lib/routes'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
+import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
 
 type ComplianceTypeAuth =
   | { error: string }
@@ -28,16 +30,18 @@ async function getComplianceTypeAuth(): Promise<ComplianceTypeAuth> {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('organization_id, role')
+    .select('organization_id, system_role, function_role')
     .eq('id', user.id)
     .single()
 
   if (!profile?.organization_id) return { error: 'Onboarding unvollständig.' }
 
+  const { systemRole } = parseProfileRoles(profile)
+
   return {
     supabase,
     orgId: profile.organization_id,
-    isAdmin: profile.role === 'admin',
+    isAdmin: isSystemAdmin(systemRole),
   }
 }
 

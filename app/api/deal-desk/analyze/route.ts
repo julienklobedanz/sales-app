@@ -1,19 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-import { analyzeBenchmarkRisk } from '@/lib/deal-desk/benchmark-risk-analysis'
-import { analyzeDealDeskRisks } from '@/lib/deal-desk/deal-desk-risk-analysis'
-import { enrichRedFlagsWithDocuments } from '@/lib/deal-desk/red-flag-document-match'
-import { extractExecutiveBriefingFromRfp } from '@/lib/deal-desk/executive-briefing-extract'
-import { mapRfpAnalysisToDealDeskSnapshot } from '@/lib/deal-desk/map-rfp-to-desk'
-import { defaultWorkspaceState } from '@/lib/deal-desk/workspace-state'
+import { analyzeRfp } from '@/lib/deal-desk/analyze-rfp'
+import { toPersistedAnalysisSnapshot } from '@/lib/deal-desk/analysis-snapshot'
 import { buildDemoDealDeskAnalysis } from '@/lib/deal-desk/mock-analysis'
+import { persistNormalizedWorkspace } from '@/lib/deal-desk/workspace-persistence'
+import { defaultWorkspaceState } from '@/lib/deal-desk/workspace-state'
 import { extractRfpPlainTextFromFile } from '@/lib/extract-rfp-plain-text'
-import { buildRfpCoverageReport } from '@/lib/rfp-coverage'
-import { extractRequirementsFromRfpText } from '@/lib/rfp-requirements'
 import { isOpenAiQuotaErrorMessage } from '@/lib/openai-api-errors'
 import { loadReferenceVisibilityForUser } from '@/lib/roles/load-reference-visibility'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { extractTimelineFromRfpText } from '@/lib/rfp-timeline'
 
 const OPENAI_QUOTA_MOCK_WARNING =
   'OpenAI-Kontingent erschöpft — Demo-Analyse wurde geladen. Bitte Guthaben unter platform.openai.com/account/billing prüfen.'
@@ -198,13 +193,13 @@ export async function POST(req: NextRequest) {
       fileNames.length > 0 ? fileNames : ['RFP-Paket']
     )
     const workspace = defaultWorkspaceState(mock.redFlags, { useDemoBidTeam: true })
+    await persistNormalizedWorkspace(supabase, projectId, orgId, workspace)
     await supabase
       .from('deal_desk_projects')
       .update({
         analysis_status: 'completed',
         analysis_snapshot: mock,
         analysis_source: 'mock',
-        workspace_state: workspace,
         win_probability: mock.winProbability,
         customer_name: mock.customerName,
         error_message: null,
@@ -420,102 +415,48 @@ export async function POST(req: NextRequest) {
 
   const mergedText = textParts.join('\n\n')
 
-  const timelineRes = await extractTimelineFromRfpText(apiKey, mergedText)
-  const timelineItems = 'error' in timelineRes ? [] : timelineRes.timelineItems
-  if ('error' in timelineRes) {
-    if (isQuotaError(timelineRes.error)) {
-      return finishWithMockQuotaFallback()
-    }
-  }
-
-  const extracted = await extractRequirementsFromRfpText(apiKey, mergedText)
-  if ('error' in extracted) {
-    if (isQuotaError(extracted.error)) {
-      return finishWithMockQuotaFallback()
-    }
-    return fail(extracted.error, 422)
-  }
-
-  const coverage = await buildRfpCoverageReport(supabase, {
-    apiKey,
-    organizationId: orgId,
-    salesVisibleOnly,
-    deal: {
-      title: projectName,
-      industry: null,
-      volume: null,
-    },
-    requirements: extracted.requirements,
-  })
-
-  const [riskResult, briefingResult, benchmarkRiskResult] = await Promise.all([
-    analyzeDealDeskRisks(apiKey, mergedText, projectName, fileNames),
-    extractExecutiveBriefingFromRfp(apiKey, mergedText, projectName),
-    analyzeBenchmarkRisk(apiKey, mergedText, fileNames),
-  ])
-
-  if ('error' in riskResult) {
-    if (isQuotaError(riskResult.error)) {
-      return finishWithMockQuotaFallback()
-    }
-    return fail(riskResult.error, 422)
-  }
-
-  if ('error' in briefingResult) {
-    if (isQuotaError(briefingResult.error)) {
-      return finishWithMockQuotaFallback()
-    }
-    return fail(briefingResult.error, 422)
-  }
-
-  if ('error' in benchmarkRiskResult) {
-    if (isQuotaError(benchmarkRiskResult.error)) {
-      return finishWithMockQuotaFallback()
-    }
-    return fail(benchmarkRiskResult.error, 422)
-  }
-
   const { data: projectDocs } = await supabase
     .from('deal_desk_documents')
     .select('id, file_name, storage_path, mime_type')
     .eq('project_id', projectId)
     .eq('organization_id', orgId)
 
-  const linkedRedFlags = enrichRedFlagsWithDocuments(
-    riskResult.redFlags,
-    (projectDocs ?? []).map((d) => ({
+  const analyzed = await analyzeRfp({
+    apiKey,
+    supabase,
+    organizationId: orgId,
+    salesVisibleOnly,
+    projectName,
+    fileNames,
+    mergedText,
+    projectDocuments: (projectDocs ?? []).map((d) => ({
       id: d.id as string,
       file_name: d.file_name as string,
       storage_path: d.storage_path as string | null,
       mime_type: d.mime_type as string | null,
-    }))
-  )
-
-  const snapshot = await mapRfpAnalysisToDealDeskSnapshot({
-    apiKey,
-    projectName,
-    fileNames,
-    requirements: extracted.requirements,
-    coverage,
-    risk: { ...riskResult, redFlags: linkedRedFlags },
-    executiveBriefing: briefingResult,
-    benchmarkRisk: benchmarkRiskResult,
-    timelineItems,
-    organizationId: orgId,
-    supabase,
+    })),
   })
 
-  const workspace = defaultWorkspaceState(snapshot.redFlags)
+  if ('error' in analyzed) {
+    if (isQuotaError(analyzed.error, { isQuotaError: analyzed.isQuotaError })) {
+      return finishWithMockQuotaFallback()
+    }
+    return fail(analyzed.error, 422)
+  }
+
+  const workspace = defaultWorkspaceState(analyzed.snapshot.redFlags)
+  const persistedSnapshot = toPersistedAnalysisSnapshot(analyzed)
+
+  await persistNormalizedWorkspace(supabase, projectId, orgId, workspace)
 
   const { error: doneError } = await supabase
     .from('deal_desk_projects')
     .update({
       analysis_status: 'completed',
-      analysis_snapshot: snapshot,
+      analysis_snapshot: persistedSnapshot,
       analysis_source: 'api',
-      workspace_state: workspace,
-      win_probability: snapshot.winProbability,
-      customer_name: snapshot.customerName,
+      win_probability: analyzed.snapshot.winProbability,
+      customer_name: analyzed.snapshot.customerName,
       error_message: null,
     })
     .eq('id', projectId)

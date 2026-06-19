@@ -55,6 +55,21 @@ type RfpAnalyzeResult = {
   }>
 }
 
+export type DealRfpSectionInitial = {
+  projectId: string
+  requirements: RfpAnalyzeResult['requirements']
+  coverage: RfpAnalyzeResult['coverage']
+}
+
+function toAnalyzeResult(initial: DealRfpSectionInitial): RfpAnalyzeResult {
+  return {
+    analysisId: initial.projectId,
+    storagePath: '',
+    requirements: initial.requirements,
+    coverage: initial.coverage,
+  }
+}
+
 type Company = { id: string; name: string }
 
 function escapeHtml(s: string) {
@@ -69,16 +84,20 @@ function escapeHtml(s: string) {
 export function DealRfpSection({
   deal,
   companies,
+  initialResult,
 }: {
   deal: DealWithReferences
   companies: Company[]
+  initialResult?: DealRfpSectionInitial | null
 }) {
   const router = useRouter()
   const inputRef = useRef<HTMLInputElement>(null)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
   const [companyContextId, setCompanyContextId] = useState<string>('')
   const [analyzing, setAnalyzing] = useState(false)
-  const [result, setResult] = useState<RfpAnalyzeResult | null>(null)
+  const [result, setResult] = useState<RfpAnalyzeResult | null>(
+    initialResult ? toAnalyzeResult(initialResult) : null
+  )
   const [responseLoading, setResponseLoading] = useState(false)
   const [linkingId, setLinkingId] = useState<string | null>(null)
   const linkedRefIds = new Set(deal.references.map((r) => r.id))
@@ -100,6 +119,7 @@ export function DealRfpSection({
       const json = (await res.json()) as
         | {
             success: true
+            projectId?: string
             analysisId: string
             storagePath: string
             requirements: RfpAnalyzeResult['requirements']
@@ -114,8 +134,8 @@ export function DealRfpSection({
       }
 
       setResult({
-        analysisId: json.analysisId,
-        storagePath: json.storagePath,
+        analysisId: json.analysisId ?? json.projectId,
+        storagePath: json.storagePath ?? '',
         requirements: json.requirements,
         coverage: json.coverage,
       })

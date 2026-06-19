@@ -1,241 +1,129 @@
 'use client'
 
 import Link from 'next/link'
-import { useMemo, useState, useTransition } from 'react'
-import { toast } from 'sonner'
-import { BellRing, Building2, ChevronRight, Flame, Search, TrendingUp, UserRound } from 'lucide-react'
-import { logMarketSignalQuickAction } from '@/app/dashboard/market-signals/actions'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { buildSalesforceTaskUrl } from '@/lib/crm/salesforce'
 import { ROUTES } from '@/lib/routes'
 import type { SalesRepDashboardModel } from '@/app/dashboard/dashboard-home-data'
 import { formatDateUtcDe } from '@/lib/format'
-import { useCommandPalette } from '@/hooks/useCommandPalette'
 
 export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
-  const { dailyTopActions, liveIntent, pipelineImpact, strategicAccounts, snoozedSignalsCount } = data
-  const { setOpen: setCommandPaletteOpen } = useCommandPalette()
-  const [isPending, startTransition] = useTransition()
-  const isMacLike = useMemo(() => {
-    if (typeof navigator === 'undefined') return true
-    const ua = navigator.userAgent.toLowerCase()
-    return /mac|iphone|ipad|ipod/.test(ua)
-  }, [])
-  const shortcutLabel = isMacLike ? 'CMD + K' : 'CTRL + K'
-  const [nowMs] = useState(() => Date.now())
-
-  function renderDraftText(input: string) {
-    return input.split(/(\[[^\]]+\])/g).map((part, idx) => {
-      if (/^\[[^\]]+\]$/.test(part)) {
-        return (
-          <span key={`${part}-${idx}`} className="font-semibold text-blue-700">
-            {part}
-          </span>
-        )
-      }
-      return <span key={`${part}-${idx}`}>{part}</span>
-    })
-  }
-
-  function openHubspotDeeplink(subject: string, body: string) {
-    const encoded = encodeURIComponent(`${subject}\n\n${body}`)
-    window.open(`https://app.hubspot.com/contacts?query=${encoded}`, '_blank', 'noopener,noreferrer')
-  }
-
-  function openSalesforceDeeplink(subject: string, body: string) {
-    window.open(buildSalesforceTaskUrl({ subject, body }), '_blank', 'noopener,noreferrer')
-  }
-
-  function triggerAction(item: SalesRepDashboardModel['dailyTopActions'][number], channel: 'hubspot_email' | 'salesforce_task' | 'slack_mention') {
-    startTransition(async () => {
-      const result = await logMarketSignalQuickAction({ signalKey: item.signalKey, channel })
-      if (!result.success) {
-        toast.error(result.error)
-        return
-      }
-      if (channel === 'hubspot_email') {
-        openHubspotDeeplink(item.draftSubject, item.draftBody)
-      } else if (channel === 'salesforce_task') {
-        openSalesforceDeeplink(item.draftSubject, item.draftBody)
-      } else {
-        window.open(ROUTES.marketSignals, '_blank', 'noopener,noreferrer')
-      }
-      toast.success('Aktion gestartet')
-    })
-  }
-
-  function relativeTimeLabel(iso: string) {
-    const t = new Date(iso).getTime()
-    if (!Number.isFinite(t)) return 'gerade'
-    const diffMin = Math.max(1, Math.round((nowMs - t) / 60000))
-    if (diffMin < 60) return `vor ${diffMin}m`
-    const hours = Math.round(diffMin / 60)
-    if (hours < 24) return `vor ${hours}h`
-    return formatDateUtcDe(iso)
-  }
+  const { activeDeals, recommended, recommendedNote, recentShares } = data
 
   return (
-    <div className="flex flex-col gap-6">
-      <button
-        type="button"
-        className="relative flex h-14 w-full items-center rounded-xl border border-border/70 bg-background pl-11 pr-20 text-left text-sm text-muted-foreground shadow-sm transition-all hover:border-blue-300/70"
-        onClick={() => setCommandPaletteOpen(true)}
-      >
-        <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        Durchsuche Deals, Accounts und Referenzen ...
-        <span className="absolute right-4 top-1/2 -translate-y-1/2 rounded-md border border-border/70 bg-background/90 px-2.5 py-1 text-xs font-medium text-muted-foreground">
-          {shortcutLabel}
-        </span>
-      </button>
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 pb-8">
+      <p className="text-sm text-muted-foreground">
+        Welche Referenz passt zu deinem nächsten Kundengespräch?
+      </p>
 
       <Card className="border-border shadow-sm">
-        <CardHeader className="pb-3">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">1. Daily Focus</p>
-          <CardTitle className="text-lg">Top Actions</CardTitle>
-          <CardDescription>{snoozedSignalsCount} Signale aktuell geparkt (Snooze).</CardDescription>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Aktive Deals</CardTitle>
+          <CardDescription>Match-Status und verknüpfte Referenzen.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-2.5">
-          {dailyTopActions.map((item) => {
-            const levelClass =
-              item.level === 'prio'
-                ? 'bg-red-500/10 text-red-700 border-red-200'
-                : item.level === 'new'
-                  ? 'bg-blue-500/10 text-blue-700 border-blue-200'
-                  : 'bg-amber-500/10 text-amber-700 border-amber-200'
-            return (
-              <div key={item.id} className="group flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2.5">
+        <CardContent className="space-y-2">
+          {activeDeals.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Keine aktiven Deals zugewiesen.</p>
+          ) : (
+            activeDeals.slice(0, 6).map((deal) => (
+              <div
+                key={deal.id}
+                className="flex flex-col gap-2 rounded-lg border border-border/70 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between"
+              >
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className={levelClass}>
-                      {item.level === 'prio' ? 'PRIO' : item.level === 'new' ? 'NEW' : 'BACK'}
-                    </Badge>
-                    <p className="truncate text-sm font-medium text-foreground">{item.title}</p>
-                  </div>
-                  <p className="mt-0.5 truncate text-xs text-muted-foreground">{item.subtitle}</p>
+                  <Link href={ROUTES.deals.detail(deal.id)} className="font-medium hover:underline">
+                    {deal.title}
+                  </Link>
+                  <p className="text-xs text-muted-foreground">
+                    {deal.company_name ?? '—'}
+                    {deal.bestMatchScore != null
+                      ? ` · Match ${Math.round(deal.bestMatchScore * 100)} %`
+                      : ''}
+                    {deal.linkedCount > 0 ? ` · ${deal.linkedCount} Referenz(en)` : ''}
+                  </p>
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={isPending}
-                    onClick={() =>
-                      triggerAction(
-                        item,
-                        item.ctaLabel === 'Draft Outreach'
-                          ? 'hubspot_email'
-                          : item.ctaLabel === 'Referenz teilen'
-                            ? 'salesforce_task'
-                            : 'slack_mention'
-                      )
-                    }
-                  >
-                    {item.ctaLabel}
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
+                  {deal.recentSignalCount > 0 ? (
+                    <Badge variant="secondary" className="text-xs">
+                      {deal.recentSignalCount} Signal{deal.recentSignalCount === 1 ? '' : 'e'}
+                    </Badge>
+                  ) : null}
+                  <Button asChild size="sm" variant="outline">
+                    <Link
+                      href={
+                        deal.quickShareReferenceId
+                          ? ROUTES.evidence.detail(deal.quickShareReferenceId)
+                          : ROUTES.matchWithDeal(deal.id)
+                      }
+                    >
+                      Beweis finden
+                    </Link>
                   </Button>
+                  {deal.company_id ? (
+                    <Button asChild size="sm" variant="ghost">
+                      <Link href={ROUTES.accountsDetail(deal.company_id)}>Account</Link>
+                    </Button>
+                  ) : null}
                 </div>
               </div>
-            )
-          })}
+            ))
+          )}
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="border-border shadow-sm">
-          <CardHeader className="pb-3">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">2. Real-Time Intent</p>
-            <CardTitle className="text-lg">Live Intent Feed</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-3">
-              {liveIntent.length === 0 ? (
-                <li className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
-                  Noch keine Live-Intent Events.
-                </li>
-              ) : (
-                liveIntent.map((event) => (
-                  <li key={event.id} className="flex items-start gap-3">
-                    <span className="mt-1 inline-flex size-2.5 shrink-0 rounded-full bg-emerald-500" />
-                    <div className="min-w-0 flex-1 rounded-md border border-border/70 px-3 py-2.5">
-                      <p className="text-sm text-foreground">{event.text}</p>
-                      <div className="mt-1 flex items-center justify-between gap-2">
-                        <p className="text-xs text-muted-foreground">{relativeTimeLabel(event.createdAt)}</p>
-                        {event.href ? (
-                          <Link href={event.href} className="text-xs font-medium text-blue-700 hover:underline">
-                            Öffnen
-                          </Link>
-                        ) : null}
-                      </div>
-                    </div>
-                  </li>
-                ))
-              )}
-            </ul>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border shadow-sm">
-          <CardHeader className="pb-3">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">3. My Pipeline Impact</p>
-            <CardTitle className="text-lg">Win-Rate</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {pipelineImpact.winRateAvailable && pipelineImpact.winRatePercent != null ? (
-              <div className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-sm">
-                <span className="font-medium text-foreground">Win-Rate:</span>{' '}
-                <span className="tabular-nums">{pipelineImpact.winRatePercent}%</span>
-                <span className="ml-2 text-muted-foreground">
-                  ({pipelineImpact.closedDealsCount} abgeschlossene Deals)
-                </span>
-              </div>
-            ) : (
-              <div className="rounded-md border border-dashed border-border/70 bg-muted/20 px-3 py-3 text-sm text-muted-foreground">
-                Zu wenige abgeschlossene Deals für eine valide Quote
-                {pipelineImpact.closedDealsCount > 0
-                  ? ` (${pipelineImpact.closedDealsCount} von mindestens 3).`
-                  : '.'}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
       <Card className="border-border shadow-sm">
-        <CardHeader className="pb-3">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">4. Strategic Accounts</p>
-          <CardTitle className="text-lg">Bridge: Signal ↔ MEDDPICC</CardTitle>
-          <CardDescription>Konten mit Signalen und strategischen Lücken für den nächsten Schritt.</CardDescription>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Empfohlene Referenzen</CardTitle>
+          <CardDescription>Semantische Treffer zum primären Deal.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
-          {strategicAccounts.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
-              Keine strategischen Accounts mit Handlungsbedarf.
-            </div>
+          {recommended.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              {recommendedNote ?? 'Noch keine Empfehlungen verfügbar.'}
+            </p>
           ) : (
-            strategicAccounts.map((row) => (
+            recommended.slice(0, 5).map((ref) => (
               <Link
-                key={row.companyId}
-                href={row.href}
-                className="group flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2.5 transition-colors hover:bg-muted/40"
+                key={ref.id}
+                href={ROUTES.evidence.detail(ref.id)}
+                className="block rounded-md border border-border/70 px-3 py-2 hover:bg-muted/40"
               >
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1 rounded border border-border/80 bg-background px-1.5 py-px text-[11px] font-medium text-muted-foreground">
-                      <Building2 className="h-3 w-3" />
-                      {row.companyName}
-                    </span>
-                    <span className="text-xs text-muted-foreground">{row.signalCount24h} neue Signale</span>
-                  </div>
-                  <p className="mt-1 line-clamp-1 text-sm text-foreground leading-relaxed">
-                    {renderDraftText(row.signalSummary)}
-                  </p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{row.meddpiccGap}</p>
-                </div>
-                <div className="flex shrink-0 items-center gap-1.5">
-                  <Badge variant="secondary">{row.actionLabel}</Badge>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                </div>
+                <p className="text-sm font-medium">{ref.title}</p>
+                <p className="line-clamp-2 text-xs text-muted-foreground">{ref.snippet}</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Relevanz {Math.round(ref.similarity * 100)} %
+                </p>
               </Link>
+            ))
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="border-border shadow-sm">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Kürzlich geteilt</CardTitle>
+          <CardDescription>Deine letzten Share-Links.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {recentShares.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Noch keine Shares in den letzten Wochen.</p>
+          ) : (
+            recentShares.slice(0, 5).map((row, idx) => (
+              <div
+                key={`${row.created_at}-${idx}`}
+                className="flex items-center justify-between gap-2 rounded-md border border-border/60 px-3 py-2 text-sm"
+              >
+                <div className="min-w-0 truncate">
+                  <span className="font-medium">{row.reference_title ?? 'Referenz'}</span>
+                  {row.account_name ? (
+                    <span className="text-muted-foreground"> · {row.account_name}</span>
+                  ) : null}
+                </div>
+                <span className="shrink-0 text-xs text-muted-foreground">
+                  {formatDateUtcDe(row.created_at)}
+                </span>
+              </div>
             ))
           )}
         </CardContent>

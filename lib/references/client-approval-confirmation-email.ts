@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-import { getPortfolioManageAndPreviewUrlsForApprovalEmail } from '@/app/dashboard/references/sharing'
+import { getPortfolioManageAndPreviewUrlsForApprovalEmail } from '@/lib/evidence/sharing'
 import {
   fetchVendorOrganizationName,
   resolveCustomerApprovalRecipient,

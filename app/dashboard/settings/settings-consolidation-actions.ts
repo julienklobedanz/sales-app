@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { ROUTES } from '@/lib/routes'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { writeAuditLog } from '@/lib/audit/log-audit'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
+import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
 
 type ActionResult = { success: true } | { success: false; error: string }
 
@@ -211,10 +213,11 @@ export async function updateWorkspaceSecurityCompliance(input: {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('system_role, function_role')
     .eq('id', user.id)
     .single()
-  if (profile?.role !== 'admin') {
+  const { systemRole } = parseProfileRoles(profile)
+  if (!isSystemAdmin(systemRole)) {
     return { success: false, error: 'Nur Workspace-Administratoren können Sicherheitsrichtlinien ändern.' }
   }
 
@@ -282,8 +285,13 @@ export async function updateWorkspaceReferenceHighlightGlossary(raw: string): Pr
   if (!user) return { success: false, error: 'Nicht angemeldet.' }
   if (!organizationId) return { success: false, error: 'Keine Organisation zugeordnet.' }
 
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'admin') {
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('system_role, function_role')
+    .eq('id', user.id)
+    .single()
+  const { systemRole } = parseProfileRoles(profile)
+  if (!isSystemAdmin(systemRole)) {
     return { success: false, error: 'Nur Workspace-Administratoren können das Glossar bearbeiten.' }
   }
 

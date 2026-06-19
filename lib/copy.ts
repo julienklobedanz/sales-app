@@ -7,6 +7,7 @@ export const COPY = {
     marketSignals: 'Marktsignale',
     dealDesk: 'Deal Desk',
     match: 'Finden',
+    insights: 'Insights',
     settings: 'Einstellungen',
   },
   pages: {

@@ -1,8 +1,17 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
+import { cookies } from 'next/headers'
 import { ROUTES } from '@/lib/routes'
 import { DashboardHome } from '@/components/dashboard/dashboard-home'
+import type { RoleHomeDashboardPayload } from '@/components/dashboard/role-home-dashboard'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
+import { loadDashboardHomeForFunctionRole } from '@/app/dashboard/dashboard-home-data'
+import {
+  DEV_ROLE_COOKIE,
+  isDevRolePreviewEnabled,
+  parseDevRolePreviewCookie,
+} from '@/lib/dev-role-preview'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,13 +26,29 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('organization_id, full_name')
+    .select('organization_id, full_name, system_role, function_role, capabilities')
     .eq('id', user.id)
     .maybeSingle()
 
   if (!profile?.organization_id) {
     redirect(ROUTES.onboarding)
   }
+
+  const cookieStore = await cookies()
+  const serverRoles = parseProfileRoles(profile)
+  const previewRoles = isDevRolePreviewEnabled()
+    ? parseDevRolePreviewCookie(cookieStore.get(DEV_ROLE_COOKIE)?.value)
+    : null
+  const functionRole = previewRoles?.functionRole ?? serverRoles.functionRole
+  const systemRole = previewRoles?.systemRole ?? serverRoles.systemRole
+
+  const dashboardPayload: RoleHomeDashboardPayload = await loadDashboardHomeForFunctionRole(
+    functionRole,
+    systemRole,
+    supabase,
+    user.id,
+    profile.full_name as string | null
+  )
 
   const orgId = profile.organization_id
 
@@ -98,6 +123,8 @@ export default async function DashboardPage() {
           hasTeamInvites: memberCount > 1 || pendingInviteCount > 0,
           hasMarketSignals: signalCount > 0 || favoriteAccountCount > 0,
         }}
+        dashboardPayload={dashboardPayload}
+        functionRole={functionRole}
       />
     </Suspense>
   )

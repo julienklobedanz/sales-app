@@ -6,13 +6,16 @@ import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
 import { ROUTES } from '@/lib/routes'
 import { Resend } from 'resend'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { SubmitForApprovalOptions } from '@/app/dashboard/references/approval-submit-types'
+import type { SubmitForApprovalOptions } from '@/lib/evidence/approval-submit-types'
 import { logEventForCurrentOrg } from '@/lib/events/log-event'
 import { getAppOrigin } from '@/lib/env/app-origin'
-import { getPortfolioManageAndPreviewUrlsForApprovalEmail } from '@/app/dashboard/references/sharing'
+import { getPortfolioManageAndPreviewUrlsForApprovalEmail } from '@/lib/evidence/sharing'
 import { parseOrgPublicLinkPolicy } from '@/lib/organization-link-policy'
-import { ensureApprovalRecipientFromInputImpl } from '@/app/dashboard/references/approval-contacts'
+import { ensureApprovalRecipientFromInputImpl } from '@/lib/evidence/approval-contacts'
 import { canStartApprovalWorkflow } from '@/lib/references/approval-workflow'
+import { legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
+import { profileCanManageOrgData } from '@/lib/roles/profile-guards'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { effectiveCustomerApprovalStatus, hasActiveCustomerApprovalWorkflow } from '@/lib/references/effective-customer-approval'
 import { isStaleInternalPending } from '@/lib/references/stale-internal-pending'
 import { isApprovalRecipientEmail } from '@/lib/references/approval-recipient-input'
@@ -441,14 +444,12 @@ export async function submitForApprovalImpl(
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, role, organization_id')
+    .select('full_name, system_role, function_role, organization_id')
     .eq('id', user.id)
     .maybeSingle()
 
-  const userRole = String((profile as { role?: string } | null)?.role ?? 'sales') as
-    | 'admin'
-    | 'sales'
-    | 'account_manager'
+  const { systemRole, functionRole } = parseProfileRoles(profile)
+
   const refStatus = String(ref.status ?? 'draft')
   const internalApproval = String(ref.approval_internal_status ?? '')
   const customerApproval = String(ref.customer_approval_status ?? '')
@@ -464,7 +465,8 @@ export async function submitForApprovalImpl(
 
   if (
     !canStartApprovalWorkflow({
-      role: userRole,
+      systemRole,
+      functionRole,
       referenceStatus: refStatus,
       internalApprovalStatus: internalApproval,
       customerApprovalStatus: ref.customer_approval_status,
@@ -628,7 +630,7 @@ export async function submitForApprovalImpl(
   return {
     success: true as const,
     stage: 'internal_review_pending' as const,
-    requesterRole: (profile as { role?: string } | null)?.role ?? null,
+    requesterRole: profile ? legacyAppRoleFrom(systemRole, functionRole) : null,
   }
 }
 
@@ -656,14 +658,14 @@ export async function approveInternalAndSendImpl(
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('role, full_name, organization_id')
+    .select('system_role, function_role, full_name, organization_id')
     .eq('id', user.id)
     .maybeSingle()
   if (profileError || !profile) {
     return { success: false, error: 'Profil nicht gefunden. Bitte Onboarding abschließen.' }
   }
-  const role = String((profile as { role?: string }).role ?? '')
-  if (role !== 'admin' && role !== 'account_manager') {
+  const { systemRole, functionRole } = parseProfileRoles(profile)
+  if (!profileCanManageOrgData(systemRole, functionRole)) {
     return { success: false, error: 'Nur Admin oder Account Manager dürfen extern versenden.' }
   }
 
@@ -941,11 +943,21 @@ export async function delegateClientApprovalImpl(params: {
     .eq('id', (ref as { id: string }).id)
   const resend = getResend()
   if (resend) {
+    const approvalUrl = `${getAppOrigin()}/approval/${token}`
+    const refTitle = String((ref as { title?: string }).title ?? 'Referenz')
+    const html = buildRefstackEmailHtml({
+      audience: 'external',
+      badge: 'Delegierte Freigabe',
+      bodyHtml:
+        '<p style="margin:0;">Eine Referenz-Freigabe wurde an Sie delegiert.</p>',
+      ctas: [{ label: 'Zur Freigabe-Seite', href: approvalUrl }],
+      meta: { rows: [{ label: 'Referenz', value: refTitle }] },
+    })
     await resend.emails.send({
-      from: 'Refstack <onboarding@resend.dev>',
+      from: getRefstackResendFrom(),
       to: email,
-      subject: `Weitergeleitete Freigabe: ${(ref as { title?: string }).title ?? 'Referenz'}`,
-      html: `<p>Eine Freigabe wurde an Sie delegiert.</p><a href="${getAppOrigin()}/approval/${token}">Zur Freigabe-Seite</a>`,
+      subject: `Weitergeleitete Freigabe: ${refTitle}`,
+      html,
     })
   }
   return { success: true }
@@ -961,10 +973,10 @@ export async function resendClientApprovalEmailImpl(referenceId: string) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, full_name')
+    .select('system_role, function_role, full_name')
     .eq('id', user.id)
     .single()
-  const role = String((profile as { role?: string } | null)?.role ?? '')
+  const { systemRole, functionRole } = parseProfileRoles(profile)
   const resenderName =
     typeof (profile as { full_name?: string } | null)?.full_name === 'string'
       ? (profile as { full_name: string }).full_name.trim()
@@ -1002,8 +1014,7 @@ export async function resendClientApprovalEmailImpl(referenceId: string) {
   }
 
   const canResend =
-    role === 'admin' ||
-    role === 'account_manager' ||
+    profileCanManageOrgData(systemRole, functionRole) ||
     ref.approval_requested_by === user.id
   if (!canResend) {
     throw new Error('Keine Berechtigung, den Freigabe-Link zu erneuern.')
@@ -1063,10 +1074,10 @@ export async function requestCustomerApprovalAgainAfterChangesImpl(
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, organization_id')
+    .select('system_role, function_role, organization_id')
     .eq('id', user.id)
     .single()
-  const role = String((profile as { role?: string } | null)?.role ?? '')
+  const { systemRole, functionRole } = parseProfileRoles(profile)
 
   const { data: row, error: fetchError } = await supabase
     .from('references')
@@ -1116,8 +1127,7 @@ export async function requestCustomerApprovalAgainAfterChangesImpl(
   }
 
   const canSend =
-    role === 'admin' ||
-    role === 'account_manager' ||
+    profileCanManageOrgData(systemRole, functionRole) ||
     ref.approval_requested_by === user.id
   if (!canSend) {
     return { success: false, error: 'Keine Berechtigung, die Freigabe erneut anzufragen.' }
@@ -1260,10 +1270,10 @@ export async function updateApprovalRecipientImpl(
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, full_name, organization_id')
+    .select('system_role, function_role, full_name, organization_id')
     .eq('id', user.id)
     .single()
-  const role = String((profile as { role?: string } | null)?.role ?? '')
+  const { systemRole, functionRole } = parseProfileRoles(profile)
 
   const { data: row, error: fetchError } = await supabase
     .from('references')
@@ -1313,8 +1323,7 @@ export async function updateApprovalRecipientImpl(
   }
 
   const canEdit =
-    role === 'admin' ||
-    role === 'account_manager' ||
+    profileCanManageOrgData(systemRole, functionRole) ||
     ref.approval_requested_by === user.id
   if (!canEdit) {
     return { success: false, error: 'Keine Berechtigung, den Kundenkontakt zu ändern.' }
@@ -1435,10 +1444,10 @@ export async function updateApprovalCoordinatorImpl(
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('system_role, function_role')
     .eq('id', user.id)
     .single()
-  const role = String((profile as { role?: string } | null)?.role ?? '')
+  const { systemRole, functionRole } = parseProfileRoles(profile)
 
   const { data: row, error: fetchError } = await supabase
     .from('references')
@@ -1480,8 +1489,7 @@ export async function updateApprovalCoordinatorImpl(
   }
 
   const canEdit =
-    role === 'admin' ||
-    role === 'account_manager' ||
+    profileCanManageOrgData(systemRole, functionRole) ||
     ref.approval_requested_by === user.id
   if (!canEdit) {
     return { success: false, error: 'Keine Berechtigung, den intern Verantwortlichen zu ändern.' }

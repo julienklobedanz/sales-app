@@ -36,6 +36,9 @@ import { formatIndustryDisplay, getIndustryLabelDe } from "@/lib/constants/indus
 import { AppIcon } from "@/lib/icons"
 import Link from "next/link"
 
+import type { ReferenceVolumeFilter } from "@/lib/references/reference-volume-filter"
+import { ReferenceVolumeFilterMenu } from "@/components/references/reference-volume-filter-menu"
+
 import type { ReferenceRow } from "../actions"
 
 /** Muss mit COLUMN_KEYS in dashboard-overview übereinstimmen */
@@ -90,6 +93,8 @@ export type ReferenceTableHeaderRenderContext = {
   setProjectStatusFilter: (v: string) => void
   projectStatusSearch: string
   setProjectStatusSearch: (v: string) => void
+  volumeFilter: ReferenceVolumeFilter
+  setVolumeFilter: (v: ReferenceVolumeFilter) => void
   sortKey: ReferenceColumnKey | null
   sortDir: "asc" | "desc"
   handleSort: (column: ReferenceColumnKey) => void
@@ -128,6 +133,8 @@ export function renderReferenceColumnHeader(
     setProjectStatusFilter,
     projectStatusSearch,
     setProjectStatusSearch,
+    volumeFilter,
+    setVolumeFilter,
     sortKey,
     sortDir,
     handleSort,
@@ -266,26 +273,57 @@ export function renderReferenceColumnHeader(
           className="text-right"
           contentAlign="end"
         >
-          <button
-            type="button"
-            className="ml-auto flex items-center gap-0.5 hover:opacity-80"
-            onClick={() => handleSort("volume_eur")}
-          >
-            {COLUMN_LABELS.volume_eur}
-            {sortKey === "volume_eur" ? (
-              sortDir === "asc" ? (
-                <AppIcon icon={ArrowUp} size={14} className="text-primary" />
+          <div className="ml-auto flex items-center gap-1">
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className={`flex items-center gap-1 hover:opacity-80 ${volumeFilter !== "all" ? "font-semibold text-foreground" : ""}`}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <span>{COLUMN_LABELS.volume_eur}</span>
+                  {volumeFilter !== "all" && (
+                    <AppIcon
+                      icon={Filter}
+                      size={14}
+                      className="shrink-0 text-primary"
+                      aria-hidden
+                    />
+                  )}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-56 p-1"
+                align="end"
+                onClick={(e) => e.stopPropagation()}
+                onOpenAutoFocus={(e) => e.preventDefault()}
+              >
+                <ReferenceVolumeFilterMenu
+                  value={volumeFilter}
+                  onChange={setVolumeFilter}
+                />
+              </PopoverContent>
+            </Popover>
+            <button
+              type="button"
+              className="flex items-center gap-0.5 hover:opacity-80"
+              onClick={() => handleSort("volume_eur")}
+            >
+              {sortKey === "volume_eur" ? (
+                sortDir === "asc" ? (
+                  <AppIcon icon={ArrowUp} size={14} className="text-primary" />
+                ) : (
+                  <AppIcon icon={ArrowDown} size={14} className="text-primary" />
+                )
               ) : (
-                <AppIcon icon={ArrowDown} size={14} className="text-primary" />
-              )
-            ) : (
-              <AppIcon
-                icon={ArrowUpDown}
-                size={14}
-                className="text-muted-foreground"
-              />
-            )}
-          </button>
+                <AppIcon
+                  icon={ArrowUpDown}
+                  size={14}
+                  className="text-muted-foreground"
+                />
+              )}
+            </button>
+          </div>
         </DraggableColumnHead>
       )
     case "industry":

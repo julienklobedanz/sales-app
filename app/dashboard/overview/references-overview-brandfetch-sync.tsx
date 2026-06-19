@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { enrichReferencedCompaniesMissingBrandfetch } from '@/app/dashboard/references/sync-company-brandfetch'
+import { enrichReferencedCompaniesMissingBrandfetch } from '@/lib/evidence/sync-company-brandfetch'
 import { resetCompanyBrandfetchRetryCache } from '@/lib/accounts/company-brandfetch-retry-client'
 
 /**

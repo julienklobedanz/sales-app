@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Input } from '@/components/ui/input'
-import type { ApprovalContactOption } from '@/app/dashboard/references/approval-contacts'
+import type { ApprovalContactOption } from '@/lib/evidence/approval-contacts'
 import { filterApprovalContactSuggestions } from '@/lib/references/approval-recipient-input'
 import { cn } from '@/lib/utils'
 

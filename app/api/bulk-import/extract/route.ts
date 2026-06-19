@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { applyBulkImportExtractionFromBuffer } from '@/lib/references/bulk-import-extraction-apply'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
+import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -17,11 +19,12 @@ export async function POST(request: Request) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, organization_id')
+    .select('system_role, function_role, organization_id')
     .eq('id', user.id)
     .single()
 
-  if (profile?.role !== 'admin') {
+  const { systemRole } = parseProfileRoles(profile ?? {})
+  if (!isSystemAdmin(systemRole)) {
     return NextResponse.json({ success: false, error: 'Keine Berechtigung.' }, { status: 403 })
   }
 

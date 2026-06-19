@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { ReferencePdfDocument } from '@/app/dashboard/references/pdf/template'
-import type { PdfOrgBranding, PdfReference, PdfTemplate } from '@/app/dashboard/references/pdf/types'
+import { ReferencePdfDocument } from '@/lib/evidence/pdf/template'
+import type { PdfOrgBranding, PdfReference, PdfTemplate } from '@/lib/evidence/pdf/types'
 
 export const runtime = 'nodejs'
 
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('organization_id, role')
+    .select('organization_id')
     .eq('id', user.id)
     .single()
 

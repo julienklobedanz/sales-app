@@ -50,7 +50,7 @@ import {
   getCompetitorSuggestions,
 } from '../../actions'
 import { REFERENCE_NARRATIVE_MAX_CHARS } from '@/lib/references/reference-narrative-limits'
-import { syncCompanyBrandfetchForEdit } from '@/app/dashboard/references/sync-company-brandfetch'
+import { syncCompanyBrandfetchForEdit } from '@/lib/evidence/sync-company-brandfetch'
 import { CreateContactDialog, type CreatedContact } from './create-contact-dialog'
 import type { ExternalContact } from './actions'
 import {
@@ -666,6 +666,8 @@ export function ReferenceForm({
               referenceId: refId,
               file_path: uploadData.path,
               original_document_url: originalUrl,
+              file_name: selectedFile.name,
+              file_type: selectedFile.type || null,
             })
           })()
         }

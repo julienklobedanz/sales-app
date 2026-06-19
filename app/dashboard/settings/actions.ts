@@ -52,7 +52,7 @@ export async function updateProfile(formData: FormData) {
 
   const { data: profileRow } = await supabase
     .from('profiles')
-    .select('role, phone, system_role, function_role, capabilities')
+    .select('phone, system_role, function_role, capabilities')
     .eq('id', user.id)
     .single()
 
@@ -100,7 +100,6 @@ export async function updateProfile(formData: FormData) {
   if (fullName !== undefined && fullName !== '') updates.full_name = fullName
   if (role) {
     const dims = legacyRoleToDimensions(role)
-    updates.role = role
     updates.system_role = dims.systemRole
     updates.function_role = dims.functionRole
   }

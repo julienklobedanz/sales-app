@@ -1,5 +1,4 @@
 import type { Capability, FunctionRole, SystemRole } from '@/lib/roles/capabilities'
-import { legacyRoleToDimensions } from '@/lib/roles/legacy-mapping'
 
 const SYSTEM_ROLES = new Set<SystemRole>(['owner', 'admin', 'member', 'viewer'])
 const FUNCTION_ROLES = new Set<FunctionRole>(['sales_rep', 'account_manager', 'sales_leader'])
@@ -25,22 +24,25 @@ export function parseCapabilitiesOverrides(raw: unknown): Partial<Record<Capabil
   return out
 }
 
-export function parseProfileRoles(profile: {
-  role?: string | null
-  system_role?: string | null
-  function_role?: string | null
-  capabilities?: unknown
-}): {
+export function parseProfileRoles(
+  profile:
+    | {
+        system_role?: string | null
+        function_role?: string | null
+        capabilities?: unknown
+      }
+    | null
+    | undefined
+): {
   systemRole: SystemRole
   functionRole: FunctionRole
   capabilities: Partial<Record<Capability, boolean>>
 } {
-  const fromLegacy = legacyRoleToDimensions(profile.role)
-  const systemRole = asSystemRole(profile.system_role) ?? fromLegacy.systemRole
-  const functionRole = asFunctionRole(profile.function_role) ?? fromLegacy.functionRole
+  const systemRole = asSystemRole(profile?.system_role) ?? 'member'
+  const functionRole = asFunctionRole(profile?.function_role) ?? 'sales_rep'
   return {
     systemRole,
     functionRole,
-    capabilities: parseCapabilitiesOverrides(profile.capabilities),
+    capabilities: parseCapabilitiesOverrides(profile?.capabilities),
   }
 }

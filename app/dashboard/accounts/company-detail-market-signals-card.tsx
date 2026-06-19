@@ -77,12 +77,6 @@ export function CompanyDetailMarketSignalsCard({ marketSignals }: Props) {
                   ))}
                 </ul>
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                  <Link
-                    href={ROUTES.marketSignals}
-                    className="text-xs text-muted-foreground hover:underline"
-                  >
-                    Zu Marktsignalen
-                  </Link>
                   {marketSignals.championMoves.length > visibleChampionCount ? (
                     <Button
                       type="button"
@@ -123,13 +117,7 @@ export function CompanyDetailMarketSignalsCard({ marketSignals }: Props) {
                     </li>
                   ))}
                 </ul>
-                <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                  <Link
-                    href={ROUTES.marketSignals}
-                    className="text-xs text-muted-foreground hover:underline"
-                  >
-                    Zu Marktsignalen
-                  </Link>
+                <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
                   {marketSignals.accountNews.length > visibleNewsCount ? (
                     <Button
                       type="button"

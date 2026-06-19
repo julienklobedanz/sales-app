@@ -10,8 +10,14 @@ import { ROUTES } from '@/lib/routes'
 import type { AdminDashboardModel } from '@/app/dashboard/dashboard-home-data'
 import { formatDateUtcDe } from '@/lib/format'
 
-export function AdminDashboard({ data }: { data: AdminDashboardModel }) {
-  const { blockers, contentRoi, systemUsage, newsIngestHealth, auditFeed } = data
+export function AdminDashboard({
+  data,
+  variant = 'admin',
+}: {
+  data: AdminDashboardModel
+  variant?: 'admin' | 'sales_leader'
+}) {
+  const { blockers, contentRoi, systemUsage, newsIngestHealth, auditFeed, kpis, kpiTrends, topReferences, pipelineSignals, winRate } = data
   const [nowMs] = useState(() => Date.now())
 
   const usagePercent = useMemo(() => {
@@ -27,6 +33,119 @@ export function AdminDashboard({ data }: { data: AdminDashboardModel }) {
     const diffH = Math.round(diffMin / 60)
     if (diffH < 24) return `vor ${diffH}h`
     return formatDateUtcDe(iso)
+  }
+
+  if (variant === 'sales_leader') {
+    return (
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 pb-8">
+        <p className="text-sm text-muted-foreground">
+          Wie performt euer Referenzprogramm — und wo fehlt Abdeckung?
+        </p>
+
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { label: 'Referenzen', value: kpis.referencesTotal, trend: kpiTrends.referencesTotal },
+            { label: 'Matches (7 Tage)', value: kpis.matches7d, trend: kpiTrends.matches7d },
+            {
+              label: 'Win-Rate',
+              value: winRate.available && winRate.percent != null ? `${winRate.percent} %` : '—',
+              hint: winRate.available
+                ? `${winRate.closedDealsCount} Deals`
+                : `Zu wenig Daten (${winRate.closedDealsCount}/${winRate.minDealsRequired})`,
+            },
+            { label: 'WAU (7 Tage)', value: kpis.wau7d, trend: kpiTrends.wau7d },
+          ].map((k) => (
+            <Card key={k.label} className="border-border shadow-sm">
+              <CardHeader className="pb-1">
+                <CardDescription>{k.label}</CardDescription>
+                <CardTitle className="text-2xl tabular-nums">{k.value}</CardTitle>
+                {'trend' in k && k.trend != null ? (
+                  <p className="text-xs text-muted-foreground">
+                    {k.trend > 0 ? '+' : ''}
+                    {k.trend} vs. Vorwoche
+                  </p>
+                ) : null}
+                {'hint' in k && k.hint ? (
+                  <p className="text-xs text-muted-foreground">{k.hint}</p>
+                ) : null}
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Adoption</CardTitle>
+            <CardDescription>Aktive Nutzer im Team.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between text-sm">
+              <span>Aktive Nutzer</span>
+              <span className="tabular-nums font-medium">
+                {systemUsage.activeUsers}/{systemUsage.activeSeats || Math.max(systemUsage.activeUsers, 1)}
+              </span>
+            </div>
+            <div className="mt-2 h-2 rounded-full bg-muted">
+              <div className="h-full rounded-full bg-primary" style={{ width: `${usagePercent}%` }} />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Top-Referenzen</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {topReferences.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Noch keine Event-Daten.</p>
+            ) : (
+              topReferences.slice(0, 5).map((ref) => (
+                <Link
+                  key={ref.id}
+                  href={ROUTES.evidence.detail(ref.id)}
+                  className="flex items-center justify-between gap-2 rounded-md border border-border/70 px-3 py-2 text-sm hover:bg-muted/40"
+                >
+                  <span className="truncate font-medium">{ref.title}</span>
+                  <span className="shrink-0 text-xs text-muted-foreground">{ref.eventCount} Events</span>
+                </Link>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Pipeline-Signale & Abdeckungslücken</CardTitle>
+            <CardDescription>Accounts mit offenen Deals und relevanten Signalen.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {contentRoi.gapAlert ? (
+              <p className="rounded-md border border-amber-200 bg-amber-50/60 px-3 py-2 text-sm text-amber-900">
+                Suche ohne Treffer: <strong>{contentRoi.gapAlert.term}</strong> ({contentRoi.gapAlert.searches}×)
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground">Keine Zero-Result-Lücken erkannt.</p>
+            )}
+            {pipelineSignals.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Keine priorisierten Pipeline-Signale.</p>
+            ) : (
+              <ul className="space-y-2">
+                {pipelineSignals.map((row) => (
+                  <li key={row.companyId}>
+                    <Link href={row.href} className="block rounded-md border border-border/70 px-3 py-2 hover:bg-muted/40">
+                      <p className="text-sm font-medium">
+                        {row.companyName} · {row.signalCount} Signale · {row.openDealCount} Deal(s)
+                      </p>
+                      <p className="line-clamp-1 text-xs text-muted-foreground">{row.latestSummary}</p>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (

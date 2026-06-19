@@ -54,6 +54,8 @@ import { diffMonthsUtc, formatReferenceDate, formatNumberDe, formatReferenceVolu
 import { formatContractTypeDisplay } from '@/lib/references/contract-type'
 import { AppIcon } from '@/lib/icons'
 import { ROUTES } from '@/lib/routes'
+import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
+import { profileCanManageOrgData, profileIsSalesRestricted } from '@/lib/roles/profile-guards'
 
 import type { ReferenceAssetRow, ReferenceRow } from '../actions'
 import { updateReferenceAssetCategory } from '../actions'
@@ -499,7 +501,7 @@ export function ReferenceDetailSheet({
                                         <span className="truncate text-sm">{asset.file_name || asset.file_path.split('/').pop() || 'Dokument'}</span>
                                       </div>
                                       <div className="flex items-center gap-2">
-                                        {profile.role === 'admin' && (
+                                        {isSystemAdmin(profile.systemRole) && (
                                           <Select
                                             value={asset.category}
                                             onValueChange={async (value: 'sales' | 'contract' | 'other') => {
@@ -582,7 +584,7 @@ export function ReferenceDetailSheet({
                   >
                     <AppIcon icon={LinkIcon} size={16} className="mr-2" /> Kundenlink erstellen
                   </Button>
-                  {profile.role === 'admin' && (
+                  {isSystemAdmin(profile.systemRole) && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -597,7 +599,7 @@ export function ReferenceDetailSheet({
 
                 {/* Rechte Seite: Detail für Freigabe / Löschen */}
                 <div className="flex w-full justify-end gap-2 sm:w-auto">
-                  {(profile.role === 'admin' || profile.role === 'account_manager') &&
+                  {profileCanManageOrgData(profile.systemRole, profile.functionRole) &&
                   selectedRef.status === 'draft' ? (
                     <Button size="sm" variant="outline" asChild>
                       <Link href={`${ROUTES.evidence.detail(selectedRef.id)}?startApproval=1`}>
@@ -606,7 +608,7 @@ export function ReferenceDetailSheet({
                       </Link>
                     </Button>
                   ) : null}
-                  {profile.role === 'sales' && selectedRef.status === 'internal_only' ? (
+                  {profileIsSalesRestricted(profile.systemRole, profile.functionRole) && selectedRef.status === 'internal_only' ? (
                     <Button size="sm" variant="outline" asChild>
                       <Link href={`${ROUTES.evidence.detail(selectedRef.id)}?startApproval=1`}>
                         <AppIcon icon={Send} size={16} className="mr-2" />
@@ -614,7 +616,7 @@ export function ReferenceDetailSheet({
                       </Link>
                     </Button>
                   ) : null}
-                  {profile.role === 'admin' && (
+                  {isSystemAdmin(profile.systemRole) && (
                     <Button
                       variant="ghost"
                       size="sm"

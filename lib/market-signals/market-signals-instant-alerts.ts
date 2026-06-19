@@ -2,9 +2,10 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
 import webpush from 'web-push'
 import { ROUTES } from '@/lib/routes'
+import { buildRefstackEmailHtml, getRefstackResendFrom } from '@/lib/email/refstack-email-layout'
 import { getAppOrigin } from '@/lib/env/app-origin'
 import {
-  parseMarketSignalsDigestRole,
+  marketSignalsDigestRoleFromProfile,
   resolveAllowedCompanyIdsForMarketSignals,
   type MarketSignalsDigestExecutive,
   type MarketSignalsDigestNews,
@@ -17,9 +18,7 @@ function getResend(): Resend | null {
 }
 
 function mailFrom(): string {
-  const from = process.env.RESEND_FROM?.trim()
-  if (from) return from
-  return 'Refstack <onboarding@resend.dev>'
+  return getRefstackResendFrom()
 }
 
 let webPushConfigured = false
@@ -98,18 +97,17 @@ function buildInstantEmailHtml(input: {
           )
           .join('')}</ul>`
 
-  return `
-<!DOCTYPE html>
-<html>
-<body style="font-family:system-ui,-apple-system,sans-serif;line-height:1.5;color:#0f172a;">
-  <p style="margin:0 0 8px 0;">Hallo ${escapeHtml(recipientName || 'du')},</p>
-  <p style="margin:0 0 12px 0;font-size:15px;">Es gibt <strong>neue Markt-Signale</strong> für deine priorisierten Accounts.</p>
-  ${newsBlock}
-  ${execBlock}
-  <p style="margin:20px 0 0 0;font-size:14px;"><a href="${signalsUrl}" style="color:#2563eb;">Im Dashboard ansehen</a></p>
-  <p style="margin:16px 0 0 0;font-size:12px;color:#94a3b8;">Sofortbenachrichtigungen kannst du unter Einstellungen › Profil steuern.</p>
-</body>
-</html>`.trim()
+  return buildRefstackEmailHtml({
+    audience: 'internal',
+    badge: 'Markt-Signale',
+    greeting: `Hallo ${escapeHtml(recipientName || 'du')},`,
+    bodyHtml: `<p style="margin:0 0 12px;font-size:15px;">Es gibt <strong>neue Markt-Signale</strong> für deine priorisierten Accounts.</p>
+      ${newsBlock}
+      ${execBlock}`,
+    ctas: [{ label: 'Im Dashboard ansehen', href: signalsUrl }],
+    supplementalHtml:
+      '<p style="margin:16px 0 0;font-size:12px;color:#94a3b8;">Sofortbenachrichtigungen kannst du unter Einstellungen › Profil steuern.</p>',
+  })
 }
 
 /**
@@ -198,7 +196,7 @@ export async function notifyInstantMarketSignalsAfterIngest(
 
     const { data: profiles } = await admin
       .from('profiles')
-      .select('id, role, notification_settings, full_name')
+      .select('id, system_role, function_role, notification_settings, full_name')
       .eq('organization_id', orgIdKey)
 
     const userIds = (profiles ?? []).map((p) => String((p as { id?: string }).id ?? '')).filter(Boolean)
@@ -232,7 +230,7 @@ export async function notifyInstantMarketSignalsAfterIngest(
       const hasSubs = (subsByUser.get(userId)?.length ?? 0) > 0
       if (!wantEmail && !(wantPushPref && hasSubs && pushOk)) continue
 
-      const role = parseMarketSignalsDigestRole((prof as { role?: unknown }).role)
+      const role = marketSignalsDigestRoleFromProfile(prof)
       const allowed = await resolveAllowedCompanyIdsForMarketSignals(admin, orgIdKey, role)
 
       const newsF = content.news.filter((n) => allowed.has(n.companyId))

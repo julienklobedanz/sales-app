@@ -66,10 +66,9 @@ import {
   extractWorkflowHighlightGlossary,
 } from '@/lib/references/reference-context-highlights'
 import { normalizeNarrativeText } from '@/lib/references/narrative-normalize'
-import { getReferenceAssetsImpl } from '@/app/dashboard/references/assets'
+import { getReferenceAssetsImpl } from '@/lib/evidence/assets'
 import { formatProjectEndWithDurationDe } from '@/lib/references/reference-duration-months'
 import { cn } from '@/lib/utils'
-import { legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
 
 export const dynamic = 'force-dynamic'
 
@@ -107,7 +106,7 @@ export default async function EvidenceDetailPage({
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, organization_id, full_name, system_role, function_role, capabilities')
+    .select('organization_id, full_name, system_role, function_role, capabilities')
     .eq('id', user.id)
     .single()
   if (!profile) redirect(ROUTES.onboarding)
@@ -388,10 +387,9 @@ export default async function EvidenceDetailPage({
     ? 'border-amber-200 bg-amber-50 text-amber-900'
     : 'border-border bg-slate-50 text-slate-700'
 
-  const appRole = legacyAppRoleFrom(systemRole, functionRole)
-
   const canStartApproval = canStartApprovalWorkflow({
-    role: appRole,
+    systemRole,
+    functionRole,
     referenceStatus: normalizedStatus,
     internalApprovalStatus: internalApproval,
     customerApprovalStatus: ref.customer_approval_status,

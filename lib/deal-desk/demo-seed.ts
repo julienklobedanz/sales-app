@@ -4,6 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { buildDemoDealDeskAnalysis } from '@/lib/deal-desk/mock-analysis'
 import { defaultWorkspaceState } from '@/lib/deal-desk/workspace-state'
+import { persistNormalizedWorkspace } from '@/lib/deal-desk/workspace-persistence'
 
 export const DEMO_SEED_PROJECT_NAME = 'Cloud Service Provider RFP India'
 export const DEMO_SEED_FILE_NAMES = ['Cloud Service Provider RFP India.pdf']
@@ -28,7 +29,6 @@ export async function seedDealDeskDemoProject(
       analysis_status: 'completed',
       analysis_snapshot: analysis,
       analysis_source: 'mock',
-      workspace_state: workspace,
       win_probability: analysis.winProbability,
     })
     .select('id')
@@ -39,6 +39,7 @@ export async function seedDealDeskDemoProject(
   }
 
   const projectId = data.id as string
+  await persistNormalizedWorkspace(supabase, projectId, organizationId, workspace)
   await supabase.from('deal_desk_documents').insert({
     project_id: projectId,
     organization_id: organizationId,

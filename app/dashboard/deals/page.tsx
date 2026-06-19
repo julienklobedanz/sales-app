@@ -6,6 +6,8 @@ import { getDeals } from './actions'
 import { DealsClientContent } from './deals-client'
 import { getOrganizationCrmConnectionPublicStatus } from '@/lib/crm/connections'
 import { isHubSpotConfigured } from '@/lib/crm/hubspot/config'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
+import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,14 +20,15 @@ export default async function DealsPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('organization_id, role')
+    .select('organization_id, system_role, function_role')
     .eq('id', user.id)
     .single()
 
   const orgId = profile?.organization_id
   if (!orgId) redirect(ROUTES.onboarding)
 
-  const isAdmin = profile.role === 'admin'
+  const { systemRole } = parseProfileRoles(profile)
+  const isAdmin = isSystemAdmin(systemRole)
   const hubspotConfigured = isHubSpotConfigured()
   const hubspotStatus =
     isAdmin

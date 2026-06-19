@@ -1,6 +1,6 @@
 import 'server-only'
 
-import type { PdfOrgBranding } from '@/app/dashboard/references/pdf/types'
+import type { PdfOrgBranding } from '@/lib/evidence/pdf/types'
 import type { PublicPortfolioBranding } from '@/app/p/actions'
 import {
   parsePdfExportSettings,

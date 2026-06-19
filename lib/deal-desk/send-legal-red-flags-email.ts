@@ -2,6 +2,11 @@ import 'server-only'
 
 import { Resend } from 'resend'
 
+import {
+  buildRefstackEmailHtml,
+  escapeRefstackEmailHtml,
+  getRefstackResendFrom,
+} from '@/lib/email/refstack-email-layout'
 import type { DealDeskRedFlag } from '@/lib/deal-desk/mock-analysis'
 import type { DealDeskDocumentRef } from '@/lib/deal-desk/red-flag-document-match'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
@@ -17,16 +22,8 @@ function getResend(): Resend | null {
 }
 
 function getResendFrom(): string | null {
-  const from = process.env.RESEND_FROM?.trim()
+  const from = getRefstackResendFrom()
   return from || null
-}
-
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
 }
 
 function buildLegalEmailHtml(params: {
@@ -42,36 +39,40 @@ function buildLegalEmailHtml(params: {
 
   const flagBlocks = flags
     .map(
-      (f) => `
-    <li style="margin-bottom:16px;">
-      <strong>[${f.severity.toUpperCase()}] ${escapeHtml(f.title)}</strong>
-      ${f.sourceFileName ? `<br/><span style="color:#64748b;font-size:12px;">Quelle: ${escapeHtml(f.sourceFileName)}${f.pageHint ? ` · ${escapeHtml(f.pageHint)}` : ''}</span>` : ''}
-      <p style="margin:8px 0 0;font-size:14px;line-height:1.5;">${escapeHtml(f.excerpt)}</p>
-    </li>`
+      (f) =>
+        `<li style="margin-bottom:12px;"><strong>[${escapeRefstackEmailHtml(f.severity.toUpperCase())}] ${escapeRefstackEmailHtml(f.title)}</strong>${
+          f.sourceFileName
+            ? `<br/><span style="color:#64748b;font-size:12px;">Quelle: ${escapeRefstackEmailHtml(f.sourceFileName)}${f.pageHint ? ` · ${escapeRefstackEmailHtml(f.pageHint)}` : ''}</span>`
+            : ''
+        }<p style="margin:8px 0 0;font-size:14px;line-height:1.5;">${escapeRefstackEmailHtml(f.excerpt)}</p></li>`
     )
     .join('')
 
   const attachmentNote =
     attachedFileNames.length > 0
-      ? `<p style="font-size:13px;"><strong>Angehängte Vertrags-/RFP-Dokumente (${attachedFileNames.length}):</strong><br/>${attachedFileNames.map((n) => escapeHtml(n)).join('<br/>')}</p>`
-      : `<p style="font-size:13px;color:#b45309;">Es konnten keine Dateien aus dem Projekt-Speicher angehängt werden. Bitte die Red-Flag-Passagen unten und ggf. das Deal-Desk-Projekt prüfen.</p>`
+      ? `<p style="margin:0 0 12px;font-size:13px;"><strong>Angehängte Vertrags-/RFP-Dokumente (${attachedFileNames.length}):</strong><br/>${attachedFileNames.map((n) => escapeRefstackEmailHtml(n)).join('<br/>')}</p>`
+      : `<p style="margin:0 0 12px;font-size:13px;color:#b45309;">Es konnten keine Dateien aus dem Projekt-Speicher angehängt werden. Bitte die Red-Flag-Passagen unten und ggf. das Deal-Desk-Projekt prüfen.</p>`
 
   const missingNote =
     missingAttachments.length > 0
-      ? `<p style="font-size:12px;color:#64748b;">Nicht angehängt (zu groß oder nicht ladbar): ${missingAttachments.map(escapeHtml).join(', ')}</p>`
+      ? `<p style="margin:0 0 12px;font-size:12px;color:#64748b;">Nicht angehängt (zu groß oder nicht ladbar): ${missingAttachments.map(escapeRefstackEmailHtml).join(', ')}</p>`
       : ''
 
-  return `
-    <div style="font-family:system-ui,sans-serif;color:#0f172a;max-width:640px;">
-      <p>Hallo,</p>
-      <p>${escapeHtml(senderName ?? 'Ein Kollege')} bittet um Legal-Review für folgende Red Flags im Deal-Desk-Projekt:</p>
-      <p><strong>${escapeHtml(projectName)}</strong><br/>Kunde: ${escapeHtml(customerName)}</p>
+  return buildRefstackEmailHtml({
+    audience: 'internal',
+    badge: 'Legal Review',
+    bodyHtml: `<p style="margin:0 0 16px;">${escapeRefstackEmailHtml(senderName ?? 'Ein Kollege')} bittet um Legal-Review für folgende Red Flags im Deal-Desk-Projekt.</p>
       ${attachmentNote}
       ${missingNote}
-      <ul style="padding-left:18px;">${flagBlocks}</ul>
-      <p style="font-size:12px;color:#64748b;">Intern — keine Weitergabe an Dritte ohne Freigabe.</p>
-    </div>
-  `.trim()
+      <ul style="margin:0;padding-left:18px;">${flagBlocks}</ul>
+      <p style="margin:16px 0 0;font-size:12px;color:#64748b;">Intern — keine Weitergabe an Dritte ohne Freigabe.</p>`,
+    meta: {
+      rows: [
+        { label: 'Projekt', value: projectName },
+        { label: 'Kunde', value: customerName },
+      ],
+    },
+  })
 }
 
 export type SendLegalRedFlagsEmailParams = {

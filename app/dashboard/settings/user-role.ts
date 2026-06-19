@@ -6,11 +6,7 @@ import { ROUTES } from '@/lib/routes'
 import { legacyRoleToDimensions } from '@/lib/roles/legacy-mapping'
 import type { AppRole } from '@/lib/roles/types'
 
-/**
- * Transitorisch bis Welle 5 (Entfernung von `profiles.role`).
- * Setzt `system_role` + `function_role`; Legacy-Spalte `role` bleibt per DB-Trigger synchron.
- * Kein separater Rollen-Pfad — Mapping identisch zu Invite-/Profil-Dimensionen.
- */
+/** Profil-Rolle: nur noch system_role + function_role (UI nutzt weiter Legacy-Labels admin/sales). */
 export async function updateUserRoleImpl(legacyRole: Extract<AppRole, 'admin' | 'sales'>) {
   const supabase = await createServerSupabaseClient()
   const {
@@ -24,7 +20,6 @@ export async function updateUserRoleImpl(legacyRole: Extract<AppRole, 'admin' | 
   const { error } = await supabase
     .from('profiles')
     .update({
-      role: legacyRole,
       system_role: dims.systemRole,
       function_role: dims.functionRole,
     })

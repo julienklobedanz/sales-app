@@ -22,6 +22,11 @@ import {
   userCanCreateReference,
 } from "@/lib/roles/reference-access"
 import {
+  matchesReferenceVolumeFilter,
+  type ReferenceVolumeFilter,
+} from "@/lib/references/reference-volume-filter"
+import { ReferenceVolumeFilterMenu } from "@/components/references/reference-volume-filter-menu"
+import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
@@ -62,6 +67,7 @@ export function EvidenceClient({
 
   const [query, setQuery] = React.useState("")
   const [status, setStatus] = React.useState<StatusFilter>("all")
+  const [volumeFilter, setVolumeFilter] = React.useState<ReferenceVolumeFilter>("all")
   const [selectedIds, setSelectedIds] = React.useState<string[]>([])
 
   const filtered = React.useMemo(() => {
@@ -69,12 +75,13 @@ export function EvidenceClient({
     return references.filter((r) => {
       if (!isReferenceVisibleToSales(r.status) && isSales) return false
       if (status !== "all" && r.status !== status) return false
+      if (!matchesReferenceVolumeFilter(r.volume_eur, volumeFilter)) return false
       if (!q) return true
       return normalizeHaystack(r).includes(q)
     })
-  }, [references, query, status])
+  }, [references, query, status, volumeFilter, isSales])
 
-  const emptyText = query.trim() || status !== "all"
+  const emptyText = query.trim() || status !== "all" || volumeFilter !== "all"
     ? "Keine Referenzen für deine Filter gefunden."
     : "Keine Referenzen vorhanden."
 
@@ -176,6 +183,21 @@ export function EvidenceClient({
                         {opt.label}
                       </DropdownMenuCheckboxItem>
                     ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="toolbar"
+                      className={volumeFilter !== 'all' ? 'bg-primary/10 text-primary hover:bg-primary/10' : 'hover:bg-muted/70'}
+                    >
+                      Volumen
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-56 p-1">
+                    <ReferenceVolumeFilterMenu value={volumeFilter} onChange={setVolumeFilter} />
                   </DropdownMenuContent>
                 </DropdownMenu>
               </>

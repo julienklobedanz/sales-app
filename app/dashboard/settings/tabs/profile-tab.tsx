@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { TabsContent } from '@/components/ui/tabs'
@@ -20,6 +21,7 @@ import { Trash2 } from '@hugeicons/core-free-icons'
 import { SettingsProfileCard } from '../settings-profile-card'
 import { SettingsTotpMfaCard } from '@/components/dashboard/SettingsTotpMfaCard'
 import { DIGEST_TIMEZONE_OPTIONS } from '@/lib/market-signals/digest-schedule'
+import { ROUTES } from '@/lib/routes'
 import { changeOwnPassword } from '../actions'
 import { MarketSignalsPushCard } from '../market-signals-push-card'
 import { updateProfileNotificationSettings } from '../settings-consolidation-actions'
@@ -252,6 +254,11 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
               </div>
             </div>
             <MarketSignalsPushCard />
+            <p className="mt-4 text-sm text-muted-foreground">
+              <Link href={ROUTES.marketSignalsManage} className="text-primary hover:underline">
+                Watchlist &amp; Stakeholder verwalten
+              </Link>
+            </p>
           </CardContent>
         </div>
         <div className={SETTINGS_CARD_CLASS}>

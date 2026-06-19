@@ -5,7 +5,7 @@ import {
   buildMarketSignalsDigestEmailHtml,
   buildMarketSignalsEmptyDigestEmailHtml,
   loadMarketSignalsDigestForUser,
-  parseMarketSignalsDigestRole,
+  marketSignalsDigestRoleFromProfile,
 } from '@/lib/market-signals/market-signals-digest'
 import {
   DIGEST_SEND_WINDOW_MINUTES,
@@ -16,6 +16,7 @@ import {
 } from '@/lib/market-signals/digest-schedule'
 import { ROUTES } from '@/lib/routes'
 import { getAppOrigin } from '@/lib/env/app-origin'
+import { getRefstackResendFrom } from '@/lib/email/refstack-email-layout'
 
 export const maxDuration = 300
 
@@ -26,9 +27,7 @@ function getResend(): Resend | null {
 }
 
 function digestFromAddress(): string {
-  const from = process.env.RESEND_FROM?.trim()
-  if (from) return from
-  return 'Refstack <onboarding@resend.dev>'
+  return getRefstackResendFrom()
 }
 
 function wantsDailyDigest(raw: unknown): boolean {
@@ -98,7 +97,7 @@ export async function GET(request: Request) {
 
   const { data: profileRows, error: profErr } = await admin
     .from('profiles')
-    .select('id, organization_id, role, notification_settings, full_name')
+    .select('id, organization_id, system_role, function_role, notification_settings, full_name')
     .not('organization_id', 'is', null)
 
   if (profErr) {
@@ -150,7 +149,7 @@ export async function GET(request: Request) {
       continue
     }
 
-    const role = parseMarketSignalsDigestRole((row as { role?: unknown }).role)
+    const role = marketSignalsDigestRoleFromProfile(row)
 
     const { news, executives } = await loadMarketSignalsDigestForUser(admin, {
       organizationId: orgId,

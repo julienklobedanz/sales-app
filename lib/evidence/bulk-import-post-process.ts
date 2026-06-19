@@ -5,6 +5,8 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { applyBulkImportExtractionFromBuffer } from '@/lib/references/bulk-import-extraction-apply'
 import type { BulkImportExtractionResult } from '@/lib/references/bulk-import-review-types'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
+import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
 
 /**
  * Fallback: Extraktion aus Storage (wenn keine Datei mehr im Browser verfügbar).
@@ -23,11 +25,12 @@ export async function runBulkImportExtractionForReference(
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, organization_id')
+    .select('system_role, function_role, organization_id')
     .eq('id', user.id)
     .single()
 
-  if (profile?.role !== 'admin') {
+  const { systemRole } = parseProfileRoles(profile)
+  if (!isSystemAdmin(systemRole)) {
     return { success: false, error: 'Nur Admins können den Import abschließen.' }
   }
   const organizationId = profile?.organization_id ?? null

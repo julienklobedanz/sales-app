@@ -32,6 +32,40 @@ export type DealRow = {
   best_match_score: number | null
 }
 
+/**
+ * Guardrail (Welle 4a / F2): `deals` bleibt ein schlanker Match-Kontext — kein CRM-Nachzug.
+ * Kein Forecast, Aktivitäten-Log oder Kontakt-CRM in dieser Tabelle.
+ * @see docs/arbeitspaket-deal-desk-reife-welle-4a.md
+ */
+export const DEAL_TABLE_ALLOWED_COLUMNS = [
+  'id',
+  'organization_id',
+  'title',
+  'company_id',
+  'industry',
+  'volume',
+  'status',
+  'expiry_date',
+  'requirements_text',
+  'account_manager_id',
+  'sales_manager_id',
+  'is_public',
+  'incumbent_provider',
+  'created_at',
+  'updated_at',
+  'created_by',
+] as const
+
+/** UI-/Join-Felder von `DealRow` — nicht als DB-Spalten anlegen. */
+export const DEAL_ROW_DERIVED_FIELDS = [
+  'company_name',
+  'company_logo_url',
+  'account_manager_name',
+  'sales_manager_name',
+  'linked_refs',
+  'best_match_score',
+] as const
+
 export type DealWithReferences = DealRow & {
   references: Array<{
     id: string

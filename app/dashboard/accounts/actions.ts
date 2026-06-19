@@ -11,6 +11,8 @@ import {
 import type { PartnerCategory } from '@/lib/accounts/company-entity'
 import { enrichBulkImportRowFromBrandfetch } from '@/lib/accounts/resolve-company-for-import'
 import { formatIndustryDisplay, resolveIndustryId } from '@/lib/constants/industries'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
+import { profileIsSalesRestricted } from '@/lib/roles/profile-guards'
 
 export type { CompanyAccountStatusValue } from '@/lib/accounts/company-account-status'
 
@@ -584,12 +586,12 @@ export async function setCompanyInternalReferenceApprovalContact(
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('organization_id, role')
+    .select('organization_id, system_role, function_role')
     .eq('id', user.id)
     .single()
   if (!profile?.organization_id) return { success: false, error: 'Onboarding unvollständig.' }
-  const role = String((profile as { role?: string }).role ?? '')
-  if (role === 'sales') return { success: false, error: 'Keine Berechtigung.' }
+  const { systemRole, functionRole } = parseProfileRoles(profile)
+  if (profileIsSalesRestricted(systemRole, functionRole)) return { success: false, error: 'Keine Berechtigung.' }
 
   const { data: company, error: cErr } = await supabase
     .from('companies')
@@ -868,11 +870,12 @@ export async function createCompany(payload: {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('organization_id, role')
+    .select('organization_id, system_role, function_role')
     .eq('id', user.id)
     .single()
   if (!profile?.organization_id) return { success: false, error: 'Onboarding unvollständig.' }
-  if (profile.role === 'sales') return { success: false, error: 'Keine Berechtigung.' }
+  const { systemRole, functionRole } = parseProfileRoles(profile)
+  if (profileIsSalesRestricted(systemRole, functionRole)) return { success: false, error: 'Keine Berechtigung.' }
 
   const name = payload.name.trim()
   if (!name) return { success: false, error: 'Name ist erforderlich.' }
@@ -920,11 +923,12 @@ export async function createPartner(payload: {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('organization_id, role')
+    .select('organization_id, system_role, function_role')
     .eq('id', user.id)
     .single()
   if (!profile?.organization_id) return { success: false, error: 'Onboarding unvollständig.' }
-  if (profile.role === 'sales') return { success: false, error: 'Keine Berechtigung.' }
+  const { systemRole, functionRole } = parseProfileRoles(profile)
+  if (profileIsSalesRestricted(systemRole, functionRole)) return { success: false, error: 'Keine Berechtigung.' }
 
   const name = payload.name.trim()
   if (!name) return { success: false, error: 'Name ist erforderlich.' }
@@ -1010,13 +1014,14 @@ export async function bulkCreateCompaniesFromSheet(
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('organization_id, role')
+    .select('organization_id, system_role, function_role')
     .eq('id', user.id)
     .single()
   if (!profile?.organization_id) {
     return { success: false, createdCount: 0, skippedCount: 0, failedCount: 0, error: 'Onboarding unvollständig.' }
   }
-  if (profile.role === 'sales') {
+  const { systemRole, functionRole } = parseProfileRoles(profile)
+  if (profileIsSalesRestricted(systemRole, functionRole)) {
     return { success: false, createdCount: 0, skippedCount: 0, failedCount: 0, error: 'Keine Berechtigung.' }
   }
 
@@ -1136,11 +1141,12 @@ export async function updateCompany(payload: {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('organization_id, role')
+    .select('organization_id, system_role, function_role')
     .eq('id', user.id)
     .single()
   if (!profile?.organization_id) return { success: false, error: 'Onboarding unvollständig.' }
-  if (profile.role === 'sales') return { success: false, error: 'Keine Berechtigung.' }
+  const { systemRole, functionRole } = parseProfileRoles(profile)
+  if (profileIsSalesRestricted(systemRole, functionRole)) return { success: false, error: 'Keine Berechtigung.' }
 
   const name = payload.name.trim()
   if (!name) return { success: false, error: 'Name ist erforderlich.' }

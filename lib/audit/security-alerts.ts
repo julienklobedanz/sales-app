@@ -2,6 +2,11 @@
 
 import { Resend } from 'resend'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import {
+  buildRefstackEmailHtml,
+  escapeRefstackEmailHtml,
+  getRefstackResendFrom,
+} from '@/lib/email/refstack-email-layout'
 
 type AlertContext = {
   orgId: string
@@ -17,9 +22,7 @@ function getResend(): Resend | null {
 }
 
 function fromAddress(): string {
-  const from = process.env.RESEND_FROM?.trim()
-  if (from) return from
-  return 'Refstack Security <security@resend.dev>'
+  return getRefstackResendFrom()
 }
 
 async function shouldSend(
@@ -84,7 +87,7 @@ export async function maybeSendSecurityAlertMail(ctx: AlertContext): Promise<voi
         .from('profiles')
         .select('email, full_name')
         .eq('organization_id', ctx.orgId)
-        .eq('role', 'admin'),
+        .in('system_role', ['owner', 'admin']),
     ])
 
     const failedCount = failedCountRes.count ?? 0
@@ -116,18 +119,17 @@ export async function maybeSendSecurityAlertMail(ctx: AlertContext): Promise<voi
       from: fromAddress(),
       to: recipients,
       subject,
-      html: `
-        <div style="font-family: Inter, system-ui, -apple-system, Segoe UI, sans-serif; line-height:1.5;">
-          <h2 style="margin:0 0 12px;">Security Alert</h2>
-          <p style="margin:0 0 10px;">${body}</p>
+      html: buildRefstackEmailHtml({
+        audience: 'internal',
+        badge: 'Security Alert',
+        bodyHtml: `<p style="margin:0 0 12px;">${escapeRefstackEmailHtml(body)}</p>
           <ul style="margin:0 0 12px 20px;padding:0;">
             <li>unlock_failed (15m): ${failedCount}</li>
             <li>unlock_rate_limited (15m): ${rateLimitedCount}</li>
-            <li>workspace: ${orgName}</li>
+            <li>workspace: ${escapeRefstackEmailHtml(orgName)}</li>
           </ul>
-          <p style="margin:0;color:#64748b;">Bitte im Workspace unter Einstellungen → Workspace → Audit Log prüfen.</p>
-        </div>
-      `,
+          <p style="margin:0;color:#64748b;">Bitte im Workspace unter Einstellungen → Workspace → Audit Log prüfen.</p>`,
+      }),
     })
 
     await markSent(supabase, ctx.orgId, alertKey)

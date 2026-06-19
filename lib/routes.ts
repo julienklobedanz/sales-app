@@ -43,7 +43,9 @@ export const ROUTES = {
     edit: (id: string) => `/dashboard/evidence/${id}/edit`,
   },
   marketSignals: '/dashboard/market-signals',
-  marketSignalsManage: '/dashboard/market-signals/manage',
+  /** Watchlist & Stakeholder-Überwachung (ehem. /dashboard/market-signals/manage). */
+  marketSignalsManage: '/dashboard/settings/market-signals',
+  insights: '/dashboard/insights',
   dealDesk: '/dashboard/deal-desk',
   dealDeskProject: (projectId: string) =>
     `/dashboard/deal-desk?project=${encodeURIComponent(projectId)}`,
@@ -52,7 +54,8 @@ export const ROUTES = {
   matchWithDeal: (dealId: string) =>
     `/dashboard/match?deal=${encodeURIComponent(dealId)}`,
   settings: '/dashboard/settings',
-  request: '/dashboard/request',
+  /** Referenzanfrage (Deal-Kontext); Legacy `/dashboard/request` leitet hierher. */
+  request: '/dashboard/deals/request/new',
 } as const
 
 /**
@@ -68,6 +71,11 @@ export const LEGACY_REDIRECTS = [
   { source: '/dashboard/companies/:path*', destination: '/dashboard/accounts/:path*', permanent: true },
   { source: '/dashboard/new', destination: ROUTES.evidence.new, permanent: true },
   { source: '/dashboard/edit/:id', destination: '/dashboard/evidence/:id/edit', permanent: true },
+  // Alte Concept-URL (W3); Lesezeichen weiter auf Evidence leiten
   { source: '/dashboard/concepts/inbox-references', destination: ROUTES.evidence.root, permanent: true },
-  { source: '/dashboard/deal-desk', destination: ROUTES.deals.root, permanent: false },
+  { source: '/dashboard/request', destination: ROUTES.request, permanent: true },
+  // Ehemalige Marktsignale-manage-URL (W4c) → Settings
+  { source: '/dashboard/market-signals/manage', destination: ROUTES.marketSignalsManage, permanent: true },
+  { source: '/dashboard/market-signals/:path*', destination: ROUTES.accounts, permanent: false },
+  { source: '/dashboard/market-signals', destination: ROUTES.accounts, permanent: false },
 ] as const

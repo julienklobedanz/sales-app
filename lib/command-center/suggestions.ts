@@ -1,4 +1,5 @@
 import type { AppRole } from '@/hooks/useRole'
+import { commandCenterSuggestionsBranch } from '@/lib/roles/legacy-mapping'
 
 export type CommandCenterSuggestion = {
   label: string
@@ -57,8 +58,9 @@ const ACCOUNT_MANAGER_SUGGESTIONS: CommandCenterSuggestion[] = [
 ]
 
 export function commandCenterSuggestionsForRole(role: AppRole): CommandCenterSuggestion[] {
-  if (role === 'admin') return ADMIN_SUGGESTIONS
-  if (role === 'account_manager') return ACCOUNT_MANAGER_SUGGESTIONS
+  const branch = commandCenterSuggestionsBranch(role)
+  if (branch === 'admin') return ADMIN_SUGGESTIONS
+  if (branch === 'account_manager') return ACCOUNT_MANAGER_SUGGESTIONS
   return SALES_SUGGESTIONS
 }
 

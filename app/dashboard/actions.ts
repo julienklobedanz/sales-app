@@ -1,6 +1,6 @@
 'use server'
 
-import { toggleFavoriteImpl } from '@/app/dashboard/references/favorites'
+import { toggleFavoriteImpl } from '@/lib/evidence/favorites'
 import {
   submitForApprovalImpl,
   resendClientApprovalEmailImpl,
@@ -11,49 +11,49 @@ import {
   getApprovalLinkImpl,
   withdrawApprovalRequestImpl,
   type ApproveInternalRecipientOptions,
-} from '@/app/dashboard/references/approvals'
-import type { SubmitForApprovalOptions } from '@/app/dashboard/references/approval-submit-types'
-import { getPendingClientApprovalsImpl } from '@/app/dashboard/references/pending-approvals'
+} from '@/lib/evidence/approvals'
+import type { SubmitForApprovalOptions } from '@/lib/evidence/approval-submit-types'
+import { getPendingClientApprovalsImpl } from '@/lib/evidence/pending-approvals'
 import { getInboxNotificationsImpl } from '@/app/dashboard/notifications/inbox'
 import {
   markNotificationReadImpl,
   markAllNotificationsReadImpl,
 } from '@/app/dashboard/notifications/read-actions'
 import type { AppRole } from '@/hooks/useRole'
-import { getContactOptionsForReferenceImpl } from '@/app/dashboard/references/approval-contacts'
-import { getCompetitorSuggestionsImpl, getIncumbentSuggestionsImpl } from '@/app/dashboard/references/suggestions'
-import { getRequestsImpl, reviewRequestImpl } from '@/app/dashboard/references/approval-requests'
+import { getContactOptionsForReferenceImpl } from '@/lib/evidence/approval-contacts'
+import { getCompetitorSuggestionsImpl, getIncumbentSuggestionsImpl } from '@/lib/evidence/suggestions'
+import { getRequestsImpl, reviewRequestImpl } from '@/lib/evidence/approval-requests'
 import {
   cleanupCompanyDomainNamesImpl,
   mergeDuplicateCompaniesImpl,
 } from '@/app/dashboard/accounts/maintenance'
 import { updateUserRoleImpl } from '@/app/dashboard/settings/user-role'
-import { matchReferencesImpl } from '@/app/dashboard/references/match'
-import { getDashboardDataImpl, getDeletedReferencesImpl } from '@/app/dashboard/references/dashboard'
+import { matchReferencesImpl } from '@/lib/evidence/match'
+import { getDashboardDataImpl, getDeletedReferencesImpl } from '@/lib/evidence/dashboard'
 import {
   deleteReferenceImpl,
   emptyTrashImpl,
   hardDeleteReferenceImpl,
   restoreReferenceImpl,
-} from '@/app/dashboard/references/trash'
+} from '@/lib/evidence/trash'
 import {
   createSharedPortfolioImpl,
   getExistingShareForReferenceImpl,
   getReferencesByIdsImpl,
   resetSharedPortfolioManageTokenImpl,
   updateShareLinkSecurityByReferenceImpl,
-} from '@/app/dashboard/references/sharing'
+} from '@/lib/evidence/sharing'
 import {
   getReferenceAssetsImpl,
   updateReferenceAssetCategoryImpl,
-} from '@/app/dashboard/references/assets'
+} from '@/lib/evidence/assets'
 import type { SubmitTicketResult } from '@/app/dashboard/support/tickets'
 import { submitTicketImpl } from '@/app/dashboard/support/tickets'
-import { updateReferenceImpl } from '@/app/dashboard/references/update'
-import { updateReferenceDetailFieldsImpl } from '@/app/dashboard/references/detail-fields'
-import { bulkCreateReferencesFromFilesImpl } from '@/app/dashboard/references/bulk-import'
-import { generateSummaryFromStoryImpl } from '@/app/dashboard/references/summary'
-import { recordKiEntwurfGenerated as recordKiEntwurfGeneratedImpl } from '@/app/dashboard/references/ki-entwurf-log'
+import { updateReferenceImpl } from '@/lib/evidence/update'
+import { updateReferenceDetailFieldsImpl } from '@/lib/evidence/detail-fields'
+import { bulkCreateReferencesFromFilesImpl } from '@/lib/evidence/bulk-import'
+import { generateSummaryFromStoryImpl } from '@/lib/evidence/summary'
+import { recordKiEntwurfGenerated as recordKiEntwurfGeneratedImpl } from '@/lib/evidence/ki-entwurf-log'
 
 export type ReferenceRow = {
   id: string
@@ -308,7 +308,7 @@ export async function approveInternalAndSend(referenceId: string, recipient?: Ap
 export type {
   ApproveInternalAndSendResult,
   ApproveInternalRecipientOptions,
-} from '@/app/dashboard/references/approvals'
+} from '@/lib/evidence/approvals'
 
 export async function getApprovalLink(referenceId: string) {
   return getApprovalLinkImpl(referenceId)
@@ -323,7 +323,7 @@ export async function getContactOptionsForReference(referenceId: string) {
 }
 
 export type { DashboardNotificationItem } from '@/app/dashboard/notifications/inbox'
-export type { PendingClientApprovalRow } from '@/app/dashboard/references/pending-approvals'
+export type { PendingClientApprovalRow } from '@/lib/evidence/pending-approvals'
 
 export async function getInboxNotificationsForLayout(userId: string, role: AppRole) {
   return getInboxNotificationsImpl(userId, role)

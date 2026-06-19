@@ -1,5 +1,7 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import type { SupabaseClient, User } from '@supabase/supabase-js'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
+import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
 
 export type CrmAdminContext = {
   supabase: SupabaseClient
@@ -24,7 +26,7 @@ export async function requireCrmAdmin(): Promise<CrmAdminGuardResult> {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('organization_id, role')
+    .select('organization_id, system_role, function_role')
     .eq('id', user.id)
     .single()
 
@@ -32,7 +34,8 @@ export async function requireCrmAdmin(): Promise<CrmAdminGuardResult> {
     return { ok: false, error: 'Onboarding unvollständig.', status: 403 }
   }
 
-  if (profile.role !== 'admin') {
+  const { systemRole } = parseProfileRoles(profile)
+  if (!isSystemAdmin(systemRole)) {
     return {
       ok: false,
       error: 'Nur Administratoren können CRM-Verbindungen verwalten.',

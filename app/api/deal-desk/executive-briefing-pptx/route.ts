@@ -4,7 +4,9 @@ import { buildExecutiveBriefingPptxBuffer } from '@/lib/deal-desk/executive-brie
 import { resolveExecutiveBriefingPptxData } from '@/lib/deal-desk/resolve-executive-briefing-pptx-data'
 import type { DealDeskMockAnalysis } from '@/lib/deal-desk/mock-analysis'
 import type { DealDeskRedFlag } from '@/lib/deal-desk/mock-analysis'
-import { parseWorkspaceState } from '@/lib/deal-desk/workspace-state'
+import { defaultWorkspaceState } from '@/lib/deal-desk/workspace-state'
+import { mergeWorkspaceWithNormalizedOverlay } from '@/lib/deal-desk/workspace-merge'
+import { loadNormalizedWorkspaceOverlay } from '@/lib/deal-desk/workspace-persistence'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
@@ -51,7 +53,7 @@ export async function GET(req: NextRequest) {
 
   const { data: project, error } = await supabase
     .from('deal_desk_projects')
-    .select('id, project_name, customer_name, analysis_snapshot, workspace_state')
+    .select('id, project_name, customer_name, analysis_snapshot')
     .eq('id', projectId)
     .eq('organization_id', profile.organization_id)
     .maybeSingle()
@@ -65,7 +67,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Keine Analyse-Daten für dieses Projekt.' }, { status: 422 })
   }
 
-  const workspace = parseWorkspaceState(project.workspace_state, analysis.redFlags ?? [])
+  const overlay = await loadNormalizedWorkspaceOverlay(supabase, projectId, profile.organization_id)
+  const baseWorkspace = defaultWorkspaceState(analysis.redFlags ?? [])
+  const workspace = mergeWorkspaceWithNormalizedOverlay(baseWorkspace, overlay, baseWorkspace.smeCustomExperts)
   const redFlags: DealDeskRedFlag[] =
     workspace.redFlags.length > 0 ? workspace.redFlags : (analysis.redFlags ?? [])
 

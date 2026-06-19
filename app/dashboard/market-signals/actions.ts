@@ -14,6 +14,14 @@ import { notifyInstantMarketSignalsAfterIngest } from '@/lib/market-signals/mark
 import { ROUTES } from '@/lib/routes'
 import { writeAuditLog } from '@/lib/audit/log-audit'
 import { Resend } from 'resend'
+import {
+  buildRefstackEmailHtml,
+  buildReferenceMetaRows,
+  getRefstackResendFrom,
+} from '@/lib/email/refstack-email-layout'
+import { getAppOrigin } from '@/lib/env/app-origin'
+import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
 
 function normalizeChampionKey(raw: string) {
   return raw.trim().toLowerCase().replace(/\s+/g, ' ')
@@ -523,16 +531,12 @@ export async function triggerMarketSignalsIngestForMyOrg(args?: {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('organization_id, role')
+    .select('organization_id, system_role, function_role')
     .eq('id', user.id)
     .maybeSingle()
 
   const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
-  const role = String((profile as { role?: string | null } | null)?.role ?? '')
   if (!orgId) return { success: false, error: 'Keine Organisation gefunden.' }
-  if (role !== 'admin' && role !== 'account_manager' && role !== 'sales') {
-    return { success: false, error: 'Signale abrufen ist für Admin, Account Manager und Sales verfügbar.' }
-  }
   const ingestMode: 'all_accounts' | 'focus_only' = args?.ingestMode ?? 'focus_only'
   const refreshFeeds = args?.refreshFeeds === true
 
@@ -635,16 +639,12 @@ export async function backfillMarketSignalEnrichmentForMyOrg(args?: {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('organization_id, role')
+    .select('organization_id, system_role, function_role')
     .eq('id', user.id)
     .maybeSingle()
 
   const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
-  const role = String((profile as { role?: string | null } | null)?.role ?? '')
   if (!orgId) return { success: false, error: 'Keine Organisation gefunden.' }
-  if (role !== 'admin' && role !== 'account_manager' && role !== 'sales') {
-    return { success: false, error: 'Insights nachladen ist für Admin, Account Manager und Sales verfügbar.' }
-  }
 
   const admin = createServiceRoleSupabaseClient()
   if (!admin) {
@@ -695,7 +695,7 @@ export async function requestReferenceApprovalForSignal(args: {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('organization_id, role')
+    .select('organization_id')
     .eq('id', user.id)
     .maybeSingle()
   const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
@@ -713,18 +713,20 @@ export async function requestReferenceApprovalForSignal(args: {
   })
 
   const resendKey = process.env.RESEND_API_KEY?.trim()
-  const resendFrom = process.env.RESEND_FROM?.trim()
   const admin = createServiceRoleSupabaseClient()
-  if (!resendKey || !resendFrom || !admin) return { success: true }
+  if (!resendKey || !admin) return { success: true }
 
   try {
     const { data: recipients } = await supabase
       .from('profiles')
-      .select('id, role')
+      .select('id, system_role, function_role')
       .eq('organization_id', orgId)
-      .in('role', ['admin', 'account_manager'])
 
     const ids = (recipients ?? [])
+      .filter((r) => {
+        const { systemRole, functionRole } = parseProfileRoles(r)
+        return isSystemAdmin(systemRole) || functionRole === 'account_manager'
+      })
       .map((r) => String((r as { id?: string | null }).id ?? ''))
       .filter(Boolean)
     if (!ids.length) return { success: true }
@@ -737,11 +739,20 @@ export async function requestReferenceApprovalForSignal(args: {
     if (!emails.length) return { success: true }
 
     const resend = new Resend(resendKey)
+    const detailUrl = `${getAppOrigin()}${ROUTES.evidence.detail(referenceId)}`
+    const html = buildRefstackEmailHtml({
+      audience: 'internal',
+      badge: 'Freigabe angefragt',
+      bodyHtml:
+        '<p style="margin:0;">Aus den Market Signals wurde eine Freigabe für diese Referenz angefragt.</p>',
+      meta: { rows: buildReferenceMetaRows(args.referenceTitle, args.companyName) },
+      ctas: [{ label: 'Referenz öffnen', href: detailUrl }],
+    })
     await resend.emails.send({
-      from: resendFrom,
+      from: getRefstackResendFrom(),
       to: emails,
       subject: `Freigabe angefragt: ${args.referenceTitle}`,
-      html: `<p>Für die Referenz <strong>${args.referenceTitle}</strong> (${args.companyName}) wurde aus den Market Signals eine Freigabe angefragt.</p>`,
+      html,
     })
   } catch (e) {
     console.error('[requestReferenceApprovalForSignal]', e)

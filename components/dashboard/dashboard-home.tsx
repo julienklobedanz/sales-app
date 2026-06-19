@@ -5,7 +5,8 @@ import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { CheckCircle2, Circle, HelpCircle, X } from 'lucide-react'
 
-import { CommandCenter } from '@/components/dashboard/command-center'
+import { RoleHomeDashboard, type RoleHomeDashboardPayload } from '@/components/dashboard/role-home-dashboard'
+import type { FunctionRole } from '@/lib/roles/capabilities'
 import { Button } from '@/components/ui/button'
 import { ROUTES } from '@/lib/routes'
 import { cn } from '@/lib/utils'
@@ -45,7 +46,7 @@ const STEPS: StepDef[] = [
   {
     id: 'hasMarketSignals',
     label: '4. Live-Infos über deine Zielkunden: Sieh jetzt nach, was passiert.',
-    href: ROUTES.marketSignals,
+    href: ROUTES.accounts,
   },
 ]
 
@@ -60,6 +61,8 @@ type DashboardHomeProps = {
   isBrandNew: boolean
   userRegisteredAt: string
   progress: FirstStepsProgress
+  dashboardPayload: RoleHomeDashboardPayload
+  functionRole: FunctionRole
 }
 
 export function DashboardHome({
@@ -67,6 +70,8 @@ export function DashboardHome({
   isBrandNew,
   userRegisteredAt,
   progress,
+  dashboardPayload,
+  functionRole,
 }: DashboardHomeProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -136,7 +141,13 @@ export function DashboardHome({
         />
       ) : null}
 
-      {showCommandCenter ? <CommandCenter greetingName={greetingName} /> : null}
+      {showCommandCenter ? (
+        <RoleHomeDashboard
+          payload={dashboardPayload}
+          greetingName={greetingName}
+          functionRole={functionRole}
+        />
+      ) : null}
 
       {showFloatingHelp && !helpExpanded ? (
         <Button

@@ -21,7 +21,6 @@ import { FilterMenuCheckboxOption } from '@/components/table/filter-menu-checkbo
 import { COPY } from '@/lib/copy'
 import { AppIcon } from '@/lib/icons'
 import { cn } from '@/lib/utils'
-import { FileText } from '@hugeicons/core-free-icons'
 import {
   CirclePlus,
   Filter,
@@ -29,10 +28,12 @@ import {
   TrendingUp,
   UploadIcon,
 } from '@hugeicons/core-free-icons'
-import { Eye, EyeOff, Lock } from 'lucide-react'
-
+import { Banknote, Eye, EyeOff } from 'lucide-react'
+import { ReferenceVolumeFilterMenu } from '@/components/references/reference-volume-filter-menu'
+import type { ReferenceVolumeFilter } from '@/lib/references/reference-volume-filter'
 import { ReferenceLayoutSwitch, type ReferenceLayoutMode } from './reference-layout-switch'
 import type { EvidenceLibraryMode } from './reference-library-switch'
+import { EVIDENCE_PROOF_SEGMENT_LABELS } from '@/lib/evidence/evidence-library-mode'
 
 /** Entfernt Elemente aus dem Flex-Layout (Zertifikatsmodus), ohne die rechte Button-Gruppe zu verschieben. */
 const SLOT_COLLAPSED = 'pointer-events-none m-0 w-0 min-w-0 max-w-0 overflow-hidden border-0 p-0 opacity-0'
@@ -42,52 +43,10 @@ const TOOLBAR_ICON_CLASS = 'shrink-0 text-muted-foreground'
 const PRIMARY_CTA_CLASS =
   'h-10 min-w-[12.5rem] shrink-0 justify-center gap-1.5 rounded-lg bg-gradient-to-b from-blue-600 to-blue-700 px-3 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] hover:from-blue-600 hover:to-blue-700/95'
 
-function EvidenceLibraryModeSwitch({
-  value,
-  onChange,
-}: {
-  value: EvidenceLibraryMode
-  onChange: (value: EvidenceLibraryMode) => void
-}) {
-  const isCertificates = value === 'certificates'
-  const label = isCertificates ? 'Zertifikatsdatenbank' : 'Referenzen-Datenbank'
-
-  return (
-    <AccountsToolbarTooltip label={label}>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={isCertificates}
-        aria-label={
-          isCertificates
-            ? 'Zur Referenzen-Datenbank wechseln'
-            : 'Zur Zertifikatsdatenbank wechseln'
-        }
-        onClick={() => onChange(isCertificates ? 'references' : 'certificates')}
-        className="relative inline-flex h-8 w-[3.25rem] shrink-0 cursor-pointer items-center rounded-full border border-border/80 bg-muted/50 p-0.5 transition-colors hover:bg-muted/70"
-      >
-        <span
-          className={cn(
-            'flex size-7 items-center justify-center rounded-full bg-background shadow-sm transition-transform duration-200 ease-out',
-            isCertificates ? 'translate-x-[1.125rem]' : 'translate-x-0'
-          )}
-        >
-          {isCertificates ? (
-            <Lock className="size-3.5 text-muted-foreground" aria-hidden />
-          ) : (
-            <AppIcon icon={FileText} size={14} className={TOOLBAR_ICON_CLASS} />
-          )}
-        </span>
-      </button>
-    </AccountsToolbarTooltip>
-  )
-}
-
 type ColumnKey = string
 
 type Props = {
   libraryMode: EvidenceLibraryMode
-  onLibraryModeChange: (mode: EvidenceLibraryMode) => void
   referenceLayout: ReferenceLayoutMode
   onReferenceLayoutChange: (mode: ReferenceLayoutMode) => void
   searchValue: string
@@ -97,6 +56,8 @@ type Props = {
   onFavoritesOnlyChange: (value: boolean) => void
   statusFilter: string
   onStatusFilterChange: (value: string) => void
+  volumeFilter: ReferenceVolumeFilter
+  onVolumeFilterChange: (value: ReferenceVolumeFilter) => void
   statusOptions: string[]
   statusLabels: Record<string, string>
   columnOrder: ColumnKey[]
@@ -116,7 +77,6 @@ type Props = {
 
 export function EvidenceLibraryToolbar({
   libraryMode,
-  onLibraryModeChange,
   referenceLayout,
   onReferenceLayoutChange,
   searchValue,
@@ -126,6 +86,8 @@ export function EvidenceLibraryToolbar({
   onFavoritesOnlyChange,
   statusFilter,
   onStatusFilterChange,
+  volumeFilter,
+  onVolumeFilterChange,
   statusOptions,
   statusLabels,
   columnOrder,
@@ -223,6 +185,29 @@ export function EvidenceLibraryToolbar({
                   )
                 })}
               </div>
+            </PopoverContent>
+          </Popover>
+
+          <Popover>
+            <AccountsToolbarTooltip label="Volumen filtern">
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="toolbar"
+                  className={cn(
+                    'shrink-0 px-2.5 hover:bg-muted/70',
+                    volumeFilter !== 'all' && 'bg-primary/10 text-primary'
+                  )}
+                  aria-label="Volumen filtern"
+                  tabIndex={isReferencesLibrary ? 0 : -1}
+                >
+                  <Banknote className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                </Button>
+              </PopoverTrigger>
+            </AccountsToolbarTooltip>
+            <PopoverContent align="end" className="w-56 p-1" onOpenAutoFocus={(e) => e.preventDefault()}>
+              <ReferenceVolumeFilterMenu value={volumeFilter} onChange={onVolumeFilterChange} />
             </PopoverContent>
           </Popover>
 
@@ -352,8 +337,6 @@ export function EvidenceLibraryToolbar({
             ) : null}
           </div>
 
-          <EvidenceLibraryModeSwitch value={libraryMode} onChange={onLibraryModeChange} />
-
           {isAdmin ? (
             <Button
               type="button"
@@ -366,7 +349,7 @@ export function EvidenceLibraryToolbar({
               <AppIcon icon={CirclePlus} size={16} className="shrink-0" />
               {isReferencesLibrary
                 ? COPY.dashboard.tooltipCreateReference
-                : 'Zertifikat hochladen'}
+                : `${EVIDENCE_PROOF_SEGMENT_LABELS.certificates} hochladen`}
             </Button>
           ) : null}
         </div>

@@ -9,6 +9,11 @@ import { validatePasswordPolicy } from '@/lib/security/password-policy'
 import { getAppOrigin } from '@/lib/env/app-origin'
 import { parseInviteRoleDimensions } from '@/lib/roles/invite-roles'
 import { legacyAppRoleFrom, legacyRoleToDimensions } from '@/lib/roles/legacy-mapping'
+import {
+  buildRefstackEmailHtml,
+  escapeRefstackEmailHtml,
+  getRefstackResendFrom,
+} from '@/lib/email/refstack-email-layout'
 
 export type SignUpResult = {
   error?: string
@@ -47,23 +52,25 @@ async function sendSignupConfirmationViaResend(params: {
     return false
   }
 
-  const safeName = params.fullName
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
+  const safeName = escapeRefstackEmailHtml(params.fullName.trim())
+  const actionLinkSafe = escapeRefstackEmailHtml(actionLink)
 
   try {
     const resend = new Resend(resendKey)
+    const html = buildRefstackEmailHtml({
+      audience: 'external',
+      badge: 'Konto bestätigen',
+      greeting: params.fullName.trim() ? `Hallo ${safeName},` : 'Hallo,',
+      bodyHtml: `<p style="margin:0 0 16px;">bitte bestätige deine E-Mail-Adresse, um dein Konto zu aktivieren.</p>
+        <p style="margin:0;font-size:13px;color:#64748b;">Falls du auch eine zweite E-Mail vom Anbieter erhältst, kannst du einen der Links nutzen.</p>`,
+      ctas: [{ label: 'E-Mail bestätigen', href: actionLink }],
+      supplementalHtml: `<p style="margin:16px 0 0;font-size:12px;color:#94a3b8;word-break:break-all;">Alternativ-Link: <a href="${actionLinkSafe}" style="color:#2563eb;">${actionLinkSafe}</a></p>`,
+    })
     await resend.emails.send({
-      from: 'Refstack <onboarding@resend.dev>',
+      from: getRefstackResendFrom(),
       to: params.email,
       subject: 'E-Mail bestätigen – Refstack',
-      html: `
-        <p>Hallo ${safeName},</p>
-        <p>bitte bestätige deine E-Mail-Adresse, um dein Konto zu aktivieren:</p>
-        <p><a href="${actionLink}" style="background: hsl(0 0% 9%); color: hsl(0 0% 98%); padding: 10px 20px; text-decoration: none; border-radius: 6px; display: inline-block;">E-Mail bestätigen</a></p>
-        <p style="color: hsl(0 0% 45%); font-size: 12px;">Falls du auch eine zweite E-Mail vom Anbieter erhältst, kannst du einen der Links nutzen.</p>
-      `,
+      html,
     })
     return true
   } catch (e) {

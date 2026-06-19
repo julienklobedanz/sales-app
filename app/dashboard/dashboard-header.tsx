@@ -243,10 +243,16 @@ export function DashboardHeader({
         subtitle: 'Semantische Suche und RFP-Analyse',
       }
     }
-    if (pathname.startsWith(ROUTES.marketSignals)) {
+    if (pathname.startsWith(ROUTES.insights)) {
       return {
-        title: COPY.pages.marketSignals,
-        subtitle: undefined,
+        title: COPY.nav.insights,
+        subtitle: 'Nutzung, Adoption und Win-Rate',
+      }
+    }
+    if (pathname.startsWith(ROUTES.marketSignalsManage)) {
+      return {
+        title: 'Marktsignale verwalten',
+        subtitle: 'Watchlist & Stakeholder-Überwachung',
       }
     }
     if (pathname.startsWith(ROUTES.dealDesk)) {
@@ -304,8 +310,8 @@ export function DashboardHeader({
       if (pathname === ROUTES.marketSignalsManage) {
         if (!cancelled) {
           setDynamicCrumbs([
-            { label: COPY.pages.marketSignals, href: ROUTES.marketSignals },
-            { label: 'Marktsignale einrichten' },
+            { label: 'Einstellungen', href: ROUTES.settings },
+            { label: 'Marktsignale verwalten' },
           ])
         }
         return

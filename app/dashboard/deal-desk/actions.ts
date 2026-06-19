@@ -22,17 +22,23 @@ import {
   enrichRedFlagsWithDocuments,
 } from '@/lib/deal-desk/red-flag-document-match'
 import { sendLegalRedFlagsEmail } from '@/lib/deal-desk/send-legal-red-flags-email'
-import { defaultWorkspaceState } from '@/lib/deal-desk/workspace-state'
+import {
+  loadNormalizedWorkspaceOverlaysBatch,
+  loadNormalizedWorkspaceOverlay,
+  persistNormalizedWorkspace,
+} from '@/lib/deal-desk/workspace-persistence'
 import { ROUTES } from '@/lib/routes'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { profileCanManageOrgData } from '@/lib/roles/profile-guards'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
 
 const DESK_PATH = ROUTES.dealDesk
 
 const DEAL_DESK_PROJECT_SELECT_WITH_ARCHIVE =
-  'id, organization_id, project_name, customer_name, analysis_status, analysis_snapshot, analysis_source, workspace_state, win_probability, error_message, deal_id, archived_at, created_by, created_at, updated_at'
+  'id, organization_id, project_name, customer_name, analysis_status, analysis_snapshot, analysis_source, win_probability, error_message, deal_id, archived_at, created_by, created_at, updated_at'
 
 const DEAL_DESK_PROJECT_SELECT_LEGACY =
-  'id, organization_id, project_name, customer_name, analysis_status, analysis_snapshot, analysis_source, workspace_state, win_probability, error_message, deal_id, created_by, created_at, updated_at'
+  'id, organization_id, project_name, customer_name, analysis_status, analysis_snapshot, analysis_source, win_probability, error_message, deal_id, created_by, created_at, updated_at'
 
 function isMissingArchivedColumnError(message: string | undefined): boolean {
   return Boolean(message && /archived_at/i.test(message))
@@ -165,7 +171,8 @@ type DeskAuth =
       supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>
       user: { id: string }
       orgId: string
-      role: string
+      systemRole: ReturnType<typeof parseProfileRoles>['systemRole']
+      functionRole: ReturnType<typeof parseProfileRoles>['functionRole']
       fullName: string | null
       email: string | null
     }
@@ -179,7 +186,7 @@ async function getDeskAuth(): Promise<DeskAuth> {
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('organization_id, role, full_name')
+    .select('organization_id, system_role, function_role, full_name')
     .eq('id', user.id)
     .maybeSingle()
 
@@ -194,11 +201,14 @@ async function getDeskAuth(): Promise<DeskAuth> {
     }
   }
 
+  const { systemRole, functionRole } = parseProfileRoles(profile)
+
   return {
     supabase,
     user,
     orgId: profile.organization_id as string,
-    role: (profile.role as string) ?? 'sales',
+    systemRole,
+    functionRole,
     fullName: (profile.full_name as string) ?? null,
     email: user.email ?? null,
   }
@@ -248,11 +258,13 @@ export async function listDealDeskProjects(): Promise<
 
   const ownerIds = rows.map((r) => r.created_by).filter((id): id is string => Boolean(id))
   const ownersByUserId = await loadProjectOwnersByUserIds(supabase, ownerIds)
+  const projectIds = rows.map((r) => r.id)
+  const overlays = await loadNormalizedWorkspaceOverlaysBatch(supabase, projectIds, orgId)
 
   const projects: DealDeskProject[] = []
   for (const row of rows) {
     const docs = await loadProjectDocuments(supabase, row.id, orgId)
-    projects.push(rowToDealDeskProject(row, docs, ownersByUserId))
+    projects.push(rowToDealDeskProject(row, docs, ownersByUserId, overlays.get(row.id) ?? null))
   }
 
   return { success: true, projects }
@@ -272,11 +284,13 @@ export async function listDealDeskProjectsByDealId(
 
   const ownerIds = fetched.rows.map((r) => r.created_by).filter((id): id is string => Boolean(id))
   const ownersByUserId = await loadProjectOwnersByUserIds(supabase, ownerIds)
+  const projectIds = fetched.rows.map((r) => r.id)
+  const overlays = await loadNormalizedWorkspaceOverlaysBatch(supabase, projectIds, orgId)
 
   const projects: DealDeskProject[] = []
   for (const row of fetched.rows) {
     const docs = await loadProjectDocuments(supabase, row.id, orgId)
-    projects.push(rowToDealDeskProject(row, docs, ownersByUserId))
+    projects.push(rowToDealDeskProject(row, docs, ownersByUserId, overlays.get(row.id) ?? null))
   }
 
   return { success: true, projects }
@@ -300,9 +314,10 @@ export async function getDealDeskProject(
     supabase,
     fetched.row.created_by ? [fetched.row.created_by] : []
   )
+  const overlay = await loadNormalizedWorkspaceOverlay(supabase, projectId, orgId)
   return {
     success: true,
-    project: rowToDealDeskProject(fetched.row, docs, ownersByUserId),
+    project: rowToDealDeskProject(fetched.row, docs, ownersByUserId, overlay),
   }
 }
 
@@ -321,7 +336,6 @@ export async function createDealDeskProjectAction(input: {
     created_by: user.id,
     project_name: input.projectName.trim() || 'Neues Projekt',
     analysis_status: 'pending',
-    workspace_state: defaultWorkspaceState(),
   }
   if (input.dealId) {
     insertPayload.deal_id = input.dealId
@@ -355,15 +369,28 @@ export async function updateDealDeskProjectAction(
 
   const update: Record<string, unknown> = {}
   if (patch.projectName != null) update.project_name = patch.projectName.trim()
-  if (patch.workspaceState != null) update.workspace_state = patch.workspaceState
 
-  const { error } = await supabase
-    .from('deal_desk_projects')
-    .update(update)
-    .eq('id', projectId)
-    .eq('organization_id', orgId)
+  if (Object.keys(update).length > 0) {
+    const { error } = await supabase
+      .from('deal_desk_projects')
+      .update(update)
+      .eq('id', projectId)
+      .eq('organization_id', orgId)
 
-  if (error) return { success: false, error: error.message }
+    if (error) return { success: false, error: error.message }
+  }
+
+  if (patch.workspaceState != null) {
+    await persistNormalizedWorkspace(supabase, projectId, orgId, {
+      redFlags: patch.workspaceState.redFlags,
+      smeRoutes: patch.workspaceState.smeRoutes,
+      smeAssignments: patch.workspaceState.smeAssignments,
+      smeCustomExperts: patch.workspaceState.smeCustomExperts,
+      decision: patch.workspaceState.decision,
+      bidTeam: patch.workspaceState.bidTeam,
+    })
+  }
+
   return { success: true }
 }
 
@@ -725,7 +752,7 @@ export async function resetDealDeskDemoForOrg(): Promise<
   const auth = await getDeskAuth()
   if ('error' in auth) return { success: false, error: auth.error }
 
-  if (auth.role !== 'admin' && auth.role !== 'account_manager') {
+  if (!profileCanManageOrgData(auth.systemRole, auth.functionRole)) {
     return { success: false, error: 'Nur Admin oder Account Manager.' }
   }
 
@@ -768,11 +795,12 @@ export async function runDealDeskDemoAnalyzeAction(): Promise<
       analysis_status: 'completed',
       analysis_snapshot: analysis,
       analysis_source: 'mock',
-      workspace_state: workspace,
       win_probability: analysis.winProbability,
       customer_name: analysis.customerName,
     })
     .eq('id', created.projectId)
+
+  await persistNormalizedWorkspace(auth.supabase, created.projectId, auth.orgId, workspace)
 
   return { success: true, projectId: created.projectId }
 }

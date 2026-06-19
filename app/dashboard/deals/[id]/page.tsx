@@ -17,6 +17,7 @@ import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 import { formatIndustryDisplay } from '@/lib/constants/industries'
+import { loadDealRfpSectionDataForDeal } from '@/lib/deal-desk/load-deal-rfp-section-data'
 import { formatDealVolume } from '@/lib/format'
 
 export const dynamic = 'force-dynamic'
@@ -44,6 +45,8 @@ export default async function DealDetailPage({
 
   const deal = await getDealWithReferences(id)
   if (!deal) notFound()
+
+  const initialRfpResult = await loadDealRfpSectionDataForDeal(supabase, orgId, id)
 
   const allReferences = await getReferencesForOrg()
 
@@ -129,6 +132,7 @@ export default async function DealDetailPage({
                 <DealRfpSection
                   deal={deal}
                   companies={(companies ?? []) as Array<{ id: string; name: string }>}
+                  initialResult={initialRfpResult}
                 />
                 <DealMatchSection deal={deal} />
                 <DealDetailContent deal={deal} allReferences={allReferences} activities={activities} />

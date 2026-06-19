@@ -42,8 +42,8 @@ import {
   withdrawApprovalRequest,
 } from '@/app/dashboard/actions'
 import { isApprovalRecipientEmail } from '@/lib/references/approval-recipient-input'
-import type { ApprovalContactOption } from '@/app/dashboard/references/approval-contacts'
-import type { ApproveInternalRecipientOptions } from '@/app/dashboard/references/approvals'
+import type { ApprovalContactOption } from '@/lib/evidence/approval-contacts'
+import type { ApproveInternalRecipientOptions } from '@/lib/evidence/approvals'
 import { AppIcon } from '@/lib/icons'
 import { canSubmitApprovalRecipient } from '@/lib/references/approval-recipient-input'
 import type { ReferenceReadinessState } from '@/lib/references/reference-readiness-state'

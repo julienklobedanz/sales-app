@@ -1,4 +1,4 @@
-import type { ApprovalContactOption } from '@/app/dashboard/references/approval-contacts'
+import type { ApprovalContactOption } from '@/lib/evidence/approval-contacts'
 
 export function isApprovalRecipientEmail(value: string): boolean {
   const t = value.trim()

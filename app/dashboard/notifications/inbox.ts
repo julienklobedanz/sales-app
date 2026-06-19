@@ -5,6 +5,11 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { formatRelativeTimeDe } from '@/lib/relative-time-de'
 import type { AppRole } from '@/hooks/useRole'
+import {
+  appRoleCanManageOrg,
+  appRoleIsAdmin,
+  appRoleIsSales,
+} from '@/lib/roles/legacy-mapping'
 
 export type DashboardNotificationItem = {
   id: string
@@ -170,7 +175,7 @@ function buildExecutiveSentence(input: {
 }
 
 function roleCanSeeApprovalEvent(role: AppRole, row: EventRowForCopy, userId: string) {
-  if (role === 'admin' || role === 'account_manager') return true
+  if (appRoleCanManageOrg(role)) return true
   // Sales sieht nur Freigabe-Events, die aus seinen eigenen Anfragen stammen.
   return row.created_by === userId
 }
@@ -218,6 +223,30 @@ export async function getInboxNotificationsImpl(
     .map((row) => row as unknown as EventRowForCopy)
     .filter((row) => roleCanSeeApprovalEvent(role, row, userId))
     .map((row) => mapEventToCopy(row.event_type, row))
+
+  const { data: requestRows, error: requestError } = await supabase
+    .from('deal_reference_requests')
+    .select('id, message, created_at, deal_id, deals ( title )')
+    .eq('organization_id', orgId)
+    .eq('created_by', userId)
+    .order('created_at', { ascending: false })
+    .limit(20)
+  if (requestError) console.error('[getInboxNotifications/requests]', requestError.message)
+
+  const requestCandidates: InboxCandidate[] = (requestRows ?? []).map((row) => {
+    const deal = Array.isArray(row.deals) ? row.deals[0] : row.deals
+    const dealTitle =
+      typeof deal?.title === 'string' && deal.title.trim() ? deal.title.trim() : 'Deal'
+    const preview = String(row.message ?? '').trim()
+    return {
+      id: `deal_request:${String(row.id)}`,
+      title: 'Meine Requests',
+      text: preview ? `„${dealTitle}“ — ${preview.slice(0, 120)}` : `Anfrage für „${dealTitle}“.`,
+      href: row.deal_id ? ROUTES.deals.detail(String(row.deal_id)) : ROUTES.deals.requestNew,
+      createdAt: String(row.created_at ?? ''),
+      priority: 2,
+    } satisfies InboxCandidate
+  })
 
   const { data: executiveRows, error: execError } = await supabase
     .from('market_signal_executive_events')
@@ -283,7 +312,7 @@ export async function getInboxNotificationsImpl(
       ].join('|')
       if (executiveSeen.has(dedupeKey)) return null
       executiveSeen.add(dedupeKey)
-      if (role === 'sales' && !championMove) return null
+      if (appRoleIsSales(role) && !championMove) return null
       return {
         id: `market_exec:${String(row.id)}`,
         title: 'Executive Tracking',
@@ -308,7 +337,7 @@ export async function getInboxNotificationsImpl(
       const companyName = String(co?.name ?? 'Account')
       const body = String(row.body ?? '').trim()
       const isFavorite = Boolean(co?.is_favorite)
-      if (role === 'sales' && !isFavorite) return null
+      if (appRoleIsSales(role) && !isFavorite) return null
       const dayKey = String(row.published_on ?? '').slice(0, 10)
       const dedupeKey = [normalizeText(companyName), normalizeText(body), dayKey].join('|')
       if (newsSeen.has(dedupeKey)) return null
@@ -325,13 +354,13 @@ export async function getInboxNotificationsImpl(
     .filter((row): row is InboxCandidate => Boolean(row))
 
   const ndaCandidates =
-    role === 'admin' ? await fetchNdaExpiryInboxCandidates(supabase, orgId) : []
+    appRoleIsAdmin(role) ? await fetchNdaExpiryInboxCandidates(supabase, orgId) : []
 
   const nowMs = Date.now()
   const isMarketSignal = (id: string) =>
     id.startsWith('market_exec:') || id.startsWith('market_news:')
 
-  const merged = [...ndaCandidates, ...executiveCandidates, ...newsCandidates, ...approvalCandidates]
+  const merged = [...ndaCandidates, ...executiveCandidates, ...newsCandidates, ...approvalCandidates, ...requestCandidates]
     .filter((entry) => {
       if (!isMarketSignal(entry.id)) return true
       const ageMs = nowMs - new Date(entry.createdAt).getTime()

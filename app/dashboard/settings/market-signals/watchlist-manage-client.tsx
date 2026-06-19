@@ -12,7 +12,7 @@ import { setChampionWatchlistState, setCompanyWatchlistState } from '@/app/dashb
 import {
   CompanySegmentSwitch,
   type CompanyWatchSegment,
-} from '@/app/dashboard/market-signals/manage/company-segment-switch'
+} from '@/app/dashboard/settings/market-signals/company-segment-switch'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
@@ -178,8 +178,8 @@ export function MarketSignalsManageClient({
       <div className="space-y-6">
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">Marktsignale einrichten</h1>
-          <Link href={ROUTES.marketSignals} className="text-sm text-muted-foreground hover:text-foreground">
-            Zurück zu Marktsignalen
+          <Link href={ROUTES.settings} className="text-sm text-muted-foreground hover:text-foreground">
+            Zurück zu Einstellungen
           </Link>
         </div>
 

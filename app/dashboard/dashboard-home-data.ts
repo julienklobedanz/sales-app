@@ -1,11 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
-import { legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
 import { matchReferences } from '@/app/dashboard/actions'
 import { getDeals } from '@/app/dashboard/deals/actions'
 import type { DealRow, DealStatus } from '@/app/dashboard/deals/types'
-import { getPendingClientApprovalsImpl } from '@/app/dashboard/references/pending-approvals'
-import { getRequestsImpl } from '@/app/dashboard/references/approval-requests'
+import { getPendingClientApprovalsImpl } from '@/lib/evidence/pending-approvals'
+import { getRequestsImpl } from '@/lib/evidence/approval-requests'
 import { ROUTES } from '@/lib/routes'
 
 const ACTIVE_DEAL_STATUSES: DealStatus[] = ['open', 'rfp', 'negotiation']
@@ -14,6 +13,7 @@ export type SalesRepDealCard = {
   id: string
   title: string
   status: DealStatus
+  company_id: string | null
   company_name: string | null
   company_logo_url?: string | null
   volume: string | null
@@ -21,6 +21,7 @@ export type SalesRepDealCard = {
   linkedCount: number
   bestMatchScore: number | null
   quickShareReferenceId: string | null
+  recentSignalCount: number
 }
 
 export type RecommendedRefRow = {
@@ -77,6 +78,29 @@ export type SalesRepDashboardModel = {
     actionLabel: string
     href: string
   }>
+}
+
+export type GeneralistDashboardModel = {
+  leadQuestion: string
+  activeDeals: SalesRepDealCard[]
+  pendingApprovalsCount: number
+  pendingApprovalsPreview: Array<{
+    approvalId: string
+    referenceId: string
+    title: string
+    companyName: string
+  }>
+  usageTotals: UsageTotalsRow
+  recentShares: RecentShareRow[]
+}
+
+export type LeaderPipelineSignalRow = {
+  companyId: string
+  companyName: string
+  openDealCount: number
+  signalCount: number
+  latestSummary: string
+  href: string
 }
 
 export type ReferenceKpiCounts = {
@@ -185,6 +209,13 @@ export type AdminDashboardModel = {
     text: string
     timestamp: string
   }>
+  pipelineSignals: LeaderPipelineSignalRow[]
+  winRate: {
+    available: boolean
+    percent: number | null
+    closedDealsCount: number
+    minDealsRequired: number
+  }
 }
 
 function firstName(fullName: string | null | undefined): string {
@@ -255,6 +286,7 @@ export async function loadSalesRepDashboardData(
       id: d.id,
       title: d.title,
       status: d.status,
+      company_id: d.company_id ?? null,
       company_name: d.company_name,
       company_logo_url: d.company_logo_url ?? null,
       volume: d.volume ?? null,
@@ -262,6 +294,7 @@ export async function loadSalesRepDashboardData(
       linkedCount: d.linked_refs?.length ?? 0,
       bestMatchScore: d.best_match_score ?? null,
       quickShareReferenceId: d.linked_refs?.[0]?.id ?? null,
+      recentSignalCount: 0,
     }))
     .slice(0, 8)
 
@@ -379,7 +412,9 @@ export async function loadSalesRepDashboardData(
         title: `${execCompanyName} - Executive-Wechsel erkannt`,
         subtitle: String(latestExec?.change_summary ?? 'Neues High-Intent Signal erkannt.'),
         ctaLabel: 'Draft Outreach',
-        href: ROUTES.marketSignals,
+        href: latestExec?.company_id
+          ? ROUTES.accountsDetail(String(latestExec.company_id))
+          : ROUTES.accounts,
         signalKey: execSignalKey,
         draftSubject: `Re: ${execCompanyName} - kurzer Austausch zum Wechsel`,
         draftBody: `Hi [Name],\n\nich habe die aktuelle Veränderung bei ${execCompanyName} gesehen. Wenn du magst, schicke ich dir 2-3 kurze Benchmarks aus ähnlichen Situationen.\n\nBeste Grüße`,
@@ -390,7 +425,9 @@ export async function loadSalesRepDashboardData(
         title: `${newsCompanyName} - Neues Firmen-Signal`,
         subtitle: String(latestNews?.body ?? 'Neues Markt-Update in der Watchlist.').slice(0, 120),
         ctaLabel: 'Referenz teilen',
-        href: ROUTES.marketSignals,
+        href: latestNews?.company_id
+          ? ROUTES.accountsDetail(String(latestNews.company_id))
+          : ROUTES.accounts,
         signalKey: newsSignalKey,
         draftSubject: `Relevante Referenz zu ${newsCompanyName}`,
         draftBody: `Hi [Name],\n\nzu eurem aktuellen Thema bei ${newsCompanyName} haben wir eine passende Referenz vorbereitet. Soll ich sie direkt schicken?\n\nViele Grüße`,
@@ -401,7 +438,7 @@ export async function loadSalesRepDashboardData(
         title: `${dueSnoozesCount} Signale aus Snooze zurück`,
         subtitle: 'Wiedervorlage heute fällig - Queue jetzt priorisieren.',
         ctaLabel: 'Review Queue',
-        href: ROUTES.marketSignals,
+        href: ROUTES.accounts,
         signalKey: `market_news:snooze_due:${orgId}`,
         draftSubject: 'Follow-up auf fällige Signale',
         draftBody: `Hi Team,\n\nich gehe heute die fälligen Snoozes durch und priorisiere die Top-Chancen.\n\nVG`,
@@ -641,9 +678,17 @@ export async function loadSalesRepDashboardData(
     })
   }
 
+  const signalByCompany = new Map(
+    strategicAccounts.map((s) => [s.companyId, s.signalCount24h] as const)
+  )
+  const dealsWithSignals = activeDeals.map((deal) => ({
+    ...deal,
+    recentSignalCount: deal.company_id ? (signalByCompany.get(deal.company_id) ?? 0) : 0,
+  }))
+
   return {
     greetingName,
-    activeDeals,
+    activeDeals: dealsWithSignals,
     recommended,
     recommendedNote,
     recentShares,
@@ -1240,6 +1285,63 @@ export async function loadAdminDashboardData(
     }
   }
 
+  const allDealsForSignals = await getDeals()
+  const openDealsByCompany = new Map<string, { companyName: string; count: number }>()
+  for (const deal of allDealsForSignals) {
+    if (!ACTIVE_DEAL_STATUSES.includes(deal.status)) continue
+    const cid = deal.company_id
+    if (!cid) continue
+    const current = openDealsByCompany.get(cid) ?? {
+      companyName: deal.company_name ?? 'Account',
+      count: 0,
+    }
+    current.count += 1
+    openDealsByCompany.set(cid, current)
+  }
+
+  let pipelineSignals: LeaderPipelineSignalRow[] = []
+  if (orgId) {
+    const { data: execForLeader } = await supabase
+      .from('market_signal_executive_events')
+      .select('company_id, change_summary, companies(name)')
+      .order('detected_at', { ascending: false })
+      .limit(80)
+    const signalCounts = new Map<string, { count: number; summary: string; name: string }>()
+    for (const row of execForLeader ?? []) {
+      const cid = String((row as { company_id?: string }).company_id ?? '')
+      if (!cid || !openDealsByCompany.has(cid)) continue
+      const company = Array.isArray((row as { companies?: unknown }).companies)
+        ? ((row as { companies: { name?: string }[] }).companies[0])
+        : ((row as { companies?: { name?: string } | null }).companies)
+      const cur = signalCounts.get(cid) ?? {
+        count: 0,
+        summary: String((row as { change_summary?: string }).change_summary ?? 'Signal'),
+        name: String(company?.name ?? openDealsByCompany.get(cid)?.companyName ?? 'Account'),
+      }
+      cur.count += 1
+      signalCounts.set(cid, cur)
+    }
+    const SIGNAL_THRESHOLD = 2
+    pipelineSignals = Array.from(signalCounts.entries())
+      .filter(([, v]) => v.count >= SIGNAL_THRESHOLD)
+      .map(([companyId, v]) => ({
+        companyId,
+        companyName: v.name,
+        openDealCount: openDealsByCompany.get(companyId)?.count ?? 0,
+        signalCount: v.count,
+        latestSummary: v.summary,
+        href: ROUTES.accountsDetail(companyId),
+      }))
+      .sort((a, b) => b.signalCount - a.signalCount)
+      .slice(0, 8)
+  }
+
+  const closedDeals = allDealsForSignals.filter((d) => d.status === 'won' || d.status === 'lost')
+  const minDealsRequired = 5
+  const winRateAvailable = closedDeals.length >= minDealsRequired
+  const wonCount = closedDeals.filter((d) => d.status === 'won').length
+  const winRatePercent = winRateAvailable ? Math.round((wonCount / closedDeals.length) * 100) : null
+
   return {
     greetingName,
     kpis: {
@@ -1262,26 +1364,90 @@ export async function loadAdminDashboardData(
     systemUsage,
     newsIngestHealth,
     auditFeed,
+    pipelineSignals,
+    winRate: {
+      available: winRateAvailable,
+      percent: winRatePercent,
+      closedDealsCount: closedDeals.length,
+      minDealsRequired,
+    },
   }
 }
 
+export async function loadGeneralistDashboardData(
+  supabase: SupabaseClient,
+  userId: string,
+  fullName: string | null
+): Promise<GeneralistDashboardModel> {
+  const salesSlice = await loadSalesRepDashboardData(supabase, userId, fullName)
+  const amSlice = await loadAccountManagerDashboardData(supabase, userId, fullName)
+
+  return {
+    leadQuestion: 'Was ist heute wichtig in deinem Workspace?',
+    activeDeals: salesSlice.activeDeals,
+    pendingApprovalsCount: amSlice.pendingApprovalsCount,
+    pendingApprovalsPreview: amSlice.pendingApprovals.slice(0, 5).map((p) => ({
+      approvalId: p.approvalId,
+      referenceId: p.referenceId,
+      title: p.title,
+      companyName: p.companyName,
+    })),
+    usageTotals: amSlice.usageTotals,
+    recentShares: salesSlice.recentShares,
+  }
+}
+
+export type DashboardHomePayload =
+  | { variant: 'sales_rep'; data: SalesRepDashboardModel }
+  | { variant: 'account_manager'; data: AccountManagerDashboardModel }
+  | { variant: 'sales_leader'; data: AdminDashboardModel }
+  | { variant: 'generalist'; data: GeneralistDashboardModel }
+
+/** Wählt das Home-Dashboard anhand der Funktions-Rolle (nicht Legacy-`role`). */
+export async function loadDashboardHomeForFunctionRole(
+  functionRole: FunctionRole,
+  systemRole: SystemRole,
+  supabase: SupabaseClient,
+  userId: string,
+  fullName: string | null
+): Promise<DashboardHomePayload> {
+  if (systemRole === 'viewer') {
+    return {
+      variant: 'generalist',
+      data: await loadGeneralistDashboardData(supabase, userId, fullName),
+    }
+  }
+  if (functionRole === 'account_manager') {
+    return {
+      variant: 'account_manager',
+      data: await loadAccountManagerDashboardData(supabase, userId, fullName),
+    }
+  }
+  if (functionRole === 'sales_leader') {
+    return {
+      variant: 'sales_leader',
+      data: await loadAdminDashboardData(supabase, fullName),
+    }
+  }
+  if (functionRole === 'sales_rep') {
+    return {
+      variant: 'sales_rep',
+      data: await loadSalesRepDashboardData(supabase, userId, fullName),
+    }
+  }
+  return {
+    variant: 'generalist',
+    data: await loadGeneralistDashboardData(supabase, userId, fullName),
+  }
+}
+
+/** @deprecated Nutze `loadDashboardHomeForFunctionRole`. */
 export async function loadDashboardHomeForRole(
   systemRole: SystemRole,
   functionRole: FunctionRole,
   supabase: SupabaseClient,
   userId: string,
   fullName: string | null
-): Promise<
-  | { role: 'sales'; data: SalesRepDashboardModel }
-  | { role: 'account_manager'; data: AccountManagerDashboardModel }
-  | { role: 'admin'; data: AdminDashboardModel }
-> {
-  const appRole = legacyAppRoleFrom(systemRole, functionRole)
-  if (appRole === 'sales') {
-    return { role: 'sales', data: await loadSalesRepDashboardData(supabase, userId, fullName) }
-  }
-  if (appRole === 'account_manager') {
-    return { role: 'account_manager', data: await loadAccountManagerDashboardData(supabase, userId, fullName) }
-  }
-  return { role: 'admin', data: await loadAdminDashboardData(supabase, fullName) }
+): Promise<DashboardHomePayload> {
+  return loadDashboardHomeForFunctionRole(functionRole, systemRole, supabase, userId, fullName)
 }

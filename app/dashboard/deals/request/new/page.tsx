@@ -1,10 +1,27 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
-import { RequestNewClient } from './request-new-client'
+import { RequestNewClient, type DealRequestPrefill } from './request-new-client'
 import { DASHBOARD_PAGE_SUBTITLE_CLASS, DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
+import type { DealStatus } from '../../types'
 
 export const dynamic = 'force-dynamic'
+
+function normalizeDealStatus(raw: unknown): DealStatus | null {
+  const value = String(raw ?? '').toLowerCase()
+  if (
+    value === 'open' ||
+    value === 'rfp' ||
+    value === 'negotiation' ||
+    value === 'won' ||
+    value === 'lost' ||
+    value === 'withdrawn' ||
+    value === 'archived'
+  ) {
+    return value
+  }
+  return null
+}
 
 export default async function DealReferenceRequestNewPage({
   searchParams,
@@ -33,6 +50,24 @@ export default async function DealReferenceRequestNewPage({
   const params = await searchParams
   const initialDealId = typeof params.dealId === 'string' ? params.dealId : null
 
+  let dealPrefill: DealRequestPrefill | null = null
+  if (initialDealId) {
+    const { data: dealRow } = await supabase
+      .from('deals')
+      .select('title, industry, volume, status')
+      .eq('id', initialDealId)
+      .eq('organization_id', profile.organization_id)
+      .maybeSingle()
+    if (dealRow?.title) {
+      dealPrefill = {
+        title: String(dealRow.title),
+        industry: (dealRow.industry as string | null) ?? null,
+        volume: (dealRow.volume as string | null) ?? null,
+        status: normalizeDealStatus(dealRow.status),
+      }
+    }
+  }
+
   return (
     <div className="flex flex-col space-y-6">
       <div>
@@ -44,8 +79,8 @@ export default async function DealReferenceRequestNewPage({
       <RequestNewClient
         deals={(deals ?? []) as Array<{ id: string; title: string }>}
         initialDealId={initialDealId}
+        dealPrefill={dealPrefill}
       />
     </div>
   )
 }
-

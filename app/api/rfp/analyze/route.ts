@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+import { analyzeRfp } from '@/lib/deal-desk/analyze-rfp'
+import { toPersistedAnalysisSnapshot } from '@/lib/deal-desk/analysis-snapshot'
+import { ensureDealDeskProjectForDeal } from '@/lib/deal-desk/ensure-deal-desk-project'
+import { defaultWorkspaceState } from '@/lib/deal-desk/workspace-state'
+import { persistNormalizedWorkspace } from '@/lib/deal-desk/workspace-persistence'
 import { extractPlainTextFromFile } from '@/lib/extract-document-plain-text'
-import { buildRfpCoverageReport } from '@/lib/rfp-coverage'
-import { extractRequirementsFromRfpText } from '@/lib/rfp-requirements'
 import { loadReferenceVisibilityForUser } from '@/lib/roles/load-reference-visibility'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
+export const maxDuration = 300
 
 function sanitizeFileName(name: string): string {
   const base = name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 180)
@@ -14,8 +18,8 @@ function sanitizeFileName(name: string): string {
 }
 
 /**
- * POST multipart: `dealId` (uuid), `file` (PDF/DOCX).
- * Speichert Datei, extrahiert Text, KI-Anforderungen, Coverage via Embeddings + `match_references`.
+ * Dünner Wrapper um `analyzeRfp` — persistiert in `deal_desk_projects` (deal-verknüpft).
+ * Liefert dieselbe Coverage/Requirements-Struktur wie zuvor für `DealRfpSection`.
  */
 export async function POST(req: NextRequest) {
   const supabase = await createServerSupabaseClient()
@@ -96,36 +100,51 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const { data: inserted, error: insertError } = await supabase
-    .from('deal_rfp_analyses')
+  const ensured = await ensureDealDeskProjectForDeal(supabase, {
+    organizationId: orgId,
+    userId: user.id,
+    dealId,
+    projectName: String(deal.title ?? 'RFP-Analyse'),
+  })
+  if ('error' in ensured) {
+    return NextResponse.json({ success: false, error: ensured.error }, { status: 500 })
+  }
+  const projectId = ensured.projectId
+
+  await supabase
+    .from('deal_desk_projects')
+    .update({ analysis_status: 'processing', error_message: null })
+    .eq('id', projectId)
+
+  const fail = async (message: string, status = 500) => {
+    await supabase
+      .from('deal_desk_projects')
+      .update({ analysis_status: 'failed', error_message: message })
+      .eq('id', projectId)
+    return NextResponse.json({ success: false, error: message }, { status })
+  }
+
+  const { data: docRow, error: docErr } = await supabase
+    .from('deal_desk_documents')
     .insert({
-      deal_id: dealId,
+      project_id: projectId,
       organization_id: orgId,
-      source_file_name: file.name || 'document',
-      status: 'pending',
+      file_name: file.name || 'document',
+      mime_type: file.type || null,
+      size_bytes: file.size,
+      extract_status: 'pending',
+      sort_order: 0,
     })
     .select('id')
     .single()
 
-  if (insertError || !inserted?.id) {
-    console.error('deal_rfp_analyses insert', insertError)
-    return NextResponse.json(
-      { success: false, error: insertError?.message ?? 'Analyse konnte nicht angelegt werden.' },
-      { status: 500 }
-    )
+  if (docErr || !docRow?.id) {
+    return fail(docErr?.message ?? 'Dokument-Metadaten fehlgeschlagen.')
   }
 
-  const analysisId = inserted.id as string
+  const docId = docRow.id as string
   const safeName = sanitizeFileName(file.name || 'document')
-  const storagePath = `${orgId}/${dealId}/${analysisId}/${safeName}`
-
-  const fail = async (message: string) => {
-    await supabase
-      .from('deal_rfp_analyses')
-      .update({ status: 'failed', error_message: message })
-      .eq('id', analysisId)
-      .eq('organization_id', orgId)
-  }
+  const storagePath = `${orgId}/deal-desk/${projectId}/${docId}/${safeName}`
 
   const { error: uploadError } = await supabase.storage
     .from('rfp-documents')
@@ -136,69 +155,77 @@ export async function POST(req: NextRequest) {
     })
 
   if (uploadError) {
-    await fail(uploadError.message)
-    return NextResponse.json(
-      { success: false, error: `Upload fehlgeschlagen: ${uploadError.message}` },
-      { status: 500 }
-    )
+    return fail(`Upload fehlgeschlagen: ${uploadError.message}`)
   }
 
   await supabase
-    .from('deal_rfp_analyses')
-    .update({ status: 'processing', storage_path: storagePath })
-    .eq('id', analysisId)
-    .eq('organization_id', orgId)
+    .from('deal_desk_documents')
+    .update({ storage_path: storagePath, extract_status: 'completed' })
+    .eq('id', docId)
 
   const plain = await extractPlainTextFromFile(file, { maxChars: 120_000 })
   if (!plain.ok) {
-    await fail(plain.error)
-    return NextResponse.json({ success: false, error: plain.error }, { status: 400 })
+    return fail(plain.error, 400)
   }
 
-  const textForExtraction = accountContextPrefix + plain.text
+  const mergedText = accountContextPrefix + plain.text
+  const fileNames = [file.name || 'document']
 
-  const extracted = await extractRequirementsFromRfpText(apiKey, textForExtraction)
-  if ('error' in extracted) {
-    await fail(extracted.error)
-    return NextResponse.json({ success: false, error: extracted.error }, { status: 422 })
-  }
-
-  const coverage = await buildRfpCoverageReport(supabase, {
+  const analyzed = await analyzeRfp({
     apiKey,
+    supabase,
     organizationId: orgId,
     salesVisibleOnly,
+    projectName: String(deal.title ?? 'RFP-Analyse'),
+    fileNames,
+    mergedText,
     deal: {
       title: deal.title ?? null,
       industry: deal.industry ?? null,
       volume: deal.volume ?? null,
     },
-    requirements: extracted.requirements,
+    projectDocuments: [
+      {
+        id: docId,
+        file_name: file.name || 'document',
+        storage_path: storagePath,
+        mime_type: file.type || null,
+      },
+    ],
   })
 
+  if ('error' in analyzed) {
+    return fail(analyzed.error, 422)
+  }
+
+  const workspace = defaultWorkspaceState(analyzed.snapshot.redFlags)
+  const persistedSnapshot = toPersistedAnalysisSnapshot(analyzed)
+
+  await persistNormalizedWorkspace(supabase, projectId, orgId, workspace)
+
   const { error: doneError } = await supabase
-    .from('deal_rfp_analyses')
+    .from('deal_desk_projects')
     .update({
-      status: 'completed',
-      extracted_requirements: extracted.requirements,
-      coverage_report: coverage,
+      analysis_status: 'completed',
+      analysis_snapshot: persistedSnapshot,
+      analysis_source: 'api',
+      win_probability: analyzed.snapshot.winProbability,
+      customer_name: analyzed.snapshot.customerName,
       error_message: null,
     })
-    .eq('id', analysisId)
-    .eq('organization_id', orgId)
+    .eq('id', projectId)
 
   if (doneError) {
-    await fail(doneError.message)
-    return NextResponse.json(
-      { success: false, error: doneError.message },
-      { status: 500 }
-    )
+    return fail(doneError.message)
   }
 
   return NextResponse.json({
     success: true,
-    analysisId,
+    projectId,
+    /** @deprecated Alias für projectId — DealRfpSection-Kompatibilität */
+    analysisId: projectId,
     storagePath,
-    requirements: extracted.requirements,
-    coverage,
+    requirements: analyzed.requirements,
+    coverage: analyzed.coverage,
   })
 }

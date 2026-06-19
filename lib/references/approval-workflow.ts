@@ -1,7 +1,12 @@
+import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
+import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
+import { isSalesAppView } from '@/lib/roles/reference-access'
+
 /** Ob der Freigabe-Workflow neu gestartet werden darf (nur von der Referenz-Detailseite). */
 
 export function canStartApprovalWorkflow(params: {
-  role: 'admin' | 'sales' | 'account_manager'
+  systemRole: SystemRole
+  functionRole: FunctionRole
   referenceStatus: string
   internalApprovalStatus: string
   customerApprovalStatus: string | null
@@ -15,11 +20,11 @@ export function canStartApprovalWorkflow(params: {
 
   if (internal === 'withdrawn_internal') {
     if (customer === 'pending') return false
-    if (params.role === 'sales') {
+    if (isSalesAppView(params.systemRole, params.functionRole)) {
       const status = params.referenceStatus.toLowerCase()
       return status === 'internal_only' || status === 'internal'
     }
-    if (params.role === 'admin' || params.role === 'account_manager') {
+    if (isSystemAdmin(params.systemRole) || params.functionRole === 'account_manager') {
       return true
     }
     return false
@@ -34,11 +39,11 @@ export function canStartApprovalWorkflow(params: {
 
   const status = params.referenceStatus.toLowerCase()
 
-  if (params.role === 'sales') {
+  if (isSalesAppView(params.systemRole, params.functionRole)) {
     return status === 'internal_only' || status === 'internal'
   }
 
-  if (params.role === 'admin' || params.role === 'account_manager') {
+  if (isSystemAdmin(params.systemRole) || params.functionRole === 'account_manager') {
     return status === 'draft' || status === 'internal_only' || status === 'internal'
   }
 

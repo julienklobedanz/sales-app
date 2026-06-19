@@ -9,6 +9,8 @@ import { extractPlainTextFromBuffer } from '@/lib/document-extraction'
 import { parseReferenceHeuristicsFromText } from '@/lib/references/heuristic-reference-extract'
 import { normalizeNarrativeText } from '@/lib/references/narrative-normalize'
 import { mapBrandfetchIndustriesArrayToGermanCategory } from '@/lib/brandfetch/map-brandfetch-industry-to-de'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
+import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
 
 type BulkImportReferencesResult =
   | { success: true; created: number; referenceIds: string[]; organizationId: string }
@@ -39,11 +41,12 @@ export async function bulkCreateReferencesFromFilesImpl(
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, organization_id')
+    .select('system_role, function_role, organization_id')
     .eq('id', user.id)
     .single()
 
-  if (profile?.role !== 'admin') {
+  const { systemRole } = parseProfileRoles(profile)
+  if (!isSystemAdmin(systemRole)) {
     return { success: false, error: 'Nur Admins können Referenzen im Bulk importieren.' }
   }
 

@@ -31,7 +31,7 @@ export default async function EditReferencePage({
 
   const { data: me } = await supabase
     .from('profiles')
-    .select('role, organization_id, system_role, function_role, capabilities')
+    .select('organization_id, system_role, function_role, capabilities')
     .eq('id', user.id)
     .single()
   if (!me) redirect(ROUTES.onboarding)

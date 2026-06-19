@@ -13,6 +13,8 @@ import {
 } from '@/lib/accounts/nda-schema'
 import { ROUTES } from '@/lib/routes'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
+import { profileCanManageOrgData } from '@/lib/roles/profile-guards'
 
 export type NdaAgreementRow = {
   id: string
@@ -48,17 +50,17 @@ async function getNdaAuth(): Promise<NdaAuth> {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('organization_id, role')
+    .select('organization_id, system_role, function_role')
     .eq('id', user.id)
     .single()
 
   if (!profile?.organization_id) return { error: 'Onboarding unvollständig.' }
 
-  const role = profile.role as string
+  const { systemRole, functionRole } = parseProfileRoles(profile)
   return {
     supabase,
     orgId: profile.organization_id,
-    canManage: role === 'admin' || role === 'account_manager',
+    canManage: profileCanManageOrgData(systemRole, functionRole),
   }
 }
 

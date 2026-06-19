@@ -1,7 +1,8 @@
 'use server'
 
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import type { AppRole } from '@/hooks/useRole'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
+import { profileIsSalesRestricted } from '@/lib/roles/profile-guards'
 
 export type PendingClientApprovalRow = {
   approvalId: string
@@ -20,11 +21,12 @@ export async function getPendingClientApprovalsImpl(): Promise<PendingClientAppr
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('system_role, function_role')
     .eq('id', user.id)
     .single()
 
-  const role = (profile?.role as AppRole | undefined) ?? 'sales'
+  const { systemRole, functionRole } = parseProfileRoles(profile)
+  const salesRestricted = profileIsSalesRestricted(systemRole, functionRole)
 
   const { data, error } = await supabase
     .from('approvals')
@@ -54,7 +56,7 @@ export async function getPendingClientApprovalsImpl(): Promise<PendingClientAppr
 
   for (const row of data as Record<string, unknown>[]) {
     const requesterId = row.requester_id as string | undefined
-    if (role === 'sales' && requesterId !== user.id) continue
+    if (salesRestricted && requesterId !== user.id) continue
 
     const refRaw = row.reference as
       | {

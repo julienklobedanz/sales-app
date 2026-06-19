@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { writeAuditLog } from '@/lib/audit/log-audit'
-import { ReferencePdfBundleDocument } from '@/app/dashboard/references/pdf/template'
-import type { PdfOrgBranding, PdfReference, PdfTemplate } from '@/app/dashboard/references/pdf/types'
+import { ReferencePdfBundleDocument } from '@/lib/evidence/pdf/template'
+import type { PdfOrgBranding, PdfReference, PdfTemplate } from '@/lib/evidence/pdf/types'
 import { computeReferenceDurationMonths } from '@/lib/references/reference-duration-months'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
+import { profileIsSalesRestricted } from '@/lib/roles/profile-guards'
 
 export const runtime = 'nodejs'
 
@@ -41,12 +43,14 @@ export async function POST(req: NextRequest) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('organization_id, role')
+    .select('organization_id, system_role, function_role')
     .eq('id', user.id)
     .single()
   if (!profile?.organization_id) {
     return NextResponse.json({ error: 'Kein Workspace gefunden.' }, { status: 403 })
   }
+
+  const { systemRole, functionRole } = parseProfileRoles(profile)
 
   const { data: rows, error } = await supabase
     .from('references')
@@ -83,13 +87,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Referenzen konnten nicht geladen werden.' }, { status: 500 })
   }
 
-  const role = String(profile.role ?? 'sales').toLowerCase()
+  const salesExportStatuses = ['approved', 'internal_only', 'anonymized', 'external', 'internal']
+  const salesRestricted = profileIsSalesRestricted(systemRole, functionRole)
   const allowedRows =
-    role === 'sales'
+    salesRestricted
       ? rows.filter((row) =>
-          ['approved', 'internal_only', 'anonymized', 'external', 'internal'].includes(
-            String(row.status ?? '').toLowerCase()
-          )
+          salesExportStatuses.includes(String(row.status ?? '').toLowerCase())
         )
       : rows
   if (allowedRows.length === 0) {

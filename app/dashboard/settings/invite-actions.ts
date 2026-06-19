@@ -327,7 +327,7 @@ export async function getTeamMembers(): Promise<TeamMemberRow[]> {
   const [profilesResult, invitesRpc] = await Promise.all([
     supabase
       .from('profiles')
-      .select('id, full_name, email, role, system_role, function_role')
+      .select('id, full_name, email, system_role, function_role')
       .eq('organization_id', organizationId),
     supabase.rpc('list_organization_pending_invites'),
   ])
@@ -400,7 +400,7 @@ export async function removeMember(params: {
 
   const { data: myProfile } = await supabase
     .from('profiles')
-    .select('organization_id, role, system_role, function_role')
+    .select('organization_id, system_role, function_role')
     .eq('id', user.id)
     .single()
 
@@ -454,7 +454,7 @@ export async function updateMemberRole(params: {
 
   const { data: myProfile } = await supabase
     .from('profiles')
-    .select('organization_id, role, system_role, function_role')
+    .select('organization_id, system_role, function_role')
     .eq('id', user.id)
     .single()
 

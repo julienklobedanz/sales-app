@@ -1,7 +1,7 @@
 'use client'
 
 import { createClient } from '@/lib/supabase/client'
-import { attachBulkImportFileToReference } from '@/app/dashboard/references/bulk-import-attach'
+import { attachBulkImportFileToReference } from '@/lib/evidence/bulk-import-attach'
 
 /**
  * Lädt Import-Dateien clientseitig in Storage (wie „Referenz erstellen“) — Server-Upload scheitert oft an Storage-RLS.

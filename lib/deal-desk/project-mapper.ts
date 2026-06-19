@@ -7,7 +7,11 @@ import {
   DEMO_SAMPLE_RED_FLAGS,
 } from '@/lib/deal-desk/mock-analysis'
 import type { DealDeskProject, DealDeskProjectOwner } from '@/lib/deal-desk/deal-desk-project'
-import { parseWorkspaceState } from '@/lib/deal-desk/workspace-state'
+import {
+  mergeWorkspaceWithNormalizedOverlay,
+  type NormalizedWorkspaceOverlay,
+} from '@/lib/deal-desk/workspace-merge'
+import { defaultWorkspaceState } from '@/lib/deal-desk/workspace-state'
 
 export type DealDeskAnalysisStatus = 'pending' | 'processing' | 'completed' | 'failed'
 
@@ -19,7 +23,6 @@ export type DealDeskProjectRow = {
   analysis_status: DealDeskAnalysisStatus
   analysis_snapshot: unknown
   analysis_source: string | null
-  workspace_state: unknown
   win_probability: number | null
   error_message: string | null
   deal_id: string | null
@@ -141,7 +144,8 @@ export function resolveProjectOwner(
 export function rowToDealDeskProject(
   row: DealDeskProjectRow,
   documents: DealDeskDocumentRow[] = [],
-  ownersByUserId: Map<string, DealDeskProjectOwner> = new Map()
+  ownersByUserId: Map<string, DealDeskProjectOwner> = new Map(),
+  normalizedOverlay: NormalizedWorkspaceOverlay | null = null
 ): DealDeskProject {
   const isDemo = isDealDeskDemoRow(row)
 
@@ -177,10 +181,14 @@ export function rowToDealDeskProject(
         : demoFlags
   }
 
-  const workspace = parseWorkspaceState(
-    row.workspace_state,
+  const baseWorkspace = defaultWorkspaceState(
     isDemo ? demoFlags : analysis.redFlags,
     { useDemoBidTeam: isDemo }
+  )
+  const workspace = mergeWorkspaceWithNormalizedOverlay(
+    baseWorkspace,
+    normalizedOverlay,
+    baseWorkspace.smeCustomExperts
   )
 
   let redFlags = workspace.redFlags

@@ -58,3 +58,35 @@ export function hasCapability(
 ): boolean {
   return effectiveCapabilities(functionRole, systemRole, overrides).has(cap)
 }
+
+const ADMIN_APP_ROLE: AppRole = 'admin'
+const SALES_APP_ROLE: AppRole = 'sales'
+const ACCOUNT_MANAGER_APP_ROLE: AppRole = 'account_manager'
+
+export const LEGACY_INVITE_APP_ROLES: readonly AppRole[] = [
+  ADMIN_APP_ROLE,
+  SALES_APP_ROLE,
+  ACCOUNT_MANAGER_APP_ROLE,
+]
+
+export function appRoleIsAdmin(role: AppRole): boolean {
+  return role === ADMIN_APP_ROLE
+}
+
+export function appRoleIsSales(role: AppRole): boolean {
+  return role === SALES_APP_ROLE
+}
+
+export function appRoleIsAccountManager(role: AppRole): boolean {
+  return role === ACCOUNT_MANAGER_APP_ROLE
+}
+
+export function appRoleCanManageOrg(role: AppRole): boolean {
+  return appRoleIsAdmin(role) || appRoleIsAccountManager(role)
+}
+
+export function commandCenterSuggestionsBranch(role: AppRole): 'admin' | 'account_manager' | 'sales' {
+  if (appRoleIsAdmin(role)) return 'admin'
+  if (appRoleIsAccountManager(role)) return 'account_manager'
+  return 'sales'
+}

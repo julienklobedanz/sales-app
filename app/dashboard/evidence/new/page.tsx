@@ -21,7 +21,7 @@ export default async function NewReferencePage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, organization_id, system_role, function_role, capabilities')
+    .select('organization_id, system_role, function_role, capabilities')
     .eq('id', user.id)
     .single()
   if (!profile) redirect(ROUTES.onboarding)

@@ -2,6 +2,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
+import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
 import { ROUTES } from '@/lib/routes'
 import { logEventForCurrentOrg } from '@/lib/events/log-event'
 export type RequestItem = {
@@ -23,9 +25,11 @@ export async function getRequestsImpl(): Promise<RequestItem[]> {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('system_role, function_role')
     .eq('id', user.id)
     .single()
+
+  const { systemRole } = parseProfileRoles(profile)
 
   let query = supabase
     .from('approvals')
@@ -44,7 +48,7 @@ export async function getRequestsImpl(): Promise<RequestItem[]> {
     )
     .order('created_at', { ascending: false })
 
-  if (profile?.role !== 'admin') {
+  if (!isSystemAdmin(systemRole)) {
     query = query.eq('requester_id', user.id)
   }
 

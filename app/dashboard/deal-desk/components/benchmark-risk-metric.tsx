@@ -50,7 +50,7 @@ export function BenchmarkRiskMetric({
           className="bg-slate-900 text-white p-4 rounded-xl shadow-xl max-w-[340px] text-xs border-0"
         >
           <span className="font-bold text-slate-200 border-b border-slate-700 pb-1.5 mb-2 block">
-            Risiko-Analyse (KI-Indikatoren)
+            Benchmark-Risiko (Kriterien-basiert)
           </span>
           {tooltipHits.length > 0 ? (
             <ul className="space-y-1.5">

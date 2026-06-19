@@ -15,6 +15,16 @@ vi.mock('@/lib/supabase/service-role', () => ({
 
 import { resolveApprovalWorkflowNotifyEmails } from './approval-workflow-notify-recipients'
 
+function roleDimsFromLegacy(requesterRole: string) {
+  if (requesterRole === 'account_manager') {
+    return { system_role: 'member', function_role: 'account_manager' }
+  }
+  if (requesterRole === 'admin') {
+    return { system_role: 'admin', function_role: 'sales_leader' }
+  }
+  return { system_role: 'member', function_role: 'sales_rep' }
+}
+
 function makeAdmin(overrides: {
   coordinatorEmail?: string | null
   companyContactEmail?: string | null
@@ -28,7 +38,7 @@ function makeAdmin(overrides: {
           eq: () => ({
             maybeSingle: async () => ({
               data: {
-                role: overrides.requesterRole ?? 'admin',
+                ...roleDimsFromLegacy(overrides.requesterRole ?? 'admin'),
                 notification_settings:
                   overrides.emailOnApprovalUpdate === false
                     ? { email_on_approval_update: false }

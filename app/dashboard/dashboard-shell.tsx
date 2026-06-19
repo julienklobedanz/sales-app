@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Handshake } from 'lucide-react'
+import { Handshake, BarChart3 } from 'lucide-react'
 import {
   Building2,
   FileText,
@@ -12,7 +12,6 @@ import {
   HeadsetIcon,
   Send,
   Sparkles,
-  TrendingUp,
 } from '@hugeicons/core-free-icons'
 import {
   Sidebar,
@@ -42,6 +41,8 @@ import {
   routeExcludesDashboardContentPadding,
 } from '@/lib/dashboard-ui'
 import { ROUTES } from '@/lib/routes'
+import { legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
+import { canViewInsights } from '@/lib/dashboard/can-view-insights'
 import { cn } from '@/lib/utils'
 import type { DashboardNotificationItem } from './actions'
 
@@ -91,11 +92,13 @@ export function DashboardShell({
     router.prefetch(ROUTES.home)
     router.prefetch(ROUTES.accounts)
     router.prefetch(ROUTES.evidence.root)
-    router.prefetch(ROUTES.marketSignals)
     router.prefetch(ROUTES.deals.root)
     router.prefetch(ROUTES.match)
-    router.prefetch(ROUTES.request)
+    router.prefetch(ROUTES.deals.requestNew)
     router.prefetch(ROUTES.settings)
+    if (canViewInsights(profile.functionRole, profile.systemRole, profile.capabilities)) {
+      router.prefetch(ROUTES.insights)
+    }
   }, [router])
 
   const userName =
@@ -125,6 +128,14 @@ export function DashboardShell({
         ['--ring' as never]: workspaceBranding.secondary,
       } as React.CSSProperties)
     : undefined
+
+  const showInsightsNav = canViewInsights(
+    profile.functionRole,
+    profile.systemRole,
+    profile.capabilities
+  )
+  const navButtonClass =
+    'group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-gradient-to-b data-[active=true]:from-blue-600 data-[active=true]:to-blue-700 data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] data-[active=true]:hover:translate-x-0'
 
   return (
     <RoleProvider
@@ -209,39 +220,19 @@ export function DashboardShell({
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
-                    isActive={pathname?.startsWith(ROUTES.marketSignals)}
-                    tooltip={COPY.nav.marketSignals}
-                    className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-gradient-to-b data-[active=true]:from-blue-600 data-[active=true]:to-blue-700 data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] data-[active=true]:hover:translate-x-0"
+                    isActive={pathname?.startsWith(ROUTES.evidence.root)}
+                    tooltip={COPY.nav.evidence}
+                    className={navButtonClass}
                   >
-                    <Link href={ROUTES.marketSignals} className="flex items-center gap-2.5">
+                    <Link href={ROUTES.evidence.root} className="flex items-center gap-2.5">
                       <span className="relative z-10">
                         <AppIcon
-                          icon={TrendingUp}
+                          icon={FileText}
                           size={16}
-                          strokeWidth={pathname?.startsWith(ROUTES.marketSignals) ? 2.5 : 2}
+                          strokeWidth={pathname?.startsWith(ROUTES.evidence.root) ? 2.5 : 2}
                         />
                       </span>
-                      <span className="relative z-10">{COPY.nav.marketSignals}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname?.startsWith(ROUTES.accounts)}
-                    tooltip={COPY.nav.accounts}
-                    className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-gradient-to-b data-[active=true]:from-blue-600 data-[active=true]:to-blue-700 data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] data-[active=true]:hover:translate-x-0"
-                  >
-                    <Link href={ROUTES.accounts} className="flex items-center gap-2.5">
-                      <span className="relative z-10">
-                        <AppIcon
-                          icon={Building2}
-                          size={16}
-                          strokeWidth={pathname?.startsWith(ROUTES.accounts) ? 2.5 : 2}
-                        />
-                      </span>
-                      <span className="relative z-10">{COPY.nav.accounts}</span>
+                      <span className="relative z-10">{COPY.nav.evidence}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -251,7 +242,7 @@ export function DashboardShell({
                     asChild
                     isActive={pathname?.startsWith(ROUTES.deals.root)}
                     tooltip={COPY.nav.deals}
-                    className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-gradient-to-b data-[active=true]:from-blue-600 data-[active=true]:to-blue-700 data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] data-[active=true]:hover:translate-x-0"
+                    className={navButtonClass}
                   >
                     <Link href={ROUTES.deals.root} className="flex items-center gap-2.5">
                       <span className="relative z-10">
@@ -268,22 +259,43 @@ export function DashboardShell({
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
-                    isActive={pathname?.startsWith(ROUTES.evidence.root)}
-                    tooltip={COPY.nav.evidence}
-                    className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-gradient-to-b data-[active=true]:from-blue-600 data-[active=true]:to-blue-700 data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] data-[active=true]:hover:translate-x-0"
+                    isActive={pathname?.startsWith(ROUTES.accounts)}
+                    tooltip={COPY.nav.accounts}
+                    className={navButtonClass}
                   >
-                    <Link href={ROUTES.evidence.root} className="flex items-center gap-2.5">
+                    <Link href={ROUTES.accounts} className="flex items-center gap-2.5">
                       <span className="relative z-10">
                         <AppIcon
-                          icon={FileText}
+                          icon={Building2}
                           size={16}
-                          strokeWidth={pathname?.startsWith(ROUTES.evidence.root) ? 2.5 : 2}
+                          strokeWidth={pathname?.startsWith(ROUTES.accounts) ? 2.5 : 2}
                         />
                       </span>
-                      <span className="relative z-10">{COPY.nav.evidence}</span>
+                      <span className="relative z-10">{COPY.nav.accounts}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+
+                {showInsightsNav ? (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname?.startsWith(ROUTES.insights)}
+                      tooltip={COPY.nav.insights}
+                      className={navButtonClass}
+                    >
+                      <Link href={ROUTES.insights} className="flex items-center gap-2.5">
+                        <span className="relative z-10">
+                          <BarChart3
+                            className="size-4 shrink-0"
+                            strokeWidth={pathname?.startsWith(ROUTES.insights) ? 2.5 : 2}
+                          />
+                        </span>
+                        <span className="relative z-10">{COPY.nav.insights}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ) : null}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -363,7 +375,7 @@ export function DashboardShell({
             userName={userName}
             userEmail={userEmail}
             userInitials={userInitials}
-            userRole={profile.role}
+            userRole={legacyAppRoleFrom(profile.systemRole, profile.functionRole)}
             initialNotifications={initialNotifications}
             devRolePreviewEnabled={devRolePreviewEnabled}
           />

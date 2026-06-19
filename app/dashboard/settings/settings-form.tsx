@@ -24,6 +24,8 @@ import {
 import { Save, Shield, User } from '@hugeicons/core-free-icons'
 import { updateProfile } from './actions'
 import { AppIcon } from '@/lib/icons'
+import type { AppRole } from '@/hooks/useRole'
+import { appRoleIsAdmin } from '@/lib/roles/legacy-mapping'
 
 export function SettingsForm({
   userEmail,
@@ -35,7 +37,7 @@ export function SettingsForm({
   role: string
 }) {
   const router = useRouter()
-  const [currentRole, setCurrentRole] = useState(role === 'admin' ? 'admin' : 'sales')
+  const [currentRole, setCurrentRole] = useState(appRoleIsAdmin(role as AppRole) ? 'admin' : 'sales')
   const [pending, setPending] = useState(false)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {

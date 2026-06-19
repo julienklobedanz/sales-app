@@ -10,16 +10,38 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { createDealReferenceRequest } from '../../actions'
+import { DEAL_STATUS_LABELS, type DealStatus } from '../../types'
 import { Loader } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { ROUTES } from '@/lib/routes'
+import { formatIndustryDisplay } from '@/lib/constants/industries'
+
+export type DealRequestPrefill = {
+  title: string
+  industry: string | null
+  volume: string | null
+  status: DealStatus | null
+}
+
+function buildPrefillMessage(prefill: DealRequestPrefill | null): string {
+  if (!prefill) return ''
+  const lines: string[] = []
+  lines.push(`Deal: ${prefill.title}`)
+  if (prefill.industry) lines.push(`Branche: ${formatIndustryDisplay(prefill.industry)}`)
+  if (prefill.volume) lines.push(`Volumen: ${prefill.volume}`)
+  if (prefill.status) lines.push(`Phase: ${DEAL_STATUS_LABELS[prefill.status]}`)
+  lines.push('', 'Benötigte Referenz:')
+  return lines.join('\n')
+}
 
 export function RequestNewClient({
   deals,
   initialDealId,
+  dealPrefill,
 }: {
   deals: Array<{ id: string; title: string }>
   initialDealId: string | null
+  dealPrefill: DealRequestPrefill | null
 }) {
   const router = useRouter()
   const [dealId, setDealId] = useState('')
@@ -29,6 +51,10 @@ export function RequestNewClient({
   useEffect(() => {
     if (initialDealId) setDealId(initialDealId)
   }, [initialDealId])
+
+  useEffect(() => {
+    if (dealPrefill) setMessage(buildPrefillMessage(dealPrefill))
+  }, [dealPrefill])
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -99,4 +125,3 @@ export function RequestNewClient({
     </Card>
   )
 }
-

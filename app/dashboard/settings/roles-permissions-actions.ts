@@ -35,7 +35,7 @@ async function requireAdminContext() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('organization_id, role, system_role, function_role, capabilities')
+    .select('organization_id, system_role, function_role, capabilities')
     .eq('id', user.id)
     .single()
 

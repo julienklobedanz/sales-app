@@ -5,6 +5,8 @@ import { CompaniesGrid } from './companies-grid'
 import { resolveNdaDisplayStatus, type NdaDisplayStatus } from '@/lib/accounts/company-entity'
 import { getOrganizationCrmConnectionPublicStatus } from '@/lib/crm/connections'
 import { isHubSpotConfigured } from '@/lib/crm/hubspot/config'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
+import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
 
 type CompanyRow = {
   id: string
@@ -30,7 +32,7 @@ export default async function AccountsPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('organization_id, role')
+    .select('organization_id, system_role, function_role')
     .eq('id', user.id)
     .single()
 
@@ -258,7 +260,8 @@ export default async function AccountsPage() {
         : null,
     })) ?? []
 
-  const isAdmin = profile.role === 'admin'
+  const { systemRole } = parseProfileRoles(profile)
+  const isAdmin = isSystemAdmin(systemRole)
   const hubspotConfigured = isHubSpotConfigured()
   const hubspotStatus =
     isAdmin && profile.organization_id

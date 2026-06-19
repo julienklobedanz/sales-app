@@ -693,8 +693,11 @@ export async function createReference(
     return { success: false, error: 'Referenz konnte nicht gespeichert werden.' }
   }
 
+  // Guardrail H7: Kundenzitat nur im Freigabe-Flow (approval-decision-form / generate-approval-quote),
+  // nicht im Anlege- oder Bearbeitungsformular.
+
   // Original-Dokument Upload läuft client-seitig im Hintergrund, damit Speichern instant ist.
-  // Wir lassen file_path/original_document_url hier bewusst unverändert.
+  // attachOriginalDocumentToReference verknüpft Storage-Pfad + reference_assets.
 
   // Embeddings werden non-blocking im Hintergrund erzeugt (EPIC 3: Trigger + Edge Function).
 
@@ -710,6 +713,8 @@ export async function attachOriginalDocumentToReference(params: {
   referenceId: string
   file_path: string
   original_document_url: string | null
+  file_name?: string | null
+  file_type?: string | null
 }): Promise<{ success: true } | { success: false; error: string }> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -717,15 +722,45 @@ export async function attachOriginalDocumentToReference(params: {
   } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Nicht angemeldet.' }
 
+  const referenceId = String(params.referenceId ?? '').trim()
+  const file_path = String(params.file_path ?? '').trim()
+  if (!referenceId || !file_path) {
+    return { success: false, error: 'Ungültige Parameter.' }
+  }
+
+  const file_name =
+    String(params.file_name ?? '').trim() || file_path.split('/').pop() || 'document'
+  const file_type = params.file_type?.trim() || null
+
+  const { data: existingAsset } = await supabase
+    .from('reference_assets')
+    .select('id')
+    .eq('reference_id', referenceId)
+    .eq('file_path', file_path)
+    .maybeSingle()
+
+  if (!existingAsset?.id) {
+    const { error: assetErr } = await supabase.from('reference_assets').insert({
+      reference_id: referenceId,
+      file_path,
+      file_name,
+      file_type,
+      category: 'other',
+    })
+    if (assetErr) return { success: false, error: assetErr.message }
+  }
+
   const { error } = await supabase
     .from('references')
     .update({
-      file_path: params.file_path,
+      file_path,
       original_document_url: params.original_document_url,
     })
-    .eq('id', params.referenceId)
+    .eq('id', referenceId)
 
   if (error) return { success: false, error: error.message }
+  revalidatePath(ROUTES.evidence.root)
+  revalidatePath(ROUTES.evidence.edit(referenceId))
   return { success: true }
 }
 

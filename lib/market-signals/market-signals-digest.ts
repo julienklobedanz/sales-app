@@ -1,8 +1,18 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { ROUTES } from '@/lib/routes'
+import {
+  buildRefstackEmailHtml,
+  escapeRefstackEmailHtml,
+} from '@/lib/email/refstack-email-layout'
 import { isActiveDealStatus } from '@/lib/market-signals/ingest-company-news'
+import { legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
 
 export type MarketSignalsDigestRole = 'admin' | 'sales' | 'account_manager'
+
+const ADMIN_DIGEST_ROLE: MarketSignalsDigestRole = 'admin'
+const SALES_DIGEST_ROLE: MarketSignalsDigestRole = 'sales'
+const ACCOUNT_MANAGER_DIGEST_ROLE: MarketSignalsDigestRole = 'account_manager'
 
 export type MarketSignalsDigestNews = {
   id: string
@@ -30,8 +40,22 @@ function companyNameFromRow(row: unknown): string {
 }
 
 export function parseMarketSignalsDigestRole(raw: unknown): MarketSignalsDigestRole {
-  if (raw === 'admin' || raw === 'sales' || raw === 'account_manager') return raw
-  return 'sales'
+  if (
+    raw === ADMIN_DIGEST_ROLE ||
+    raw === SALES_DIGEST_ROLE ||
+    raw === ACCOUNT_MANAGER_DIGEST_ROLE
+  ) {
+    return raw as MarketSignalsDigestRole
+  }
+  return SALES_DIGEST_ROLE
+}
+
+/** Digest-Rolle aus normalisierten Profil-Dimensionen (ohne profiles.role). */
+export function marketSignalsDigestRoleFromProfile(
+  profile: Parameters<typeof parseProfileRoles>[0]
+): MarketSignalsDigestRole {
+  const { systemRole, functionRole } = parseProfileRoles(profile)
+  return parseMarketSignalsDigestRole(legacyAppRoleFrom(systemRole, functionRole))
 }
 
 /** Favoriten (+ bei Admin/AM Accounts mit aktivem Deal) – gleiche Logik wie Digest/Inbox-Priorität. */
@@ -74,7 +98,7 @@ export async function resolveAllowedCompanyIdsForMarketSignals(
   }
 
   const allowed = new Set<string>()
-  if (role === 'sales') {
+  if (role === SALES_DIGEST_ROLE) {
     for (const id of favoriteIds) allowed.add(id)
   } else {
     for (const id of favoriteIds) allowed.add(id)
@@ -184,20 +208,19 @@ export function buildMarketSignalsDigestEmailHtml(input: {
           )
           .join('')}</ul>`
 
-  return `
-<!DOCTYPE html>
-<html>
-<body style="font-family:system-ui,-apple-system,sans-serif;line-height:1.5;color:#0f172a;">
-  <p style="margin:0 0 8px 0;">Hallo ${escapeHtml(recipientName || 'du')},</p>
-  <p style="margin:0 0 16px 0;font-size:15px;">Hier ist dein täglicher Überblick zu <strong>Markt-Signalen</strong>: Sales sieht Favoriten; Admin und Account-Manager zusätzlich Accounts mit aktivem Deal.</p>
-  <h2 style="font-size:16px;margin:20px 0 8px 0;">Company Update</h2>
-  ${newsBlock}
-  <h2 style="font-size:16px;margin:20px 0 8px 0;">Executive Tracking</h2>
-  ${execBlock}
-  <p style="margin:24px 0 0 0;font-size:14px;"><a href="${signalsUrl}" style="color:#2563eb;">Alle Signale im Dashboard</a></p>
-  <p style="margin:16px 0 0 0;font-size:12px;color:#94a3b8;">Du erhältst diese E-Mail, weil der Tagesüberblick unter Einstellungen › Profil aktiviert ist.</p>
-</body>
-</html>`.trim()
+  return buildRefstackEmailHtml({
+    audience: 'internal',
+    badge: 'Markt-Signale',
+    greeting: `Hallo ${escapeHtml(recipientName || 'du')},`,
+    bodyHtml: `<p style="margin:0 0 16px;">Hier ist dein täglicher Überblick zu <strong>Markt-Signalen</strong>: Sales sieht Favoriten; Admin und Account-Manager zusätzlich Accounts mit aktivem Deal.</p>
+      <h2 style="font-size:16px;margin:20px 0 8px 0;">Company Update</h2>
+      ${newsBlock}
+      <h2 style="font-size:16px;margin:20px 0 8px 0;">Executive Tracking</h2>
+      ${execBlock}`,
+    ctas: [{ label: 'Alle Signale im Dashboard', href: signalsUrl }],
+    supplementalHtml:
+      '<p style="margin:16px 0 0;font-size:12px;color:#94a3b8;">Du erhältst diese E-Mail, weil der Tagesüberblick unter Einstellungen › Profil aktiviert ist.</p>',
+  })
 }
 
 export function buildMarketSignalsEmptyDigestEmailHtml(input: {
@@ -207,14 +230,14 @@ export function buildMarketSignalsEmptyDigestEmailHtml(input: {
   const { recipientName, appOrigin } = input
   const origin = appOrigin.replace(/\/$/, '')
   const signalsUrl = `${origin}${ROUTES.marketSignals}`
-  return `
-<!DOCTYPE html>
-<html>
-<body style="font-family:system-ui,-apple-system,sans-serif;line-height:1.5;color:#0f172a;">
-  <p style="margin:0 0 8px 0;">Hallo ${escapeHtml(recipientName || 'du')},</p>
-  <p style="margin:0 0 12px 0;font-size:15px;">Im gewählten 24h-Fenster gibt es <strong>keine neuen</strong> Account-News oder Executive-Signale für deine priorisierten Accounts.</p>
-  <p style="margin:0 0 16px 0;font-size:14px;"><a href="${signalsUrl}" style="color:#2563eb;">Markt-Signale im Dashboard</a></p>
-  <p style="margin:16px 0 0 0;font-size:12px;color:#94a3b8;">Du erhältst diese E-Mail, weil „Auch bei leerem Tag“ unter Einstellungen › Profil aktiviert ist.</p>
-</body>
-</html>`.trim()
+  return buildRefstackEmailHtml({
+    audience: 'internal',
+    badge: 'Markt-Signale',
+    greeting: `Hallo ${escapeHtml(recipientName || 'du')},`,
+    bodyHtml:
+      '<p style="margin:0 0 12px;font-size:15px;">Im gewählten 24h-Fenster gibt es <strong>keine neuen</strong> Account-News oder Executive-Signale für deine priorisierten Accounts.</p>',
+    ctas: [{ label: 'Markt-Signale im Dashboard', href: signalsUrl }],
+    supplementalHtml:
+      '<p style="margin:16px 0 0;font-size:12px;color:#94a3b8;">Du erhältst diese E-Mail, weil „Auch bei leerem Tag“ unter Einstellungen › Profil aktiviert ist.</p>',
+  })
 }

@@ -1,5 +1,10 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { Resend } from 'resend'
+import {
+  buildRefstackEmailHtml,
+  escapeRefstackEmailHtml,
+  getRefstackResendFrom,
+} from '@/lib/email/refstack-email-layout'
 
 export type SubmitTicketResult = { success: true } | { success: false; error: string }
 
@@ -8,9 +13,7 @@ function supportInboxAddress(): string {
 }
 
 function ticketMailFrom(): string {
-  const from = process.env.RESEND_FROM?.trim()
-  if (from) return from
-  return 'Refstack <onboarding@resend.dev>'
+  return getRefstackResendFrom()
 }
 
 function getResend(): Resend | null {
@@ -41,22 +44,25 @@ async function notifySupportInboxEmail(params: {
     params.replyToEmail?.trim() || params.userEmail?.trim() || undefined
 
   try {
+    const html = buildRefstackEmailHtml({
+      audience: 'internal',
+      badge: `RefStack ${label}`,
+      bodyHtml: `<p style="margin:0;white-space:pre-wrap;">${escapeRefstackEmailHtml(params.message)}</p>`,
+      meta: {
+        rows: [
+          { label: 'Typ', value: label },
+          { label: 'User-ID', value: params.userId },
+          { label: 'Login', value: params.userEmail || '—' },
+          { label: 'Betreff', value: params.subject },
+        ],
+      },
+    })
     const { error } = await resend.emails.send({
       from: ticketMailFrom(),
       to: [to],
       ...(replyTo ? { replyTo } : {}),
       subject: `[RefStack ${label}] ${params.subject}`,
-      text: [
-        `Typ: ${label}`,
-        `User-ID: ${params.userId}`,
-        `Login-E-Mail: ${params.userEmail || '—'}`,
-        '',
-        `Betreff: ${params.subject}`,
-        '',
-        '---',
-        '',
-        params.message,
-      ].join('\n'),
+      html,
     })
     if (error) {
       console.error('[submitTicket] Resend:', error)

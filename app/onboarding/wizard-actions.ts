@@ -13,7 +13,7 @@ import {
 } from '@/app/dashboard/evidence/new/actions'
 import { isValidSalesPhone, salesContactValidationMessage } from '@/lib/profile/sales-contact'
 import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
-import { legacyAppRoleFrom, legacyRoleToDimensions } from '@/lib/roles/legacy-mapping'
+import { legacyAppRoleFrom, legacyRoleToDimensions, LEGACY_INVITE_APP_ROLES } from '@/lib/roles/legacy-mapping'
 import { parseInviteRoleDimensions } from '@/lib/roles/invite-roles'
 
 export type FinalizeWorkspaceResult =
@@ -102,7 +102,7 @@ export async function finalizeWorkspaceAndProfile(params: {
   }
 
   const chosenDims =
-    params.role === 'admin' || params.role === 'sales' || params.role === 'account_manager'
+    params.role && LEGACY_INVITE_APP_ROLES.includes(params.role)
       ? legacyRoleToDimensions(params.role)
       : null
 

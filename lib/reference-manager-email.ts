@@ -21,7 +21,7 @@ export async function resolveReferenceManagerEmail(
     .from('profiles')
     .select('id')
     .eq('organization_id', organizationId)
-    .eq('role', 'admin')
+    .in('system_role', ['owner', 'admin'])
     .limit(1)
     .maybeSingle()
 
