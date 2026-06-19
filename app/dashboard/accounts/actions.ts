@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { ROUTES } from '@/lib/routes'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { asJson, asTableInsert } from '@/lib/supabase/db-types'
+import { asJson, asTableInsert, asTableUpdate } from '@/lib/supabase/db-types'
 import { looseSelect } from '@/lib/supabase/loose-select'
 import * as XLSX from 'xlsx'
 import {
@@ -212,11 +212,13 @@ export async function upsertRoadmapProject(
   if (payload.id) {
     const { error } = await supabase
       .from('company_roadmap_projects')
-      .update(row)
+      .update(asTableUpdate<'company_roadmap_projects'>(row))
       .eq('id', payload.id)
     if (error) return { success: false, error: error.message }
   } else {
-    const { error } = await supabase.from('company_roadmap_projects').insert(row)
+    const { error } = await supabase
+      .from('company_roadmap_projects')
+      .insert(asTableInsert<'company_roadmap_projects'>(row))
     if (error) return { success: false, error: error.message }
   }
   revalidatePath(ROUTES.accountsDetail(companyId))
