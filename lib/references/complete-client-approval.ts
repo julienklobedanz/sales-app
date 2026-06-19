@@ -10,6 +10,7 @@ import {
   notifyInternalTeamCustomerChangesNeeded,
   notifyInternalTeamCustomerRejected,
 } from '@/lib/references/approval-workflow-internal-notifications'
+import { asTableUpdate } from '@/lib/supabase/db-types'
 
 export type CompleteClientApprovalParams = {
   token: string
@@ -214,7 +215,7 @@ export async function completeClientApprovalWithAdmin(
     updatePatch.status = snapshot || 'draft'
   }
 
-  const { error: updateError } = await admin.from('references').update(updatePatch).eq('id', ref.id)
+  const { error: updateError } = await admin.from('references').update(asTableUpdate<'references'>(updatePatch)).eq('id', ref.id)
 
   if (updateError) {
     return { success: false, error: updateError.message }

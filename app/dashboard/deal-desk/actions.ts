@@ -322,7 +322,7 @@ export async function updateDealDeskProjectAction(
   if (Object.keys(update).length > 0) {
     const { error } = await supabase
       .from('deal_desk_projects')
-      .update(update)
+      .update(asTableUpdate<'deal_desk_projects'>(update))
       .eq('id', projectId)
       .eq('organization_id', orgId)
 

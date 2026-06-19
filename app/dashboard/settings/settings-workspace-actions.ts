@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { asTableUpdate } from '@/lib/supabase/db-types'
 import { ROUTES } from '@/lib/routes'
 import { normalizeOrgDateDisplayFormat } from '@/lib/format'
 
@@ -56,7 +57,7 @@ export async function updateOrganization(
 
   const { error } = await supabase
     .from('organizations')
-    .update(updates)
+    .update(asTableUpdate<'organizations'>(updates))
     .eq('id', organizationId)
 
   if (error) return { success: false, error: error.message }

@@ -8,6 +8,7 @@ import type {
   BulkImportExtractionResult,
   BulkImportReviewSuggestions,
 } from '@/lib/references/bulk-import-review-types'
+import { asTableUpdate } from '@/lib/supabase/db-types'
 
 function pushSuggestion(
   out: BulkImportReviewSuggestions,
@@ -198,7 +199,7 @@ export async function applyBulkImportExtractionFromBuffer(
   }
 
   if (Object.keys(patch).length > 1) {
-    const { error: updateErr } = await supabase.from('references').update(patch).eq('id', id)
+    const { error: updateErr } = await supabase.from('references').update(asTableUpdate<'references'>(patch)).eq('id', id)
     if (updateErr) {
       extractionError = updateErr.message
       extractionOk = false

@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { getAppOrigin } from '@/lib/env/app-origin'
-import { asReferenceStatus } from '@/lib/supabase/db-types'
+import { asReferenceStatus, asTableUpdate } from '@/lib/supabase/db-types'
 import { profileCanManageOrgData } from '@/lib/roles/profile-guards'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { effectiveCustomerApprovalStatus, hasActiveCustomerApprovalWorkflow } from '@/lib/references/effective-customer-approval'
@@ -249,7 +249,7 @@ export async function resendClientApprovalEmailImpl(referenceId: string) {
 
   const { error: updateError } = await supabase
     .from('references')
-    .update(tokenPatch)
+    .update(asTableUpdate<'references'>(tokenPatch))
     .eq('id', referenceId)
 
   if (updateError) throw new Error(updateError.message)

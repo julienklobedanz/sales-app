@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { asTableUpdate } from '@/lib/supabase/db-types'
 import { ROUTES } from '@/lib/routes'
 import { validatePasswordPolicy } from '@/lib/security/password-policy'
 import { isValidSalesPhone, salesContactValidationMessage } from '@/lib/profile/sales-contact'
@@ -135,7 +136,7 @@ export async function updateProfile(formData: FormData) {
 
   const { error } = await supabase
     .from('profiles')
-    .update(updates)
+    .update(asTableUpdate<'profiles'>(updates))
     .eq('id', user.id)
 
   if (error) {

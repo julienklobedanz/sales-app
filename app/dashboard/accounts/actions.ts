@@ -682,7 +682,7 @@ export async function createContactPerson(
 
   const { data, error } = await supabase
     .from('contact_persons')
-    .insert(insertRow)
+    .insert(asTableInsert<'contact_persons'>(insertRow))
     .select('*')
     .single()
   if (error) {
