@@ -41,15 +41,26 @@ export async function getDashboardDataImpl(
 
   const supabase = await createServerSupabaseClient()
 
-  const rows = await getCachedOrgReferenceRows(orgId)
+  const [rows, favResult, portfolioResult, dealRefResult, deletedResult] = await Promise.all([
+    getCachedOrgReferenceRows(orgId),
+    user
+      ? supabase.from('favorites').select('reference_id').eq('user_id', user.id)
+      : Promise.resolve({ data: null }),
+    supabase.from('shared_portfolios').select('reference_ids, view_count'),
+    supabase.from('deal_references').select('reference_id'),
+    // Trash-Indikator: planned reicht (Größenordnung), kein exakter Count nötig.
+    supabase
+      .from('references')
+      .select('id', { count: 'planned', head: true })
+      .eq('organization_id', orgId)
+      .not('deleted_at', 'is', null),
+  ])
 
   // Favoriten des aktuellen Users (Set für schnellen Lookup)
   const favoriteIds = new Set<string>()
-  if (user) {
-    const { data: favs } = await supabase.from('favorites').select('reference_id').eq('user_id', user.id)
-    if (favs) {
-      favs.forEach((f: { reference_id: string }) => favoriteIds.add(f.reference_id))
-    }
+  const favs = favResult.data
+  if (favs) {
+    favs.forEach((f: { reference_id: string }) => favoriteIds.add(f.reference_id))
   }
 
   let references = (rows ?? []).map((r: Record<string, unknown>) => {
@@ -135,7 +146,9 @@ export async function getDashboardDataImpl(
 
   const viewsByRefId = new Map<string, number>()
   const shareCountByRefId = new Map<string, number>()
-  const { data: portfolioRows } = await supabase.from('shared_portfolios').select('reference_ids, view_count')
+  // Follow-up (T2): bei Skalierung shared_portfolios auf Org-Referenz-IDs scopen
+  // (.overlaps('reference_ids', orgRefIds)) — erzeugt Abhängigkeit von rows, daher nicht parallelisierbar.
+  const portfolioRows = portfolioResult.data
   if (portfolioRows?.length) {
     for (const row of portfolioRows) {
       const ids = (row.reference_ids as string[] | null) ?? []
@@ -148,7 +161,7 @@ export async function getDashboardDataImpl(
   }
 
   const dealLinkCountByRefId = new Map<string, number>()
-  const { data: dealRefRows } = await supabase.from('deal_references').select('reference_id')
+  const dealRefRows = dealRefResult.data
   if (dealRefRows?.length) {
     for (const row of dealRefRows) {
       const id = (row as { reference_id?: string }).reference_id
@@ -164,11 +177,6 @@ export async function getDashboardDataImpl(
   }))
 
   let deletedCount = 0
-  const deletedResult = await supabase
-    .from('references')
-    .select('id', { count: 'exact', head: true })
-    .eq('organization_id', orgId)
-    .not('deleted_at', 'is', null)
   if (!deletedResult.error) {
     deletedCount = deletedResult.count ?? 0
   }
