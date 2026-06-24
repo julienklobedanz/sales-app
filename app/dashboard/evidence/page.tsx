@@ -1,8 +1,10 @@
+import { Suspense } from 'react'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
 import { getDashboardDataImpl } from '@/lib/evidence/dashboard'
 import { DashboardOverview } from '@/app/dashboard/dashboard-overview'
+import { EvidencePageSkeleton } from '@/components/dashboard/evidence-page-skeleton'
 import { enrichReferencedCompaniesMissingBrandfetch } from '@/lib/evidence/sync-company-brandfetch'
 import { getRequestEffectiveRoles, getRequestUser } from '@/lib/auth/request-user'
 import { normalizeOrgDateDisplayFormat } from '@/lib/format'
@@ -98,22 +100,24 @@ export default async function EvidenceHubPage() {
   const complianceDocuments = complianceListed.success ? complianceListed.rows : []
 
   return (
-    <DashboardOverview
-      references={references}
-      totalCount={dashboard.totalCount}
-      deletedCount={dashboard.deletedCount}
-      profile={{
-        full_name: profile.full_name,
-        role: effectiveRole,
-        systemRole: effectiveSystemRole,
-        functionRole: effectiveFunctionRole,
-        capabilities,
-      }}
-      companies={companies}
-      contacts={contactsResult.data ?? []}
-      externalContacts={externalContactsResult.data ?? []}
-      orgDateDisplayFormat={orgDateDisplayFormat}
-      complianceDocuments={complianceDocuments}
-    />
+    <Suspense fallback={<EvidencePageSkeleton />}>
+      <DashboardOverview
+        references={references}
+        totalCount={dashboard.totalCount}
+        deletedCount={dashboard.deletedCount}
+        profile={{
+          full_name: profile.full_name,
+          role: effectiveRole,
+          systemRole: effectiveSystemRole,
+          functionRole: effectiveFunctionRole,
+          capabilities,
+        }}
+        companies={companies}
+        contacts={contactsResult.data ?? []}
+        externalContacts={externalContactsResult.data ?? []}
+        orgDateDisplayFormat={orgDateDisplayFormat}
+        complianceDocuments={complianceDocuments}
+      />
+    </Suspense>
   )
 }

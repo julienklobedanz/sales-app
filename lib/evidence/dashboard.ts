@@ -1,4 +1,4 @@
-'use server'
+import 'server-only'
 
 import { getRequestProfile, getRequestUser } from '@/lib/auth/request-user'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
