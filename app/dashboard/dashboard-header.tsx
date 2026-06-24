@@ -5,6 +5,7 @@ import { Fragment } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useTheme } from 'next-themes'
+import { Check } from 'lucide-react'
 import {
   Bell,
   LogOut,
@@ -39,7 +40,7 @@ import {
 import { useCommandPalette } from '@/hooks/useCommandPalette'
 import { useHydrated } from '@/hooks/use-hydrated'
 import { type AppRole, useRole } from '@/hooks/useRole'
-import { DEV_ROLE_PRESETS, type DevRolePreview } from '@/lib/dev-role-preview'
+import { DEV_ROLE_PRESETS, formatDevRolePreviewLabel, type DevRolePreview } from '@/lib/dev-role-preview'
 import { createClient } from '@/lib/supabase/client'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
@@ -93,6 +94,7 @@ export function DashboardHeader({
   userRole,
   initialNotifications = [],
   devRolePreviewEnabled = false,
+  devRolePreviewActive = false,
 }: {
   userId: string
   userName: string
@@ -101,6 +103,7 @@ export function DashboardHeader({
   userRole: AppRole
   initialNotifications?: DashboardNotificationItem[]
   devRolePreviewEnabled?: boolean
+  devRolePreviewActive?: boolean
 }) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -200,6 +203,18 @@ export function DashboardHeader({
       const res = await setDevPreviewRole(preview)
       if (!res.ok) {
         toast.error(res.error ?? 'Rolle konnte nicht gesetzt werden.')
+        return
+      }
+      toast.success(COPY.roleSwitcher.switchSuccess)
+      router.refresh()
+    })
+  }
+
+  function resetDevRole() {
+    startRoleSwitch(async () => {
+      const res = await clearDevPreviewRole()
+      if (!res.ok) {
+        toast.error(res.error ?? 'Anzeige konnte nicht zurückgesetzt werden.')
         return
       }
       toast.success(COPY.roleSwitcher.switchSuccess)
@@ -646,7 +661,7 @@ export function DashboardHeader({
                 {DEV_ROLE_PRESETS.map((preset) => {
                   const active =
                     preset.systemRole === systemRole && preset.functionRole === functionRole
-                  const label = `${COPY.roleDimensions.systemRoles[preset.systemRole]} · ${COPY.roleDimensions.functionRoles[preset.functionRole]}`
+                  const label = formatDevRolePreviewLabel(preset)
                   return (
                     <DropdownMenuItem
                       key={`${preset.systemRole}:${preset.functionRole}`}
@@ -654,10 +669,28 @@ export function DashboardHeader({
                       onSelect={() => selectDevRole(preset)}
                       className={cn('cursor-pointer', active && 'bg-accent font-medium')}
                     >
-                      {label}
+                      {active ? <Check className="mr-2 size-4 shrink-0" aria-hidden /> : null}
+                      <span className={cn(!active && 'pl-6')}>
+                        {label}
+                        {active ? (
+                          <span className="ml-1 text-xs text-muted-foreground">
+                            ({COPY.roleSwitcher.profileMenuActiveSuffix})
+                          </span>
+                        ) : null}
+                      </span>
                     </DropdownMenuItem>
                   )
                 })}
+                <DropdownMenuItem
+                  disabled={roleSwitchPending || !devRolePreviewActive}
+                  onSelect={resetDevRole}
+                  className="cursor-pointer text-muted-foreground"
+                >
+                  {COPY.roleSwitcher.profileMenuReset}
+                </DropdownMenuItem>
+                <p className="px-2 py-1.5 text-[11px] leading-snug text-muted-foreground">
+                  {COPY.roleSwitcher.profileMenuHint}
+                </p>
                 <DropdownMenuSeparator />
               </>
             ) : null}

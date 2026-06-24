@@ -1,9 +1,11 @@
 import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
 import {
+  isSystemAdmin,
   legacyAppRoleFrom,
   legacyRoleToDimensions,
 } from '@/lib/roles/legacy-mapping'
 import type { AppRole } from '@/lib/roles/types'
+import { COPY } from '@/lib/copy'
 
 /** Cookie für die in der Oberfläche gewählte Rolle (wirkt zusammen mit Profil im Layout). */
 export const DEV_ROLE_COOKIE = 'refstack_dev_role'
@@ -21,6 +23,25 @@ export function isDevRolePreviewEnabled(): boolean {
   if (flag === '1') return true
   if (flag === '0') return false
   return process.env.NODE_ENV !== 'production'
+}
+
+/** Env-Flag + in Production nur Owner/Admin (echte DB-Rolle, nicht Preview-Cookie). */
+export function canUseDevRolePreview(systemRole: SystemRole): boolean {
+  if (!isDevRolePreviewEnabled()) return false
+  if (process.env.NODE_ENV !== 'production') return true
+  return systemRole === 'owner' || isSystemAdmin(systemRole)
+}
+
+export function formatDevRolePreviewLabel(preview: DevRolePreview): string {
+  const system =
+    COPY.roleDimensions.systemRoles[preview.systemRole] ?? preview.systemRole
+  const fn =
+    COPY.roleDimensions.functionRoles[preview.functionRole] ?? preview.functionRole
+  return `${system} · ${fn}`
+}
+
+export function devRolePreviewKey(preview: DevRolePreview): string {
+  return `${preview.systemRole}:${preview.functionRole}`
 }
 
 function parseDimensionToken(value: string, allowed: Set<string>): string | null {

@@ -61,6 +61,7 @@ export function DashboardShell({
   initialNotifications = [],
   workspaceBranding = null,
   devRolePreviewEnabled = false,
+  devRolePreviewActive = false,
 }: {
   children: React.ReactNode
   user: User
@@ -68,6 +69,7 @@ export function DashboardShell({
   initialNotifications?: DashboardNotificationItem[]
   workspaceBranding?: { enabled: boolean; primary: string; secondary: string } | null
   devRolePreviewEnabled?: boolean
+  devRolePreviewActive?: boolean
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -378,6 +380,7 @@ export function DashboardShell({
             userRole={legacyAppRoleFrom(profile.systemRole, profile.functionRole)}
             initialNotifications={initialNotifications}
             devRolePreviewEnabled={devRolePreviewEnabled}
+            devRolePreviewActive={devRolePreviewActive}
           />
         </Suspense>
         <div

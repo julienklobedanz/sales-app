@@ -1,5 +1,11 @@
-import { isDevRolePreviewEnabled } from '@/lib/dev-role-preview'
+import { cookies } from 'next/headers'
+import {
+  canUseDevRolePreview,
+  DEV_ROLE_COOKIE,
+  parseDevRolePreviewCookie,
+} from '@/lib/dev-role-preview'
 import { getRequestEffectiveRoles, getRequestUser } from '@/lib/auth/request-user'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
@@ -32,6 +38,12 @@ export default async function DashboardLayout({
   }
 
   const { profile, effectiveRole, systemRole: effectiveSystemRole, functionRole: effectiveFunctionRole, capabilities: effectiveCapabilities } = effective
+
+  const serverRoles = parseProfileRoles(profile)
+  const cookieStore = await cookies()
+  const previewRoles = parseDevRolePreviewCookie(cookieStore.get(DEV_ROLE_COOKIE)?.value)
+  const devRolePreviewEnabled = canUseDevRolePreview(serverRoles.systemRole)
+  const devRolePreviewActive = devRolePreviewEnabled && previewRoles !== null
 
   const initialNotifications = await getInboxNotificationsForLayout(user.id, effectiveRole)
 
@@ -67,7 +79,8 @@ export default async function DashboardLayout({
       }}
       initialNotifications={initialNotifications}
       workspaceBranding={workspaceBranding}
-      devRolePreviewEnabled={isDevRolePreviewEnabled()}
+      devRolePreviewEnabled={devRolePreviewEnabled}
+      devRolePreviewActive={devRolePreviewActive}
     >
       <DashboardMfaGate>{children}</DashboardMfaGate>
     </DashboardShell>

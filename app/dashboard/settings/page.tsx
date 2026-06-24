@@ -3,7 +3,7 @@ import { Suspense } from 'react'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
-import { DEV_ROLE_COOKIE, isDevRolePreviewEnabled, parseDevRolePreviewCookie } from '@/lib/dev-role-preview'
+import { DEV_ROLE_COOKIE, canUseDevRolePreview, parseDevRolePreviewCookie } from '@/lib/dev-role-preview'
 import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
@@ -225,7 +225,8 @@ export default async function SettingsPage() {
 
   const cookieStore = await cookies()
   const serverRoles = parseProfileRoles(profileRow)
-  const previewRoles = isDevRolePreviewEnabled()
+  const devRolePreviewEnabled = canUseDevRolePreview(serverRoles.systemRole)
+  const previewRoles = devRolePreviewEnabled
     ? parseDevRolePreviewCookie(cookieStore.get(DEV_ROLE_COOKIE)?.value)
     : null
   const isAdmin = isSystemAdmin(serverRoles.systemRole)
@@ -270,7 +271,7 @@ export default async function SettingsPage() {
     <div className="flex flex-col space-y-6">
       <Suspense fallback={<div className="h-96 animate-pulse rounded-xl bg-muted/40" />}>
         <SettingsTabs
-        devRolePreviewEnabled={isDevRolePreviewEnabled()}
+        devRolePreviewEnabled={devRolePreviewEnabled}
         roleSwitcher={{
           serverRoles: {
             systemRole: serverRoles.systemRole,

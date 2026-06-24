@@ -2,12 +2,14 @@
 
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
+import { getRequestProfile } from '@/lib/auth/request-user'
 import {
+  canUseDevRolePreview,
   DEV_ROLE_COOKIE,
   formatDevRolePreviewCookie,
-  isDevRolePreviewEnabled,
   type DevRolePreview,
 } from '@/lib/dev-role-preview'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { ROUTES } from '@/lib/routes'
 
 function revalidateDashboardRole() {
@@ -18,10 +20,25 @@ export type SetDevPreviewRoleResult =
   | { ok: true }
   | { ok: false; error: string }
 
-export async function setDevPreviewRole(preview: DevRolePreview): Promise<SetDevPreviewRoleResult> {
-  if (!isDevRolePreviewEnabled()) {
-    return { ok: false, error: 'Rollen-Vorschau ist in dieser Umgebung deaktiviert.' }
+async function assertDevRolePreviewAllowed(): Promise<SetDevPreviewRoleResult | { ok: true }> {
+  const profile = await getRequestProfile()
+  if (!profile) {
+    return { ok: false, error: 'Profil nicht gefunden.' }
   }
+  const { systemRole } = parseProfileRoles(profile)
+  if (!canUseDevRolePreview(systemRole)) {
+    return {
+      ok: false,
+      error: 'Rollen-Vorschau ist in dieser Umgebung nicht verfügbar.',
+    }
+  }
+  return { ok: true }
+}
+
+export async function setDevPreviewRole(preview: DevRolePreview): Promise<SetDevPreviewRoleResult> {
+  const allowed = await assertDevRolePreviewAllowed()
+  if (!allowed.ok) return allowed
+
   try {
     const jar = await cookies()
     jar.set(DEV_ROLE_COOKIE, formatDevRolePreviewCookie(preview), {
@@ -41,8 +58,9 @@ export async function setDevPreviewRole(preview: DevRolePreview): Promise<SetDev
 }
 
 export async function clearDevPreviewRole() {
-  if (!isDevRolePreviewEnabled()) {
-    return { ok: true as const }
+  const allowed = await assertDevRolePreviewAllowed()
+  if (!allowed.ok) {
+    return allowed
   }
   const jar = await cookies()
   jar.set(DEV_ROLE_COOKIE, '', { path: '/', maxAge: 0 })

@@ -1,8 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  canUseDevRolePreview,
   DEV_ROLE_PRESETS,
   formatDevRolePreviewCookie,
+  formatDevRolePreviewLabel,
   isDevRolePreviewEnabled,
   parseAppRoleCookie,
   parseDevRolePreviewCookie,
@@ -85,5 +87,42 @@ describe('isDevRolePreviewEnabled', () => {
 
     vi.stubEnv('NEXT_PUBLIC_ENABLE_DEV_ROLE_PREVIEW', '0')
     expect(isDevRolePreviewEnabled()).toBe(false)
+  })
+})
+
+describe('canUseDevRolePreview', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  it('allows all roles in development when preview is enabled', () => {
+    vi.stubEnv('NODE_ENV', 'development')
+    delete process.env.NEXT_PUBLIC_ENABLE_DEV_ROLE_PREVIEW
+    expect(canUseDevRolePreview('member')).toBe(true)
+    expect(canUseDevRolePreview('owner')).toBe(true)
+  })
+
+  it('restricts production to owner and admin when flag is 1', () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('NEXT_PUBLIC_ENABLE_DEV_ROLE_PREVIEW', '1')
+    expect(canUseDevRolePreview('owner')).toBe(true)
+    expect(canUseDevRolePreview('admin')).toBe(true)
+    expect(canUseDevRolePreview('member')).toBe(false)
+    expect(canUseDevRolePreview('viewer')).toBe(false)
+  })
+
+  it('denies everyone when preview is disabled', () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    delete process.env.NEXT_PUBLIC_ENABLE_DEV_ROLE_PREVIEW
+    expect(canUseDevRolePreview('owner')).toBe(false)
+    expect(canUseDevRolePreview('admin')).toBe(false)
+  })
+})
+
+describe('formatDevRolePreviewLabel', () => {
+  it('formats preset labels in German', () => {
+    expect(
+      formatDevRolePreviewLabel({ systemRole: 'member', functionRole: 'sales_rep' })
+    ).toContain('Vertrieb')
   })
 })

@@ -32,6 +32,10 @@ export const COPY = {
   /** Profilmenü: welche Rolle die Oberfläche steuert (Cookie, nur wenn die Umgebung es erlaubt). */
   roleSwitcher: {
     profileMenuSectionTitle: 'Rolle wechseln',
+    profileMenuReset: 'Anzeige zurücksetzen',
+    profileMenuHint:
+      'Steuert nur die Oberfläche. Server und Datenbank nutzen weiterhin deine gespeicherte Profil-Rolle.',
+    profileMenuActiveSuffix: 'aktiv',
     roleMarketingAdmin: 'Marketing / Admin',
     roleAccountManager: 'Account Manager',
     roleSalesRep: 'Sales Representative',

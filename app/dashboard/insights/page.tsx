@@ -7,8 +7,8 @@ import {
   resolveInsightsScope,
 } from '@/app/dashboard/insights/insights-data'
 import {
+  canUseDevRolePreview,
   DEV_ROLE_COOKIE,
-  isDevRolePreviewEnabled,
   parseDevRolePreviewCookie,
 } from '@/lib/dev-role-preview'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
@@ -33,7 +33,7 @@ export default async function InsightsPage() {
 
   const cookieStore = await cookies()
   const serverRoles = parseProfileRoles(profile)
-  const previewRoles = isDevRolePreviewEnabled()
+  const previewRoles = canUseDevRolePreview(serverRoles.systemRole)
     ? parseDevRolePreviewCookie(cookieStore.get(DEV_ROLE_COOKIE)?.value)
     : null
   const functionRole = previewRoles?.functionRole ?? serverRoles.functionRole

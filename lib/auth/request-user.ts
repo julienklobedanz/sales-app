@@ -4,7 +4,7 @@ import { cookies } from 'next/headers'
 import type { AppRole } from '@/hooks/useRole'
 import {
   DEV_ROLE_COOKIE,
-  isDevRolePreviewEnabled,
+  canUseDevRolePreview,
   parseDevRolePreviewCookie,
 } from '@/lib/dev-role-preview'
 import { log } from '@/lib/observability/logger'
@@ -62,7 +62,7 @@ export const getRequestEffectiveRoles = cache(async (): Promise<RequestEffective
 
   const serverRoles = parseProfileRoles(profile)
   const cookieStore = await cookies()
-  const previewRoles = isDevRolePreviewEnabled()
+  const previewRoles = canUseDevRolePreview(serverRoles.systemRole)
     ? parseDevRolePreviewCookie(cookieStore.get(DEV_ROLE_COOKIE)?.value)
     : null
 
