@@ -20,7 +20,7 @@ import {
   COMPANIES_IMPORT_ACCEPT,
   downloadCompaniesImportTemplate,
   isCompaniesImportFile,
-} from '@/lib/accounts/companies-import-template'
+} from '@/lib/accounts/companies-import-shared'
 import { cn } from '@/lib/utils'
 
 type Props = {
@@ -87,7 +87,11 @@ export function CompaniesImportDialog({
             variant="outline"
             className="w-full justify-center gap-2"
             disabled={importing}
-            onClick={() => downloadCompaniesImportTemplate(entityKind)}
+            onClick={() => {
+              void downloadCompaniesImportTemplate(entityKind).catch(() => {
+                toast.error('Vorlage konnte nicht geladen werden.')
+              })
+            }}
           >
             <AppIcon icon={Download} size={16} aria-hidden />
             {COPY.accounts.importTemplateDownload}

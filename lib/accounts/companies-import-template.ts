@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx'
 
 import type { CompanyEntityKind } from '@/lib/accounts/company-entity'
+import { companiesImportTemplateFilename } from '@/lib/accounts/companies-import-shared'
 
 const ACCOUNT_HEADERS = ['Name', 'Website', 'Branche', 'Standort', 'Mitarbeiter'] as const
 const PARTNER_HEADERS = [
@@ -34,24 +35,12 @@ function buildImportTemplateWorkbook(entityKind: CompanyEntityKind): XLSX.WorkBo
   return workbook
 }
 
-export function downloadCompaniesImportTemplate(entityKind: CompanyEntityKind): void {
+export function buildCompaniesImportTemplateXlsx(entityKind: CompanyEntityKind): {
+  buffer: Buffer
+  filename: string
+} {
   const workbook = buildImportTemplateWorkbook(entityKind)
-  const filename =
-    entityKind === 'partner' ? 'partner-import-vorlage.xlsx' : 'accounts-import-vorlage.xlsx'
-  XLSX.writeFile(workbook, filename)
-}
-
-export const COMPANIES_IMPORT_ACCEPT =
-  '.xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv'
-
-export function isCompaniesImportFile(file: File): boolean {
-  const name = file.name.toLowerCase()
-  return (
-    name.endsWith('.csv') ||
-    name.endsWith('.xlsx') ||
-    name.endsWith('.xls') ||
-    file.type === 'text/csv' ||
-    file.type.includes('spreadsheet') ||
-    file.type.includes('excel')
-  )
+  const filename = companiesImportTemplateFilename(entityKind)
+  const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' }) as Buffer
+  return { buffer, filename }
 }

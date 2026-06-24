@@ -1,5 +1,10 @@
 import type { NextConfig } from 'next'
+import bundleAnalyzer from '@next/bundle-analyzer'
 import { LEGACY_REDIRECTS } from './lib/routes'
+
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === 'true',
+})
 
 const nextConfig: NextConfig = {
   // pdf-parse/pdfjs nativ laden — verhindert fehlgeschlagene Textextraktion nach Webpack-Bundle.
@@ -23,4 +28,4 @@ const nextConfig: NextConfig = {
   },
 }
 
-export default nextConfig
+export default withBundleAnalyzer(nextConfig)

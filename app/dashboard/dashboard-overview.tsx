@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -87,14 +88,12 @@ import { AccountsToolbarTooltip } from '@/app/dashboard/accounts/components/acco
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { ShareLinkDialog } from './overview/share-link-dialog'
 import { BulkDeleteReferencesDialog } from './overview/bulk-delete-references-dialog'
-import { InboxReferencesConceptClient } from '@/app/dashboard/overview/inbox-references/client'
 import { TrashDialog } from './overview/trash-dialog'
 import {
   renderReferenceColumnCell,
   renderReferenceColumnHeader,
   type ReferenceColumnKey,
 } from './overview/reference-table-column-renders'
-import { ReferenceDetailSheet } from './overview/reference-detail-sheet'
 import { ReferencesOverviewBrandfetchSync } from './overview/references-overview-brandfetch-sync'
 import { ReferencesBulkActionsBar } from './overview/references-bulk-actions-bar'
 import { EvidenceOnboardingEmptyState } from '@/app/dashboard/evidence/components/evidence-onboarding-empty-state'
@@ -112,6 +111,32 @@ import {
   matchesReferenceVolumeFilter,
   type ReferenceVolumeFilter,
 } from '@/lib/references/reference-volume-filter'
+
+const InboxReferencesConceptClient = dynamic(
+  () =>
+    import('@/app/dashboard/overview/inbox-references/client').then((m) => ({
+      default: m.InboxReferencesConceptClient,
+    })),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        className="min-h-[32rem] w-full animate-pulse rounded-lg border border-border/60 bg-muted/30"
+        aria-busy
+        aria-label="Laden"
+      />
+    ),
+  }
+)
+
+const ReferenceDetailSheet = dynamic(
+  () =>
+    import('./overview/reference-detail-sheet').then((m) => ({
+      default: m.ReferenceDetailSheet,
+    })),
+  { ssr: false, loading: () => null }
+)
+
 // --- Konstanten & Hilfsfunktionen ---
 
 const STATUS_LABELS: Record<string, string> = {
