@@ -1,5 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
+import {
+  getRequestProfile,
+  getRequestUser,
+  REQUEST_PROFILE_SELECT,
+  type RequestProfile,
+} from '@/lib/auth/request-user'
 import { getReferenceVisibilityScope } from '@/lib/roles/reference-visibility-scope'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { parseRolesPermissionsSettings } from '@/lib/roles/roles-permissions-settings'
@@ -11,11 +17,19 @@ export async function loadReferenceVisibilityForUser(
   organizationId: string
   salesVisibleOnly: boolean
 } | null> {
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id, system_role, function_role, capabilities')
-    .eq('id', userId)
-    .single()
+  const requestUser = await getRequestUser()
+  let profile: RequestProfile | null = null
+
+  if (requestUser?.id === userId) {
+    profile = await getRequestProfile()
+  } else {
+    const { data } = await supabase
+      .from('profiles')
+      .select(REQUEST_PROFILE_SELECT)
+      .eq('id', userId)
+      .single()
+    profile = data
+  }
 
   if (!profile?.organization_id) return null
 

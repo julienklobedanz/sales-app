@@ -1,56 +1,47 @@
-import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
-import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { DashboardHome } from '@/components/dashboard/dashboard-home'
+import { DashboardHomeSkeleton } from '@/components/dashboard/dashboard-home-skeleton'
 import type { RoleHomeDashboardPayload } from '@/components/dashboard/role-home-dashboard'
-import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { loadDashboardHomeForFunctionRole } from '@/app/dashboard/dashboard-home-data'
-import {
-  DEV_ROLE_COOKIE,
-  isDevRolePreviewEnabled,
-  parseDevRolePreviewCookie,
-} from '@/lib/dev-role-preview'
+import { getRequestEffectiveRoles, getRequestUser } from '@/lib/auth/request-user'
 
 export const dynamic = 'force-dynamic'
 
-export default async function DashboardPage() {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<DashboardHomeSkeleton />}>
+      <DashboardHomeContent />
+    </Suspense>
+  )
+}
+
+async function DashboardHomeContent() {
+  const user = await getRequestUser()
   if (!user) {
     redirect(ROUTES.login)
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id, full_name, system_role, function_role, capabilities')
-    .eq('id', user.id)
-    .maybeSingle()
-
-  if (!profile?.organization_id) {
+  const effective = await getRequestEffectiveRoles()
+  if (!effective?.profile.organization_id) {
     redirect(ROUTES.onboarding)
   }
 
-  const cookieStore = await cookies()
-  const serverRoles = parseProfileRoles(profile)
-  const previewRoles = isDevRolePreviewEnabled()
-    ? parseDevRolePreviewCookie(cookieStore.get(DEV_ROLE_COOKIE)?.value)
-    : null
-  const functionRole = previewRoles?.functionRole ?? serverRoles.functionRole
-  const systemRole = previewRoles?.systemRole ?? serverRoles.systemRole
+  const { profile, functionRole, systemRole } = effective
+  const supabase = await createServerSupabaseClient()
 
   const dashboardPayload: RoleHomeDashboardPayload = await loadDashboardHomeForFunctionRole(
     functionRole,
     systemRole,
     supabase,
     user.id,
-    profile.full_name as string | null
+    profile.full_name,
+    profile.organization_id ?? undefined
   )
 
-  const orgId = profile.organization_id
+  const orgId = profile.organization_id as string
 
   const [
     accountsRes,
@@ -72,7 +63,7 @@ export default async function DashboardPage() {
       .is('deleted_at', null),
     supabase
       .from('profiles')
-      .select('id', { count: 'planned', head: true }) // KPI-Trend, ±1 akzeptabel
+      .select('id', { count: 'planned', head: true })
       .eq('organization_id', orgId),
     supabase
       .from('organization_invites')
@@ -99,7 +90,7 @@ export default async function DashboardPage() {
     const [newsRes, execRes] = await Promise.all([
       supabase
         .from('market_signal_account_news')
-        .select('id', { count: 'planned', head: true }) // KPI-Trend, ±1 akzeptabel
+        .select('id', { count: 'planned', head: true })
         .in('company_id', companyIds),
       supabase
         .from('market_signal_executive_events')
@@ -112,20 +103,18 @@ export default async function DashboardPage() {
   const isBrandNew = accountCount === 0 && referenceCount === 0
 
   return (
-    <Suspense fallback={<div className="mx-auto mt-12 h-64 max-w-xl animate-pulse rounded-2xl bg-muted/40" />}>
-      <DashboardHome
-        greetingName={profile.full_name as string | null}
-        isBrandNew={isBrandNew}
-        userRegisteredAt={user.created_at}
-        progress={{
-          hasAccounts: accountCount > 0,
-          hasReferences: referenceCount > 0,
-          hasTeamInvites: memberCount > 1 || pendingInviteCount > 0,
-          hasMarketSignals: signalCount > 0 || favoriteAccountCount > 0,
-        }}
-        dashboardPayload={dashboardPayload}
-        functionRole={functionRole}
-      />
-    </Suspense>
+    <DashboardHome
+      greetingName={profile.full_name}
+      isBrandNew={isBrandNew}
+      userRegisteredAt={user.created_at}
+      progress={{
+        hasAccounts: accountCount > 0,
+        hasReferences: referenceCount > 0,
+        hasTeamInvites: memberCount > 1 || pendingInviteCount > 0,
+        hasMarketSignals: signalCount > 0 || favoriteAccountCount > 0,
+      }}
+      dashboardPayload={dashboardPayload}
+      functionRole={functionRole}
+    />
   )
 }

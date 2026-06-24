@@ -7,12 +7,10 @@ import { dashboardFirstName } from '@/lib/dashboard-home/dashboard-home-pure'
 export async function loadAccountManagerDashboardData(
   supabase: SupabaseClient,
   userId: string,
-  fullName: string | null
+  fullName: string | null,
+  orgId: string | undefined
 ): Promise<AccountManagerDashboardModel> {
   const greetingName = dashboardFirstName(fullName) || 'du'
-
-  const { data: profile } = await supabase.from('profiles').select('organization_id').eq('id', userId).single()
-  const orgId = profile?.organization_id as string | undefined
 
   const kpis = orgId
     ? await loadReferenceKpis(supabase, orgId)

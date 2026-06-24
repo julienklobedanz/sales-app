@@ -25,35 +25,36 @@ async function loadDashboardHomeForFunctionRoleInner(
   systemRole: SystemRole,
   supabase: SupabaseClient,
   userId: string,
-  fullName: string | null
+  fullName: string | null,
+  organizationId: string | undefined
 ): Promise<DashboardHomePayload> {
   if (systemRole === 'viewer') {
     return {
       variant: 'generalist',
-      data: await loadGeneralistDashboardData(supabase, userId, fullName),
+      data: await loadGeneralistDashboardData(supabase, userId, fullName, organizationId),
     }
   }
   if (functionRole === 'account_manager') {
     return {
       variant: 'account_manager',
-      data: await loadAccountManagerDashboardData(supabase, userId, fullName),
+      data: await loadAccountManagerDashboardData(supabase, userId, fullName, organizationId),
     }
   }
   if (functionRole === 'sales_leader') {
     return {
       variant: 'sales_leader',
-      data: await loadAdminDashboardData(supabase, fullName),
+      data: await loadAdminDashboardData(supabase, fullName, organizationId),
     }
   }
   if (functionRole === 'sales_rep') {
     return {
       variant: 'sales_rep',
-      data: await loadSalesRepDashboardData(supabase, userId, fullName),
+      data: await loadSalesRepDashboardData(supabase, userId, fullName, organizationId),
     }
   }
   return {
     variant: 'generalist',
-    data: await loadGeneralistDashboardData(supabase, userId, fullName),
+    data: await loadGeneralistDashboardData(supabase, userId, fullName, organizationId),
   }
 }
 
@@ -63,9 +64,17 @@ export async function loadDashboardHomeForRole(
   functionRole: FunctionRole,
   supabase: SupabaseClient,
   userId: string,
-  fullName: string | null
+  fullName: string | null,
+  organizationId?: string
 ): Promise<DashboardHomePayload> {
-  return loadDashboardHomeForFunctionRole(functionRole, systemRole, supabase, userId, fullName)
+  return loadDashboardHomeForFunctionRole(
+    functionRole,
+    systemRole,
+    supabase,
+    userId,
+    fullName,
+    organizationId
+  )
 }
 
 export async function loadDashboardHomeForFunctionRole(
@@ -73,15 +82,9 @@ export async function loadDashboardHomeForFunctionRole(
   systemRole: SystemRole,
   supabase: SupabaseClient,
   userId: string,
-  fullName: string | null
+  fullName: string | null,
+  organizationId?: string
 ): Promise<DashboardHomePayload> {
-  const { data: prof } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', userId)
-    .maybeSingle()
-  const organizationId = prof?.organization_id as string | undefined
-
   const timingLabel =
     systemRole === 'viewer'
       ? 'dashboard.home.generalist'
@@ -97,7 +100,14 @@ export async function loadDashboardHomeForFunctionRole(
     const { result } = await withTiming(
       timingLabel,
       () =>
-        loadDashboardHomeForFunctionRoleInner(functionRole, systemRole, supabase, userId, fullName),
+        loadDashboardHomeForFunctionRoleInner(
+          functionRole,
+          systemRole,
+          supabase,
+          userId,
+          fullName,
+          organizationId
+        ),
       { organizationId, userId, functionRole, systemRole }
     )
     return result

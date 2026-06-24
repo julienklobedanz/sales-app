@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
+import { getRequestProfile, getRequestUser } from '@/lib/auth/request-user'
 import { Resend } from 'resend'
 import { getAppOrigin } from '@/lib/env/app-origin'
 import { resolveReferenceManagerEmail } from '@/lib/reference-manager-email'
@@ -16,17 +17,9 @@ import {
 import type { DealRow, DealStatus, DealWithReferences } from './types'
 
 async function getSessionOrgId(
-  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>
+  _supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>
 ): Promise<string | null> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return null
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', user.id)
-    .single()
+  const profile = await getRequestProfile()
   return profile?.organization_id ?? null
 }
 

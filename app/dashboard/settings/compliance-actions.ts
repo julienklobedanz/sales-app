@@ -8,6 +8,7 @@ import { inferComplianceDocumentTypeFromUpload } from '@/lib/compliance/document
 import { extractCertificateExpiryFromText } from '@/lib/compliance/extract-certificate-expiry'
 import { buildComplianceStorageFileName } from '@/lib/compliance/upload-filename'
 import { extractPdfPlainText } from '@/lib/pdf-text-extract'
+import { getRequestProfile, getRequestUser } from '@/lib/auth/request-user'
 import { ROUTES } from '@/lib/routes'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
@@ -49,20 +50,13 @@ type ComplianceAuth =
     }
 
 async function getComplianceAuth(): Promise<ComplianceAuth> {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getRequestUser()
   if (!user) return { error: 'Nicht eingeloggt.' }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id, system_role, function_role')
-    .eq('id', user.id)
-    .single()
-
+  const profile = await getRequestProfile()
   if (!profile?.organization_id) return { error: 'Onboarding unvollständig.' }
 
+  const supabase = await createServerSupabaseClient()
   const { systemRole } = parseProfileRoles(profile)
 
   const { data: org } = await supabase

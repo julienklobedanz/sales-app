@@ -19,16 +19,10 @@ import {
 
 export async function loadAdminDashboardData(
   supabase: SupabaseClient,
-  fullName: string | null
+  fullName: string | null,
+  orgId: string | undefined
 ): Promise<AdminDashboardModel> {
   const greetingName = dashboardFirstName(fullName) || 'du'
-
-  const { data: profile } = await supabase.auth.getUser()
-  const uid = profile.user?.id
-  const { data: prof } = uid
-    ? await supabase.from('profiles').select('organization_id').eq('id', uid).single()
-    : { data: null }
-  const orgId = prof?.organization_id as string | undefined
 
   const kpisBase = orgId ? await loadReferenceKpis(supabase, orgId) : { total: 0, approved: 0, internal: 0, draft: 0 }
   const referencesTotal = kpisBase.total

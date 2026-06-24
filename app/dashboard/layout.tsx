@@ -1,15 +1,8 @@
-import { cookies } from 'next/headers'
-import { createServerSupabaseClient } from '@/lib/supabase/server'
-import type { AppRole } from '@/hooks/useRole'
-import {
-  DEV_ROLE_COOKIE,
-  isDevRolePreviewEnabled,
-  parseDevRolePreviewCookie,
-} from '@/lib/dev-role-preview'
-import { legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
-import { parseProfileRoles } from '@/lib/roles/profile-roles'
+import { isDevRolePreviewEnabled } from '@/lib/dev-role-preview'
+import { getRequestEffectiveRoles, getRequestUser } from '@/lib/auth/request-user'
 import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { DashboardShell } from './dashboard-shell'
 import { DashboardMfaGate } from '@/components/dashboard/DashboardMfaGate'
 import { getInboxNotificationsForLayout } from './actions'
@@ -28,40 +21,24 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const supabase = await createServerSupabaseClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getRequestUser()
   if (!user) {
     redirect(ROUTES.login)
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile) {
+  const effective = await getRequestEffectiveRoles()
+  if (!effective) {
     redirect(ROUTES.onboarding)
   }
 
-  const cookieStore = await cookies()
-  const serverRoles = parseProfileRoles(profile as Parameters<typeof parseProfileRoles>[0])
-  const previewRoles = isDevRolePreviewEnabled()
-    ? parseDevRolePreviewCookie(cookieStore.get(DEV_ROLE_COOKIE)?.value)
-    : null
-  const effectiveSystemRole = previewRoles?.systemRole ?? serverRoles.systemRole
-  const effectiveFunctionRole = previewRoles?.functionRole ?? serverRoles.functionRole
-  const effectiveCapabilities = serverRoles.capabilities
-  const effectiveRole: AppRole = legacyAppRoleFrom(effectiveSystemRole, effectiveFunctionRole)
+  const { profile, effectiveRole, systemRole: effectiveSystemRole, functionRole: effectiveFunctionRole, capabilities: effectiveCapabilities } = effective
 
   const initialNotifications = await getInboxNotificationsForLayout(user.id, effectiveRole)
 
-  const orgId = (profile as { organization_id?: string | null }).organization_id ?? null
+  const orgId = profile.organization_id ?? null
   let workspaceBranding: { enabled: boolean; primary: string; secondary: string } | null = null
   if (orgId) {
+    const supabase = await createServerSupabaseClient()
     const { data: org } = await supabase
       .from('organizations')
       .select('primary_color, secondary_color, api_settings')
@@ -82,7 +59,7 @@ export default async function DashboardLayout({
     <DashboardShell
       user={user}
       profile={{
-        ...profile,
+        full_name: profile.full_name,
         role: effectiveRole,
         systemRole: effectiveSystemRole,
         functionRole: effectiveFunctionRole,

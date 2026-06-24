@@ -1,19 +1,12 @@
-import { cookies } from 'next/headers'
 import { Suspense } from 'react'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
 import { getDashboardData } from '@/app/dashboard/actions'
 import { DashboardOverview } from '@/app/dashboard/dashboard-overview'
+import { EvidencePageSkeleton } from '@/components/dashboard/evidence-page-skeleton'
 import { enrichReferencedCompaniesMissingBrandfetch } from '@/lib/evidence/sync-company-brandfetch'
-import {
-  DEV_ROLE_COOKIE,
-  isDevRolePreviewEnabled,
-  parseDevRolePreviewCookie,
-} from '@/lib/dev-role-preview'
-import type { AppRole } from '@/hooks/useRole'
-import { legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
-import { parseProfileRoles } from '@/lib/roles/profile-roles'
+import { getRequestEffectiveRoles, getRequestUser } from '@/lib/auth/request-user'
 import { normalizeOrgDateDisplayFormat } from '@/lib/format'
 import { listComplianceDocuments } from '@/app/dashboard/settings/compliance-actions'
 import { getReferenceVisibilityScope } from '@/lib/roles/reference-visibility-scope'
@@ -23,29 +16,30 @@ import { getCachedOrgCompanies } from '@/lib/cache/cached-org-reads'
 
 export const dynamic = 'force-dynamic'
 
-export default async function EvidenceHubPage() {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+export default function EvidenceHubPage() {
+  return (
+    <Suspense fallback={<EvidencePageSkeleton />}>
+      <EvidenceHubContent />
+    </Suspense>
+  )
+}
+
+async function EvidenceHubContent() {
+  const user = await getRequestUser()
   if (!user) redirect(ROUTES.login)
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('full_name, organization_id, system_role, function_role, capabilities')
-    .eq('id', user.id)
-    .single()
+  const effective = await getRequestEffectiveRoles()
+  if (!effective) redirect(ROUTES.onboarding)
 
-  if (!profile) redirect(ROUTES.onboarding)
+  const {
+    profile,
+    effectiveRole,
+    systemRole: effectiveSystemRole,
+    functionRole: effectiveFunctionRole,
+    capabilities,
+  } = effective
 
-  const cookieStore = await cookies()
-  const serverRoles = parseProfileRoles(profile)
-  const previewRoles = isDevRolePreviewEnabled()
-    ? parseDevRolePreviewCookie(cookieStore.get(DEV_ROLE_COOKIE)?.value)
-    : null
-  const effectiveSystemRole = previewRoles?.systemRole ?? serverRoles.systemRole
-  const effectiveFunctionRole = previewRoles?.functionRole ?? serverRoles.functionRole
-  const effectiveRole: AppRole = legacyAppRoleFrom(effectiveSystemRole, effectiveFunctionRole)
+  const supabase = await createServerSupabaseClient()
 
   const { data: orgRow } = profile.organization_id
     ? await supabase
@@ -65,7 +59,7 @@ export default async function EvidenceHubPage() {
   const visibilityScope = getReferenceVisibilityScope({
     systemRole: effectiveSystemRole,
     functionRole: effectiveFunctionRole,
-    capabilityOverrides: serverRoles.capabilities,
+    capabilityOverrides: capabilities,
     orgRolesPermissions,
   })
 
@@ -94,7 +88,7 @@ export default async function EvidenceHubPage() {
       : refreshed.references
   }
 
-  const orgId = (profile as { organization_id?: string | null }).organization_id ?? ''
+  const orgId = profile.organization_id ?? ''
 
   const [companies, contactsResult, externalContactsResult, orgFmtResult] = await Promise.all([
     orgId ? getCachedOrgCompanies(orgId) : Promise.resolve([]),
@@ -117,25 +111,22 @@ export default async function EvidenceHubPage() {
   const complianceDocuments = complianceListed.success ? complianceListed.rows : []
 
   return (
-    <Suspense fallback={<div className="min-h-[70vh] animate-pulse rounded-xl bg-muted/40" />}>
-      <DashboardOverview
-        references={references}
-        totalCount={dashboard.totalCount}
-        deletedCount={dashboard.deletedCount}
-        profile={{
-          full_name: profile.full_name,
-          role: effectiveRole,
-          systemRole: effectiveSystemRole,
-          functionRole: effectiveFunctionRole,
-          capabilities: serverRoles.capabilities,
-        }}
-        companies={companies}
-        contacts={contactsResult.data ?? []}
-        externalContacts={externalContactsResult.data ?? []}
-        orgDateDisplayFormat={orgDateDisplayFormat}
-        complianceDocuments={complianceDocuments}
-      />
-    </Suspense>
+    <DashboardOverview
+      references={references}
+      totalCount={dashboard.totalCount}
+      deletedCount={dashboard.deletedCount}
+      profile={{
+        full_name: profile.full_name,
+        role: effectiveRole,
+        systemRole: effectiveSystemRole,
+        functionRole: effectiveFunctionRole,
+        capabilities,
+      }}
+      companies={companies}
+      contacts={contactsResult.data ?? []}
+      externalContacts={externalContactsResult.data ?? []}
+      orgDateDisplayFormat={orgDateDisplayFormat}
+      complianceDocuments={complianceDocuments}
+    />
   )
 }
-

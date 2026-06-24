@@ -14,7 +14,8 @@ import {
 export async function loadSalesRepDashboardData(
   supabase: SupabaseClient,
   userId: string,
-  fullName: string | null
+  fullName: string | null,
+  orgId: string | undefined
 ): Promise<SalesRepDashboardModel> {
   const greetingName = dashboardFirstName(fullName) || 'du'
 
@@ -68,8 +69,6 @@ export async function loadSalesRepDashboardData(
     recommendedNote = 'Keine aktiven Deals – keine automatischen Empfehlungen.'
   }
 
-  const { data: profile } = await supabase.from('profiles').select('organization_id').eq('id', userId).single()
-  const orgId = profile?.organization_id as string | undefined
   let recentShares: RecentShareRow[] = []
   let snoozedSignalsCount = 0
   let dueSnoozesCount = 0

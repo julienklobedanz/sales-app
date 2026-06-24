@@ -1,34 +1,36 @@
+import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 import { getDeals } from './actions'
 import { DealsClientContent } from './deals-client'
+import { DealsPageSkeleton } from '@/components/dashboard/deals-page-skeleton'
 import { getOrganizationCrmConnectionPublicStatus } from '@/lib/crm/connections'
 import { isHubSpotConfigured } from '@/lib/crm/hubspot/config'
-import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
+import { getRequestEffectiveRoles, getRequestUser } from '@/lib/auth/request-user'
 
 export const dynamic = 'force-dynamic'
 
-export default async function DealsPage() {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+export default function DealsPage() {
+  return (
+    <Suspense fallback={<DealsPageSkeleton />}>
+      <DealsPageContent />
+    </Suspense>
+  )
+}
+
+async function DealsPageContent() {
+  const user = await getRequestUser()
   if (!user) redirect(ROUTES.login)
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id, system_role, function_role')
-    .eq('id', user.id)
-    .single()
-
-  const orgId = profile?.organization_id
+  const effective = await getRequestEffectiveRoles()
+  const orgId = effective?.profile.organization_id
   if (!orgId) redirect(ROUTES.onboarding)
 
-  const { systemRole } = parseProfileRoles(profile)
-  const isAdmin = isSystemAdmin(systemRole)
+  const supabase = await createServerSupabaseClient()
+  const isAdmin = isSystemAdmin(effective.systemRole)
   const hubspotConfigured = isHubSpotConfigured()
   const hubspotStatus =
     isAdmin

@@ -1,5 +1,6 @@
 'use server'
 
+import { getRequestProfile, getRequestUser } from '@/lib/auth/request-user'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { getCachedOrgReferenceRows } from '@/lib/cache/cached-org-reads'
 
@@ -24,25 +25,18 @@ function normalizeStatus(raw: unknown): ReferenceStatus {
 }
 
 export async function getDashboardDataImpl(onlyFavorites = false) {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
+  const user = await getRequestUser()
   if (!user) {
     return { references: [], totalCount: 0, deletedCount: 0 }
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', user.id)
-    .maybeSingle()
-
+  const profile = await getRequestProfile()
   const orgId = profile?.organization_id ?? null
   if (!orgId) {
     return { references: [], totalCount: 0, deletedCount: 0 }
   }
+
+  const supabase = await createServerSupabaseClient()
 
   const rows = await getCachedOrgReferenceRows(orgId)
 
