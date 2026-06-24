@@ -5,7 +5,6 @@ import type { DealRow } from '@/app/dashboard/deals/types'
 import { ROUTES } from '@/lib/routes'
 import { ACTIVE_DEAL_STATUSES, type RecommendedRefRow, type RecentShareRow, type SalesRepDashboardModel, type SalesRepDealCard } from '@/lib/dashboard-home/dashboard-home-types'
 import {
-  computeWinRateMetrics,
   countDueMarketSnoozes,
   dashboardFirstName,
   meddpiccAccountAction,
@@ -76,21 +75,6 @@ export async function loadSalesRepDashboardData(
   let liveIntent: SalesRepDashboardModel['liveIntent'] = []
   let strategicAccounts: SalesRepDashboardModel['strategicAccounts'] = []
 
-  const closedDeals = allDeals.filter(
-    (d) => d.sales_manager_id === userId && (d.status === 'won' || d.status === 'lost')
-  )
-  const wonCount = closedDeals.filter((d) => d.status === 'won').length
-  const minClosedForWinRate = 3
-  const { available: winRateAvailable, percent: winRatePercent, closedDealsCount } = computeWinRateMetrics(
-    closedDeals.length,
-    wonCount,
-    minClosedForWinRate
-  )
-  const pipelineImpact: SalesRepDashboardModel['pipelineImpact'] = {
-    winRateAvailable,
-    winRatePercent,
-    closedDealsCount,
-  }
   if (orgId) {
     const [signalReadRows, execRows, newsRows, intentRows] = await Promise.all([
       supabase
@@ -418,7 +402,6 @@ export async function loadSalesRepDashboardData(
     dueSnoozesCount,
     dailyTopActions,
     liveIntent,
-    pipelineImpact,
     strategicAccounts,
   }
 }

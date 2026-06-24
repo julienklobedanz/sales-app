@@ -59,11 +59,6 @@ export type SalesRepDashboardModel = {
     createdAt: string
     href: string | null
   }>
-  pipelineImpact: {
-    winRateAvailable: boolean
-    winRatePercent: number | null
-    closedDealsCount: number
-  }
   strategicAccounts: Array<{
     companyId: string
     companyName: string
