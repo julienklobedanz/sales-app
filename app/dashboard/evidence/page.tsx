@@ -5,14 +5,15 @@ import { redirect } from 'next/navigation'
 import { getDashboardDataImpl } from '@/lib/evidence/dashboard'
 import { DashboardOverview } from '@/app/dashboard/dashboard-overview'
 import { EvidencePageSkeleton } from '@/components/dashboard/evidence-page-skeleton'
-import { enrichReferencedCompaniesMissingBrandfetch } from '@/lib/evidence/sync-company-brandfetch'
 import { getRequestEffectiveRoles, getRequestUser } from '@/lib/auth/request-user'
 import { normalizeOrgDateDisplayFormat } from '@/lib/format'
 import { listComplianceDocuments } from '@/app/dashboard/settings/compliance-actions'
+import type { ComplianceDocumentRow } from '@/app/dashboard/settings/compliance-actions'
 import { getReferenceVisibilityScope } from '@/lib/roles/reference-visibility-scope'
 import { parseRolesPermissionsSettings } from '@/lib/roles/roles-permissions-settings'
 import { filterReferencesForSales } from '@/lib/references/sales-reference-visibility'
 import { getCachedOrgCompanies } from '@/lib/cache/cached-org-reads'
+import { canViewComplianceEvidenceSegment } from '@/lib/evidence/evidence-proof-segment-access'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,14 +34,41 @@ export default async function EvidenceHubPage() {
 
   const orgId = profile.organization_id as string
   const auth = { orgId, userId: user.id }
+  const canViewCompliance = canViewComplianceEvidenceSegment(
+    effectiveSystemRole,
+    effectiveFunctionRole
+  )
 
   const supabase = await createServerSupabaseClient()
 
-  const { data: orgRow } = await supabase
-    .from('organizations')
-    .select('api_settings')
-    .eq('id', orgId)
-    .maybeSingle()
+  const [
+    { data: orgRow },
+    dashboard,
+    companies,
+    contactsResult,
+    externalContactsResult,
+    complianceListed,
+  ] = await Promise.all([
+    supabase
+      .from('organizations')
+      .select('api_settings, date_display_format')
+      .eq('id', orgId)
+      .maybeSingle(),
+    getDashboardDataImpl(false, auth),
+    getCachedOrgCompanies(orgId),
+    supabase
+      .from('contact_persons')
+      .select('id, first_name, last_name, email')
+      .order('last_name'),
+    supabase
+      .from('external_contacts')
+      .select('id, company_id, first_name, last_name, email, role')
+      .eq('organization_id', orgId)
+      .order('last_name'),
+    canViewCompliance
+      ? listComplianceDocuments()
+      : Promise.resolve({ success: true as const, rows: [] as ComplianceDocumentRow[] }),
+  ])
 
   const orgRolesPermissions =
     orgRow?.api_settings && typeof orgRow.api_settings === 'object'
@@ -56,47 +84,14 @@ export default async function EvidenceHubPage() {
     orgRolesPermissions,
   })
 
-  const dashboard = await getDashboardDataImpl(false, auth)
-
-  let references = visibilityScope.restrictToSalesVisibleStatuses
+  const references = visibilityScope.restrictToSalesVisibleStatuses
     ? filterReferencesForSales(dashboard.references)
     : dashboard.references
 
-  const companyIdsNeedingEnrich = [
-    ...new Set(
-      references
-        .filter(
-          (r) =>
-            r.company_id &&
-            (!String(r.company_logo_url ?? '').trim() || !String(r.industry ?? '').trim())
-        )
-        .map((r) => r.company_id as string)
-    ),
-  ]
-  if (companyIdsNeedingEnrich.length > 0) {
-    await enrichReferencedCompaniesMissingBrandfetch(companyIdsNeedingEnrich)
-    const refreshed = await getDashboardDataImpl(false, auth)
-    references = visibilityScope.restrictToSalesVisibleStatuses
-      ? filterReferencesForSales(refreshed.references)
-      : refreshed.references
-  }
-
-  const [companies, contactsResult, externalContactsResult, orgFmtResult] = await Promise.all([
-    getCachedOrgCompanies(orgId),
-    supabase.from('contact_persons').select('*').order('last_name'),
-    supabase
-      .from('external_contacts')
-      .select('id, company_id, first_name, last_name, email, role')
-      .eq('organization_id', orgId)
-      .order('last_name'),
-    supabase.from('organizations').select('date_display_format').eq('id', orgId).maybeSingle(),
-  ])
-
   const orgDateDisplayFormat = normalizeOrgDateDisplayFormat(
-    (orgFmtResult.data as { date_display_format?: string | null } | null)?.date_display_format
+    (orgRow as { date_display_format?: string | null } | null)?.date_display_format
   )
 
-  const complianceListed = await listComplianceDocuments()
   const complianceDocuments = complianceListed.success ? complianceListed.rows : []
 
   return (

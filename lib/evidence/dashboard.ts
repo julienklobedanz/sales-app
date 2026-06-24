@@ -24,6 +24,22 @@ function normalizeStatus(raw: unknown): ReferenceStatus {
   return STATUS_MAP[s] ?? (VALID_STATUSES.includes(s as ReferenceStatus) ? (s as ReferenceStatus) : 'draft')
 }
 
+const DEAL_REF_IN_CHUNK = 150
+
+/** deal_references hat keine organization_id — auf Org-Referenz-IDs scopen (RLS-Session-Client). */
+async function fetchDealReferenceRowsForRefs(
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+  orgRefIds: string[]
+): Promise<{ data: { reference_id: string }[] }> {
+  const rows: { reference_id: string }[] = []
+  for (let i = 0; i < orgRefIds.length; i += DEAL_REF_IN_CHUNK) {
+    const chunk = orgRefIds.slice(i, i + DEAL_REF_IN_CHUNK)
+    const { data } = await supabase.from('deal_references').select('reference_id').in('reference_id', chunk)
+    if (data?.length) rows.push(...(data as { reference_id: string }[]))
+  }
+  return { data: rows }
+}
+
 export async function getDashboardDataImpl(
   onlyFavorites = false,
   auth?: { orgId: string; userId: string }
@@ -41,13 +57,11 @@ export async function getDashboardDataImpl(
 
   const supabase = await createServerSupabaseClient()
 
-  const [rows, favResult, portfolioResult, dealRefResult, deletedResult] = await Promise.all([
+  const [rows, favResult, deletedResult] = await Promise.all([
     getCachedOrgReferenceRows(orgId),
     user
       ? supabase.from('favorites').select('reference_id').eq('user_id', user.id)
       : Promise.resolve({ data: null }),
-    supabase.from('shared_portfolios').select('reference_ids, view_count'),
-    supabase.from('deal_references').select('reference_id'),
     // Trash-Indikator: planned reicht (Größenordnung), kein exakter Count nötig.
     supabase
       .from('references')
@@ -55,6 +69,19 @@ export async function getDashboardDataImpl(
       .eq('organization_id', orgId)
       .not('deleted_at', 'is', null),
   ])
+
+  const orgRefIds = (rows ?? []).map((r) => String(r.id ?? '')).filter(Boolean)
+
+  const [portfolioResult, dealRefResult] =
+    orgRefIds.length > 0
+      ? await Promise.all([
+          supabase
+            .from('shared_portfolios')
+            .select('reference_ids, view_count')
+            .overlaps('reference_ids', orgRefIds),
+          fetchDealReferenceRowsForRefs(supabase, orgRefIds),
+        ])
+      : [{ data: [] as { reference_ids: string[]; view_count: number }[] }, { data: [] as { reference_id: string }[] }]
 
   // Favoriten des aktuellen Users (Set für schnellen Lookup)
   const favoriteIds = new Set<string>()
@@ -146,8 +173,6 @@ export async function getDashboardDataImpl(
 
   const viewsByRefId = new Map<string, number>()
   const shareCountByRefId = new Map<string, number>()
-  // Follow-up (T2): bei Skalierung shared_portfolios auf Org-Referenz-IDs scopen
-  // (.overlaps('reference_ids', orgRefIds)) — erzeugt Abhängigkeit von rows, daher nicht parallelisierbar.
   const portfolioRows = portfolioResult.data
   if (portfolioRows?.length) {
     for (const row of portfolioRows) {
