@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
+import { revalidateOrgCachesForReference } from '@/lib/cache/revalidate-org'
 import { getAppOrigin } from '@/lib/env/app-origin'
 import { asReferenceStatus, asTableUpdate } from '@/lib/supabase/db-types'
 import { profileCanManageOrgData } from '@/lib/roles/profile-guards'
@@ -130,6 +131,7 @@ export async function withdrawApprovalRequestImpl(referenceId: string): Promise<
   revalidatePath(ROUTES.evidence.detail(referenceId))
   revalidatePath(ROUTES.evidence.root)
   revalidatePath(ROUTES.home)
+  await revalidateOrgCachesForReference(referenceId)
   return { success: true }
 }
 
@@ -263,4 +265,5 @@ export async function resendClientApprovalEmailImpl(referenceId: string) {
   revalidatePath(ROUTES.home)
   revalidatePath(ROUTES.evidence.detail(referenceId))
   revalidatePath(ROUTES.evidence.root)
+  await revalidateOrgCachesForReference(referenceId)
 }

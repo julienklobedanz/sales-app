@@ -2,6 +2,8 @@
 
 import { revalidatePath } from 'next/cache'
 
+import { getCachedOrgComplianceDocuments } from '@/lib/cache/cached-org-reads'
+import { revalidateOrgCompliance } from '@/lib/cache/revalidate-org'
 import { inferComplianceDocumentTypeFromUpload } from '@/lib/compliance/document-icon'
 import { extractCertificateExpiryFromText } from '@/lib/compliance/extract-certificate-expiry'
 import { buildComplianceStorageFileName } from '@/lib/compliance/upload-filename'
@@ -84,22 +86,8 @@ export async function listComplianceDocuments(): Promise<
   const auth = await getComplianceAuth()
   if ('error' in auth) return { success: false, error: auth.error }
 
-  const { data, error } = await auth.supabase
-    .from('organization_compliance_documents')
-    .select(COMPLIANCE_SELECT)
-    .eq('organization_id', auth.orgId)
-    .order('document_type', { ascending: true })
-    .order('is_current', { ascending: false })
-    .order('updated_at', { ascending: false })
-
-  if (error) {
-    if ((error.message ?? '').includes('organization_compliance_documents')) {
-      return { success: true, rows: [] }
-    }
-    return { success: false, error: error.message }
-  }
-
-  return { success: true, rows: (data ?? []) as ComplianceDocumentRow[] }
+  const rows = await getCachedOrgComplianceDocuments(auth.orgId)
+  return { success: true, rows }
 }
 
 export async function createComplianceDocument(payload: {
@@ -171,6 +159,7 @@ export async function createComplianceDocument(payload: {
 
   revalidatePath(ROUTES.settings)
   revalidatePath(ROUTES.evidence.root)
+  revalidateOrgCompliance(auth.orgId)
   return { success: true, id: docId }
 }
 
@@ -328,6 +317,7 @@ export async function uploadComplianceDocumentsBatch(
 
   revalidatePath(ROUTES.settings)
   revalidatePath(ROUTES.evidence.root)
+  revalidateOrgCompliance(auth.orgId)
   return { success: true, uploaded, errors }
 }
 
@@ -496,6 +486,7 @@ export async function updateComplianceDocument(payload: {
 
   revalidatePath(ROUTES.settings)
   revalidatePath(ROUTES.evidence.root)
+  revalidateOrgCompliance(auth.orgId)
   return { success: true }
 }
 
@@ -574,5 +565,6 @@ export async function deleteComplianceDocuments(
 
   revalidatePath(ROUTES.settings)
   revalidatePath(ROUTES.evidence.root)
+  revalidateOrgCompliance(auth.orgId)
   return { success: true, deleted: rows.length }
 }

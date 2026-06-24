@@ -1,6 +1,7 @@
 'use server'
 
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { getCachedOrgReferenceRows } from '@/lib/cache/cached-org-reads'
 
 type ReferenceStatus = 'draft' | 'internal_only' | 'approved' | 'anonymized'
 
@@ -43,135 +44,7 @@ export async function getDashboardDataImpl(onlyFavorites = false) {
     return { references: [], totalCount: 0, deletedCount: 0 }
   }
 
-  // Relation per FK-Constraint-Name (Supabase: Table Editor → references → Beziehungen).
-  const fullSelect = `
-      id,
-      title,
-      summary,
-      industry,
-      country,
-      website,
-      employee_count,
-      volume_eur,
-      contract_type,
-      incumbent_provider,
-      competitors,
-      customer_challenge,
-      our_solution,
-      status,
-      customer_approval_status,
-      approval_scope_named_mention,
-      approval_scope_anonymous_mention,
-      created_at,
-      updated_at,
-      company_id,
-      contact_id,
-      customer_contact_id,
-      customer_contact,
-      file_path,
-      tags,
-      project_status,
-      project_start,
-      project_end,
-      is_nda_deal,
-      companies ( name, logo_url ),
-      contact_persons!references_contact_id_fkey ( email, first_name, last_name )
-    `
-
-  let rows: Record<string, unknown>[] | null = null
-  let error: { message: string; details?: string } | null = null
-
-  const result = await supabase
-    .from('references')
-    .select(fullSelect)
-    .eq('organization_id', orgId)
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false })
-
-  error = result.error
-  rows = result.data
-
-  const fullSelectNoRelations = `
-    id, title, summary, industry, country, website, employee_count,
-    volume_eur, contract_type, incumbent_provider, competitors,
-    customer_challenge, our_solution, status, customer_approval_status,
-    approval_scope_named_mention, approval_scope_anonymous_mention,
-    created_at, updated_at,
-    company_id, contact_id, customer_contact_id, customer_contact, file_path, tags,
-    project_status, project_start, project_end,
-    is_nda_deal,
-    companies ( name, logo_url )
-  `
-  const fullSelectMinimal = `
-    id, title, summary, industry, country, website, employee_count,
-    volume_eur, contract_type, incumbent_provider, competitors,
-    customer_challenge, our_solution, status, customer_approval_status,
-    approval_scope_named_mention, approval_scope_anonymous_mention,
-    created_at, updated_at,
-    company_id, contact_id, file_path, tags,
-    project_status, project_start, project_end,
-    companies ( name, logo_url )
-  `
-
-  // Fallback 1: Ohne contact_persons (falls FK/Schema fehlt), weiter mit deleted_at-Filter
-  if (error) {
-    console.error('[getDashboardData] Supabase error:', error.message, error.details)
-    const fallback = await supabase
-      .from('references')
-      .select(fullSelectNoRelations)
-      .eq('organization_id', orgId)
-      .is('deleted_at', null)
-      .order('created_at', { ascending: false })
-    if (!fallback.error) {
-      rows = fallback.data
-      error = null
-    }
-  }
-
-  // Fallback 2: deleted_at-Spalte fehlt oder Filter schlägt fehl – ohne Filter laden, dann in JS filtern
-  if (error) {
-    const withDeletedColumn = await supabase
-      .from('references')
-      .select(fullSelectNoRelations + ', deleted_at')
-      .eq('organization_id', orgId)
-      .order('created_at', { ascending: false })
-    if (!withDeletedColumn.error && withDeletedColumn.data) {
-      const data = withDeletedColumn.data as unknown as Record<string, unknown>[]
-      rows = data.filter((r) => r.deleted_at == null || r.deleted_at === undefined)
-      error = null
-    }
-  }
-
-  // Fallback 3: Tabelle hat deleted_at gar nicht – alle Zeilen verwenden
-  if (error) {
-    const noDeletedFilter = await supabase
-      .from('references')
-      .select(fullSelectNoRelations)
-      .eq('organization_id', orgId)
-      .order('created_at', { ascending: false })
-    if (!noDeletedFilter.error) {
-      rows = noDeletedFilter.data
-      error = null
-    }
-  }
-
-  // Fallback 4: is_nda_deal oder andere Spalte fehlt – minimale Spaltenliste
-  if (error) {
-    const minimal = await supabase
-      .from('references')
-      .select(fullSelectMinimal)
-      .eq('organization_id', orgId)
-      .order('created_at', { ascending: false })
-    if (!minimal.error) {
-      rows = minimal.data
-      error = null
-    }
-  }
-
-  if (error) {
-    console.error('[getDashboardData] All fallbacks failed:', error.message)
-    return { references: [], totalCount: 0, deletedCount: 0 }
-  }
+  const rows = await getCachedOrgReferenceRows(orgId)
 
   // Favoriten des aktuellen Users (Set für schnellen Lookup)
   const favoriteIds = new Set<string>()

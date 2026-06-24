@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { asReferenceStatus, type ReferenceStatus } from '@/lib/supabase/db-types'
 import { ROUTES } from '@/lib/routes'
+import { revalidateOrgCachesForReference } from '@/lib/cache/revalidate-org'
 
 import type { ReferenceRow } from '@/app/dashboard/actions'
 import { narrativeFieldLengthError } from '@/lib/references/reference-narrative-limits'
@@ -175,5 +176,6 @@ export async function updateReferenceImpl(id: string, formData: FormData) {
 
   revalidatePath(ROUTES.home)
   revalidatePath(ROUTES.evidence.edit(id))
+  await revalidateOrgCachesForReference(id)
 }
 

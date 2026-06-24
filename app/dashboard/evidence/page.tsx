@@ -19,6 +19,7 @@ import { listComplianceDocuments } from '@/app/dashboard/settings/compliance-act
 import { getReferenceVisibilityScope } from '@/lib/roles/reference-visibility-scope'
 import { parseRolesPermissionsSettings } from '@/lib/roles/roles-permissions-settings'
 import { filterReferencesForSales } from '@/lib/references/sales-reference-visibility'
+import { getCachedOrgCompanies } from '@/lib/cache/cached-org-reads'
 
 export const dynamic = 'force-dynamic'
 
@@ -95,9 +96,8 @@ export default async function EvidenceHubPage() {
 
   const orgId = (profile as { organization_id?: string | null }).organization_id ?? ''
 
-  const [companiesResult, contactsResult, externalContactsResult, orgFmtResult] =
-    await Promise.all([
-    supabase.from('companies').select('id, name, logo_url, industry').order('name'),
+  const [companies, contactsResult, externalContactsResult, orgFmtResult] = await Promise.all([
+    orgId ? getCachedOrgCompanies(orgId) : Promise.resolve([]),
     supabase.from('contact_persons').select('*').order('last_name'),
     supabase
       .from('external_contacts')
@@ -129,7 +129,7 @@ export default async function EvidenceHubPage() {
           functionRole: effectiveFunctionRole,
           capabilities: serverRoles.capabilities,
         }}
-        companies={companiesResult.data ?? []}
+        companies={companies}
         contacts={contactsResult.data ?? []}
         externalContacts={externalContactsResult.data ?? []}
         orgDateDisplayFormat={orgDateDisplayFormat}

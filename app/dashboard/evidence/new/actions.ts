@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { REVALIDATE, ROUTES } from '@/lib/routes'
+import { revalidateOrgCachesForReference, revalidateOrgCompanies, revalidateOrgReferences } from '@/lib/cache/revalidate-org'
 import { narrativeFieldLengthError } from '@/lib/references/reference-narrative-limits'
 import { resolveDomainForCompanyName } from '@/lib/accounts/resolve-company-for-import'
 import { fetchBrandfetchCompany } from '@/lib/accounts/brandfetch-accounts-refresh'
@@ -706,6 +707,7 @@ export async function createReference(
 
   revalidatePath(ROUTES.home)
   revalidatePath(ROUTES.evidence.root)
+  revalidateOrgReferences(organizationId)
   return { success: true, referenceId: reference.id }
 }
 
@@ -761,6 +763,7 @@ export async function attachOriginalDocumentToReference(params: {
   if (error) return { success: false, error: error.message }
   revalidatePath(ROUTES.evidence.root)
   revalidatePath(ROUTES.evidence.edit(referenceId))
+  await revalidateOrgCachesForReference(referenceId)
   return { success: true }
 }
 

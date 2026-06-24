@@ -1,6 +1,8 @@
 import 'server-only'
 
-const EMBEDDING_MODEL = 'text-embedding-3-small'
+export const OPENAI_EMBEDDING_MODEL = 'text-embedding-3-small'
+
+const EMBEDDING_MODEL = OPENAI_EMBEDDING_MODEL
 
 const OPENAI_ERROR_BODY_MAX = 320
 

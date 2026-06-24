@@ -7,6 +7,7 @@ import type { PdfOrgBranding, PdfReference, PdfTemplate } from '@/lib/evidence/p
 import { computeReferenceDurationMonths } from '@/lib/references/reference-duration-months'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { profileIsSalesRestricted } from '@/lib/roles/profile-guards'
+import { buildServerTimingHeader, withTiming } from '@/lib/observability/timing'
 
 export const runtime = 'nodejs'
 
@@ -153,13 +154,21 @@ export async function POST(req: NextRequest) {
   }
 
   const exportedAtLabel = new Date().toLocaleDateString('de-DE', { dateStyle: 'long' })
-  const pdf = await renderToBuffer(
-    ReferencePdfBundleDocument({
-      references,
-      org: branding,
-      template,
-      exportedAtLabel,
-    })
+  const { result: pdf, ms: generateMs } = await withTiming(
+    'export.pdf.bulk',
+    () =>
+      renderToBuffer(
+        ReferencePdfBundleDocument({
+          references,
+          org: branding,
+          template,
+          exportedAtLabel,
+        })
+      ),
+    {
+      organizationId: profile.organization_id as string,
+      resultCount: references.length,
+    }
   )
 
   await Promise.all(
@@ -181,6 +190,7 @@ export async function POST(req: NextRequest) {
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="${fileName}"`,
       'Cache-Control': 'no-store',
+      'Server-Timing': buildServerTimingHeader([{ name: 'export.pdf.bulk', ms: generateMs }]),
     },
   })
 }

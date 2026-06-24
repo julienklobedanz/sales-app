@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
 import { log } from '@/lib/observability/logger'
+import { withTiming } from '@/lib/observability/timing'
 import { loadAccountManagerDashboardData } from '@/lib/dashboard-home/dashboard-home-account-manager'
 import { loadAdminDashboardData } from '@/lib/dashboard-home/dashboard-home-admin'
 import { loadGeneralistDashboardData } from '@/lib/dashboard-home/dashboard-home-generalist'
@@ -74,8 +75,32 @@ export async function loadDashboardHomeForFunctionRole(
   userId: string,
   fullName: string | null
 ): Promise<DashboardHomePayload> {
+  const { data: prof } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', userId)
+    .maybeSingle()
+  const organizationId = prof?.organization_id as string | undefined
+
+  const timingLabel =
+    systemRole === 'viewer'
+      ? 'dashboard.home.generalist'
+      : functionRole === 'account_manager'
+        ? 'dashboard.home.account_manager'
+        : functionRole === 'sales_leader'
+          ? 'dashboard.home.sales_leader'
+          : functionRole === 'sales_rep'
+            ? 'dashboard.home.sales_rep'
+            : 'dashboard.home.generalist'
+
   try {
-    return await loadDashboardHomeForFunctionRoleInner(functionRole, systemRole, supabase, userId, fullName)
+    const { result } = await withTiming(
+      timingLabel,
+      () =>
+        loadDashboardHomeForFunctionRoleInner(functionRole, systemRole, supabase, userId, fullName),
+      { organizationId, userId, functionRole, systemRole }
+    )
+    return result
   } catch (error) {
     log.error('dashboard home load failed', { action: 'loadDashboardHomeForFunctionRole', userId, functionRole, systemRole }, error)
     throw error

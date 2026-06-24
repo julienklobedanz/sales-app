@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
+import { revalidateOrgCachesForReference } from '@/lib/cache/revalidate-org'
 import type { SubmitForApprovalOptions } from '@/lib/evidence/approval-submit-types'
 import { ensureApprovalRecipientFromInputImpl } from '@/lib/evidence/approval-contacts'
 import { logEventForCurrentOrg } from '@/lib/events/log-event'
@@ -162,5 +163,6 @@ export async function approveInternalAndSendImpl(
   revalidatePath(ROUTES.home)
   revalidatePath(ROUTES.evidence.detail(referenceId))
   revalidatePath(ROUTES.evidence.root)
+  await revalidateOrgCachesForReference(referenceId)
   return { success: true, customerEmailSent, recipientEmail: contactEmail }
 }

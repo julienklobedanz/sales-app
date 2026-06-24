@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { asTableUpdate } from '@/lib/supabase/db-types'
 import { ROUTES } from '@/lib/routes'
+import { revalidateOrgCachesForReference } from '@/lib/cache/revalidate-org'
 
 export async function updateReferenceDetailFieldsImpl(
   id: string,
@@ -30,5 +31,6 @@ export async function updateReferenceDetailFieldsImpl(
   if (error) throw new Error(error.message)
   revalidatePath(ROUTES.home)
   revalidatePath(ROUTES.evidence.edit(id))
+  await revalidateOrgCachesForReference(id)
 }
 

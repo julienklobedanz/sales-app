@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
+import { revalidateOrgReferences } from '@/lib/cache/revalidate-org'
 import { BULK_IMPORT_MAX_FILES } from '@/lib/references/bulk-import-limits'
 import { resolveOrCreateCompanyForImport } from '@/lib/accounts/resolve-company-for-import'
 import { extractPlainTextFromBuffer } from '@/lib/document-extraction'
@@ -162,5 +163,6 @@ export async function bulkCreateReferencesFromFilesImpl(
 
   revalidatePath(ROUTES.home)
   revalidatePath(ROUTES.evidence.root)
+  revalidateOrgReferences(organizationId)
   return { success: true, created, referenceIds, organizationId }
 }

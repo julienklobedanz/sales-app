@@ -23,20 +23,20 @@ export async function loadAdminDashboardData(
 ): Promise<AdminDashboardModel> {
   const greetingName = dashboardFirstName(fullName) || 'du'
 
-  const kpisBase = await loadReferenceKpis(supabase)
-  const referencesTotal = kpisBase.total
-
-  const since7 = new Date()
-  since7.setDate(since7.getDate() - 7)
-  const prevSince7 = new Date()
-  prevSince7.setDate(prevSince7.getDate() - 14)
-
   const { data: profile } = await supabase.auth.getUser()
   const uid = profile.user?.id
   const { data: prof } = uid
     ? await supabase.from('profiles').select('organization_id').eq('id', uid).single()
     : { data: null }
   const orgId = prof?.organization_id as string | undefined
+
+  const kpisBase = orgId ? await loadReferenceKpis(supabase, orgId) : { total: 0, approved: 0, internal: 0, draft: 0 }
+  const referencesTotal = kpisBase.total
+
+  const since7 = new Date()
+  since7.setDate(since7.getDate() - 7)
+  const prevSince7 = new Date()
+  prevSince7.setDate(prevSince7.getDate() - 14)
 
   let matches7d = 0
   let shares7d = 0
@@ -263,84 +263,93 @@ export async function loadAdminDashboardData(
       })
     )
 
-    const { count: refCurrent } = await supabase
-      .from('references')
-      .select('id', { count: 'exact', head: true })
-      .eq('organization_id', orgId)
-      .is('deleted_at', null)
-      .gte('created_at', since7.toISOString())
-    referencesCreated7d = refCurrent ?? 0
+    const [
+      refCurrentRes,
+      refPrevRes,
+      mRes,
+      mPrevRes,
+      s1Res,
+      s2Res,
+      ps1Res,
+      ps2Res,
+      distinctUsersRes,
+      prevDistinctUsersRes,
+    ] = await Promise.all([
+      supabase
+        .from('references')
+        .select('id', { count: 'planned', head: true }) // KPI-Trend, ±1 akzeptabel
+        .eq('organization_id', orgId)
+        .is('deleted_at', null)
+        .gte('created_at', since7.toISOString()),
+      supabase
+        .from('references')
+        .select('id', { count: 'planned', head: true })
+        .eq('organization_id', orgId)
+        .is('deleted_at', null)
+        .gte('created_at', prevSince7.toISOString())
+        .lt('created_at', since7.toISOString()),
+      supabase
+        .from('evidence_events')
+        .select('id', { count: 'planned', head: true })
+        .eq('organization_id', orgId)
+        .eq('event_type', 'reference_matched')
+        .gte('created_at', since7.toISOString()),
+      supabase
+        .from('evidence_events')
+        .select('id', { count: 'planned', head: true })
+        .eq('organization_id', orgId)
+        .eq('event_type', 'reference_matched')
+        .gte('created_at', prevSince7.toISOString())
+        .lt('created_at', since7.toISOString()),
+      supabase
+        .from('evidence_events')
+        .select('id', { count: 'planned', head: true })
+        .eq('organization_id', orgId)
+        .eq('event_type', 'reference_shared')
+        .gte('created_at', since7.toISOString()),
+      supabase
+        .from('evidence_events')
+        .select('id', { count: 'planned', head: true })
+        .eq('organization_id', orgId)
+        .eq('event_type', 'share_link_viewed')
+        .gte('created_at', since7.toISOString()),
+      supabase
+        .from('evidence_events')
+        .select('id', { count: 'planned', head: true })
+        .eq('organization_id', orgId)
+        .eq('event_type', 'reference_shared')
+        .gte('created_at', prevSince7.toISOString())
+        .lt('created_at', since7.toISOString()),
+      supabase
+        .from('evidence_events')
+        .select('id', { count: 'planned', head: true })
+        .eq('organization_id', orgId)
+        .eq('event_type', 'share_link_viewed')
+        .gte('created_at', prevSince7.toISOString())
+        .lt('created_at', since7.toISOString()),
+      supabase
+        .from('evidence_events')
+        .select('created_by')
+        .eq('organization_id', orgId)
+        .gte('created_at', since7.toISOString())
+        .not('created_by', 'is', null),
+      supabase
+        .from('evidence_events')
+        .select('created_by')
+        .eq('organization_id', orgId)
+        .gte('created_at', prevSince7.toISOString())
+        .lt('created_at', since7.toISOString())
+        .not('created_by', 'is', null),
+    ])
 
-    const { count: refPrev } = await supabase
-      .from('references')
-      .select('id', { count: 'exact', head: true })
-      .eq('organization_id', orgId)
-      .is('deleted_at', null)
-      .gte('created_at', prevSince7.toISOString())
-      .lt('created_at', since7.toISOString())
-    prevReferencesCreated7d = refPrev ?? 0
-
-    const { count: m } = await supabase
-      .from('evidence_events')
-      .select('id', { count: 'exact', head: true })
-      .eq('organization_id', orgId)
-      .eq('event_type', 'reference_matched')
-      .gte('created_at', since7.toISOString())
-    matches7d = m ?? 0
-    const { count: mPrev } = await supabase
-      .from('evidence_events')
-      .select('id', { count: 'exact', head: true })
-      .eq('organization_id', orgId)
-      .eq('event_type', 'reference_matched')
-      .gte('created_at', prevSince7.toISOString())
-      .lt('created_at', since7.toISOString())
-    prevMatches7d = mPrev ?? 0
-
-    const { count: s1 } = await supabase
-      .from('evidence_events')
-      .select('id', { count: 'exact', head: true })
-      .eq('organization_id', orgId)
-      .eq('event_type', 'reference_shared')
-      .gte('created_at', since7.toISOString())
-    const { count: s2 } = await supabase
-      .from('evidence_events')
-      .select('id', { count: 'exact', head: true })
-      .eq('organization_id', orgId)
-      .eq('event_type', 'share_link_viewed')
-      .gte('created_at', since7.toISOString())
-    shares7d = (s1 ?? 0) + (s2 ?? 0)
-    const { count: ps1 } = await supabase
-      .from('evidence_events')
-      .select('id', { count: 'exact', head: true })
-      .eq('organization_id', orgId)
-      .eq('event_type', 'reference_shared')
-      .gte('created_at', prevSince7.toISOString())
-      .lt('created_at', since7.toISOString())
-    const { count: ps2 } = await supabase
-      .from('evidence_events')
-      .select('id', { count: 'exact', head: true })
-      .eq('organization_id', orgId)
-      .eq('event_type', 'share_link_viewed')
-      .gte('created_at', prevSince7.toISOString())
-      .lt('created_at', since7.toISOString())
-    prevShares7d = (ps1 ?? 0) + (ps2 ?? 0)
-
-    const { data: distinctUsers } = await supabase
-      .from('evidence_events')
-      .select('created_by')
-      .eq('organization_id', orgId)
-      .gte('created_at', since7.toISOString())
-      .not('created_by', 'is', null)
-    const u = new Set((distinctUsers ?? []).map((r) => r.created_by as string))
-    wau7d = u.size
-    const { data: prevDistinctUsers } = await supabase
-      .from('evidence_events')
-      .select('created_by')
-      .eq('organization_id', orgId)
-      .gte('created_at', prevSince7.toISOString())
-      .lt('created_at', since7.toISOString())
-      .not('created_by', 'is', null)
-    prevWau7d = new Set((prevDistinctUsers ?? []).map((r) => r.created_by as string)).size
+    referencesCreated7d = refCurrentRes.count ?? 0
+    prevReferencesCreated7d = refPrevRes.count ?? 0
+    matches7d = mRes.count ?? 0
+    prevMatches7d = mPrevRes.count ?? 0
+    shares7d = (s1Res.count ?? 0) + (s2Res.count ?? 0)
+    prevShares7d = (ps1Res.count ?? 0) + (ps2Res.count ?? 0)
+    wau7d = new Set((distinctUsersRes.data ?? []).map((r) => r.created_by as string)).size
+    prevWau7d = new Set((prevDistinctUsersRes.data ?? []).map((r) => r.created_by as string)).size
 
     const { data: evRows } = await supabase
       .from('evidence_events')

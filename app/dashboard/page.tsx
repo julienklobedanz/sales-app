@@ -72,16 +72,16 @@ export default async function DashboardPage() {
       .is('deleted_at', null),
     supabase
       .from('profiles')
-      .select('id', { count: 'exact', head: true })
+      .select('id', { count: 'planned', head: true }) // KPI-Trend, ±1 akzeptabel
       .eq('organization_id', orgId),
     supabase
       .from('organization_invites')
-      .select('id', { count: 'exact', head: true })
+      .select('id', { count: 'planned', head: true })
       .eq('organization_id', orgId)
       .gt('expires_at', new Date().toISOString()),
     supabase
       .from('companies')
-      .select('id', { count: 'exact', head: true })
+      .select('id', { count: 'planned', head: true })
       .eq('organization_id', orgId)
       .eq('is_favorite', true),
     supabase.from('companies').select('id').eq('organization_id', orgId),
@@ -99,11 +99,11 @@ export default async function DashboardPage() {
     const [newsRes, execRes] = await Promise.all([
       supabase
         .from('market_signal_account_news')
-        .select('id', { count: 'exact', head: true })
+        .select('id', { count: 'planned', head: true }) // KPI-Trend, ±1 akzeptabel
         .in('company_id', companyIds),
       supabase
         .from('market_signal_executive_events')
-        .select('id', { count: 'exact', head: true })
+        .select('id', { count: 'planned', head: true })
         .in('company_id', companyIds),
     ])
     signalCount = (newsRes.count ?? 0) + (execRes.count ?? 0)

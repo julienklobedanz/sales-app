@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
+import { revalidateOrgCachesForReference } from '@/lib/cache/revalidate-org'
 import { applyBulkImportExtractionFromBuffer } from '@/lib/references/bulk-import-extraction-apply'
 import type { BulkImportExtractionResult } from '@/lib/references/bulk-import-review-types'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
@@ -94,6 +95,7 @@ export async function runBulkImportExtractionForReference(
   revalidatePath(ROUTES.evidence.root)
   revalidatePath(ROUTES.home)
   revalidatePath(ROUTES.evidence.edit(id))
+  await revalidateOrgCachesForReference(id)
 
   return result
 }

@@ -6,6 +6,7 @@ import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
 import { asReferenceStatus } from '@/lib/supabase/db-types'
 import { ROUTES } from '@/lib/routes'
+import { revalidateOrgCachesForReference } from '@/lib/cache/revalidate-org'
 import { logEventForCurrentOrg } from '@/lib/events/log-event'
 export type RequestItem = {
   id: string
@@ -135,5 +136,6 @@ export async function reviewRequestImpl(
   revalidatePath(ROUTES.home)
   revalidatePath(ROUTES.evidence.detail(approval.reference_id))
   revalidatePath(ROUTES.evidence.root)
+  await revalidateOrgCachesForReference(approval.reference_id)
 }
 

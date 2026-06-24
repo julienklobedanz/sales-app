@@ -9,11 +9,13 @@ import {
   referenceVolumeMatchesConstraint,
 } from '@/lib/command-center/homepage-semantic-query'
 import type { HomepageSemanticReferenceHit } from '@/lib/command-center/homepage-semantic-types'
-import { embedTextWithOpenAI } from '@/lib/embeddings-openai'
+import { embedTextWithOpenAICached } from '@/lib/embeddings/cached-embed-query'
 import { rpcMatchReferences } from '@/lib/match-references-rpc'
 import { snippetFromSummary } from '@/lib/match-reference-snippet'
 import { fetchCompanyFieldsForReferenceIds } from '@/lib/references/enrich-match-hits-company'
 import { logReferenceMatched } from '@/lib/events/log-reference-matched'
+import { log } from '@/lib/observability/logger'
+import { withTiming } from '@/lib/observability/timing'
 
 export const HOME_SEMANTIC_MATCH_THRESHOLD = 0.42
 export const HOME_SEMANTIC_MATCH_COUNT = 12
@@ -29,23 +31,53 @@ type SemanticSearchParams = {
 }
 
 async function runSemanticMatch(
-  params: SemanticSearchParams & { embedInput: string }
-): Promise<{ rows: Awaited<ReturnType<typeof rpcMatchReferences>>['rows']; error?: string }> {
-  const emb = await embedTextWithOpenAI(params.apiKey, params.embedInput)
-  if ('error' in emb) {
-    return { rows: [], error: emb.error }
-  }
+  params: SemanticSearchParams & { embedInput: string; source: 'homepage' | 'command' }
+): Promise<{
+  rows: Awaited<ReturnType<typeof rpcMatchReferences>>['rows']
+  error?: string
+  durationMs: number
+}> {
+  const totalStart = performance.now()
+  const timingCtx = { organizationId: params.organizationId, source: params.source }
 
-  const { rows, error } = await rpcMatchReferences(params.supabase, {
-    queryEmbedding: emb.embedding,
-    matchThreshold: params.matchThreshold ?? HOME_SEMANTIC_MATCH_THRESHOLD,
-    matchCount: params.matchCount ?? HOME_SEMANTIC_MATCH_COUNT,
-    organizationId: params.organizationId,
-    salesVisibleOnly: params.salesVisibleOnly,
+  const embeddingStart = performance.now()
+  const emb = await embedTextWithOpenAICached(params.apiKey, params.embedInput)
+  const embeddingMs = Math.round(performance.now() - embeddingStart)
+  if ('error' in emb) {
+    return { rows: [], error: emb.error, durationMs: Math.round(performance.now() - totalStart) }
+  }
+  log.info('command.semantic.embedding', {
+    label: 'command.semantic.embedding',
+    ms: embeddingMs,
+    cacheHit: emb.cacheHit,
+    ...timingCtx,
   })
 
-  if (error) return { rows: [], error }
-  return { rows }
+  const { result: rpcResult, ms: rpcMs } = await withTiming(
+    'command.semantic.rpc',
+    () =>
+      rpcMatchReferences(params.supabase, {
+        queryEmbedding: emb.embedding,
+        matchThreshold: params.matchThreshold ?? HOME_SEMANTIC_MATCH_THRESHOLD,
+        matchCount: params.matchCount ?? HOME_SEMANTIC_MATCH_COUNT,
+        organizationId: params.organizationId,
+        salesVisibleOnly: params.salesVisibleOnly,
+      }),
+    timingCtx
+  )
+
+  const durationMs = Math.round(performance.now() - totalStart)
+  log.info('command.semantic.total', {
+    label: 'command.semantic.total',
+    ms: durationMs,
+    ...timingCtx,
+    embeddingMs,
+    rpcMs,
+    resultCount: rpcResult.rows.length,
+  })
+
+  if (rpcResult.error) return { rows: [], error: rpcResult.error, durationMs }
+  return { rows: rpcResult.rows, durationMs }
 }
 
 /** Homepage: angereicherter Query, volle Karten-Daten. */
@@ -59,10 +91,11 @@ export async function searchHomepageReferencesSemantic(
   const matchCount = params.matchCount ?? HOME_SEMANTIC_MATCH_COUNT
   const fetchCount = volumeConstraint ? Math.max(matchCount * 4, 36) : matchCount
 
-  const { rows, error } = await runSemanticMatch({
+  const { rows, error, durationMs } = await runSemanticMatch({
     ...params,
     embedInput: enrichHomepageSemanticQuery(trimmed),
     matchCount: fetchCount,
+    source: 'homepage',
   })
 
   if (error) return { ok: false, error }
@@ -110,6 +143,7 @@ export async function searchHomepageReferencesSemantic(
     matchedReferenceIds: hits.map((h) => h.id),
     source: 'homepage',
     matchThreshold: params.matchThreshold ?? HOME_SEMANTIC_MATCH_THRESHOLD,
+    durationMs,
   })
 
   return { ok: true, hits }
@@ -125,11 +159,12 @@ export async function searchReferencesSemanticLegacy(
   const trimmed = params.query.trim()
   if (!trimmed) return { ok: true, hits: [] }
 
-  const { rows, error } = await runSemanticMatch({
+  const { rows, error, durationMs } = await runSemanticMatch({
     ...params,
     embedInput: trimmed,
     matchThreshold: params.matchThreshold ?? 0.52,
     matchCount: params.matchCount ?? 10,
+    source: 'command',
   })
 
   if (error) return { ok: false, error }
@@ -148,6 +183,7 @@ export async function searchReferencesSemanticLegacy(
     matchedReferenceIds: hits.map((h) => h.id),
     source: 'command',
     matchThreshold: params.matchThreshold ?? 0.52,
+    durationMs,
   })
 
   return { ok: true, hits }

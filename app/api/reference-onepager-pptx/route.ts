@@ -7,6 +7,7 @@ import { formatReferenceDate, formatReferenceVolume, normalizeOrgDateDisplayForm
 import { formatContractTypeDisplay } from '@/lib/references/contract-type'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { profileIsSalesRestricted } from '@/lib/roles/profile-guards'
+import { buildServerTimingHeader, withTiming } from '@/lib/observability/timing'
 
 export const runtime = 'nodejs'
 
@@ -103,24 +104,29 @@ export async function GET(req: NextRequest) {
   const dateFmt = normalizeOrgDateDisplayFormat(org?.date_display_format)
   const exportedAtLabel = new Date().toLocaleDateString('de-DE', { dateStyle: 'long' })
 
-  const buffer = await buildReferenceOnepagerPptxBuffer({
-    title: String(row.title ?? 'Referenz'),
-    companyName,
-    status: String(row.status ?? ''),
-    projectStatus: row.project_status ?? null,
-    summary: row.summary ?? null,
-    industry: row.industry ?? null,
-    country: row.country ?? null,
-    customerChallenge: row.customer_challenge ?? null,
-    ourSolution: row.our_solution ?? null,
-    volumeEur: formatReferenceVolume(row.volume_eur) || null,
-    contractType: formatContractTypeDisplay(row.contract_type) || null,
-    projectStart: row.project_start ? formatReferenceDate(row.project_start, dateFmt) : null,
-    projectEnd: row.project_end ? formatReferenceDate(row.project_end, dateFmt) : null,
-    logoUrl,
-    orgName: String(org?.name ?? 'RefStack'),
-    exportedAtLabel,
-  })
+  const { result: buffer, ms: generateMs } = await withTiming(
+    'export.pptx_onepager',
+    () =>
+      buildReferenceOnepagerPptxBuffer({
+        title: String(row.title ?? 'Referenz'),
+        companyName,
+        status: String(row.status ?? ''),
+        projectStatus: row.project_status ?? null,
+        summary: row.summary ?? null,
+        industry: row.industry ?? null,
+        country: row.country ?? null,
+        customerChallenge: row.customer_challenge ?? null,
+        ourSolution: row.our_solution ?? null,
+        volumeEur: formatReferenceVolume(row.volume_eur) || null,
+        contractType: formatContractTypeDisplay(row.contract_type) || null,
+        projectStart: row.project_start ? formatReferenceDate(row.project_start, dateFmt) : null,
+        projectEnd: row.project_end ? formatReferenceDate(row.project_end, dateFmt) : null,
+        logoUrl,
+        orgName: String(org?.name ?? 'RefStack'),
+        exportedAtLabel,
+      }),
+    { organizationId: profile.organization_id as string, referenceId: id }
+  )
 
   const customerName = sanitizeFileName(companyName || 'Account')
   const titleName = sanitizeFileName(String(row.title ?? 'Referenz'))
@@ -146,6 +152,7 @@ export async function GET(req: NextRequest) {
       'Content-Type': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
       'Content-Disposition': `attachment; filename="${fileName}"`,
       'Cache-Control': 'no-store',
+      'Server-Timing': buildServerTimingHeader([{ name: 'export.pptx_onepager', ms: generateMs }]),
     },
   })
 }

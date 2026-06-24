@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Search01Icon } from '@hugeicons/core-free-icons'
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { MatchResultSkeleton } from '@/components/dashboard/match-result-skeleton'
 import { AppIcon } from '@/lib/icons'
 import { ROUTES } from '@/lib/routes'
 import { matchReferences, type MatchReferenceHit } from '@/app/dashboard/actions'
@@ -33,6 +34,7 @@ export function MatchSmartClient({ initialDeal }: { initialDeal: DealWithReferen
   const [query, setQuery] = useState(defaultQuery)
   const [loading, setLoading] = useState(false)
   const [matches, setMatches] = useState<MatchReferenceHit[] | null>(null)
+  const lastSearchAtRef = useRef(0)
 
   const dealContext = initialDeal ? buildDealContextForKiEntwurf(initialDeal) : null
   const linkedIds = useMemo(
@@ -43,6 +45,11 @@ export function MatchSmartClient({ initialDeal }: { initialDeal: DealWithReferen
   async function run() {
     const q = query.trim()
     if (!q) return
+
+    const now = Date.now()
+    if (now - lastSearchAtRef.current < 300) return
+    lastSearchAtRef.current = now
+
     setLoading(true)
     setMatches(null)
     try {
@@ -98,7 +105,9 @@ export function MatchSmartClient({ initialDeal }: { initialDeal: DealWithReferen
           )}
         </Button>
 
-        {matches && matches.length > 0 ? (
+        {loading ? <MatchResultSkeleton count={4} /> : null}
+
+        {!loading && matches && matches.length > 0 ? (
           <div className="space-y-3">
             {matches.map((m, index) => (
               <MatchResultCard
@@ -117,7 +126,7 @@ export function MatchSmartClient({ initialDeal }: { initialDeal: DealWithReferen
               />
             ))}
           </div>
-        ) : matches && matches.length === 0 ? (
+        ) : !loading && matches && matches.length === 0 ? (
           <p className="text-sm text-muted-foreground">Keine Treffer für diese Anfrage.</p>
         ) : null}
       </CardContent>

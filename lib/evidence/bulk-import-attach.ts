@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
+import { revalidateOrgCachesForReference } from '@/lib/cache/revalidate-org'
 
 export async function attachBulkImportFileToReference(params: {
   referenceId: string
@@ -47,5 +48,6 @@ export async function attachBulkImportFileToReference(params: {
 
   revalidatePath(ROUTES.evidence.root)
   revalidatePath(ROUTES.evidence.edit(referenceId))
+  await revalidateOrgCachesForReference(referenceId)
   return { success: true }
 }

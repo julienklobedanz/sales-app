@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
+import { revalidateOrgCachesForReference } from '@/lib/cache/revalidate-org'
 import type { SubmitForApprovalOptions } from '@/lib/evidence/approval-submit-types'
 import { logEventForCurrentOrg } from '@/lib/events/log-event'
 import { parseOrgPublicLinkPolicy } from '@/lib/organization-link-policy'
@@ -249,6 +250,7 @@ export async function submitForApprovalImpl(
   revalidatePath(ROUTES.home)
   revalidatePath(ROUTES.evidence.detail(id))
   revalidatePath(ROUTES.evidence.root)
+  await revalidateOrgCachesForReference(id)
   return {
     success: true as const,
     stage: 'internal_review_pending' as const,

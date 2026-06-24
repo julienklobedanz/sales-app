@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
+import { revalidateOrgCachesForReference } from '@/lib/cache/revalidate-org'
 import { getAppOrigin } from '@/lib/env/app-origin'
 import { logEventForCurrentOrg } from '@/lib/events/log-event'
 import { profileCanManageOrgData } from '@/lib/roles/profile-guards'
@@ -203,6 +204,7 @@ export async function requestCustomerApprovalAgainAfterChangesImpl(
   revalidatePath(ROUTES.home)
   revalidatePath(ROUTES.evidence.detail(referenceId))
   revalidatePath(ROUTES.evidence.root)
+  await revalidateOrgCachesForReference(referenceId)
   return {
     success: true,
     emailSent: !emailMocked,

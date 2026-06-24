@@ -9,6 +9,7 @@ export type LogReferenceMatchedParams = {
   dealId?: string | null
   matchThreshold?: number
   rerank?: boolean
+  durationMs?: number
 }
 
 /**
@@ -27,6 +28,7 @@ export async function logReferenceMatched(params: LogReferenceMatchedParams): Pr
       rerank: Boolean(params.rerank),
       match_threshold: params.matchThreshold ?? null,
       matched_reference_ids: params.matchedReferenceIds,
+      ...(params.durationMs !== undefined ? { duration_ms: params.durationMs } : {}),
     },
     dealId: params.dealId ?? null,
     referenceId: null,

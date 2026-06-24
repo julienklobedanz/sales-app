@@ -1,38 +1,25 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { ReferenceKpiCounts } from '@/lib/dashboard-home/dashboard-home-types'
+import { loadReferenceKpisForOrg } from '@/lib/cache/cached-org-reads'
 
-export async function loadReferenceKpis(supabase: SupabaseClient): Promise<ReferenceKpiCounts> {
-  const totalQ = () =>
-    supabase.from('references').select('id', { count: 'exact', head: true }).is('deleted_at', null)
-
-  const [{ count: total }, { count: draft }, { count: internal_only }, { count: approved }] = await Promise.all([
-    totalQ(),
-    supabase.from('references').select('id', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'draft'),
-    supabase.from('references').select('id', { count: 'exact', head: true }).is('deleted_at', null).eq('status', 'internal_only'),
-    supabase
-      .from('references')
-      .select('id', { count: 'exact', head: true })
-      .is('deleted_at', null)
-      .in('status', ['approved', 'external']),
-  ])
-
-  return {
-    total: total ?? 0,
-    approved: approved ?? 0,
-    internal: internal_only ?? 0,
-    draft: draft ?? 0,
-  }
+export async function loadReferenceKpis(
+  supabase: SupabaseClient,
+  orgId: string
+): Promise<ReferenceKpiCounts> {
+  return loadReferenceKpisForOrg(supabase, orgId)
 }
 
 export async function countReferencesInWindow(
   supabase: SupabaseClient,
+  orgId: string,
   fromIso: string,
   toIso: string,
   status?: 'draft' | 'internal_only' | 'approved'
 ) {
   let q = supabase
     .from('references')
-    .select('id', { count: 'exact', head: true })
+    .select('id', { count: 'planned', head: true }) // KPI-Trend, ±1 akzeptabel
+    .eq('organization_id', orgId)
     .is('deleted_at', null)
     .gte('created_at', fromIso)
     .lt('created_at', toIso)

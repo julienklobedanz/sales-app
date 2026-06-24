@@ -2,11 +2,13 @@
 
 import { loadReferenceVisibilityForUser } from '@/lib/roles/load-reference-visibility'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { embedTextWithOpenAI } from '@/lib/embeddings-openai'
+import { embedTextWithOpenAICached } from '@/lib/embeddings/cached-embed-query'
 import { rpcMatchReferences } from '@/lib/match-references-rpc'
 import { snippetFromSummary } from '@/lib/match-reference-snippet'
 import { logReferenceMatched } from '@/lib/events/log-reference-matched'
 import { formatIndustryDisplay } from '@/lib/constants/industries'
+import { withTiming } from '@/lib/observability/timing'
+import { log } from '@/lib/observability/logger'
 
 import type {
   MatchReferenceHit,
@@ -77,22 +79,38 @@ export async function matchReferencesImpl(
     return { success: false, error: 'OpenAI API ist nicht konfiguriert (OPENAI_API_KEY).' }
   }
 
-  const emb = await embedTextWithOpenAI(apiKey, queryText)
+  const totalStart = performance.now()
+
+  const embeddingStart = performance.now()
+  const emb = await embedTextWithOpenAICached(apiKey, queryText)
+  const embeddingMs = Math.round(performance.now() - embeddingStart)
   if ('error' in emb) {
     return { success: false, error: emb.error }
   }
+  log.info('match.embedding', {
+    label: 'match.embedding',
+    ms: embeddingMs,
+    cacheHit: emb.cacheHit,
+    organizationId: orgId,
+  })
   const embedding = emb.embedding
 
   const matchThreshold = options?.matchThreshold ?? MATCH_DEFAULT_THRESHOLD
   const matchCount = options?.matchCount ?? MATCH_DEFAULT_COUNT
 
-  const { rows: list, error: rpcError } = await rpcMatchReferences(supabase, {
-    queryEmbedding: embedding,
-    matchThreshold,
-    matchCount,
-    organizationId: orgId,
-    salesVisibleOnly,
-  })
+  const { result: rpcResult, ms: rpcMs } = await withTiming(
+    'match.rpc',
+    () =>
+      rpcMatchReferences(supabase, {
+        queryEmbedding: embedding,
+        matchThreshold,
+        matchCount,
+        organizationId: orgId,
+        salesVisibleOnly,
+      }),
+    { organizationId: orgId }
+  )
+  const { rows: list, error: rpcError } = rpcResult
 
   if (rpcError) {
     return { success: false, error: rpcError }
@@ -115,8 +133,23 @@ export async function matchReferencesImpl(
   })
 
   if (options?.rerank && matches.length > 1) {
-    matches = await rerankMatchHitsWithGpt(apiKey, queryText, matches)
+    const { result: reranked } = await withTiming(
+      'match.rerank',
+      () => rerankMatchHitsWithGpt(apiKey, queryText, matches),
+      { organizationId: orgId, resultCount: matches.length }
+    )
+    matches = reranked
   }
+
+  const totalMs = Math.round(performance.now() - totalStart)
+  log.info('match.total', {
+    label: 'match.total',
+    ms: totalMs,
+    organizationId: orgId,
+    resultCount: matches.length,
+    embeddingMs,
+    rpcMs,
+  })
 
   void logReferenceMatched({
     organizationId: orgId,
@@ -125,6 +158,7 @@ export async function matchReferencesImpl(
     dealId: dealId ?? null,
     rerank: Boolean(options?.rerank),
     matchThreshold,
+    durationMs: totalMs,
   })
 
   return { success: true, matches }

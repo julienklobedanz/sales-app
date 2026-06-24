@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 
 import { searchHomepageUniversalAction } from '@/app/dashboard/command-center/actions'
 import { CommandCenterHomepageResults } from '@/components/dashboard/command-center-homepage-results'
+import { CommandCenterResultsSkeleton } from '@/components/dashboard/match-result-skeleton'
 import { useRole } from '@/hooks/useRole'
 import {
   commandCenterSuggestionsForRole,
@@ -51,6 +52,7 @@ export function CommandCenter({ greetingName }: Props) {
   const router = useRouter()
   const { role } = useRole()
   const inputRef = useRef<HTMLInputElement>(null)
+  const lastSearchAtRef = useRef(0)
 
   const [draft, setDraft] = useState('')
   const [submittedQuery, setSubmittedQuery] = useState<string | null>(null)
@@ -79,6 +81,10 @@ export function CommandCenter({ greetingName }: Props) {
       toast.error('Bitte eine Suchanfrage eingeben.')
       return
     }
+
+    const now = Date.now()
+    if (now - lastSearchAtRef.current < 300) return
+    lastSearchAtRef.current = now
 
     setDraft(q)
     setSubmittedQuery(q)
@@ -182,10 +188,7 @@ export function CommandCenter({ greetingName }: Props) {
       {hasSubmitted ? (
         <div className="mx-auto mt-10 w-full max-w-3xl px-4 sm:mt-12">
           {loading ? (
-            <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500">
-              <Loader2 className="size-5 animate-spin" aria-hidden />
-              Suche läuft …
-            </div>
+            <CommandCenterResultsSkeleton />
           ) : searchState ? (
             <CommandCenterHomepageResults
               query={submittedQuery!}

@@ -10,7 +10,13 @@ export async function loadAccountManagerDashboardData(
   fullName: string | null
 ): Promise<AccountManagerDashboardModel> {
   const greetingName = dashboardFirstName(fullName) || 'du'
-  const kpis = await loadReferenceKpis(supabase)
+
+  const { data: profile } = await supabase.from('profiles').select('organization_id').eq('id', userId).single()
+  const orgId = profile?.organization_id as string | undefined
+
+  const kpis = orgId
+    ? await loadReferenceKpis(supabase, orgId)
+    : { total: 0, approved: 0, internal: 0, draft: 0 }
   const now = new Date()
   const weekStart = new Date(now)
   weekStart.setDate(weekStart.getDate() - 7)
@@ -27,14 +33,54 @@ export async function loadAccountManagerDashboardData(
     draftThisWeek,
     draftPrevWeek,
   ] = await Promise.all([
-    countReferencesInWindow(supabase, weekStart.toISOString(), now.toISOString()),
-    countReferencesInWindow(supabase, prevWeekStart.toISOString(), weekStart.toISOString()),
-    countReferencesInWindow(supabase, weekStart.toISOString(), now.toISOString(), 'approved'),
-    countReferencesInWindow(supabase, prevWeekStart.toISOString(), weekStart.toISOString(), 'approved'),
-    countReferencesInWindow(supabase, weekStart.toISOString(), now.toISOString(), 'internal_only'),
-    countReferencesInWindow(supabase, prevWeekStart.toISOString(), weekStart.toISOString(), 'internal_only'),
-    countReferencesInWindow(supabase, weekStart.toISOString(), now.toISOString(), 'draft'),
-    countReferencesInWindow(supabase, prevWeekStart.toISOString(), weekStart.toISOString(), 'draft'),
+    orgId
+      ? countReferencesInWindow(supabase, orgId, weekStart.toISOString(), now.toISOString())
+      : Promise.resolve(0),
+    orgId
+      ? countReferencesInWindow(supabase, orgId, prevWeekStart.toISOString(), weekStart.toISOString())
+      : Promise.resolve(0),
+    orgId
+      ? countReferencesInWindow(supabase, orgId, weekStart.toISOString(), now.toISOString(), 'approved')
+      : Promise.resolve(0),
+    orgId
+      ? countReferencesInWindow(
+          supabase,
+          orgId,
+          prevWeekStart.toISOString(),
+          weekStart.toISOString(),
+          'approved'
+        )
+      : Promise.resolve(0),
+    orgId
+      ? countReferencesInWindow(
+          supabase,
+          orgId,
+          weekStart.toISOString(),
+          now.toISOString(),
+          'internal_only'
+        )
+      : Promise.resolve(0),
+    orgId
+      ? countReferencesInWindow(
+          supabase,
+          orgId,
+          prevWeekStart.toISOString(),
+          weekStart.toISOString(),
+          'internal_only'
+        )
+      : Promise.resolve(0),
+    orgId
+      ? countReferencesInWindow(supabase, orgId, weekStart.toISOString(), now.toISOString(), 'draft')
+      : Promise.resolve(0),
+    orgId
+      ? countReferencesInWindow(
+          supabase,
+          orgId,
+          prevWeekStart.toISOString(),
+          weekStart.toISOString(),
+          'draft'
+        )
+      : Promise.resolve(0),
   ])
   const kpiTrends: WeeklyTrendStrip = {
     total: totalThisWeek - totalPrevWeek,
@@ -50,44 +96,40 @@ export async function loadAccountManagerDashboardData(
   const since = new Date()
   since.setDate(since.getDate() - usageWindowDays)
 
-  const { data: prof } = await supabase.from('profiles').select('organization_id').eq('id', userId).single()
-  const orgId = prof?.organization_id as string | undefined
-
   let usageTotals: UsageTotalsRow = { views: 0, shares: 0, matches: 0 }
   const usageByReference: AccountManagerDashboardModel['usageByReference'] = []
   if (orgId) {
-    const { count: views } = await supabase
-      .from('evidence_events')
-      .select('id', { count: 'exact', head: true })
-      .eq('organization_id', orgId)
-      .eq('event_type', 'reference_viewed')
-      .gte('created_at', since.toISOString())
-
-    const { count: shareA } = await supabase
-      .from('evidence_events')
-      .select('id', { count: 'exact', head: true })
-      .eq('organization_id', orgId)
-      .eq('event_type', 'reference_shared')
-      .gte('created_at', since.toISOString())
-
-    const { count: shareB } = await supabase
-      .from('evidence_events')
-      .select('id', { count: 'exact', head: true })
-      .eq('organization_id', orgId)
-      .eq('event_type', 'share_link_viewed')
-      .gte('created_at', since.toISOString())
-
-    const { count: matches } = await supabase
-      .from('evidence_events')
-      .select('id', { count: 'exact', head: true })
-      .eq('organization_id', orgId)
-      .eq('event_type', 'reference_matched')
-      .gte('created_at', since.toISOString())
+    const [viewsRes, shareARes, shareBRes, matchesRes] = await Promise.all([
+      supabase
+        .from('evidence_events')
+        .select('id', { count: 'planned', head: true }) // KPI-Trend, ±1 akzeptabel
+        .eq('organization_id', orgId)
+        .eq('event_type', 'reference_viewed')
+        .gte('created_at', since.toISOString()),
+      supabase
+        .from('evidence_events')
+        .select('id', { count: 'planned', head: true })
+        .eq('organization_id', orgId)
+        .eq('event_type', 'reference_shared')
+        .gte('created_at', since.toISOString()),
+      supabase
+        .from('evidence_events')
+        .select('id', { count: 'planned', head: true })
+        .eq('organization_id', orgId)
+        .eq('event_type', 'share_link_viewed')
+        .gte('created_at', since.toISOString()),
+      supabase
+        .from('evidence_events')
+        .select('id', { count: 'planned', head: true })
+        .eq('organization_id', orgId)
+        .eq('event_type', 'reference_matched')
+        .gte('created_at', since.toISOString()),
+    ])
 
     usageTotals = {
-      views: views ?? 0,
-      shares: (shareA ?? 0) + (shareB ?? 0),
-      matches: matches ?? 0,
+      views: viewsRes.count ?? 0,
+      shares: (shareARes.count ?? 0) + (shareBRes.count ?? 0),
+      matches: matchesRes.count ?? 0,
     }
 
     // Minimal-Variante: „eigene“ Referenzen (created_by=userId) + Zählungen pro reference_id in evidence_events.
