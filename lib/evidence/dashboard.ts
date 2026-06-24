@@ -24,14 +24,17 @@ function normalizeStatus(raw: unknown): ReferenceStatus {
   return STATUS_MAP[s] ?? (VALID_STATUSES.includes(s as ReferenceStatus) ? (s as ReferenceStatus) : 'draft')
 }
 
-export async function getDashboardDataImpl(onlyFavorites = false) {
-  const user = await getRequestUser()
+export async function getDashboardDataImpl(
+  onlyFavorites = false,
+  auth?: { orgId: string; userId: string }
+) {
+  const user = auth?.userId ? { id: auth.userId } : await getRequestUser()
   if (!user) {
     return { references: [], totalCount: 0, deletedCount: 0 }
   }
 
-  const profile = await getRequestProfile()
-  const orgId = profile?.organization_id ?? null
+  const orgId =
+    auth?.orgId ?? (await getRequestProfile())?.organization_id ?? null
   if (!orgId) {
     return { references: [], totalCount: 0, deletedCount: 0 }
   }

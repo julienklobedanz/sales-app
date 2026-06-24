@@ -1,10 +1,8 @@
-import { Suspense } from 'react'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
-import { getDashboardData } from '@/app/dashboard/actions'
+import { getDashboardDataImpl } from '@/lib/evidence/dashboard'
 import { DashboardOverview } from '@/app/dashboard/dashboard-overview'
-import { EvidencePageSkeleton } from '@/components/dashboard/evidence-page-skeleton'
 import { enrichReferencedCompaniesMissingBrandfetch } from '@/lib/evidence/sync-company-brandfetch'
 import { getRequestEffectiveRoles, getRequestUser } from '@/lib/auth/request-user'
 import { normalizeOrgDateDisplayFormat } from '@/lib/format'
@@ -16,20 +14,12 @@ import { getCachedOrgCompanies } from '@/lib/cache/cached-org-reads'
 
 export const dynamic = 'force-dynamic'
 
-export default function EvidenceHubPage() {
-  return (
-    <Suspense fallback={<EvidencePageSkeleton />}>
-      <EvidenceHubContent />
-    </Suspense>
-  )
-}
-
-async function EvidenceHubContent() {
+export default async function EvidenceHubPage() {
   const user = await getRequestUser()
   if (!user) redirect(ROUTES.login)
 
   const effective = await getRequestEffectiveRoles()
-  if (!effective) redirect(ROUTES.onboarding)
+  if (!effective?.profile.organization_id) redirect(ROUTES.onboarding)
 
   const {
     profile,
@@ -39,15 +29,16 @@ async function EvidenceHubContent() {
     capabilities,
   } = effective
 
+  const orgId = profile.organization_id as string
+  const auth = { orgId, userId: user.id }
+
   const supabase = await createServerSupabaseClient()
 
-  const { data: orgRow } = profile.organization_id
-    ? await supabase
-        .from('organizations')
-        .select('api_settings')
-        .eq('id', profile.organization_id)
-        .maybeSingle()
-    : { data: null }
+  const { data: orgRow } = await supabase
+    .from('organizations')
+    .select('api_settings')
+    .eq('id', orgId)
+    .maybeSingle()
 
   const orgRolesPermissions =
     orgRow?.api_settings && typeof orgRow.api_settings === 'object'
@@ -63,7 +54,7 @@ async function EvidenceHubContent() {
     orgRolesPermissions,
   })
 
-  const dashboard = await getDashboardData(false)
+  const dashboard = await getDashboardDataImpl(false, auth)
 
   let references = visibilityScope.restrictToSalesVisibleStatuses
     ? filterReferencesForSales(dashboard.references)
@@ -82,25 +73,21 @@ async function EvidenceHubContent() {
   ]
   if (companyIdsNeedingEnrich.length > 0) {
     await enrichReferencedCompaniesMissingBrandfetch(companyIdsNeedingEnrich)
-    const refreshed = await getDashboardData(false)
+    const refreshed = await getDashboardDataImpl(false, auth)
     references = visibilityScope.restrictToSalesVisibleStatuses
       ? filterReferencesForSales(refreshed.references)
       : refreshed.references
   }
 
-  const orgId = profile.organization_id ?? ''
-
   const [companies, contactsResult, externalContactsResult, orgFmtResult] = await Promise.all([
-    orgId ? getCachedOrgCompanies(orgId) : Promise.resolve([]),
+    getCachedOrgCompanies(orgId),
     supabase.from('contact_persons').select('*').order('last_name'),
     supabase
       .from('external_contacts')
       .select('id, company_id, first_name, last_name, email, role')
       .eq('organization_id', orgId)
       .order('last_name'),
-    orgId
-      ? supabase.from('organizations').select('date_display_format').eq('id', orgId).maybeSingle()
-      : Promise.resolve({ data: null }),
+    supabase.from('organizations').select('date_display_format').eq('id', orgId).maybeSingle(),
   ])
 
   const orgDateDisplayFormat = normalizeOrgDateDisplayFormat(
