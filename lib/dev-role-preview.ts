@@ -25,10 +25,15 @@ export function isDevRolePreviewEnabled(): boolean {
   return process.env.NODE_ENV !== 'production'
 }
 
-/** Env-Flag + in Production nur Owner/Admin (echte DB-Rolle, nicht Preview-Cookie). */
+/** Nur auf Vercel Production eingeschränkt — lokal (dev/start) und Preview-Deploys: alle Nutzer. */
+function isVercelProductionDeploy(): boolean {
+  return process.env.VERCEL_ENV === 'production'
+}
+
+/** Env-Flag + auf Vercel Production nur Owner/Admin (echte DB-Rolle, nicht Preview-Cookie). */
 export function canUseDevRolePreview(systemRole: SystemRole): boolean {
   if (!isDevRolePreviewEnabled()) return false
-  if (process.env.NODE_ENV !== 'production') return true
+  if (!isVercelProductionDeploy()) return true
   return systemRole === 'owner' || isSystemAdmin(systemRole)
 }
 

@@ -98,12 +98,21 @@ describe('canUseDevRolePreview', () => {
   it('allows all roles in development when preview is enabled', () => {
     vi.stubEnv('NODE_ENV', 'development')
     delete process.env.NEXT_PUBLIC_ENABLE_DEV_ROLE_PREVIEW
+    delete process.env.VERCEL_ENV
     expect(canUseDevRolePreview('member')).toBe(true)
     expect(canUseDevRolePreview('owner')).toBe(true)
   })
 
-  it('restricts production to owner and admin when flag is 1', () => {
+  it('allows all roles on local production start when flag is 1', () => {
     vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('NEXT_PUBLIC_ENABLE_DEV_ROLE_PREVIEW', '1')
+    delete process.env.VERCEL_ENV
+    expect(canUseDevRolePreview('member')).toBe(true)
+  })
+
+  it('restricts Vercel production to owner and admin when flag is 1', () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('VERCEL_ENV', 'production')
     vi.stubEnv('NEXT_PUBLIC_ENABLE_DEV_ROLE_PREVIEW', '1')
     expect(canUseDevRolePreview('owner')).toBe(true)
     expect(canUseDevRolePreview('admin')).toBe(true)
@@ -113,6 +122,7 @@ describe('canUseDevRolePreview', () => {
 
   it('denies everyone when preview is disabled', () => {
     vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('VERCEL_ENV', 'production')
     delete process.env.NEXT_PUBLIC_ENABLE_DEV_ROLE_PREVIEW
     expect(canUseDevRolePreview('owner')).toBe(false)
     expect(canUseDevRolePreview('admin')).toBe(false)
