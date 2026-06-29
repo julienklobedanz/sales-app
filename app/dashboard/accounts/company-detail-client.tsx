@@ -2,15 +2,16 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { Award, Compass, Kanban, Users } from 'lucide-react'
+import { Award, Compass, Kanban } from 'lucide-react'
 import { toast } from 'sonner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useRole } from '@/hooks/useRole'
-import type {
-  ContactPersonRow,
-  StakeholderRole,
-  StakeholderRow,
-} from './actions'
+import {
+  type CompanyDetailTab,
+  isCompanyDetailTab,
+  normalizeCompanyDetailTab,
+} from '@/lib/accounts/company-detail-tabs'
+import type { ContactPersonRow, StakeholderRow } from './actions'
 import {
   createContactPerson,
   createStakeholder,
@@ -18,19 +19,18 @@ import {
   deleteStakeholder,
   setCompanyInternalReferenceApprovalContact,
   updateContactPerson,
-  updateExternalContactBuyingCenterRole,
   updateStakeholder,
   upsertCompanyStrategy,
 } from './actions'
 import { CompanyContactDialog } from './company-contact-dialog'
 import type { CompanyDetailClientProps } from './company-detail-types'
 import { CompanyDetailHeader } from './company-detail-header'
-import { CompanyDetailStrategyTab } from './company-detail-strategy-tab'
+import { CompanyDetailOverviewTab } from './company-detail-overview-tab'
+import { CompanyDetailSignalStrip } from './company-detail-signal-strip'
 import { CompanyStakeholderDialog } from './company-stakeholder-dialog'
 import { EditAccountDialog } from './edit-account-dialog'
-import { CompanyDetailPipelineTab } from './company-detail-pipeline-tab'
+import { CompanyDetailDealsProofTab } from './company-detail-deals-proof-tab'
 import { CompanyDetailProofPointsTab } from './company-detail-proof-points-tab'
-import { CompanyDetailPowerMapTab } from './company-detail-power-map-tab'
 
 const ACCOUNT_DETAIL_TAB_TRIGGER_CLASS =
   'h-auto min-w-0 flex-1 justify-center gap-1.5 rounded-md px-3.5 py-1.5 text-sm font-medium text-slate-500 shadow-none transition-all after:hidden hover:bg-slate-50 hover:text-slate-800 data-[state=active]:border-transparent data-[state=active]:bg-slate-100 data-[state=active]:font-medium data-[state=active]:text-slate-900 data-[state=active]:shadow-none dark:data-[state=active]:bg-slate-100 dark:data-[state=active]:text-slate-900'
@@ -56,17 +56,9 @@ export function CompanyDetailClient({
   const canEditAccount = isAdmin || isAccountManager
   const canEditStrategy = isAdmin || isAccountManager || isSales
   const canEditBuyingCenter = isAdmin || isAccountManager || isSales
-  const initialTabParam = searchParams.get('tab')
-  const initialTab =
-    initialTabParam === 'mission_control' ||
-    initialTabParam === 'buying_center' ||
-    initialTabParam === 'pipeline' ||
-    initialTabParam === 'proof_points'
-      ? initialTabParam
-      : 'mission_control'
-  const [activeTab, setActiveTab] = useState<
-    'mission_control' | 'buying_center' | 'pipeline' | 'proof_points'
-  >(initialTab)
+  const [activeTab, setActiveTab] = useState<CompanyDetailTab>(() =>
+    normalizeCompanyDetailTab(searchParams.get('tab'))
+  )
 
   const [goals, setGoals] = useState(initialStrategy?.company_goals ?? '')
   const [valueProposition, setValueProposition] = useState(initialStrategy?.value_proposition ?? '')
@@ -100,11 +92,15 @@ export function CompanyDetailClient({
     setInternalRefApprovalContactId(company.internal_reference_approval_contact_id ?? null)
   }, [company.internal_reference_approval_contact_id])
 
+  useEffect(() => {
+    setActiveTab(normalizeCompanyDetailTab(searchParams.get('tab')))
+  }, [searchParams])
+
   const [stakeholderOpen, setStakeholderOpen] = useState(false)
   const [editingStakeholder, setEditingStakeholder] = useState<StakeholderRow | null>(null)
   const [shName, setShName] = useState('')
   const [shTitle, setShTitle] = useState('')
-  const [shRole, setShRole] = useState<StakeholderRole>('champion')
+  const [shRole, setShRole] = useState<StakeholderRow['role']>('champion')
   const [shInfluence, setShInfluence] = useState('')
   const [shAttitude, setShAttitude] = useState('')
   const [shNotes, setShNotes] = useState('')
@@ -345,6 +341,14 @@ export function CompanyDetailClient({
     toast.success('Kontakt gelöscht.')
   }
 
+  const setActiveTabAndUrl = (value: string) => {
+    const next = isCompanyDetailTab(value) ? value : 'overview'
+    setActiveTab(next)
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('tab', next)
+    router.replace(`${pathname}?${params.toString()}`)
+  }
+
   return (
     <div className="space-y-6">
       <CompanyDetailHeader
@@ -355,100 +359,41 @@ export function CompanyDetailClient({
         openNdaOnMount={searchParams.get('openNda') === '1'}
       />
 
+      <CompanyDetailSignalStrip marketSignals={marketSignals} activeDeals={activeDeals} />
+
       <EditAccountDialog open={editAccountOpen} onOpenChange={setEditAccountOpen} company={company} />
 
-      <Tabs
-        value={activeTab}
-        onValueChange={(value) => {
-          const next =
-            value === 'mission_control' ||
-            value === 'buying_center' ||
-            value === 'pipeline' ||
-            value === 'proof_points'
-              ? value
-              : 'mission_control'
-          setActiveTab(next)
-          const params = new URLSearchParams(searchParams.toString())
-          params.set('tab', next)
-          router.replace(`${pathname}?${params.toString()}`)
-        }}
-        className="w-full gap-6"
-      >
+      <Tabs value={activeTab} onValueChange={setActiveTabAndUrl} className="w-full gap-6">
         <TabsList className="mb-2 flex h-auto w-full gap-1 rounded-none border-0 bg-transparent p-0">
-          <TabsTrigger value="mission_control" className={ACCOUNT_DETAIL_TAB_TRIGGER_CLASS}>
+          <TabsTrigger value="overview" className={ACCOUNT_DETAIL_TAB_TRIGGER_CLASS}>
             <Compass className="size-4" />
-            Strategie
+            Überblick
           </TabsTrigger>
-          <TabsTrigger value="buying_center" className={ACCOUNT_DETAIL_TAB_TRIGGER_CLASS}>
-            <Users className="size-4" />
-            Buying Center
-          </TabsTrigger>
-          <TabsTrigger value="pipeline" className={ACCOUNT_DETAIL_TAB_TRIGGER_CLASS}>
+          <TabsTrigger value="deals" className={ACCOUNT_DETAIL_TAB_TRIGGER_CLASS}>
             <Kanban className="size-4" />
-            Pipeline
+            Deals &amp; Beweis
           </TabsTrigger>
-          <TabsTrigger value="proof_points" className={ACCOUNT_DETAIL_TAB_TRIGGER_CLASS}>
+          <TabsTrigger value="references" className={ACCOUNT_DETAIL_TAB_TRIGGER_CLASS}>
             <Award className="size-4" />
-            Passende Referenzen
+            Referenzen
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="mission_control" className="mt-2">
-          <CompanyDetailStrategyTab
-            canEdit={canEditStrategy}
+        <TabsContent value="overview" className="mt-2">
+          <CompanyDetailOverviewTab
+            companyDescription={company.description}
+            canEditStrategy={canEditStrategy}
             strategySaving={strategySaving}
             strategyFields={strategyFields}
             saveStrategy={saveStrategy}
             stakeholders={stakeholders}
-            externalContacts={externalContacts}
-            marketSignals={marketSignals}
-            onSetStakeholderRole={async (id, role) => {
-              const res = await updateStakeholder(id, { role })
-              if (!res.success) {
-                toast.error(res.error ?? 'Speichern fehlgeschlagen.')
-                return
-              }
-              setStakeholders((prev) =>
-                prev.map((s) => (s.id === id ? ({ ...s, role } as StakeholderRow) : s))
-              )
-              if (role !== 'unknown') {
-                setExternalContacts((prev) =>
-                  prev.map((c) =>
-                    c.buying_center_role === role ? { ...c, buying_center_role: 'unknown' as const } : c
-                  )
-                )
-              }
-              toast.success('Rolle aktualisiert.')
-            }}
-            onSetExternalBuyingCenterRole={async (id, role) => {
-              const res = await updateExternalContactBuyingCenterRole(id, role)
-              if (!res.success) {
-                toast.error(res.error ?? 'Speichern fehlgeschlagen.')
-                return
-              }
-              setExternalContacts((prev) =>
-                prev.map((c) => (c.id === id ? { ...c, buying_center_role: role } : c))
-              )
-              if (role !== 'unknown') {
-                setStakeholders((prev) =>
-                  prev.map((s) => (s.role === role ? ({ ...s, role: 'unknown' as const } as StakeholderRow) : s))
-                )
-              }
-              toast.success('Rolle aktualisiert.')
-            }}
-          />
-        </TabsContent>
-
-        <TabsContent value="buying_center" className="mt-2">
-          <CompanyDetailPowerMapTab
-            stakeholders={stakeholders}
-            marketSignals={marketSignals}
             internalContacts={internalContacts}
             externalContacts={externalContacts}
             companyName={company.name}
             organizationName={organizationName}
             internalReferenceApprovalContactId={internalRefApprovalContactId}
-            canEdit={canEditBuyingCenter}
+            canEditBuyingCenter={canEditBuyingCenter}
+            marketSignals={marketSignals}
             onAddStakeholder={() => openStakeholderDialog()}
             onEditStakeholder={openStakeholderDialog}
             onRemoveStakeholder={removeStakeholder}
@@ -458,12 +403,25 @@ export function CompanyDetailClient({
           />
         </TabsContent>
 
-        <TabsContent value="pipeline" className="mt-2">
-          <CompanyDetailPipelineTab activeDeals={activeDeals} hubspotPortalId={hubspotPortalId} />
+        <TabsContent value="deals" className="mt-2">
+          {activeTab === 'deals' ? (
+            <CompanyDetailDealsProofTab
+              activeDeals={activeDeals}
+              hubspotPortalId={hubspotPortalId}
+              stakeholders={stakeholders}
+              isActive
+            />
+          ) : null}
         </TabsContent>
 
-        <TabsContent value="proof_points" className="mt-2">
-          <CompanyDetailProofPointsTab company={company} references={references} />
+        <TabsContent value="references" className="mt-2">
+          {activeTab === 'references' ? (
+            <CompanyDetailProofPointsTab
+              company={company}
+              references={references}
+              isActive
+            />
+          ) : null}
         </TabsContent>
       </Tabs>
 

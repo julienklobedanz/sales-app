@@ -51,6 +51,7 @@ import {
   accountsListTitle,
   parseAccountsListView,
 } from '@/lib/accounts/accounts-list-view'
+import { normalizeCompanyDetailTab } from '@/lib/accounts/company-detail-tabs'
 import {
   syncAccountsListViewFromUrl,
   useAccountsListView,
@@ -362,15 +363,13 @@ export function DashboardHeader({
       const accountMatch = pathname.match(/^\/dashboard\/accounts\/([^/]+)$/)
       if (accountMatch) {
         const id = accountMatch[1]
-        const tab = searchParams.get('tab') ?? 'strategy'
+        const tab = normalizeCompanyDetailTab(searchParams.get('tab'))
         const tabLabel =
-          tab === 'stakeholders'
-            ? 'Stakeholder'
-            : tab === 'contacts'
-              ? 'Kontakte'
-              : tab === 'links'
-                ? 'Referenzen & Deals'
-                : 'Strategie'
+          tab === 'deals'
+            ? 'Deals & Beweis'
+            : tab === 'references'
+              ? 'Referenzen'
+              : 'Überblick'
         const fallbackName = accountCrumbNames[id] ?? 'Account'
         const supabase = createClient()
         const { data } = await supabase

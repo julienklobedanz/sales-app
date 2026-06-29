@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useRef, useState } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { FileUp, Loader, Sparkles } from '@hugeicons/core-free-icons'
@@ -16,22 +15,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { DealCoverageMatrix } from '@/components/deals/deal-coverage-matrix'
 import { AppIcon } from '@/lib/icons'
-import { ROUTES } from '@/lib/routes'
+import type { RfpCoverageRow } from '@/lib/rfp-coverage-types'
 
 import type { DealWithReferences } from '../types'
 import { addReferenceToDealWithScore } from '../actions'
 import { generateRfpResponseBlockAction } from '../rfp-response-block'
-
-const COVER_THRESHOLD = 0.55
 
 type RfpCoverageMatch = {
   id: string
@@ -160,22 +150,7 @@ export function DealRfpSection({
     setPendingFile(file)
   }
 
-  const { coveredCount, totalReq, coveragePct } = (() => {
-    if (!result?.coverage.length) {
-      return { coveredCount: 0, totalReq: 0, coveragePct: 0 }
-    }
-    const total = result.coverage.length
-    const covered = result.coverage.filter((row) => {
-      if (row.embedError) return false
-      const best = row.matches[0]
-      return best && best.similarity >= COVER_THRESHOLD
-    }).length
-    return {
-      coveredCount: covered,
-      totalReq: total,
-      coveragePct: total ? Math.round((covered / total) * 100) : 0,
-    }
-  })()
+  const totalReq = result?.coverage.length ?? 0
 
   function exportMatrixPdf() {
     if (!result) return
@@ -346,21 +321,6 @@ export function DealRfpSection({
 
         {result && totalReq > 0 ? (
           <div className="space-y-3">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Abdeckung</span>
-                <span className="font-medium tabular-nums">
-                  {coveredCount}/{totalReq} Anforderungen ({coveragePct}%)
-                </span>
-              </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full rounded-full bg-primary transition-[width] duration-500"
-                  style={{ width: `${coveragePct}%` }}
-                />
-              </div>
-            </div>
-
             <div className="flex flex-wrap gap-2">
               <Button type="button" variant="outline" size="sm" onClick={exportMatrixPdf}>
                 Als PDF exportieren
@@ -381,83 +341,13 @@ export function DealRfpSection({
               </Button>
             </div>
 
-            <div className="rounded-md border bg-muted/20 overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="min-w-[200px]">Anforderung</TableHead>
-                    <TableHead className="min-w-[160px]">Beste Referenz</TableHead>
-                    <TableHead className="w-[110px]">Score</TableHead>
-                    <TableHead className="w-[140px]">Aktion</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {result.coverage.map((row) => {
-                    const best = row.matches[0]
-                    const isGap =
-                      Boolean(row.embedError) || !best || best.similarity < COVER_THRESHOLD
-                    return (
-                      <TableRow
-                        key={row.requirementId}
-                        className={isGap ? 'bg-amber-50/80 dark:bg-amber-950/25' : undefined}
-                      >
-                        <TableCell className="align-top text-sm">
-                          {isGap ? (
-                            <span className="mr-1 inline-flex text-amber-600" aria-hidden>
-                              ⚠
-                            </span>
-                          ) : null}
-                          {row.requirementText}
-                          {row.embedError ? (
-                            <span className="mt-1 block text-xs text-destructive">{row.embedError}</span>
-                          ) : null}
-                        </TableCell>
-                        <TableCell className="align-top text-sm">
-                          {best ? (
-                            <div>
-                              <Link
-                                href={ROUTES.references.detail(best.id)}
-                                className="font-medium hover:underline"
-                              >
-                                {best.title}
-                              </Link>
-                              {best.companyName ? (
-                                <div className="text-xs text-muted-foreground">{best.companyName}</div>
-                              ) : null}
-                            </div>
-                          ) : (
-                            '—'
-                          )}
-                        </TableCell>
-                        <TableCell className="align-top font-mono text-sm tabular-nums">
-                          {best ? `${Math.round(best.similarity * 100)} %` : '—'}
-                        </TableCell>
-                        <TableCell className="align-top">
-                          {best ? (
-                            <Button
-                              type="button"
-                              variant="secondary"
-                              size="sm"
-                              className="h-8 text-xs"
-                              disabled={linkingId === best.id || linkedRefIds.has(best.id)}
-                              onClick={() => void linkBestMatch(best.id, best.similarity)}
-                            >
-                              {linkingId === best.id
-                                ? '…'
-                                : linkedRefIds.has(best.id)
-                                  ? 'Bereits im Deal'
-                                  : 'In Deal übernehmen'}
-                            </Button>
-                          ) : (
-                            '—'
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-            </div>
+            <DealCoverageMatrix
+              coverage={result.coverage as RfpCoverageRow[]}
+              dealId={deal.id}
+              linkedRefIds={linkedRefIds}
+              linkingId={linkingId}
+              onLinkBestMatch={(referenceId, similarity) => void linkBestMatch(referenceId, similarity)}
+            />
           </div>
         ) : null}
       </CardContent>

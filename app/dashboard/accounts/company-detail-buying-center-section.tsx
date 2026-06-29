@@ -1,12 +1,9 @@
 import { CompanyDetailContactsTab } from './company-detail-contacts-tab'
-import { CompanyDetailMarketSignalsCard } from './company-detail-market-signals-card'
 import { CompanyDetailStakeholdersTab } from './company-detail-stakeholders-tab'
 import type { ContactPersonRow, ExternalContactRow, StakeholderRow } from './actions'
-import type { CompanyDetailClientProps } from './company-detail-types'
 
-export function CompanyDetailPowerMapTab({
+export function CompanyDetailBuyingCenterSection({
   stakeholders,
-  marketSignals,
   internalContacts,
   externalContacts,
   companyName,
@@ -21,7 +18,6 @@ export function CompanyDetailPowerMapTab({
   onRemoveInternalContact,
 }: {
   stakeholders: StakeholderRow[]
-  marketSignals: CompanyDetailClientProps['marketSignals']
   internalContacts: ContactPersonRow[]
   externalContacts: ExternalContactRow[]
   companyName: string
@@ -55,8 +51,6 @@ export function CompanyDetailPowerMapTab({
         onEdit={onEditInternalContact}
         onRemove={onRemoveInternalContact}
       />
-      <CompanyDetailMarketSignalsCard marketSignals={marketSignals} />
     </div>
   )
 }
-
