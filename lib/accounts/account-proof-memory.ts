@@ -4,11 +4,14 @@ import { unstable_cache } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import {
+  accountProofMemoryDealFilter,
+  applySalesVisibleReferenceFilters,
+} from '@/lib/accounts/account-proof-memory-filters'
+import {
   buildAccountProofMemory,
   type AccountProofMemory,
 } from '@/lib/accounts/account-proof-memory-pure'
 import type { Database } from '@/lib/database.types'
-import { RPC_SALES_VISIBLE_REFERENCE_STATUSES } from '@/lib/roles/reference-visibility-scope'
 import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
@@ -30,11 +33,11 @@ async function computeAccountProofMemory(
 ): Promise<AccountProofMemory> {
   const { organizationId, companyId, salesVisibleOnly } = params
 
-  const { data: deals, error: dealsErr } = await supabase
-    .from('deals')
-    .select('id, title, status, decisive_reference_id, updated_at')
-    .eq('organization_id', organizationId)
-    .eq('company_id', companyId)
+  const { data: deals, error: dealsErr } = await accountProofMemoryDealFilter(
+    supabase.from('deals').select('id, title, status, decisive_reference_id, updated_at'),
+    organizationId,
+    companyId
+  )
 
   if (dealsErr || !deals?.length) {
     return { impact: [], history: [], lastWonWithProof: null }
@@ -76,7 +79,7 @@ async function computeAccountProofMemory(
     .is('deleted_at', null)
 
   if (salesVisibleOnly) {
-    refQuery = refQuery.in('status', [...RPC_SALES_VISIBLE_REFERENCE_STATUSES])
+    refQuery = applySalesVisibleReferenceFilters(refQuery)
   }
 
   const { data: refs } = await refQuery
@@ -110,13 +113,32 @@ async function computeAccountProofMemory(
   })
 }
 
+/** Direkt mit Session-Client (RLS) — für Tests und Sales-Sicht. */
+export async function loadAccountProofMemory(
+  supabase: DbClient,
+  params: {
+    organizationId: string
+    companyId: string
+    salesVisibleOnly: boolean
+  }
+): Promise<AccountProofMemory> {
+  return computeAccountProofMemory(supabase, params)
+}
+
 export async function getCachedAccountProofMemory(params: {
   organizationId: string
   companyId: string
   salesVisibleOnly: boolean
 }): Promise<AccountProofMemory> {
   const { organizationId, companyId, salesVisibleOnly } = params
-  const visibilityKey = salesVisibleOnly ? 'sales' : 'all'
+
+  // Sales-Sicht: Session-Client + RLS (kein Draft/NDA-Leak über Service-Role-Cache).
+  if (salesVisibleOnly) {
+    const client = await createServerSupabaseClient()
+    return loadAccountProofMemory(client, params)
+  }
+
+  const visibilityKey = 'all'
   const cacheKey = `account-proof-memory:${organizationId}:${companyId}:${visibilityKey}`
 
   const admin = createServiceRoleSupabaseClient()

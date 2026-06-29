@@ -34,6 +34,7 @@ type DealRow = {
   status: string
   decisive_reference_id: string | null
   updated_at: string | null
+  account_manager_id?: string | null
 }
 
 type DealReferenceRow = {
