@@ -15,6 +15,7 @@ import {
 
 export { RFP_COVER_THRESHOLD, type RfpCoverageMatch, type RfpCoverageRow } from '@/lib/rfp-coverage-types'
 
+const MATCH_THRESHOLD = RFP_COVER_THRESHOLD
 const MATCH_COUNT = 8
 const EMBED_CONCURRENCY = 4
 

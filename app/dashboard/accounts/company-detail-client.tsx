@@ -415,7 +415,13 @@ export function CompanyDetailClient({
         </TabsContent>
 
         <TabsContent value="references" className="mt-2">
-          <CompanyDetailProofPointsTab company={company} references={references} />
+          {activeTab === 'references' ? (
+            <CompanyDetailProofPointsTab
+              company={company}
+              references={references}
+              isActive
+            />
+          ) : null}
         </TabsContent>
       </Tabs>
 
