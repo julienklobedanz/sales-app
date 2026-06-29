@@ -8,7 +8,8 @@ import { rpcMatchReferences } from '@/lib/match-references-rpc'
 import type { ExtractedRfpRequirement } from '@/lib/rfp-requirements'
 import { formatIndustryDisplay } from '@/lib/constants/industries'
 
-const MATCH_THRESHOLD = 0.55
+export const RFP_COVER_THRESHOLD = 0.55
+const MATCH_THRESHOLD = RFP_COVER_THRESHOLD
 const MATCH_COUNT = 8
 const EMBED_CONCURRENCY = 4
 

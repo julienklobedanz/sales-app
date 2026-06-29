@@ -29,7 +29,7 @@ import { CompanyDetailOverviewTab } from './company-detail-overview-tab'
 import { CompanyDetailSignalStrip } from './company-detail-signal-strip'
 import { CompanyStakeholderDialog } from './company-stakeholder-dialog'
 import { EditAccountDialog } from './edit-account-dialog'
-import { CompanyDetailPipelineTab } from './company-detail-pipeline-tab'
+import { CompanyDetailDealsProofTab } from './company-detail-deals-proof-tab'
 import { CompanyDetailProofPointsTab } from './company-detail-proof-points-tab'
 
 const ACCOUNT_DETAIL_TAB_TRIGGER_CLASS =
@@ -404,7 +404,13 @@ export function CompanyDetailClient({
         </TabsContent>
 
         <TabsContent value="deals" className="mt-2">
-          <CompanyDetailPipelineTab activeDeals={activeDeals} hubspotPortalId={hubspotPortalId} />
+          {activeTab === 'deals' ? (
+            <CompanyDetailDealsProofTab
+              activeDeals={activeDeals}
+              hubspotPortalId={hubspotPortalId}
+              isActive
+            />
+          ) : null}
         </TabsContent>
 
         <TabsContent value="references" className="mt-2">

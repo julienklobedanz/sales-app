@@ -769,6 +769,48 @@ export type Database = {
           },
         ]
       }
+      deal_requirements: {
+        Row: {
+          created_at: string
+          deal_id: string
+          id: string
+          label: string
+          organization_id: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          deal_id: string
+          id?: string
+          label: string
+          organization_id: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          deal_id?: string
+          id?: string
+          label?: string
+          organization_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_requirements_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_requirements_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deal_rfp_analyses: {
         Row: {
           coverage_report: Json | null
