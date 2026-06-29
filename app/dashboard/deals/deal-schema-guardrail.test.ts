@@ -47,6 +47,8 @@ describe('deal schema guardrail (F2)', () => {
       ...DEAL_TABLE_ALLOWED_COLUMNS,
       ...DEAL_ROW_DERIVED_FIELDS,
       'requirements_text',
+      'outcome_reason',
+      'decisive_reference_id',
       'linked_refs',
       'company_logo_url',
     ])

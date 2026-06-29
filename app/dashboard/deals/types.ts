@@ -24,6 +24,8 @@ export type DealRow = {
   sales_manager_name: string | null
   status: DealStatus
   expiry_date: string | null
+  outcome_reason?: string | null
+  decisive_reference_id?: string | null
   created_at: string
   updated_at: string | null
   /** Verknüpfte Referenzen inkl. Logo für Listen-Anzeige */
@@ -51,6 +53,8 @@ export const DEAL_TABLE_ALLOWED_COLUMNS = [
   'sales_manager_id',
   'is_public',
   'incumbent_provider',
+  'outcome_reason',
+  'decisive_reference_id',
   'created_at',
   'updated_at',
   'created_by',

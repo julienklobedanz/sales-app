@@ -41,7 +41,13 @@ export function RfpSidebarPanel({
 
         <LinkReferenceDialog dealId={deal.id} availableRefs={availableRefs} />
 
-        <OutcomeDialog dealId={deal.id} />
+        <OutcomeDialog
+          dealId={deal.id}
+          dealStatus={deal.status}
+          linkedReferences={deal.references}
+          initialOutcomeReason={deal.outcome_reason ?? null}
+          initialDecisiveReferenceId={deal.decisive_reference_id ?? null}
+        />
 
         <Button asChild size="sm" className="w-full">
           <Link href={`${ROUTES.deals.requestNew}?dealId=${encodeURIComponent(deal.id)}`}>

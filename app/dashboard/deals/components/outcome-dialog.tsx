@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Trophy } from "@hugeicons/core-free-icons"
@@ -21,35 +21,56 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 
 import { recordDealOutcome } from "../actions"
+import type { DealStatus } from "../types"
 
-type ReferenceHelpfulChoice = "__none__" | "yes" | "no" | "na"
+type LinkedReference = {
+  id: string
+  title: string
+  company_name: string
+}
 
-export function OutcomeDialog({ dealId }: { dealId: string }) {
+export function OutcomeDialog({
+  dealId,
+  dealStatus,
+  linkedReferences,
+  initialOutcomeReason = null,
+  initialDecisiveReferenceId = null,
+}: {
+  dealId: string
+  dealStatus: DealStatus
+  linkedReferences: LinkedReference[]
+  initialOutcomeReason?: string | null
+  initialDecisiveReferenceId?: string | null
+}) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [outcome, setOutcome] = useState<"won" | "lost" | "withdrawn" | "">("")
-  const [comment, setComment] = useState("")
-  const [referenceHelpful, setReferenceHelpful] = useState<ReferenceHelpfulChoice>("__none__")
+  const [outcomeReason, setOutcomeReason] = useState("")
+  const [decisiveReferenceId, setDecisiveReferenceId] = useState<string>("__none__")
   const [saving, setSaving] = useState(false)
 
-  /** `undefined` = keine Angabe (Feld weglassen im Event-Payload). */
-  function mapReferenceHelpful(): boolean | null | undefined {
-    if (referenceHelpful === "yes") return true
-    if (referenceHelpful === "no") return false
-    if (referenceHelpful === "na") return null
-    return undefined
-  }
+  const isTerminal = dealStatus === "won" || dealStatus === "lost" || dealStatus === "withdrawn"
+
+  useEffect(() => {
+    if (!open) return
+    setOutcomeReason(initialOutcomeReason ?? "")
+    setDecisiveReferenceId(initialDecisiveReferenceId ?? "__none__")
+    if (dealStatus === "won" || dealStatus === "lost" || dealStatus === "withdrawn") {
+      setOutcome(dealStatus)
+    } else {
+      setOutcome("")
+    }
+  }, [open, dealStatus, initialOutcomeReason, initialDecisiveReferenceId])
 
   async function submit() {
     if (!outcome) return
     setSaving(true)
     try {
-      const rh = mapReferenceHelpful()
       const res = await recordDealOutcome({
         dealId,
         outcome,
-        comment,
-        ...(rh !== undefined ? { referenceHelpful: rh } : {}),
+        outcomeReason,
+        decisiveReferenceId: decisiveReferenceId === "__none__" ? null : decisiveReferenceId,
       })
       if (!res.success) {
         toast.error(res.error ?? "Konnte Ausgang nicht speichern.")
@@ -57,34 +78,39 @@ export function OutcomeDialog({ dealId }: { dealId: string }) {
       }
       toast.success("Ausgang gespeichert.")
       setOpen(false)
-      setOutcome("")
-      setComment("")
-      setReferenceHelpful("__none__")
       router.refresh()
     } finally {
       setSaving(false)
     }
   }
 
+  const showDecisiveReference =
+    (outcome === "won" || outcome === "lost") && linkedReferences.length > 0
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button type="button" size="sm" variant="outline" className="w-full">
           <AppIcon icon={Trophy} size={16} className="mr-2" />
-          Ausgang festhalten
+          {isTerminal ? "Ausgang bearbeiten" : "Ausgang festhalten"}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Ausgang des Deals</DialogTitle>
-          <DialogDescription>Kurz festhalten, wie der Deal ausgegangen ist.</DialogDescription>
+          <DialogDescription>
+            Kurz festhalten, wie der Deal ausgegangen ist. Grund und entscheidender Beweis sind optional
+            — ein Klick auf Speichern reicht.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-2">
-            <Label>Outcome</Label>
+            <Label>Ergebnis</Label>
             <Select
               value={outcome || "__none__"}
-              onValueChange={(v) => setOutcome(v === "__none__" ? "" : (v as "won" | "lost" | "withdrawn"))}
+              onValueChange={(v) =>
+                setOutcome(v === "__none__" ? "" : (v as "won" | "lost" | "withdrawn"))
+              }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Auswählen …" />
@@ -98,34 +124,42 @@ export function OutcomeDialog({ dealId }: { dealId: string }) {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="outcome-comment">Grund (Freitext, optional)</Label>
+            <Label htmlFor="outcome-reason">
+              {outcome === "lost"
+                ? "Warum verloren? (optional)"
+                : outcome === "won"
+                  ? "Warum gewonnen? (optional)"
+                  : "Grund (optional)"}
+            </Label>
             <Textarea
-              id="outcome-comment"
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
+              id="outcome-reason"
+              value={outcomeReason}
+              onChange={(e) => setOutcomeReason(e.target.value)}
               rows={3}
-              placeholder="z. B. Kriterien, Wettbewerber, Lessons Learned …"
+              placeholder="z. B. Kriterien, Wettbewerber, Lessons Learned …"
             />
           </div>
-          <div className="space-y-2">
-            <Label>War die Referenz hilfreich?</Label>
-            <Select
-              value={referenceHelpful}
-              onValueChange={(v) => setReferenceHelpful(v as ReferenceHelpfulChoice)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Optional …" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__">Keine Angabe</SelectItem>
-                <SelectItem value="yes">Ja</SelectItem>
-                <SelectItem value="no">Nein</SelectItem>
-                <SelectItem value="na">Nicht zutreffend</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {showDecisiveReference ? (
+            <div className="space-y-2">
+              <Label>Welcher Beweis war entscheidend? (optional)</Label>
+              <Select value={decisiveReferenceId} onValueChange={setDecisiveReferenceId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Referenz wählen …" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Keine Angabe</SelectItem>
+                  {linkedReferences.map((ref) => (
+                    <SelectItem key={ref.id} value={ref.id}>
+                      {ref.title}
+                      {ref.company_name ? ` · ${ref.company_name}` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : null}
         </div>
-        <DialogFooter>
+        <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>
             Abbrechen
           </Button>
@@ -137,4 +171,3 @@ export function OutcomeDialog({ dealId }: { dealId: string }) {
     </Dialog>
   )
 }
-

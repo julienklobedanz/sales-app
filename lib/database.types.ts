@@ -876,12 +876,14 @@ export type Database = {
           crm_opportunity_id: string | null
           crm_source: string | null
           crm_synced_at: string | null
+          decisive_reference_id: string | null
           expiry_date: string | null
           id: string
           incumbent_provider: string | null
           industry: string | null
           is_public: boolean
           organization_id: string
+          outcome_reason: string | null
           requirements_text: string | null
           sales_manager_id: string | null
           salesforce_opportunity_id: string | null
@@ -897,12 +899,14 @@ export type Database = {
           crm_opportunity_id?: string | null
           crm_source?: string | null
           crm_synced_at?: string | null
+          decisive_reference_id?: string | null
           expiry_date?: string | null
           id?: string
           incumbent_provider?: string | null
           industry?: string | null
           is_public?: boolean
           organization_id: string
+          outcome_reason?: string | null
           requirements_text?: string | null
           sales_manager_id?: string | null
           salesforce_opportunity_id?: string | null
@@ -918,12 +922,14 @@ export type Database = {
           crm_opportunity_id?: string | null
           crm_source?: string | null
           crm_synced_at?: string | null
+          decisive_reference_id?: string | null
           expiry_date?: string | null
           id?: string
           incumbent_provider?: string | null
           industry?: string | null
           is_public?: boolean
           organization_id?: string
+          outcome_reason?: string | null
           requirements_text?: string | null
           sales_manager_id?: string | null
           salesforce_opportunity_id?: string | null
@@ -945,6 +951,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deals_decisive_reference_id_fkey"
+            columns: ["decisive_reference_id"]
+            isOneToOne: false
+            referencedRelation: "references"
             referencedColumns: ["id"]
           },
         ]

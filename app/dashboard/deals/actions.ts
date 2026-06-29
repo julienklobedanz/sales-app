@@ -14,6 +14,7 @@ import {
   escapeRefstackEmailHtml,
   getRefstackResendFrom,
 } from '@/lib/email/refstack-email-layout'
+import { validateDecisiveReferenceId } from '@/lib/deals/outcome-capture'
 import type { DealRow, DealStatus, DealWithReferences } from './types'
 
 async function getSessionOrgId(
@@ -212,6 +213,8 @@ export async function getDealWithReferences(id: string): Promise<DealWithReferen
       sales_manager_id,
       status,
       expiry_date,
+      outcome_reason,
+      decisive_reference_id,
       created_at,
       updated_at,
       companies ( name )
@@ -298,6 +301,9 @@ export async function getDealWithReferences(id: string): Promise<DealWithReferen
     sales_manager_name: salesManagerName,
     status: normalizeDealStatus(deal.status),
     expiry_date: deal.expiry_date ?? null,
+    outcome_reason: (deal as { outcome_reason?: string | null }).outcome_reason ?? null,
+    decisive_reference_id:
+      (deal as { decisive_reference_id?: string | null }).decisive_reference_id ?? null,
     created_at: deal.created_at ?? '',
     updated_at: deal.updated_at ?? null,
     linked_refs,
@@ -542,9 +548,8 @@ export async function updateDeal(args: {
 export async function recordDealOutcome(args: {
   dealId: string
   outcome: 'won' | 'lost' | 'withdrawn'
-  comment?: string
-  /** `true`/`false`/`null` = gesetzt; weglassen = keine Angabe im Payload. */
-  referenceHelpful?: boolean | null
+  outcomeReason?: string
+  decisiveReferenceId?: string | null
 }): Promise<{ success: boolean; error?: string }> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -560,11 +565,34 @@ export async function recordDealOutcome(args: {
   const orgId = profile?.organization_id
   if (!orgId) return { success: false, error: 'Keine Organisation zugeordnet.' }
 
+  const decisiveReferenceId = args.decisiveReferenceId?.trim() || null
+  if (decisiveReferenceId && args.outcome === 'withdrawn') {
+    return {
+      success: false,
+      error: 'Entscheidende Referenz ist nur bei Gewonnen/Verloren möglich.',
+    }
+  }
+  if (decisiveReferenceId) {
+    const { data: linkedRows } = await supabase
+      .from('deal_references')
+      .select('reference_id')
+      .eq('deal_id', args.dealId)
+
+    const linkedIds = (linkedRows ?? []).map((row) => String(row.reference_id))
+    const validation = validateDecisiveReferenceId(decisiveReferenceId, linkedIds)
+    if (!validation.ok) return { success: false, error: validation.error }
+  }
+
   const status = normalizeDealStatus(args.outcome)
+  const outcomeReason = args.outcomeReason?.trim() || null
 
   const { error: updErr } = await supabase
     .from('deals')
-    .update({ status })
+    .update({
+      status,
+      outcome_reason: outcomeReason,
+      decisive_reference_id: decisiveReferenceId,
+    })
     .eq('id', args.dealId)
     .eq('organization_id', orgId)
   if (updErr) return { success: false, error: updErr.message }
@@ -576,17 +604,18 @@ export async function recordDealOutcome(args: {
         ? 'deal_lost'
         : 'deal_withdrawn'
 
-  const eventPayload: { comment: string | null; reference_helpful?: boolean | null } = {
-    comment: args.comment?.trim() || null,
-  }
-  if (args.referenceHelpful !== undefined) {
-    eventPayload.reference_helpful = args.referenceHelpful
+  const eventPayload: {
+    outcome_reason: string | null
+    decisive_reference_id: string | null
+  } = {
+    outcome_reason: outcomeReason,
+    decisive_reference_id: decisiveReferenceId,
   }
 
   const { error: evErr } = await supabase.from('evidence_events').insert({
     organization_id: orgId,
     deal_id: args.dealId,
-    reference_id: null,
+    reference_id: decisiveReferenceId,
     event_type: eventType,
     payload: eventPayload,
     created_by: user.id,
