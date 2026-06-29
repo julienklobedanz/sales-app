@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Loader2, Plus, Trash2 } from 'lucide-react'
+import { Loader2, Package, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { DealCoverageMatrix } from '@/components/deals/deal-coverage-matrix'
+import { DealCoverageMatrix, extractCoveredReferences } from '@/components/deals/deal-coverage-matrix'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -21,12 +21,13 @@ import {
 } from '@/components/ui/table'
 import { AppIcon } from '@/lib/icons'
 import { DatabaseSyncIcon, Wifi01Icon } from '@hugeicons/core-free-icons'
-import type { RfpCoverageRow } from '@/lib/rfp-coverage'
+import type { RfpCoverageRow } from '@/lib/rfp-coverage-types'
 import { buildCrmDealUrl, dealHasCrmSync } from '@/lib/crm/deal-links'
 import { formatDealVolume } from '@/lib/format'
 import { ROUTES } from '@/lib/routes'
 
-import type { AccountDealRow } from './actions'
+import type { AccountDealRow, StakeholderRow } from './actions'
+import { ChampionKitDialog } from './champion-kit-dialog'
 import {
   addDealRequirementAction,
   fetchDealProofCoverageAction,
@@ -40,10 +41,12 @@ import {
 export function CompanyDetailDealsProofTab({
   activeDeals,
   hubspotPortalId = null,
+  stakeholders,
   isActive,
 }: {
   activeDeals: AccountDealRow[]
   hubspotPortalId?: string | null
+  stakeholders: StakeholderRow[]
   isActive: boolean
 }) {
   const [selectedDealId, setSelectedDealId] = useState<string | null>(
@@ -56,6 +59,11 @@ export function CompanyDetailDealsProofTab({
   const [newLabel, setNewLabel] = useState('')
   const [adding, setAdding] = useState(false)
   const [importing, setImporting] = useState<'text' | 'rfp' | null>(null)
+  const [championKitOpen, setChampionKitOpen] = useState(false)
+
+  const championName =
+    stakeholders.find((s) => s.role === 'champion')?.name?.trim() || null
+  const coveredReferences = extractCoveredReferences(coverage)
 
   useEffect(() => {
     if (!activeDeals.some((d) => d.id === selectedDealId)) {
@@ -379,11 +387,39 @@ export function CompanyDetailDealsProofTab({
                   Coverage berechnen …
                 </div>
               ) : (
-                <DealCoverageMatrix coverage={coverage} dealId={selectedDealId ?? undefined} />
+                <div className="space-y-4">
+                  {coveredReferences.length > 0 ? (
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-sm text-muted-foreground">
+                        {coveredReferences.length} belegte Referenz
+                        {coveredReferences.length === 1 ? '' : 'en'} für Champion-Kit verfügbar.
+                      </p>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => setChampionKitOpen(true)}
+                      >
+                        <Package className="mr-2 size-4" />
+                        Champion-Kit
+                      </Button>
+                    </div>
+                  ) : null}
+                  <DealCoverageMatrix coverage={coverage} dealId={selectedDealId ?? undefined} />
+                </div>
               )
             ) : null}
           </CardContent>
         </Card>
+      ) : null}
+
+      {selectedDeal ? (
+        <ChampionKitDialog
+          open={championKitOpen}
+          onOpenChange={setChampionKitOpen}
+          dealTitle={selectedDeal.title}
+          championName={championName}
+          coveredReferences={coveredReferences}
+        />
       ) : null}
     </div>
   )

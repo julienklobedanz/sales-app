@@ -4,7 +4,7 @@ import { revalidateTag } from 'next/cache'
 
 import { dealProofCoverageTag, getCachedDealProofCoverage } from '@/lib/accounts/deal-proof-coverage'
 import { parseRequirementsTextToExtracted } from '@/lib/accounts/deal-requirements-parse'
-import type { RfpCoverageRow } from '@/lib/rfp-coverage'
+import type { RfpCoverageRow } from '@/lib/rfp-coverage-types'
 import { loadReferenceVisibilityForUser } from '@/lib/roles/load-reference-visibility'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 

@@ -7,28 +7,16 @@ import { rpcMatchReferences } from '@/lib/match-references-rpc'
 
 import type { ExtractedRfpRequirement } from '@/lib/rfp-requirements'
 import { formatIndustryDisplay } from '@/lib/constants/industries'
+import {
+  RFP_COVER_THRESHOLD,
+  type RfpCoverageMatch,
+  type RfpCoverageRow,
+} from '@/lib/rfp-coverage-types'
 
-export const RFP_COVER_THRESHOLD = 0.55
-const MATCH_THRESHOLD = RFP_COVER_THRESHOLD
+export { RFP_COVER_THRESHOLD, type RfpCoverageMatch, type RfpCoverageRow } from '@/lib/rfp-coverage-types'
+
 const MATCH_COUNT = 8
 const EMBED_CONCURRENCY = 4
-
-export type RfpCoverageMatch = {
-  id: string
-  title: string
-  summary: string | null
-  industry: string | null
-  similarity: number
-  companyName: string | null
-}
-
-export type RfpCoverageRow = {
-  requirementId: string
-  requirementText: string
-  category?: string
-  matches: RfpCoverageMatch[]
-  embedError?: string
-}
 
 type DealContext = {
   title: string | null

@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/select'
 import { DealCoverageMatrix } from '@/components/deals/deal-coverage-matrix'
 import { AppIcon } from '@/lib/icons'
-import type { RfpCoverageRow } from '@/lib/rfp-coverage'
+import type { RfpCoverageRow } from '@/lib/rfp-coverage-types'
 
 import type { DealWithReferences } from '../types'
 import { addReferenceToDealWithScore } from '../actions'

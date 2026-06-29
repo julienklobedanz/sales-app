@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { RFP_COVER_THRESHOLD, type RfpCoverageRow } from '@/lib/rfp-coverage'
+import { RFP_COVER_THRESHOLD, type RfpCoverageRow } from '@/lib/rfp-coverage-types'
 import { ROUTES } from '@/lib/routes'
 
 export function computeCoverageStats(coverage: RfpCoverageRow[]) {
@@ -28,6 +28,35 @@ export function computeCoverageStats(coverage: RfpCoverageRow[]) {
     totalReq: total,
     coveragePct: total ? Math.round((covered / total) * 100) : 0,
   }
+}
+
+export function extractCoveredReferenceIds(coverage: RfpCoverageRow[]): string[] {
+  const ids = new Set<string>()
+  for (const row of coverage) {
+    if (row.embedError) continue
+    const best = row.matches[0]
+    if (best && best.similarity >= RFP_COVER_THRESHOLD) {
+      ids.add(best.id)
+    }
+  }
+  return Array.from(ids)
+}
+
+export function extractCoveredReferences(coverage: RfpCoverageRow[]) {
+  const byId = new Map<string, { id: string; title: string; companyName: string | null }>()
+  for (const row of coverage) {
+    if (row.embedError) continue
+    const best = row.matches[0]
+    if (!best || best.similarity < RFP_COVER_THRESHOLD) continue
+    if (!byId.has(best.id)) {
+      byId.set(best.id, {
+        id: best.id,
+        title: best.title,
+        companyName: best.companyName ?? null,
+      })
+    }
+  }
+  return Array.from(byId.values())
 }
 
 export function DealCoverageMatrix({

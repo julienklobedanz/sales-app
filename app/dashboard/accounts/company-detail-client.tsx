@@ -408,6 +408,7 @@ export function CompanyDetailClient({
             <CompanyDetailDealsProofTab
               activeDeals={activeDeals}
               hubspotPortalId={hubspotPortalId}
+              stakeholders={stakeholders}
               isActive
             />
           ) : null}
