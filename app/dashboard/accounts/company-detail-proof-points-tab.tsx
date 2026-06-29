@@ -80,7 +80,7 @@ export function CompanyDetailProofPointsTab({
                   return (
                     <TableRow key={r.id}>
                       <TableCell className="font-medium">
-                        <Link className="hover:underline" href={ROUTES.evidence.detail(r.id)}>
+                        <Link className="hover:underline" href={ROUTES.references.detail(r.id)}>
                           {r.title}
                         </Link>
                       </TableCell>

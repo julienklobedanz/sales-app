@@ -102,7 +102,7 @@ export function AdminDashboard({
               topReferences.slice(0, 5).map((ref) => (
                 <Link
                   key={ref.id}
-                  href={ROUTES.evidence.detail(ref.id)}
+                  href={ROUTES.references.detail(ref.id)}
                   className="flex items-center justify-between gap-2 rounded-md border border-border/70 px-3 py-2 text-sm hover:bg-muted/40"
                 >
                   <span className="truncate font-medium">{ref.title}</span>
@@ -204,7 +204,7 @@ export function AdminDashboard({
             </div>
             <div className="pt-1">
               <Button asChild size="sm" variant="outline">
-                <Link href={ROUTES.evidence.root}>Referenzbibliothek prüfen</Link>
+                <Link href={ROUTES.references.root}>Referenzbibliothek prüfen</Link>
               </Button>
             </div>
           </CardContent>

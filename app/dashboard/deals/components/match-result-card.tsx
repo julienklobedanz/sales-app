@@ -128,7 +128,7 @@ export function MatchResultCard({
                 </p>
               ) : null}
               <Link
-                href={ROUTES.evidence.detail(hit.id)}
+                href={ROUTES.references.detail(hit.id)}
                 className="font-semibold text-foreground hover:underline line-clamp-2"
               >
                 {hit.title}
@@ -173,7 +173,7 @@ export function MatchResultCard({
               </Button>
             </div>
             <Button type="button" variant="secondary" size="sm" className="h-8 shrink-0 text-xs" asChild>
-              <Link href={ROUTES.evidence.detail(hit.id)}>→ Details</Link>
+              <Link href={ROUTES.references.detail(hit.id)}>→ Details</Link>
             </Button>
           </div>
         ) : (
@@ -202,7 +202,7 @@ export function MatchResultCard({
               KI-Entwurf
             </Button>
             <Button type="button" variant="secondary" size="sm" className="h-8 text-xs" asChild>
-              <Link href={ROUTES.evidence.detail(hit.id)}>→ Details</Link>
+              <Link href={ROUTES.references.detail(hit.id)}>→ Details</Link>
             </Button>
             {dealId ? (
               <Button

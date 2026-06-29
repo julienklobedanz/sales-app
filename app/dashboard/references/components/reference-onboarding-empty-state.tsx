@@ -31,17 +31,17 @@ function filterAcceptedFiles(files: FileList | File[]): File[] {
   return accepted
 }
 
-type EvidenceOnboardingEmptyStateProps = {
+type ReferenceOnboardingEmptyStateProps = {
   canCreate?: boolean
   onUploadFiles?: (files: File[]) => void
   onCreateManual?: () => void
 }
 
-export function EvidenceOnboardingEmptyState({
+export function ReferenceOnboardingEmptyState({
   canCreate = true,
   onUploadFiles,
   onCreateManual,
-}: EvidenceOnboardingEmptyStateProps) {
+}: ReferenceOnboardingEmptyStateProps) {
   const router = useRouter()
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragOver, setDragOver] = useState(false)
@@ -65,7 +65,7 @@ export function EvidenceOnboardingEmptyState({
       inputRef.current?.click()
       return
     }
-    router.push(ROUTES.evidence.new)
+    router.push(ROUTES.references.new)
   }
 
   return (
@@ -147,7 +147,7 @@ export function EvidenceOnboardingEmptyState({
               </button>
             ) : (
               <Link
-                href={ROUTES.evidence.new}
+                href={ROUTES.references.new}
                 className="flex items-center gap-1 font-medium text-gray-600 hover:text-gray-900"
               >
                 <Plus className="size-4 shrink-0" aria-hidden />

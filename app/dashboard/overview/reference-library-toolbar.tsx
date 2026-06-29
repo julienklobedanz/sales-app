@@ -32,8 +32,8 @@ import { Banknote, Eye, EyeOff } from 'lucide-react'
 import { ReferenceVolumeFilterMenu } from '@/components/references/reference-volume-filter-menu'
 import type { ReferenceVolumeFilter } from '@/lib/references/reference-volume-filter'
 import { ReferenceLayoutSwitch, type ReferenceLayoutMode } from './reference-layout-switch'
-import type { EvidenceLibraryMode } from './reference-library-switch'
-import { EVIDENCE_PROOF_SEGMENT_LABELS } from '@/lib/evidence/evidence-library-mode'
+import type { ReferenceLibraryMode } from './reference-library-switch'
+import { REFERENCE_PROOF_SEGMENT_LABELS } from '@/lib/references/library/reference-library-mode'
 
 /** Entfernt Elemente aus dem Flex-Layout (Zertifikatsmodus), ohne die rechte Button-Gruppe zu verschieben. */
 const SLOT_COLLAPSED = 'pointer-events-none m-0 w-0 min-w-0 max-w-0 overflow-hidden border-0 p-0 opacity-0'
@@ -46,7 +46,7 @@ const PRIMARY_CTA_CLASS =
 type ColumnKey = string
 
 type Props = {
-  libraryMode: EvidenceLibraryMode
+  libraryMode: ReferenceLibraryMode
   referenceLayout: ReferenceLayoutMode
   onReferenceLayoutChange: (mode: ReferenceLayoutMode) => void
   searchValue: string
@@ -75,7 +75,7 @@ type Props = {
   onShowExpiredCertificatesChange?: (value: boolean) => void
 }
 
-export function EvidenceLibraryToolbar({
+export function ReferenceLibraryToolbar({
   libraryMode,
   referenceLayout,
   onReferenceLayoutChange,
@@ -349,7 +349,7 @@ export function EvidenceLibraryToolbar({
               <AppIcon icon={CirclePlus} size={16} className="shrink-0" />
               {isReferencesLibrary
                 ? COPY.dashboard.tooltipCreateReference
-                : `${EVIDENCE_PROOF_SEGMENT_LABELS.certificates} hochladen`}
+                : `${REFERENCE_PROOF_SEGMENT_LABELS.certificates} hochladen`}
             </Button>
           ) : null}
         </div>

@@ -86,7 +86,7 @@ export function InsightsClient({ data }: { data: InsightsPageModel }) {
             data.topReferences.map((ref) => (
               <Link
                 key={ref.id}
-                href={ROUTES.evidence.detail(ref.id)}
+                href={ROUTES.references.detail(ref.id)}
                 className="flex justify-between gap-2 rounded-md border border-border/70 px-3 py-2 text-sm hover:bg-muted/40"
               >
                 <span className="truncate font-medium">{ref.title}</span>

@@ -56,7 +56,7 @@ export async function runBulkImportExtractionForReference(
   const fileName = assets?.[0]?.file_name ?? path?.split('/').pop() ?? 'document.pdf'
 
   if (!path) {
-    revalidatePath(ROUTES.evidence.root)
+    revalidatePath(ROUTES.references.root)
     return {
       success: true,
       referenceId: id,
@@ -71,7 +71,7 @@ export async function runBulkImportExtractionForReference(
 
   const { data: blob, error: dlErr } = await supabase.storage.from('references').download(path)
   if (dlErr || !blob) {
-    revalidatePath(ROUTES.evidence.root)
+    revalidatePath(ROUTES.references.root)
     return {
       success: true,
       referenceId: id,
@@ -92,9 +92,9 @@ export async function runBulkImportExtractionForReference(
     fileName
   )
 
-  revalidatePath(ROUTES.evidence.root)
+  revalidatePath(ROUTES.references.root)
   revalidatePath(ROUTES.home)
-  revalidatePath(ROUTES.evidence.edit(id))
+  revalidatePath(ROUTES.references.edit(id))
   await revalidateOrgCachesForReference(id)
 
   return result

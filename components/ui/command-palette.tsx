@@ -162,7 +162,7 @@ export function CommandPalette() {
         icon: <AppIcon icon={FileText} size={16} />,
         onSelect: () => {
           setOpen(false)
-          router.push(ROUTES.evidence.new)
+          router.push(ROUTES.references.new)
         },
         visible: isAdmin || isAccountManager,
       },
@@ -331,7 +331,7 @@ export function CommandPalette() {
         {hasEntityHits ? (
           <>
             {grouped.refs.length ? (
-              <CommandGroup heading={COPY.nav.evidence}>
+              <CommandGroup heading={COPY.nav.references}>
                 {grouped.refs.map((r) => (
                   <CommandItem
                     key={`ref:${r.id}`}

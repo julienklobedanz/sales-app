@@ -305,7 +305,7 @@ export function ReferenceIncubatorTab({
       return
     }
     toast.success('Entwurf angelegt — bitte prüfen, speichern, dann Freigabe in der Detailansicht starten.')
-    window.location.href = `${ROUTES.evidence.root}/${res.referenceId}/edit?fromDesk=${projectId}`
+    window.location.href = `${ROUTES.references.root}/${res.referenceId}/edit?fromDesk=${projectId}`
   }
 
   function startHarvest() {

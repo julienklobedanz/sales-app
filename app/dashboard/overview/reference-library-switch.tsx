@@ -1,1 +1,1 @@
-export type { EvidenceLibraryMode } from '@/lib/evidence/evidence-library-mode'
+export type { ReferenceLibraryMode } from '@/lib/references/library/reference-library-mode'

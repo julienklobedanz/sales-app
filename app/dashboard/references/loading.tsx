@@ -1,5 +1,5 @@
-import { EvidencePageSkeleton } from '@/components/dashboard/evidence-page-skeleton'
+import { ReferencePageSkeleton } from '@/components/dashboard/reference-page-skeleton'
 
-export default function EvidenceLoading() {
-  return <EvidencePageSkeleton />
+export default function ReferencesLoading() {
+  return <ReferencePageSkeleton />
 }

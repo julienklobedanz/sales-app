@@ -586,7 +586,7 @@ import { CreateContactDialog, type CreatedContact } from '@/app/dashboard/refere
 import type { ReferenceFormCompany } from '@/app/dashboard/references/new/reference-form-fields'
 import { updateReference } from '@/app/dashboard/actions'
 import { resolveIndustryId } from '@/lib/constants/industries'
-import { syncCompanyBrandfetchForEdit } from '@/lib/evidence/sync-company-brandfetch'
+import { syncCompanyBrandfetchForEdit } from '@/lib/references/library/sync-company-brandfetch'
 import { log } from '@/lib/observability/logger'
 import { ROUTES } from '@/lib/routes'
 import { createClient } from '@/lib/supabase/client'

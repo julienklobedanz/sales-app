@@ -1,6 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
 
-export function EvidencePageSkeleton() {
+export function ReferencePageSkeleton() {
   return (
     <div className="flex flex-col space-y-6">
       <div className="flex items-center justify-between gap-4">

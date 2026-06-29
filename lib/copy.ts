@@ -3,7 +3,7 @@ export const COPY = {
     accounts: 'Accounts',
     partners: 'Partner',
     deals: 'Deals',
-    evidence: 'Referenzen',
+    references: 'Referenzen',
     marketSignals: 'Marktsignale',
     dealDesk: 'Deal Desk',
     match: 'Smart Match',
@@ -12,7 +12,7 @@ export const COPY = {
   },
   pages: {
     dashboard: 'Home',
-    evidence: 'Referenzen',
+    references: 'Referenzen',
     marketSignals: 'Marktsignale',
     dealDesk: 'Deal Desk',
     match: 'Smart Match',
@@ -112,7 +112,7 @@ export const COPY = {
     columns: 'Spalten',
     view: 'Ansicht',
   },
-  evidence: {
+  references: {
     contextSelect: 'Selektieren',
     contextOpen: 'Öffnen',
     contextEdit: 'Bearbeiten',

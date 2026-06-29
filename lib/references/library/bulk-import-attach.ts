@@ -46,8 +46,8 @@ export async function attachBulkImportFileToReference(params: {
     if (refErr) return { success: false, error: refErr.message }
   }
 
-  revalidatePath(ROUTES.evidence.root)
-  revalidatePath(ROUTES.evidence.edit(referenceId))
+  revalidatePath(ROUTES.references.root)
+  revalidatePath(ROUTES.references.edit(referenceId))
   await revalidateOrgCachesForReference(referenceId)
   return { success: true }
 }

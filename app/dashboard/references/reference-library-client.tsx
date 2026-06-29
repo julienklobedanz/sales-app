@@ -8,8 +8,8 @@ import { CirclePlus, SlidersHorizontal } from "@hugeicons/core-free-icons"
 import type { ReferenceRow } from "@/app/dashboard/actions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { evidenceColumns } from "./columns"
-import { EvidenceDataTable } from "./data-table"
+import { referenceColumns } from "./columns"
+import { ReferenceDataTable } from "./data-table"
 import { AppIcon } from "@/lib/icons"
 import { TableBulkActionsBar } from "@/components/table/table-bulk-actions-bar"
 import { ToolbarSearchField } from "@/components/ui/toolbar-search-field"
@@ -50,7 +50,7 @@ function normalizeHaystack(r: ReferenceRow) {
 
 // Status Chips wurden zugunsten der shadcn-Tasks Toolbar (Facets) ersetzt.
 
-export function EvidenceClient({
+export function ReferenceLibraryClient({
   references,
   systemRole,
   functionRole,
@@ -99,12 +99,12 @@ export function EvidenceClient({
             <div className="flex flex-wrap gap-2">
               {canCreate ? (
                 <Button asChild>
-                  <Link href={ROUTES.evidence.new}>Referenz erstellen</Link>
+                  <Link href={ROUTES.references.new}>Referenz erstellen</Link>
                 </Button>
               ) : null}
               {canCreate ? (
                 <Button asChild variant="ghost" className="hover:bg-muted/70">
-                  <Link href={ROUTES.evidence.newBulk}>Bulk-Import</Link>
+                  <Link href={ROUTES.references.newBulk}>Bulk-Import</Link>
                 </Button>
               ) : null}
             </div>
@@ -141,8 +141,8 @@ export function EvidenceClient({
             ]}
           />
 
-          <EvidenceDataTable
-            columns={evidenceColumns()}
+          <ReferenceDataTable
+            columns={referenceColumns()}
             data={filtered}
             emptyText={emptyText}
             getRowId={(row) => row.id}
@@ -153,7 +153,7 @@ export function EvidenceClient({
                   variant="list"
                   value={query}
                   onChange={setQuery}
-                  placeholder={COPY.evidence.filterReferencesPlaceholder}
+                  placeholder={COPY.references.filterReferencesPlaceholder}
                 />
 
                 <DropdownMenu>
@@ -205,7 +205,7 @@ export function EvidenceClient({
             toolbarRight={() =>
               canCreate ? (
                 <Button asChild size="toolbar">
-                  <Link href={ROUTES.evidence.new} className="inline-flex items-center gap-2">
+                  <Link href={ROUTES.references.new} className="inline-flex items-center gap-2">
                     <AppIcon icon={CirclePlus} size={16} />
                     Referenz erstellen
                   </Link>

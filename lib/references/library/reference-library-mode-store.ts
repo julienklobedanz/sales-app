@@ -3,11 +3,11 @@
 import { useSyncExternalStore } from 'react'
 
 import {
-  type EvidenceLibraryMode,
-  loadEvidenceLibraryModeFromStorage,
-} from '@/lib/evidence/evidence-library-mode'
+  type ReferenceLibraryMode,
+  loadReferenceLibraryModeFromStorage,
+} from '@/lib/references/library/reference-library-mode'
 
-let current: EvidenceLibraryMode = 'references'
+let current: ReferenceLibraryMode = 'references'
 const listeners = new Set<() => void>()
 
 function subscribe(listener: () => void) {
@@ -19,19 +19,19 @@ function emit() {
   listeners.forEach((l) => l())
 }
 
-export function setEvidenceLibraryModeOptimistic(mode: EvidenceLibraryMode) {
+export function setReferenceLibraryModeOptimistic(mode: ReferenceLibraryMode) {
   if (current === mode) return
   current = mode
   emit()
 }
 
-export function syncEvidenceLibraryModeFromStorage(mode?: EvidenceLibraryMode) {
-  const next = mode ?? loadEvidenceLibraryModeFromStorage()
+export function syncReferenceLibraryModeFromStorage(mode?: ReferenceLibraryMode) {
+  const next = mode ?? loadReferenceLibraryModeFromStorage()
   if (current === next) return
   current = next
   emit()
 }
 
-export function useEvidenceLibraryMode(): EvidenceLibraryMode {
+export function useReferenceLibraryMode(): ReferenceLibraryMode {
   return useSyncExternalStore(subscribe, () => current, () => current)
 }

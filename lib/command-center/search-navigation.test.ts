@@ -15,6 +15,6 @@ describe('hrefForCommandSearchResult', () => {
       hasFile: true,
     })
 
-    expect(href).toBe(ROUTES.evidence.detail('ref-42'))
+    expect(href).toBe(ROUTES.references.detail('ref-42'))
   })
 })

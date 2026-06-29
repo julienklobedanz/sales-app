@@ -743,7 +743,7 @@ export async function requestReferenceApprovalForSignal(args: {
     if (!emails.length) return { success: true }
 
     const resend = new Resend(resendKey)
-    const detailUrl = `${getAppOrigin()}${ROUTES.evidence.detail(referenceId)}`
+    const detailUrl = `${getAppOrigin()}${ROUTES.references.detail(referenceId)}`
     const html = buildRefstackEmailHtml({
       audience: 'internal',
       badge: 'Freigabe angefragt',

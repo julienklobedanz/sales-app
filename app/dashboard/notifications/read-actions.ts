@@ -25,7 +25,7 @@ export async function markNotificationReadImpl(notificationKey: string) {
     return { success: false as const, error: error.message }
   }
   revalidatePath(ROUTES.home, 'layout')
-  revalidatePath(ROUTES.evidence.root)
+  revalidatePath(ROUTES.references.root)
   return { success: true as const }
 }
 
@@ -52,6 +52,6 @@ export async function markAllNotificationsReadImpl(notificationKeys: string[]) {
     return { success: false as const, error: error.message }
   }
   revalidatePath(ROUTES.home, 'layout')
-  revalidatePath(ROUTES.evidence.root)
+  revalidatePath(ROUTES.references.root)
   return { success: true as const }
 }

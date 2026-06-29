@@ -589,7 +589,7 @@ export function ReferenceDetailSheet({
                       variant="ghost"
                       size="sm"
                       onClick={() =>
-                        router.push(ROUTES.evidence.edit(selectedRef.id))
+                        router.push(ROUTES.references.edit(selectedRef.id))
                       }
                     >
                       <AppIcon icon={Pencil} size={16} className="mr-2" /> Bearbeiten
@@ -602,7 +602,7 @@ export function ReferenceDetailSheet({
                   {profileCanManageOrgData(profile.systemRole, profile.functionRole) &&
                   selectedRef.status === 'draft' ? (
                     <Button size="sm" variant="outline" asChild>
-                      <Link href={`${ROUTES.evidence.detail(selectedRef.id)}?startApproval=1`}>
+                      <Link href={`${ROUTES.references.detail(selectedRef.id)}?startApproval=1`}>
                         <AppIcon icon={Send} size={16} className="mr-2" />
                         Freigabe (Detail)
                       </Link>
@@ -610,7 +610,7 @@ export function ReferenceDetailSheet({
                   ) : null}
                   {profileIsSalesRestricted(profile.systemRole, profile.functionRole) && selectedRef.status === 'internal_only' ? (
                     <Button size="sm" variant="outline" asChild>
-                      <Link href={`${ROUTES.evidence.detail(selectedRef.id)}?startApproval=1`}>
+                      <Link href={`${ROUTES.references.detail(selectedRef.id)}?startApproval=1`}>
                         <AppIcon icon={Send} size={16} className="mr-2" />
                         Freigabe (Detail)
                       </Link>

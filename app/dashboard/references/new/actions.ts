@@ -344,7 +344,7 @@ export async function enrichAndSaveCompany(domain: string): Promise<EnrichCompan
   if (existing?.id) {
     const { error } = await supabase.from('companies').update(payload).eq('id', existing.id)
     if (error) return { success: false, error: error.message }
-    revalidatePath(ROUTES.evidence.new)
+    revalidatePath(ROUTES.references.new)
     return {
       success: true,
       company_id: existing.id,
@@ -361,7 +361,7 @@ export async function enrichAndSaveCompany(domain: string): Promise<EnrichCompan
   const { data: inserted, error } = await supabase.from('companies').insert(payload).select('id').single()
   if (error) return { success: false, error: error.message }
   if (!inserted?.id) return { success: false, error: 'Firma konnte nicht angelegt werden.' }
-  revalidatePath(ROUTES.evidence.new)
+  revalidatePath(ROUTES.references.new)
   return {
     success: true,
     company_id: inserted.id,
@@ -706,7 +706,7 @@ export async function createReference(
   // daher wird der Status hier nicht mehr automatisch auf einen Zwischenstatus gesetzt.
 
   revalidatePath(ROUTES.home)
-  revalidatePath(ROUTES.evidence.root)
+  revalidatePath(ROUTES.references.root)
   revalidateOrgReferences(organizationId)
   return { success: true, referenceId: reference.id }
 }
@@ -761,8 +761,8 @@ export async function attachOriginalDocumentToReference(params: {
     .eq('id', referenceId)
 
   if (error) return { success: false, error: error.message }
-  revalidatePath(ROUTES.evidence.root)
-  revalidatePath(ROUTES.evidence.edit(referenceId))
+  revalidatePath(ROUTES.references.root)
+  revalidatePath(ROUTES.references.edit(referenceId))
   await revalidateOrgCachesForReference(referenceId)
   return { success: true }
 }
@@ -822,8 +822,8 @@ export async function createContact(formData: FormData) {
     return { success: false, error: error.message }
   }
 
-  revalidatePath(ROUTES.evidence.new)
-  revalidatePath(REVALIDATE.evidenceEditPage, 'page')
+  revalidatePath(ROUTES.references.new)
+  revalidatePath(REVALIDATE.referenceEditPage, 'page')
 
   return { success: true, contact: data }
 }
@@ -892,8 +892,8 @@ export async function createExternalContact(
     return { success: false, error: error.message }
   }
 
-  revalidatePath(ROUTES.evidence.new)
-  revalidatePath(REVALIDATE.evidenceEditPage, 'page')
+  revalidatePath(ROUTES.references.new)
+  revalidatePath(REVALIDATE.referenceEditPage, 'page')
 
   return {
     success: true,
@@ -935,8 +935,8 @@ export async function updateContact(
     .eq('id', id)
 
   if (error) return { success: false, error: error.message }
-  revalidatePath(ROUTES.evidence.new)
-  revalidatePath(REVALIDATE.evidenceEditPage, 'page')
+  revalidatePath(ROUTES.references.new)
+  revalidatePath(REVALIDATE.referenceEditPage, 'page')
   return { success: true }
 }
 
@@ -968,7 +968,7 @@ export async function updateExternalContact(
     .eq('id', id)
 
   if (error) return { success: false, error: error.message }
-  revalidatePath(ROUTES.evidence.new)
-  revalidatePath(REVALIDATE.evidenceEditPage, 'page')
+  revalidatePath(ROUTES.references.new)
+  revalidatePath(REVALIDATE.referenceEditPage, 'page')
   return { success: true }
 }

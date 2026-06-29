@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { submitForApproval } from '@/app/dashboard/actions'
-import type { SubmitForApprovalOptions } from '@/lib/evidence/approval-submit-types'
+import type { SubmitForApprovalOptions } from '@/lib/references/library/approval-submit-types'
 import { isApprovalRecipientEmail } from '@/lib/references/approval-recipient-input'
 
 function RequiredMark() {

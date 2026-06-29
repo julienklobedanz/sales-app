@@ -5,8 +5,8 @@ import { logEvent } from '@/lib/events/log-event'
 import { writeAuditLog } from '@/lib/audit/log-audit'
 import {
   ReferencePdfDocument,
-} from '@/lib/evidence/pdf/template'
-import type { PdfOrgBranding, PdfReference } from '@/lib/evidence/pdf/types'
+} from '@/lib/references/library/pdf/template'
+import type { PdfOrgBranding, PdfReference } from '@/lib/references/library/pdf/types'
 import { computeReferenceDurationMonths } from '@/lib/references/reference-duration-months'
 import {
   parsePdfExportSettings,

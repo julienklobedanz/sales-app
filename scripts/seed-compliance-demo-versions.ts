@@ -153,7 +153,7 @@ async function main() {
   }
 
   console.log('Archiv-Version ISO 27001 (abgelaufen 31.12.2024) angelegt.')
-  console.log(`Öffne ${ROUTES.evidence.root} → Zertifikate und klicke auf eine Zeile für die Versionshistorie.`)
+  console.log(`Öffne ${ROUTES.references.root} → Zertifikate und klicke auf eine Zeile für die Versionshistorie.`)
 }
 
 main().catch((err) => {

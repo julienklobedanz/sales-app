@@ -162,7 +162,7 @@ export async function bulkCreateReferencesFromFilesImpl(
   }
 
   revalidatePath(ROUTES.home)
-  revalidatePath(ROUTES.evidence.root)
+  revalidatePath(ROUTES.references.root)
   revalidateOrgReferences(organizationId)
   return { success: true, created, referenceIds, organizationId }
 }

@@ -1,21 +1,21 @@
 'use client'
 
 import {
-  EVIDENCE_PROOF_SEGMENT_DESCRIPTIONS,
-  EVIDENCE_PROOF_SEGMENT_LABELS,
-  type EvidenceLibraryMode,
-} from '@/lib/evidence/evidence-library-mode'
+  REFERENCE_PROOF_SEGMENT_DESCRIPTIONS,
+  REFERENCE_PROOF_SEGMENT_LABELS,
+  type ReferenceLibraryMode,
+} from '@/lib/references/library/reference-library-mode'
 import { cn } from '@/lib/utils'
 
-const SEGMENTS: EvidenceLibraryMode[] = ['references', 'certificates']
+const SEGMENTS: ReferenceLibraryMode[] = ['references', 'certificates']
 
-export function EvidenceProofSegmentSwitch({
+export function ReferenceProofSegmentSwitch({
   value,
   onChange,
   className,
 }: {
-  value: EvidenceLibraryMode
-  onChange: (mode: EvidenceLibraryMode) => void
+  value: ReferenceLibraryMode
+  onChange: (mode: ReferenceLibraryMode) => void
   className?: string
 }) {
   return (
@@ -35,8 +35,8 @@ export function EvidenceProofSegmentSwitch({
             type="button"
             role="tab"
             aria-selected={selected}
-            aria-controls={`evidence-proof-panel-${segment}`}
-            id={`evidence-proof-tab-${segment}`}
+            aria-controls={`reference-proof-panel-${segment}`}
+            id={`reference-proof-tab-${segment}`}
             onClick={() => onChange(segment)}
             className={cn(
               'min-w-0 flex-1 rounded-md px-3 py-2 text-left transition-colors sm:flex-none sm:min-w-[11rem]',
@@ -46,10 +46,10 @@ export function EvidenceProofSegmentSwitch({
             )}
           >
             <span className="block text-sm font-medium leading-tight">
-              {EVIDENCE_PROOF_SEGMENT_LABELS[segment]}
+              {REFERENCE_PROOF_SEGMENT_LABELS[segment]}
             </span>
             <span className="mt-0.5 block text-[11px] leading-snug text-muted-foreground">
-              {EVIDENCE_PROOF_SEGMENT_DESCRIPTIONS[segment]}
+              {REFERENCE_PROOF_SEGMENT_DESCRIPTIONS[segment]}
             </span>
           </button>
         )

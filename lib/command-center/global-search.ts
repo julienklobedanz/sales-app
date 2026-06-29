@@ -178,7 +178,7 @@ export function hrefForGlobalSearchResult(result: {
 }): string {
   if (result.kind === 'account') return ROUTES.accountsDetail(result.id)
   if (result.kind === 'deal') return ROUTES.deals.detail(result.id)
-  return ROUTES.evidence.detail(result.id)
+  return ROUTES.references.detail(result.id)
 }
 
 export function emptyCommandSearchGroups(): CommandSearchGroups {

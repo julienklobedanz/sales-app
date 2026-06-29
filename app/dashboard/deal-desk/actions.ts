@@ -684,7 +684,7 @@ export async function createDraftReferenceFromDeskProject(
     details: { reference_id: reference.id },
   })
 
-  revalidatePath(ROUTES.evidence.root)
+  revalidatePath(ROUTES.references.root)
   return { success: true, referenceId: reference.id as string }
 }
 

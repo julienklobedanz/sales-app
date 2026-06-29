@@ -19,8 +19,8 @@ import {
   resendClientApprovalEmail,
   withdrawApprovalRequest,
 } from '@/app/dashboard/actions'
-import type { ApprovalContactOption } from '@/lib/evidence/approval-contacts'
-import type { ApproveInternalRecipientOptions } from '@/lib/evidence/approvals'
+import type { ApprovalContactOption } from '@/lib/references/library/approval-contacts'
+import type { ApproveInternalRecipientOptions } from '@/lib/references/library/approvals'
 import { canSubmitApprovalRecipient } from '@/lib/references/approval-recipient-input'
 import { ApprovalContactSuggestField } from './approval-contact-suggest-field'
 

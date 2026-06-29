@@ -7,7 +7,7 @@ import {
 import {
   ReferencePdfBundleDocument,
   ReferencePdfDocument,
-} from '@/lib/evidence/pdf/template'
+} from '@/lib/references/library/pdf/template'
 import { mapPublicReferenceToPdfReference } from '@/lib/public-portfolio/map-public-reference-to-pdf'
 import { resolvePublicPdfExportContext } from '@/lib/public-portfolio/resolve-public-pdf-export-context'
 import { resolvePdfTemplate } from '@/lib/references/pdf-export-settings'

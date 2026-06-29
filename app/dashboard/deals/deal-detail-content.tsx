@@ -135,7 +135,7 @@ export function DealDetailContent({
                       <div className="flex flex-wrap items-start justify-between gap-2">
                         <div className="min-w-0">
                           <Link
-                            href={ROUTES.evidence.edit(ref.id)}
+                            href={ROUTES.references.edit(ref.id)}
                             className="font-medium hover:underline block truncate"
                           >
                             {ref.title}

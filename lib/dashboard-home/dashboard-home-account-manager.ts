@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { getPendingClientApprovalsImpl } from '@/lib/evidence/pending-approvals'
+import { getPendingClientApprovalsImpl } from '@/lib/references/library/pending-approvals'
 import type { AccountManagerDashboardModel, UsageTotalsRow, WeeklyTrendStrip } from '@/lib/dashboard-home/dashboard-home-types'
 import { countReferencesInWindow, loadReferenceKpis } from '@/lib/dashboard-home/dashboard-home-queries'
 import { dashboardFirstName } from '@/lib/dashboard-home/dashboard-home-pure'

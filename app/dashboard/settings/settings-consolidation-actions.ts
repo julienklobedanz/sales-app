@@ -323,7 +323,7 @@ export async function updateWorkspaceReferenceHighlightGlossary(raw: string): Pr
 
   if (error) return { success: false, error: error.message }
   revalidatePath(ROUTES.settings)
-  revalidatePath(ROUTES.evidence.root)
+  revalidatePath(ROUTES.references.root)
   return { success: true }
 }
 

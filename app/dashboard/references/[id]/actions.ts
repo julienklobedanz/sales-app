@@ -29,26 +29,26 @@ export async function logReferenceViewed(referenceId: string) {
 /** Nach Soft-Delete zurück zur Referenzen-Liste. */
 export async function deleteReferenceFromDetailPage(id: string) {
   await deleteReference(id)
-  revalidatePath(ROUTES.evidence.root)
-  redirect(ROUTES.evidence.root)
+  revalidatePath(ROUTES.references.root)
+  redirect(ROUTES.references.root)
 }
 
 export async function approveInternalAndSendFromDetail(referenceId: string) {
   const result = await approveInternalAndSend(referenceId)
   if (result.success) {
-    revalidatePath(ROUTES.evidence.detail(referenceId))
+    revalidatePath(ROUTES.references.detail(referenceId))
   }
   return result
 }
 
 export async function resendApprovalFromDetail(referenceId: string) {
   await resendClientApprovalEmail(referenceId)
-  revalidatePath(ROUTES.evidence.detail(referenceId))
+  revalidatePath(ROUTES.references.detail(referenceId))
 }
 
 export async function withdrawApprovalFromDetail(referenceId: string) {
   await withdrawApprovalRequest(referenceId)
-  revalidatePath(ROUTES.evidence.detail(referenceId))
+  revalidatePath(ROUTES.references.detail(referenceId))
 }
 
 export async function getApprovalLinkFromDetail(referenceId: string) {
@@ -297,7 +297,7 @@ export async function createAnonymizedReferenceVersion(id: string): Promise<Anon
     return { success: false, error: insertError?.message ?? 'Anonymisierte Referenz konnte nicht erstellt werden.' }
   }
 
-  revalidatePath(ROUTES.evidence.root)
-  revalidatePath(ROUTES.evidence.detail(inserted.id))
+  revalidatePath(ROUTES.references.root)
+  revalidatePath(ROUTES.references.detail(inserted.id))
   return { success: true, referenceId: inserted.id }
 }

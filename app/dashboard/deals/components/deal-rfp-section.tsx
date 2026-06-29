@@ -416,7 +416,7 @@ export function DealRfpSection({
                           {best ? (
                             <div>
                               <Link
-                                href={ROUTES.evidence.detail(best.id)}
+                                href={ROUTES.references.detail(best.id)}
                                 className="font-medium hover:underline"
                               >
                                 {best.title}

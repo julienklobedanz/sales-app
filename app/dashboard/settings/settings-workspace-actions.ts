@@ -62,6 +62,6 @@ export async function updateOrganization(
 
   if (error) return { success: false, error: error.message }
   revalidatePath(ROUTES.settings)
-  revalidatePath(ROUTES.evidence.root)
+  revalidatePath(ROUTES.references.root)
   return { success: true }
 }

@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input'
 
 import { bulkCreateReferencesFromFiles } from '../actions'
-import { runBulkImportExtractionForReference } from '@/lib/evidence/bulk-import-post-process'
+import { runBulkImportExtractionForReference } from '@/lib/references/library/bulk-import-post-process'
 import { extractBulkImportReferenceFromFile } from '@/lib/references/bulk-import-extract-client'
 import { uploadBulkImportFilesForReference } from '@/lib/references/bulk-import-upload'
 import { createClient } from '@/lib/supabase/client'

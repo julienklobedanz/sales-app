@@ -1,4 +1,4 @@
-import type { PdfTemplate } from '@/lib/evidence/pdf/types'
+import type { PdfTemplate } from '@/lib/references/library/pdf/types'
 
 export type PdfExportSettings = {
   pdf_layout?: PdfTemplate

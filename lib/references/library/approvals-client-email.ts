@@ -2,9 +2,9 @@ import { Resend } from 'resend'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { getAppOrigin } from '@/lib/env/app-origin'
-import { buildClientApprovalEmailHtml } from '@/lib/evidence/approvals-email-templates'
-import type { ReferenceApprovalRow } from '@/lib/evidence/approvals-types'
-import { getPortfolioManageAndPreviewUrlsForApprovalEmail } from '@/lib/evidence/sharing'
+import { buildClientApprovalEmailHtml } from '@/lib/references/library/approvals-email-templates'
+import type { ReferenceApprovalRow } from '@/lib/references/library/approvals-types'
+import { getPortfolioManageAndPreviewUrlsForApprovalEmail } from '@/lib/references/library/sharing'
 import { escapeRefstackEmailHtml, getRefstackResendFrom } from '@/lib/email/refstack-email-layout'
 import { markCustomerApprovalEmailSent } from '@/lib/references/customer-approval-reminder'
 

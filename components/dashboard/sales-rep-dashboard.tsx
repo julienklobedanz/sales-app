@@ -53,7 +53,7 @@ export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
                     <Link
                       href={
                         deal.quickShareReferenceId
-                          ? ROUTES.evidence.detail(deal.quickShareReferenceId)
+                          ? ROUTES.references.detail(deal.quickShareReferenceId)
                           : ROUTES.matchWithDeal(deal.id)
                       }
                     >
@@ -86,7 +86,7 @@ export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
             recommended.slice(0, 5).map((ref) => (
               <Link
                 key={ref.id}
-                href={ROUTES.evidence.detail(ref.id)}
+                href={ROUTES.references.detail(ref.id)}
                 className="block rounded-md border border-border/70 px-3 py-2 hover:bg-muted/40"
               >
                 <p className="text-sm font-medium">{ref.title}</p>

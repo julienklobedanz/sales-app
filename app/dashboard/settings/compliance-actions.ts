@@ -152,7 +152,7 @@ export async function createComplianceDocument(payload: {
   }
 
   revalidatePath(ROUTES.settings)
-  revalidatePath(ROUTES.evidence.root)
+  revalidatePath(ROUTES.references.root)
   revalidateOrgCompliance(auth.orgId)
   return { success: true, id: docId }
 }
@@ -310,7 +310,7 @@ export async function uploadComplianceDocumentsBatch(
   }
 
   revalidatePath(ROUTES.settings)
-  revalidatePath(ROUTES.evidence.root)
+  revalidatePath(ROUTES.references.root)
   revalidateOrgCompliance(auth.orgId)
   return { success: true, uploaded, errors }
 }
@@ -479,7 +479,7 @@ export async function updateComplianceDocument(payload: {
   if (error) return { success: false, error: error.message }
 
   revalidatePath(ROUTES.settings)
-  revalidatePath(ROUTES.evidence.root)
+  revalidatePath(ROUTES.references.root)
   revalidateOrgCompliance(auth.orgId)
   return { success: true }
 }
@@ -558,7 +558,7 @@ export async function deleteComplianceDocuments(
   if (deleteError) return { success: false, error: deleteError.message }
 
   revalidatePath(ROUTES.settings)
-  revalidatePath(ROUTES.evidence.root)
+  revalidatePath(ROUTES.references.root)
   revalidateOrgCompliance(auth.orgId)
   return { success: true, deleted: rows.length }
 }

@@ -8,7 +8,7 @@ import { ROUTES } from './routes'
 describe('routeExcludesDashboardContentPadding', () => {
   it('bleed layout for new deal and new evidence', () => {
     expect(routeExcludesDashboardContentPadding('/dashboard/deals/new')).toBe(true)
-    expect(routeExcludesDashboardContentPadding(ROUTES.evidence.new)).toBe(true)
+    expect(routeExcludesDashboardContentPadding(ROUTES.references.new)).toBe(true)
   })
 
   it('bleed layout for account detail only, not list', () => {
@@ -17,7 +17,7 @@ describe('routeExcludesDashboardContentPadding', () => {
   })
 
   it('default padded layout for other dashboard routes', () => {
-    expect(routeExcludesDashboardContentPadding(ROUTES.evidence.root)).toBe(false)
+    expect(routeExcludesDashboardContentPadding(ROUTES.references.root)).toBe(false)
     expect(routeExcludesDashboardContentPadding('/dashboard/deals')).toBe(false)
     expect(routeExcludesDashboardContentPadding(null)).toBe(false)
   })
@@ -25,10 +25,10 @@ describe('routeExcludesDashboardContentPadding', () => {
 
 describe('detailRouteNeedsBottomPadding', () => {
   it('true for evidence and deal detail, not new/list', () => {
-    expect(detailRouteNeedsBottomPadding(ROUTES.evidence.detail('abc'))).toBe(true)
-    expect(detailRouteNeedsBottomPadding(ROUTES.evidence.edit('abc'))).toBe(true)
-    expect(detailRouteNeedsBottomPadding(ROUTES.evidence.new)).toBe(false)
-    expect(detailRouteNeedsBottomPadding(ROUTES.evidence.root)).toBe(false)
+    expect(detailRouteNeedsBottomPadding(ROUTES.references.detail('abc'))).toBe(true)
+    expect(detailRouteNeedsBottomPadding(ROUTES.references.edit('abc'))).toBe(true)
+    expect(detailRouteNeedsBottomPadding(ROUTES.references.new)).toBe(false)
+    expect(detailRouteNeedsBottomPadding(ROUTES.references.root)).toBe(false)
   })
 
   it('true for deal detail, false for request/new', () => {

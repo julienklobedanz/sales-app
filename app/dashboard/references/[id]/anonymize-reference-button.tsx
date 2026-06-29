@@ -49,7 +49,7 @@ export function AnonymizeReferenceButton({ referenceId }: { referenceId: string 
                   return
                 }
                 toast.success('Anonymisierte Version erstellt.')
-                router.push(ROUTES.evidence.detail(result.referenceId))
+                router.push(ROUTES.references.detail(result.referenceId))
               })
             }}
           >

@@ -66,7 +66,7 @@ import {
   extractWorkflowHighlightGlossary,
 } from '@/lib/references/reference-context-highlights'
 import { normalizeNarrativeText } from '@/lib/references/narrative-normalize'
-import { getReferenceAssetsImpl } from '@/lib/evidence/assets'
+import { getReferenceAssetsImpl } from '@/lib/references/library/assets'
 import { formatProjectEndWithDurationDe } from '@/lib/references/reference-duration-months'
 import { cn } from '@/lib/utils'
 
@@ -88,7 +88,7 @@ function anonymizeText(value: string | null | undefined, companyName: string | n
   return text.replace(new RegExp(escaped, 'gi'), 'Kunde')
 }
 
-export default async function EvidenceDetailPage({
+export default async function ReferenceDetailPage({
   params,
   searchParams,
 }: {
@@ -890,7 +890,7 @@ export default async function EvidenceDetailPage({
                     </Button>
                   </form>
                   <Button asChild variant="outline" className="w-full gap-2">
-                    <Link href={ROUTES.evidence.edit(id)}>
+                    <Link href={ROUTES.references.edit(id)}>
                       <AppIcon icon={Pencil} size={16} />
                       Bearbeiten
                     </Link>

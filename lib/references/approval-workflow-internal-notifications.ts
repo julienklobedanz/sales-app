@@ -14,7 +14,7 @@ import { ROUTES } from '@/lib/routes'
 import { resolveApprovalWorkflowNotifyEmails } from '@/lib/references/approval-workflow-notify-recipients'
 
 function referenceDetailUrl(referenceId: string): string {
-  return `${getAppOrigin()}${ROUTES.evidence.detail(referenceId)}`
+  return `${getAppOrigin()}${ROUTES.references.detail(referenceId)}`
 }
 
 async function sendToRecipients(args: {

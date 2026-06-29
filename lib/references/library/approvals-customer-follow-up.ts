@@ -13,11 +13,11 @@ import { referenceHasOpenCustomerChangeRequests } from '@/lib/references/approva
 import { markCustomerApprovalEmailSent } from '@/lib/references/customer-approval-reminder'
 import { isResendSandboxRecipientError, resolveResendRecipient, shouldMockResendSend } from '@/lib/email/resend-dev-override'
 import { getRefstackResendFrom } from '@/lib/email/refstack-email-layout'
-import { buildFollowUpApprovalAfterChangesEmailHtml } from '@/lib/evidence/approvals-email-templates'
-import { getApprovalResendClient } from '@/lib/evidence/approvals-client-email'
-import { companyNameFromReferenceRow } from '@/lib/evidence/approvals-helpers'
-import { resolveContactForApproval } from '@/lib/evidence/approvals-recipient'
-import type { ReferenceApprovalRow, RequestCustomerApprovalAgainResult } from '@/lib/evidence/approvals-types'
+import { buildFollowUpApprovalAfterChangesEmailHtml } from '@/lib/references/library/approvals-email-templates'
+import { getApprovalResendClient } from '@/lib/references/library/approvals-client-email'
+import { companyNameFromReferenceRow } from '@/lib/references/library/approvals-helpers'
+import { resolveContactForApproval } from '@/lib/references/library/approvals-recipient'
+import type { ReferenceApprovalRow, RequestCustomerApprovalAgainResult } from '@/lib/references/library/approvals-types'
 
 export async function requestCustomerApprovalAgainAfterChangesImpl(
   referenceId: string
@@ -202,8 +202,8 @@ export async function requestCustomerApprovalAgainAfterChangesImpl(
   })
 
   revalidatePath(ROUTES.home)
-  revalidatePath(ROUTES.evidence.detail(referenceId))
-  revalidatePath(ROUTES.evidence.root)
+  revalidatePath(ROUTES.references.detail(referenceId))
+  revalidatePath(ROUTES.references.root)
   await revalidateOrgCachesForReference(referenceId)
   return {
     success: true,

@@ -1,4 +1,4 @@
-import type { SubmitForApprovalOptions } from '@/lib/evidence/approval-submit-types'
+import type { SubmitForApprovalOptions } from '@/lib/references/library/approval-submit-types'
 
 export type ReferenceApprovalRow = {
   id?: string

@@ -49,7 +49,7 @@ export function GeneralistDashboard({ data }: { data: GeneralistDashboardModel }
               <ul className="space-y-2 text-sm">
                 {data.pendingApprovalsPreview.map((p) => (
                   <li key={p.approvalId}>
-                    <Link href={ROUTES.evidence.detail(p.referenceId)} className="font-medium hover:underline">
+                    <Link href={ROUTES.references.detail(p.referenceId)} className="font-medium hover:underline">
                       {p.title}
                     </Link>
                     <p className="text-xs text-muted-foreground">{p.companyName}</p>
@@ -105,7 +105,7 @@ export function GeneralistDashboard({ data }: { data: GeneralistDashboardModel }
           <Link href={ROUTES.deals.root}>Zu Deals</Link>
         </Button>
         <Button asChild variant="outline" size="sm">
-          <Link href={ROUTES.evidence.root}>Zu Referenzen</Link>
+          <Link href={ROUTES.references.root}>Zu Referenzen</Link>
         </Button>
       </div>
     </div>

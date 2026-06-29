@@ -41,7 +41,7 @@ export function InternalApprovalForm({
   const [confirmed, setConfirmed] = useState(false)
   const [delegatedTo, setDelegatedTo] = useState<string | null>(null)
 
-  const detailHref = ROUTES.evidence.detail(referenceId)
+  const detailHref = ROUTES.references.detail(referenceId)
 
   function onConfirm() {
     startTransition(async () => {

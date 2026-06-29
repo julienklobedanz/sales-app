@@ -1,7 +1,7 @@
 import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
 
 /** Compliance/Unternehmensnachweis: AM, Sales Leader, Admin — nicht Sales Rep / Viewer. */
-export function canViewComplianceEvidenceSegment(
+export function canViewComplianceReferenceSegment(
   systemRole: SystemRole,
   functionRole: FunctionRole
 ): boolean {

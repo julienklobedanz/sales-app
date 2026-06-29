@@ -3,18 +3,18 @@
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
-import type { SubmitForApprovalOptions } from '@/lib/evidence/approval-submit-types'
-import { ensureApprovalRecipientFromInputImpl } from '@/lib/evidence/approval-contacts'
+import type { SubmitForApprovalOptions } from '@/lib/references/library/approval-submit-types'
+import { ensureApprovalRecipientFromInputImpl } from '@/lib/references/library/approval-contacts'
 import { profileCanManageOrgData } from '@/lib/roles/profile-guards'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { hasActiveCustomerApprovalWorkflow } from '@/lib/references/effective-customer-approval'
 import { isApprovalRecipientEmail } from '@/lib/references/approval-recipient-input'
 import { canEditInternalApprovalCoordinator, canEditPreCustomerApprovalRecipient } from '@/lib/references/pre-customer-approval-edit'
 import { sendInternalApprovalReviewEmail } from '@/lib/references/internal-approval-email'
-import { sendClientApprovalEmail } from '@/lib/evidence/approvals-client-email'
-import { companyNameFromReferenceRow, referenceGiverNameFromRecipientEmail } from '@/lib/evidence/approvals-helpers'
-import { resolveContactForApproval } from '@/lib/evidence/approvals-recipient'
-import type { ApproveInternalRecipientOptions, ReferenceApprovalRow, ResolvedApprovalRecipient } from '@/lib/evidence/approvals-types'
+import { sendClientApprovalEmail } from '@/lib/references/library/approvals-client-email'
+import { companyNameFromReferenceRow, referenceGiverNameFromRecipientEmail } from '@/lib/references/library/approvals-helpers'
+import { resolveContactForApproval } from '@/lib/references/library/approvals-recipient'
+import type { ApproveInternalRecipientOptions, ReferenceApprovalRow, ResolvedApprovalRecipient } from '@/lib/references/library/approvals-types'
 
 export async function updateApprovalRecipientImpl(
   referenceId: string,
@@ -181,7 +181,7 @@ export async function updateApprovalRecipientImpl(
     }
   }
 
-  revalidatePath(ROUTES.evidence.detail(referenceId))
+  revalidatePath(ROUTES.references.detail(referenceId))
   return { success: true, customerEmailSent }
 }
 
@@ -284,6 +284,6 @@ export async function updateApprovalCoordinatorImpl(
     referenceId,
   })
 
-  revalidatePath(ROUTES.evidence.detail(referenceId))
+  revalidatePath(ROUTES.references.detail(referenceId))
   return { success: true, emailSent }
 }

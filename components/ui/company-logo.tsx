@@ -7,7 +7,7 @@ import { Building2 } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 import { requestCompanyBrandfetchRetry } from '@/lib/accounts/company-brandfetch-retry-client'
-import { refreshCompanyBrandfetchOnLogoIssue } from '@/lib/evidence/sync-company-brandfetch'
+import { refreshCompanyBrandfetchOnLogoIssue } from '@/lib/references/library/sync-company-brandfetch'
 
 /** Einheitlicher Logo-Container — kein dynamischer Dark-Mode-Rahmen (vermeidet schwarze Boxen bei einzelnen Marken). */
 export const COMPANY_LOGO_CONTAINER_CLASS =

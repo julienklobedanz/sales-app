@@ -41,7 +41,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu"
 
-export type AppDataTableVariant = "default" | "evidence" | "deals"
+export type AppDataTableVariant = "default" | "references" | "deals"
 
 /** Klick auf interaktive Controls — keine Zeilen-Navigation (Checkbox, Links, Buttons, …). */
 function isRowNavSuppressedTarget(target: EventTarget | null): boolean {
@@ -176,7 +176,7 @@ export function AppDataTable<TData, TValue>({
       <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
     ))
 
-    const isNavVariant = tableVariant === "evidence" || tableVariant === "deals"
+    const isNavVariant = tableVariant === "references" || tableVariant === "deals"
     const rowNavClass = isNavVariant ? "cursor-pointer hover:bg-accent/35" : undefined
 
     const handleRowClick = (e: React.MouseEvent<HTMLTableRowElement>) => {
@@ -185,8 +185,8 @@ export function AppDataTable<TData, TValue>({
       const rawId = (row.original as { id?: string }).id
       if (!rawId) return
       const href =
-        tableVariant === "evidence"
-          ? ROUTES.evidence.detail(rawId)
+        tableVariant === "references"
+          ? ROUTES.references.detail(rawId)
           : ROUTES.deals.detail(rawId)
       if (e.metaKey || e.ctrlKey) {
         window.open(href, "_blank", "noopener,noreferrer")
@@ -196,7 +196,7 @@ export function AppDataTable<TData, TValue>({
       router.push(href)
     }
 
-    if (tableVariant === "evidence") {
+    if (tableVariant === "references") {
       return (
         <ContextMenu key={row.id}>
           <ContextMenuTrigger asChild>
@@ -210,28 +210,28 @@ export function AppDataTable<TData, TValue>({
           </ContextMenuTrigger>
           <ContextMenuContent>
             <ContextMenuItem onSelect={() => row.toggleSelected(true)}>
-              {COPY.evidence.contextSelect}
+              {COPY.references.contextSelect}
             </ContextMenuItem>
             <ContextMenuSeparator />
             <ContextMenuItem
               onSelect={() => {
                 const anyRow = row.original as unknown as { id?: string }
                 if (anyRow?.id) {
-                  window.location.href = ROUTES.evidence.detail(anyRow.id)
+                  window.location.href = ROUTES.references.detail(anyRow.id)
                 }
               }}
             >
-              {COPY.evidence.contextOpen}
+              {COPY.references.contextOpen}
             </ContextMenuItem>
             <ContextMenuItem
               onSelect={() => {
                 const anyRow = row.original as unknown as { id?: string }
                 if (anyRow?.id) {
-                  window.location.href = ROUTES.evidence.edit(anyRow.id)
+                  window.location.href = ROUTES.references.edit(anyRow.id)
                 }
               }}
             >
-              {COPY.evidence.contextEdit}
+              {COPY.references.contextEdit}
             </ContextMenuItem>
           </ContextMenuContent>
         </ContextMenu>

@@ -69,19 +69,19 @@ import {
 } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { BulkImportDialog, type BulkImportGroupItem } from './overview/bulk-import-dialog'
-import { EvidenceLibraryToolbar } from './overview/evidence-library-toolbar'
+import { ReferenceLibraryToolbar } from './overview/reference-library-toolbar'
 import { ComplianceDocumentsTable } from './overview/compliance-documents-table'
 import { ComplianceBulkUploadDialog } from './overview/compliance-bulk-upload-dialog'
 import { ComplianceUploadDialog } from './overview/compliance-upload-dialog'
 import {
-  EVIDENCE_LIBRARY_MODE_STORAGE_KEY,
-  type EvidenceLibraryMode,
-} from '@/lib/evidence/evidence-library-mode'
+  REFERENCE_LIBRARY_MODE_STORAGE_KEY,
+  type ReferenceLibraryMode,
+} from '@/lib/references/library/reference-library-mode'
 import {
-  setEvidenceLibraryModeOptimistic,
-  syncEvidenceLibraryModeFromStorage,
-  useEvidenceLibraryMode,
-} from '@/lib/evidence/evidence-library-mode-store'
+  setReferenceLibraryModeOptimistic,
+  syncReferenceLibraryModeFromStorage,
+  useReferenceLibraryMode,
+} from '@/lib/references/library/reference-library-mode-store'
 import type { ComplianceDocumentRow } from '@/app/dashboard/settings/compliance-actions'
 import { NewReferenceDialog } from './overview/new-reference-dialog'
 import { AccountsToolbarTooltip } from '@/app/dashboard/accounts/components/accounts-toolbar-tooltip'
@@ -96,7 +96,7 @@ import {
 } from './overview/reference-table-column-renders'
 import { ReferencesOverviewBrandfetchSync } from './overview/references-overview-brandfetch-sync'
 import { ReferencesBulkActionsBar } from './overview/references-bulk-actions-bar'
-import { EvidenceOnboardingEmptyState } from '@/app/dashboard/references/components/evidence-onboarding-empty-state'
+import { ReferenceOnboardingEmptyState } from '@/app/dashboard/references/components/reference-onboarding-empty-state'
 import { FilterMenuCheckboxOption } from '@/components/table/filter-menu-checkbox-option'
 import { TableRowCheckbox } from '@/components/table/table-row-checkbox'
 import { TableRowAlign } from '@/components/table/table-row-align'
@@ -104,8 +104,8 @@ import { toast } from 'sonner'
 import { BULK_IMPORT_MAX_FILES } from '@/lib/references/bulk-import-limits'
 import { copyTableRowsSelected } from '@/lib/copy'
 import { parseReferenceVolume, type OrgDateDisplayFormat } from '@/lib/format'
-import { EvidenceProofSegmentSwitch } from '@/components/evidence/evidence-proof-segment-switch'
-import { canViewComplianceEvidenceSegment } from '@/lib/evidence/evidence-proof-segment-access'
+import { ReferenceProofSegmentSwitch } from '@/components/references/reference-proof-segment-switch'
+import { canViewComplianceReferenceSegment } from '@/lib/references/library/reference-proof-segment-access'
 import { MASTER_INDUSTRIES, getIndustryLabelDe, resolveIndustryId } from '@/lib/constants/industries'
 import {
   matchesReferenceVolumeFilter,
@@ -216,7 +216,7 @@ const COLUMN_LABELS: Record<(typeof COLUMN_KEYS)[number], string> = {
 
 const COLUMN_ORDER_STORAGE_KEY = 'dashboard-overview-column-order-v1'
 const COLUMN_VISIBLE_STORAGE_KEY = 'dashboard-overview-column-visible-v1'
-const EVIDENCE_SHOW_EXPIRED_CERTS_KEY = 'evidence-compliance-show-expired-v1'
+const REFERENCE_SHOW_EXPIRED_CERTS_KEY = 'evidence-compliance-show-expired-v1'
 
 function loadVisibleColumnsFromStorage(): Record<(typeof COLUMN_KEYS)[number], boolean> {
   if (typeof window === 'undefined') return { ...DEFAULT_VISIBLE }
@@ -317,13 +317,13 @@ export function DashboardOverview({
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const [favoritesOnly, setFavoritesOnly] = useState(initialFavoritesOnly)
   const [referenceLayout, setReferenceLayout] = useState<'inbox' | 'table'>('table')
-  const libraryMode = useEvidenceLibraryMode()
+  const libraryMode = useReferenceLibraryMode()
   const [complianceUploadOpen, setComplianceUploadOpen] = useState(false)
   const [complianceBulkUploadOpen, setComplianceBulkUploadOpen] = useState(false)
   const [showExpiredCertificates, setShowExpiredCertificates] = useState(false)
   const isReferencesLibrary = libraryMode === 'references'
   const isCertificatesLibrary = libraryMode === 'certificates'
-  const canViewComplianceSegment = canViewComplianceEvidenceSegment(
+  const canViewComplianceSegment = canViewComplianceReferenceSegment(
     profile.systemRole,
     profile.functionRole
   )
@@ -367,28 +367,28 @@ export function DashboardOverview({
   }, [])
 
   useLayoutEffect(() => {
-    syncEvidenceLibraryModeFromStorage()
+    syncReferenceLibraryModeFromStorage()
     try {
-      setShowExpiredCertificates(localStorage.getItem(EVIDENCE_SHOW_EXPIRED_CERTS_KEY) === '1')
+      setShowExpiredCertificates(localStorage.getItem(REFERENCE_SHOW_EXPIRED_CERTS_KEY) === '1')
     } catch {
       /* ignore */
     }
   }, [])
 
-  const handleLibraryModeChange = useCallback((mode: EvidenceLibraryMode) => {
-    setEvidenceLibraryModeOptimistic(mode)
+  const handleLibraryModeChange = useCallback((mode: ReferenceLibraryMode) => {
+    setReferenceLibraryModeOptimistic(mode)
   }, [])
 
   useEffect(() => {
     if (!canViewComplianceSegment && libraryMode === 'certificates') {
-      setEvidenceLibraryModeOptimistic('references')
+      setReferenceLibraryModeOptimistic('references')
     }
   }, [canViewComplianceSegment, libraryMode])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
     try {
-      localStorage.setItem(EVIDENCE_LIBRARY_MODE_STORAGE_KEY, libraryMode)
+      localStorage.setItem(REFERENCE_LIBRARY_MODE_STORAGE_KEY, libraryMode)
     } catch {
       /* ignore */
     }
@@ -398,7 +398,7 @@ export function DashboardOverview({
     if (typeof window === 'undefined') return
     try {
       localStorage.setItem(
-        EVIDENCE_SHOW_EXPIRED_CERTS_KEY,
+        REFERENCE_SHOW_EXPIRED_CERTS_KEY,
         showExpiredCertificates ? '1' : '0'
       )
     } catch {
@@ -840,7 +840,7 @@ export function DashboardOverview({
   }
 
   const openDetail = (ref: ReferenceRow) => {
-    router.push(ROUTES.evidence.detail(ref.id))
+    router.push(ROUTES.references.detail(ref.id))
   }
 
   const toggleCart = (refId: string, e?: React.MouseEvent) => {
@@ -926,13 +926,13 @@ export function DashboardOverview({
     countryFilter !== 'all' ||
     projectStatusFilter !== 'all' ||
     volumeFilter !== 'all'
-  const showEvidenceOnboarding =
+  const showReferencesOnboarding =
     isReferencesLibrary &&
     ((process.env.NODE_ENV === 'development' &&
       searchParams.get('previewOnboarding') === '1') ||
       (initialReferences.length === 0 && !filtersActive))
 
-  if (showEvidenceOnboarding) {
+  if (showReferencesOnboarding) {
     const isAdmin = isSystemAdmin(profile.systemRole)
 
     const handleEmptyStateUpload = (files: File[]) => {
@@ -947,7 +947,7 @@ export function DashboardOverview({
 
     return (
       <>
-        <EvidenceOnboardingEmptyState
+        <ReferenceOnboardingEmptyState
           canCreate={canCreateReference}
           onUploadFiles={isAdmin ? handleEmptyStateUpload : undefined}
           onCreateManual={isAdmin ? () => setNewRefModalOpen(true) : undefined}
@@ -989,13 +989,13 @@ export function DashboardOverview({
       {/* Toolbar & Tabelle */}
       <div className="space-y-3.5">
         {canViewComplianceSegment ? (
-          <EvidenceProofSegmentSwitch
+          <ReferenceProofSegmentSwitch
             value={libraryMode}
             onChange={handleLibraryModeChange}
           />
         ) : null}
         {/* Toolbar: Suche bis zu den Buttons; rechts Favoriten → Status → Spalten → … */}
-        <EvidenceLibraryToolbar
+        <ReferenceLibraryToolbar
           libraryMode={libraryMode}
           referenceLayout={referenceLayout}
           onReferenceLayoutChange={setReferenceLayout}
@@ -1271,7 +1271,7 @@ export function DashboardOverview({
                             Details ansehen
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onSelect={() => router.push(ROUTES.evidence.edit(ref.id))}
+                            onSelect={() => router.push(ROUTES.references.edit(ref.id))}
                           >
                             <AppIcon icon={Pencil} size={16} className="mr-2" />
                             Bearbeiten

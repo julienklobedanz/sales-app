@@ -30,7 +30,7 @@ export async function updateReferenceDetailFieldsImpl(
   const { error } = await supabase.from('references').update(asTableUpdate<'references'>(updatePayload)).eq('id', id)
   if (error) throw new Error(error.message)
   revalidatePath(ROUTES.home)
-  revalidatePath(ROUTES.evidence.edit(id))
+  revalidatePath(ROUTES.references.edit(id))
   await revalidateOrgCachesForReference(id)
 }
 

@@ -1,5 +1,5 @@
-import type { getPendingClientApprovalsImpl } from '@/lib/evidence/pending-approvals'
-import type { getRequestsImpl } from '@/lib/evidence/approval-requests'
+import type { getPendingClientApprovalsImpl } from '@/lib/references/library/pending-approvals'
+import type { getRequestsImpl } from '@/lib/references/library/approval-requests'
 import type { DealStatus } from '@/app/dashboard/deals/types'
 
 export const ACTIVE_DEAL_STATUSES: DealStatus[] = ['open', 'rfp', 'negotiation']

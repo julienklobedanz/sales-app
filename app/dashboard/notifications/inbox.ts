@@ -92,7 +92,7 @@ function mapEventToCopy(eventType: string, row: EventRowForCopy): InboxCandidate
       id: `approval:${row.id}`,
       title: 'Kunden-Freigabe',
       text,
-      href: row.reference_id ? ROUTES.evidence.detail(row.reference_id) : ROUTES.evidence.root,
+      href: row.reference_id ? ROUTES.references.detail(row.reference_id) : ROUTES.references.root,
       createdAt: row.created_at,
       priority: 1,
     }
@@ -103,7 +103,7 @@ function mapEventToCopy(eventType: string, row: EventRowForCopy): InboxCandidate
       id: `approval:${row.id}`,
       title: 'Kunden-Freigabe angepasst',
       text: `Der Kunde hat Anmerkungen oder den Freigabe-Umfang bei „${refTitle}“ geändert.`,
-      href: row.reference_id ? ROUTES.evidence.detail(row.reference_id) : ROUTES.evidence.root,
+      href: row.reference_id ? ROUTES.references.detail(row.reference_id) : ROUTES.references.root,
       createdAt: row.created_at,
       priority: 1,
     }
@@ -114,7 +114,7 @@ function mapEventToCopy(eventType: string, row: EventRowForCopy): InboxCandidate
       id: `approval:${row.id}`,
       title: 'Kunden-Freigabe angefragt',
       text: `Freigabe-E-Mail für „${refTitle}“ wurde an den Kunden versendet.`,
-      href: row.reference_id ? ROUTES.evidence.detail(row.reference_id) : ROUTES.evidence.root,
+      href: row.reference_id ? ROUTES.references.detail(row.reference_id) : ROUTES.references.root,
       createdAt: row.created_at,
       priority: 1,
     }
@@ -131,7 +131,7 @@ function mapEventToCopy(eventType: string, row: EventRowForCopy): InboxCandidate
       id: `approval:${row.id}`,
       title: 'Interne Freigabe',
       text: `„${refTitle}“: ${detail}`,
-      href: row.reference_id ? ROUTES.evidence.detail(row.reference_id) : ROUTES.evidence.root,
+      href: row.reference_id ? ROUTES.references.detail(row.reference_id) : ROUTES.references.root,
       createdAt: row.created_at,
       priority: 1,
     }

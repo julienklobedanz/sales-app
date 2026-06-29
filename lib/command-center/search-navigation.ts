@@ -10,7 +10,7 @@ export function hrefForCommandSearchResult(result: CommandSearchResult): string 
     case 'nda':
       return `${ROUTES.accountsDetail(result.companyId)}?openNda=1`
     case 'reference':
-      return ROUTES.evidence.detail(result.id)
+      return ROUTES.references.detail(result.id)
     case 'market_signal':
       return ROUTES.accountsDetail(result.companyId)
     case 'contact_external':
@@ -20,7 +20,7 @@ export function hrefForCommandSearchResult(result: CommandSearchResult): string 
     case 'certificate':
       return ROUTES.settings
     case 'reference_document':
-      return ROUTES.evidence.detail(result.referenceId)
+      return ROUTES.references.detail(result.referenceId)
     default:
       return ROUTES.home
   }

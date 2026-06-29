@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { revalidateOrgCachesForReference } from '@/lib/cache/revalidate-org'
-import type { SubmitForApprovalOptions } from '@/lib/evidence/approval-submit-types'
+import type { SubmitForApprovalOptions } from '@/lib/references/library/approval-submit-types'
 import { logEventForCurrentOrg } from '@/lib/events/log-event'
 import { parseOrgPublicLinkPolicy } from '@/lib/organization-link-policy'
 import { canStartApprovalWorkflow } from '@/lib/references/approval-workflow'
@@ -15,11 +15,11 @@ import { isApprovalRecipientEmail } from '@/lib/references/approval-recipient-in
 import {
   companyNameFromReferenceRow,
   referenceGiverNameFromRecipientEmail,
-} from '@/lib/evidence/approvals-helpers'
-import { computeApprovalStatusSnapshot } from '@/lib/evidence/approvals-snapshot'
-import { notifyInternalReferenceCoordinatorAboutPendingReview } from '@/lib/evidence/approvals-internal-notify'
-import { resolveContactForApproval } from '@/lib/evidence/approvals-recipient'
-import type { ReferenceApprovalRow } from '@/lib/evidence/approvals-types'
+} from '@/lib/references/library/approvals-helpers'
+import { computeApprovalStatusSnapshot } from '@/lib/references/library/approvals-snapshot'
+import { notifyInternalReferenceCoordinatorAboutPendingReview } from '@/lib/references/library/approvals-internal-notify'
+import { resolveContactForApproval } from '@/lib/references/library/approvals-recipient'
+import type { ReferenceApprovalRow } from '@/lib/references/library/approvals-types'
 
 export async function submitForApprovalImpl(
   id: string,
@@ -248,8 +248,8 @@ export async function submitForApprovalImpl(
   })
 
   revalidatePath(ROUTES.home)
-  revalidatePath(ROUTES.evidence.detail(id))
-  revalidatePath(ROUTES.evidence.root)
+  revalidatePath(ROUTES.references.detail(id))
+  revalidatePath(ROUTES.references.root)
   await revalidateOrgCachesForReference(id)
   return {
     success: true as const,

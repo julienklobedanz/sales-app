@@ -2,9 +2,9 @@ import { Suspense } from 'react'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
-import { getDashboardDataImpl } from '@/lib/evidence/dashboard'
+import { getDashboardDataImpl } from '@/lib/references/library/dashboard'
 import { DashboardOverview } from '@/app/dashboard/dashboard-overview'
-import { EvidencePageSkeleton } from '@/components/dashboard/evidence-page-skeleton'
+import { ReferencePageSkeleton } from '@/components/dashboard/reference-page-skeleton'
 import { getRequestEffectiveRoles, getRequestUser } from '@/lib/auth/request-user'
 import { normalizeOrgDateDisplayFormat } from '@/lib/format'
 import { listComplianceDocuments } from '@/app/dashboard/settings/compliance-actions'
@@ -13,11 +13,11 @@ import { getReferenceVisibilityScope } from '@/lib/roles/reference-visibility-sc
 import { parseRolesPermissionsSettings } from '@/lib/roles/roles-permissions-settings'
 import { filterReferencesForSales } from '@/lib/references/sales-reference-visibility'
 import { getCachedOrgCompanies } from '@/lib/cache/cached-org-reads'
-import { canViewComplianceEvidenceSegment } from '@/lib/evidence/evidence-proof-segment-access'
+import { canViewComplianceReferenceSegment } from '@/lib/references/library/reference-proof-segment-access'
 
 export const dynamic = 'force-dynamic'
 
-export default async function EvidenceHubPage() {
+export default async function ReferencesHubPage() {
   const user = await getRequestUser()
   if (!user) redirect(ROUTES.login)
 
@@ -34,7 +34,7 @@ export default async function EvidenceHubPage() {
 
   const orgId = profile.organization_id as string
   const auth = { orgId, userId: user.id }
-  const canViewCompliance = canViewComplianceEvidenceSegment(
+  const canViewCompliance = canViewComplianceReferenceSegment(
     effectiveSystemRole,
     effectiveFunctionRole
   )
@@ -95,7 +95,7 @@ export default async function EvidenceHubPage() {
   const complianceDocuments = complianceListed.success ? complianceListed.rows : []
 
   return (
-    <Suspense fallback={<EvidencePageSkeleton />}>
+    <Suspense fallback={<ReferencePageSkeleton />}>
       <DashboardOverview
         references={references}
         totalCount={dashboard.totalCount}

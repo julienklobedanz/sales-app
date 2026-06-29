@@ -1,4 +1,4 @@
-import type { PdfReference } from '@/lib/evidence/pdf/types'
+import type { PdfReference } from '@/lib/references/library/pdf/types'
 import type { PublicReference } from '@/app/p/actions'
 import { computeReferenceDurationMonths } from '@/lib/references/reference-duration-months'
 

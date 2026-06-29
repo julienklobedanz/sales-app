@@ -395,7 +395,7 @@ export async function revokePortfolioAccess(params: {
       details: params.details,
     })
     for (const referenceId of referenceIds) {
-      revalidatePath(ROUTES.evidence.detail(referenceId))
+      revalidatePath(ROUTES.references.detail(referenceId))
     }
   }
 

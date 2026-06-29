@@ -27,7 +27,7 @@ export default async function NewReferencePage() {
   if (!profile) redirect(ROUTES.onboarding)
   const roles = parseProfileRoles(profile)
   if (!userCanCreateReference(roles.functionRole, roles.systemRole, roles.capabilities)) {
-    redirect(ROUTES.evidence.root)
+    redirect(ROUTES.references.root)
   }
 
   // 1. Firmen laden (inkl. logo_url für Anzeige bei Auswahl)
@@ -52,10 +52,10 @@ export default async function NewReferencePage() {
   return (
     <div className="min-h-screen bg-background p-4 md:p-6">
       <div className="mx-auto max-w-2xl space-y-6">
-        <Link href={ROUTES.evidence.root}>
+        <Link href={ROUTES.references.root}>
           <Button variant="ghost" size="sm" className="gap-2 -ml-2">
             <AppIcon icon={ArrowLeftIcon} size={16} />
-            Zurück zu {COPY.nav.evidence}
+            Zurück zu {COPY.nav.references}
           </Button>
         </Link>
         <ReferenceForm

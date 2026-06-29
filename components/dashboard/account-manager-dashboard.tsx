@@ -32,13 +32,13 @@ export function AccountManagerDashboard({ data }: { data: AccountManagerDashboar
 
       <div className="flex flex-wrap gap-2">
         <Button asChild variant="default" className="gap-2">
-          <Link href={ROUTES.evidence.new}>
+          <Link href={ROUTES.references.new}>
             <AppIcon icon={CirclePlus} size={18} />
             Referenz anlegen
           </Link>
         </Button>
         <Button asChild variant="outline" className="gap-2">
-          <Link href={ROUTES.evidence.newBulk}>
+          <Link href={ROUTES.references.newBulk}>
             <AppIcon icon={UploadIcon} size={18} />
             Bulk-Import
           </Link>
@@ -83,7 +83,7 @@ export function AccountManagerDashboard({ data }: { data: AccountManagerDashboar
                 >
                   <div>
                     <Link
-                      href={ROUTES.evidence.detail(p.referenceId)}
+                      href={ROUTES.references.detail(p.referenceId)}
                       className="font-medium hover:underline"
                     >
                       {p.title}
@@ -142,7 +142,7 @@ export function AccountManagerDashboard({ data }: { data: AccountManagerDashboar
                 {usageByReference.slice(0, 8).map((r) => (
                   <TableRow key={r.id}>
                     <TableCell className="font-medium">
-                      <Link href={ROUTES.evidence.detail(r.id)} className="hover:underline">
+                      <Link href={ROUTES.references.detail(r.id)} className="hover:underline">
                         {r.title}
                       </Link>
                     </TableCell>

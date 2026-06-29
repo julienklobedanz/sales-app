@@ -44,7 +44,7 @@ export default async function InternalApprovalPage({
     )
   }
 
-  const detailHref = ROUTES.evidence.detail(context.referenceId)
+  const detailHref = ROUTES.references.detail(context.referenceId)
 
   if (context.alreadyApproved) {
     return (

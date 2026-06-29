@@ -93,7 +93,7 @@ export function DashboardShell({
   useEffect(() => {
     router.prefetch(ROUTES.home)
     router.prefetch(ROUTES.accounts)
-    router.prefetch(ROUTES.evidence.root)
+    router.prefetch(ROUTES.references.root)
     router.prefetch(ROUTES.deals.root)
     router.prefetch(ROUTES.match)
     router.prefetch(ROUTES.deals.requestNew)
@@ -222,19 +222,19 @@ export function DashboardShell({
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
-                    isActive={pathname?.startsWith(ROUTES.evidence.root)}
-                    tooltip={COPY.nav.evidence}
+                    isActive={pathname?.startsWith(ROUTES.references.root)}
+                    tooltip={COPY.nav.references}
                     className={navButtonClass}
                   >
-                    <Link href={ROUTES.evidence.root} className="flex items-center gap-2.5">
+                    <Link href={ROUTES.references.root} className="flex items-center gap-2.5">
                       <span className="relative z-10">
                         <AppIcon
                           icon={FileText}
                           size={16}
-                          strokeWidth={pathname?.startsWith(ROUTES.evidence.root) ? 2.5 : 2}
+                          strokeWidth={pathname?.startsWith(ROUTES.references.root) ? 2.5 : 2}
                         />
                       </span>
-                      <span className="relative z-10">{COPY.nav.evidence}</span>
+                      <span className="relative z-10">{COPY.nav.references}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

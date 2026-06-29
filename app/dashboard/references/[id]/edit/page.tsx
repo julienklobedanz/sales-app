@@ -37,7 +37,7 @@ export default async function EditReferencePage({
   if (!me) redirect(ROUTES.onboarding)
   const roles = parseProfileRoles(me)
   if (!fromDeskId && !userCanEditReference(roles.functionRole, roles.systemRole, roles.capabilities)) {
-    redirect(ROUTES.evidence.detail(id))
+    redirect(ROUTES.references.detail(id))
   }
 
   // 1. Referenz laden (mit contact_id)
@@ -82,7 +82,7 @@ export default async function EditReferencePage({
   if (roles.functionRole === 'account_manager') {
     const createdBy = (row as unknown as { created_by?: string | null }).created_by ?? null
     if (!createdBy || createdBy !== user.id) {
-      redirect(ROUTES.evidence.detail(id))
+      redirect(ROUTES.references.detail(id))
     }
   }
 
@@ -166,7 +166,7 @@ export default async function EditReferencePage({
   return (
     <div className="min-h-screen bg-muted/10 p-4 md:p-6">
       <div className="mx-auto max-w-3xl space-y-6">
-        <Link href={ROUTES.evidence.detail(id)}>
+        <Link href={ROUTES.references.detail(id)}>
           <Button variant="ghost" size="sm" className="gap-2 -ml-2">
             <AppIcon icon={ArrowLeftIcon} size={16} />
             Zurück zur Referenz
@@ -188,7 +188,7 @@ export default async function EditReferencePage({
               unter <strong>Freigabestatus</strong> („Freigabe anfordern“).
             </p>
             <Button asChild variant="outline" size="sm" className="mt-3 bg-background">
-              <Link href={ROUTES.evidence.detail(id)}>Zur Detailansicht</Link>
+              <Link href={ROUTES.references.detail(id)}>Zur Detailansicht</Link>
             </Button>
           </div>
         ) : null}

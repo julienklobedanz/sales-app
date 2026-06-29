@@ -36,7 +36,7 @@ const STEPS: StepDef[] = [
   {
     id: 'hasReferences',
     label: '2. Erste Referenz sichern: Lade eine Case Study oder ein Projekt-Factsheet hoch.',
-    href: ROUTES.evidence.root,
+    href: ROUTES.references.root,
   },
   {
     id: 'hasTeamInvites',

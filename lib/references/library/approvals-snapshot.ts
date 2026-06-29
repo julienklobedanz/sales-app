@@ -1,4 +1,4 @@
-import type { ReferenceApprovalRow } from '@/lib/evidence/approvals-types'
+import type { ReferenceApprovalRow } from '@/lib/references/library/approvals-types'
 
 /** Status-Snapshot für Freigabe-Workflow (vor Kunden-Pending beibehalten). */
 export function computeApprovalStatusSnapshot(row: ReferenceApprovalRow): string {

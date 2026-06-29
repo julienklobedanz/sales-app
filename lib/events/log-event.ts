@@ -13,7 +13,8 @@ export type LogEventParams = {
 }
 
 /**
- * Schreibt ein `evidence_events`-Eintrag. Fehler werden geloggt, nicht geworfen
+ * Schreibt ein `evidence_events`-Eintrag (DB-Name historisch, absichtlich unverändert).
+ * Fehler werden geloggt, nicht geworfen
  * (Tracking darf Business-Flows nicht brechen).
  */
 export async function logEvent(params: LogEventParams): Promise<void> {

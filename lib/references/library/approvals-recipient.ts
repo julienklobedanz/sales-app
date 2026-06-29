@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-import type { SubmitForApprovalOptions } from '@/lib/evidence/approval-submit-types'
-import type { ReferenceApprovalRow, ResolvedApprovalRecipient } from '@/lib/evidence/approvals-types'
+import type { SubmitForApprovalOptions } from '@/lib/references/library/approval-submit-types'
+import type { ReferenceApprovalRow, ResolvedApprovalRecipient } from '@/lib/references/library/approvals-types'
 
 export async function resolveContactForApproval(
   supabase: SupabaseClient,

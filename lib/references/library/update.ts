@@ -175,7 +175,7 @@ export async function updateReferenceImpl(id: string, formData: FormData) {
   // daher ist kein automatischer Wechsel auf einen Legacy-Status mehr nötig.
 
   revalidatePath(ROUTES.home)
-  revalidatePath(ROUTES.evidence.edit(id))
+  revalidatePath(ROUTES.references.edit(id))
   await revalidateOrgCachesForReference(id)
 }
 

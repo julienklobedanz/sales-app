@@ -122,7 +122,7 @@ export async function createComplianceDocumentType(
     return { success: false, error: error?.message ?? 'Typ konnte nicht angelegt werden.' }
   }
 
-  revalidatePath(ROUTES.evidence.root)
+  revalidatePath(ROUTES.references.root)
   return {
     success: true,
     type: { id: data.id, slug: data.slug, label: data.label, isSystem: false },
@@ -150,7 +150,7 @@ export async function updateComplianceDocumentType(
 
   if (error) return { success: false, error: error.message }
 
-  revalidatePath(ROUTES.evidence.root)
+  revalidatePath(ROUTES.references.root)
   return { success: true }
 }
 
@@ -193,6 +193,6 @@ export async function deleteComplianceDocumentType(
 
   if (error) return { success: false, error: error.message }
 
-  revalidatePath(ROUTES.evidence.root)
+  revalidatePath(ROUTES.references.root)
   return { success: true }
 }

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { ReferencePdfDocument } from '@/lib/evidence/pdf/template'
-import type { PdfOrgBranding, PdfReference, PdfTemplate } from '@/lib/evidence/pdf/types'
+import { ReferencePdfDocument } from '@/lib/references/library/pdf/template'
+import type { PdfOrgBranding, PdfReference, PdfTemplate } from '@/lib/references/library/pdf/types'
 
 export const runtime = 'nodejs'
 

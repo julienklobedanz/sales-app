@@ -56,13 +56,13 @@ import {
   useAccountsListView,
 } from '@/lib/accounts/accounts-list-view-store'
 import {
-  evidenceLibraryTitle,
-  loadEvidenceLibraryModeFromStorage,
-} from '@/lib/evidence/evidence-library-mode'
+  referenceLibraryTitle,
+  loadReferenceLibraryModeFromStorage,
+} from '@/lib/references/library/reference-library-mode'
 import {
-  syncEvidenceLibraryModeFromStorage,
-  useEvidenceLibraryMode,
-} from '@/lib/evidence/evidence-library-mode-store'
+  syncReferenceLibraryModeFromStorage,
+  useReferenceLibraryMode,
+} from '@/lib/references/library/reference-library-mode-store'
 import { ROUTES } from '@/lib/routes'
 import { toast } from 'sonner'
 import { clearDevPreviewRole, setDevPreviewRole } from '@/app/dashboard/dev-preview-role-actions'
@@ -109,7 +109,7 @@ export function DashboardHeader({
   const searchParams = useSearchParams()
   const router = useRouter()
   const accountsListView = useAccountsListView()
-  const evidenceLibraryMode = useEvidenceLibraryMode()
+  const referenceLibraryMode = useReferenceLibraryMode()
 
   const hydrated = useHydrated()
 
@@ -118,8 +118,8 @@ export function DashboardHeader({
   }, [searchParams])
 
   useEffect(() => {
-    if (pathname === ROUTES.evidence.root) {
-      syncEvidenceLibraryModeFromStorage(loadEvidenceLibraryModeFromStorage())
+    if (pathname === ROUTES.references.root) {
+      syncReferenceLibraryModeFromStorage(loadReferenceLibraryModeFromStorage())
     }
   }, [pathname])
 
@@ -231,12 +231,12 @@ export function DashboardHeader({
         subtitle: undefined,
       }
     }
-    if (pathname.startsWith(ROUTES.evidence.root)) {
+    if (pathname.startsWith(ROUTES.references.root)) {
       return {
         title:
-          pathname === ROUTES.evidence.root
-            ? evidenceLibraryTitle(evidenceLibraryMode)
-            : COPY.pages.evidence,
+          pathname === ROUTES.references.root
+            ? referenceLibraryTitle(referenceLibraryMode)
+            : COPY.pages.references,
         subtitle: undefined,
       }
     }
@@ -286,7 +286,7 @@ export function DashboardHeader({
       title: 'Dashboard',
       subtitle: undefined,
     }
-  }, [pathname, accountsListView, evidenceLibraryMode])
+  }, [pathname, accountsListView, referenceLibraryMode])
   const hasHeaderSecondaryLine = dynamicCrumbs.length > 0 || Boolean(headerMeta.subtitle)
 
   useEffect(() => {
@@ -297,7 +297,7 @@ export function DashboardHeader({
         return
       }
 
-      if (pathname === ROUTES.accounts || pathname === ROUTES.evidence.root) {
+      if (pathname === ROUTES.accounts || pathname === ROUTES.references.root) {
         if (!cancelled) setDynamicCrumbs([])
         return
       }
@@ -438,7 +438,7 @@ export function DashboardHeader({
         const companyId = typeof data?.company_id === 'string' ? data.company_id : null
         if (!cancelled) {
           setDynamicCrumbs([
-            { label: COPY.pages.evidence, href: ROUTES.evidence.root },
+            { label: COPY.pages.references, href: ROUTES.references.root },
             { label: company?.name ?? 'Account', href: companyId ? ROUTES.accountsDetail(companyId) : ROUTES.accounts },
             { label: data?.title ?? 'Referenz' },
           ])

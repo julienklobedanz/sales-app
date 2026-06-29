@@ -134,8 +134,8 @@ export async function reviewRequestImpl(
   })
 
   revalidatePath(ROUTES.home)
-  revalidatePath(ROUTES.evidence.detail(approval.reference_id))
-  revalidatePath(ROUTES.evidence.root)
+  revalidatePath(ROUTES.references.detail(approval.reference_id))
+  revalidatePath(ROUTES.references.root)
   await revalidateOrgCachesForReference(approval.reference_id)
 }
 

@@ -4,15 +4,15 @@ import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { revalidateOrgCachesForReference } from '@/lib/cache/revalidate-org'
-import type { SubmitForApprovalOptions } from '@/lib/evidence/approval-submit-types'
-import { ensureApprovalRecipientFromInputImpl } from '@/lib/evidence/approval-contacts'
+import type { SubmitForApprovalOptions } from '@/lib/references/library/approval-submit-types'
+import { ensureApprovalRecipientFromInputImpl } from '@/lib/references/library/approval-contacts'
 import { logEventForCurrentOrg } from '@/lib/events/log-event'
 import { profileCanManageOrgData } from '@/lib/roles/profile-guards'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
-import { sendClientApprovalEmail } from '@/lib/evidence/approvals-client-email'
-import { companyNameFromReferenceRow, referenceGiverNameFromRecipientEmail } from '@/lib/evidence/approvals-helpers'
-import { resolveContactForApproval } from '@/lib/evidence/approvals-recipient'
-import type { ApproveInternalAndSendResult, ApproveInternalRecipientOptions, ReferenceApprovalRow } from '@/lib/evidence/approvals-types'
+import { sendClientApprovalEmail } from '@/lib/references/library/approvals-client-email'
+import { companyNameFromReferenceRow, referenceGiverNameFromRecipientEmail } from '@/lib/references/library/approvals-helpers'
+import { resolveContactForApproval } from '@/lib/references/library/approvals-recipient'
+import type { ApproveInternalAndSendResult, ApproveInternalRecipientOptions, ReferenceApprovalRow } from '@/lib/references/library/approvals-types'
 
 export async function approveInternalAndSendImpl(
   referenceId: string,
@@ -161,8 +161,8 @@ export async function approveInternalAndSendImpl(
   })
 
   revalidatePath(ROUTES.home)
-  revalidatePath(ROUTES.evidence.detail(referenceId))
-  revalidatePath(ROUTES.evidence.root)
+  revalidatePath(ROUTES.references.detail(referenceId))
+  revalidatePath(ROUTES.references.root)
   await revalidateOrgCachesForReference(referenceId)
   return { success: true, customerEmailSent, recipientEmail: contactEmail }
 }

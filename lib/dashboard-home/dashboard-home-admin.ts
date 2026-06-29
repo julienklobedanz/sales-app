@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { getDeals } from '@/app/dashboard/deals/actions'
-import { getRequestsImpl } from '@/lib/evidence/approval-requests'
+import { getRequestsImpl } from '@/lib/references/library/approval-requests'
 import { ROUTES } from '@/lib/routes'
 import {
   ACTIVE_DEAL_STATUSES,

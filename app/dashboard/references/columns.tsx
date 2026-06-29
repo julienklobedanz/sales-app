@@ -22,7 +22,7 @@ import { ReferenceStatusBadge } from "@/components/reference-status-badge"
 import { ROUTES } from "@/lib/routes"
 import { AccountCell } from "@/components/table/account-cell"
 
-export function evidenceColumns(): ColumnDef<ReferenceRow>[] {
+export function referenceColumns(): ColumnDef<ReferenceRow>[] {
   return [
     {
       id: "select",
@@ -167,10 +167,10 @@ export function evidenceColumns(): ColumnDef<ReferenceRow>[] {
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link href={ROUTES.evidence.detail(ref.id)}>Öffnen</Link>
+                <Link href={ROUTES.references.detail(ref.id)}>Öffnen</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href={ROUTES.evidence.edit(ref.id)}>Bearbeiten</Link>
+                <Link href={ROUTES.references.edit(ref.id)}>Bearbeiten</Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

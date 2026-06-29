@@ -11,9 +11,9 @@ import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { effectiveCustomerApprovalStatus, hasActiveCustomerApprovalWorkflow } from '@/lib/references/effective-customer-approval'
 import { notifyInternalTeamApprovalWithdrawn } from '@/lib/references/approval-workflow-internal-notifications'
 import { buildRefstackEmailHtml, getRefstackResendFrom } from '@/lib/email/refstack-email-layout'
-import { getApprovalResendClient } from '@/lib/evidence/approvals-client-email'
-import { withdrawRestoredReferenceStatus } from '@/lib/evidence/approvals-helpers'
-import type { ReferenceApprovalRow } from '@/lib/evidence/approvals-types'
+import { getApprovalResendClient } from '@/lib/references/library/approvals-client-email'
+import { withdrawRestoredReferenceStatus } from '@/lib/references/library/approvals-helpers'
+import type { ReferenceApprovalRow } from '@/lib/references/library/approvals-types'
 
 export async function getApprovalLinkImpl(referenceId: string): Promise<string | null> {
   const supabase = await createServerSupabaseClient()
@@ -128,8 +128,8 @@ export async function withdrawApprovalRequestImpl(referenceId: string): Promise<
     .update({ status: 'rejected' })
     .eq('reference_id', referenceId)
     .eq('status', 'pending')
-  revalidatePath(ROUTES.evidence.detail(referenceId))
-  revalidatePath(ROUTES.evidence.root)
+  revalidatePath(ROUTES.references.detail(referenceId))
+  revalidatePath(ROUTES.references.root)
   revalidatePath(ROUTES.home)
   await revalidateOrgCachesForReference(referenceId)
   return { success: true }
@@ -263,7 +263,7 @@ export async function resendClientApprovalEmailImpl(referenceId: string) {
     .in('status', ['approved', 'rejected'])
 
   revalidatePath(ROUTES.home)
-  revalidatePath(ROUTES.evidence.detail(referenceId))
-  revalidatePath(ROUTES.evidence.root)
+  revalidatePath(ROUTES.references.detail(referenceId))
+  revalidatePath(ROUTES.references.root)
   await revalidateOrgCachesForReference(referenceId)
 }
