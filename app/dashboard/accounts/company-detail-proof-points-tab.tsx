@@ -14,10 +14,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import type { AccountProofMemory } from '@/lib/accounts/account-proof-memory-pure'
 import { ROUTES } from '@/lib/routes'
 
 import type { CompanyRefRow } from './actions'
+import { fetchAccountProofMemoryAction } from './account-proof-memory-actions'
 import { fetchAccountReferenceFitScoresAction } from './account-reference-fit-actions'
+import {
+  AccountProofHistoryCard,
+  AccountProofImpactCard,
+} from './company-detail-proof-memory-section'
 import { referenceStatusLabel } from './company-detail-constants'
 import type { CompanyDetailCompany } from './company-detail-types'
 
@@ -33,6 +39,9 @@ export function CompanyDetailProofPointsTab({
   const [fitScores, setFitScores] = useState<Record<string, number>>({})
   const [loadingFit, setLoadingFit] = useState(false)
   const [fitError, setFitError] = useState<string | null>(null)
+  const [memory, setMemory] = useState<AccountProofMemory | null>(null)
+  const [loadingMemory, setLoadingMemory] = useState(false)
+  const [memoryError, setMemoryError] = useState<string | null>(null)
 
   const loadFitScores = useCallback(async () => {
     if (!references.length) {
@@ -57,6 +66,27 @@ export function CompanyDetailProofPointsTab({
     }
   }, [company.id, references])
 
+  const loadMemory = useCallback(async () => {
+    setLoadingMemory(true)
+    setMemoryError(null)
+    try {
+      const res = await fetchAccountProofMemoryAction(company.id)
+      if (!res.success) {
+        setMemoryError(res.error)
+        setMemory(null)
+        return
+      }
+      setMemory(res.memory)
+    } finally {
+      setLoadingMemory(false)
+    }
+  }, [company.id])
+
+  useEffect(() => {
+    if (!isActive) return
+    void loadMemory()
+  }, [isActive, loadMemory])
+
   useEffect(() => {
     if (!isActive) return
     void loadFitScores()
@@ -64,6 +94,24 @@ export function CompanyDetailProofPointsTab({
 
   return (
     <div className="space-y-6">
+      {loadingMemory ? (
+        <p className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" />
+          Account-Gedächtnis laden …
+        </p>
+      ) : null}
+      {memoryError ? (
+        <p className="text-sm text-destructive" role="alert">
+          {memoryError}
+        </p>
+      ) : null}
+      {memory ? (
+        <>
+          <AccountProofImpactCard rows={memory.impact} />
+          <AccountProofHistoryCard items={memory.history} />
+        </>
+      ) : null}
+
       <Card>
         <CardHeader>
           <CardTitle>Referenz-Bibliothek</CardTitle>

@@ -1,6 +1,6 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { getRequestProfile, getRequestUser } from '@/lib/auth/request-user'
@@ -15,6 +15,7 @@ import {
   getRefstackResendFrom,
 } from '@/lib/email/refstack-email-layout'
 import { validateDecisiveReferenceId } from '@/lib/deals/outcome-capture'
+import { accountProofMemoryTag } from '@/lib/accounts/account-proof-memory'
 import type { DealRow, DealStatus, DealWithReferences } from './types'
 
 async function getSessionOrgId(
@@ -586,7 +587,7 @@ export async function recordDealOutcome(args: {
   const status = normalizeDealStatus(args.outcome)
   const outcomeReason = args.outcomeReason?.trim() || null
 
-  const { error: updErr } = await supabase
+  const { data: updatedDeal, error: updErr } = await supabase
     .from('deals')
     .update({
       status,
@@ -595,6 +596,8 @@ export async function recordDealOutcome(args: {
     })
     .eq('id', args.dealId)
     .eq('organization_id', orgId)
+    .select('company_id')
+    .single()
   if (updErr) return { success: false, error: updErr.message }
 
   const eventType =
@@ -621,6 +624,10 @@ export async function recordDealOutcome(args: {
     created_by: user.id,
   })
   if (evErr) return { success: false, error: evErr.message }
+
+  if (updatedDeal?.company_id) {
+    revalidateTag(accountProofMemoryTag(String(updatedDeal.company_id)), 'max')
+  }
 
   revalidatePath(ROUTES.deals.root)
   revalidatePath(ROUTES.deals.detail(args.dealId))
