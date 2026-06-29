@@ -18,6 +18,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { createClient } from '@supabase/supabase-js'
+import { ROUTES } from '../lib/routes'
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -152,7 +153,7 @@ async function main() {
   }
 
   console.log('Archiv-Version ISO 27001 (abgelaufen 31.12.2024) angelegt.')
-  console.log('Öffne /dashboard/evidence → Zertifikate und klicke auf eine Zeile für die Versionshistorie.')
+  console.log(`Öffne ${ROUTES.evidence.root} → Zertifikate und klicke auf eine Zeile für die Versionshistorie.`)
 }
 
 main().catch((err) => {

@@ -1,4 +1,4 @@
-import type { ExtractedReferenceData } from '@/app/dashboard/evidence/new/types'
+import type { ExtractedReferenceData } from '@/app/dashboard/references/new/types'
 import { clampNarrativeTextNullable } from '@/lib/references/reference-narrative-limits'
 
 const COMPANY_SUFFIX =

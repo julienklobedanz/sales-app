@@ -7,11 +7,11 @@ import { asTableInsert } from '@/lib/supabase/db-types'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { extractDataFromDocument } from '@/lib/document-extraction'
 import { inviteByEmail } from '@/app/dashboard/settings/invite-actions'
-import type { ExtractedReferenceData } from '@/app/dashboard/evidence/new/types'
+import type { ExtractedReferenceData } from '@/app/dashboard/references/new/types'
 import {
   attachOriginalDocumentToReference,
   createReference,
-} from '@/app/dashboard/evidence/new/actions'
+} from '@/app/dashboard/references/new/actions'
 import { isValidSalesPhone, salesContactValidationMessage } from '@/lib/profile/sales-contact'
 import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
 import { legacyAppRoleFrom, legacyRoleToDimensions, LEGACY_INVITE_APP_ROLES } from '@/lib/roles/legacy-mapping'

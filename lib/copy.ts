@@ -6,7 +6,7 @@ export const COPY = {
     evidence: 'Referenzen',
     marketSignals: 'Marktsignale',
     dealDesk: 'Deal Desk',
-    match: 'Finden',
+    match: 'Smart Match',
     insights: 'Insights',
     settings: 'Einstellungen',
   },
@@ -15,7 +15,7 @@ export const COPY = {
     evidence: 'Referenzen',
     marketSignals: 'Marktsignale',
     dealDesk: 'Deal Desk',
-    match: 'Finden',
+    match: 'Smart Match',
   },
   misc: {
     matches: 'Treffer',

@@ -23,7 +23,7 @@ import { COPY } from '@/lib/copy'
 import {
   fetchCompanyEnrichment,
   type CompanySearchSuggestion,
-} from '@/app/dashboard/evidence/new/actions'
+} from '@/app/dashboard/references/new/actions'
 import { CompanyNameSuggestField } from './components/company-name-suggest-field'
 import { displayHostFromUrl, normalizeWebsiteForSave } from './account-company-helpers'
 import {

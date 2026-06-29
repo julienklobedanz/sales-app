@@ -12,8 +12,8 @@ import type {
   ExternalContactDisplay,
   ReferenceFormInitialData,
 } from '@/lib/references/reference-form/reference-form-types'
-import type { ReferenceFormCompany } from '@/app/dashboard/evidence/new/reference-form-fields'
-import type { ExternalContact } from '@/app/dashboard/evidence/new/actions'
+import type { ReferenceFormCompany } from '@/app/dashboard/references/new/reference-form-fields'
+import type { ExternalContact } from '@/app/dashboard/references/new/actions'
 
 type Company = ReferenceFormCompany
 

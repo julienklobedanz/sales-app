@@ -6,6 +6,7 @@ import type { CompanyDetailCompany } from './company-detail-types'
 import type { CompanyRefRow } from './actions'
 import { referenceStatusLabel } from './company-detail-constants'
 import { ROUTES } from '@/lib/routes'
+import { COPY } from '@/lib/copy'
 
 /**
  * Einfache Heuristik (Branche + Region der Referenz vs. Account) — nicht die KI-/Embedding-Suche (`matchReferences`).
@@ -43,7 +44,7 @@ export function CompanyDetailProofPointsTab({
             {references.length} Referenzen (direkt dem Account zugeordnet). Spalte „Fit“: einfache Schätzung aus
             Branche und Region — für semantische Treffer die Suche unter{' '}
             <Link className="underline underline-offset-2" href={ROUTES.match}>
-              Match
+              {COPY.nav.match}
             </Link>
             .
           </CardDescription>

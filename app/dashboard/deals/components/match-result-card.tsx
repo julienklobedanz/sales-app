@@ -17,7 +17,7 @@ import { getMatchStrength } from '@/lib/match/match-strength'
 import type { MatchReferenceHit } from '@/app/dashboard/actions'
 import { createSharedPortfolio } from '@/app/dashboard/actions'
 import { addReferenceToDealWithScore } from '../actions'
-import { PdfExportDialog } from '@/app/dashboard/evidence/[id]/pdf-export-dialog'
+import { PdfExportDialog } from '@/app/dashboard/references/[id]/pdf-export-dialog'
 import { KiEntwurfSheet } from './ki-entwurf-sheet'
 
 export function MatchResultCard({

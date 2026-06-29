@@ -96,7 +96,7 @@ import {
 } from './overview/reference-table-column-renders'
 import { ReferencesOverviewBrandfetchSync } from './overview/references-overview-brandfetch-sync'
 import { ReferencesBulkActionsBar } from './overview/references-bulk-actions-bar'
-import { EvidenceOnboardingEmptyState } from '@/app/dashboard/evidence/components/evidence-onboarding-empty-state'
+import { EvidenceOnboardingEmptyState } from '@/app/dashboard/references/components/evidence-onboarding-empty-state'
 import { FilterMenuCheckboxOption } from '@/components/table/filter-menu-checkbox-option'
 import { TableRowCheckbox } from '@/components/table/table-row-checkbox'
 import { TableRowAlign } from '@/components/table/table-row-align'

@@ -36,11 +36,11 @@ export const ROUTES = {
       tab === 'overview' ? `/dashboard/deals/${id}` : `/dashboard/deals/${id}?tab=${tab}`,
   },
   evidence: {
-    root: '/dashboard/evidence',
-    new: '/dashboard/evidence/new',
-    newBulk: '/dashboard/evidence/new?bulk=true',
-    detail: (id: string) => `/dashboard/evidence/${id}`,
-    edit: (id: string) => `/dashboard/evidence/${id}/edit`,
+    root: '/dashboard/references',
+    new: '/dashboard/references/new',
+    newBulk: '/dashboard/references/new?bulk=true',
+    detail: (id: string) => `/dashboard/references/${id}`,
+    edit: (id: string) => `/dashboard/references/${id}/edit`,
   },
   marketSignals: '/dashboard/market-signals',
   /** Watchlist & Stakeholder-Überwachung (ehem. /dashboard/market-signals/manage). */
@@ -49,10 +49,10 @@ export const ROUTES = {
   dealDesk: '/dashboard/deal-desk',
   dealDeskProject: (projectId: string) =>
     `/dashboard/deal-desk?project=${encodeURIComponent(projectId)}`,
-  match: '/dashboard/match',
+  match: '/dashboard/smart-match',
   /** Semantische Suche mit Deal-Kontext (`matchReferences`). */
   matchWithDeal: (dealId: string) =>
-    `/dashboard/match?deal=${encodeURIComponent(dealId)}`,
+    `/dashboard/smart-match?deal=${encodeURIComponent(dealId)}`,
   settings: '/dashboard/settings',
   /** Referenzanfrage (Deal-Kontext); Legacy `/dashboard/request` leitet hierher. */
   request: '/dashboard/deals/request/new',
@@ -62,15 +62,19 @@ export const ROUTES = {
  * Pfade für `revalidatePath(..., 'page')` mit dynamischen Segmenten (Next.js App Router).
  */
 export const REVALIDATE = {
-  evidenceEditPage: '/dashboard/evidence/[id]/edit',
+  evidenceEditPage: '/dashboard/references/[id]/edit',
 } as const
 
 /** Permanente Weiterleitungen (alte URLs → aktuelle Struktur), siehe `next.config`. */
 export const LEGACY_REDIRECTS = [
+  { source: '/dashboard/match', destination: '/dashboard/smart-match', permanent: false },
+  { source: '/dashboard/match/:path*', destination: '/dashboard/smart-match/:path*', permanent: false },
+  { source: '/dashboard/evidence', destination: '/dashboard/references', permanent: false },
+  { source: '/dashboard/evidence/:path*', destination: '/dashboard/references/:path*', permanent: false },
   { source: '/dashboard/companies', destination: ROUTES.accounts, permanent: true },
   { source: '/dashboard/companies/:path*', destination: '/dashboard/accounts/:path*', permanent: true },
   { source: '/dashboard/new', destination: ROUTES.evidence.new, permanent: true },
-  { source: '/dashboard/edit/:id', destination: '/dashboard/evidence/:id/edit', permanent: true },
+  { source: '/dashboard/edit/:id', destination: '/dashboard/references/:id/edit', permanent: true },
   // Alte Concept-URL (W3); Lesezeichen weiter auf Evidence leiten
   { source: '/dashboard/concepts/inbox-references', destination: ROUTES.evidence.root, permanent: true },
   { source: '/dashboard/request', destination: ROUTES.request, permanent: true },

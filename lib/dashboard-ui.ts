@@ -39,7 +39,7 @@ export function detailRouteNeedsBottomPadding(pathname: string | null): boolean 
   if (!pathname) return false
   const parts = pathname.split('/').filter(Boolean)
   if (parts[0] !== 'dashboard') return false
-  if (parts[1] === 'evidence' && parts.length >= 3 && parts[2] !== 'new') {
+  if (parts[1] === 'references' && parts.length >= 3 && parts[2] !== 'new') {
     return true
   }
   if (

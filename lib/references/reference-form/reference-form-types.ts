@@ -1,4 +1,4 @@
-import type { ReferenceFormCompany } from '@/app/dashboard/evidence/new/reference-form-fields'
+import type { ReferenceFormCompany } from '@/app/dashboard/references/new/reference-form-fields'
 
 export type { ReferenceFormCompany }
 

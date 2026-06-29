@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import {
   searchCompanySuggestions,
   type CompanySearchSuggestion,
-} from '@/app/dashboard/evidence/new/actions'
+} from '@/app/dashboard/references/new/actions'
 import { COPY } from '@/lib/copy'
 import { cn } from '@/lib/utils'
 

@@ -23,7 +23,7 @@ import { COPY } from '@/lib/copy'
 import {
   fetchCompanyEnrichment,
   type CompanySearchSuggestion,
-} from '@/app/dashboard/evidence/new/actions'
+} from '@/app/dashboard/references/new/actions'
 import { displayHostFromUrl, normalizeWebsiteForSave } from './account-company-helpers'
 import { PARTNER_CATEGORY_OPTIONS, type PartnerCategory } from '@/lib/accounts/company-entity'
 import { resolveIndustryId } from '@/lib/constants/industries'

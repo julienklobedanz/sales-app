@@ -34,8 +34,8 @@ import {
 } from "@/app/dashboard/actions"
 import type { Profile } from "@/app/dashboard/dashboard-shell"
 
-import { PdfExportDialog } from "@/app/dashboard/evidence/[id]/pdf-export-dialog"
-import { ShareLinkButton } from "@/app/dashboard/evidence/[id]/share-link-button"
+import { PdfExportDialog } from "@/app/dashboard/references/[id]/pdf-export-dialog"
+import { ShareLinkButton } from "@/app/dashboard/references/[id]/share-link-button"
 
 import type { ConceptReferenceRow } from "./types"
 import { splitTags } from "./types"

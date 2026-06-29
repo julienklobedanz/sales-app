@@ -33,7 +33,7 @@ import { DealQuickAccountDialog } from './deal-quick-account-dialog'
 import {
   CompanyCombobox,
   type ReferenceFormCompany,
-} from '@/app/dashboard/evidence/new/reference-form-fields'
+} from '@/app/dashboard/references/new/reference-form-fields'
 
 type Company = { id: string; name: string }
 type OrgProfile = { id: string; full_name: string | null }

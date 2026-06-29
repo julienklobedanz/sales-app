@@ -48,8 +48,8 @@ import {
   CompanyCombobox,
   FileDropZone,
   MagicImportDropzone,
-} from '@/app/dashboard/evidence/new/reference-form-fields'
-import { CreateContactDialog } from '@/app/dashboard/evidence/new/create-contact-dialog'
+} from '@/app/dashboard/references/new/reference-form-fields'
+import { CreateContactDialog } from '@/app/dashboard/references/new/create-contact-dialog'
 import { generateSummaryFromStory, getCompetitorSuggestions, getIncumbentSuggestions } from '@/app/dashboard/actions'
 
 export function ReferenceFormContent(props: ReferenceFormViewModel) {

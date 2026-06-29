@@ -1,7 +1,7 @@
 import type {
   ExtractedReferenceData,
   ExtractDataFromDocumentResult,
-} from '@/app/dashboard/evidence/new/types'
+} from '@/app/dashboard/references/new/types'
 import { MASTER_INDUSTRIES, resolveIndustryId } from '@/lib/constants/industries'
 import { parseReferenceHeuristicsFromText } from '@/lib/references/heuristic-reference-extract'
 import { clampNarrativeTextNullable } from '@/lib/references/reference-narrative-limits'

@@ -27,7 +27,7 @@ import { updateCompany } from './actions'
 import { COPY } from '@/lib/copy'
 import type { CompanyDetailCompany } from './company-detail-types'
 import { displayHostFromUrl, normalizeWebsiteForSave } from './account-company-helpers'
-import { fetchCompanyEnrichment, searchCompanySuggestions } from '@/app/dashboard/evidence/new/actions'
+import { fetchCompanyEnrichment, searchCompanySuggestions } from '@/app/dashboard/references/new/actions'
 import {
   ACCOUNT_STATUS_FORM_OPTIONS,
   accountStatusFromDb,

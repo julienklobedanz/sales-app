@@ -24,7 +24,7 @@ function write(name, content) {
 // --- small modules (manual headers) ---
 write(
   'reference-form-types.ts',
-  `import type { ReferenceFormCompany } from '@/app/dashboard/evidence/new/reference-form-fields'
+  `import type { ReferenceFormCompany } from '@/app/dashboard/references/new/reference-form-fields'
 
 export type { ReferenceFormCompany }
 
@@ -468,8 +468,8 @@ import {
   CompanyCombobox,
   FileDropZone,
   MagicImportDropzone,
-} from '@/app/dashboard/evidence/new/reference-form-fields'
-import { CreateContactDialog } from '@/app/dashboard/evidence/new/create-contact-dialog'
+} from '@/app/dashboard/references/new/reference-form-fields'
+import { CreateContactDialog } from '@/app/dashboard/references/new/create-contact-dialog'
 import { generateSummaryFromStory, getCompetitorSuggestions, getIncumbentSuggestions } from '@/app/dashboard/actions'
 
 export function ReferenceFormContent(props: ReferenceFormViewModel) {
@@ -579,11 +579,11 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { toast } from 'sonner'
 import { z } from 'zod'
-import { attachOriginalDocumentToReference, createReference, fetchCompanyEnrichment } from '@/app/dashboard/evidence/new/actions'
-import type { ExtractDataFromDocumentResult } from '@/app/dashboard/evidence/new/types'
-import type { ExternalContact } from '@/app/dashboard/evidence/new/actions'
-import { CreateContactDialog, type CreatedContact } from '@/app/dashboard/evidence/new/create-contact-dialog'
-import type { ReferenceFormCompany } from '@/app/dashboard/evidence/new/reference-form-fields'
+import { attachOriginalDocumentToReference, createReference, fetchCompanyEnrichment } from '@/app/dashboard/references/new/actions'
+import type { ExtractDataFromDocumentResult } from '@/app/dashboard/references/new/types'
+import type { ExternalContact } from '@/app/dashboard/references/new/actions'
+import { CreateContactDialog, type CreatedContact } from '@/app/dashboard/references/new/create-contact-dialog'
+import type { ReferenceFormCompany } from '@/app/dashboard/references/new/reference-form-fields'
 import { updateReference } from '@/app/dashboard/actions'
 import { resolveIndustryId } from '@/lib/constants/industries'
 import { syncCompanyBrandfetchForEdit } from '@/lib/evidence/sync-company-brandfetch'
@@ -753,8 +753,8 @@ import type {
   ExternalContactDisplay,
   ReferenceFormInitialData,
 } from '@/lib/references/reference-form/reference-form-types'
-import type { ReferenceFormCompany } from '@/app/dashboard/evidence/new/reference-form-fields'
-import type { ExternalContact } from '@/app/dashboard/evidence/new/actions'
+import type { ReferenceFormCompany } from '@/app/dashboard/references/new/reference-form-fields'
+import type { ExternalContact } from '@/app/dashboard/references/new/actions'
 
 type Company = ReferenceFormCompany
 
@@ -864,7 +864,7 @@ export function ReferenceForm({
 )
 
 write(
-  path.join(root, 'app/dashboard/evidence/new/reference-form.tsx'),
+  path.join(root, 'app/dashboard/references/new/reference-form.tsx'),
   `'use client'
 
 export type {

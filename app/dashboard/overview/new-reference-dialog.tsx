@@ -2,8 +2,8 @@
 
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 
-import type { ExternalContact } from '../evidence/new/actions'
-import { ReferenceForm, type ContactPerson } from '../evidence/new/reference-form'
+import type { ExternalContact } from '../references/new/actions'
+import { ReferenceForm, type ContactPerson } from '../references/new/reference-form'
 
 type CompanyOption = { id: string; name: string; logo_url?: string | null }
 
