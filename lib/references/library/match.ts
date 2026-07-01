@@ -16,7 +16,11 @@ import type {
   MatchReferencesResult,
 } from '@/app/dashboard/actions'
 
-const MATCH_DEFAULT_THRESHOLD = 0.7
+// Kalibriert an der tatsächlichen Embedding-Skala des Bestands: inhaltlich
+// verwandte Referenzen erreichen doc-zu-doc nur ~0,55–0,59, echte (kürzere)
+// Suchanfragen liegen darunter. 0,7/0,65 filterte praktisch alles weg → 0 Treffer.
+// 0,35 + Top-N-Limit (match_count) liefert die besten Treffer, filtert klaren Lärm.
+const MATCH_DEFAULT_THRESHOLD = 0.35
 const MATCH_DEFAULT_COUNT = 10
 const RERANK_MODEL = 'gpt-4o-mini'
 const RERANK_FETCH_MS = 8000
@@ -107,6 +111,7 @@ export async function matchReferencesImpl(
         matchCount,
         organizationId: orgId,
         salesVisibleOnly,
+        filters: options?.filters,
       }),
     { organizationId: orgId }
   )
@@ -129,6 +134,8 @@ export async function matchReferencesImpl(
       snippet,
       companyName: r.company_name?.trim() ? r.company_name : null,
       volumeEur: volRaw && volRaw.length > 0 ? volRaw : null,
+      status: r.status ?? null,
+      createdAt: r.created_at ?? null,
     }
   })
 

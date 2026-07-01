@@ -48,7 +48,7 @@ export function DealMatchSection({ deal }: { deal: DealWithReferences }) {
     try {
       const res = await matchReferences(q, deal.id, {
         matchCount: 10,
-        matchThreshold: 0.65,
+        matchThreshold: 0.35,
         rerank: false,
       })
       if (!res.success) {

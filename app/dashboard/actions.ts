@@ -412,11 +412,27 @@ export type MatchReferenceHit = {
   companyLogoUrl?: string | null
   /** Projekt-/Volumenangabe (Rohwert wie in Evidence). */
   volumeEur: string | null
+  /** Lifecycle-Status (draft/approved/internal_only/anonymized/external). */
+  status?: string | null
+  /** ISO-Timestamp der Erstellung (Aktualitäts-Filter/Anzeige). */
+  createdAt?: string | null
 }
 
 export type MatchReferencesResult =
   | { success: true; matches: MatchReferenceHit[] }
   | { success: false; error: string }
+
+/** Strukturelle Vorfilter (Stufe C) — jeweils weggelassen/null = kein Filter. */
+export type MatchReferenceFilters = {
+  industries?: string[] | null
+  /** Mindest-Volumen in Euro (numerisch). */
+  minVolume?: number | null
+  /** Höchst-Volumen in Euro (numerisch). */
+  maxVolume?: number | null
+  statuses?: string[] | null
+  /** ISO-Timestamp; nur Referenzen mit created_at >= createdAfter. */
+  createdAfter?: string | null
+}
 
 export type MatchReferencesOptions = {
   matchThreshold?: number
@@ -426,6 +442,8 @@ export type MatchReferencesOptions = {
    * Bei API-Fehler bleibt die Vektor-Reihenfolge erhalten.
    */
   rerank?: boolean
+  /** Strukturelle Vorfilter (Branche/Volumen/Status/Aktualität). */
+  filters?: MatchReferenceFilters
 }
 
 /**

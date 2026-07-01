@@ -52,7 +52,7 @@ export async function loadSalesRepDashboardData(
       [full?.title, full?.industry, full?.volume, req].filter(Boolean).join('\n').slice(0, 3500) || full?.title || ''
 
     if (query.trim()) {
-      const result = await matchReferences(query, primary.id, { matchCount: 6, matchThreshold: 0.65 })
+      const result = await matchReferences(query, primary.id, { matchCount: 6, matchThreshold: 0.35 })
       if (result.success) {
         recommended = result.matches.map((m) => ({
           id: m.id,
