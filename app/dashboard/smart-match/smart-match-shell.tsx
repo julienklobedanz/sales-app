@@ -28,6 +28,7 @@ import {
   type MatchReferenceFilters,
 } from '@/app/dashboard/actions'
 import type { DealRow } from '@/app/dashboard/deals/types'
+import { SmartMatchRfp } from './smart-match-rfp'
 
 type Mode = 'smart' | 'rfp'
 
@@ -214,9 +215,6 @@ export function SmartMatchShell({
     `${d.title} ${d.company_name ?? ''}`.toLowerCase().includes(dealQuery.trim().toLowerCase())
   )
 
-  // RFP (Stufe D — noch Hülle)
-  const [rfpStep, setRfpStep] = useState<'upload' | 'loading' | 'result'>('upload')
-
   async function runSearch(opts?: { text?: string; filters?: FiltersState; dealId?: string | null }) {
     const q = (opts?.text ?? query).trim()
     if (!q) return
@@ -272,11 +270,6 @@ export function SmartMatchShell({
       ...filters,
       statuses: has ? filters.statuses.filter((x) => x !== id) : [...filters.statuses, id],
     })
-  }
-
-  function analyzeRfp() {
-    setRfpStep('loading')
-    window.setTimeout(() => setRfpStep('result'), 900)
   }
 
   const hasSearched = loading || results !== null
@@ -522,104 +515,7 @@ export function SmartMatchShell({
           )}
         </section>
       ) : (
-        /* ===================== RFP (Stufe D — noch Hülle) ===================== */
-        <section>
-          {rfpStep === 'upload' ? (
-            <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
-              <div className="rounded-xl border border-dashed border-input bg-muted/30 p-[30px] text-center text-muted-foreground">
-                <span className="mb-2 block text-[26px]">⬆</span>
-                Ausschreibung hier ablegen (PDF/DOCX)
-                <div className="mt-4">
-                  <Button size="sm" onClick={analyzeRfp}>
-                    Datei wählen &amp; analysieren
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ) : rfpStep === 'loading' ? (
-            <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
-              <div className="h-[11px] w-[40%] animate-pulse rounded bg-muted" />
-              <div className="mt-3 h-[11px] w-[90%] animate-pulse rounded bg-muted" />
-              <div className="mt-2 h-[11px] w-[85%] animate-pulse rounded bg-muted" />
-              <div className="mt-3 text-[13px] text-muted-foreground">
-                Anforderungen werden extrahiert und gegen die Beweis-Datenbank gematcht …
-              </div>
-            </div>
-          ) : (
-            <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
-              <div className="mb-3.5 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <strong className="text-foreground">Abdeckung: 7 / 9 Anforderungen</strong>
-                  <span className="block h-2.5 w-[220px] overflow-hidden rounded-md bg-muted">
-                    <span className="block h-full w-[78%] bg-primary" />
-                  </span>
-                  <span className="font-semibold text-primary">78%</span>
-                </div>
-                <Button size="sm" onClick={() => toast.success('Export (folgt)')}>
-                  Export
-                </Button>
-              </div>
-              <table className="w-full border-collapse text-[13.5px]">
-                <thead>
-                  <tr>
-                    {['Anforderung', 'Bester Beweis', 'Coverage'].map((h) => (
-                      <th
-                        key={h}
-                        className="pb-2 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
-                      >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    { req: 'Cloud-Migration', ref: 'FinanzCorp', sc: 94, dots: 4 },
-                    { req: 'SAP-Umfeld', ref: 'IndustrieAG', sc: 88, dots: 3 },
-                    { req: '24/7 Managed Services', ref: 'MetroBank', sc: 81, dots: 3 },
-                    { req: 'ISO 27001 / Security ⚠', ref: '— (Lücke)', sc: null, dots: 0 },
-                    { req: 'BSI-Grundschutz ⚠', ref: '— (Lücke)', sc: null, dots: 0 },
-                  ].map((row) => (
-                    <tr
-                      key={row.req}
-                      className={
-                        'border-t border-border ' +
-                        (row.sc === null ? 'text-destructive' : 'text-foreground')
-                      }
-                    >
-                      <td className="py-2.5">{row.req}</td>
-                      <td className="py-2.5">{row.ref}</td>
-                      <td className="py-2.5">
-                        {row.sc !== null ? (
-                          <span className="font-bold text-primary">{row.sc}%</span>
-                        ) : (
-                          '—'
-                        )}
-                        &nbsp;
-                        <span className="text-[11px] tracking-widest">
-                          {[0, 1, 2, 3].map((d) => (
-                            <span
-                              key={d}
-                              className={d < row.dots ? 'text-primary' : 'text-muted-foreground/40'}
-                            >
-                              ●
-                            </span>
-                          ))}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-[13.5px] text-destructive">
-                <span>⚠ 2 Lücken ohne Beweis</span>
-                <Button variant="outline" size="sm" onClick={() => toast.success('Referenzen angefragt (folgt)')}>
-                  Referenzen anfragen
-                </Button>
-              </div>
-            </div>
-          )}
-        </section>
+        <SmartMatchRfp />
       )}
     </div>
   )

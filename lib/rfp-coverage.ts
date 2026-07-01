@@ -8,7 +8,9 @@ import { rpcMatchReferences } from '@/lib/match-references-rpc'
 import type { ExtractedRfpRequirement } from '@/lib/rfp-requirements'
 import { formatIndustryDisplay } from '@/lib/constants/industries'
 
-const MATCH_THRESHOLD = 0.55
+// An die reale Embedding-Skala kalibriert (Bestand erreicht max ~0,59 doc-zu-doc,
+// Query-zu-Doc niedriger). 0,55 filterte praktisch alle Anforderungen als „Lücke".
+const MATCH_THRESHOLD = 0.35
 const MATCH_COUNT = 8
 const EMBED_CONCURRENCY = 4
 
