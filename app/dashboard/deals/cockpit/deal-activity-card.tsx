@@ -3,8 +3,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { COPY } from '@/lib/copy'
 
-import { OutcomeDialog } from '../components/outcome-dialog'
-
 export type DealActivityItem = {
   id: string
   at: Date
@@ -12,18 +10,11 @@ export type DealActivityItem = {
   detail: string
 }
 
-export function DealActivityCard({
-  dealId,
-  activities,
-}: {
-  dealId: string
-  activities: DealActivityItem[]
-}) {
+export function DealActivityCard({ activities }: { activities: DealActivityItem[] }) {
   return (
     <Card>
-      <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 pb-2">
+      <CardHeader className="pb-2">
         <CardTitle className="text-base">{COPY.deals.cockpit.activityTitle}</CardTitle>
-        <OutcomeDialog dealId={dealId} triggerVariant="compact" />
       </CardHeader>
       <CardContent>
         {activities.length ? (

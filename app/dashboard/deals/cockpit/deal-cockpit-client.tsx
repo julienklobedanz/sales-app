@@ -50,7 +50,7 @@ export function DealCockpitClient({
 
       <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <DealFactsCard deal={deal} />
-        <DealActivityCard dealId={deal.id} activities={activities} />
+        <DealActivityCard activities={activities} />
       </div>
 
       {showRfpBlock && rfpBlock ? <div className="mb-6">{rfpBlock}</div> : null}
