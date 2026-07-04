@@ -6,7 +6,7 @@
  *
  * Stufe A: Smart Search ist live an `matchReferences` gebunden; Treffer werden über
  * die bestehende, voll verdrahtete `MatchResultCard` gerendert (PDF/Share/→Deal/KI-Entwurf).
- * Offen (mit `TODO(wiring:*)` markiert): Deal-Kontext-Picker (B), Filter (C), RFP-Upload (D).
+ * Offen (mit `TODO(wiring:*)` markiert): Deal-Kontext-Picker (B), Filter (C).
  */
 
 import { useState, type ReactNode } from 'react'
@@ -28,9 +28,6 @@ import {
   type MatchReferenceFilters,
 } from '@/app/dashboard/actions'
 import type { DealRow } from '@/app/dashboard/deals/types'
-import { SmartMatchRfp } from './smart-match-rfp'
-
-type Mode = 'smart' | 'rfp'
 
 const SUGGESTIONS = [
   { label: '>2 Mio €', q: 'Projekte über 2 Mio Euro im Enterprise-Umfeld' },
@@ -153,38 +150,6 @@ function SingleSelect({
   )
 }
 
-/* ---------- lokaler Segmented-Control (token-basiert) ---------- */
-
-function Seg<T extends string>({
-  value,
-  onChange,
-  options,
-}: {
-  value: T
-  onChange: (v: T) => void
-  options: { value: T; label: string }[]
-}) {
-  return (
-    <span className="inline-flex gap-0.5 rounded-lg bg-muted p-0.5">
-      {options.map((o) => (
-        <button
-          key={o.value}
-          type="button"
-          onClick={() => onChange(o.value)}
-          className={
-            'rounded-md px-3 py-1 text-sm transition-colors ' +
-            (value === o.value
-              ? 'bg-background text-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground')
-          }
-        >
-          {o.label}
-        </button>
-      ))}
-    </span>
-  )
-}
-
 /* ---------- Hauptkomponente ---------- */
 
 export function SmartMatchShell({
@@ -202,7 +167,6 @@ export function SmartMatchShell({
 
   const initialDeal = deals.find((d) => d.id === initialDealId) ?? null
 
-  const [mode, setMode] = useState<Mode>('smart')
   const [query, setQuery] = useState(
     initialDeal ? initialDeal.requirements_text?.trim() || initialDeal.title : ''
   )
@@ -282,21 +246,9 @@ export function SmartMatchShell({
 
   return (
     <div className={embedded ? 'space-y-3' : 'max-w-[1000px] space-y-4'}>
-      {/* Titel + Modus */}
-      <div className={`flex items-center gap-3 ${embedded ? 'justify-end' : 'justify-between'}`}>
-        {!embedded ? <h1 className={DASHBOARD_PAGE_TITLE_CLASS}>Smart Match</h1> : null}
-        <Seg
-          value={mode}
-          onChange={setMode}
-          options={[
-            { value: 'smart', label: 'Smart Search' },
-            { value: 'rfp', label: 'RFP' },
-          ]}
-        />
-      </div>
+      {!embedded ? <h1 className={DASHBOARD_PAGE_TITLE_CLASS}>Smart Match</h1> : null}
 
-      {mode === 'smart' ? (
-        <section className="space-y-4">
+      <section className="space-y-4">
           {/* Hero-Suche */}
           <div className="rounded-xl border border-border bg-card p-[18px] shadow-sm">
             <div className="flex items-center gap-2.5 rounded-lg border border-input bg-background px-3.5 py-2.5 transition-shadow focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50">
@@ -521,10 +473,7 @@ export function SmartMatchShell({
               )}
             </div>
           )}
-        </section>
-      ) : (
-        <SmartMatchRfp />
-      )}
+      </section>
     </div>
   )
 }

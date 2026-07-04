@@ -350,7 +350,6 @@ export const COPY = {
     noRecentsYet: 'Noch keine Einträge',
     actionStartMatch: 'Suche starten',
     actionNewDeal: 'Neuen Deal erstellen',
-    actionRfpUpload: 'RFP im Deal hochladen',
     actionNewReference: 'Neue Referenz erstellen',
     actionNewAccount: 'Account erstellen',
     /** Anzeige in der Suche, wenn keine Firma verknüpft ist */
