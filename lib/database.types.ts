@@ -838,6 +838,70 @@ export type Database = {
           },
         ]
       }
+      deal_documents: {
+        Row: {
+          id: string
+          deal_id: string
+          organization_id: string
+          file_name: string
+          kind: Database["public"]["Enums"]["deal_document_kind"]
+          storage_path: string
+          mime_type: string | null
+          size_bytes: number | null
+          uploaded_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          deal_id: string
+          organization_id: string
+          file_name: string
+          kind?: Database["public"]["Enums"]["deal_document_kind"]
+          storage_path: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          uploaded_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          deal_id?: string
+          organization_id?: string
+          file_name?: string
+          kind?: Database["public"]["Enums"]["deal_document_kind"]
+          storage_path?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          uploaded_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_documents_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_documents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deal_rfp_analyses: {
         Row: {
           coverage_report: Json | null
@@ -2619,6 +2683,15 @@ export type Database = {
         | "custom"
         | "internal_review"
       deal_deadline_source: "rfp" | "manual"
+      deal_document_kind:
+        | "ausschreibung"
+        | "nda"
+        | "vertrag"
+        | "angebot"
+        | "praesentation"
+        | "spezifikation"
+        | "notiz"
+        | "sonstiges"
       function_role: "sales_rep" | "account_manager" | "sales_leader"
       reference_status:
         | "draft"
