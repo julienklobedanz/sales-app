@@ -36,7 +36,7 @@ export default async function DealDeskPage({
 
         const dealId = (project as { deal_id?: string | null } | null)?.deal_id
         if (dealId) {
-          redirect(ROUTES.deals.detailTab(dealId, 'desk'))
+          redirect(ROUTES.deals.detailRfp(dealId))
         }
       }
     }

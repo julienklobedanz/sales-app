@@ -63,6 +63,15 @@ export type DealDeskDocumentRow = {
   sort_order: number
 }
 
+/**
+ * Mappt `deal_desk_projects.analysis_snapshot` auf {@link DealDeskMockAnalysis}.
+ *
+ * Zusätzliche Persistenz-Felder (siehe {@link import('./analysis-snapshot').PersistedDealDeskAnalysisSnapshot}):
+ * - `engineVersion` — 1 = Legacy-Coverage, 2 = judgeRfpRelevance + zentrale Thresholds; Cockpit prüft
+ *   Staleness via `RFP_COCKPIT_ENGINE_VERSION_CURRENT`, nicht über diesen Mapper.
+ * - `analyzedAt`, `requirements`, `coverage`, `eligibilityCriteria`, `rfpVerdicts` — werden vom
+ *   Deal-Cockpit direkt aus dem Roh-Snapshot gelesen (`load-deal-rfp-cockpit-data`).
+ */
 function parseAnalysisSnapshot(
   raw: unknown,
   documentNames: string[],

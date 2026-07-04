@@ -32,8 +32,10 @@ export const ROUTES = {
     new: '/dashboard/deals/new',
     requestNew: '/dashboard/deals/request/new',
     detail: (id: string) => `/dashboard/deals/${id}`,
+    /** Anker zum lazy RFP-Cockpit-Block (ersetzt Legacy-Tab „KI-Analyse" / `?tab=desk`). */
+    detailRfp: (id: string) => `/dashboard/deals/${id}#ausschreibung`,
     detailTab: (id: string, tab: 'overview' | 'desk' = 'overview') =>
-      tab === 'overview' ? `/dashboard/deals/${id}` : `/dashboard/deals/${id}?tab=${tab}`,
+      tab === 'desk' ? `/dashboard/deals/${id}#ausschreibung` : `/dashboard/deals/${id}`,
   },
   references: {
     root: '/dashboard/references',

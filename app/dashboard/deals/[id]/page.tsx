@@ -14,16 +14,32 @@ import { DealCockpitBriefingTrigger } from '../cockpit/deal-cockpit-briefing-tri
 import type { DealActivityItem } from '../cockpit/deal-activity-card'
 import { listDealDeadlines } from '@/lib/deals/deadlines'
 
-export default function DealDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default function DealDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ tab?: string }>
+}) {
   return (
     <Suspense fallback={<DealDetailSkeleton />}>
-      <DealDetailPageContent params={params} />
+      <DealDetailPageContent params={params} searchParams={searchParams} />
     </Suspense>
   )
 }
 
-async function DealDetailPageContent({ params }: { params: Promise<{ id: string }> }) {
+async function DealDetailPageContent({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ tab?: string }>
+}) {
   const { id } = await params
+  const sp = await searchParams
+  if (sp.tab === 'desk') {
+    redirect(ROUTES.deals.detailRfp(id))
+  }
 
   const user = await getRequestUser()
   if (!user) redirect(ROUTES.login)
