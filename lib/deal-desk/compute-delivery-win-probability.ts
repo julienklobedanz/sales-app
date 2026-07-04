@@ -1,6 +1,7 @@
 import type { DealDeskRedFlag } from '@/lib/deal-desk/mock-analysis'
 import type { RfpCoverageRow } from '@/lib/rfp-coverage'
 import type { ExtractedRfpRequirement } from '@/lib/rfp-requirements'
+import { MATCH_COVERAGE_THRESHOLD } from '@/lib/match/match-thresholds'
 
 export type OrgComplianceDoc = {
   document_type: string
@@ -27,7 +28,8 @@ export type WinProbabilityBreakdown = {
   totalComplianceRequirements: number
 }
 
-export const DESK_COVER_THRESHOLD = 0.55
+/** @deprecated Verwende `MATCH_COVERAGE_THRESHOLD` aus `@/lib/match/match-thresholds`. */
+export const DESK_COVER_THRESHOLD = MATCH_COVERAGE_THRESHOLD
 
 const WEIGHTS = {
   portfolio: 0.4,
@@ -149,7 +151,7 @@ export function computeDeliveryWinProbability(params: {
     coverage,
     complianceDocs,
     redFlags,
-    matchThreshold = DESK_COVER_THRESHOLD,
+    matchThreshold = MATCH_COVERAGE_THRESHOLD,
     refDate = new Date(),
   } = params
 

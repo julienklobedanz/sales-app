@@ -14,13 +14,13 @@ import type { RfpCoverageRow } from '@/lib/rfp-coverage'
 import type { ExtractedRfpRequirement } from '@/lib/rfp-requirements'
 import {
   computeDeliveryWinProbability,
-  DESK_COVER_THRESHOLD,
   formatWinProbabilityBreakdownSummary,
 } from '@/lib/deal-desk/compute-delivery-win-probability'
+import { MATCH_COVERAGE_THRESHOLD } from '@/lib/match/match-thresholds'
 import { loadOrgComplianceDocsForDelivery } from '@/lib/deal-desk/load-org-delivery-context'
 import { generateDealDeskAnswerForRequirement } from '@/lib/deal-desk/generate-desk-answer'
 
-export { DESK_COVER_THRESHOLD }
+export { MATCH_COVERAGE_THRESHOLD as DESK_COVER_THRESHOLD } from '@/lib/match/match-thresholds'
 
 const SME_CATEGORIES = new Set(['legal', 'compliance', 'pricing', 'finance', 'security'])
 
@@ -32,7 +32,7 @@ function buildSmeTasks(
   let n = 0
   for (const row of coverage) {
     const best = row.matches[0]
-    const hasMatch = best && best.similarity >= DESK_COVER_THRESHOLD
+    const hasMatch = best && best.similarity >= MATCH_COVERAGE_THRESHOLD
     const cat = (row.category ?? '').toLowerCase()
     if (!hasMatch || SME_CATEGORIES.has(cat)) {
       tasks.push({
@@ -139,7 +139,7 @@ export async function mapRfpAnalysisToDealDeskSnapshot(params: {
   const draftRows = await Promise.all(
     coverage.map(async (row) => {
       const best = row.matches[0]
-      const hasMatch = best && best.similarity >= DESK_COVER_THRESHOLD && !row.embedError
+      const hasMatch = best && best.similarity >= MATCH_COVERAGE_THRESHOLD && !row.embedError
 
       if (!hasMatch) {
         return {
@@ -183,7 +183,7 @@ export async function mapRfpAnalysisToDealDeskSnapshot(params: {
     `${requirements.length} Anforderungen extrahiert.`,
     `Lieferfähigkeit (Win Score ${winProbability}%): ${formatWinProbabilityBreakdownSummary(winBreakdown)}.`,
     matchedRows > 0
-      ? `${matchedRows} Referenz-Matches im Antwort-Entwurf (≥${Math.round(DESK_COVER_THRESHOLD * 100)} % Ähnlichkeit).`
+      ? `${matchedRows} Referenz-Matches im Antwort-Entwurf (≥${Math.round(MATCH_COVERAGE_THRESHOLD * 100)} % Ähnlichkeit).`
       : 'Referenz-Matches für Antwort-Entwürfe prüfen.',
   ].join(' ')
 

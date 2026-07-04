@@ -1,5 +1,6 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { useState } from 'react'
 
 import type { DealWithReferences } from '../types'
@@ -10,7 +11,6 @@ import { DealCockpitPromoteCard } from './deal-cockpit-promote-card'
 import { DealDeadlinesCard } from './deal-deadlines-card'
 import { DealFactsCard } from './deal-facts-card'
 import { DealProofSection } from './deal-proof-section'
-import { DealRfpBlockPlaceholder } from './deal-rfp-block-placeholder'
 import { DealSmartMatchDrawer } from './deal-smart-match-drawer'
 import { isRfpDeal } from '@/lib/deals/is-rfp-deal'
 import type { DealDeadlineRow } from '@/lib/deals/deadline-display'
@@ -24,12 +24,14 @@ export function DealCockpitClient({
   companies,
   orgProfiles,
   deadlines,
+  rfpBlock,
 }: {
   deal: DealWithReferences
   activities: DealActivityItem[]
   companies: Company[]
   orgProfiles: OrgProfile[]
   deadlines: DealDeadlineRow[]
+  rfpBlock?: ReactNode
 }) {
   const showRfpBlock = isRfpDeal(deal)
   const [matchDrawerOpen, setMatchDrawerOpen] = useState(false)
@@ -45,11 +47,7 @@ export function DealCockpitClient({
         <DealActivityCard dealId={deal.id} activities={activities} />
       </div>
 
-      {showRfpBlock ? (
-        <div className="mb-6">
-          <DealRfpBlockPlaceholder />
-        </div>
-      ) : null}
+      {showRfpBlock && rfpBlock ? <div className="mb-6">{rfpBlock}</div> : null}
 
       {!showRfpBlock ? (
         <div className="mb-6">

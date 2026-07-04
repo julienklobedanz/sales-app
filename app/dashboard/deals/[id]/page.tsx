@@ -8,6 +8,8 @@ import { ROUTES } from '@/lib/routes'
 
 import { getDealWithReferences } from '../actions'
 import { DealCockpitClient } from '../cockpit/deal-cockpit-client'
+import { DealRfpCockpitBlock } from '../cockpit/deal-rfp-cockpit-block'
+import { DealRfpCockpitSkeleton } from '../cockpit/deal-rfp-cockpit-skeleton'
 import type { DealActivityItem } from '../cockpit/deal-activity-card'
 import { listDealDeadlines } from '@/lib/deals/deadlines'
 
@@ -91,6 +93,13 @@ async function DealDetailPageContent({ params }: { params: Promise<{ id: string 
       deal={deal}
       activities={activities}
       deadlines={deadlines}
+      rfpBlock={
+        deal.is_rfp_mode ? (
+          <Suspense fallback={<DealRfpCockpitSkeleton />}>
+            <DealRfpCockpitBlock dealId={id} orgId={orgId} />
+          </Suspense>
+        ) : undefined
+      }
       companies={(companies ?? []) as Array<{ id: string; name: string }>}
       orgProfiles={(orgProfiles ?? []) as Array<{ id: string; full_name: string | null }>}
     />
