@@ -839,6 +839,7 @@ export type Database = {
           incumbent_provider: string | null
           industry: string | null
           is_public: boolean
+          is_rfp_mode: boolean
           organization_id: string
           requirements_text: string | null
           sales_manager_id: string | null
@@ -860,6 +861,7 @@ export type Database = {
           incumbent_provider?: string | null
           industry?: string | null
           is_public?: boolean
+          is_rfp_mode?: boolean
           organization_id: string
           requirements_text?: string | null
           sales_manager_id?: string | null
@@ -881,6 +883,7 @@ export type Database = {
           incumbent_provider?: string | null
           industry?: string | null
           is_public?: boolean
+          is_rfp_mode?: boolean
           organization_id?: string
           requirements_text?: string | null
           sales_manager_id?: string | null

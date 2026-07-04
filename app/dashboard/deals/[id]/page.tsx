@@ -1,28 +1,14 @@
-import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { Suspense } from 'react'
 
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { getRequestProfile, getRequestUser } from '@/lib/auth/request-user'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DealDetailSkeleton } from '@/components/dashboard/deal-detail-skeleton'
-
-import { getDealWithReferences, getReferencesForOrg } from '../actions'
-import { DealDetailContent } from '../deal-detail-content'
-import { DealMatchSection } from '../components/deal-match-section'
-import { DealRfpSection } from '../components/deal-rfp-section'
-import { RfpSidebarPanel } from '../rfp-sidebar-panel'
-import { DealDetailTabs } from '../deal-detail-tabs'
-import { DealDeskTabPanel } from '../deal-desk-tab-panel'
-import { DealStatusBadge } from '@/components/deal-status-badge'
-import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
-import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
-import { formatIndustryDisplay } from '@/lib/constants/industries'
-import { loadDealRfpSectionDataForDeal } from '@/lib/deal-desk/load-deal-rfp-section-data'
-import { formatDealVolume } from '@/lib/format'
 
-export const dynamic = 'force-dynamic'
+import { getDealWithReferences } from '../actions'
+import { DealCockpitClient } from '../cockpit/deal-cockpit-client'
+import type { DealActivityItem } from '../cockpit/deal-activity-card'
 
 export default function DealDetailPage({ params }: { params: Promise<{ id: string }> }) {
   return (
@@ -46,10 +32,6 @@ async function DealDetailPageContent({ params }: { params: Promise<{ id: string 
 
   const deal = await getDealWithReferences(id)
   if (!deal) notFound()
-
-  const initialRfpResult = await loadDealRfpSectionDataForDeal(supabase, orgId, id)
-
-  const allReferences = await getReferencesForOrg()
 
   const { data: companies } = await supabase
     .from('companies')
@@ -77,7 +59,7 @@ async function DealDetailPageContent({ params }: { params: Promise<{ id: string 
     created_at: string
   }
 
-  const activities = [
+  const activities: DealActivityItem[] = [
     {
       id: 'deal-created',
       at: new Date(deal.created_at),
@@ -102,84 +84,11 @@ async function DealDetailPageContent({ params }: { params: Promise<{ id: string 
   ]
 
   return (
-    <div>
-      <div className="mb-6 space-y-2">
-        <nav className="text-sm text-muted-foreground">
-          <Link href={ROUTES.deals.root} className="hover:underline">
-            Deals
-          </Link>
-          <span className="px-2">/</span>
-          <span className="text-foreground">{deal.title}</span>
-        </nav>
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0 space-y-2">
-            <h1 className={`${DASHBOARD_PAGE_TITLE_CLASS} flex flex-wrap items-center gap-2 break-words`}>
-              <span>{deal.title}</span>
-              <DealStatusBadge status={deal.status} />
-            </h1>
-            {deal.industry ? (
-              <p className="text-sm text-muted-foreground">{formatIndustryDisplay(deal.industry)}</p>
-            ) : null}
-          </div>
-        </div>
-      </div>
-
-      <DealDetailTabs
-        dealId={id}
-        overview={
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
-            <div className="space-y-6">
-              <DealRfpSection
-                deal={deal}
-                companies={(companies ?? []) as Array<{ id: string; name: string }>}
-                initialResult={initialRfpResult}
-              />
-              <DealMatchSection deal={deal} />
-              <DealDetailContent deal={deal} allReferences={allReferences} activities={activities} />
-            </div>
-
-            <div className="lg:sticky lg:top-6 space-y-4 h-fit">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Deal-Informationen</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                  <div className="flex justify-between gap-2">
-                    <span className="text-muted-foreground">Account</span>
-                    <span className="font-medium truncate max-w-[220px]">{deal.company_name ?? '—'}</span>
-                  </div>
-                  <div className="flex justify-between gap-2">
-                    <span className="text-muted-foreground">{COPY.roles.accountManager}</span>
-                    <span className="font-medium truncate max-w-[220px]">{deal.account_manager_name ?? '—'}</span>
-                  </div>
-                  <div className="flex justify-between gap-2">
-                    <span className="text-muted-foreground">{COPY.roles.salesManager}</span>
-                    <span className="font-medium truncate max-w-[220px]">{deal.sales_manager_name ?? '—'}</span>
-                  </div>
-                  <div className="flex justify-between gap-2">
-                    <span className="text-muted-foreground">Volumen</span>
-                    <span className="font-medium tabular-nums truncate max-w-[220px]">
-                      {formatDealVolume(deal.volume)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between gap-2">
-                    <span className="text-muted-foreground">Ablaufdatum</span>
-                    <span className="font-medium">{deal.expiry_date ?? '—'}</span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <RfpSidebarPanel
-                deal={deal}
-                companies={(companies ?? []) as Array<{ id: string; name: string }>}
-                orgProfiles={(orgProfiles ?? []) as Array<{ id: string; full_name: string | null }>}
-                allReferences={allReferences}
-              />
-            </div>
-          </div>
-        }
-        desk={<DealDeskTabPanel dealId={id} />}
-      />
-    </div>
+    <DealCockpitClient
+      deal={deal}
+      activities={activities}
+      companies={(companies ?? []) as Array<{ id: string; name: string }>}
+      orgProfiles={(orgProfiles ?? []) as Array<{ id: string; full_name: string | null }>}
+    />
   )
 }

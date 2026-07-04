@@ -22,6 +22,7 @@ describe('deal schema guardrail (F2)', () => {
       sales_manager_id: null,
       sales_manager_name: null,
       status: 'open',
+      is_rfp_mode: false,
       expiry_date: null,
       created_at: new Date().toISOString(),
       updated_at: null,

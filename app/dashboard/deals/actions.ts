@@ -75,6 +75,7 @@ export async function getDeals(): Promise<DealRow[]> {
       account_manager_id,
       sales_manager_id,
       status,
+      is_rfp_mode,
       expiry_date,
       created_at,
       updated_at,
@@ -170,6 +171,7 @@ export async function getDeals(): Promise<DealRow[]> {
       sales_manager_id: r.sales_manager_id ?? null,
       sales_manager_name: r.sales_manager_id ? names[r.sales_manager_id] ?? null : null,
       status: normalizeDealStatus(r.status),
+      is_rfp_mode: Boolean((r as { is_rfp_mode?: boolean }).is_rfp_mode),
       expiry_date: r.expiry_date ?? null,
       created_at: r.created_at ?? '',
       updated_at: r.updated_at ?? null,
@@ -211,6 +213,7 @@ export async function getDealWithReferences(id: string): Promise<DealWithReferen
       account_manager_id,
       sales_manager_id,
       status,
+      is_rfp_mode,
       expiry_date,
       created_at,
       updated_at,
@@ -297,6 +300,7 @@ export async function getDealWithReferences(id: string): Promise<DealWithReferen
     sales_manager_id: deal.sales_manager_id ?? null,
     sales_manager_name: salesManagerName,
     status: normalizeDealStatus(deal.status),
+    is_rfp_mode: Boolean((deal as { is_rfp_mode?: boolean }).is_rfp_mode),
     expiry_date: deal.expiry_date ?? null,
     created_at: deal.created_at ?? '',
     updated_at: deal.updated_at ?? null,
@@ -359,6 +363,7 @@ export async function createDeal(formData: FormData): Promise<{ success: boolean
       sales_manager_id: sales_manager_id || null,
       status,
       expiry_date: expiry_date || null,
+      is_rfp_mode: status === 'rfp',
     })
     .select('id')
     .single()
@@ -514,6 +519,8 @@ export async function updateDeal(args: {
   const title = args.title.trim()
   if (!title) return { success: false, error: 'Titel ist erforderlich.' }
 
+  const normalizedStatus = normalizeDealStatus(args.status)
+
   const { error } = await supabase
     .from('deals')
     .update({
@@ -521,7 +528,8 @@ export async function updateDeal(args: {
       company_id: args.company_id,
       industry: args.industry,
       volume: args.volume,
-      status: normalizeDealStatus(args.status),
+      status: normalizedStatus,
+      ...(normalizedStatus === 'rfp' ? { is_rfp_mode: true } : {}),
       expiry_date: args.expiry_date,
       is_public: args.is_public,
       account_manager_id: args.account_manager_id,
@@ -536,6 +544,27 @@ export async function updateDeal(args: {
 
   revalidatePath(ROUTES.deals.root)
   revalidatePath(ROUTES.deals.detail(args.id))
+  return { success: true }
+}
+
+/** Manuell RFP-Modus setzen (Promote/Demote). Nur explizite Nutzeraktion — nicht für stateless Coverage. */
+export async function setDealRfpMode(
+  dealId: string,
+  isRfpMode: boolean
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createServerSupabaseClient()
+  const orgId = await getSessionOrgId(supabase)
+  if (!orgId) return { success: false, error: 'Keine Organisation zugeordnet.' }
+
+  const { error } = await supabase
+    .from('deals')
+    .update({ is_rfp_mode: isRfpMode })
+    .eq('id', dealId)
+    .eq('organization_id', orgId)
+
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath(ROUTES.deals.detail(dealId))
   return { success: true }
 }
 

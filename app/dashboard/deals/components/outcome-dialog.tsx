@@ -24,9 +24,23 @@ import { recordDealOutcome } from "../actions"
 
 type ReferenceHelpfulChoice = "__none__" | "yes" | "no" | "na"
 
-export function OutcomeDialog({ dealId }: { dealId: string }) {
+export function OutcomeDialog({
+  dealId,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  showTrigger = true,
+  triggerVariant = 'default',
+}: {
+  dealId: string
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  showTrigger?: boolean
+  triggerVariant?: 'default' | 'compact'
+}) {
   const router = useRouter()
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
+  const open = controlledOpen ?? internalOpen
+  const setOpen = controlledOnOpenChange ?? setInternalOpen
   const [outcome, setOutcome] = useState<"won" | "lost" | "withdrawn" | "">("")
   const [comment, setComment] = useState("")
   const [referenceHelpful, setReferenceHelpful] = useState<ReferenceHelpfulChoice>("__none__")
@@ -68,12 +82,19 @@ export function OutcomeDialog({ dealId }: { dealId: string }) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button type="button" size="sm" variant="outline" className="w-full">
-          <AppIcon icon={Trophy} size={16} className="mr-2" />
-          Ausgang festhalten
-        </Button>
-      </DialogTrigger>
+      {showTrigger ? (
+        <DialogTrigger asChild>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className={triggerVariant === 'compact' ? 'h-8 shrink-0' : 'w-full'}
+          >
+            <AppIcon icon={Trophy} size={16} className={triggerVariant === 'compact' ? 'mr-1' : 'mr-2'} />
+            {triggerVariant === 'compact' ? 'Ausgang' : 'Ausgang festhalten'}
+          </Button>
+        </DialogTrigger>
+      ) : null}
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Ausgang des Deals</DialogTitle>

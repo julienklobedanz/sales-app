@@ -130,6 +130,16 @@ export const COPY = {
     filterStatusWon: 'Gewonnen',
     filterStatusLost: 'Verloren',
     referenceCountColumn: 'Referenzen',
+    cockpit: {
+      factsTitle: 'Deal-Fakten',
+      activityTitle: 'Aktivität',
+      actionsMenu: 'Aktionen',
+      generateBriefing: 'Briefing erzeugen',
+      promoteToRfp: 'Als Ausschreibung bearbeiten',
+      demoteFromRfp: 'Kein Ausschreibungs-Deal',
+      rfpBlockPlaceholder: 'Ausschreibungs-Analyse folgt in den nächsten Schritten.',
+      legacySectionNote: 'Die Bereiche unten werden schrittweise ins Deal-Cockpit integriert.',
+    },
   },
   accounts: {
     searchCompaniesPlaceholder: 'Firma suchen …',

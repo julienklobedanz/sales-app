@@ -35,12 +35,20 @@ export function EditDealDialog({
   deal,
   companies,
   orgProfiles,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  showTrigger = true,
 }: {
   deal: DealWithReferences
   companies: Company[]
   orgProfiles: OrgProfile[]
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  showTrigger?: boolean
 }) {
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
+  const open = controlledOpen ?? internalOpen
+  const setOpen = controlledOnOpenChange ?? setInternalOpen
   const [saving, setSaving] = useState(false)
 
   const [title, setTitle] = useState(deal.title)
@@ -89,12 +97,14 @@ export function EditDealDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button type="button" size="sm" variant="outline" className="w-full">
-          <AppIcon icon={Pencil} size={16} className="mr-2" />
-          Bearbeiten
-        </Button>
-      </DialogTrigger>
+      {showTrigger ? (
+        <DialogTrigger asChild>
+          <Button type="button" size="sm" variant="outline" className="w-full">
+            <AppIcon icon={Pencil} size={16} className="mr-2" />
+            Bearbeiten
+          </Button>
+        </DialogTrigger>
+      ) : null}
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Deal bearbeiten</DialogTitle>

@@ -23,6 +23,8 @@ export type DealRow = {
   sales_manager_id: string | null
   sales_manager_name: string | null
   status: DealStatus
+  /** Cockpit-Gate: konditionaler RFP-Block (unabhängig vom Pipeline-Status). */
+  is_rfp_mode: boolean
   expiry_date: string | null
   created_at: string
   updated_at: string | null
@@ -45,6 +47,7 @@ export const DEAL_TABLE_ALLOWED_COLUMNS = [
   'industry',
   'volume',
   'status',
+  'is_rfp_mode',
   'expiry_date',
   'requirements_text',
   'account_manager_id',
