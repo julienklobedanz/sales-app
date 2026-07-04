@@ -1,6 +1,7 @@
 import type { DealDeskMockAnalysis } from '@/lib/deal-desk/mock-analysis'
 import type { RfpCoverageRow } from '@/lib/rfp-coverage'
 import type { ExtractedRfpRequirement } from '@/lib/rfp-requirements'
+import type { EligibilityCriterion } from '@/lib/deals/eligibility-criteria-schema'
 
 import { RFP_COCKPIT_ENGINE_VERSION_CURRENT } from '@/lib/deals/rfp-cockpit-metrics'
 
@@ -8,6 +9,8 @@ import { RFP_COCKPIT_ENGINE_VERSION_CURRENT } from '@/lib/deals/rfp-cockpit-metr
 export type PersistedDealDeskAnalysisSnapshot = DealDeskMockAnalysis & {
   requirements?: ExtractedRfpRequirement[]
   coverage?: RfpCoverageRow[]
+  /** Strukturierte Eignungs-/K.O.-Kriterien aus RFP-Extraktion (Phase 5). */
+  eligibilityCriteria?: EligibilityCriterion[]
   /** ISO-Zeitpunkt der Analyse (Cockpit-Staleness). */
   analyzedAt?: string
   /** 2 = judgeRfpRelevance + zentrale Threshold (Phase 6+); 1 = Legacy. */
@@ -24,6 +27,7 @@ export function toPersistedAnalysisSnapshot(input: {
   snapshot: DealDeskMockAnalysis
   requirements: ExtractedRfpRequirement[]
   coverage: RfpCoverageRow[]
+  eligibilityCriteria?: EligibilityCriterion[]
   analyzedAt?: string
   engineVersion?: number
 }): PersistedDealDeskAnalysisSnapshot {
@@ -31,6 +35,9 @@ export function toPersistedAnalysisSnapshot(input: {
     ...input.snapshot,
     requirements: input.requirements,
     coverage: input.coverage,
+    ...(input.eligibilityCriteria?.length
+      ? { eligibilityCriteria: input.eligibilityCriteria }
+      : {}),
     analyzedAt: input.analyzedAt ?? new Date().toISOString(),
     engineVersion: input.engineVersion ?? 1,
   }

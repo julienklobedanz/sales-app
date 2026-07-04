@@ -84,6 +84,10 @@ export function SettingsTabs({
       auditLogRetentionDays: number
       referenceHighlightGlossary: string
     }
+    capabilitySettings: {
+      capabilityProfile: import('@/lib/organizations/capability-profile-types').CapabilityProfile
+      icpDefinition: import('@/lib/deals/icp-rubric').IcpDefinition
+    }
     dateDisplayFormat: string
   }
   teamMembers: Parameters<typeof SettingsTeamCard>[0]['initialMembers']

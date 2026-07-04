@@ -14,6 +14,7 @@ import { getTeamMembers } from './invite-actions'
 import { SettingsTabs } from './settings-tabs'
 import { getOrganizationCrmConnectionPublicStatus } from '@/lib/crm/connections'
 import { isHubSpotConfigured } from '@/lib/crm/hubspot/config'
+import { parseOrgCapabilitySettings } from '@/lib/organizations/capability-profile-types'
 
 type AuditLogRow = {
   id: string
@@ -266,6 +267,9 @@ export default async function SettingsPage() {
   const apiSettingsParsed = parseOrganizationApiSettings(
     (orgRow as { api_settings?: unknown } | null)?.api_settings
   )
+  const capabilitySettings = parseOrgCapabilitySettings(
+    (orgRow as { workflow_settings?: unknown } | null)?.workflow_settings
+  )
 
   return (
     <div className="flex flex-col space-y-6">
@@ -319,6 +323,7 @@ export default async function SettingsPage() {
           workflowSettings: parseOrganizationWorkflowSettings(
             (orgRow as { workflow_settings?: unknown } | null)?.workflow_settings
           ),
+          capabilitySettings,
         }}
         teamMembers={teamMembers}
         auditLogs={auditLogs}

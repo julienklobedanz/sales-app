@@ -6,6 +6,10 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { writeAuditLog } from '@/lib/audit/log-audit'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
+import type { Json } from '@/lib/database.types'
+import { mergeWorkflowSettings } from '@/lib/organizations/workflow-settings-merge'
+import type { CapabilityProfile } from '@/lib/organizations/capability-profile-types'
+import type { IcpDefinition } from '@/lib/deals/icp-rubric'
 
 type ActionResult = { success: true } | { success: false; error: string }
 
@@ -190,7 +194,7 @@ export async function updateWorkflowSettings(input: {
   const { error } = await supabase
     .from('organizations')
     .update({
-      workflow_settings: workflowSettings,
+      workflow_settings: workflowSettings as Json,
       updated_at: new Date().toISOString(),
     })
     .eq('id', organizationId)
@@ -251,7 +255,7 @@ export async function updateWorkspaceSecurityCompliance(input: {
   const { error } = await supabase
     .from('organizations')
     .update({
-      workflow_settings: workflowSettings,
+      workflow_settings: workflowSettings as Json,
       updated_at: new Date().toISOString(),
     })
     .eq('id', organizationId)
@@ -316,7 +320,7 @@ export async function updateWorkspaceReferenceHighlightGlossary(raw: string): Pr
   const { error } = await supabase
     .from('organizations')
     .update({
-      workflow_settings: workflowSettings,
+      workflow_settings: workflowSettings as Json,
       updated_at: new Date().toISOString(),
     })
     .eq('id', organizationId)
@@ -324,6 +328,55 @@ export async function updateWorkspaceReferenceHighlightGlossary(raw: string): Pr
   if (error) return { success: false, error: error.message }
   revalidatePath(ROUTES.settings)
   revalidatePath(ROUTES.references.root)
+  return { success: true }
+}
+
+export async function updateOrgCapabilitySettings(input: {
+  capabilityProfile: CapabilityProfile
+  icpDefinition: IcpDefinition
+}): Promise<ActionResult> {
+  const { supabase, user, organizationId } = await getContext()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+  if (!organizationId) {
+    return { success: false, error: 'Keine Organisation zugeordnet.' }
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('system_role, function_role')
+    .eq('id', user.id)
+    .single()
+  const { systemRole } = parseProfileRoles(profile)
+  if (!isSystemAdmin(systemRole)) {
+    return {
+      success: false,
+      error: 'Nur Workspace-Administratoren können das Fähigkeitsprofil bearbeiten.',
+    }
+  }
+
+  const { data: orgRow, error: readErr } = await supabase
+    .from('organizations')
+    .select('workflow_settings')
+    .eq('id', organizationId)
+    .single()
+  if (readErr) return { success: false, error: readErr.message }
+
+  const workflowSettings = mergeWorkflowSettings(orgRow?.workflow_settings, {
+    capabilityProfile: input.capabilityProfile,
+    icpDefinition: input.icpDefinition,
+  })
+
+  const { error } = await supabase
+    .from('organizations')
+    .update({
+      workflow_settings: workflowSettings as Json,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', organizationId)
+
+  if (error) return { success: false, error: error.message }
+  revalidatePath(ROUTES.settings)
+  revalidatePath(ROUTES.deals.root)
   return { success: true }
 }
 

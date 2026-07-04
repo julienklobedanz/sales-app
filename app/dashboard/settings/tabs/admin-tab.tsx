@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch'
 import type { DevRolePreview } from '@/lib/dev-role-preview'
 import { SettingsBillingCard } from '../settings-billing-card'
 import { SettingsDevRoleCard } from '../settings-dev-role-card'
+import { SettingsCapabilityProfile } from '../settings-capability-profile'
 import {
   updateWorkspaceAdminSettings,
   updateWorkspaceReferenceHighlightGlossary,
@@ -43,6 +44,10 @@ type AdminTabProps = {
       publicLinkRequirePasswordForNew: boolean
       auditLogRetentionDays: number
       referenceHighlightGlossary: string
+    }
+    capabilitySettings: {
+      capabilityProfile: import('@/lib/organizations/capability-profile-types').CapabilityProfile
+      icpDefinition: import('@/lib/deals/icp-rubric').IcpDefinition
     }
   }
   subdomain: string
@@ -325,6 +330,14 @@ export function AdminTab({
             </div>
           </CardContent>
         </div>
+
+        {roleSwitcher.isServerAdmin ? (
+          <SettingsCapabilityProfile
+            initialProfile={org.capabilitySettings.capabilityProfile}
+            initialIcp={org.capabilitySettings.icpDefinition}
+            canEdit={roleSwitcher.isServerAdmin}
+          />
+        ) : null}
 
         {roleSwitcher.isServerAdmin ? (
           <div className={SETTINGS_CARD_CLASS}>

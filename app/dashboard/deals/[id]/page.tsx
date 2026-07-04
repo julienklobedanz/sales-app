@@ -96,7 +96,15 @@ async function DealDetailPageContent({ params }: { params: Promise<{ id: string 
       rfpBlock={
         deal.is_rfp_mode ? (
           <Suspense fallback={<DealRfpCockpitSkeleton />}>
-            <DealRfpCockpitBlock dealId={id} orgId={orgId} />
+            <DealRfpCockpitBlock
+              dealId={id}
+              orgId={orgId}
+              dealContext={{
+                title: deal.title,
+                industry: deal.industry,
+                volume: deal.volume,
+              }}
+            />
           </Suspense>
         ) : undefined
       }

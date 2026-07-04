@@ -3,9 +3,17 @@ import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import type { PersistedDealDeskAnalysisSnapshot } from '@/lib/deal-desk/analysis-snapshot'
+import { loadOrgComplianceDocsForDelivery } from '@/lib/deal-desk/load-org-delivery-context'
 import type { WinProbabilityBreakdown } from '@/lib/deal-desk/compute-delivery-win-probability'
 import type { RfpCoverageRow } from '@/lib/rfp-coverage'
 import type { ExtractedRfpRequirement } from '@/lib/rfp-requirements'
+import type { EligibilityAssessment, EligibilityCriterion } from '@/lib/deals/eligibility-criteria-schema'
+import { compareEligibilityCriteria } from '@/lib/deals/compare-eligibility-criteria'
+import { isIcpDefinitionEmpty, scoreIcpRubrik, type IcpRubrikScore } from '@/lib/deals/icp-rubric'
+import {
+  loadOrgCapabilitySettings,
+  loadOrgReferenceCount,
+} from '@/lib/organizations/capability-profile'
 
 import {
   computeRequirementCoveragePercent,
@@ -24,14 +32,23 @@ export type DealRfpCockpitData = {
   coveragePercent: number
   icpFitLabel: string | null
   icpSummary: string | null
+  icpRubrik: IcpRubrikScore | null
   requirementsCount: number
+  eligibilityCriteria: EligibilityCriterion[]
+  eligibilityAssessment: EligibilityAssessment | null
+  capabilityProfileEmpty: boolean
   recommendation: ReturnType<typeof resolveBidRecommendation>
 }
 
 export async function loadDealRfpCockpitData(
   supabase: SupabaseClient,
   organizationId: string,
-  dealId: string
+  dealId: string,
+  dealContext?: {
+    industry?: string | null
+    volume?: string | null
+    title?: string | null
+  }
 ): Promise<DealRfpCockpitData | null> {
   const { data: project, error } = await supabase
     .from('deal_desk_projects')
@@ -57,6 +74,32 @@ export async function loadDealRfpCockpitData(
     ? snap.requirements
     : []
   const coverage: RfpCoverageRow[] = Array.isArray(snap.coverage) ? snap.coverage : []
+  const eligibilityCriteria: EligibilityCriterion[] = Array.isArray(snap.eligibilityCriteria)
+    ? snap.eligibilityCriteria
+    : []
+
+  const [orgSettings, complianceDocs, referenceCount] = await Promise.all([
+    loadOrgCapabilitySettings(supabase, organizationId),
+    loadOrgComplianceDocsForDelivery(supabase, organizationId),
+    loadOrgReferenceCount(supabase, organizationId),
+  ])
+
+  const eligibilityAssessment =
+    eligibilityCriteria.length > 0
+      ? compareEligibilityCriteria(eligibilityCriteria, {
+          profile: orgSettings.capabilityProfile,
+          complianceDocs,
+          referenceCount,
+        })
+      : null
+
+  const icpRubrik = !isIcpDefinitionEmpty(orgSettings.icpDefinition)
+    ? scoreIcpRubrik(orgSettings.icpDefinition, {
+        industry: dealContext?.industry,
+        volume: dealContext?.volume,
+        title: dealContext?.title,
+      })
+    : null
 
   const analyzedAt =
     (typeof snap.analyzedAt === 'string' && snap.analyzedAt) ||
@@ -70,6 +113,12 @@ export async function loadDealRfpCockpitData(
       ? snap.winProbability
       : 0
 
+  const capabilityProfileEmpty =
+    !orgSettings.capabilityProfile.employeeCount &&
+    !orgSettings.capabilityProfile.annualRevenueEur &&
+    !orgSettings.capabilityProfile.regions?.length &&
+    !orgSettings.capabilityProfile.certifiedRoles?.length
+
   return {
     projectId: String(project.id),
     analyzedAt,
@@ -80,8 +129,12 @@ export async function loadDealRfpCockpitData(
     winProbabilityBreakdown: snap.winProbabilityBreakdown ?? null,
     coveragePercent: computeRequirementCoveragePercent(requirements, coverage),
     icpFitLabel: snap.icpFitLabel ?? null,
-    icpSummary: snap.icpSummary ?? null,
+    icpSummary: icpRubrik?.summary ?? snap.icpSummary ?? null,
+    icpRubrik,
     requirementsCount: requirements.length,
+    eligibilityCriteria,
+    eligibilityAssessment,
+    capabilityProfileEmpty,
     recommendation: resolveBidRecommendation({
       winProbability,
       hasAnalysis,

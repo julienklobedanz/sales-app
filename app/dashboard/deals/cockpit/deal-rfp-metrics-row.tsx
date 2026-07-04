@@ -1,5 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { COPY } from '@/lib/copy'
+import {
+  eligibilityVerdictLabel,
+  eligibilityVerdictTone,
+} from '@/lib/deals/compare-eligibility-criteria'
 import { formatAngebotsReifeBreakdown } from '@/lib/deals/rfp-cockpit-metrics'
 import type { DealRfpCockpitData } from '@/lib/deals/load-deal-rfp-cockpit-data'
 import { cn } from '@/lib/utils'
@@ -49,11 +53,36 @@ export function DealRfpMetricsRow({ data }: { data: DealRfpCockpitData }) {
     ? `${formatAngebotsReifeBreakdown(data.winProbabilityBreakdown)} · Coverage ${data.coveragePercent}%`
     : COPY.deals.cockpit.metricsStaleHint
 
-  const icpValue = showMetrics && data.icpFitLabel ? data.icpFitLabel : '—'
+  const eligibilityAssessment = data.eligibilityAssessment
+  const eligibilityValue =
+    showMetrics && eligibilityAssessment
+      ? eligibilityVerdictLabel(eligibilityAssessment.verdict)
+      : '—'
+  const eligibilityTone =
+    showMetrics && eligibilityAssessment
+      ? eligibilityVerdictTone(eligibilityAssessment.verdict)
+      : 'muted'
+  const eligibilitySub =
+    showMetrics && eligibilityAssessment
+      ? eligibilityAssessment.summary.slice(0, 120) +
+        (eligibilityAssessment.summary.length > 120 ? '…' : '')
+      : data.capabilityProfileEmpty
+        ? COPY.deals.cockpit.metricEligibilityEmptyProfile
+        : COPY.deals.cockpit.metricEligibilityHint
+
+  const icpRubrik = data.icpRubrik
+  const icpValue =
+    showMetrics && icpRubrik
+      ? `${icpRubrik.score}/${icpRubrik.max}`
+      : showMetrics && data.icpFitLabel
+        ? data.icpFitLabel
+        : '—'
   const icpSub =
-    showMetrics && data.icpSummary
-      ? data.icpSummary.slice(0, 120) + (data.icpSummary.length > 120 ? '…' : '')
-      : COPY.deals.cockpit.icpPlaceholder
+    showMetrics && icpRubrik
+      ? icpRubrik.summary
+      : showMetrics && data.icpSummary
+        ? data.icpSummary.slice(0, 120) + (data.icpSummary.length > 120 ? '…' : '')
+        : COPY.deals.cockpit.icpPlaceholder
 
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -65,15 +94,15 @@ export function DealRfpMetricsRow({ data }: { data: DealRfpCockpitData }) {
       />
       <MetricTile
         label={COPY.deals.cockpit.metricEligibility}
-        value={COPY.deals.cockpit.metricEligibilityPlaceholder}
-        sub={COPY.deals.cockpit.metricEligibilityHint}
-        tone="muted"
+        value={eligibilityValue}
+        sub={eligibilitySub}
+        tone={eligibilityTone}
       />
       <MetricTile
         label={COPY.deals.cockpit.metricIcpFit}
         value={icpValue}
         sub={icpSub}
-        tone="muted"
+        tone={icpRubrik && icpRubrik.score >= 4 ? 'go' : icpRubrik && icpRubrik.score >= 2 ? 'caution' : 'muted'}
       />
     </div>
   )

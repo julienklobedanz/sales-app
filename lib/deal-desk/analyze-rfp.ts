@@ -11,6 +11,8 @@ import { enrichRedFlagsWithDocuments } from '@/lib/deal-desk/red-flag-document-m
 import { buildRfpCoverageReport, type RfpCoverageRow } from '@/lib/rfp-coverage'
 import { extractRequirementsFromRfpText, type ExtractedRfpRequirement } from '@/lib/rfp-requirements'
 import { extractTimelineFromRfpText } from '@/lib/rfp-timeline'
+import { extractEligibilityCriteriaFromRfpText } from '@/lib/deals/extract-eligibility-criteria'
+import type { EligibilityCriterion } from '@/lib/deals/eligibility-criteria-schema'
 import { isOpenAiQuotaErrorMessage } from '@/lib/openai-api-errors'
 
 export type AnalyzeRfpDealContext = {
@@ -42,6 +44,7 @@ export type AnalyzeRfpResult = {
   snapshot: DealDeskMockAnalysis
   requirements: ExtractedRfpRequirement[]
   coverage: RfpCoverageRow[]
+  eligibilityCriteria: EligibilityCriterion[]
 }
 
 export type AnalyzeRfpError = { error: string; isQuotaError?: boolean }
@@ -82,6 +85,16 @@ export async function analyzeRfp(
   const extracted = await extractRequirementsFromRfpText(apiKey, mergedText)
   if ('error' in extracted) {
     return { error: extracted.error, isQuotaError: quotaFromError(extracted.error) }
+  }
+
+  const eligibilityRes = await extractEligibilityCriteriaFromRfpText(apiKey, mergedText)
+  let eligibilityCriteria: EligibilityCriterion[] = []
+  if ('error' in eligibilityRes) {
+    if (quotaFromError(eligibilityRes.error)) {
+      return { error: eligibilityRes.error, isQuotaError: true }
+    }
+  } else {
+    eligibilityCriteria = eligibilityRes.criteria
   }
 
   const coverage = await buildRfpCoverageReport(supabase, {
@@ -132,5 +145,6 @@ export async function analyzeRfp(
     snapshot,
     requirements: extracted.requirements,
     coverage,
+    eligibilityCriteria,
   }
 }

@@ -7,18 +7,25 @@ import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 import { loadDealRfpCockpitData } from '@/lib/deals/load-deal-rfp-cockpit-data'
 
+import { DealRfpEligibilitySection } from './deal-rfp-eligibility-section'
 import { DealRfpMetricsRow } from './deal-rfp-metrics-row'
 import { DealRfpRecommendationBanner } from './deal-rfp-recommendation-banner'
 
 export async function DealRfpCockpitBlock({
   dealId,
   orgId,
+  dealContext,
 }: {
   dealId: string
   orgId: string
+  dealContext?: {
+    industry?: string | null
+    volume?: string | null
+    title?: string | null
+  }
 }) {
   const supabase = await createServerSupabaseClient()
-  const data = await loadDealRfpCockpitData(supabase, orgId, dealId)
+  const data = await loadDealRfpCockpitData(supabase, orgId, dealId, dealContext)
 
   if (!data) {
     return (
@@ -44,6 +51,7 @@ export async function DealRfpCockpitBlock({
       </div>
       <DealRfpRecommendationBanner data={data} />
       <DealRfpMetricsRow data={data} />
+      <DealRfpEligibilitySection data={data} />
       <p className="text-xs text-muted-foreground">{COPY.deals.cockpit.rfpBlockPhaseHint}</p>
     </section>
   )
