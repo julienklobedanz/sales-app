@@ -138,7 +138,12 @@ export const COPY = {
       promoteToRfp: 'Als Ausschreibung bearbeiten',
       demoteFromRfp: 'Kein Ausschreibungs-Deal',
       rfpBlockPlaceholder: 'Ausschreibungs-Analyse folgt in den nächsten Schritten.',
-      legacySectionNote: 'Die Bereiche unten werden schrittweise ins Deal-Cockpit integriert.',
+      proofTitle: 'Referenzen am Deal',
+      proofEmpty: 'Noch keine Referenzen verknüpft — finde passende Beweise für diesen Deal.',
+      findReference: 'Referenz finden',
+      findReferenceTitle: 'Referenz finden',
+      findReferenceDescription:
+        'Smart Search und RFP-Coverage mit vorausgefülltem Deal-Kontext. Treffer können direkt verknüpft werden.',
     },
   },
   accounts: {

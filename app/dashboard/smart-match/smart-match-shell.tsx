@@ -190,11 +190,15 @@ function Seg<T extends string>({
 export function SmartMatchShell({
   deals,
   initialDealId,
+  variant = 'page',
 }: {
   deals: DealRow[]
   initialDealId: string | null
+  /** `embedded`: Drawer im Deal-Cockpit — fester Deal-Kontext, kein Seiten-Titel. */
+  variant?: 'page' | 'embedded'
 }) {
   const router = useRouter()
+  const embedded = variant === 'embedded'
 
   const initialDeal = deals.find((d) => d.id === initialDealId) ?? null
 
@@ -248,12 +252,14 @@ export function SmartMatchShell({
     if (query.trim() && results !== null) void runSearch({ filters: next })
   }
   function selectDeal(id: string) {
+    if (embedded) return
     setSelectedDealId(id)
     setDealPickerOpen(false)
     setDealQuery('')
     if (query.trim()) void runSearch({ dealId: id })
   }
   function clearDeal() {
+    if (embedded) return
     setSelectedDealId(null)
     if (query.trim() && results !== null) void runSearch({ dealId: null })
   }
@@ -275,10 +281,10 @@ export function SmartMatchShell({
   const hasSearched = loading || results !== null
 
   return (
-    <div className="max-w-[1000px] space-y-4">
+    <div className={embedded ? 'space-y-3' : 'max-w-[1000px] space-y-4'}>
       {/* Titel + Modus */}
-      <div className="flex items-center justify-between gap-3">
-        <h1 className={DASHBOARD_PAGE_TITLE_CLASS}>Smart Match</h1>
+      <div className={`flex items-center gap-3 ${embedded ? 'justify-end' : 'justify-between'}`}>
+        {!embedded ? <h1 className={DASHBOARD_PAGE_TITLE_CLASS}>Smart Match</h1> : null}
         <Seg
           value={mode}
           onChange={setMode}
@@ -315,16 +321,18 @@ export function SmartMatchShell({
                 {selectedDeal ? (
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[13px] text-primary">
                     <span className="max-w-[220px] truncate">Deal: {selectedDeal.title}</span>
-                    <button
-                      type="button"
-                      onClick={clearDeal}
-                      aria-label="Deal-Kontext entfernen"
-                      className="opacity-70 hover:opacity-100"
-                    >
-                      ✕
-                    </button>
+                    {!embedded ? (
+                      <button
+                        type="button"
+                        onClick={clearDeal}
+                        aria-label="Deal-Kontext entfernen"
+                        className="opacity-70 hover:opacity-100"
+                      >
+                        ✕
+                      </button>
+                    ) : null}
                   </span>
-                ) : (
+                ) : embedded ? null : (
                   <Popover open={dealPickerOpen} onOpenChange={setDealPickerOpen}>
                     <PopoverTrigger asChild>
                       <button
