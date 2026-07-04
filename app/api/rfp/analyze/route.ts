@@ -5,6 +5,7 @@ import { toPersistedAnalysisSnapshot } from '@/lib/deal-desk/analysis-snapshot'
 import { ensureDealDeskProjectForDeal } from '@/lib/deal-desk/ensure-deal-desk-project'
 import { defaultWorkspaceState } from '@/lib/deal-desk/workspace-state'
 import { persistNormalizedWorkspace } from '@/lib/deal-desk/workspace-persistence'
+import { syncRfpDeadlinesFromTimeline } from '@/lib/deals/deadlines'
 import { extractPlainTextFromFile } from '@/lib/extract-document-plain-text'
 import { loadReferenceVisibilityForUser } from '@/lib/roles/load-reference-visibility'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
@@ -218,6 +219,12 @@ export async function POST(req: NextRequest) {
   if (doneError) {
     return fail(doneError.message)
   }
+
+  await syncRfpDeadlinesFromTimeline(supabase, {
+    dealId,
+    organizationId: orgId,
+    timelineItems: analyzed.snapshot.timelineItems ?? [],
+  })
 
   return NextResponse.json({
     success: true,

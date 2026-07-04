@@ -769,6 +769,75 @@ export type Database = {
           },
         ]
       }
+      deal_deadlines: {
+        Row: {
+          id: string
+          deal_id: string
+          organization_id: string
+          kind: Database["public"]["Enums"]["deal_deadline_kind"]
+          label: string
+          due_at: string | null
+          due_text: string | null
+          is_approximate: boolean
+          source: Database["public"]["Enums"]["deal_deadline_source"]
+          source_key: string
+          suppressed_at: string | null
+          pinned: boolean
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          deal_id: string
+          organization_id: string
+          kind?: Database["public"]["Enums"]["deal_deadline_kind"]
+          label: string
+          due_at?: string | null
+          due_text?: string | null
+          is_approximate?: boolean
+          source: Database["public"]["Enums"]["deal_deadline_source"]
+          source_key: string
+          suppressed_at?: string | null
+          pinned?: boolean
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          deal_id?: string
+          organization_id?: string
+          kind?: Database["public"]["Enums"]["deal_deadline_kind"]
+          label?: string
+          due_at?: string | null
+          due_text?: string | null
+          is_approximate?: boolean
+          source?: Database["public"]["Enums"]["deal_deadline_source"]
+          source_key?: string
+          suppressed_at?: string | null
+          pinned?: boolean
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_deadlines_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_deadlines_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deal_rfp_analyses: {
         Row: {
           coverage_report: Json | null
@@ -2368,6 +2437,19 @@ export type Database = {
         Returns: Json
       }
       create_organization: { Args: { org_name: string }; Returns: string }
+      upsert_deal_rfp_deadline: {
+        Args: {
+          p_deal_id: string
+          p_organization_id: string
+          p_kind: Database["public"]["Enums"]["deal_deadline_kind"]
+          p_label: string
+          p_due_at: string | null
+          p_due_text: string | null
+          p_is_approximate: boolean
+          p_source_key: string
+        }
+        Returns: undefined
+      }
       create_organization_invite:
         | {
             Args: {
@@ -2529,6 +2611,14 @@ export type Database = {
     }
     Enums: {
       approval_status: "pending" | "approved" | "rejected"
+      deal_deadline_kind:
+        | "submission"
+        | "questions"
+        | "presentation"
+        | "award_expected"
+        | "custom"
+        | "internal_review"
+      deal_deadline_source: "rfp" | "manual"
       function_role: "sales_rep" | "account_manager" | "sales_leader"
       reference_status:
         | "draft"

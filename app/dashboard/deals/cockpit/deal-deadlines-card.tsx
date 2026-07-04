@@ -1,0 +1,300 @@
+'use client'
+
+import { useMemo, useState } from 'react'
+import { toast } from 'sonner'
+import { ArrowRight01Icon, CirclePlus, PencilEdit01Icon, Trash2 } from '@hugeicons/core-free-icons'
+
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { AppIcon } from '@/lib/icons'
+import { COPY } from '@/lib/copy'
+import {
+  formatDeadlineCountdownLabel,
+  formatNextDeadlineHeadline,
+  pickNextDeadline,
+  type DealDeadlineRow,
+} from '@/lib/deals/deadline-display'
+import { DEAL_DEADLINE_KIND_LABELS, type DealDeadlineKind } from '@/lib/deals/deadline-types'
+
+import {
+  createDealDeadlineManual,
+  suppressDealDeadlineAction,
+  updateDealDeadlineAction,
+} from '../deadline-actions'
+
+const KIND_OPTIONS = Object.entries(DEAL_DEADLINE_KIND_LABELS) as [DealDeadlineKind, string][]
+
+export function DealDeadlinesCard({
+  dealId,
+  deadlines,
+}: {
+  dealId: string
+  deadlines: DealDeadlineRow[]
+}) {
+  const [expanded, setExpanded] = useState(false)
+  const [addOpen, setAddOpen] = useState(false)
+  const [editTarget, setEditTarget] = useState<DealDeadlineRow | null>(null)
+
+  const sorted = useMemo(() => {
+    return [...deadlines].sort((a, b) => {
+      if (a.due_at && b.due_at) return a.due_at.localeCompare(b.due_at)
+      if (a.due_at) return -1
+      if (b.due_at) return 1
+      return a.label.localeCompare(b.label)
+    })
+  }, [deadlines])
+
+  const next = useMemo(() => pickNextDeadline(sorted), [sorted])
+  const headline = next ? formatNextDeadlineHeadline(next) : null
+
+  return (
+    <Card className="mb-6">
+      <Collapsible open={expanded} onOpenChange={setExpanded}>
+        <CardContent className="py-4">
+          <div className="flex flex-wrap items-start gap-4">
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
+                className="flex min-w-0 flex-1 items-center gap-3 text-left"
+              >
+                <AppIcon
+                  icon={ArrowRight01Icon}
+                  size={16}
+                  className={`shrink-0 text-muted-foreground transition-transform ${expanded ? 'rotate-90' : ''}`}
+                />
+                <div className="min-w-0">
+                  {headline ? (
+                    <>
+                      <div className="text-2xl font-bold tabular-nums tracking-tight">
+                        {headline.title}
+                      </div>
+                      <div className="text-sm text-muted-foreground">{headline.subtitle}</div>
+                    </>
+                  ) : (
+                    <div className="text-sm text-muted-foreground">{COPY.deals.cockpit.deadlinesEmpty}</div>
+                  )}
+                </div>
+              </button>
+            </CollapsibleTrigger>
+
+            <Popover open={addOpen} onOpenChange={setAddOpen}>
+              <PopoverTrigger asChild>
+                <Button type="button" size="sm" variant="outline" className="shrink-0">
+                  <AppIcon icon={CirclePlus} size={16} className="mr-1" />
+                  {COPY.deals.cockpit.addDeadline}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-80">
+                <DeadlineForm
+                  title={COPY.deals.cockpit.addDeadline}
+                  onSubmit={async (values) => {
+                    const res = await createDealDeadlineManual({ dealId, ...values })
+                    if (!res.success) {
+                      toast.error(res.error ?? 'Speichern fehlgeschlagen.')
+                      return
+                    }
+                    toast.success('Termin angelegt.')
+                    setAddOpen(false)
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <CollapsibleContent className="mt-4 border-t pt-3">
+            {sorted.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{COPY.deals.cockpit.deadlinesEmptyHint}</p>
+            ) : (
+              <ul className="space-y-0">
+                {sorted.map((d) => (
+                  <li
+                    key={d.id}
+                    className="flex flex-wrap items-center gap-2 border-t border-dashed py-2.5 first:border-t-0 text-sm"
+                  >
+                    <span className="min-w-[140px] font-medium">{d.label}</span>
+                    <span className="text-muted-foreground">
+                      {formatDeadlineCountdownLabel(d)}
+                    </span>
+                    <Badge variant="outline" className="text-[10px]">
+                      {d.source === 'manual' ? 'Manuell' : 'RFP'}
+                    </Badge>
+                    {d.pinned ? (
+                      <Badge variant="secondary" className="text-[10px]">
+                        Angepasst
+                      </Badge>
+                    ) : null}
+                    <div className="ml-auto flex items-center gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2"
+                        onClick={() => setEditTarget(d)}
+                      >
+                        <AppIcon icon={PencilEdit01Icon} size={14} />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2"
+                        onClick={async () => {
+                          const res = await suppressDealDeadlineAction({
+                            dealId,
+                            deadlineId: d.id,
+                          })
+                          if (!res.success) toast.error(res.error ?? 'Löschen fehlgeschlagen.')
+                          else toast.success('Termin entfernt.')
+                        }}
+                      >
+                        <AppIcon icon={Trash2} size={14} />
+                      </Button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CollapsibleContent>
+        </CardContent>
+      </Collapsible>
+
+      <Dialog open={editTarget !== null} onOpenChange={(o) => !o && setEditTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{COPY.deals.cockpit.editDeadline}</DialogTitle>
+          </DialogHeader>
+          {editTarget ? (
+            <DeadlineForm
+              title={COPY.deals.cockpit.editDeadline}
+              initial={{
+                kind: editTarget.kind as DealDeadlineKind,
+                label: editTarget.label,
+                dueDate: editTarget.due_at?.slice(0, 10) ?? '',
+                dueText: editTarget.due_text ?? '',
+              }}
+              submitLabel="Speichern"
+              onSubmit={async (values) => {
+                const res = await updateDealDeadlineAction({
+                  dealId,
+                  deadlineId: editTarget.id,
+                  source: editTarget.source,
+                  ...values,
+                })
+                if (!res.success) {
+                  toast.error(res.error ?? 'Speichern fehlgeschlagen.')
+                  return
+                }
+                toast.success('Termin aktualisiert.')
+                setEditTarget(null)
+              }}
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
+    </Card>
+  )
+}
+
+function DeadlineForm({
+  title,
+  initial,
+  submitLabel = 'Anlegen',
+  onSubmit,
+}: {
+  title: string
+  initial?: {
+    kind: DealDeadlineKind
+    label: string
+    dueDate: string
+    dueText: string
+  }
+  submitLabel?: string
+  onSubmit: (values: {
+    kind: DealDeadlineKind
+    label: string
+    dueDate?: string | null
+    dueText?: string | null
+  }) => Promise<void>
+}) {
+  const [kind, setKind] = useState<DealDeadlineKind>(initial?.kind ?? 'custom')
+  const [label, setLabel] = useState(initial?.label ?? '')
+  const [dueDate, setDueDate] = useState(initial?.dueDate ?? '')
+  const [dueText, setDueText] = useState(initial?.dueText ?? '')
+  const [saving, setSaving] = useState(false)
+
+  async function handleSubmit() {
+    setSaving(true)
+    try {
+      await onSubmit({
+        kind,
+        label,
+        dueDate: dueDate.trim() || null,
+        dueText: dueText.trim() || null,
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm font-medium">{title}</p>
+      <div className="space-y-2">
+        <Label>Art</Label>
+        <Select value={kind} onValueChange={(v) => setKind(v as DealDeadlineKind)}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {KIND_OPTIONS.map(([k, lbl]) => (
+              <SelectItem key={k} value={k}>
+                {lbl}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="dl-label">Bezeichnung</Label>
+        <Input id="dl-label" value={label} onChange={(e) => setLabel(e.target.value)} />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="dl-date">Datum (optional)</Label>
+        <Input id="dl-date" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="dl-text">Fuzzy-Text (optional)</Label>
+        <Input
+          id="dl-text"
+          value={dueText}
+          onChange={(e) => setDueText(e.target.value)}
+          placeholder="z. B. Q3 2026"
+        />
+      </div>
+      <DialogFooter className="gap-2 sm:justify-end px-0">
+        <Button type="button" onClick={() => void handleSubmit()} disabled={saving || !label.trim()}>
+          {saving ? 'Speichern …' : submitLabel}
+        </Button>
+      </DialogFooter>
+    </div>
+  )
+}

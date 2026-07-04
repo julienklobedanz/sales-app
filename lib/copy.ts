@@ -144,6 +144,11 @@ export const COPY = {
       findReferenceTitle: 'Referenz finden',
       findReferenceDescription:
         'Smart Search und RFP-Coverage mit vorausgefülltem Deal-Kontext. Treffer können direkt verknüpft werden.',
+      deadlinesEmpty: 'Keine Termine',
+      deadlinesEmptyHint:
+        'Fristen erscheinen nach RFP-Analyse oder wenn du manuell Termine hinzufügst.',
+      addDeadline: 'Termin',
+      editDeadline: 'Termin bearbeiten',
     },
   },
   accounts: {

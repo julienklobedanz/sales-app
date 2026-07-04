@@ -9,6 +9,7 @@ import { ROUTES } from '@/lib/routes'
 import { getDealWithReferences } from '../actions'
 import { DealCockpitClient } from '../cockpit/deal-cockpit-client'
 import type { DealActivityItem } from '../cockpit/deal-activity-card'
+import { listDealDeadlines } from '@/lib/deals/deadlines'
 
 export default function DealDetailPage({ params }: { params: Promise<{ id: string }> }) {
   return (
@@ -32,6 +33,8 @@ async function DealDetailPageContent({ params }: { params: Promise<{ id: string 
 
   const deal = await getDealWithReferences(id)
   if (!deal) notFound()
+
+  const deadlines = await listDealDeadlines(supabase, id)
 
   const { data: companies } = await supabase
     .from('companies')
@@ -87,6 +90,7 @@ async function DealDetailPageContent({ params }: { params: Promise<{ id: string 
     <DealCockpitClient
       deal={deal}
       activities={activities}
+      deadlines={deadlines}
       companies={(companies ?? []) as Array<{ id: string; name: string }>}
       orgProfiles={(orgProfiles ?? []) as Array<{ id: string; full_name: string | null }>}
     />

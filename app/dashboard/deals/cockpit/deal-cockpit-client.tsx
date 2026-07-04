@@ -7,11 +7,13 @@ import type { DealActivityItem } from './deal-activity-card'
 import { DealActivityCard } from './deal-activity-card'
 import { DealCockpitHeader } from './deal-cockpit-header'
 import { DealCockpitPromoteCard } from './deal-cockpit-promote-card'
+import { DealDeadlinesCard } from './deal-deadlines-card'
 import { DealFactsCard } from './deal-facts-card'
 import { DealProofSection } from './deal-proof-section'
 import { DealRfpBlockPlaceholder } from './deal-rfp-block-placeholder'
 import { DealSmartMatchDrawer } from './deal-smart-match-drawer'
 import { isRfpDeal } from '@/lib/deals/is-rfp-deal'
+import type { DealDeadlineRow } from '@/lib/deals/deadline-display'
 
 type Company = { id: string; name: string }
 type OrgProfile = { id: string; full_name: string | null }
@@ -21,11 +23,13 @@ export function DealCockpitClient({
   activities,
   companies,
   orgProfiles,
+  deadlines,
 }: {
   deal: DealWithReferences
   activities: DealActivityItem[]
   companies: Company[]
   orgProfiles: OrgProfile[]
+  deadlines: DealDeadlineRow[]
 }) {
   const showRfpBlock = isRfpDeal(deal)
   const [matchDrawerOpen, setMatchDrawerOpen] = useState(false)
@@ -33,6 +37,8 @@ export function DealCockpitClient({
   return (
     <div>
       <DealCockpitHeader deal={deal} companies={companies} orgProfiles={orgProfiles} />
+
+      <DealDeadlinesCard dealId={deal.id} deadlines={deadlines} />
 
       <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <DealFactsCard deal={deal} />

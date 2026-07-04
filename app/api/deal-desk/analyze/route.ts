@@ -4,6 +4,7 @@ import { analyzeRfp } from '@/lib/deal-desk/analyze-rfp'
 import { toPersistedAnalysisSnapshot } from '@/lib/deal-desk/analysis-snapshot'
 import { buildDemoDealDeskAnalysis } from '@/lib/deal-desk/mock-analysis'
 import { persistNormalizedWorkspace } from '@/lib/deal-desk/workspace-persistence'
+import { syncRfpDeadlinesFromTimeline } from '@/lib/deals/deadlines'
 import { defaultWorkspaceState } from '@/lib/deal-desk/workspace-state'
 import { extractRfpPlainTextFromFile } from '@/lib/extract-rfp-plain-text'
 import { isOpenAiQuotaErrorMessage } from '@/lib/openai-api-errors'
@@ -80,7 +81,7 @@ export async function POST(req: NextRequest) {
 
   const { data: project, error: projectErr } = await supabase
     .from('deal_desk_projects')
-    .select('id, project_name, organization_id')
+    .select('id, project_name, organization_id, deal_id')
     .eq('id', projectId)
     .eq('organization_id', orgId)
     .maybeSingle()
@@ -463,6 +464,15 @@ export async function POST(req: NextRequest) {
 
   if (doneError) {
     return fail(doneError.message)
+  }
+
+  const linkedDealId = (project as { deal_id?: string | null }).deal_id
+  if (linkedDealId) {
+    await syncRfpDeadlinesFromTimeline(supabase, {
+      dealId: linkedDealId,
+      organizationId: orgId,
+      timelineItems: analyzed.snapshot.timelineItems ?? [],
+    })
   }
 
   return NextResponse.json({
