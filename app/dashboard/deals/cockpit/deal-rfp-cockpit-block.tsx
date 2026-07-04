@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { COPY } from '@/lib/copy'
-import { ROUTES } from '@/lib/routes'
 import type { DealWithReferences } from '../types'
 import { loadDealRfpCockpitData } from '@/lib/deals/load-deal-rfp-cockpit-data'
 
@@ -40,8 +39,8 @@ export async function DealRfpCockpitBlock({
           <CardDescription>{COPY.deals.cockpit.rfpBlockEmpty}</CardDescription>
         </CardHeader>
         <CardContent>
-          <Button type="button" size="sm" asChild>
-            <Link href={ROUTES.matchWithDeal(dealId)}>{COPY.deals.cockpit.rfpAnalyzeCta}</Link>
+          <Button type="button" size="sm" variant="outline" asChild>
+            <Link href="#dokumente">{COPY.deals.cockpit.rfpAnalyzeCta}</Link>
           </Button>
         </CardContent>
       </Card>

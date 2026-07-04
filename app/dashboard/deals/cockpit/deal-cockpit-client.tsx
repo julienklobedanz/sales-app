@@ -63,6 +63,7 @@ export function DealCockpitClient({
         dealId={deal.id}
         documents={documents}
         canManage={canManageDocuments}
+        isRfpMode={showRfpBlock}
       />
 
       {showRfpBlock && rfpBlock ? <div className="mb-6">{rfpBlock}</div> : null}

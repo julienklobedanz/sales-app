@@ -200,10 +200,12 @@ export function DealDocumentsSection({
   dealId,
   documents: initialDocuments,
   canManage,
+  isRfpMode = false,
 }: {
   dealId: string
   documents: DealDocumentRow[]
   canManage: boolean
+  isRfpMode?: boolean
 }) {
   const router = useRouter()
   const [documents, setDocuments] = useState(initialDocuments)
@@ -222,6 +224,7 @@ export function DealDocumentsSection({
   const [deleteTarget, setDeleteTarget] = useState<DealDocumentRow | null>(null)
   const [deletePending, setDeletePending] = useState(false)
   const [downloadPendingId, setDownloadPendingId] = useState<string | null>(null)
+  const [analyzingId, setAnalyzingId] = useState<string | null>(null)
 
   async function handleUpload() {
     if (!uploadFile) {
@@ -245,6 +248,28 @@ export function DealDocumentsSection({
       router.refresh()
     } finally {
       setUploading(false)
+    }
+  }
+
+  async function handleAnalyze(doc: DealDocumentRow) {
+    setAnalyzingId(doc.id)
+    try {
+      const res = await fetch('/api/rfp/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dealId, dealDocumentId: doc.id }),
+      })
+      const json = (await res.json()) as { success?: boolean; error?: string }
+      if (!res.ok || !json.success) {
+        toast.error(json.error ?? COPY.deals.cockpit.documentsAnalyzeFailed)
+        return
+      }
+      toast.success(COPY.deals.cockpit.documentsAnalyzeSuccess)
+      router.refresh()
+    } catch {
+      toast.error(COPY.deals.cockpit.documentsAnalyzeFailed)
+    } finally {
+      setAnalyzingId(null)
     }
   }
 
@@ -343,7 +368,27 @@ export function DealDocumentsSection({
                       {` · ${formatUploadedAt(doc.created_at)}`}
                     </p>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex flex-wrap items-center gap-1">
+                    {canManage && doc.kind === 'ausschreibung' ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={analyzingId === doc.id}
+                        onClick={() => void handleAnalyze(doc)}
+                      >
+                        {analyzingId === doc.id ? (
+                          <>
+                            <AppIcon icon={Loader} size={14} className="mr-1 animate-spin" />
+                            {COPY.deals.cockpit.documentsAnalyzePending}
+                          </>
+                        ) : isRfpMode ? (
+                          COPY.deals.cockpit.documentsReanalyze
+                        ) : (
+                          COPY.deals.cockpit.documentsAnalyze
+                        )}
+                      </Button>
+                    ) : null}
                     <Button
                       type="button"
                       variant="ghost"

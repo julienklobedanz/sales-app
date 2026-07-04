@@ -3,22 +3,54 @@ import { NextRequest, NextResponse } from 'next/server'
 import { analyzeRfp } from '@/lib/deal-desk/analyze-rfp'
 import { finalizeRfpAnalysis } from '@/lib/deal-desk/finalize-rfp-analysis'
 import { ensureDealDeskProjectForDeal } from '@/lib/deal-desk/ensure-deal-desk-project'
+import { canManageDealDocuments } from '@/lib/deals/can-manage-deal-documents'
 import { syncRfpDeadlinesFromTimeline } from '@/lib/deals/deadlines'
-import { extractPlainTextFromFile } from '@/lib/extract-document-plain-text'
+import { loadDealDocumentAsFile } from '@/lib/deals/load-deal-document-file'
+import { extractRfpPlainTextFromFile } from '@/lib/extract-rfp-plain-text'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { loadReferenceVisibilityForUser } from '@/lib/roles/load-reference-visibility'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
 
-function sanitizeFileName(name: string): string {
-  const base = name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 180)
-  return base || 'upload.bin'
+type AnalyzeBody = {
+  dealId?: string
+  dealDocumentId?: string
+  companyContextId?: string
+}
+
+async function parseAnalyzeRequest(req: NextRequest): Promise<AnalyzeBody | null> {
+  const contentType = req.headers.get('content-type') ?? ''
+  if (contentType.includes('application/json')) {
+    try {
+      return (await req.json()) as AnalyzeBody
+    } catch {
+      return null
+    }
+  }
+
+  try {
+    const formData = await req.formData()
+    return {
+      dealId: typeof formData.get('dealId') === 'string' ? formData.get('dealId')!.toString() : undefined,
+      dealDocumentId:
+        typeof formData.get('dealDocumentId') === 'string'
+          ? formData.get('dealDocumentId')!.toString()
+          : undefined,
+      companyContextId:
+        typeof formData.get('companyContextId') === 'string'
+          ? formData.get('companyContextId')!.toString()
+          : undefined,
+    }
+  } catch {
+    return null
+  }
 }
 
 /**
- * Dünner Wrapper um `analyzeRfp` — persistiert in `deal_desk_projects` (deal-verknüpft).
- * Liefert dieselbe Coverage/Requirements-Struktur wie zuvor für `DealRfpSection`.
+ * RFP-Analyse aus kanonischem `deal_documents`-Eintrag (`kind=ausschreibung`).
+ * Persistiert Snapshot in `deal_desk_projects` — keine Kopie in `deal_desk_documents` / `rfp-documents`.
  */
 export async function POST(req: NextRequest) {
   const supabase = await createServerSupabaseClient()
@@ -52,28 +84,24 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  let formData: FormData
-  try {
-    formData = await req.formData()
-  } catch {
+  const body = await parseAnalyzeRequest(req)
+  if (!body) {
     return NextResponse.json({ success: false, error: 'Ungültige Anfrage.' }, { status: 400 })
   }
 
-  const dealIdRaw = formData.get('dealId')
-  const file = formData.get('file')
+  const dealId = body.dealId?.trim() ?? ''
+  const dealDocumentId = body.dealDocumentId?.trim() ?? ''
 
-  const dealId = typeof dealIdRaw === 'string' ? dealIdRaw.trim() : ''
   if (!dealId) {
     return NextResponse.json({ success: false, error: 'dealId fehlt.' }, { status: 400 })
   }
-
-  if (!(file instanceof File) || !file.size) {
-    return NextResponse.json({ success: false, error: 'Keine gültige Datei.' }, { status: 400 })
+  if (!dealDocumentId) {
+    return NextResponse.json({ success: false, error: 'dealDocumentId fehlt.' }, { status: 400 })
   }
 
   const { data: deal, error: dealErr } = await supabase
     .from('deals')
-    .select('id, title, industry, volume')
+    .select('id, title, industry, volume, sales_manager_id, account_manager_id')
     .eq('id', dealId)
     .eq('organization_id', orgId)
     .maybeSingle()
@@ -85,13 +113,59 @@ export async function POST(req: NextRequest) {
     )
   }
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('system_role, function_role')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  const { systemRole, functionRole } = parseProfileRoles(profile)
+  if (
+    !canManageDealDocuments(
+      {
+        sales_manager_id: deal.sales_manager_id ?? null,
+        account_manager_id: deal.account_manager_id ?? null,
+      },
+      user.id,
+      systemRole,
+      functionRole
+    )
+  ) {
+    return NextResponse.json(
+      { success: false, error: 'Keine Berechtigung für RFP-Analyse an diesem Deal.' },
+      { status: 403 }
+    )
+  }
+
+  const { data: dealDoc, error: docErr } = await supabase
+    .from('deal_documents')
+    .select('id, deal_id, organization_id, file_name, kind, storage_path, mime_type, size_bytes')
+    .eq('id', dealDocumentId)
+    .eq('deal_id', dealId)
+    .eq('organization_id', orgId)
+    .maybeSingle()
+
+  if (docErr || !dealDoc) {
+    return NextResponse.json(
+      { success: false, error: 'Dokument nicht gefunden.' },
+      { status: 404 }
+    )
+  }
+
+  if (dealDoc.kind !== 'ausschreibung') {
+    return NextResponse.json(
+      { success: false, error: 'Nur Dokumente vom Typ Ausschreibung können analysiert werden.' },
+      { status: 400 }
+    )
+  }
+
   let accountContextPrefix = ''
-  const companyContextIdRaw = formData.get('companyContextId')
-  if (typeof companyContextIdRaw === 'string' && companyContextIdRaw.trim()) {
+  const companyContextId = body.companyContextId?.trim()
+  if (companyContextId) {
     const { data: co } = await supabase
       .from('companies')
       .select('name')
-      .eq('id', companyContextIdRaw.trim())
+      .eq('id', companyContextId)
       .eq('organization_id', orgId)
       .maybeSingle()
     if (co?.name) {
@@ -123,52 +197,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: message }, { status })
   }
 
-  const { data: docRow, error: docErr } = await supabase
-    .from('deal_desk_documents')
-    .insert({
-      project_id: projectId,
-      organization_id: orgId,
-      file_name: file.name || 'document',
-      mime_type: file.type || null,
-      size_bytes: file.size,
-      extract_status: 'pending',
-      sort_order: 0,
-    })
-    .select('id')
-    .single()
-
-  if (docErr || !docRow?.id) {
-    return fail(docErr?.message ?? 'Dokument-Metadaten fehlgeschlagen.')
+  const loaded = await loadDealDocumentAsFile(supabase, dealDoc)
+  if (!loaded.ok) {
+    return fail(loaded.error, 400)
   }
 
-  const docId = docRow.id as string
-  const safeName = sanitizeFileName(file.name || 'document')
-  const storagePath = `${orgId}/deal-desk/${projectId}/${docId}/${safeName}`
-
-  const { error: uploadError } = await supabase.storage
-    .from('rfp-documents')
-    .upload(storagePath, file, {
-      cacheControl: '3600',
-      upsert: false,
-      contentType: file.type || undefined,
-    })
-
-  if (uploadError) {
-    return fail(`Upload fehlgeschlagen: ${uploadError.message}`)
-  }
-
-  await supabase
-    .from('deal_desk_documents')
-    .update({ storage_path: storagePath, extract_status: 'completed' })
-    .eq('id', docId)
-
-  const plain = await extractPlainTextFromFile(file, { maxChars: 120_000 })
+  const plain = await extractRfpPlainTextFromFile(loaded.file, { maxChars: 120_000 })
   if (!plain.ok) {
     return fail(plain.error, 400)
   }
 
   const mergedText = accountContextPrefix + plain.text
-  const fileNames = [file.name || 'document']
+  const fileNames = [dealDoc.file_name || 'document']
 
   const analyzed = await analyzeRfp({
     apiKey,
@@ -185,10 +225,10 @@ export async function POST(req: NextRequest) {
     },
     projectDocuments: [
       {
-        id: docId,
-        file_name: file.name || 'document',
-        storage_path: storagePath,
-        mime_type: file.type || null,
+        id: dealDoc.id,
+        file_name: dealDoc.file_name,
+        storage_path: dealDoc.storage_path,
+        mime_type: dealDoc.mime_type,
       },
     ],
   })
@@ -229,9 +269,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     success: true,
     projectId,
-    /** @deprecated Alias für projectId — DealRfpSection-Kompatibilität */
-    analysisId: projectId,
-    storagePath,
+    dealDocumentId: dealDoc.id,
     requirements: analyzed.requirements,
     coverage: analyzed.coverage,
   })

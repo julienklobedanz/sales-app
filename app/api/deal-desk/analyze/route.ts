@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+/** @deprecated Kein UI-Caller mehr — kanonische RFP-Analyse: POST /api/rfp/analyze mit dealDocumentId. */
+
 import { analyzeRfp } from '@/lib/deal-desk/analyze-rfp'
 import { finalizeRfpAnalysis } from '@/lib/deal-desk/finalize-rfp-analysis'
 import { buildDemoDealDeskAnalysis } from '@/lib/deal-desk/mock-analysis'
