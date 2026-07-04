@@ -39,6 +39,7 @@ export type DealDeskDraftRow = {
   requirement: string
   answer: string | null
   reference?: {
+    id: string
     title: string
     companyName: string
     logoUrl: string | null
@@ -272,6 +273,7 @@ export function buildMockDealDeskAnalysis(fileNames: string[]): DealDeskMockAnal
       answer:
         'Ja. Wir haben eine vergleichbare Migration bei Aurubis durchgeführt: Lift-and-Shift der Kern-Workloads, anschließend Containerisierung der Integrationslayer. Time-to-Value nach 14 Wochen für die erste produktive Umgebung.',
       reference: {
+        id: 'demo-ref-aurubis',
         title: 'Cloud-Migration Aurubis',
         companyName: 'Aurubis',
         logoUrl: null,
@@ -283,6 +285,7 @@ export function buildMockDealDeskAnalysis(fileNames: string[]): DealDeskMockAnal
       requirement: 'Beschreiben Sie Ihr Vorgehen zum Betrieb mit 99,9 % Verfügbarkeit.',
       answer: null,
       reference: {
+        id: 'demo-ref-sla',
         title: 'Managed Services SLA',
         companyName: 'Intern',
         logoUrl: null,
@@ -295,6 +298,7 @@ export function buildMockDealDeskAnalysis(fileNames: string[]): DealDeskMockAnal
       answer:
         'ISO 27001 zertifiziert; Datenresidenz EU/CH wählbar. Referenzprojekt mit vergleichbarem Compliance-Rahmen (Finanzdienstleister, CH).',
       reference: {
+        id: 'demo-ref-ch',
         title: 'Compliance-Rollout Finanz CH',
         companyName: 'Helvetia FinTech',
         logoUrl: null,

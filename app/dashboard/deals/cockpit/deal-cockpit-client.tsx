@@ -2,7 +2,6 @@
 
 import type { ReactNode } from 'react'
 import { useState } from 'react'
-
 import type { DealWithReferences } from '../types'
 import type { DealActivityItem } from './deal-activity-card'
 import { DealActivityCard } from './deal-activity-card'
@@ -25,6 +24,7 @@ export function DealCockpitClient({
   orgProfiles,
   deadlines,
   rfpBlock,
+  briefingButton,
 }: {
   deal: DealWithReferences
   activities: DealActivityItem[]
@@ -32,13 +32,19 @@ export function DealCockpitClient({
   orgProfiles: OrgProfile[]
   deadlines: DealDeadlineRow[]
   rfpBlock?: ReactNode
+  briefingButton?: ReactNode
 }) {
   const showRfpBlock = isRfpDeal(deal)
   const [matchDrawerOpen, setMatchDrawerOpen] = useState(false)
 
   return (
     <div>
-      <DealCockpitHeader deal={deal} companies={companies} orgProfiles={orgProfiles} />
+      <DealCockpitHeader
+        deal={deal}
+        companies={companies}
+        orgProfiles={orgProfiles}
+        briefingButton={showRfpBlock ? briefingButton : undefined}
+      />
 
       <DealDeadlinesCard dealId={deal.id} deadlines={deadlines} />
 

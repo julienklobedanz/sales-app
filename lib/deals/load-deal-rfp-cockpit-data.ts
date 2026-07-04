@@ -5,6 +5,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { PersistedDealDeskAnalysisSnapshot } from '@/lib/deal-desk/analysis-snapshot'
 import { loadOrgComplianceDocsForDelivery } from '@/lib/deal-desk/load-org-delivery-context'
 import type { WinProbabilityBreakdown } from '@/lib/deal-desk/compute-delivery-win-probability'
+import type { DealDeskDraftRow } from '@/lib/deal-desk/mock-analysis'
 import type { RfpCoverageRow } from '@/lib/rfp-coverage'
 import type { ExtractedRfpRequirement } from '@/lib/rfp-requirements'
 import type { EligibilityAssessment, EligibilityCriterion } from '@/lib/deals/eligibility-criteria-schema'
@@ -40,6 +41,7 @@ export type DealRfpCockpitData = {
   eligibilityAssessment: EligibilityAssessment | null
   capabilityProfileEmpty: boolean
   risks: DealRfpRisksData | null
+  draftRows: DealDeskDraftRow[]
   recommendation: ReturnType<typeof resolveBidRecommendation>
 }
 
@@ -147,6 +149,7 @@ export async function loadDealRfpCockpitData(
     eligibilityAssessment,
     capabilityProfileEmpty,
     risks,
+    draftRows: Array.isArray(snap.draftRows) ? snap.draftRows : [],
     recommendation: resolveBidRecommendation({
       winProbability,
       hasAnalysis,

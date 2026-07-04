@@ -174,6 +174,7 @@ export async function mapRfpAnalysisToDealDeskSnapshot(params: {
         requirement: row.requirementText,
         answer,
         reference: {
+          id: best.id,
           title: best.title,
           companyName: best.companyName ?? 'Referenz',
           logoUrl: logoByRef.get(best.id) ?? null,

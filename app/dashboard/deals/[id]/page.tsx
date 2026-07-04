@@ -10,6 +10,7 @@ import { getDealWithReferences } from '../actions'
 import { DealCockpitClient } from '../cockpit/deal-cockpit-client'
 import { DealRfpCockpitBlock } from '../cockpit/deal-rfp-cockpit-block'
 import { DealRfpCockpitSkeleton } from '../cockpit/deal-rfp-cockpit-skeleton'
+import { DealCockpitBriefingTrigger } from '../cockpit/deal-cockpit-briefing-trigger'
 import type { DealActivityItem } from '../cockpit/deal-activity-card'
 import { listDealDeadlines } from '@/lib/deals/deadlines'
 
@@ -93,12 +94,20 @@ async function DealDetailPageContent({ params }: { params: Promise<{ id: string 
       deal={deal}
       activities={activities}
       deadlines={deadlines}
+      briefingButton={
+        deal.is_rfp_mode ? (
+          <Suspense fallback={null}>
+            <DealCockpitBriefingTrigger dealId={id} orgId={orgId} />
+          </Suspense>
+        ) : undefined
+      }
       rfpBlock={
         deal.is_rfp_mode ? (
           <Suspense fallback={<DealRfpCockpitSkeleton />}>
             <DealRfpCockpitBlock
               dealId={id}
               orgId={orgId}
+              deal={deal}
               dealContext={{
                 title: deal.title,
                 industry: deal.industry,

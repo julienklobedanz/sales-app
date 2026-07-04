@@ -1,15 +1,13 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import Link from 'next/link'
 
 import { DealStatusBadge } from '@/components/deal-status-badge'
-import { Button } from '@/components/ui/button'
-import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 import { formatDealVolume } from '@/lib/format'
 import { formatIndustryDisplay } from '@/lib/constants/industries'
-import { isRfpDeal } from '@/lib/deals/is-rfp-deal'
 
 import type { DealWithReferences } from '../types'
 import { DealCockpitActions } from './deal-cockpit-actions'
@@ -21,10 +19,12 @@ export function DealCockpitHeader({
   deal,
   companies,
   orgProfiles,
+  briefingButton,
 }: {
   deal: DealWithReferences
   companies: Company[]
   orgProfiles: OrgProfile[]
+  briefingButton?: ReactNode
 }) {
   const owner = deal.sales_manager_name ?? deal.account_manager_name ?? '—'
   const subtitleParts = [
@@ -56,11 +56,7 @@ export function DealCockpitHeader({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {isRfpDeal(deal) ? (
-            <Button type="button" variant="outline" size="sm" disabled title="Folgt in Phase 7">
-              {COPY.deals.cockpit.generateBriefing}
-            </Button>
-          ) : null}
+          {briefingButton}
           <DealCockpitActions deal={deal} companies={companies} orgProfiles={orgProfiles} />
         </div>
       </div>
