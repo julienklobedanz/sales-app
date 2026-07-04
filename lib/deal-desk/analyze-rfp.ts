@@ -8,7 +8,9 @@ import { extractExecutiveBriefingFromRfp } from '@/lib/deal-desk/executive-brief
 import { mapRfpAnalysisToDealDeskSnapshot } from '@/lib/deal-desk/map-rfp-to-desk'
 import type { DealDeskMockAnalysis, DealDeskTimelineItem } from '@/lib/deal-desk/mock-analysis'
 import { enrichRedFlagsWithDocuments } from '@/lib/deal-desk/red-flag-document-match'
-import { buildRfpCoverageReport, type RfpCoverageRow } from '@/lib/rfp-coverage'
+import { buildRfpCoverageWithRelevance } from '@/lib/deals/rfp-coverage-pipeline'
+import type { RfpCoverageRow } from '@/lib/rfp-coverage'
+import type { RfpVerdict } from '@/lib/rfp-relevance'
 import { extractRequirementsFromRfpText, type ExtractedRfpRequirement } from '@/lib/rfp-requirements'
 import { extractTimelineFromRfpText } from '@/lib/rfp-timeline'
 import { extractEligibilityCriteriaFromRfpText } from '@/lib/deals/extract-eligibility-criteria'
@@ -45,6 +47,7 @@ export type AnalyzeRfpResult = {
   requirements: ExtractedRfpRequirement[]
   coverage: RfpCoverageRow[]
   eligibilityCriteria: EligibilityCriterion[]
+  rfpVerdicts: Record<string, RfpVerdict>
 }
 
 export type AnalyzeRfpError = { error: string; isQuotaError?: boolean }
@@ -97,7 +100,7 @@ export async function analyzeRfp(
     eligibilityCriteria = eligibilityRes.criteria
   }
 
-  const coverage = await buildRfpCoverageReport(supabase, {
+  const { coverage, verdicts: rfpVerdicts } = await buildRfpCoverageWithRelevance(supabase, {
     apiKey,
     organizationId,
     salesVisibleOnly,
@@ -133,6 +136,7 @@ export async function analyzeRfp(
     fileNames,
     requirements: extracted.requirements,
     coverage,
+    rfpVerdicts,
     risk: { ...riskResult, redFlags: linkedRedFlags },
     executiveBriefing: briefingResult,
     benchmarkRisk: benchmarkRiskResult,
@@ -146,5 +150,6 @@ export async function analyzeRfp(
     requirements: extracted.requirements,
     coverage,
     eligibilityCriteria,
+    rfpVerdicts,
   }
 }

@@ -1,8 +1,10 @@
 import type { WinProbabilityBreakdown } from '@/lib/deal-desk/compute-delivery-win-probability'
 import { winProbabilityTone, type WinProbabilityTone } from '@/lib/deal-desk/win-probability'
 import { MATCH_COVERAGE_THRESHOLD } from '@/lib/match/match-thresholds'
+import { computeCoveragePercentWithVerdicts } from '@/lib/deals/rfp-relevance-coverage'
 import type { RfpCoverageRow } from '@/lib/rfp-coverage'
 import type { ExtractedRfpRequirement } from '@/lib/rfp-requirements'
+import type { RfpVerdict } from '@/lib/rfp-relevance'
 
 export const RFP_COCKPIT_ENGINE_VERSION_CURRENT = 2
 
@@ -21,8 +23,12 @@ export function isRfpMetricsStale(meta: RfpSnapshotMeta): boolean {
 export function computeRequirementCoveragePercent(
   requirements: ExtractedRfpRequirement[],
   coverage: RfpCoverageRow[],
-  threshold = MATCH_COVERAGE_THRESHOLD
+  threshold = MATCH_COVERAGE_THRESHOLD,
+  verdicts?: Record<string, RfpVerdict> | null
 ): number {
+  if (verdicts && Object.keys(verdicts).length > 0) {
+    return computeCoveragePercentWithVerdicts(requirements, coverage, verdicts, threshold)
+  }
   if (!requirements.length) return 0
   let covered = 0
   for (const req of requirements) {

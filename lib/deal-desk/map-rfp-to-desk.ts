@@ -17,6 +17,11 @@ import {
   formatWinProbabilityBreakdownSummary,
 } from '@/lib/deal-desk/compute-delivery-win-probability'
 import { MATCH_COVERAGE_THRESHOLD } from '@/lib/match/match-thresholds'
+import {
+  isRequirementCovered,
+  resolveCoverageMatch,
+} from '@/lib/deals/rfp-relevance-coverage'
+import type { RfpVerdict } from '@/lib/rfp-relevance'
 import { loadOrgComplianceDocsForDelivery } from '@/lib/deal-desk/load-org-delivery-context'
 import { generateDealDeskAnswerForRequirement } from '@/lib/deal-desk/generate-desk-answer'
 
@@ -26,13 +31,13 @@ const SME_CATEGORIES = new Set(['legal', 'compliance', 'pricing', 'finance', 'se
 
 function buildSmeTasks(
   coverage: RfpCoverageRow[],
-  requirements: ExtractedRfpRequirement[]
+  requirements: ExtractedRfpRequirement[],
+  verdicts?: Record<string, RfpVerdict>
 ): DealDeskSmeTask[] {
   const tasks: DealDeskSmeTask[] = []
   let n = 0
   for (const row of coverage) {
-    const best = row.matches[0]
-    const hasMatch = best && best.similarity >= MATCH_COVERAGE_THRESHOLD
+    const hasMatch = isRequirementCovered(row, verdicts)
     const cat = (row.category ?? '').toLowerCase()
     if (!hasMatch || SME_CATEGORIES.has(cat)) {
       tasks.push({
@@ -100,6 +105,7 @@ export async function mapRfpAnalysisToDealDeskSnapshot(params: {
   fileNames: string[]
   requirements: ExtractedRfpRequirement[]
   coverage: RfpCoverageRow[]
+  rfpVerdicts?: Record<string, RfpVerdict>
   risk: DealDeskRiskAnalysisResult
   executiveBriefing: DealDeskExecutiveBriefingFields
   benchmarkRisk: BenchmarkRiskAnalysis
@@ -113,6 +119,7 @@ export async function mapRfpAnalysisToDealDeskSnapshot(params: {
     fileNames,
     requirements,
     coverage,
+    rfpVerdicts,
     risk,
     executiveBriefing,
     benchmarkRisk,
@@ -133,13 +140,14 @@ export async function mapRfpAnalysisToDealDeskSnapshot(params: {
     coverage,
     complianceDocs,
     redFlags: risk.redFlags,
+    rfpVerdicts,
   })
   const winProbability = winBreakdown.finalScore
 
   const draftRows = await Promise.all(
     coverage.map(async (row) => {
-      const best = row.matches[0]
-      const hasMatch = best && best.similarity >= MATCH_COVERAGE_THRESHOLD && !row.embedError
+      const best = resolveCoverageMatch(row, rfpVerdicts)
+      const hasMatch = isRequirementCovered(row, rfpVerdicts) && best && !row.embedError
 
       if (!hasMatch) {
         return {
@@ -175,7 +183,7 @@ export async function mapRfpAnalysisToDealDeskSnapshot(params: {
     })
   )
 
-  const smeTasks = buildSmeTasks(coverage, requirements)
+  const smeTasks = buildSmeTasks(coverage, requirements, rfpVerdicts)
 
   const matchedRows = draftRows.filter((r) => r.reference).length
   const icpSummary = [

@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import { analyzeRfp } from '@/lib/deal-desk/analyze-rfp'
-import { toPersistedAnalysisSnapshot } from '@/lib/deal-desk/analysis-snapshot'
+import { finalizeRfpAnalysis } from '@/lib/deal-desk/finalize-rfp-analysis'
 import { buildDemoDealDeskAnalysis } from '@/lib/deal-desk/mock-analysis'
-import { persistNormalizedWorkspace } from '@/lib/deal-desk/workspace-persistence'
 import { syncRfpDeadlinesFromTimeline } from '@/lib/deals/deadlines'
 import { defaultWorkspaceState } from '@/lib/deal-desk/workspace-state'
+import { persistNormalizedWorkspace } from '@/lib/deal-desk/workspace-persistence'
 import { extractRfpPlainTextFromFile } from '@/lib/extract-rfp-plain-text'
 import { isOpenAiQuotaErrorMessage } from '@/lib/openai-api-errors'
 import { loadReferenceVisibilityForUser } from '@/lib/roles/load-reference-visibility'
@@ -445,10 +445,13 @@ export async function POST(req: NextRequest) {
     return fail(analyzed.error, 422)
   }
 
-  const workspace = defaultWorkspaceState(analyzed.snapshot.redFlags)
-  const persistedSnapshot = toPersistedAnalysisSnapshot(analyzed)
-
-  await persistNormalizedWorkspace(supabase, projectId, orgId, workspace)
+  const linkedDealId = (project as { deal_id?: string | null }).deal_id
+  const persistedSnapshot = await finalizeRfpAnalysis(supabase, {
+    projectId,
+    organizationId: orgId,
+    dealId: linkedDealId,
+    analyzed,
+  })
 
   const { error: doneError } = await supabase
     .from('deal_desk_projects')
@@ -466,7 +469,6 @@ export async function POST(req: NextRequest) {
     return fail(doneError.message)
   }
 
-  const linkedDealId = (project as { deal_id?: string | null }).deal_id
   if (linkedDealId) {
     await syncRfpDeadlinesFromTimeline(supabase, {
       dealId: linkedDealId,

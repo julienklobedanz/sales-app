@@ -1,6 +1,8 @@
 import type { DealDeskRedFlag } from '@/lib/deal-desk/mock-analysis'
 import type { RfpCoverageRow } from '@/lib/rfp-coverage'
 import type { ExtractedRfpRequirement } from '@/lib/rfp-requirements'
+import type { RfpVerdict } from '@/lib/rfp-relevance'
+import { effectiveSimilarity, isRequirementCovered } from '@/lib/deals/rfp-relevance-coverage'
 import { MATCH_COVERAGE_THRESHOLD } from '@/lib/match/match-thresholds'
 
 export type OrgComplianceDoc = {
@@ -116,11 +118,14 @@ export function isComplianceRequirementFulfilled(
   return orgHasAnyComplianceEvidence(docs, refDate)
 }
 
-function bestSimilarity(coverage: RfpCoverageRow[], requirementId: string): number {
+function bestSimilarity(
+  coverage: RfpCoverageRow[],
+  requirementId: string,
+  verdicts?: Record<string, RfpVerdict> | null
+): number {
   const row = coverage.find((c) => c.requirementId === requirementId)
-  const best = row?.matches[0]
-  if (!best || row.embedError) return 0
-  return Math.min(1, Math.max(0, best.similarity))
+  if (!row || row.embedError) return 0
+  return effectiveSimilarity(row, verdicts)
 }
 
 function computeContractPenalty(redFlags: DealDeskRedFlag[]): number {
@@ -145,6 +150,7 @@ export function computeDeliveryWinProbability(params: {
   redFlags: DealDeskRedFlag[]
   matchThreshold?: number
   refDate?: Date
+  rfpVerdicts?: Record<string, RfpVerdict> | null
 }): WinProbabilityBreakdown {
   const {
     requirements,
@@ -153,6 +159,7 @@ export function computeDeliveryWinProbability(params: {
     redFlags,
     matchThreshold = MATCH_COVERAGE_THRESHOLD,
     refDate = new Date(),
+    rfpVerdicts,
   } = params
 
   const deliveryReqs = requirements.filter((r) => !isComplianceRequirement(r))
@@ -165,9 +172,12 @@ export function computeDeliveryWinProbability(params: {
   let similaritySum = 0
 
   for (const req of deliveryPool) {
-    const sim = bestSimilarity(coverage, req.id)
+    const row = coverage.find((c) => c.requirementId === req.id)
+    const sim = bestSimilarity(coverage, req.id, rfpVerdicts)
     similaritySum += sim
-    if (sim >= matchThreshold) matchedReferences += 1
+    if (row && isRequirementCovered(row, rfpVerdicts, matchThreshold)) {
+      matchedReferences += 1
+    }
   }
 
   const totalDeliveryRequirements = deliveryPool.length

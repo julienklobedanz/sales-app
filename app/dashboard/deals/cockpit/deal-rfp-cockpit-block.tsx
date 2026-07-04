@@ -10,6 +10,7 @@ import { loadDealRfpCockpitData } from '@/lib/deals/load-deal-rfp-cockpit-data'
 import { DealRfpEligibilitySection } from './deal-rfp-eligibility-section'
 import { DealRfpMetricsRow } from './deal-rfp-metrics-row'
 import { DealRfpRecommendationBanner } from './deal-rfp-recommendation-banner'
+import { DealRfpRisksSection } from './deal-rfp-risks-section'
 
 export async function DealRfpCockpitBlock({
   dealId,
@@ -52,6 +53,7 @@ export async function DealRfpCockpitBlock({
       <DealRfpRecommendationBanner data={data} />
       <DealRfpMetricsRow data={data} />
       <DealRfpEligibilitySection data={data} />
+      <DealRfpRisksSection data={data} />
       <p className="text-xs text-muted-foreground">{COPY.deals.cockpit.rfpBlockPhaseHint}</p>
     </section>
   )

@@ -10,6 +10,8 @@ import type { ExtractedRfpRequirement } from '@/lib/rfp-requirements'
 import type { EligibilityAssessment, EligibilityCriterion } from '@/lib/deals/eligibility-criteria-schema'
 import { compareEligibilityCriteria } from '@/lib/deals/compare-eligibility-criteria'
 import { isIcpDefinitionEmpty, scoreIcpRubrik, type IcpRubrikScore } from '@/lib/deals/icp-rubric'
+import { loadDealRfpRisksData, type DealRfpRisksData } from '@/lib/deals/load-deal-rfp-risks-data'
+import type { RfpVerdict } from '@/lib/rfp-relevance'
 import {
   loadOrgCapabilitySettings,
   loadOrgReferenceCount,
@@ -37,6 +39,7 @@ export type DealRfpCockpitData = {
   eligibilityCriteria: EligibilityCriterion[]
   eligibilityAssessment: EligibilityAssessment | null
   capabilityProfileEmpty: boolean
+  risks: DealRfpRisksData | null
   recommendation: ReturnType<typeof resolveBidRecommendation>
 }
 
@@ -77,11 +80,14 @@ export async function loadDealRfpCockpitData(
   const eligibilityCriteria: EligibilityCriterion[] = Array.isArray(snap.eligibilityCriteria)
     ? snap.eligibilityCriteria
     : []
+  const rfpVerdicts: Record<string, RfpVerdict> | null =
+    snap.rfpVerdicts && typeof snap.rfpVerdicts === 'object' ? snap.rfpVerdicts : null
 
-  const [orgSettings, complianceDocs, referenceCount] = await Promise.all([
+  const [orgSettings, complianceDocs, referenceCount, risks] = await Promise.all([
     loadOrgCapabilitySettings(supabase, organizationId),
     loadOrgComplianceDocsForDelivery(supabase, organizationId),
     loadOrgReferenceCount(supabase, organizationId),
+    loadDealRfpRisksData(supabase, organizationId, String(project.id), snap),
   ])
 
   const eligibilityAssessment =
@@ -127,7 +133,12 @@ export async function loadDealRfpCockpitData(
     isStale,
     winProbability,
     winProbabilityBreakdown: snap.winProbabilityBreakdown ?? null,
-    coveragePercent: computeRequirementCoveragePercent(requirements, coverage),
+    coveragePercent: computeRequirementCoveragePercent(
+      requirements,
+      coverage,
+      undefined,
+      engineVersion >= 2 ? rfpVerdicts : null
+    ),
     icpFitLabel: snap.icpFitLabel ?? null,
     icpSummary: icpRubrik?.summary ?? snap.icpSummary ?? null,
     icpRubrik,
@@ -135,6 +146,7 @@ export async function loadDealRfpCockpitData(
     eligibilityCriteria,
     eligibilityAssessment,
     capabilityProfileEmpty,
+    risks,
     recommendation: resolveBidRecommendation({
       winProbability,
       hasAnalysis,
