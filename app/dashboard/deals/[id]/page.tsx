@@ -7,12 +7,15 @@ import { DealDetailSkeleton } from '@/components/dashboard/deal-detail-skeleton'
 import { ROUTES } from '@/lib/routes'
 
 import { getDealWithReferences } from '../actions'
+import { listDealDocuments } from '../document-actions'
 import { DealCockpitClient } from '../cockpit/deal-cockpit-client'
 import { DealRfpCockpitBlock } from '../cockpit/deal-rfp-cockpit-block'
 import { DealRfpCockpitSkeleton } from '../cockpit/deal-rfp-cockpit-skeleton'
 import { DealCockpitBriefingTrigger } from '../cockpit/deal-cockpit-briefing-trigger'
 import type { DealActivityItem } from '../cockpit/deal-activity-card'
 import { listDealDeadlines } from '@/lib/deals/deadlines'
+import { canManageDealDocuments } from '@/lib/deals/can-manage-deal-documents'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
 
 export default function DealDetailPage({
   params,
@@ -54,6 +57,19 @@ async function DealDetailPageContent({
   if (!deal) notFound()
 
   const deadlines = await listDealDeadlines(supabase, id)
+
+  const { systemRole, functionRole } = parseProfileRoles(profile)
+  const canManageDocuments = canManageDealDocuments(
+    {
+      sales_manager_id: deal.sales_manager_id,
+      account_manager_id: deal.account_manager_id,
+    },
+    user.id,
+    systemRole,
+    functionRole
+  )
+  const documentsResult = await listDealDocuments(id)
+  const documents = documentsResult.success ? documentsResult.rows : []
 
   const { data: companies } = await supabase
     .from('companies')
@@ -110,6 +126,8 @@ async function DealDetailPageContent({
       deal={deal}
       activities={activities}
       deadlines={deadlines}
+      documents={documents}
+      canManageDocuments={canManageDocuments}
       briefingButton={
         deal.is_rfp_mode ? (
           <Suspense fallback={null}>

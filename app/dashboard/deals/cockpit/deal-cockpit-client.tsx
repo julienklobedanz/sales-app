@@ -7,6 +7,8 @@ import type { DealActivityItem } from './deal-activity-card'
 import { DealActivityCard } from './deal-activity-card'
 import { DealCockpitHeader } from './deal-cockpit-header'
 import { DealCockpitPromoteCard } from './deal-cockpit-promote-card'
+import { DealDocumentsSection } from './deal-documents-section'
+import type { DealDocumentRow } from '../document-actions'
 import { DealDeadlinesCard } from './deal-deadlines-card'
 import { DealFactsCard } from './deal-facts-card'
 import { DealProofSection } from './deal-proof-section'
@@ -23,6 +25,8 @@ export function DealCockpitClient({
   companies,
   orgProfiles,
   deadlines,
+  documents,
+  canManageDocuments,
   rfpBlock,
   briefingButton,
 }: {
@@ -31,6 +35,8 @@ export function DealCockpitClient({
   companies: Company[]
   orgProfiles: OrgProfile[]
   deadlines: DealDeadlineRow[]
+  documents: DealDocumentRow[]
+  canManageDocuments: boolean
   rfpBlock?: ReactNode
   briefingButton?: ReactNode
 }) {
@@ -52,6 +58,12 @@ export function DealCockpitClient({
         <DealFactsCard deal={deal} />
         <DealActivityCard activities={activities} />
       </div>
+
+      <DealDocumentsSection
+        dealId={deal.id}
+        documents={documents}
+        canManage={canManageDocuments}
+      />
 
       {showRfpBlock && rfpBlock ? <div className="mb-6">{rfpBlock}</div> : null}
 
