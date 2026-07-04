@@ -312,6 +312,9 @@ export function DealDocumentsSection({
     }
     setDocuments((prev) => prev.map((d) => (d.id === doc.id ? { ...d, kind } : d)))
     toast.success('Dokumenttyp aktualisiert.')
+    if (doc.kind === 'ausschreibung' && kind !== 'ausschreibung') {
+      toast.info(COPY.deals.cockpit.documentsKindChangeAnalysisHint)
+    }
     router.refresh()
   }
 

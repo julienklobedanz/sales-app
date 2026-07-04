@@ -6,6 +6,16 @@ import Link from 'next/link'
 import { toast } from 'sonner'
 import { MoreHorizontal } from '@hugeicons/core-free-icons'
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -19,7 +29,7 @@ import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 
 import type { DealWithReferences } from '../types'
-import { setDealRfpMode } from '../actions'
+import { deleteDeal, setDealRfpMode } from '../actions'
 import { EditDealDialog } from '../components/edit-deal-dialog'
 import { LinkReferenceDialog } from '../components/link-reference-dialog'
 import { OutcomeDialog } from '../components/outcome-dialog'
@@ -31,16 +41,20 @@ export function DealCockpitActions({
   deal,
   companies,
   orgProfiles,
+  canManage,
 }: {
   deal: DealWithReferences
   companies: Company[]
   orgProfiles: OrgProfile[]
+  canManage: boolean
 }) {
   const router = useRouter()
   const [editOpen, setEditOpen] = useState(false)
   const [linkOpen, setLinkOpen] = useState(false)
   const [outcomeOpen, setOutcomeOpen] = useState(false)
   const [demotePending, setDemotePending] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deletePending, setDeletePending] = useState(false)
 
   const linkedRefIds = deal.references.map((r) => r.id)
 
@@ -56,6 +70,23 @@ export function DealCockpitActions({
       router.refresh()
     } finally {
       setDemotePending(false)
+    }
+  }
+
+  async function confirmDeleteDeal() {
+    setDeletePending(true)
+    try {
+      const res = await deleteDeal(deal.id)
+      if (!res.success) {
+        toast.error(res.error ?? COPY.deals.cockpit.deleteDealFailed)
+        return
+      }
+      toast.success(COPY.deals.cockpit.deleteDealSuccess)
+      setDeleteOpen(false)
+      router.push(ROUTES.deals.root)
+      router.refresh()
+    } finally {
+      setDeletePending(false)
     }
   }
 
@@ -85,8 +116,43 @@ export function DealCockpitActions({
               </DropdownMenuItem>
             </>
           ) : null}
+          {canManage ? (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onSelect={() => setDeleteOpen(true)}
+              >
+                {COPY.deals.cockpit.deleteDeal}
+              </DropdownMenuItem>
+            </>
+          ) : null}
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{COPY.deals.cockpit.deleteDealConfirm}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {COPY.deals.cockpit.deleteDealDescription}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletePending}>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deletePending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={(e) => {
+                e.preventDefault()
+                void confirmDeleteDeal()
+              }}
+            >
+              {deletePending ? COPY.deals.cockpit.deleteDealPending : COPY.deals.cockpit.deleteDeal}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <EditDealDialog
         deal={deal}

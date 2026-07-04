@@ -15,6 +15,13 @@ import {
   getRefstackResendFrom,
 } from '@/lib/email/refstack-email-layout'
 import type { DealRow, DealStatus, DealWithReferences } from './types'
+import { canManageDealDocuments } from '@/lib/deals/can-manage-deal-documents'
+import {
+  DEAL_DOCUMENTS_BUCKET,
+  RFP_DOCUMENTS_BUCKET,
+  uniqueStoragePaths,
+} from '@/lib/deals/deal-delete-storage'
+import { parseProfileRoles } from '@/lib/roles/profile-roles'
 
 async function getSessionOrgId(
   _supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>
@@ -565,6 +572,100 @@ export async function setDealRfpMode(
   if (error) return { success: false, error: error.message }
 
   revalidatePath(ROUTES.deals.detail(dealId))
+  return { success: true }
+}
+
+/** Deal inkl. Storage (deal-documents + legacy rfp-documents) und Desk-Projekte löschen. */
+export async function deleteDeal(
+  dealId: string
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createServerSupabaseClient()
+  const user = await getRequestUser()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+
+  const profile = await getRequestProfile()
+  const orgId = profile?.organization_id
+  if (!orgId) return { success: false, error: 'Keine Organisation zugeordnet.' }
+
+  const { data: deal, error: dealErr } = await supabase
+    .from('deals')
+    .select('id, sales_manager_id, account_manager_id')
+    .eq('id', dealId)
+    .eq('organization_id', orgId)
+    .maybeSingle()
+
+  if (dealErr || !deal) {
+    return { success: false, error: 'Deal nicht gefunden.' }
+  }
+
+  const { systemRole, functionRole } = parseProfileRoles(profile)
+  if (
+    !canManageDealDocuments(
+      {
+        sales_manager_id: deal.sales_manager_id ?? null,
+        account_manager_id: deal.account_manager_id ?? null,
+      },
+      user.id,
+      systemRole,
+      functionRole
+    )
+  ) {
+    return { success: false, error: 'Keine Berechtigung, diesen Deal zu löschen.' }
+  }
+
+  const { data: dealDocs } = await supabase
+    .from('deal_documents')
+    .select('storage_path')
+    .eq('deal_id', dealId)
+    .eq('organization_id', orgId)
+
+  const dealDocPaths = uniqueStoragePaths((dealDocs ?? []).map((d) => d.storage_path))
+
+  const { data: projects } = await supabase
+    .from('deal_desk_projects')
+    .select('id')
+    .eq('deal_id', dealId)
+    .eq('organization_id', orgId)
+
+  const projectIds = (projects ?? []).map((p) => p.id)
+  let rfpPaths: string[] = []
+  if (projectIds.length > 0) {
+    const { data: deskDocs } = await supabase
+      .from('deal_desk_documents')
+      .select('storage_path')
+      .in('project_id', projectIds)
+      .eq('organization_id', orgId)
+    rfpPaths = uniqueStoragePaths((deskDocs ?? []).map((d) => d.storage_path))
+  }
+
+  if (dealDocPaths.length > 0) {
+    const { error } = await supabase.storage.from(DEAL_DOCUMENTS_BUCKET).remove(dealDocPaths)
+    if (error) return { success: false, error: error.message }
+  }
+
+  if (rfpPaths.length > 0) {
+    const { error } = await supabase.storage.from(RFP_DOCUMENTS_BUCKET).remove(rfpPaths)
+    if (error) return { success: false, error: error.message }
+  }
+
+  if (projectIds.length > 0) {
+    const { error } = await supabase
+      .from('deal_desk_projects')
+      .delete()
+      .eq('deal_id', dealId)
+      .eq('organization_id', orgId)
+    if (error) return { success: false, error: error.message }
+  }
+
+  const { error: deleteError } = await supabase
+    .from('deals')
+    .delete()
+    .eq('id', dealId)
+    .eq('organization_id', orgId)
+
+  if (deleteError) return { success: false, error: deleteError.message }
+
+  revalidatePath(ROUTES.deals.root)
   return { success: true }
 }
 

@@ -20,11 +20,13 @@ export function DealCockpitHeader({
   companies,
   orgProfiles,
   briefingButton,
+  canManageDocuments,
 }: {
   deal: DealWithReferences
   companies: Company[]
   orgProfiles: OrgProfile[]
   briefingButton?: ReactNode
+  canManageDocuments: boolean
 }) {
   const owner = deal.sales_manager_name ?? deal.account_manager_name ?? '—'
   const subtitleParts = [
@@ -57,7 +59,12 @@ export function DealCockpitHeader({
 
         <div className="flex flex-wrap items-center gap-2">
           {briefingButton}
-          <DealCockpitActions deal={deal} companies={companies} orgProfiles={orgProfiles} />
+          <DealCockpitActions
+            deal={deal}
+            companies={companies}
+            orgProfiles={orgProfiles}
+            canManage={canManageDocuments}
+          />
         </div>
       </div>
     </div>

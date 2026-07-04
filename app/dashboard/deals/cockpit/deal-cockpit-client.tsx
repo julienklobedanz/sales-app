@@ -49,6 +49,7 @@ export function DealCockpitClient({
         deal={deal}
         companies={companies}
         orgProfiles={orgProfiles}
+        canManageDocuments={canManageDocuments}
         briefingButton={showRfpBlock ? briefingButton : undefined}
       />
 

@@ -180,6 +180,15 @@ export const COPY = {
       documentsAnalyzePending: 'Analyse läuft …',
       documentsAnalyzeSuccess: 'RFP-Analyse abgeschlossen.',
       documentsAnalyzeFailed: 'RFP-Analyse fehlgeschlagen.',
+      deleteDeal: 'Deal löschen',
+      deleteDealConfirm: 'Deal endgültig löschen?',
+      deleteDealDescription:
+        'Der Deal, alle Dokumente, Fristen und Analyse-Daten werden unwiderruflich entfernt.',
+      deleteDealPending: 'Wird gelöscht …',
+      deleteDealSuccess: 'Deal gelöscht.',
+      deleteDealFailed: 'Deal konnte nicht gelöscht werden.',
+      documentsKindChangeAnalysisHint:
+        'Analyse basiert auf einer früheren Ausschreibungs-Version dieses Dokuments.',
       metricsStaleHint: 'Neu analysieren, um belastbare Werte zu sehen.',
       metricAngebotsReife: 'Angebots-Reife',
       metricEligibility: 'Bietfähigkeit / Eignung',
