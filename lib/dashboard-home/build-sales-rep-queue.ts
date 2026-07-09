@@ -6,6 +6,7 @@ import { ROUTES } from '@/lib/routes'
 export type QueueTone = DashboardQueueTone
 
 export type SalesRepQueueItem = {
+  id: string
   tone: QueueTone
   title: string
   meta?: string
@@ -57,6 +58,7 @@ export function buildSalesRepQueue(data: SalesRepDashboardModel): SalesRepQueueI
 
   for (const deal of gapDeals) {
     items.push({
+      id: `deal-gap-${deal.id}`,
       tone: 'gap',
       title: `${deal.company_name ?? deal.title} — ${copy.queueNoProof}`,
       meta: dealLabel(deal),
@@ -73,6 +75,7 @@ export function buildSalesRepQueue(data: SalesRepDashboardModel): SalesRepQueueI
   for (const deal of warnDeals) {
     if (items.some((i) => i.href === ROUTES.matchWithDeal(deal.id))) continue
     items.push({
+      id: `deal-warn-${deal.id}`,
       tone: 'warn',
       title: `${deal.company_name ?? deal.title} — ${copy.queueWeakProof}`,
       meta: [deal.volume, dealLabel(deal)].filter(Boolean).join(' · '),
@@ -81,18 +84,25 @@ export function buildSalesRepQueue(data: SalesRepDashboardModel): SalesRepQueueI
     })
   }
 
+  const seenIntentKeys = new Set<string>()
   for (const intent of data.liveIntent.slice(0, 4)) {
+    const href = intent.href ?? ROUTES.accounts
+    const dedupeKey = `${href}::${intent.text}`
+    if (seenIntentKeys.has(dedupeKey)) continue
+    seenIntentKeys.add(dedupeKey)
     items.push({
+      id: `intent-${intent.id}`,
       tone: 'intent',
       title: intent.text,
       meta: copy.queueHotSignal,
       ctaLabel: copy.queueFollowUp,
-      href: intent.href ?? ROUTES.accounts,
+      href,
     })
   }
 
   if (data.dueSnoozesCount > 0) {
     items.push({
+      id: 'snooze-due',
       tone: 'neutral',
       title: `${data.dueSnoozesCount} ${copy.queueSnoozeBack}`,
       meta: copy.queueSnoozeDue,

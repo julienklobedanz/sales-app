@@ -56,4 +56,28 @@ describe('buildSalesRepQueue', () => {
     const queue = buildSalesRepQueue(baseModel({ dueSnoozesCount: 2 }))
     expect(queue.some((q) => q.title.includes('Snooze'))).toBe(true)
   })
+
+  it('dedupliziert gleiche Intent-Einträge', () => {
+    const queue = buildSalesRepQueue(
+      baseModel({
+        liveIntent: [
+          {
+            id: 'i1',
+            text: 'Apple liest Supply-Chain-Control-Tower',
+            createdAt: new Date().toISOString(),
+            href: '/dashboard/accounts/c1',
+          },
+          {
+            id: 'i2',
+            text: 'Apple liest Supply-Chain-Control-Tower',
+            createdAt: new Date().toISOString(),
+            href: '/dashboard/accounts/c1',
+          },
+        ],
+      })
+    )
+
+    expect(queue.filter((q) => q.tone === 'intent')).toHaveLength(1)
+    expect(new Set(queue.map((q) => q.id)).size).toBe(queue.length)
+  })
 })

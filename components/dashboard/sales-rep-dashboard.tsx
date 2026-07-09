@@ -96,7 +96,7 @@ export function SalesRepDashboard({
         ) : (
           queue.map((item) => (
             <WorkQueueRow
-              key={`${item.href}-${item.title}`}
+              key={item.id}
               tone={item.tone}
               title={item.title}
               meta={item.meta}
