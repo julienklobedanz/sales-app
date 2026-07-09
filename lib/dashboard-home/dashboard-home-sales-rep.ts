@@ -1,9 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { matchReferences } from '@/app/dashboard/actions'
 import { getDeals } from '@/app/dashboard/deals/actions'
 import type { DealRow } from '@/app/dashboard/deals/types'
 import { ROUTES } from '@/lib/routes'
-import { ACTIVE_DEAL_STATUSES, type RecommendedRefRow, type RecentShareRow, type SalesRepDashboardModel, type SalesRepDealCard } from '@/lib/dashboard-home/dashboard-home-types'
+import { ACTIVE_DEAL_STATUSES, type RecentShareRow, type SalesRepDashboardModel, type SalesRepDealCard } from '@/lib/dashboard-home/dashboard-home-types'
 import {
   countDueMarketSnoozes,
   dashboardFirstName,
@@ -41,42 +40,19 @@ export async function loadSalesRepDashboardData(
     }))
     .slice(0, 8)
 
-  let recommended: RecommendedRefRow[] = []
-  let recommendedNote: string | null = null
-
-  const primary = activeDeals[0]
-  if (primary) {
-    const full = allDeals.find((x) => x.id === primary.id)
-    const req = (full?.requirements_text ?? '').trim()
-    const query =
-      [full?.title, full?.industry, full?.volume, req].filter(Boolean).join('\n').slice(0, 3500) || full?.title || ''
-
-    if (query.trim()) {
-      const result = await matchReferences(query, primary.id, { matchCount: 6, matchThreshold: 0.35 })
-      if (result.success) {
-        recommended = result.matches.map((m) => ({
-          id: m.id,
-          title: m.title,
-          snippet: m.snippet,
-          similarity: m.similarity,
-        }))
-      } else {
-        recommendedNote = result.error
-      }
-    }
-  } else {
-    recommendedNote = 'Keine aktiven Deals – keine automatischen Empfehlungen.'
-  }
-
   let recentShares: RecentShareRow[] = []
   let snoozedSignalsCount = 0
   let dueSnoozesCount = 0
-  let dailyTopActions: SalesRepDashboardModel['dailyTopActions'] = []
+  let matches7d = 0
+  let shares7d = 0
   let liveIntent: SalesRepDashboardModel['liveIntent'] = []
   let strategicAccounts: SalesRepDashboardModel['strategicAccounts'] = []
 
   if (orgId) {
-    const [signalReadRows, execRows, newsRows, intentRows] = await Promise.all([
+    const since7 = new Date()
+    since7.setDate(since7.getDate() - 7)
+
+    const [signalReadRows, execRows, newsRows, intentRows, matchCountRes, shareCountRes] = await Promise.all([
       supabase
         .from('notification_inbox_reads')
         .select('notification_key,read_at')
@@ -102,7 +78,24 @@ export async function loadSalesRepDashboardData(
         .in('event_type', ['share_link_viewed', 'reference_viewed', 'reference_shared'])
         .order('created_at', { ascending: false })
         .limit(50),
+      supabase
+        .from('evidence_events')
+        .select('id', { count: 'planned', head: true })
+        .eq('organization_id', orgId)
+        .eq('created_by', userId)
+        .eq('event_type', 'reference_matched')
+        .gte('created_at', since7.toISOString()),
+      supabase
+        .from('evidence_events')
+        .select('id', { count: 'planned', head: true })
+        .eq('organization_id', orgId)
+        .eq('created_by', userId)
+        .in('event_type', ['reference_shared', 'share_link_viewed'])
+        .gte('created_at', since7.toISOString()),
     ])
+
+    matches7d = matchCountRes.count ?? 0
+    shares7d = shareCountRes.count ?? 0
 
     const snoozeKeys = (signalReadRows.data ?? [])
       .map((row) => String((row as { notification_key?: string | null }).notification_key ?? ''))
@@ -110,60 +103,6 @@ export async function loadSalesRepDashboardData(
     snoozedSignalsCount = snoozeKeys.length
     const nowMs = Date.now()
     dueSnoozesCount = countDueMarketSnoozes(snoozeKeys, nowMs)
-
-    const latestExec = (execRows.data ?? [])[0] as
-      | { id?: string; person_name?: string | null; change_summary?: string | null; company_id?: string | null; companies?: { name?: string | null }[] | { name?: string | null } | null; detected_at?: string | null }
-      | undefined
-    const latestNews = (newsRows.data ?? [])[0] as
-      | { id?: string; body?: string | null; company_id?: string | null; companies?: { name?: string | null }[] | { name?: string | null } | null; published_on?: string | null }
-      | undefined
-
-    const execCompany = Array.isArray(latestExec?.companies) ? latestExec?.companies[0] : latestExec?.companies
-    const newsCompany = Array.isArray(latestNews?.companies) ? latestNews?.companies[0] : latestNews?.companies
-    const execCompanyName = String(execCompany?.name ?? 'Account')
-    const newsCompanyName = String(newsCompany?.name ?? 'Account')
-    const execSignalKey = latestExec?.id ? `market_exec:${latestExec.id}` : `market_exec:dashboard:${orgId}`
-    const newsSignalKey = latestNews?.id ? `market_news:${latestNews.id}` : `market_news:dashboard:${orgId}`
-
-    dailyTopActions = [
-      {
-        id: 'top-prio',
-        level: 'prio',
-        title: `${execCompanyName} - Executive-Wechsel erkannt`,
-        subtitle: String(latestExec?.change_summary ?? 'Neues High-Intent Signal erkannt.'),
-        ctaLabel: 'Draft Outreach',
-        href: latestExec?.company_id
-          ? ROUTES.accountsDetail(String(latestExec.company_id))
-          : ROUTES.accounts,
-        signalKey: execSignalKey,
-        draftSubject: `Re: ${execCompanyName} - kurzer Austausch zum Wechsel`,
-        draftBody: `Hi [Name],\n\nich habe die aktuelle Veränderung bei ${execCompanyName} gesehen. Wenn du magst, schicke ich dir 2-3 kurze Benchmarks aus ähnlichen Situationen.\n\nBeste Grüße`,
-      },
-      {
-        id: 'top-new',
-        level: 'new',
-        title: `${newsCompanyName} - Neues Firmen-Signal`,
-        subtitle: String(latestNews?.body ?? 'Neues Markt-Update in der Watchlist.').slice(0, 120),
-        ctaLabel: 'Referenz teilen',
-        href: latestNews?.company_id
-          ? ROUTES.accountsDetail(String(latestNews.company_id))
-          : ROUTES.accounts,
-        signalKey: newsSignalKey,
-        draftSubject: `Relevante Referenz zu ${newsCompanyName}`,
-        draftBody: `Hi [Name],\n\nzu eurem aktuellen Thema bei ${newsCompanyName} haben wir eine passende Referenz vorbereitet. Soll ich sie direkt schicken?\n\nViele Grüße`,
-      },
-      {
-        id: 'top-back',
-        level: 'back',
-        title: `${dueSnoozesCount} Signale aus Snooze zurück`,
-        subtitle: 'Wiedervorlage heute fällig - Queue jetzt priorisieren.',
-        ctaLabel: 'Review Queue',
-        href: ROUTES.accounts,
-        signalKey: `market_news:snooze_due:${orgId}`,
-        draftSubject: 'Follow-up auf fällige Signale',
-        draftBody: `Hi Team,\n\nich gehe heute die fälligen Snoozes durch und priorisiere die Top-Chancen.\n\nVG`,
-      },
-    ]
 
     const intentEvents = (intentRows.data ?? []) as Array<{
       id?: string | null
@@ -392,16 +331,21 @@ export async function loadSalesRepDashboardData(
     recentSignalCount: deal.company_id ? (signalByCompany.get(deal.company_id) ?? 0) : 0,
   }))
 
+  const dealsWithProof = dealsWithSignals.filter((d) => d.linkedCount > 0).length
+
   return {
     greetingName,
     activeDeals: dealsWithSignals,
-    recommended,
-    recommendedNote,
     recentShares,
     snoozedSignalsCount,
     dueSnoozesCount,
-    dailyTopActions,
     liveIntent,
     strategicAccounts,
+    footerStats: {
+      matches7d,
+      shares7d,
+      dealsWithProof,
+      dealsTotal: dealsWithSignals.length,
+    },
   }
 }

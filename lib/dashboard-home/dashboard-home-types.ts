@@ -37,22 +37,9 @@ export type RecentShareRow = {
 export type SalesRepDashboardModel = {
   greetingName: string
   activeDeals: SalesRepDealCard[]
-  recommended: RecommendedRefRow[]
-  recommendedNote: string | null
   recentShares: RecentShareRow[]
   snoozedSignalsCount: number
   dueSnoozesCount: number
-  dailyTopActions: Array<{
-    id: string
-    level: 'prio' | 'new' | 'back'
-    title: string
-    subtitle: string
-    ctaLabel: string
-    href: string
-    signalKey: string
-    draftSubject: string
-    draftBody: string
-  }>
   liveIntent: Array<{
     id: string
     text: string
@@ -68,6 +55,12 @@ export type SalesRepDashboardModel = {
     actionLabel: string
     href: string
   }>
+  footerStats: {
+    matches7d: number
+    shares7d: number
+    dealsWithProof: number
+    dealsTotal: number
+  }
 }
 
 export type GeneralistDashboardModel = {
@@ -113,21 +106,60 @@ export type UsageTotalsRow = {
   matches: number
 }
 
+export type DashboardQueueTone = 'gap' | 'warn' | 'intent' | 'neutral' | 'info'
+
+export type DashboardQueueItem = {
+  tone: DashboardQueueTone
+  title: string
+  meta?: string
+  ctaLabel: string
+  href: string
+}
+
+export type DashboardFreshnessRow = {
+  id: string
+  name: string
+  summary: string
+  tone: 'ok' | 'warn' | 'gap'
+  href: string
+}
+
+export type DashboardWhitespotRow = {
+  label: string
+  countLabel: string
+  tone: 'gap' | 'warn'
+  href: string
+}
+
+export type DashboardFunnelStep = {
+  label: string
+  value: number
+}
+
+export type DashboardAdvocateRow = {
+  label: string
+  value: number
+  display: string
+  tone?: 'warn'
+}
+
 export type AccountManagerDashboardModel = {
   greetingName: string
   kpis: ReferenceKpiCounts
-  kpiTrends: WeeklyTrendStrip
   pendingApprovalsCount: number
   pendingApprovals: Awaited<ReturnType<typeof getPendingClientApprovalsImpl>>
-  usageWindowDays: number
   usageTotals: UsageTotalsRow
-  usageByReference: Array<{
-    id: string
-    title: string
-    views: number
-    shares: number
-    matches: number
-  }>
+  digest: DashboardQueueItem[]
+  freshness: DashboardFreshnessRow[]
+  freshnessMoreCount: number
+  whitespots: DashboardWhitespotRow[]
+  approvalFunnel: DashboardFunnelStep[]
+  advocateLoad: DashboardAdvocateRow[]
+  footerStats: {
+    referencesTotal: number
+    pendingApprovals: number
+    advocateRequests: number
+  }
 }
 
 export type AdminKpiStrip = {
@@ -156,6 +188,35 @@ export type TeamActivityRow = {
   companyLogoUrl: string | null
 }
 
+export type LeaderRiskDealRow = {
+  id: string
+  title: string
+  valueLabel: string
+  coverageLabel: string
+  tone: 'gap' | 'warn' | 'ok'
+  ctaLabel: string | null
+  href: string
+}
+
+export type LeaderCoachingRow = {
+  who: string
+  signal: string
+  tone: 'gap' | 'warn' | 'ok'
+}
+
+export type LeaderCoveragePipelineRow = {
+  label: string
+  sublabel: string
+  tone: 'gap' | 'warn' | 'ok'
+}
+
+export type LeaderSignalRiskRow = {
+  tone: 'gap' | 'warn'
+  text: string
+  ctaLabel: string
+  href: string
+}
+
 export type AdminDashboardModel = {
   greetingName: string
   kpis: AdminKpiStrip
@@ -166,6 +227,22 @@ export type AdminDashboardModel = {
     wau7d: number
   }
   topReferences: TopReferenceRow[]
+  riskDeals: LeaderRiskDealRow[]
+  coachingSignals: LeaderCoachingRow[]
+  coveragePipeline: LeaderCoveragePipelineRow[]
+  signalRisks: LeaderSignalRiskRow[]
+  winRateCompare: {
+    available: boolean
+    withReferencePercent: number | null
+    withoutReferencePercent: number | null
+    closedDealsCount: number
+    minDealsRequired: number
+  }
+  footerStats: {
+    referencesTotal: number
+    activeUsers: number
+    shareRatePercent: number | null
+  }
   openRequests: Awaited<ReturnType<typeof getRequestsImpl>>
   teamActivity: TeamActivityRow[]
   blockers: Array<{

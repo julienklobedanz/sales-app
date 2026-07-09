@@ -16,6 +16,14 @@ import {
   integrationConnectionStatus,
   teamActivityLabelForEvent,
 } from '@/lib/dashboard-home/dashboard-home-pure'
+import {
+  aggregateTeamMatches,
+  buildLeaderCoaching,
+  buildLeaderCoveragePipeline,
+  buildLeaderRiskDeals,
+  buildLeaderSignalRisks,
+  buildWinRateCompare,
+} from '@/lib/dashboard-home/build-leader-dashboard'
 
 export async function loadAdminDashboardData(
   supabase: SupabaseClient,
@@ -509,6 +517,63 @@ export async function loadAdminDashboardData(
     minDealsRequired
   )
 
+  let riskDeals = buildLeaderRiskDeals(allDealsForSignals)
+  let coachingSignals: AdminDashboardModel['coachingSignals'] = []
+  let coveragePipeline = buildLeaderCoveragePipeline(
+    pipelineSignals,
+    contentRoi.gapAlert?.term ?? null
+  )
+  let signalRisks: AdminDashboardModel['signalRisks'] = []
+  const winRateCompare = buildWinRateCompare(closedDeals, minDealsRequired)
+
+  if (orgId) {
+    const { data: profileRows } = await supabase
+      .from('profiles')
+      .select('id, full_name, function_role')
+      .eq('organization_id', orgId)
+      .limit(40)
+
+    const matchCounts = aggregateTeamMatches(teamActivity)
+    const pendingByUser = new Map<string, number>()
+    for (const req of openRequests) {
+      // requester not in openRequests type - skip detailed pending by user
+    }
+
+    coachingSignals = buildLeaderCoaching(
+      (profileRows ?? []) as Array<{ id: string; full_name: string | null; function_role: string | null }>,
+      matchCounts,
+      pendingByUser
+    )
+
+    const openHighValue = allDealsForSignals.filter(
+      (d) =>
+        ACTIVE_DEAL_STATUSES.includes(d.status) &&
+        (d.volume?.includes('Mio') || d.volume?.includes('Mio'))
+    )
+    const companyIds = [...new Set(openHighValue.map((d) => d.company_id).filter(Boolean) as string[])]
+    let championLossCount = 0
+    if (companyIds.length) {
+      const { data: execLoss } = await supabase
+        .from('market_signal_executive_events')
+        .select('company_id, change_summary')
+        .in('company_id', companyIds)
+        .order('detected_at', { ascending: false })
+        .limit(40)
+      championLossCount = (execLoss ?? []).filter((row) =>
+        /verlass|wechsel|ausgeschieden|left/i.test(String((row as { change_summary?: string }).change_summary ?? ''))
+      ).length
+    }
+
+    signalRisks = buildLeaderSignalRisks({
+      championLossCount: Math.min(championLossCount, openHighValue.length),
+      unansweredTriggers: Math.max(0, pipelineSignals.length - 1),
+      totalTriggers: pipelineSignals.length,
+    })
+  }
+
+  const shareRatePercent =
+    matches7d > 0 ? Math.min(100, Math.round((shares7d / matches7d) * 100)) : null
+
   return {
     greetingName,
     kpis: {
@@ -516,6 +581,16 @@ export async function loadAdminDashboardData(
       matches7d,
       shares7d,
       wau7d,
+    },
+    riskDeals,
+    coachingSignals,
+    coveragePipeline,
+    signalRisks,
+    winRateCompare,
+    footerStats: {
+      referencesTotal,
+      activeUsers: wau7d,
+      shareRatePercent,
     },
     kpiTrends: {
       referencesTotal: referencesCreated7d - prevReferencesCreated7d,

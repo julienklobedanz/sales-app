@@ -1,161 +1,151 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
-import { CirclePlus, UploadIcon } from '@hugeicons/core-free-icons'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { AppIcon } from '@/lib/icons'
-import { ROUTES } from '@/lib/routes'
-import type { AccountManagerDashboardModel } from '@/app/dashboard/dashboard-home-data'
-import { formatDateUtcDe } from '@/lib/format'
-import { toast } from 'sonner'
-import { resendClientApprovalEmail } from '@/app/dashboard/actions'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 
-export function AccountManagerDashboard({ data }: { data: AccountManagerDashboardModel }) {
-  const { kpis, pendingApprovalsCount, pendingApprovals, usageByReference } = data
-  const [remindingId, setRemindingId] = useState<string | null>(null)
+import {
+  DashboardFooterStrip,
+  DashboardSectionCard,
+  FunnelBarList,
+  HonestEmpty,
+  HorizontalBarList,
+  StatusTonePill,
+  WorkQueueRow,
+} from '@/components/dashboard/dashboard-home-primitives'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import type { AccountManagerDashboardModel } from '@/app/dashboard/dashboard-home-data'
+import { COPY } from '@/lib/copy'
+import { formatCopy } from '@/lib/dashboard-home/copy-format'
+import { ROUTES } from '@/lib/routes'
+import { cn } from '@/lib/utils'
+
+function riskPillClass(tone: 'gap' | 'warn' | 'ok') {
+  return cn(
+    'text-[11px]',
+    tone === 'ok' && 'border-primary/30 bg-primary/10 text-primary',
+    tone === 'warn' && 'border-amber-300/60 bg-amber-50 text-amber-900',
+    tone === 'gap' && 'border-destructive/30 bg-destructive/10 text-destructive'
+  )
+}
+
+export function AccountManagerDashboard({
+  data,
+  thin = false,
+}: {
+  data: AccountManagerDashboardModel
+  thin?: boolean
+}) {
+  const c = COPY.dashboard.home.accountManager
+
+  const footerItems = thin
+    ? [
+        { text: formatCopy(c.footerReferences, { n: 0 }) },
+        { text: formatCopy(c.footerPending, { n: 0 }) },
+        { text: formatCopy(c.footerAdvocate, { n: 0 }) },
+      ]
+    : [
+        { text: formatCopy(c.footerReferences, { n: data.footerStats.referencesTotal }) },
+        { text: formatCopy(c.footerPending, { n: data.footerStats.pendingApprovals }) },
+        { text: formatCopy(c.footerAdvocate, { n: data.footerStats.advocateRequests }) },
+      ]
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 pb-8">
-      <p className="text-sm text-muted-foreground">
-        Welche Referenzen brauchen deine Aufmerksamkeit?
-      </p>
+    <>
+      <DashboardSectionCard
+        title={c.digestTitle}
+        count={thin ? undefined : data.digest.length}
+        description={c.digestDescription}
+        hero
+      >
+        {thin || data.digest.length === 0 ? (
+          <HonestEmpty title={c.digestEmptyTitle} description={c.digestEmptyDescription} />
+        ) : (
+          data.digest.map((item) => (
+            <WorkQueueRow
+              key={`${item.href}-${item.title}`}
+              tone={item.tone === 'info' ? 'intent' : item.tone === 'intent' ? 'intent' : item.tone}
+              title={item.title}
+              meta={item.meta}
+              ctaLabel={item.ctaLabel}
+              href={item.href}
+            />
+          ))
+        )}
+      </DashboardSectionCard>
 
-      <div className="flex flex-wrap gap-2">
-        <Button asChild variant="default" className="gap-2">
-          <Link href={ROUTES.references.new}>
-            <AppIcon icon={CirclePlus} size={18} />
-            Referenz anlegen
-          </Link>
-        </Button>
-        <Button asChild variant="outline" className="gap-2">
-          <Link href={ROUTES.references.newBulk}>
-            <AppIcon icon={UploadIcon} size={18} />
-            Bulk-Import
-          </Link>
-        </Button>
+      <div className="grid gap-4 md:grid-cols-2">
+        <DashboardSectionCard title={c.freshTitle} description={c.freshDescription}>
+          {thin || data.freshness.length === 0 ? (
+            <HonestEmpty title={c.freshEmptyTitle} description={c.freshEmptyDescription} />
+          ) : (
+            <div className="space-y-0">
+              {data.freshness.map((row) => (
+                <div
+                  key={row.id}
+                  className="flex items-start justify-between gap-2 border-t border-border py-2.5 first:border-t-0 first:pt-0"
+                >
+                  <div className="min-w-0 text-sm">
+                    <Link href={row.href} className="font-medium hover:underline">
+                      {row.name}
+                    </Link>
+                    <p className="text-xs text-muted-foreground">{row.summary}</p>
+                  </div>
+                  <StatusTonePill tone={row.tone} />
+                </div>
+              ))}
+            </div>
+          )}
+        </DashboardSectionCard>
+
+        <DashboardSectionCard title={c.whitespotTitle} description={c.whitespotDescription}>
+          {thin || data.whitespots.length === 0 ? (
+            <HonestEmpty title={c.whitespotEmptyTitle} description={c.whitespotEmptyDescription} />
+          ) : (
+            <div className="space-y-0">
+              {data.whitespots.map((row) => (
+                <div
+                  key={row.label}
+                  className="flex items-center gap-2 border-t border-border py-2.5 first:border-t-0 first:pt-0"
+                >
+                  <span className="min-w-0 flex-1 text-sm">{row.label}</span>
+                  <Badge variant="outline" className={riskPillClass(row.tone)}>
+                    {row.countLabel}
+                  </Badge>
+                  <Button asChild variant="outline" size="sm" className="h-7 text-xs">
+                    <Link href={row.href}>{c.whitespotRequest}</Link>
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </DashboardSectionCard>
       </div>
 
-      <Card className="border-border shadow-sm">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Eigene Referenzen nach Status</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {[
-              { label: 'Gesamt', value: kpis.total },
-              { label: 'Freigegeben', value: kpis.approved },
-              { label: 'Nur intern', value: kpis.internal },
-              { label: 'Entwurf', value: kpis.draft },
-            ].map((k) => (
-              <div key={k.label} className="rounded-lg border border-border p-3 text-center">
-                <div className="text-xs text-muted-foreground">{k.label}</div>
-                <div className="text-2xl font-semibold tabular-nums">{k.value}</div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Ausstehende Freigaben ({pendingApprovalsCount})</CardTitle>
-          <CardDescription>Inkl. Kunden-Änderungswünsche in der Detailansicht.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {pendingApprovals.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Keine ausstehenden Freigaben.</p>
+      <div className="grid gap-4 md:grid-cols-2">
+        <DashboardSectionCard title={c.funnelTitle} description={c.funnelDescription}>
+          {thin || data.approvalFunnel.every((s) => s.value === 0) ? (
+            <HonestEmpty title={c.funnelEmptyTitle} description={c.funnelEmptyDescription} />
           ) : (
-            <ul className="space-y-3">
-              {pendingApprovals.slice(0, 8).map((p) => (
-                <li
-                  key={p.approvalId}
-                  className="flex flex-col gap-1 rounded-md border border-border p-3 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div>
-                    <Link
-                      href={ROUTES.references.detail(p.referenceId)}
-                      className="font-medium hover:underline"
-                    >
-                      {p.title}
-                    </Link>
-                    <div className="text-xs text-muted-foreground">
-                      {p.companyName} · angefragt {formatDateUtcDe(p.requestedAt)}
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={remindingId === p.referenceId}
-                      onClick={() => {
-                        setRemindingId(p.referenceId)
-                        void toast
-                          .promise(resendClientApprovalEmail(p.referenceId), {
-                            loading: 'Neuer Link wird erzeugt …',
-                            success: 'Neuer Freigabe-Link aktiv.',
-                            error: (e) => (e instanceof Error ? e.message : 'Fehler'),
-                          })
-                          .unwrap()
-                          .finally(() => setRemindingId(null))
-                      }}
-                    >
-                      Neuen Link
-                    </Button>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <FunnelBarList steps={data.approvalFunnel} />
           )}
-        </CardContent>
-      </Card>
+        </DashboardSectionCard>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Nutzung deiner Referenzen</CardTitle>
-          <CardDescription>Views, Shares und Matches (letzte 30 Tage).</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {usageByReference.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Noch keine Nutzungsdaten.</p>
+        <DashboardSectionCard title={c.advocateTitle} description={c.advocateDescription}>
+          {thin || data.advocateLoad.length === 0 ? (
+            <HonestEmpty title={c.advocateEmptyTitle} description={c.advocateEmptyDescription} />
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Referenz</TableHead>
-                  <TableHead className="text-right">Views</TableHead>
-                  <TableHead className="text-right">Shares</TableHead>
-                  <TableHead className="text-right">Matches</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {usageByReference.slice(0, 8).map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell className="font-medium">
-                      <Link href={ROUTES.references.detail(r.id)} className="hover:underline">
-                        {r.title}
-                      </Link>
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">{r.views}</TableCell>
-                    <TableCell className="text-right tabular-nums">{r.shares}</TableCell>
-                    <TableCell className="text-right tabular-nums">{r.matches}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <HorizontalBarList
+              items={data.advocateLoad.map((row) => ({
+                label: row.label,
+                value: row.value,
+                display: row.display,
+              }))}
+            />
           )}
-        </CardContent>
-      </Card>
-    </div>
+        </DashboardSectionCard>
+      </div>
+
+      <DashboardFooterStrip label={c.footerLabel} items={footerItems} />
+    </>
   )
 }

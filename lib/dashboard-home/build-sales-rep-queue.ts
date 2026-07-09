@@ -1,0 +1,105 @@
+import { COPY } from '@/lib/copy'
+import { formatCopy } from '@/lib/dashboard-home/copy-format'
+import type { DashboardQueueTone, SalesRepDashboardModel } from '@/lib/dashboard-home/dashboard-home-types'
+import { ROUTES } from '@/lib/routes'
+
+export type QueueTone = DashboardQueueTone
+
+export type SalesRepQueueItem = {
+  tone: QueueTone
+  title: string
+  meta?: string
+  ctaLabel: string
+  href: string
+}
+
+const PARTIAL_MATCH_CUTOFF = 0.47
+const c = () => COPY.dashboard.home.salesRep
+
+function daysUntilExpiry(expiryDate: string | null, refDate = new Date()): number | null {
+  if (!expiryDate?.trim()) return null
+  const end = new Date(`${expiryDate}T12:00:00`)
+  if (Number.isNaN(end.getTime())) return null
+  const today = new Date(refDate)
+  today.setHours(0, 0, 0, 0)
+  end.setHours(0, 0, 0, 0)
+  return Math.round((end.getTime() - today.getTime()) / (24 * 60 * 60 * 1000))
+}
+
+function formatDealDeadline(days: number | null): string {
+  const copy = c()
+  if (days == null) return copy.dealOpen
+  if (days < 0) return copy.dealOverdue
+  if (days === 0) return copy.dealToday
+  if (days === 1) return copy.dealInOneDay
+  if (days < 14) return formatCopy(copy.dealInDays, { n: days })
+  const weeks = Math.round(days / 7)
+  return weeks === 1 ? copy.dealInOneWeek : formatCopy(copy.dealInWeeks, { n: weeks })
+}
+
+function dealLabel(deal: SalesRepDashboardModel['activeDeals'][number]): string {
+  const company = deal.company_name ?? deal.title
+  const deadline = formatDealDeadline(daysUntilExpiry(deal.expiry_date))
+  return `${company} · ${deadline}`
+}
+
+export function buildSalesRepQueue(data: SalesRepDashboardModel): SalesRepQueueItem[] {
+  const copy = c()
+  const items: SalesRepQueueItem[] = []
+
+  const gapDeals = [...data.activeDeals]
+    .filter((d) => d.linkedCount === 0)
+    .sort((a, b) => {
+      const da = daysUntilExpiry(a.expiry_date) ?? 9999
+      const db = daysUntilExpiry(b.expiry_date) ?? 9999
+      return da - db
+    })
+
+  for (const deal of gapDeals) {
+    items.push({
+      tone: 'gap',
+      title: `${deal.company_name ?? deal.title} — ${copy.queueNoProof}`,
+      meta: dealLabel(deal),
+      ctaLabel: copy.queueFindProof,
+      href: ROUTES.matchWithDeal(deal.id),
+    })
+  }
+
+  const warnDeals = data.activeDeals.filter(
+    (d) =>
+      d.linkedCount > 0 &&
+      (d.bestMatchScore == null || d.bestMatchScore < PARTIAL_MATCH_CUTOFF || d.linkedCount === 1)
+  )
+  for (const deal of warnDeals) {
+    if (items.some((i) => i.href === ROUTES.matchWithDeal(deal.id))) continue
+    items.push({
+      tone: 'warn',
+      title: `${deal.company_name ?? deal.title} — ${copy.queueWeakProof}`,
+      meta: [deal.volume, dealLabel(deal)].filter(Boolean).join(' · '),
+      ctaLabel: copy.queueFindProof,
+      href: ROUTES.matchWithDeal(deal.id),
+    })
+  }
+
+  for (const intent of data.liveIntent.slice(0, 4)) {
+    items.push({
+      tone: 'intent',
+      title: intent.text,
+      meta: copy.queueHotSignal,
+      ctaLabel: copy.queueFollowUp,
+      href: intent.href ?? ROUTES.accounts,
+    })
+  }
+
+  if (data.dueSnoozesCount > 0) {
+    items.push({
+      tone: 'neutral',
+      title: `${data.dueSnoozesCount} ${copy.queueSnoozeBack}`,
+      meta: copy.queueSnoozeDue,
+      ctaLabel: copy.queueReview,
+      href: ROUTES.accounts,
+    })
+  }
+
+  return items.slice(0, 8)
+}

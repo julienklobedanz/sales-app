@@ -7,6 +7,7 @@ import { DashboardHomeSkeleton } from '@/components/dashboard/dashboard-home-ske
 import type { RoleHomeDashboardPayload } from '@/components/dashboard/role-home-dashboard'
 import { loadDashboardHomeForFunctionRole } from '@/app/dashboard/dashboard-home-data'
 import { getRequestEffectiveRoles, getRequestUser } from '@/lib/auth/request-user'
+import { isThinDashboardContext } from '@/lib/dashboard-home/thin-data'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,6 +51,8 @@ async function DashboardHomeContent() {
     invitesRes,
     favoriteAccountsRes,
     orgCompanyIdsRes,
+    dealsRes,
+    events7dRes,
   ] = await Promise.all([
     supabase
       .from('companies')
@@ -76,6 +79,16 @@ async function DashboardHomeContent() {
       .eq('organization_id', orgId)
       .eq('is_favorite', true),
     supabase.from('companies').select('id').eq('organization_id', orgId),
+    supabase
+      .from('deals')
+      .select('id', { count: 'planned', head: true })
+      .eq('organization_id', orgId)
+      .in('status', ['open', 'rfp', 'negotiation']),
+    supabase
+      .from('evidence_events')
+      .select('id', { count: 'planned', head: true })
+      .eq('organization_id', orgId)
+      .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
   ])
 
   const accountCount = accountsRes.count ?? 0
@@ -101,6 +114,11 @@ async function DashboardHomeContent() {
   }
 
   const isBrandNew = accountCount === 0 && referenceCount === 0
+  const thinDashboard = isThinDashboardContext({
+    referenceCount,
+    dealCount: dealsRes.count ?? 0,
+    eventCount: events7dRes.count ?? 0,
+  })
 
   return (
     <DashboardHome
@@ -115,6 +133,7 @@ async function DashboardHomeContent() {
       }}
       dashboardPayload={dashboardPayload}
       functionRole={functionRole}
+      thinDashboard={thinDashboard}
     />
   )
 }

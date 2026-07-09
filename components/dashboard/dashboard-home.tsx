@@ -63,6 +63,7 @@ type DashboardHomeProps = {
   progress: FirstStepsProgress
   dashboardPayload: RoleHomeDashboardPayload
   functionRole: FunctionRole
+  thinDashboard?: boolean
 }
 
 export function DashboardHome({
@@ -72,6 +73,7 @@ export function DashboardHome({
   progress,
   dashboardPayload,
   functionRole,
+  thinDashboard = false,
 }: DashboardHomeProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -146,6 +148,7 @@ export function DashboardHome({
           payload={dashboardPayload}
           greetingName={greetingName}
           functionRole={functionRole}
+          thin={thinDashboard}
         />
       ) : null}
 

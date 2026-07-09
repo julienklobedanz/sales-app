@@ -1,133 +1,205 @@
 'use client'
 
 import Link from 'next/link'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ROUTES } from '@/lib/routes'
-import type { SalesRepDashboardModel } from '@/app/dashboard/dashboard-home-data'
-import { formatDateUtcDe } from '@/lib/format'
 
-export function SalesRepDashboard({ data }: { data: SalesRepDashboardModel }) {
-  const { activeDeals, recommended, recommendedNote, recentShares } = data
+import {
+  CoverageDonut,
+  DashboardFooterStrip,
+  DashboardSectionCard,
+  HonestEmpty,
+  HorizontalBarList,
+  SignalStatusPill,
+  WorkQueueRow,
+} from '@/components/dashboard/dashboard-home-primitives'
+import { Button } from '@/components/ui/button'
+import { COPY } from '@/lib/copy'
+import { formatCopy } from '@/lib/dashboard-home/copy-format'
+import { buildSalesRepQueue } from '@/lib/dashboard-home/build-sales-rep-queue'
+import type { SalesRepDashboardModel } from '@/app/dashboard/dashboard-home-data'
+import { ROUTES } from '@/lib/routes'
+
+function signalToneFromGap(meddpiccGap: string): 'ok' | 'warn' | 'gap' {
+  const g = meddpiccGap.toLowerCase()
+  if (g.includes('economic buyer') || g.includes('champion fehlt')) return 'gap'
+  if (g.includes('fehlt') || g.includes('ziele')) return 'warn'
+  return 'ok'
+}
+
+function aggregateShareBars(recentShares: SalesRepDashboardModel['recentShares'], fallbackTitle: string) {
+  const counts = new Map<string, number>()
+  for (const row of recentShares) {
+    const label = row.reference_title?.trim() || fallbackTitle
+    counts.set(label, (counts.get(label) ?? 0) + 1)
+  }
+  return [...counts.entries()]
+    .map(([label, value]) => ({
+      label,
+      value,
+      display: value === 1 ? '1' : `${value}`,
+    }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 5)
+}
+
+export function SalesRepDashboard({
+  data,
+  thin = false,
+}: {
+  data: SalesRepDashboardModel
+  thin?: boolean
+}) {
+  const c = COPY.dashboard.home.salesRep
+  const queue = buildSalesRepQueue(data)
+  const shareBars = aggregateShareBars(data.recentShares, c.reuseFallbackTitle)
+  const { footerStats } = data
+  const coveragePct =
+    footerStats.dealsTotal > 0
+      ? Math.round((footerStats.dealsWithProof / footerStats.dealsTotal) * 100)
+      : 0
+
+  const footerItems = thin
+    ? [
+        { text: c.footerThinMatches },
+        { text: c.footerThinShared },
+        { text: c.footerThinDeals },
+      ]
+    : [
+        { text: formatCopy(c.footerMatches, { n: footerStats.matches7d }) },
+        { text: formatCopy(c.footerShared, { n: footerStats.shares7d }) },
+        {
+          text:
+            footerStats.dealsTotal > 0
+              ? formatCopy(c.footerDealsProof, {
+                  withProof: footerStats.dealsWithProof,
+                  total: footerStats.dealsTotal,
+                })
+              : c.footerNoDeals,
+        },
+      ]
+
+  const sortedDeals = [...data.activeDeals].sort((a, b) => {
+    const da = a.expiry_date ? new Date(`${a.expiry_date}T12:00:00`).getTime() : Infinity
+    const db = b.expiry_date ? new Date(`${b.expiry_date}T12:00:00`).getTime() : Infinity
+    return da - db
+  })
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 pb-8">
-      <p className="text-sm text-muted-foreground">
-        Welche Referenz passt zu deinem nächsten Kundengespräch?
-      </p>
+    <>
+      <DashboardSectionCard
+        title={c.queueTitle}
+        count={thin ? undefined : queue.length}
+        description={c.queueDescription}
+        hero
+      >
+        {thin || queue.length === 0 ? (
+          <HonestEmpty title={c.queueEmptyTitle} description={c.queueEmptyDescription} />
+        ) : (
+          queue.map((item) => (
+            <WorkQueueRow
+              key={`${item.href}-${item.title}`}
+              tone={item.tone}
+              title={item.title}
+              meta={item.meta}
+              ctaLabel={item.ctaLabel}
+              href={item.href}
+            />
+          ))
+        )}
+      </DashboardSectionCard>
 
-      <Card className="border-border shadow-sm">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Aktive Deals</CardTitle>
-          <CardDescription>Match-Status und verknüpfte Referenzen.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {activeDeals.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Keine aktiven Deals zugewiesen.</p>
-          ) : (
-            activeDeals.slice(0, 6).map((deal) => (
-              <div
-                key={deal.id}
-                className="flex flex-col gap-2 rounded-lg border border-border/70 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div className="min-w-0">
-                  <Link href={ROUTES.deals.detail(deal.id)} className="font-medium hover:underline">
-                    {deal.title}
-                  </Link>
-                  <p className="text-xs text-muted-foreground">
-                    {deal.company_name ?? '—'}
-                    {deal.bestMatchScore != null
-                      ? ` · Match ${Math.round(deal.bestMatchScore * 100)} %`
-                      : ''}
-                    {deal.linkedCount > 0 ? ` · ${deal.linkedCount} Referenz(en)` : ''}
-                  </p>
-                </div>
-                <div className="flex shrink-0 flex-wrap items-center gap-2">
-                  {deal.recentSignalCount > 0 ? (
-                    <Badge variant="secondary" className="text-xs">
-                      {deal.recentSignalCount} Signal{deal.recentSignalCount === 1 ? '' : 'e'}
-                    </Badge>
-                  ) : null}
-                  <Button asChild size="sm" variant="outline">
-                    <Link
-                      href={
-                        deal.quickShareReferenceId
-                          ? ROUTES.references.detail(deal.quickShareReferenceId)
-                          : ROUTES.matchWithDeal(deal.id)
-                      }
-                    >
-                      Beweis finden
-                    </Link>
+      <DashboardSectionCard
+        title={c.signalsTitle}
+        count={thin ? undefined : data.strategicAccounts.length}
+        description={c.signalsDescription}
+      >
+        {thin || data.strategicAccounts.length === 0 ? (
+          <HonestEmpty title={c.signalsEmptyTitle} description={c.signalsEmptyDescription} />
+        ) : (
+          <div className="space-y-0">
+            {data.strategicAccounts.map((signal) => {
+              const tone = signalToneFromGap(signal.meddpiccGap)
+              return (
+                <div
+                  key={signal.companyId}
+                  className="flex items-start gap-3 border-t border-border py-2.5 first:border-t-0 first:pt-0"
+                >
+                  <SignalStatusPill tone={tone} />
+                  <div className="min-w-0 flex-1 text-sm">
+                    <span className="font-medium">{signal.companyName}</span>
+                    <span className="text-muted-foreground"> — {signal.signalSummary}</span>
+                  </div>
+                  <Button asChild variant="outline" size="sm" className="h-7 shrink-0 text-xs">
+                    <Link href={signal.href}>{signal.actionLabel}</Link>
                   </Button>
-                  {deal.company_id ? (
-                    <Button asChild size="sm" variant="ghost">
-                      <Link href={ROUTES.accountsDetail(deal.company_id)}>Account</Link>
-                    </Button>
-                  ) : null}
                 </div>
-              </div>
-            ))
-          )}
-        </CardContent>
-      </Card>
+              )
+            })}
+          </div>
+        )}
+      </DashboardSectionCard>
 
-      <Card className="border-border shadow-sm">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Empfohlene Referenzen</CardTitle>
-          <CardDescription>Semantische Treffer zum primären Deal.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {recommended.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              {recommendedNote ?? 'Noch keine Empfehlungen verfügbar.'}
-            </p>
+      <div className="grid gap-4 md:grid-cols-2">
+        <DashboardSectionCard title={c.coverageTitle} description={c.coverageDescription}>
+          {thin || data.activeDeals.length === 0 ? (
+            <HonestEmpty title={c.coverageEmptyTitle} description={c.coverageEmptyDescription} />
           ) : (
-            recommended.slice(0, 5).map((ref) => (
-              <Link
-                key={ref.id}
-                href={ROUTES.references.detail(ref.id)}
-                className="block rounded-md border border-border/70 px-3 py-2 hover:bg-muted/40"
-              >
-                <p className="text-sm font-medium">{ref.title}</p>
-                <p className="line-clamp-2 text-xs text-muted-foreground">{ref.snippet}</p>
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  Relevanz {Math.round(ref.similarity * 100)} %
-                </p>
-              </Link>
-            ))
-          )}
-        </CardContent>
-      </Card>
-
-      <Card className="border-border shadow-sm">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Kürzlich geteilt</CardTitle>
-          <CardDescription>Deine letzten Share-Links.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {recentShares.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Noch keine Shares in den letzten Wochen.</p>
-          ) : (
-            recentShares.slice(0, 5).map((row, idx) => (
-              <div
-                key={`${row.created_at}-${idx}`}
-                className="flex items-center justify-between gap-2 rounded-md border border-border/60 px-3 py-2 text-sm"
-              >
-                <div className="min-w-0 truncate">
-                  <span className="font-medium">{row.reference_title ?? 'Referenz'}</span>
-                  {row.account_name ? (
-                    <span className="text-muted-foreground"> · {row.account_name}</span>
-                  ) : null}
-                </div>
-                <span className="shrink-0 text-xs text-muted-foreground">
-                  {formatDateUtcDe(row.created_at)}
-                </span>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+              <CoverageDonut
+                percent={coveragePct}
+                label={`${footerStats.dealsWithProof}/${footerStats.dealsTotal}`}
+                sublabel={c.coverageDonutSublabel}
+              />
+              <div className="min-w-0 flex-1 space-y-0">
+                {sortedDeals.map((deal) => {
+                  const hasProof = deal.linkedCount > 0
+                  const deadline = deal.expiry_date
+                    ? new Date(`${deal.expiry_date}T12:00:00`).toLocaleDateString('de-DE', {
+                        day: 'numeric',
+                        month: 'short',
+                      })
+                    : null
+                  return (
+                    <div
+                      key={deal.id}
+                      className="flex items-center justify-between gap-2 border-t border-border py-2 first:border-t-0 first:pt-0"
+                    >
+                      <div className="min-w-0 text-sm">
+                        <Link href={ROUTES.deals.detail(deal.id)} className="font-medium hover:underline">
+                          {deal.company_name ?? deal.title}
+                        </Link>
+                        {deadline ? (
+                          <p className="text-xs text-muted-foreground">
+                            {c.coverageUntil} {deadline}
+                          </p>
+                        ) : null}
+                      </div>
+                      {hasProof ? (
+                        <span className="shrink-0 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] text-primary">
+                          {c.coverageProofOk}
+                        </span>
+                      ) : (
+                        <Button asChild variant="outline" size="sm" className="h-7 text-xs">
+                          <Link href={ROUTES.matchWithDeal(deal.id)}>{c.queueFindProof}</Link>
+                        </Button>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
-            ))
+            </div>
           )}
-        </CardContent>
-      </Card>
-    </div>
+        </DashboardSectionCard>
+
+        <DashboardSectionCard title={c.reuseTitle} description={c.reuseDescription}>
+          {thin || shareBars.length === 0 ? (
+            <HonestEmpty title={c.reuseEmptyTitle} description={c.reuseEmptyDescription} />
+          ) : (
+            <HorizontalBarList items={shareBars} />
+          )}
+        </DashboardSectionCard>
+      </div>
+
+      <DashboardFooterStrip label={c.footerLabel} items={footerItems} />
+    </>
   )
 }
