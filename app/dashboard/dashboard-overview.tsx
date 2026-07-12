@@ -984,17 +984,16 @@ export function DashboardOverview({
   }
 
   return (
-    <div className="flex flex-col space-y-5">
+    <div className="flex min-w-0 flex-col space-y-5">
       <ReferencesOverviewBrandfetchSync companyIds={companyIdsNeedingBrandfetch} />
       {/* Toolbar & Tabelle */}
-      <div className="space-y-3.5">
+      <div className="min-w-0 space-y-2">
         {canViewComplianceSegment ? (
           <ReferenceProofSegmentSwitch
             value={libraryMode}
             onChange={handleLibraryModeChange}
           />
         ) : null}
-        {/* Toolbar: Suche bis zu den Buttons; rechts Favoriten → Status → Spalten → … */}
         <ReferenceLibraryToolbar
           libraryMode={libraryMode}
           referenceLayout={referenceLayout}
@@ -1157,7 +1156,7 @@ export function DashboardOverview({
                     })}
                   </React.Fragment>
                 ))}
-                <TableHead className="w-[88px] min-w-[88px] p-2 text-right">
+                <TableHead className="sticky right-0 z-10 w-[88px] min-w-[88px] bg-card p-2 text-right shadow-[-8px_0_12px_-8px_rgba(15,23,42,0.12)]">
                   <span className="sr-only">Favorit &amp; Aktionen</span>
                 </TableHead>
               </TableRow>
@@ -1217,7 +1216,7 @@ export function DashboardOverview({
                       </React.Fragment>
                     ))}
                     <TableCell
-                      className="w-[88px] min-w-[88px] align-middle p-2 text-right"
+                      className="sticky right-0 z-10 w-[88px] min-w-[88px] bg-card align-middle p-2 text-right shadow-[-8px_0_12px_-8px_rgba(15,23,42,0.12)] group-hover:bg-accent/35"
                       onClick={(e: React.MouseEvent) => e.stopPropagation()}
                     >
                       <TableRowAlign className="justify-end">

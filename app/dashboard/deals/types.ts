@@ -26,6 +26,11 @@ export type DealRow = {
   /** Cockpit-Gate: konditionaler RFP-Block (unabhängig vom Pipeline-Status). */
   is_rfp_mode: boolean
   expiry_date: string | null
+  salesforce_opportunity_id?: string | null
+  crm_opportunity_id?: string | null
+  crm_source?: string | null
+  crm_stage?: string | null
+  crm_synced_at?: string | null
   created_at: string
   updated_at: string | null
   /** Verknüpfte Referenzen inkl. Logo für Listen-Anzeige */
@@ -57,6 +62,11 @@ export const DEAL_TABLE_ALLOWED_COLUMNS = [
   'created_at',
   'updated_at',
   'created_by',
+  'salesforce_opportunity_id',
+  'crm_opportunity_id',
+  'crm_source',
+  'crm_stage',
+  'crm_synced_at',
 ] as const
 
 /** UI-/Join-Felder von `DealRow` — nicht als DB-Spalten anlegen. */

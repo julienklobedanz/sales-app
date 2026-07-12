@@ -35,7 +35,6 @@ describe('deal schema guardrail (F2)', () => {
       'forecast_probability',
       'activity_log',
       'contact_ids',
-      'crm_stage',
       'last_activity_at',
     ]
 

@@ -15,6 +15,9 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { Checkbox } from '@/components/ui/checkbox'
 import { AppIcon } from '@/lib/icons'
 import { DealStatusBadge } from '@/components/deal-status-badge'
+import { MatchScoreCircle } from '@/components/match/match-score-circle'
+import { getMatchStrength } from '@/lib/match/match-strength'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { COPY } from '@/lib/copy'
 import { formatDealVolume } from '@/lib/format'
 import { AccountCell } from '@/components/table/account-cell'
@@ -34,7 +37,8 @@ import { useCrmOAuthCallback } from '@/hooks/use-crm-oauth-callback'
 import { getHubSpotConnectHref } from '@/lib/crm/hubspot/oauth-return'
 
 type StatusFilterValue = 'all' | DealStatus
-const DEAL_COLUMNS_STORAGE_KEY = 'refstack:deals:column-order'
+const DEAL_COLUMNS_STORAGE_KEY = 'refstack:deals:column-order-v2'
+const DEAL_COL_LABELS = COPY.deals.columnViewLabels
 const STATUS_FILTER_OPTIONS: { value: StatusFilterValue; label: string }[] = [
   { value: 'all', label: COPY.deals.filterStatusAll },
   { value: 'negotiation', label: COPY.deals.filterStatusNegotiation },
@@ -93,8 +97,9 @@ export function DealsClientContent({
     'company_name',
     'title',
     'volume',
-    'reference_count',
     'status',
+    'reference_count',
+    'match',
     'expiry_date',
     'account_manager_name',
     'sales_manager_name',
@@ -193,6 +198,7 @@ export function DealsClientContent({
       },
       {
         accessorKey: 'status',
+        meta: { viewLabel: DEAL_COL_LABELS.status },
         header: ({ column }) => (
           <Button
             type="button"
@@ -211,6 +217,7 @@ export function DealsClientContent({
       },
       {
         accessorKey: 'title',
+        meta: { viewLabel: DEAL_COL_LABELS.title },
         header: ({ column }) => (
           <Button
             type="button"
@@ -233,6 +240,7 @@ export function DealsClientContent({
       },
       {
         accessorKey: 'company_name',
+        meta: { viewLabel: DEAL_COL_LABELS.company_name },
         header: ({ column }) => (
           <Button
             type="button"
@@ -256,6 +264,7 @@ export function DealsClientContent({
       },
       {
         accessorKey: 'volume',
+        meta: { viewLabel: DEAL_COL_LABELS.volume },
         header: ({ column }) => (
           <Button
             type="button"
@@ -279,28 +288,118 @@ export function DealsClientContent({
       {
         id: 'reference_count',
         accessorFn: (row) => row.linked_refs?.length ?? 0,
+        meta: { viewLabel: DEAL_COL_LABELS.reference_count },
+        size: 96,
+        minSize: 80,
+        maxSize: 120,
         header: ({ column }) => (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="-ml-2"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          >
-            {COPY.deals.referenceCountColumn}
-            <span className="ml-2">
-              <AppIcon icon={ArrowUpDown} size={16} />
-            </span>
-          </Button>
+          <div className="flex justify-center">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="justify-center px-2"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            >
+              {COPY.deals.referenceCountColumn}
+              <span className="ml-2">
+                <AppIcon icon={ArrowUpDown} size={16} />
+              </span>
+            </Button>
+          </div>
         ),
         cell: ({ row }) => (
-          <span className="tabular-nums text-muted-foreground">
+          <div className="text-center tabular-nums text-muted-foreground">
             {row.original.linked_refs?.length ?? 0}
-          </span>
+          </div>
         ),
       },
       {
+        id: 'match',
+        accessorFn: (row) => row.best_match_score,
+        meta: { viewLabel: DEAL_COL_LABELS.match },
+        sortingFn: (rowA, rowB) => {
+          const a = rowA.original.best_match_score
+          const b = rowB.original.best_match_score
+          if (a == null && b == null) return 0
+          if (a == null) return 1
+          if (b == null) return -1
+          return a - b
+        },
+        size: 80,
+        minSize: 72,
+        maxSize: 96,
+        header: ({ column }) => (
+          <div className="flex justify-center">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="justify-center px-2"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            >
+              {COPY.deals.matchColumn}
+              <span className="ml-2">
+                <AppIcon icon={ArrowUpDown} size={16} />
+              </span>
+            </Button>
+          </div>
+        ),
+        cell: ({ row }) => {
+          const refCount = row.original.linked_refs?.length ?? 0
+          const score = row.original.best_match_score
+
+          if (refCount === 0) {
+            return (
+              <div className="flex justify-center text-muted-foreground" aria-label="Keine Referenzen">
+                —
+              </div>
+            )
+          }
+
+          if (score == null || Number.isNaN(score)) {
+            return (
+              <div className="flex justify-center">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span
+                      tabIndex={0}
+                      className="cursor-default text-muted-foreground"
+                      aria-label="Manuell verknüpft, kein Match-Score"
+                    >
+                      —
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-xs text-xs">
+                    Manuell verknüpft — kein Match-Score aus Smart Match
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            )
+          }
+
+          const percent = Math.round(score * 100)
+          const strength = getMatchStrength(score)
+
+          return (
+            <div className="flex justify-center">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span tabIndex={0} className="inline-flex cursor-default rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                    <MatchScoreCircle size="sm" strength={strength} percent={percent} />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">
+                  {strength.ariaLabel} · {percent}%
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          )
+        },
+      },
+      {
         accessorKey: 'account_manager_name',
+        meta: { viewLabel: DEAL_COL_LABELS.account_manager_name },
         header: ({ column }) => (
           <Button
             type="button"
@@ -319,6 +418,7 @@ export function DealsClientContent({
       },
       {
         accessorKey: 'expiry_date',
+        meta: { viewLabel: DEAL_COL_LABELS.expiry_date },
         header: ({ column }) => (
           <Button
             type="button"
@@ -344,6 +444,7 @@ export function DealsClientContent({
       },
       {
         accessorKey: 'sales_manager_name',
+        meta: { viewLabel: DEAL_COL_LABELS.sales_manager_name },
         header: ({ column }) => (
           <Button
             type="button"
@@ -432,6 +533,7 @@ export function DealsClientContent({
           },
         ]}
       />
+      <TooltipProvider delayDuration={300}>
       <AppDataTable
         tableVariant="deals"
         columns={columns}
@@ -447,6 +549,7 @@ export function DealsClientContent({
           title: true,
           volume: true,
           reference_count: true,
+          match: true,
           expiry_date: true,
         }}
         initialColumnOrder={[
@@ -454,8 +557,9 @@ export function DealsClientContent({
           'company_name',
           'title',
           'volume',
-          'reference_count',
           'status',
+          'reference_count',
+          'match',
           'expiry_date',
           'account_manager_name',
           'sales_manager_name',
@@ -530,6 +634,7 @@ export function DealsClientContent({
         )}
         showViewOptions
       />
+      </TooltipProvider>
       {createDealDialog}
       {canConnectCrm ? (
         <CrmImportPreviewDialog open={crmImportOpen} onOpenChange={setCrmImportOpen} />

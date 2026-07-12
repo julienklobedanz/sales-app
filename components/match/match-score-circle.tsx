@@ -10,17 +10,38 @@ const TIER_COLOR: Record<MatchStrengthDisplay['tier'], string> = {
   low: 'text-muted-foreground border-border',
 }
 
+const SIZE_CLASS = {
+  default: 'h-[3.25rem] w-[3.25rem] px-1 text-[10px]',
+  sm: 'h-9 w-9 px-0.5 text-[10px] tabular-nums',
+} as const
+
+type MatchScoreCircleProps = {
+  strength: MatchStrengthDisplay
+  /** Kompakte Variante für Tabellenzeilen. */
+  size?: keyof typeof SIZE_CLASS
+  /** Bei `size="sm"`: Prozentzahl im Ring (0–100). */
+  percent?: number
+}
+
 /** Match-Stärke-Kreis: kurzes Relevanz-Label, Farbe nach Tier. */
-export function MatchScoreCircle({ strength }: { strength: MatchStrengthDisplay }) {
+export function MatchScoreCircle({
+  strength,
+  size = 'default',
+  percent,
+}: MatchScoreCircleProps) {
+  const content =
+    size === 'sm' && typeof percent === 'number' ? `${percent}%` : strength.labelShort
+
   return (
     <div
       className={cn(
-        'flex h-[3.25rem] w-[3.25rem] shrink-0 items-center justify-center rounded-full border-2 bg-muted/40 px-1 text-center text-[10px] font-semibold leading-tight',
+        'flex shrink-0 items-center justify-center rounded-full border-2 bg-muted/40 text-center font-semibold leading-tight',
+        SIZE_CLASS[size],
         TIER_COLOR[strength.tier]
       )}
       aria-label={strength.ariaLabel}
     >
-      {strength.labelShort}
+      {content}
     </div>
   )
 }

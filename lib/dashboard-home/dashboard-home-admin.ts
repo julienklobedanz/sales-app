@@ -16,6 +16,7 @@ import {
   integrationConnectionStatus,
   teamActivityLabelForEvent,
 } from '@/lib/dashboard-home/dashboard-home-pure'
+import { normalizeOrgDateDisplayFormat, type OrgDateDisplayFormat } from '@/lib/format'
 import {
   aggregateTeamMatches,
   buildLeaderCoaching,
@@ -75,6 +76,8 @@ export async function loadAdminDashboardData(
     errors: 0,
   }
 
+  let dateDisplayFormat: OrgDateDisplayFormat = 'de-DE'
+
   if (orgId) {
     const [
       orgRow,
@@ -87,7 +90,7 @@ export async function loadAdminDashboardData(
     ] = await Promise.all([
       supabase
         .from('organizations')
-        .select('workflow_settings')
+        .select('workflow_settings, date_display_format')
         .eq('id', orgId)
         .maybeSingle(),
       supabase
@@ -123,6 +126,10 @@ export async function loadAdminDashboardData(
         .order('timestamp', { ascending: false })
         .limit(200),
     ])
+
+    dateDisplayFormat = normalizeOrgDateDisplayFormat(
+      (orgRow.data as { date_display_format?: string | null } | null)?.date_display_format
+    )
 
     const pendingOver12h = openRequests.filter((r) => Date.now() - new Date(r.created_at).getTime() > 12 * 60 * 60 * 1000).length
     if (pendingOver12h > 0) {
@@ -517,7 +524,7 @@ export async function loadAdminDashboardData(
     minDealsRequired
   )
 
-  let riskDeals = buildLeaderRiskDeals(allDealsForSignals)
+  let riskDeals = buildLeaderRiskDeals(allDealsForSignals, { dateDisplayFormat })
   let coachingSignals: AdminDashboardModel['coachingSignals'] = []
   let coveragePipeline = buildLeaderCoveragePipeline(
     pipelineSignals,

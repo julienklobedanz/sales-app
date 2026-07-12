@@ -29,6 +29,7 @@ export function DealCockpitClient({
   canManageDocuments,
   rfpBlock,
   briefingButton,
+  hubspotPortalId = null,
 }: {
   deal: DealWithReferences
   activities: DealActivityItem[]
@@ -39,6 +40,7 @@ export function DealCockpitClient({
   canManageDocuments: boolean
   rfpBlock?: ReactNode
   briefingButton?: ReactNode
+  hubspotPortalId?: string | null
 }) {
   const showRfpBlock = isRfpDeal(deal)
   const [matchDrawerOpen, setMatchDrawerOpen] = useState(false)
@@ -56,7 +58,7 @@ export function DealCockpitClient({
       <DealDeadlinesCard dealId={deal.id} deadlines={deadlines} />
 
       <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <DealFactsCard deal={deal} />
+        <DealFactsCard deal={deal} hubspotPortalId={hubspotPortalId} />
         <DealActivityCard activities={activities} />
       </div>
 

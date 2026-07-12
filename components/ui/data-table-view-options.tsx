@@ -15,6 +15,13 @@ import {
 import { COPY } from "@/lib/copy"
 import { AppIcon } from "@/lib/icons"
 
+function columnViewLabel<TData>(column: { id: string; columnDef: { header?: unknown; meta?: unknown } }): string {
+  const meta = column.columnDef.meta as { viewLabel?: string } | undefined
+  if (meta?.viewLabel) return meta.viewLabel
+  if (typeof column.columnDef.header === "string") return column.columnDef.header
+  return column.id.replace(/_/g, " ")
+}
+
 export function DataTableViewOptions<TData>({ table }: { table: Table<TData> }) {
   return (
     <DropdownMenu>
@@ -24,7 +31,7 @@ export function DataTableViewOptions<TData>({ table }: { table: Table<TData> }) 
           {COPY.table.columns}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[180px]">
+      <DropdownMenuContent align="end" className="w-[min(100vw-2rem,13rem)]">
         <DropdownMenuLabel>{COPY.table.columns}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {table
@@ -33,11 +40,10 @@ export function DataTableViewOptions<TData>({ table }: { table: Table<TData> }) 
           .map((column) => (
             <DropdownMenuCheckboxItem
               key={column.id}
-              className="capitalize"
               checked={column.getIsVisible()}
               onCheckedChange={(value) => column.toggleVisibility(!!value)}
             >
-              {typeof column.columnDef.header === "string" ? column.columnDef.header : column.id}
+              {columnViewLabel(column)}
             </DropdownMenuCheckboxItem>
           ))}
       </DropdownMenuContent>

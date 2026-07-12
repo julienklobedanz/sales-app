@@ -41,7 +41,7 @@ const SLOT_COLLAPSED = 'pointer-events-none m-0 w-0 min-w-0 max-w-0 overflow-hid
 const TOOLBAR_ICON_CLASS = 'shrink-0 text-muted-foreground'
 
 const PRIMARY_CTA_CLASS =
-  'h-10 min-w-[12.5rem] shrink-0 justify-center gap-1.5 rounded-lg bg-gradient-to-b from-blue-600 to-blue-700 px-3 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] hover:from-blue-600 hover:to-blue-700/95'
+  'h-10 min-w-0 shrink-0 justify-center gap-1.5 rounded-lg bg-gradient-to-b from-blue-600 to-blue-700 px-3 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] hover:from-blue-600 hover:to-blue-700/95 sm:min-w-[10rem] lg:min-w-[12.5rem]'
 
 type ColumnKey = string
 
@@ -105,10 +105,10 @@ export function ReferenceLibraryToolbar({
   const isReferencesLibrary = libraryMode === 'references'
 
   return (
-    <div className="flex w-full min-w-0 flex-nowrap items-center gap-2.5 sm:gap-3.5 min-h-10">
+    <div className="flex w-full min-w-0 flex-col gap-2.5 2xl:flex-row 2xl:items-center 2xl:gap-3.5">
       <ToolbarSearchField
         variant="dashboard"
-        wrapperClassName="min-w-0 flex-1"
+        wrapperClassName="min-w-0 w-full 2xl:flex-1"
         className="bg-white"
         placeholder={
           isReferencesLibrary
@@ -120,6 +120,7 @@ export function ReferenceLibraryToolbar({
       />
 
       <TooltipProvider delayDuration={300}>
+        <div className="flex min-w-0 w-full items-center gap-2.5 overflow-x-auto overscroll-x-contain pb-0.5 [-webkit-overflow-scrolling:touch] 2xl:ml-auto 2xl:w-auto 2xl:max-w-full 2xl:shrink-0 2xl:pb-0">
         <div
           className={cn(
             'flex shrink-0 items-center gap-2.5',
@@ -256,7 +257,7 @@ export function ReferenceLibraryToolbar({
           </DropdownMenu>
         </div>
 
-        <div className="ml-auto flex shrink-0 flex-nowrap items-center gap-2.5">
+        <div className="flex shrink-0 items-center gap-2.5">
           {isAdmin ? (
             <div
               className={cn(!isReferencesLibrary && SLOT_COLLAPSED)}
@@ -352,6 +353,7 @@ export function ReferenceLibraryToolbar({
                 : `${REFERENCE_PROOF_SEGMENT_LABELS.certificates} hochladen`}
             </Button>
           ) : null}
+        </div>
         </div>
       </TooltipProvider>
     </div>

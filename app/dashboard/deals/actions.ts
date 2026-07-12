@@ -206,9 +206,7 @@ export async function getDealWithReferences(id: string): Promise<DealWithReferen
   const orgId = await getSessionOrgId(supabase)
   if (!orgId) return null
 
-  const { data: deal, error } = await supabase
-    .from('deals')
-    .select(`
+  const dealSelectWithCrmStage = `
       id,
       title,
       company_id,
@@ -222,14 +220,36 @@ export async function getDealWithReferences(id: string): Promise<DealWithReferen
       status,
       is_rfp_mode,
       expiry_date,
+      salesforce_opportunity_id,
+      crm_opportunity_id,
+      crm_source,
+      crm_stage,
       created_at,
       updated_at,
       companies ( name )
-    `)
+    `
+  const dealSelectWithoutCrmStage = dealSelectWithCrmStage.replace(/\s*crm_stage,\n/, '')
+
+  let dealQuery = await supabase
+    .from('deals')
+    .select(dealSelectWithCrmStage)
     .eq('id', id)
     .eq('organization_id', orgId)
     .single()
 
+  if (
+    dealQuery.error?.code === '42703' &&
+    dealQuery.error.message?.includes('crm_stage')
+  ) {
+    dealQuery = await supabase
+      .from('deals')
+      .select(dealSelectWithoutCrmStage)
+      .eq('id', id)
+      .eq('organization_id', orgId)
+      .single()
+  }
+
+  const { data: deal, error } = dealQuery
   if (error || !deal) return null
 
   const { data: drRows } = await supabase
@@ -309,6 +329,11 @@ export async function getDealWithReferences(id: string): Promise<DealWithReferen
     status: normalizeDealStatus(deal.status),
     is_rfp_mode: Boolean((deal as { is_rfp_mode?: boolean }).is_rfp_mode),
     expiry_date: deal.expiry_date ?? null,
+    salesforce_opportunity_id:
+      (deal as { salesforce_opportunity_id?: string | null }).salesforce_opportunity_id ?? null,
+    crm_opportunity_id: (deal as { crm_opportunity_id?: string | null }).crm_opportunity_id ?? null,
+    crm_source: (deal as { crm_source?: string | null }).crm_source ?? null,
+    crm_stage: (deal as { crm_stage?: string | null }).crm_stage ?? null,
     created_at: deal.created_at ?? '',
     updated_at: deal.updated_at ?? null,
     linked_refs,

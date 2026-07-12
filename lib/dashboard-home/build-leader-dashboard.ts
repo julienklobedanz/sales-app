@@ -1,5 +1,11 @@
 import type { DealRow } from '@/app/dashboard/deals/types'
 import { COPY } from '@/lib/copy'
+import {
+  formatDealVolume,
+  formatReferenceDate,
+  normalizeOrgDateDisplayFormat,
+  type OrgDateDisplayFormat,
+} from '@/lib/format'
 import type {
   LeaderCoachingRow,
   LeaderCoveragePipelineRow,
@@ -13,8 +19,12 @@ import { ROUTES } from '@/lib/routes'
 
 const PARTIAL_MATCH_CUTOFF = 0.47
 
-export function buildLeaderRiskDeals(deals: DealRow[]): LeaderRiskDealRow[] {
+export function buildLeaderRiskDeals(
+  deals: DealRow[],
+  options?: { dateDisplayFormat?: OrgDateDisplayFormat | string | null }
+): LeaderRiskDealRow[] {
   const copy = COPY.dashboard.home.salesLeader
+  const dateFmt = normalizeOrgDateDisplayFormat(options?.dateDisplayFormat)
   return deals
     .filter((d) => ACTIVE_DEAL_STATUSES.includes(d.status))
     .map((deal) => {
@@ -36,9 +46,14 @@ export function buildLeaderRiskDeals(deals: DealRow[]): LeaderRiskDealRow[] {
         coverageLabel = copy.riskStrong
         ctaLabel = null
       }
-      const valueParts = [deal.volume, deal.expiry_date ? `schließt ${deal.expiry_date}` : null].filter(
-        Boolean
-      )
+      const volumeLabel = formatDealVolume(deal.volume)
+      const closeLabel = deal.expiry_date
+        ? `schließt ${formatReferenceDate(deal.expiry_date, dateFmt)}`
+        : null
+      const valueParts = [
+        volumeLabel !== '—' ? volumeLabel : null,
+        closeLabel,
+      ].filter(Boolean)
       return {
         id: deal.id,
         title: deal.title,

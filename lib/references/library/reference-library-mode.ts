@@ -2,10 +2,10 @@ export type ReferenceLibraryMode = 'references' | 'certificates'
 
 export const REFERENCE_LIBRARY_MODE_STORAGE_KEY = 'evidence-library-mode-v1'
 
-/** Gleichrangige Proof-Segmente im Evidence-Hub (C6). */
+/** Kurzlabels für Top-Bar, Segment-Switch und CTAs. */
 export const REFERENCE_PROOF_SEGMENT_LABELS: Record<ReferenceLibraryMode, string> = {
-  references: 'Kundenreferenz',
-  certificates: 'Unternehmensnachweis',
+  references: 'Referenzen',
+  certificates: 'Nachweise',
 }
 
 export const REFERENCE_PROOF_SEGMENT_DESCRIPTIONS: Record<ReferenceLibraryMode, string> = {

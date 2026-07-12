@@ -1,23 +1,21 @@
 'use client'
 
+import Link from 'next/link'
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { COPY } from '@/lib/copy'
-import { formatDealVolume } from '@/lib/format'
+import { buildDealFactRows } from '@/lib/deals/deal-facts-rows'
 
 import type { DealWithReferences } from '../types'
 
-export function DealFactsCard({ deal }: { deal: DealWithReferences }) {
-  const owner = deal.sales_manager_name ?? deal.account_manager_name ?? '—'
-
-  const rows: Array<{ label: string; value: string }> = [
-    { label: 'Account', value: deal.company_name ?? '—' },
-    { label: 'Volumen', value: formatDealVolume(deal.volume) },
-    { label: 'Branche', value: deal.industry ?? '—' },
-    { label: COPY.roles.accountManager, value: deal.account_manager_name ?? '—' },
-    { label: COPY.roles.salesManager, value: deal.sales_manager_name ?? '—' },
-    { label: 'Owner', value: owner },
-    { label: 'Close', value: deal.expiry_date ?? '—' },
-  ]
+export function DealFactsCard({
+  deal,
+  hubspotPortalId = null,
+}: {
+  deal: DealWithReferences
+  hubspotPortalId?: string | null
+}) {
+  const rows = buildDealFactRows(deal, { hubspotPortalId })
 
   return (
     <Card>
@@ -27,8 +25,19 @@ export function DealFactsCard({ deal }: { deal: DealWithReferences }) {
       <CardContent className="space-y-2">
         {rows.map((row) => (
           <div key={row.label} className="flex justify-between gap-3 text-sm">
-            <span className="text-muted-foreground">{row.label}</span>
-            <span className="font-medium text-right truncate max-w-[60%]">{row.value}</span>
+            <span className="shrink-0 text-muted-foreground">{row.label}</span>
+            {row.kind === 'link' ? (
+              <Link
+                href={row.href}
+                target="_blank"
+                rel="noreferrer"
+                className="max-w-[60%] truncate text-right font-medium text-primary hover:underline"
+              >
+                {row.linkLabel}
+              </Link>
+            ) : (
+              <span className="max-w-[60%] truncate text-right font-medium">{row.value}</span>
+            )}
           </div>
         ))}
       </CardContent>

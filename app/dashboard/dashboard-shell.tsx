@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Handshake, BarChart3 } from 'lucide-react'
+import { Handshake, Radar } from 'lucide-react'
 import {
   Building2,
   FileText,
@@ -26,9 +26,11 @@ import {
   SidebarInset,
   SidebarRail,
 } from '@/components/ui/sidebar'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { DashboardHeader } from './dashboard-header'
 import { SupportTicketModal } from '@/components/dashboard/SupportTicketModal'
 import { SupportChannelsDialog } from '@/components/dashboard/SupportChannelsDialog'
+import { DashboardUserMenu } from '@/components/dashboard/dashboard-user-menu'
 import { type User } from '@supabase/supabase-js'
 import { RoleProvider, type AppRole, type Capability, type FunctionRole, type SystemRole } from '@/hooks/useRole'
 import { CommandPalette } from '@/components/ui/command-palette'
@@ -42,7 +44,6 @@ import {
 } from '@/lib/dashboard-ui'
 import { ROUTES } from '@/lib/routes'
 import { legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
-import { canViewInsights } from '@/lib/dashboard/can-view-insights'
 import { cn } from '@/lib/utils'
 import type { DashboardNotificationItem } from './actions'
 
@@ -78,17 +79,6 @@ export function DashboardShell({
   const [ticketModalType, setTicketModalType] = useState<'support' | 'feedback'>('support')
   const [supportChannelsOpen, setSupportChannelsOpen] = useState(false)
 
-  // Immer mit false starten (SSR + erster Client-Render), damit Radix useId-Reihenfolge stabil bleibt.
-  const [forceCollapsed, setForceCollapsed] = useState(false)
-
-  useEffect(() => {
-    const mql = window.matchMedia('(max-width: 1023px)')
-    const sync = () => setForceCollapsed(mql.matches)
-    sync()
-    mql.addEventListener('change', sync)
-    return () => mql.removeEventListener('change', sync)
-  }, [])
-
   // Prefetch wichtige Routen für snappige Navigation
   useEffect(() => {
     router.prefetch(ROUTES.home)
@@ -96,11 +86,9 @@ export function DashboardShell({
     router.prefetch(ROUTES.references.root)
     router.prefetch(ROUTES.deals.root)
     router.prefetch(ROUTES.match)
+    router.prefetch(ROUTES.marketSignals)
     router.prefetch(ROUTES.deals.requestNew)
     router.prefetch(ROUTES.settings)
-    if (canViewInsights(profile.functionRole, profile.systemRole, profile.capabilities)) {
-      router.prefetch(ROUTES.insights)
-    }
   }, [router])
 
   const userName =
@@ -131,11 +119,6 @@ export function DashboardShell({
       } as React.CSSProperties)
     : undefined
 
-  const showInsightsNav = canViewInsights(
-    profile.functionRole,
-    profile.systemRole,
-    profile.capabilities
-  )
   const navButtonClass =
     'group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-gradient-to-b data-[active=true]:from-blue-600 data-[active=true]:to-blue-700 data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] data-[active=true]:hover:translate-x-0'
 
@@ -147,11 +130,7 @@ export function DashboardShell({
       capabilities={profile.capabilities}
     >
       <div style={brandingStyle}>
-        <SidebarProvider
-          defaultOpen={!forceCollapsed}
-          open={forceCollapsed ? false : undefined}
-          onOpenChange={forceCollapsed ? () => {} : undefined}
-        >
+        <SidebarProvider>
           <Sidebar
             collapsible="icon"
             className="border-r border-sidebar-border/90 bg-sidebar"
@@ -222,6 +201,25 @@ export function DashboardShell({
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
+                    isActive={pathname?.startsWith(ROUTES.marketSignals)}
+                    tooltip={COPY.nav.marketSignals}
+                    className={navButtonClass}
+                  >
+                    <Link href={ROUTES.marketSignals} className="flex items-center gap-2.5">
+                      <span className="relative z-10">
+                        <Radar
+                          className="size-4 shrink-0"
+                          strokeWidth={pathname?.startsWith(ROUTES.marketSignals) ? 2.5 : 2}
+                        />
+                      </span>
+                      <span className="relative z-10">{COPY.nav.marketSignals}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
                     isActive={pathname?.startsWith(ROUTES.references.root)}
                     tooltip={COPY.nav.references}
                     className={navButtonClass}
@@ -277,86 +275,70 @@ export function DashboardShell({
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-
-                {showInsightsNav ? (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={pathname?.startsWith(ROUTES.insights)}
-                      tooltip={COPY.nav.insights}
-                      className={navButtonClass}
-                    >
-                      <Link href={ROUTES.insights} className="flex items-center gap-2.5">
-                        <span className="relative z-10">
-                          <BarChart3
-                            className="size-4 shrink-0"
-                            strokeWidth={pathname?.startsWith(ROUTES.insights) ? 2.5 : 2}
-                          />
-                        </span>
-                        <span className="relative z-10">{COPY.nav.insights}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ) : null}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
 
-          <SidebarGroup className="mt-auto space-y-0 border-t border-sidebar-border/60 px-2 pt-3">
+          <SidebarGroup className="mt-auto space-y-0 px-2 pb-2 pt-2">
+            <div className="mb-1.5 flex w-full gap-1.5 group-data-[collapsible=icon]:hidden">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => setSupportChannelsOpen(true)}
+                    className="flex h-9 min-w-0 flex-1 items-center justify-center rounded-xl border border-border/50 bg-muted/20 transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    aria-label="Support erhalten"
+                  >
+                    <AppIcon icon={HeadsetIcon} size={16} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">Support erhalten</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTicketModalType('feedback')
+                      setTicketModalOpen(true)
+                    }}
+                    className="flex h-9 min-w-0 flex-1 items-center justify-center rounded-xl border border-border/50 bg-muted/20 transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    aria-label="Feedback senden"
+                  >
+                    <AppIcon icon={Send} size={16} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">Feedback senden</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link
+                    href={ROUTES.settings}
+                    className={cn(
+                      'flex h-9 min-w-0 flex-1 items-center justify-center rounded-xl border border-border/50 bg-muted/20 transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                      pathname?.startsWith(ROUTES.settings) && 'border-primary/30 bg-muted text-foreground'
+                    )}
+                    aria-label="Einstellungen"
+                  >
+                    <AppIcon icon={SettingsIcon} size={16} />
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="top">Einstellungen</TooltipContent>
+              </Tooltip>
+            </div>
+
             <SidebarGroupContent>
               <SidebarMenu className="gap-0.5">
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    size="sm"
-                    tooltip="Support erhalten"
-                    className="group rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => setSupportChannelsOpen(true)}
-                      className="w-full"
-                    >
-                      <AppIcon icon={HeadsetIcon} size={16} />
-                      <span>Support erhalten</span>
-                    </button>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    size="sm"
-                    tooltip="Feedback"
-                    className="group rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setTicketModalType('feedback')
-                        setTicketModalOpen(true)
-                      }}
-                      className="w-full"
-                    >
-                      <AppIcon icon={Send} size={16} />
-                      <span>Feedback senden</span>
-                    </button>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    size="sm"
-                    tooltip="Einstellungen"
-                    isActive={pathname?.startsWith(ROUTES.settings)}
-                    className="group rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-muted data-[active=true]:text-foreground"
-                  >
-                    <Link href={ROUTES.settings}>
-                      <AppIcon icon={SettingsIcon} size={16} />
-                      <span>Einstellungen</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                <DashboardUserMenu
+                  userName={userName}
+                  userEmail={userEmail}
+                  userInitials={userInitials}
+                  userRole={legacyAppRoleFrom(profile.systemRole, profile.functionRole)}
+                  devRolePreviewEnabled={devRolePreviewEnabled}
+                  devRolePreviewActive={devRolePreviewActive}
+                />
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -374,13 +356,8 @@ export function DashboardShell({
         >
           <DashboardHeader
             userId={user.id}
-            userName={userName}
-            userEmail={userEmail}
-            userInitials={userInitials}
             userRole={legacyAppRoleFrom(profile.systemRole, profile.functionRole)}
             initialNotifications={initialNotifications}
-            devRolePreviewEnabled={devRolePreviewEnabled}
-            devRolePreviewActive={devRolePreviewActive}
           />
         </Suspense>
         <div

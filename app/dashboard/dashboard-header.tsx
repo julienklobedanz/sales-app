@@ -3,32 +3,16 @@
 import { useEffect, useMemo, useState, useTransition } from 'react'
 import { Fragment } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { useTheme } from 'next-themes'
-import { Check } from 'lucide-react'
+import { usePathname, useSearchParams } from 'next/navigation'
 import {
   Bell,
-  LogOut,
   MailOpen,
-  Moon,
   SearchIcon,
-  SettingsIcon,
-  Sun,
 } from '@hugeicons/core-free-icons'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -39,8 +23,7 @@ import {
 } from '@/components/ui/breadcrumb'
 import { useCommandPalette } from '@/hooks/useCommandPalette'
 import { useHydrated } from '@/hooks/use-hydrated'
-import { type AppRole, useRole } from '@/hooks/useRole'
-import { DEV_ROLE_PRESETS, formatDevRolePreviewLabel, type DevRolePreview } from '@/lib/dev-role-preview'
+import { type AppRole } from '@/hooks/useRole'
 import { createClient } from '@/lib/supabase/client'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
@@ -64,8 +47,6 @@ import {
   useReferenceLibraryMode,
 } from '@/lib/references/library/reference-library-mode-store'
 import { ROUTES } from '@/lib/routes'
-import { toast } from 'sonner'
-import { clearDevPreviewRole, setDevPreviewRole } from '@/app/dashboard/dev-preview-role-actions'
 import {
   getInboxNotificationsForLayout,
   markAllNotificationReads,
@@ -73,41 +54,19 @@ import {
   type DashboardNotificationItem,
 } from '@/app/dashboard/actions'
 
-function formatRoleBadgeLabel(role: AppRole): string {
-  switch (role) {
-    case 'admin':
-      return 'ADMIN'
-    case 'sales':
-      return 'SALES'
-    default:
-      return String(role).toUpperCase()
-  }
-}
-
 const INBOX_POLL_MS = 120_000
 
 export function DashboardHeader({
   userId,
-  userName,
-  userEmail,
-  userInitials,
   userRole,
   initialNotifications = [],
-  devRolePreviewEnabled = false,
-  devRolePreviewActive = false,
 }: {
   userId: string
-  userName: string
-  userEmail: string
-  userInitials: string
   userRole: AppRole
   initialNotifications?: DashboardNotificationItem[]
-  devRolePreviewEnabled?: boolean
-  devRolePreviewActive?: boolean
 }) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const router = useRouter()
   const accountsListView = useAccountsListView()
   const referenceLibraryMode = useReferenceLibraryMode()
 
@@ -123,10 +82,7 @@ export function DashboardHeader({
     }
   }, [pathname])
 
-  const { resolvedTheme, setTheme } = useTheme()
   const { setOpen } = useCommandPalette()
-  const { systemRole, functionRole } = useRole()
-  const [roleSwitchPending, startRoleSwitch] = useTransition()
   const [notifications, setNotifications] =
     useState<DashboardNotificationItem[]>(initialNotifications)
   const [dynamicCrumbs, setDynamicCrumbs] = useState<Array<{ label: string; href?: string }>>([])
@@ -191,43 +147,12 @@ export function DashboardHeader({
     })
   }
 
-  const handleLogout = async () => {
-    await clearDevPreviewRole()
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push(ROUTES.login)
-  }
-
-  function selectDevRole(preview: DevRolePreview) {
-    startRoleSwitch(async () => {
-      const res = await setDevPreviewRole(preview)
-      if (!res.ok) {
-        toast.error(res.error ?? 'Rolle konnte nicht gesetzt werden.')
-        return
-      }
-      toast.success(COPY.roleSwitcher.switchSuccess)
-      router.refresh()
-    })
-  }
-
-  function resetDevRole() {
-    startRoleSwitch(async () => {
-      const res = await clearDevPreviewRole()
-      if (!res.ok) {
-        toast.error(res.error ?? 'Anzeige konnte nicht zurückgesetzt werden.')
-        return
-      }
-      toast.success(COPY.roleSwitcher.switchSuccess)
-      router.refresh()
-    })
-  }
-
   const headerMeta = useMemo(() => {
-    if (!pathname) return { title: 'Dashboard', subtitle: undefined as string | undefined }
+    if (!pathname) return { title: COPY.pages.dashboard, subtitle: undefined as string | undefined }
 
     if (pathname === ROUTES.home) {
       return {
-        title: 'Dashboard',
+        title: COPY.pages.dashboard,
         subtitle: undefined,
       }
     }
@@ -255,7 +180,13 @@ export function DashboardHeader({
     if (pathname.startsWith(ROUTES.match)) {
       return {
         title: COPY.pages.match,
-        subtitle: 'Semantische Suche und RFP-Analyse',
+        subtitle: undefined,
+      }
+    }
+    if (pathname.startsWith(ROUTES.marketSignals)) {
+      return {
+        title: COPY.nav.marketSignals,
+        subtitle: COPY.marketSignals.pageSubtitle,
       }
     }
     if (pathname.startsWith(ROUTES.insights)) {
@@ -283,7 +214,7 @@ export function DashboardHeader({
       }
     }
     return {
-      title: 'Dashboard',
+      title: COPY.pages.dashboard,
       subtitle: undefined,
     }
   }, [pathname, accountsListView, referenceLibraryMode])
@@ -505,7 +436,7 @@ export function DashboardHeader({
         </div>
       </div>
 
-      <div className="flex items-center gap-2 shrink-0 ml-auto">
+      <div className="ml-auto flex shrink-0 items-center gap-1">
         <button
           type="button"
           className="relative inline-flex size-9 shrink-0 items-center justify-center rounded-md outline-none transition-colors hover:bg-muted/60 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
@@ -606,136 +537,6 @@ export function DashboardHeader({
               </span>
             ) : null}
           </button>
-        )}
-
-        <div className="mx-1 h-6 w-px shrink-0 bg-border/80" aria-hidden="true" />
-
-        {hydrated ? (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              className="h-9 gap-2 px-2 font-normal hover:bg-muted/60"
-              aria-label="Profilmenü"
-            >
-              <span className="hidden max-w-[160px] truncate text-left text-sm font-medium sm:inline">
-                {userName}
-              </span>
-              <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarFallback className="rounded-lg text-xs">{userInitials}</AvatarFallback>
-              </Avatar>
-              <span className="size-4 shrink-0" aria-hidden />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            className="min-w-56 rounded-lg shadow-xl"
-            side="bottom"
-            align="end"
-            sideOffset={4}
-          >
-            <DropdownMenuLabel className="p-0 font-normal">
-              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarFallback className="rounded-lg">{userInitials}</AvatarFallback>
-                </Avatar>
-                <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">{userName}</span>
-                  <span className="truncate text-xs text-muted-foreground">{userEmail}</span>
-                  <span
-                    className={cn(
-                      'mt-1 inline-flex w-fit rounded-md border border-border bg-muted px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-foreground'
-                    )}
-                  >
-                    {formatRoleBadgeLabel(userRole)}
-                  </span>
-                </div>
-              </div>
-            </DropdownMenuLabel>
-            {devRolePreviewEnabled ? (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  {COPY.roleSwitcher.profileMenuSectionTitle}
-                </DropdownMenuLabel>
-                {DEV_ROLE_PRESETS.map((preset) => {
-                  const active =
-                    preset.systemRole === systemRole && preset.functionRole === functionRole
-                  const label = formatDevRolePreviewLabel(preset)
-                  return (
-                    <DropdownMenuItem
-                      key={`${preset.systemRole}:${preset.functionRole}`}
-                      disabled={roleSwitchPending}
-                      onSelect={() => selectDevRole(preset)}
-                      className={cn('cursor-pointer', active && 'bg-accent font-medium')}
-                    >
-                      {active ? <Check className="mr-2 size-4 shrink-0" aria-hidden /> : null}
-                      <span className={cn(!active && 'pl-6')}>
-                        {label}
-                        {active ? (
-                          <span className="ml-1 text-xs text-muted-foreground">
-                            ({COPY.roleSwitcher.profileMenuActiveSuffix})
-                          </span>
-                        ) : null}
-                      </span>
-                    </DropdownMenuItem>
-                  )
-                })}
-                <DropdownMenuItem
-                  disabled={roleSwitchPending || !devRolePreviewActive}
-                  onSelect={resetDevRole}
-                  className="cursor-pointer text-muted-foreground"
-                >
-                  {COPY.roleSwitcher.profileMenuReset}
-                </DropdownMenuItem>
-                <p className="px-2 py-1.5 text-[11px] leading-snug text-muted-foreground">
-                  {COPY.roleSwitcher.profileMenuHint}
-                </p>
-                <DropdownMenuSeparator />
-              </>
-            ) : null}
-            <DropdownMenuGroup>
-              <DropdownMenuItem
-                onSelect={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-              >
-                {resolvedTheme === 'dark' ? (
-                  <AppIcon icon={Sun} size={16} className="mr-2" />
-                ) : (
-                  <AppIcon icon={Moon} size={16} className="mr-2" />
-                )}
-                Theme umschalten
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => router.push(ROUTES.settings)}>
-                <AppIcon icon={SettingsIcon} size={16} className="mr-2" />
-                Account
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onSelect={handleLogout}
-              className="text-destructive focus:text-destructive"
-            >
-              <AppIcon icon={LogOut} size={16} className="mr-2" />
-              Abmelden
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        ) : (
-          <Button
-            type="button"
-            variant="ghost"
-            className="h-9 gap-2 px-2 font-normal hover:bg-muted/60"
-            aria-label="Profilmenü"
-            tabIndex={-1}
-          >
-            <span className="hidden max-w-[160px] truncate text-left text-sm font-medium sm:inline">
-              {userName}
-            </span>
-            <Avatar className="h-8 w-8 rounded-lg">
-              <AvatarFallback className="rounded-lg text-xs">{userInitials}</AvatarFallback>
-            </Avatar>
-            <span className="size-4 shrink-0" aria-hidden />
-          </Button>
         )}
       </div>
     </header>

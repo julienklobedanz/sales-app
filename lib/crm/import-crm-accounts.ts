@@ -183,7 +183,7 @@ export async function importCrmAccounts(
         continue
       }
 
-      const { error: dealError } = await supabase.from('deals').insert({
+      const dealPayload = {
         organization_id: organizationId,
         company_id: companyId,
         title: opportunity.title.trim() || 'Unbenannter Deal',
@@ -192,8 +192,19 @@ export async function importCrmAccounts(
         expiry_date: opportunity.closeDate?.slice(0, 10) ?? null,
         crm_source: provider,
         crm_opportunity_id: oppId,
+        crm_stage: opportunity.stage?.trim() || null,
         crm_synced_at: new Date().toISOString(),
-      })
+      }
+
+      let { error: dealError } = await supabase.from('deals').insert(dealPayload)
+
+      if (
+        dealError?.code === 'PGRST204' &&
+        dealError.message?.includes('crm_stage')
+      ) {
+        const { crm_stage: _crmStage, ...dealPayloadWithoutStage } = dealPayload
+        ;({ error: dealError } = await supabase.from('deals').insert(dealPayloadWithoutStage))
+      }
 
       if (dealError) {
         skippedDeals += 1

@@ -151,8 +151,24 @@ export const COPY = {
     filterStatusWon: 'Gewonnen',
     filterStatusLost: 'Verloren',
     referenceCountColumn: 'Referenzen',
+    matchColumn: 'Match',
+    /** Labels im Menü „Spalten“ (Deals-Tabelle). */
+    columnViewLabels: {
+      status: 'Status',
+      title: 'Titel',
+      company_name: 'Account',
+      volume: 'Volumen',
+      reference_count: '# Referenzen',
+      match: 'Match',
+      expiry_date: 'Ablauf',
+      account_manager_name: 'Account Manager',
+      sales_manager_name: 'Sales Manager',
+    },
     cockpit: {
       factsTitle: 'Deal-Fakten',
+      crmStage: 'CRM-Stage',
+      crmOpportunity: 'Opportunity',
+      openInCrm: (provider: string) => `In ${provider} öffnen`,
       activityTitle: 'Aktivität',
       actionsMenu: 'Aktionen',
       generateBriefing: 'Briefing erzeugen',
@@ -414,7 +430,7 @@ export const COPY = {
         footerAdvocate: '{n} Advocate-Anfragen',
       },
       salesLeader: {
-        subtitle: 'Wo das Geschäft Risiko trägt — und wo Beweis fehlt.',
+        subtitle: 'Was steht heute auf dem Plan?',
         cta: 'Team-Report',
         riskTitle: 'Deals mit Risiko — Beweis-Abdeckung',
         riskDescription: 'Offene Deals nach Wert und Frist, bewertet nach Beweislage.',

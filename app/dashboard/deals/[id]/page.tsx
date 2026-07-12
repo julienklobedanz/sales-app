@@ -13,6 +13,13 @@ import { DealRfpCockpitBlock } from '../cockpit/deal-rfp-cockpit-block'
 import { DealRfpCockpitSkeleton } from '../cockpit/deal-rfp-cockpit-skeleton'
 import { DealCockpitBriefingTrigger } from '../cockpit/deal-cockpit-briefing-trigger'
 import type { DealActivityItem } from '../cockpit/deal-activity-card'
+import {
+  DEAL_ACTIVITY_VISIBLE_EVENT_TYPES,
+  mapEvidenceEventsToDealActivities,
+  sortDealActivitiesNewestFirst,
+  type DealActivityEvidenceRow,
+} from '@/lib/deals/deal-activity-events'
+import { getHubSpotPortalIdForOrganization } from '@/lib/crm/connections'
 import { listDealDeadlines } from '@/lib/deals/deadlines'
 import { canManageDealDocuments } from '@/lib/deals/can-manage-deal-documents'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
@@ -57,6 +64,7 @@ async function DealDetailPageContent({
   if (!deal) notFound()
 
   const deadlines = await listDealDeadlines(supabase, id)
+  const hubspotPortalId = await getHubSpotPortalIdForOrganization(supabase, orgId)
 
   const { systemRole, functionRole } = parseProfileRoles(profile)
   const canManageDocuments = canManageDealDocuments(
@@ -87,39 +95,19 @@ async function DealDetailPageContent({
     .from('evidence_events')
     .select('id, event_type, payload, created_at')
     .eq('deal_id', id)
+    .in('event_type', [...DEAL_ACTIVITY_VISIBLE_EVENT_TYPES])
     .order('created_at', { ascending: false })
     .limit(25)
 
-  type EvidenceEventRow = {
-    id: string
-    event_type: string
-    payload: { helped?: boolean; comment?: unknown } | null
-    created_at: string
-  }
-
-  const activities: DealActivityItem[] = [
+  const activities: DealActivityItem[] = sortDealActivitiesNewestFirst([
     {
       id: 'deal-created',
       at: new Date(deal.created_at),
       title: 'Deal erstellt',
       detail: 'Der Deal wurde angelegt.',
     },
-    ...((events ?? []) as EvidenceEventRow[]).map((e) => ({
-      id: String(e.id),
-      at: new Date(String(e.created_at)),
-      title:
-        e.event_type === 'reference_helped'
-          ? (e.payload?.helped ? 'Referenz hat geholfen' : 'Referenz hat nicht geholfen')
-          : e.event_type === 'deal_won'
-            ? 'Deal gewonnen'
-            : e.event_type === 'deal_lost'
-              ? 'Deal verloren'
-              : e.event_type === 'deal_withdrawn'
-                ? 'Deal zurückgezogen'
-                : String(e.event_type),
-      detail: e.payload?.comment ? String(e.payload.comment) : '',
-    })),
-  ]
+    ...mapEvidenceEventsToDealActivities((events ?? []) as DealActivityEvidenceRow[]),
+  ])
 
   return (
     <DealCockpitClient
@@ -153,6 +141,7 @@ async function DealDetailPageContent({
       }
       companies={(companies ?? []) as Array<{ id: string; name: string }>}
       orgProfiles={(orgProfiles ?? []) as Array<{ id: string; full_name: string | null }>}
+      hubspotPortalId={hubspotPortalId}
     />
   )
 }
