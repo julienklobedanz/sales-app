@@ -82,6 +82,4 @@ export const LEGACY_REDIRECTS = [
   { source: '/dashboard/request', destination: ROUTES.request, permanent: true },
   // Ehemalige Marktsignale-manage-URL (W4c) → Settings
   { source: '/dashboard/market-signals/manage', destination: ROUTES.marketSignalsManage, permanent: true },
-  { source: '/dashboard/market-signals/:path*', destination: ROUTES.accounts, permanent: false },
-  { source: '/dashboard/market-signals', destination: ROUTES.accounts, permanent: false },
 ] as const
