@@ -206,7 +206,7 @@ export async function getDealWithReferences(id: string): Promise<DealWithReferen
   const orgId = await getSessionOrgId(supabase)
   if (!orgId) return null
 
-  const dealSelectWithCrmStage = `
+  const dealSelect = `
       id,
       title,
       company_id,
@@ -228,28 +228,14 @@ export async function getDealWithReferences(id: string): Promise<DealWithReferen
       updated_at,
       companies ( name )
     `
-  const dealSelectWithoutCrmStage = dealSelectWithCrmStage.replace(/\s*crm_stage,\n/, '')
 
-  let dealQuery = await supabase
+  const { data: deal, error } = await supabase
     .from('deals')
-    .select(dealSelectWithCrmStage)
+    .select(dealSelect)
     .eq('id', id)
     .eq('organization_id', orgId)
     .single()
 
-  if (
-    dealQuery.error?.code === '42703' &&
-    dealQuery.error.message?.includes('crm_stage')
-  ) {
-    dealQuery = await supabase
-      .from('deals')
-      .select(dealSelectWithoutCrmStage)
-      .eq('id', id)
-      .eq('organization_id', orgId)
-      .single()
-  }
-
-  const { data: deal, error } = dealQuery
   if (error || !deal) return null
 
   const { data: drRows } = await supabase
@@ -333,7 +319,7 @@ export async function getDealWithReferences(id: string): Promise<DealWithReferen
       (deal as { salesforce_opportunity_id?: string | null }).salesforce_opportunity_id ?? null,
     crm_opportunity_id: (deal as { crm_opportunity_id?: string | null }).crm_opportunity_id ?? null,
     crm_source: (deal as { crm_source?: string | null }).crm_source ?? null,
-    crm_stage: (deal as { crm_stage?: string | null }).crm_stage ?? null,
+    crm_stage: deal.crm_stage ?? null,
     created_at: deal.created_at ?? '',
     updated_at: deal.updated_at ?? null,
     linked_refs,

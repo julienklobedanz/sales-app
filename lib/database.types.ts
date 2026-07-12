@@ -966,6 +966,7 @@ export type Database = {
           created_at: string | null
           crm_opportunity_id: string | null
           crm_source: string | null
+          crm_stage: string | null
           crm_synced_at: string | null
           expiry_date: string | null
           id: string
@@ -988,6 +989,7 @@ export type Database = {
           created_at?: string | null
           crm_opportunity_id?: string | null
           crm_source?: string | null
+          crm_stage?: string | null
           crm_synced_at?: string | null
           expiry_date?: string | null
           id?: string
@@ -1010,6 +1012,7 @@ export type Database = {
           created_at?: string | null
           crm_opportunity_id?: string | null
           crm_source?: string | null
+          crm_stage?: string | null
           crm_synced_at?: string | null
           expiry_date?: string | null
           id?: string
