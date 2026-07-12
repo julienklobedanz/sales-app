@@ -12,16 +12,22 @@ import { DealRfpEligibilitySection } from './deal-rfp-eligibility-section'
 import { DealRfpMetricsRow } from './deal-rfp-metrics-row'
 import { DealRfpRecommendationBanner } from './deal-rfp-recommendation-banner'
 import { DealRfpRisksSection } from './deal-rfp-risks-section'
+import type { DealDocumentRow } from '../document-actions'
+import { DealRfpAnalyzeButton } from './deal-rfp-analyze-button'
 
 export async function DealRfpCockpitBlock({
   dealId,
   orgId,
   deal,
+  documents,
+  canManageDocuments,
   dealContext,
 }: {
   dealId: string
   orgId: string
   deal: DealWithReferences
+  documents: DealDocumentRow[]
+  canManageDocuments: boolean
   dealContext?: {
     industry?: string | null
     volume?: string | null
@@ -38,10 +44,21 @@ export async function DealRfpCockpitBlock({
           <CardTitle className="text-base">{COPY.deals.cockpit.rfpBlockTitle}</CardTitle>
           <CardDescription>{COPY.deals.cockpit.rfpBlockEmpty}</CardDescription>
         </CardHeader>
-        <CardContent>
-          <Button type="button" size="sm" variant="outline" asChild>
-            <Link href="#dokumente">{COPY.deals.cockpit.rfpAnalyzeCta}</Link>
-          </Button>
+        <CardContent className="space-y-3">
+          {documents.length > 0 && canManageDocuments ? (
+            <DealRfpAnalyzeButton
+              dealId={dealId}
+              documents={documents}
+              canManage={canManageDocuments}
+              hasAnalysis={false}
+              isStale={false}
+              variant="outline"
+            />
+          ) : (
+            <Button type="button" size="sm" variant="outline" asChild>
+              <Link href="#dokumente">{COPY.deals.cockpit.rfpAnalyzeCta}</Link>
+            </Button>
+          )}
         </CardContent>
       </Card>
     )
@@ -53,7 +70,12 @@ export async function DealRfpCockpitBlock({
         <h2 className="text-base font-semibold">{COPY.deals.cockpit.rfpBlockTitle}</h2>
         <p className="text-sm text-muted-foreground">{COPY.deals.cockpit.rfpBlockSubtitle}</p>
       </div>
-      <DealRfpRecommendationBanner data={data} />
+      <DealRfpRecommendationBanner
+        data={data}
+        dealId={dealId}
+        documents={documents}
+        canManage={canManageDocuments}
+      />
       <DealRfpMetricsRow data={data} />
       <DealRfpEligibilitySection data={data} />
       <DealRfpRisksSection data={data} />

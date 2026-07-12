@@ -63,6 +63,7 @@ import {
   setDealDocumentKind,
   uploadDealDocument,
 } from '../document-actions'
+import { runDealRfpAnalyze } from './deal-rfp-analyze-button'
 
 function formatFileSize(bytes: number | null): string {
   if (bytes == null || bytes <= 0) return '—'
@@ -215,7 +216,9 @@ export function DealDocumentsSection({
   }, [initialDocuments])
 
   const [uploadOpen, setUploadOpen] = useState(false)
-  const [uploadKind, setUploadKind] = useState<DealDocumentKind>('sonstiges')
+  const [uploadKind, setUploadKind] = useState<DealDocumentKind>(
+    isRfpMode ? 'ausschreibung' : 'sonstiges'
+  )
   const [uploadFile, setUploadFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [renameTarget, setRenameTarget] = useState<DealDocumentRow | null>(null)
@@ -244,7 +247,7 @@ export function DealDocumentsSection({
       toast.success('Dokument hochgeladen.')
       setUploadOpen(false)
       setUploadFile(null)
-      setUploadKind('sonstiges')
+      setUploadKind(isRfpMode ? 'ausschreibung' : 'sonstiges')
       router.refresh()
     } finally {
       setUploading(false)
@@ -254,14 +257,9 @@ export function DealDocumentsSection({
   async function handleAnalyze(doc: DealDocumentRow) {
     setAnalyzingId(doc.id)
     try {
-      const res = await fetch('/api/rfp/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dealId, dealDocumentId: doc.id }),
-      })
-      const json = (await res.json()) as { success?: boolean; error?: string }
-      if (!res.ok || !json.success) {
-        toast.error(json.error ?? COPY.deals.cockpit.documentsAnalyzeFailed)
+      const result = await runDealRfpAnalyze(dealId, doc)
+      if (!result.ok) {
+        toast.error(result.error ?? COPY.deals.cockpit.documentsAnalyzeFailed)
         return
       }
       toast.success(COPY.deals.cockpit.documentsAnalyzeSuccess)
@@ -372,7 +370,7 @@ export function DealDocumentsSection({
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-1">
-                    {canManage && doc.kind === 'ausschreibung' ? (
+                    {canManage && (isRfpMode || doc.kind === 'ausschreibung') ? (
                       <Button
                         type="button"
                         variant="outline"
@@ -385,6 +383,8 @@ export function DealDocumentsSection({
                             <AppIcon icon={Loader} size={14} className="mr-1 animate-spin" />
                             {COPY.deals.cockpit.documentsAnalyzePending}
                           </>
+                        ) : doc.kind !== 'ausschreibung' && isRfpMode ? (
+                          COPY.deals.cockpit.documentsAnalyzeAsRfp
                         ) : isRfpMode ? (
                           COPY.deals.cockpit.documentsReanalyze
                         ) : (

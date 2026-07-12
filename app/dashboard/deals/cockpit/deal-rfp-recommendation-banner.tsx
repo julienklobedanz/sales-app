@@ -1,9 +1,24 @@
 import { cn } from '@/lib/utils'
+import { COPY } from '@/lib/copy'
 
 import type { DealRfpCockpitData } from '@/lib/deals/load-deal-rfp-cockpit-data'
 
-export function DealRfpRecommendationBanner({ data }: { data: DealRfpCockpitData }) {
-  const { recommendation, analyzedAt, isStale } = data
+import type { DealDocumentRow } from '../document-actions'
+import { DealRfpAnalyzeButton } from './deal-rfp-analyze-button'
+
+export function DealRfpRecommendationBanner({
+  data,
+  dealId,
+  documents,
+  canManage,
+}: {
+  data: DealRfpCockpitData
+  dealId: string
+  documents: DealDocumentRow[]
+  canManage: boolean
+}) {
+  const { recommendation, analyzedAt, isStale, hasAnalysis } = data
+  const showReanalyzeCta = isStale || !hasAnalysis
   const toneClass =
     recommendation.tone === 'go'
       ? 'border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900/40 dark:bg-emerald-950/40 dark:text-emerald-100'
@@ -14,20 +29,39 @@ export function DealRfpRecommendationBanner({ data }: { data: DealRfpCockpitData
           : 'border-border bg-muted/40 text-muted-foreground'
 
   return (
-    <div className={cn('mb-4 flex flex-col gap-1 rounded-xl border px-4 py-3 text-sm sm:flex-row sm:items-center sm:gap-3', toneClass)}>
-      <span className="font-semibold shrink-0">{recommendation.label}</span>
-      <span>{recommendation.detail}</span>
-      {analyzedAt && !isStale ? (
-        <span className="sm:ml-auto text-xs opacity-80">
-          Analyse vom{' '}
-          {new Date(analyzedAt).toLocaleDateString('de-DE', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-          })}
-        </span>
-      ) : analyzedAt && isStale ? (
-        <span className="sm:ml-auto text-xs font-medium">Neu analysieren empfohlen</span>
+    <div className="mb-4">
+      <div
+        className={cn(
+          'flex flex-col gap-3 rounded-xl border px-4 py-3 text-sm sm:flex-row sm:items-center sm:gap-3',
+          toneClass
+        )}
+      >
+        <span className="shrink-0 font-semibold">{recommendation.label}</span>
+        <span className="min-w-0 flex-1">{recommendation.detail}</span>
+        {analyzedAt && !isStale ? (
+          <span className="text-xs opacity-80 sm:ml-auto">
+            Analyse vom{' '}
+            {new Date(analyzedAt).toLocaleDateString('de-DE', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+            })}
+          </span>
+        ) : showReanalyzeCta ? (
+          <DealRfpAnalyzeButton
+            dealId={dealId}
+            documents={documents}
+            canManage={canManage}
+            hasAnalysis={hasAnalysis}
+            isStale={isStale}
+            className="sm:ml-auto"
+          />
+        ) : null}
+      </div>
+      {isStale ? (
+        <p className="mt-1 text-right text-xs font-medium text-muted-foreground">
+          {COPY.deals.cockpit.rfpReanalyzeHint}
+        </p>
       ) : null}
     </div>
   )

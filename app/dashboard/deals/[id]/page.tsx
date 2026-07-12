@@ -130,6 +130,8 @@ async function DealDetailPageContent({
               dealId={id}
               orgId={orgId}
               deal={deal}
+              documents={documents}
+              canManageDocuments={canManageDocuments}
               dealContext={{
                 title: deal.title,
                 industry: deal.industry,

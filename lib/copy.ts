@@ -191,7 +191,9 @@ export const COPY = {
       rfpBlockEmpty:
         'Lade eine Ausschreibung unter Dokumente hoch und starte die Analyse von dort.',
       rfpAnalyzeCta: 'Zu Dokumenten',
+      rfpReanalyzeHint: 'Neu analysieren empfohlen',
       documentsAnalyze: 'Analysieren',
+      documentsAnalyzeAsRfp: 'Als Ausschreibung analysieren',
       documentsReanalyze: 'Neu analysieren',
       documentsAnalyzePending: 'Analyse läuft …',
       documentsAnalyzeSuccess: 'RFP-Analyse abgeschlossen.',
