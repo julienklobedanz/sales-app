@@ -1,5 +1,7 @@
 'use client'
 
+import { AuthThemeToggle } from '@/components/auth-theme-toggle'
+
 export type AuthBrandContent = {
   title: string
   description?: string
@@ -18,11 +20,14 @@ export function AuthBrandPanel({ content }: { content: AuthBrandContent }) {
         aria-hidden
       />
 
-      <div className="relative z-10 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-sm font-black text-zinc-950 shadow-sm">
-          R
+      <div className="relative z-10 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-sm font-black text-zinc-950 shadow-sm">
+            R
+          </div>
+          <span className="text-lg font-semibold tracking-tight text-white">RefStack</span>
         </div>
-        <span className="text-lg font-semibold tracking-tight text-white">RefStack</span>
+        <AuthThemeToggle variant="brand" />
       </div>
 
       <div className="relative z-10">

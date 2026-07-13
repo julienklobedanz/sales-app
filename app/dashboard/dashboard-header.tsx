@@ -1,18 +1,11 @@
 'use client'
 
-import { useEffect, useMemo, useState, useTransition } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Fragment } from 'react'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
-import {
-  Bell,
-  MailOpen,
-  SearchIcon,
-} from '@hugeicons/core-free-icons'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Separator } from '@/components/ui/separator'
-import { Button } from '@/components/ui/button'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -21,11 +14,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
-import { useCommandPalette } from '@/hooks/useCommandPalette'
-import { useHydrated } from '@/hooks/use-hydrated'
-import { type AppRole } from '@/hooks/useRole'
 import { createClient } from '@/lib/supabase/client'
-import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
 import { cn } from '@/lib/utils'
 import {
@@ -47,30 +36,12 @@ import {
   useReferenceLibraryMode,
 } from '@/lib/references/library/reference-library-mode-store'
 import { ROUTES } from '@/lib/routes'
-import {
-  getInboxNotificationsForLayout,
-  markAllNotificationReads,
-  markNotificationRead,
-  type DashboardNotificationItem,
-} from '@/app/dashboard/actions'
 
-const INBOX_POLL_MS = 120_000
-
-export function DashboardHeader({
-  userId,
-  userRole,
-  initialNotifications = [],
-}: {
-  userId: string
-  userRole: AppRole
-  initialNotifications?: DashboardNotificationItem[]
-}) {
+export function DashboardHeader() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const accountsListView = useAccountsListView()
   const referenceLibraryMode = useReferenceLibraryMode()
-
-  const hydrated = useHydrated()
 
   useEffect(() => {
     syncAccountsListViewFromUrl(parseAccountsListView(searchParams))
@@ -82,70 +53,9 @@ export function DashboardHeader({
     }
   }, [pathname])
 
-  const { setOpen } = useCommandPalette()
-  const [notifications, setNotifications] =
-    useState<DashboardNotificationItem[]>(initialNotifications)
   const [dynamicCrumbs, setDynamicCrumbs] = useState<Array<{ label: string; href?: string }>>([])
   const [accountCrumbNames, setAccountCrumbNames] = useState<Record<string, string>>({})
   const [dealCrumbTitles, setDealCrumbTitles] = useState<Record<string, string>>({})
-
-  useEffect(() => {
-    setNotifications(initialNotifications)
-  }, [initialNotifications])
-
-  useEffect(() => {
-    async function refreshInbox() {
-      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return
-      try {
-        const next = await getInboxNotificationsForLayout(userId, userRole)
-        setNotifications(next)
-      } catch {
-        // offline / transient — keep current list
-      }
-    }
-
-    const id = window.setInterval(refreshInbox, INBOX_POLL_MS)
-    const onVis = () => {
-      if (document.visibilityState === 'visible') void refreshInbox()
-    }
-    document.addEventListener('visibilitychange', onVis)
-
-    return () => {
-      window.clearInterval(id)
-      document.removeEventListener('visibilitychange', onVis)
-    }
-  }, [userId, userRole])
-
-  const unreadCount = useMemo(
-    () => notifications.filter((n) => !n.read).length,
-    [notifications]
-  )
-
-  const [markNotificationsPending, startMarkNotifications] = useTransition()
-
-  function markAllNotificationsRead() {
-    const ids = notifications.filter((n) => !n.read).map((n) => n.id)
-    if (!ids.length) return
-    startMarkNotifications(() => {
-      void markAllNotificationReads(ids).then((res) => {
-        if (res.success) {
-          setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
-        }
-      })
-    })
-  }
-
-  function handleOpenNotification(id: string) {
-    startMarkNotifications(() => {
-      void markNotificationRead(id).then((res) => {
-        if (res.success) {
-          setNotifications((prev) =>
-            prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-          )
-        }
-      })
-    })
-  }
 
   const headerMeta = useMemo(() => {
     if (!pathname) return { title: COPY.pages.dashboard, subtitle: undefined as string | undefined }
@@ -223,6 +133,7 @@ export function DashboardHeader({
   useEffect(() => {
     let cancelled = false
     async function resolveCrumbs() {
+      try {
       if (!pathname) {
         if (!cancelled) setDynamicCrumbs([])
         return
@@ -256,8 +167,8 @@ export function DashboardHeader({
       if (pathname === ROUTES.marketSignalsManage) {
         if (!cancelled) {
           setDynamicCrumbs([
-            { label: 'Einstellungen', href: ROUTES.settings },
-            { label: 'Marktsignale verwalten' },
+            { label: COPY.nav.marketSignals, href: ROUTES.marketSignals },
+            { label: 'Watchlist verwalten' },
           ])
         }
         return
@@ -378,6 +289,9 @@ export function DashboardHeader({
       }
 
       if (!cancelled) setDynamicCrumbs([])
+      } catch {
+        if (!cancelled) setDynamicCrumbs([])
+      }
     }
     void resolveCrumbs()
     return () => {
@@ -434,110 +348,6 @@ export function DashboardHeader({
             </div>
           ) : null}
         </div>
-      </div>
-
-      <div className="ml-auto flex shrink-0 items-center gap-1">
-        <button
-          type="button"
-          className="relative inline-flex size-9 shrink-0 items-center justify-center rounded-md outline-none transition-colors hover:bg-muted/60 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-          aria-label="Globale Suche öffnen"
-          title="Globale Suche"
-          onClick={() => setOpen(true)}
-        >
-          <AppIcon icon={SearchIcon} size={20} />
-        </button>
-
-        {hydrated ? (
-          <Popover>
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                className="relative inline-flex size-9 items-center justify-center rounded-md hover:bg-muted/60 transition-colors"
-                aria-label="Benachrichtigungen"
-              >
-                <AppIcon icon={Bell} size={20} />
-                {unreadCount > 0 ? (
-                  <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-white">
-                    {unreadCount}
-                  </span>
-                ) : null}
-              </button>
-            </PopoverTrigger>
-            <PopoverContent
-              align="end"
-              side="bottom"
-              sideOffset={4}
-              className="w-96 p-0"
-            >
-              <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
-                <h3 className="text-sm font-semibold">{COPY.notifications.title}</h3>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
-                  disabled={unreadCount === 0 || markNotificationsPending}
-                  aria-label={COPY.notifications.markAllReadAria}
-                  title={COPY.notifications.markAllReadAria}
-                  onClick={markAllNotificationsRead}
-                >
-                  <AppIcon icon={MailOpen} size={18} />
-                </Button>
-              </div>
-              <div className="max-h-[28rem] overflow-auto">
-                {notifications.length === 0 ? (
-                  <p className="px-4 py-6 text-center text-sm text-muted-foreground">
-                    Keine Benachrichtigungen.
-                  </p>
-                ) : (
-                  notifications.map((notification) => (
-                    <div
-                      key={notification.id}
-                      className="flex items-start gap-2 border-b px-4 py-3 last:border-b-0"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <Link
-                          href={notification.href}
-                          onClick={() => handleOpenNotification(notification.id)}
-                          className={cn(
-                            'inline-block max-w-full truncate rounded-sm text-sm font-medium text-foreground underline-offset-2 transition-colors',
-                            'hover:text-primary hover:underline',
-                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
-                          )}
-                        >
-                          {notification.title}
-                        </Link>
-                        <p className="text-xs text-muted-foreground">{notification.text}</p>
-                        <p className="mt-1 text-[11px] text-muted-foreground">{notification.time}</p>
-                      </div>
-                      {!notification.read ? (
-                        <span
-                          className="mt-1.5 size-2 shrink-0 rounded-full bg-sidebar-primary"
-                          title={COPY.notifications.unreadBadgeAria}
-                          aria-label={COPY.notifications.unreadBadgeAria}
-                        />
-                      ) : null}
-                    </div>
-                  ))
-                )}
-              </div>
-            </PopoverContent>
-          </Popover>
-        ) : (
-          <button
-            type="button"
-            className="relative inline-flex size-9 items-center justify-center rounded-md hover:bg-muted/60 transition-colors"
-            aria-label="Benachrichtigungen"
-            tabIndex={-1}
-          >
-            <AppIcon icon={Bell} size={20} />
-            {unreadCount > 0 ? (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-white">
-                {unreadCount}
-              </span>
-            ) : null}
-          </button>
-        )}
       </div>
     </header>
   )

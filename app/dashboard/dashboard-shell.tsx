@@ -31,6 +31,8 @@ import { DashboardHeader } from './dashboard-header'
 import { SupportTicketModal } from '@/components/dashboard/SupportTicketModal'
 import { SupportChannelsDialog } from '@/components/dashboard/SupportChannelsDialog'
 import { DashboardUserMenu } from '@/components/dashboard/dashboard-user-menu'
+import { SidebarCommandSearch } from '@/components/dashboard/sidebar-command-search'
+import { SidebarNotificationsSection } from '@/components/dashboard/sidebar-notifications-button'
 import { type User } from '@supabase/supabase-js'
 import { RoleProvider, type AppRole, type Capability, type FunctionRole, type SystemRole } from '@/hooks/useRole'
 import { CommandPalette } from '@/components/ui/command-palette'
@@ -155,6 +157,12 @@ export function DashboardShell({
         </SidebarHeader>
 
         <SidebarContent className="gap-0">
+          <SidebarGroup className="space-y-0 px-2 pb-2 pt-1">
+            <SidebarGroupContent>
+              <SidebarCommandSearch />
+            </SidebarGroupContent>
+          </SidebarGroup>
+
           <SidebarGroup className="space-y-0 px-2 py-0">
             <SidebarGroupContent>
               <SidebarMenu className="gap-0.5">
@@ -329,6 +337,12 @@ export function DashboardShell({
               </Tooltip>
             </div>
 
+            <SidebarNotificationsSection
+              userId={user.id}
+              userRole={legacyAppRoleFrom(profile.systemRole, profile.functionRole)}
+              initialNotifications={initialNotifications}
+            />
+
             <SidebarGroupContent>
               <SidebarMenu className="gap-0.5">
                 <DashboardUserMenu
@@ -354,11 +368,7 @@ export function DashboardShell({
             </div>
           }
         >
-          <DashboardHeader
-            userId={user.id}
-            userRole={legacyAppRoleFrom(profile.systemRole, profile.functionRole)}
-            initialNotifications={initialNotifications}
-          />
+          <DashboardHeader />
         </Suspense>
         <div
           className={cn(

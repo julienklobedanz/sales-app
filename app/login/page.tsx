@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { AuthShell } from '@/components/auth-shell'
 import { LoginForm } from './login-form'
 import { AUTH_BRAND_CONTENT } from '@/lib/auth/brand-content'
@@ -34,8 +33,8 @@ export default async function LoginPage({ searchParams }: Props) {
 
   return (
     <AuthShell brandContent={AUTH_BRAND_CONTENT.login}>
-      <div className="space-y-4">
-        <div className="mb-4 space-y-1">
+      <div className="w-full space-y-6">
+        <div className="space-y-1.5">
           <h1 className="text-2xl font-bold tracking-tight text-gray-900">Willkommen zurück.</h1>
           {inviteToken ? (
             <p className="text-sm text-gray-500">
@@ -43,16 +42,7 @@ export default async function LoginPage({ searchParams }: Props) {
             </p>
           ) : null}
         </div>
-        <LoginForm inviteToken={inviteToken} />
-        <p className="text-sm text-gray-500">
-          Neu bei RefStack?{' '}
-          <Link
-            href={registerHref}
-            className="font-medium text-primary underline-offset-4 hover:underline"
-          >
-            Konto erstellen
-          </Link>
-        </p>
+        <LoginForm inviteToken={inviteToken} registerHref={registerHref} />
       </div>
     </AuthShell>
   )

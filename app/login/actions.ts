@@ -1,6 +1,5 @@
 'use server'
 
-import { redirect } from 'next/navigation'
 import {
   buildAuthCallbackUrl,
   normalizeSsoDomain,
@@ -10,7 +9,7 @@ import { sendMagicLinkEmailViaResend } from '@/lib/auth/send-magic-link-email'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 
-export type SignInResult = { error?: string; success?: boolean }
+export type SignInResult = { error?: string; redirectTo?: string }
 export type AltSignInResult = { error?: string; success?: string; redirectUrl?: string }
 
 export async function signInWithPassword(
@@ -34,9 +33,9 @@ export async function signInWithPassword(
 
   const inviteToken = formData.get('invite_token')?.toString()?.trim()
   if (inviteToken) {
-    redirect(`${ROUTES.onboarding}?invite=${encodeURIComponent(inviteToken)}`)
+    return { redirectTo: `${ROUTES.onboarding}?invite=${encodeURIComponent(inviteToken)}` }
   }
-  redirect(ROUTES.home)
+  return { redirectTo: ROUTES.home }
 }
 
 export async function sendMagicLinkSignIn(formData: FormData): Promise<AltSignInResult> {
