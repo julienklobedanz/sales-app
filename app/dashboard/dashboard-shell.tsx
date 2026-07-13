@@ -25,14 +25,15 @@ import {
   SidebarProvider,
   SidebarInset,
   SidebarRail,
+  SidebarTrigger,
 } from '@/components/ui/sidebar'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { DashboardHeader } from './dashboard-header'
 import { SupportTicketModal } from '@/components/dashboard/SupportTicketModal'
 import { SupportChannelsDialog } from '@/components/dashboard/SupportChannelsDialog'
 import { DashboardUserMenu } from '@/components/dashboard/dashboard-user-menu'
 import { SidebarCommandSearch } from '@/components/dashboard/sidebar-command-search'
 import { SidebarNotificationsSection } from '@/components/dashboard/sidebar-notifications-button'
+import { DashboardListPageHeader } from '@/components/dashboard/dashboard-list-page-header'
 import { type User } from '@supabase/supabase-js'
 import { RoleProvider, type AppRole, type Capability, type FunctionRole, type SystemRole } from '@/hooks/useRole'
 import { CommandPalette } from '@/components/ui/command-palette'
@@ -137,23 +138,22 @@ export function DashboardShell({
             collapsible="icon"
             className="border-r border-sidebar-border/90 bg-sidebar"
           >
-        <SidebarHeader className="flex h-[84px] shrink-0 flex-col justify-center gap-0 p-0 px-3">
-          <SidebarMenu className="gap-0">
-            <SidebarMenuItem>
-              <SidebarMenuButton size="lg" asChild className="h-auto min-h-0 py-0 hover:bg-transparent">
-                <Link href={ROUTES.home} className="group/link flex items-center gap-2.5 group-data-[collapsible=icon]:justify-center">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-b from-blue-600 to-blue-700 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)]">
-                    <AppIcon icon={GalleryHorizontalEndIcon} size={16} strokeWidth={2.5} />
-                  </div>
-                  <div className="flex flex-col gap-0.5 leading-none group-data-[collapsible=icon]:hidden">
-                    <span className="text-sm font-semibold tracking-tight">
-                      RefStack
-                    </span>
-                  </div>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
+        <SidebarHeader className="flex h-[84px] shrink-0 flex-col justify-center px-3">
+          <div className="flex w-full items-center justify-between gap-2 group-data-[collapsible=icon]:justify-center">
+            <Link
+              href={ROUTES.home}
+              className="group-data-[collapsible=icon]:hidden flex min-w-0 items-center gap-2.5"
+            >
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-b from-blue-600 to-blue-700 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)]">
+                <AppIcon icon={GalleryHorizontalEndIcon} size={16} strokeWidth={2.5} />
+              </div>
+              <span className="text-sm font-semibold tracking-tight">RefStack</span>
+            </Link>
+            <SidebarTrigger
+              className="hidden size-8 shrink-0 text-muted-foreground hover:text-foreground md:inline-flex group-data-[collapsible=icon]:flex"
+              aria-label="Sidebar ein-/ausklappen"
+            />
+          </div>
         </SidebarHeader>
 
         <SidebarContent className="gap-0">
@@ -360,25 +360,23 @@ export function DashboardShell({
 
         <SidebarRail />
       </Sidebar>
-      <SidebarInset>
-        <Suspense
-          fallback={
-            <div className="flex h-14 shrink-0 items-center border-b border-border px-4">
-              <div className="h-6 w-48 animate-pulse rounded bg-muted" />
-            </div>
-          }
-        >
-          <DashboardHeader />
-        </Suspense>
+      <SidebarInset className="relative">
+        <SidebarTrigger
+          className="fixed left-4 top-4 z-40 size-9 bg-background shadow-sm md:hidden"
+          aria-label="Menü öffnen"
+        />
         <div
           className={cn(
             routeExcludesDashboardContentPadding(pathname)
               ? DASHBOARD_SCROLL_AREA_BLEED_CLASS
               : DASHBOARD_SCROLL_AREA_CLASS,
-            "bg-background",
+            'bg-background',
             detailRouteNeedsBottomPadding(pathname) && 'pb-10'
           )}
         >
+          <Suspense fallback={null}>
+            <DashboardListPageHeader />
+          </Suspense>
           {children}
         </div>
       </SidebarInset>

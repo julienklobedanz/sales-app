@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isIndustryId, resolveIndustryId } from './industries'
+import { formatIndustryDisplayCompact, isIndustryId, resolveIndustryId } from './industries'
 
 describe('resolveIndustryId', () => {
   it('behält gültige ids', () => {
@@ -15,5 +15,20 @@ describe('resolveIndustryId', () => {
 
   it('liefert leer für unbekannte Werte', () => {
     expect(resolveIndustryId('Automotive')).toBe('')
+  })
+})
+
+describe('formatIndustryDisplayCompact', () => {
+  it('kürzt vor dem Komma', () => {
+    expect(formatIndustryDisplayCompact('health').compact).toBe('Gesundheitswesen')
+    expect(formatIndustryDisplayCompact('health').full).toBe(
+      'Gesundheitswesen, Life Sciences & Chemie'
+    )
+  })
+
+  it('kürzt lange Ein-Wort-Cluster auf zwei Wörter', () => {
+    const { compact, full } = formatIndustryDisplayCompact('fin')
+    expect(full).toBe('Finanzdienstleistungen & Versicherung')
+    expect(compact).toBe('Finanzdienstleistungen &…')
   })
 })

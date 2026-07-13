@@ -1,7 +1,7 @@
 import Link from 'next/link'
 
 import { AuthBrandPanel, type AuthBrandContent } from '@/components/auth-brand-panel'
-import { AuthThemeToggle } from '@/components/auth-theme-toggle'
+import { AuthThemeScope } from '@/components/auth-theme-scope'
 
 type AuthShellProps = {
   children: React.ReactNode
@@ -16,27 +16,26 @@ const AUTH_FORM_COLUMN_CLASS =
 
 export function AuthShell({ children, brandContent, topRightLink }: AuthShellProps) {
   return (
-    <div className="min-h-screen overflow-hidden bg-zinc-100 dark:bg-zinc-950">
-      <div className="grid min-h-screen grid-cols-1 lg:grid-cols-2">
-        <div className={AUTH_FORM_COLUMN_CLASS}>
-          <div className="absolute right-4 top-4 flex items-center gap-1 md:right-8 md:top-8 lg:top-12">
-            <div className="lg:hidden">
-              <AuthThemeToggle />
-            </div>
+    <AuthThemeScope>
+      <div className="min-h-screen overflow-hidden bg-zinc-100">
+        <div className="grid min-h-screen grid-cols-1 lg:grid-cols-2">
+          <div className={AUTH_FORM_COLUMN_CLASS}>
             {topRightLink ? (
-              <Link
-                href={topRightLink.href}
-                className="px-2 text-sm font-medium text-zinc-500 underline-offset-4 transition-colors hover:text-zinc-900 hover:underline dark:hover:text-zinc-900"
-              >
-                {topRightLink.label}
-              </Link>
+              <div className="absolute right-4 top-4 md:right-8 md:top-8 lg:top-12">
+                <Link
+                  href={topRightLink.href}
+                  className="px-2 text-sm font-medium text-zinc-500 underline-offset-4 transition-colors hover:text-zinc-900 hover:underline"
+                >
+                  {topRightLink.label}
+                </Link>
+              </div>
             ) : null}
+            <div className="mx-auto w-full max-w-sm">{children}</div>
           </div>
-          <div className="mx-auto w-full max-w-sm">{children}</div>
-        </div>
 
-        <AuthBrandPanel content={brandContent} />
+          <AuthBrandPanel content={brandContent} />
+        </div>
       </div>
-    </div>
+    </AuthThemeScope>
   )
 }

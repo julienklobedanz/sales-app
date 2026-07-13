@@ -191,8 +191,10 @@ export type TeamActivityRow = {
 export type LeaderRiskDealRow = {
   id: string
   title: string
-  valueLabel: string
-  coverageLabel: string
+  companyName: string | null
+  companyLogoUrl: string | null
+  companyId: string | null
+  subtitle: string
   tone: 'gap' | 'warn' | 'ok'
   ctaLabel: string | null
   href: string

@@ -82,3 +82,22 @@ export function formatIndustryDisplay(value: string | null | undefined): string 
   const label = getIndustryLabelDe(raw)
   return label || raw
 }
+
+/** Kompaktes Tabellen-Label: Segment vor dem Komma oder maximal zwei Wörter. */
+export function formatIndustryDisplayCompact(value: string | null | undefined): {
+  compact: string
+  full: string
+} {
+  const full = formatIndustryDisplay(value)
+  if (!full) return { compact: '', full: '' }
+
+  const comma = full.indexOf(',')
+  if (comma > 0) {
+    return { compact: full.slice(0, comma).trim(), full }
+  }
+
+  const words = full.split(/\s+/).filter(Boolean)
+  if (words.length <= 2) return { compact: full, full }
+
+  return { compact: `${words.slice(0, 2).join(' ')}…`, full }
+}

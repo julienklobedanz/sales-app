@@ -32,7 +32,7 @@ import {
   ArrowUpDown,
   Filter,
 } from "@hugeicons/core-free-icons"
-import { formatIndustryDisplay, getIndustryLabelDe } from "@/lib/constants/industries"
+import { formatIndustryDisplay, formatIndustryDisplayCompact, getIndustryLabelDe } from "@/lib/constants/industries"
 import { AppIcon } from "@/lib/icons"
 import Link from "next/link"
 
@@ -243,7 +243,7 @@ export function renderReferenceColumnHeader(
       )
     case "title":
       return (
-        <DraggableColumnHead {...dragProps}>
+        <DraggableColumnHead {...dragProps} className="min-w-0">
           <button
             type="button"
             className="flex items-center gap-0.5 hover:opacity-80"
@@ -328,7 +328,7 @@ export function renderReferenceColumnHeader(
       )
     case "industry":
       return (
-        <DraggableColumnHead {...dragProps}>
+        <DraggableColumnHead {...dragProps} className="w-[108px] max-w-[108px]">
           <Popover>
             <PopoverTrigger asChild>
               <button
@@ -421,7 +421,7 @@ export function renderReferenceColumnHeader(
       )
     case "status":
       return (
-        <DraggableColumnHead {...dragProps}>
+        <DraggableColumnHead {...dragProps} className="w-[104px] max-w-[104px]">
           <Popover>
             <PopoverTrigger asChild>
               <button
@@ -947,7 +947,7 @@ export function renderReferenceColumnCell(
     case "title": {
       const summaryText = String(ref.summary ?? "").trim()
       return (
-        <TableDataCell className="max-w-[min(100%,420px)] min-w-[140px]">
+        <TableDataCell className="min-w-0 max-w-[min(100%,280px)]">
           <HoverCard openDelay={200} closeDelay={80}>
             <HoverCardTrigger asChild>
               <span
@@ -980,10 +980,12 @@ export function renderReferenceColumnCell(
         String(ref.industry ?? '').trim() ||
         companyIndustryById.get(ref.company_id) ||
         ''
-      const industry = formatIndustryDisplay(industryRaw)
+      const { compact, full } = formatIndustryDisplayCompact(industryRaw)
       return (
-        <TableDataCell className="text-muted-foreground">
-          <span className="truncate leading-none">{industry}</span>
+        <TableDataCell className="max-w-[108px] text-muted-foreground">
+          <span className="block truncate leading-none" title={full || undefined}>
+            {compact}
+          </span>
         </TableDataCell>
       )
     }

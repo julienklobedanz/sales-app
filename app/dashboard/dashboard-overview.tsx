@@ -104,7 +104,6 @@ import { toast } from 'sonner'
 import { BULK_IMPORT_MAX_FILES } from '@/lib/references/bulk-import-limits'
 import { copyTableRowsSelected } from '@/lib/copy'
 import { parseReferenceVolume, type OrgDateDisplayFormat } from '@/lib/format'
-import { ReferenceProofSegmentSwitch } from '@/components/references/reference-proof-segment-switch'
 import { canViewComplianceReferenceSegment } from '@/lib/references/library/reference-proof-segment-access'
 import { MASTER_INDUSTRIES, getIndustryLabelDe, resolveIndustryId } from '@/lib/constants/industries'
 import {
@@ -988,14 +987,10 @@ export function DashboardOverview({
       <ReferencesOverviewBrandfetchSync companyIds={companyIdsNeedingBrandfetch} />
       {/* Toolbar & Tabelle */}
       <div className="min-w-0 space-y-2">
-        {canViewComplianceSegment ? (
-          <ReferenceProofSegmentSwitch
-            value={libraryMode}
-            onChange={handleLibraryModeChange}
-          />
-        ) : null}
         <ReferenceLibraryToolbar
           libraryMode={libraryMode}
+          onLibraryModeChange={handleLibraryModeChange}
+          showProofSegmentSwitch={canViewComplianceSegment}
           referenceLayout={referenceLayout}
           onReferenceLayoutChange={setReferenceLayout}
           searchValue={isReferencesLibrary ? search : certificateSearch}
@@ -1091,7 +1086,7 @@ export function DashboardOverview({
         ) : referenceLayout === 'table' ? (
           <>
         <div className="min-w-0 overflow-x-auto rounded-xl border border-border/70 bg-card shadow-sm shadow-slate-900/5">
-          <Table className="min-w-[800px] w-full">
+          <Table className="w-full table-fixed">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[32px] align-middle p-2 pr-0">
@@ -1156,8 +1151,8 @@ export function DashboardOverview({
                     })}
                   </React.Fragment>
                 ))}
-                <TableHead className="sticky right-0 z-10 w-[88px] min-w-[88px] bg-card p-2 text-right shadow-[-8px_0_12px_-8px_rgba(15,23,42,0.12)]">
-                  <span className="sr-only">Favorit &amp; Aktionen</span>
+                <TableHead className="sticky right-0 z-10 w-[44px] min-w-[44px] bg-card p-2 text-right shadow-[-8px_0_12px_-8px_rgba(15,23,42,0.12)]">
+                  <span className="sr-only">Aktionen</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -1216,40 +1211,10 @@ export function DashboardOverview({
                       </React.Fragment>
                     ))}
                     <TableCell
-                      className="sticky right-0 z-10 w-[88px] min-w-[88px] bg-card align-middle p-2 text-right shadow-[-8px_0_12px_-8px_rgba(15,23,42,0.12)] group-hover:bg-accent/35"
+                      className="sticky right-0 z-10 w-[44px] min-w-[44px] bg-card align-middle p-2 text-right shadow-[-8px_0_12px_-8px_rgba(15,23,42,0.12)] group-hover:bg-accent/35"
                       onClick={(e: React.MouseEvent) => e.stopPropagation()}
                     >
                       <TableRowAlign className="justify-end">
-                      <div className="flex items-center justify-end gap-0.5 pr-0 opacity-0 transition-opacity group-hover:opacity-100 has-[[data-state=open]]:opacity-100">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 shrink-0 hover:bg-transparent"
-                          onClick={(e: React.MouseEvent) => handleToggleFavorite(ref.id, e)}
-                          aria-label={ref.is_favorited ? 'Favorit entfernen' : 'Als Favorit markieren'}
-                        >
-                          <AppIcon
-                            icon={StarIcon}
-                            size={16}
-                            className={
-                              ref.is_favorited
-                                ? 'text-amber-500 dark:text-amber-400'
-                                : 'text-muted-foreground/50 hover:text-amber-500/80'
-                            }
-                          />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 shrink-0 hover:bg-transparent"
-                          onClick={async () => {
-                            await copyReferenceShareLink(ref.id)
-                          }}
-                          aria-label="Kundenlink kopieren"
-                          title="Kundenlink kopieren"
-                        >
-                          <AppIcon icon={LinkIcon} size={16} className="text-muted-foreground/60 hover:text-foreground" />
-                        </Button>
                         <DropdownMenu
                           open={rowMenuOpenId === ref.id}
                           onOpenChange={(open) => setRowMenuOpenId(open ? ref.id : null)}
@@ -1258,50 +1223,73 @@ export function DashboardOverview({
                             <Button
                               variant="ghost"
                               className="h-8 w-8 shrink-0 p-0"
+                              aria-label="Aktionen"
                             >
-                              <span className="sr-only">Menü öffnen</span>
                               <AppIcon icon={MoreHorizontal} size={16} />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Aktionen</DropdownMenuLabel>
-                          <DropdownMenuItem onSelect={() => openDetail(ref)}>
-                            <AppIcon icon={FileText} size={16} className="mr-2" />
-                            Details ansehen
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onSelect={() => router.push(ROUTES.references.edit(ref.id))}
-                          >
-                            <AppIcon icon={Pencil} size={16} className="mr-2" />
-                            Bearbeiten
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onSelect={(e: Event) =>
-                              handleCopyId(
-                                ref.id,
-                                e as unknown as React.MouseEvent
-                              )
-                            }
-                          >
-                            <AppIcon icon={CopyIcon} size={16} className="mr-2" />
-                            ID kopieren
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onSelect={(e: Event) => {
-                              handleDelete(
-                                ref.id,
-                                e as unknown as React.MouseEvent
-                              )
-                            }}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <AppIcon icon={Trash2} size={16} className="mr-2" />
-                            Löschen
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                      </div>
+                            <DropdownMenuLabel>Aktionen</DropdownMenuLabel>
+                            <DropdownMenuItem
+                              onSelect={(e) => {
+                                void handleToggleFavorite(
+                                  ref.id,
+                                  e as unknown as React.MouseEvent
+                                )
+                              }}
+                            >
+                              <AppIcon
+                                icon={StarIcon}
+                                size={16}
+                                className={`mr-2 ${ref.is_favorited ? 'text-amber-500' : ''}`}
+                              />
+                              {ref.is_favorited ? 'Favorit entfernen' : 'Als Favorit markieren'}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onSelect={() => {
+                                void copyReferenceShareLink(ref.id)
+                              }}
+                            >
+                              <AppIcon icon={LinkIcon} size={16} className="mr-2" />
+                              Kundenlink kopieren
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onSelect={() => openDetail(ref)}>
+                              <AppIcon icon={FileText} size={16} className="mr-2" />
+                              Details ansehen
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onSelect={() => router.push(ROUTES.references.edit(ref.id))}
+                            >
+                              <AppIcon icon={Pencil} size={16} className="mr-2" />
+                              Bearbeiten
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onSelect={(e: Event) =>
+                                handleCopyId(
+                                  ref.id,
+                                  e as unknown as React.MouseEvent
+                                )
+                              }
+                            >
+                              <AppIcon icon={CopyIcon} size={16} className="mr-2" />
+                              ID kopieren
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onSelect={(e: Event) => {
+                                handleDelete(
+                                  ref.id,
+                                  e as unknown as React.MouseEvent
+                                )
+                              }}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <AppIcon icon={Trash2} size={16} className="mr-2" />
+                              Löschen
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableRowAlign>
                     </TableCell>
                   </TableRow>

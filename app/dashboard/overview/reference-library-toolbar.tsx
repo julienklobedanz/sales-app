@@ -32,6 +32,7 @@ import { Banknote, Eye, EyeOff } from 'lucide-react'
 import { ReferenceVolumeFilterMenu } from '@/components/references/reference-volume-filter-menu'
 import type { ReferenceVolumeFilter } from '@/lib/references/reference-volume-filter'
 import { ReferenceLayoutSwitch, type ReferenceLayoutMode } from './reference-layout-switch'
+import { ReferenceProofSegmentSwitch } from '@/components/references/reference-proof-segment-switch'
 import type { ReferenceLibraryMode } from './reference-library-switch'
 import { REFERENCE_PROOF_SEGMENT_LABELS } from '@/lib/references/library/reference-library-mode'
 
@@ -41,12 +42,14 @@ const SLOT_COLLAPSED = 'pointer-events-none m-0 w-0 min-w-0 max-w-0 overflow-hid
 const TOOLBAR_ICON_CLASS = 'shrink-0 text-muted-foreground'
 
 const PRIMARY_CTA_CLASS =
-  'h-10 min-w-0 shrink-0 justify-center gap-1.5 rounded-lg bg-gradient-to-b from-blue-600 to-blue-700 px-3 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] hover:from-blue-600 hover:to-blue-700/95 sm:min-w-[10rem] lg:min-w-[12.5rem]'
+  'h-10 min-w-0 shrink-0 justify-center gap-1.5 rounded-lg bg-gradient-to-b from-blue-600 to-blue-700 px-3 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] hover:from-blue-600 hover:to-blue-700/95'
 
 type ColumnKey = string
 
 type Props = {
   libraryMode: ReferenceLibraryMode
+  onLibraryModeChange?: (mode: ReferenceLibraryMode) => void
+  showProofSegmentSwitch?: boolean
   referenceLayout: ReferenceLayoutMode
   onReferenceLayoutChange: (mode: ReferenceLayoutMode) => void
   searchValue: string
@@ -77,6 +80,8 @@ type Props = {
 
 export function ReferenceLibraryToolbar({
   libraryMode,
+  onLibraryModeChange,
+  showProofSegmentSwitch = false,
   referenceLayout,
   onReferenceLayoutChange,
   searchValue,
@@ -105,10 +110,10 @@ export function ReferenceLibraryToolbar({
   const isReferencesLibrary = libraryMode === 'references'
 
   return (
-    <div className="flex w-full min-w-0 flex-col gap-2.5 2xl:flex-row 2xl:items-center 2xl:gap-3.5">
+    <div className="flex w-full min-w-0 items-center gap-2.5 sm:gap-3">
       <ToolbarSearchField
         variant="dashboard"
-        wrapperClassName="min-w-0 w-full 2xl:flex-1"
+        wrapperClassName="min-w-0 flex-1"
         className="bg-white"
         placeholder={
           isReferencesLibrary
@@ -120,7 +125,7 @@ export function ReferenceLibraryToolbar({
       />
 
       <TooltipProvider delayDuration={300}>
-        <div className="flex min-w-0 w-full items-center gap-2.5 overflow-x-auto overscroll-x-contain pb-0.5 [-webkit-overflow-scrolling:touch] 2xl:ml-auto 2xl:w-auto 2xl:max-w-full 2xl:shrink-0 2xl:pb-0">
+        <div className="flex shrink-0 flex-nowrap items-center gap-2 sm:gap-2.5">
         <div
           className={cn(
             'flex shrink-0 items-center gap-2.5',
@@ -338,6 +343,13 @@ export function ReferenceLibraryToolbar({
             ) : null}
           </div>
 
+          {showProofSegmentSwitch && onLibraryModeChange ? (
+            <ReferenceProofSegmentSwitch
+              value={libraryMode}
+              onChange={onLibraryModeChange}
+            />
+          ) : null}
+
           {isAdmin ? (
             <Button
               type="button"
@@ -348,9 +360,11 @@ export function ReferenceLibraryToolbar({
               }
             >
               <AppIcon icon={CirclePlus} size={16} className="shrink-0" />
-              {isReferencesLibrary
-                ? COPY.dashboard.tooltipCreateReference
-                : `${REFERENCE_PROOF_SEGMENT_LABELS.certificates} hochladen`}
+              <span className="max-w-[9rem] truncate sm:max-w-none">
+                {isReferencesLibrary
+                  ? COPY.dashboard.tooltipCreateReference
+                  : `${REFERENCE_PROOF_SEGMENT_LABELS.certificates} hochladen`}
+              </span>
             </Button>
           ) : null}
         </div>

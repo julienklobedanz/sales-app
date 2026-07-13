@@ -34,14 +34,13 @@ function deal(overrides: Partial<DealRow>): DealRow {
 }
 
 describe('buildLeaderRiskDeals', () => {
-  it('formats volume with currency and close date from org date preset', () => {
+  it('formats close date and coverage without deal volume', () => {
     const [row] = buildLeaderRiskDeals([deal({})], { dateDisplayFormat: 'de-DE' })
-    expect(row?.valueLabel).toBe('1.200.000 € · schließt 30.04.2026')
-    expect(row?.coverageLabel).toBe('stark belegt')
+    expect(row?.subtitle).toBe('schließt 30.04.2026 · stark belegt')
   })
 
   it('uses en-US date format when configured in workspace settings', () => {
     const [row] = buildLeaderRiskDeals([deal({})], { dateDisplayFormat: 'en-US' })
-    expect(row?.valueLabel).toBe('1.200.000 € · schließt 04/30/2026')
+    expect(row?.subtitle).toBe('schließt 04/30/2026 · stark belegt')
   })
 })

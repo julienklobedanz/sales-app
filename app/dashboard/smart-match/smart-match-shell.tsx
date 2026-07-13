@@ -355,18 +355,7 @@ export function SmartMatchShell({
             </div>
           </div>
 
-          {/* Leerzustand */}
-          {!hasSearched ? (
-            <div className="rounded-xl border border-border bg-card px-2.5 py-[34px] text-center shadow-sm">
-              <div className="mb-1 text-[15px] font-semibold text-foreground">
-                Beschreibe, was du brauchst — finde den passenden Beweis
-              </div>
-              <div className="text-muted-foreground">
-                z. B. „Cloud-Migration für Pharma, &gt;1 Mio, AWS" · oder verknüpfe einen Deal für
-                vorbefüllten Kontext.
-              </div>
-            </div>
-          ) : (
+          {hasSearched ? (
             <div className="space-y-3">
               {/* Filter + Meta — TODO(wiring:C): Filter funktional */}
               <div className="flex flex-wrap items-center justify-between gap-2.5 text-[13px] text-muted-foreground">
@@ -482,7 +471,7 @@ export function SmartMatchShell({
                 </div>
               )}
             </div>
-          )}
+          ) : null}
       </section>
     </div>
   )

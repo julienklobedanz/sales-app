@@ -1,7 +1,6 @@
 import type { DealRow } from '@/app/dashboard/deals/types'
 import { COPY } from '@/lib/copy'
 import {
-  formatDealVolume,
   formatReferenceDate,
   normalizeOrgDateDisplayFormat,
   type OrgDateDisplayFormat,
@@ -46,19 +45,17 @@ export function buildLeaderRiskDeals(
         coverageLabel = copy.riskStrong
         ctaLabel = null
       }
-      const volumeLabel = formatDealVolume(deal.volume)
       const closeLabel = deal.expiry_date
         ? `schließt ${formatReferenceDate(deal.expiry_date, dateFmt)}`
         : null
-      const valueParts = [
-        volumeLabel !== '—' ? volumeLabel : null,
-        closeLabel,
-      ].filter(Boolean)
+      const subtitle = [closeLabel, coverageLabel].filter(Boolean).join(' · ')
       return {
         id: deal.id,
         title: deal.title,
-        valueLabel: valueParts.join(' · ') || '—',
-        coverageLabel,
+        companyName: deal.company_name ?? null,
+        companyLogoUrl: deal.company_logo_url ?? null,
+        companyId: deal.company_id ?? null,
+        subtitle,
         tone,
         ctaLabel,
         href: ROUTES.deals.detail(deal.id),

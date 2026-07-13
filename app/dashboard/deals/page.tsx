@@ -2,7 +2,6 @@ import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
-import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 import { getDeals } from './actions'
 import { DealsClientContent } from './deals-client'
 import { DealsPageSkeleton } from '@/components/dashboard/deals-page-skeleton'
@@ -51,11 +50,8 @@ async function DealsPageContent() {
       .order('full_name', { ascending: true }),
   ])
 
-  const showTitle = deals.length > 0
-
   return (
     <div className="space-y-6">
-      {showTitle ? <h1 className={DASHBOARD_PAGE_TITLE_CLASS}>Deals</h1> : null}
       <DealsClientContent
         deals={deals}
         companies={(companiesRes.data ?? []) as { id: string; name: string }[]}

@@ -25,7 +25,7 @@ export function ReferenceProofSegmentSwitch({
         role="tablist"
         aria-label="Nachweis-Art"
         className={cn(
-          'inline-flex w-full max-w-md gap-1 rounded-lg border border-border/80 bg-muted/40 p-0.5',
+          'inline-flex w-auto shrink-0 gap-0.5 rounded-md border border-border/80 bg-muted/40 p-0.5',
           className
         )}
       >
@@ -42,7 +42,7 @@ export function ReferenceProofSegmentSwitch({
                   id={`reference-proof-tab-${segment}`}
                   onClick={() => onChange(segment)}
                   className={cn(
-                    'min-w-0 flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                    'shrink-0 rounded-[5px] px-2 py-1 text-xs font-medium transition-colors',
                     selected
                       ? 'bg-background text-foreground shadow-sm'
                       : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'
