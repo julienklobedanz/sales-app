@@ -126,6 +126,7 @@ export type Database = {
       companies: {
         Row: {
           account_status: string | null
+          account_status_source: string | null
           brandfetch_synced_at: string | null
           created_at: string | null
           crm_account_id: string | null
@@ -149,6 +150,7 @@ export type Database = {
         }
         Insert: {
           account_status?: string | null
+          account_status_source?: string | null
           brandfetch_synced_at?: string | null
           created_at?: string | null
           crm_account_id?: string | null
@@ -172,6 +174,7 @@ export type Database = {
         }
         Update: {
           account_status?: string | null
+          account_status_source?: string | null
           brandfetch_synced_at?: string | null
           created_at?: string | null
           crm_account_id?: string | null

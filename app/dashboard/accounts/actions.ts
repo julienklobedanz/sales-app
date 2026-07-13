@@ -834,7 +834,10 @@ export async function updateCompanyAccountStatus(
   const supabase = await createServerSupabaseClient()
   const { error } = await supabase
     .from('companies')
-    .update({ account_status } as { account_status: string | null })
+    .update({
+      account_status,
+      account_status_source: account_status ? 'manual' : 'crm',
+    } as { account_status: string | null; account_status_source: string | null })
     .eq('id', companyId)
   if (error) return { success: false, error: error.message }
   revalidatePath(ROUTES.accounts)

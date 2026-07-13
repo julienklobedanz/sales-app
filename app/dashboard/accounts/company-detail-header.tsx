@@ -9,6 +9,8 @@ import { accountsListHref } from '@/lib/accounts/accounts-list-view'
 import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 import { CompanyLogo } from '@/components/ui/company-logo'
 import { CompanyDetailNdaPopover } from './components/company-detail-nda-popover'
+import { AccountStatusPicker } from './components/account-status-picker'
+import { normalizeCompanyAccountStatus } from '@/lib/accounts/company-account-status'
 import type { NdaAgreementRow } from './nda-actions'
 
 export function CompanyDetailHeader({
@@ -28,6 +30,8 @@ export function CompanyDetailHeader({
     typeof company.employee_count === 'number' && Number.isFinite(company.employee_count)
       ? formatEmployeeCountDeDisplay(company.employee_count)
       : null
+
+  const accountStatus = normalizeCompanyAccountStatus(company.account_status)
 
   return (
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -87,6 +91,14 @@ export function CompanyDetailHeader({
           canManage={Boolean(canEdit)}
           openOnMount={openNdaOnMount}
         />
+        {company.entity_kind !== 'partner' ? (
+          <AccountStatusPicker
+            companyId={company.id}
+            status={accountStatus}
+            canManage={Boolean(canEdit)}
+            variant="button"
+          />
+        ) : null}
         {canEdit && onEditClick ? (
           <Button
             type="button"

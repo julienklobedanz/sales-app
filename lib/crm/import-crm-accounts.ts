@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { syncExistingCompanyBrandfetch } from '@/lib/accounts/resolve-company-for-import'
 import { touchOrganizationCrmLastSync } from '@/lib/crm/connections'
+import { syncHubSpotWonDealsForOrganization } from '@/lib/crm/sync-hubspot-won-deals'
 import {
   formatHubSpotAmount,
   mapHubSpotStageToDealStatus,
@@ -219,6 +220,10 @@ export async function importCrmAccounts(
     organizationId,
     [...new Set(enrichCompanyIds)]
   )
+
+  if (provider === 'hubspot') {
+    await syncHubSpotWonDealsForOrganization(supabase, organizationId, provider)
+  }
 
   await touchOrganizationCrmLastSync(supabase, organizationId, provider)
 

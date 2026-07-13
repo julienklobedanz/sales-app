@@ -3,8 +3,12 @@ import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
 import { CompaniesGrid } from './companies-grid'
 import { resolveNdaDisplayStatus, type NdaDisplayStatus } from '@/lib/accounts/company-entity'
+import type { CompanyAccountStatusValue } from '@/lib/accounts/company-account-status'
+import { normalizeCompanyAccountStatus } from '@/lib/accounts/company-account-status'
+import { syncComputedAccountStatuses } from '@/lib/accounts/sync-computed-account-statuses'
 import { getOrganizationCrmConnectionPublicStatus } from '@/lib/crm/connections'
 import { isHubSpotConfigured } from '@/lib/crm/hubspot/config'
+import { syncHubSpotWonDealsForOrganization } from '@/lib/crm/sync-hubspot-won-deals'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
 
@@ -20,6 +24,9 @@ type CompanyRow = {
   entity_kind?: string | null
   partner_category?: string | null
   linked_account_id?: string | null
+  account_status?: string | null
+  account_status_source?: string | null
+  crm_account_id?: string | null
 }
 
 export default async function AccountsPage() {
@@ -42,7 +49,7 @@ export default async function AccountsPage() {
   if (!orgId) redirect(ROUTES.onboarding)
 
   const extendedSelect =
-    'id, name, logo_url, website_url, headquarters, industry, employee_count, is_favorite, entity_kind, partner_category, linked_account_id'
+    'id, name, logo_url, website_url, headquarters, industry, employee_count, is_favorite, entity_kind, partner_category, linked_account_id, account_status, account_status_source, crm_account_id'
 
   let companies: CompanyRow[] | null = null
 
@@ -54,11 +61,15 @@ export default async function AccountsPage() {
 
   if (withExtended.error) {
     const msg = withExtended.error.message ?? ''
-    if (msg.includes('entity_kind') || msg.includes('partner_category') || msg.includes('linked_account_id')) {
+    if (
+      msg.includes('entity_kind') ||
+      msg.includes('partner_category') ||
+      msg.includes('linked_account_id')
+    ) {
       const withFav = await supabase
         .from('companies')
         .select(
-          'id, name, logo_url, website_url, headquarters, industry, employee_count, is_favorite'
+          'id, name, logo_url, website_url, headquarters, industry, employee_count, is_favorite, account_status, crm_account_id'
         )
         .eq('organization_id', orgId)
         .order('name')
@@ -75,6 +86,9 @@ export default async function AccountsPage() {
           entity_kind: 'account',
           partner_category: null,
           linked_account_id: null,
+          account_status: null,
+          account_status_source: null,
+          crm_account_id: null,
         }))
       } else {
         companies = (withFav.data ?? []).map((c) => ({
@@ -82,17 +96,30 @@ export default async function AccountsPage() {
           entity_kind: 'account',
           partner_category: null,
           linked_account_id: null,
+          account_status_source: null,
         }))
       }
     } else if (msg.includes('is_favorite')) {
       const withoutFav = await supabase
         .from('companies')
         .select(
-          'id, name, logo_url, website_url, headquarters, industry, employee_count, entity_kind, partner_category, linked_account_id'
+          'id, name, logo_url, website_url, headquarters, industry, employee_count, entity_kind, partner_category, linked_account_id, account_status, account_status_source, crm_account_id'
         )
         .eq('organization_id', orgId)
         .order('name')
       companies = (withoutFav.data ?? []).map((c) => ({ ...c, is_favorite: false }))
+    } else if (msg.includes('account_status_source')) {
+      const withoutSource = await supabase
+        .from('companies')
+        .select(
+          'id, name, logo_url, website_url, headquarters, industry, employee_count, is_favorite, entity_kind, partner_category, linked_account_id, account_status, crm_account_id'
+        )
+        .eq('organization_id', orgId)
+        .order('name')
+      companies = (withoutSource.data ?? []).map((c) => ({
+        ...c,
+        account_status_source: null,
+      }))
     } else {
       companies = []
     }
@@ -149,24 +176,54 @@ export default async function AccountsPage() {
     }
   }
 
+  const { systemRole } = parseProfileRoles(profile)
+  const isAdmin = isSystemAdmin(systemRole)
+  const hubspotConfigured = isHubSpotConfigured()
+  const hubspotStatus =
+    isAdmin && profile.organization_id
+      ? await getOrganizationCrmConnectionPublicStatus(supabase, profile.organization_id, 'hubspot')
+      : { connected: false, externalAccountId: null, lastSyncAt: null }
+
+  if (hubspotStatus.connected && isAdmin) {
+    try {
+      await syncHubSpotWonDealsForOrganization(supabase, orgId, 'hubspot')
+    } catch {
+      // Won-Sync blockiert die Übersicht nicht.
+    }
+  }
+
   const [dealsRows, refRows, stakeholderRows, strategyRows, executiveSignalRows, newsSignalRows] =
     await Promise.all([
       companyIds.length
         ? supabase
             .from('deals')
-            .select('id, company_id, status')
+            .select('id, company_id, status, expiry_date, updated_at, created_at')
             .in('company_id', companyIds)
             .eq('organization_id', orgId)
         : Promise.resolve({
-            data: [] as { id: string; company_id: string | null; status: string }[] | null,
+            data: [] as {
+              id: string
+              company_id: string | null
+              status: string
+              expiry_date: string | null
+              updated_at: string | null
+              created_at: string | null
+            }[] | null,
           }),
       companyIds.length
         ? supabase
             .from('references')
-            .select('id, company_id')
+            .select('id, company_id, approval_expires_at, approval_grace_until')
             .in('company_id', companyIds)
             .is('deleted_at', null)
-        : Promise.resolve({ data: [] as { id: string; company_id: string | null }[] | null }),
+        : Promise.resolve({
+            data: [] as {
+              id: string
+              company_id: string | null
+              approval_expires_at: string | null
+              approval_grace_until: string | null
+            }[] | null,
+          }),
       companyIds.length
         ? supabase
             .from('stakeholders')
@@ -203,6 +260,29 @@ export default async function AccountsPage() {
         : Promise.resolve({ data: [] as { company_id: string | null }[] | null }),
     ])
 
+  const dealsData = dealsRows.data ?? []
+  const refsData = refRows.data ?? []
+
+  let effectiveStatusByCompany: Record<string, CompanyAccountStatusValue | null> = {}
+  try {
+    effectiveStatusByCompany = await syncComputedAccountStatuses(
+      supabase,
+      (companies ?? []).map((c) => ({
+        id: c.id,
+        account_status: c.account_status ?? null,
+        account_status_source: c.account_status_source ?? null,
+        crm_account_id: c.crm_account_id ?? null,
+        entity_kind: c.entity_kind ?? 'account',
+      })),
+      dealsData,
+      refsData
+    )
+  } catch {
+    for (const c of companies ?? []) {
+      effectiveStatusByCompany[c.id] = normalizeCompanyAccountStatus(c.account_status)
+    }
+  }
+
   const activeDealStatuses = new Set([
     'in_negotiation',
     'rfp_phase',
@@ -213,13 +293,13 @@ export default async function AccountsPage() {
   ])
 
   const dealCountByCompany: Record<string, number> = {}
-  for (const d of dealsRows.data ?? []) {
+  for (const d of dealsData) {
     if (!d.company_id) continue
     if (!activeDealStatuses.has(d.status)) continue
     dealCountByCompany[d.company_id] = (dealCountByCompany[d.company_id] ?? 0) + 1
   }
   const refCountByCompany: Record<string, number> = {}
-  for (const r of refRows.data ?? []) {
+  for (const r of refsData) {
     if (!r.company_id) continue
     refCountByCompany[r.company_id] = (refCountByCompany[r.company_id] ?? 0) + 1
   }
@@ -253,6 +333,8 @@ export default async function AccountsPage() {
     (companies ?? []).map((c) => ({
       ...c,
       entity_kind: (c.entity_kind === 'partner' ? 'partner' : 'account') as 'account' | 'partner',
+      account_status:
+        effectiveStatusByCompany[c.id] ?? normalizeCompanyAccountStatus(c.account_status),
       open_deals_count: dealCountByCompany[c.id] ?? 0,
       reference_count: refCountByCompany[c.id] ?? 0,
       stakeholder_count: stakeholderCountByCompany[c.id] ?? 0,
@@ -263,14 +345,6 @@ export default async function AccountsPage() {
         ? linkedAccountNameById[c.linked_account_id] ?? null
         : null,
     })) ?? []
-
-  const { systemRole } = parseProfileRoles(profile)
-  const isAdmin = isSystemAdmin(systemRole)
-  const hubspotConfigured = isHubSpotConfigured()
-  const hubspotStatus =
-    isAdmin && profile.organization_id
-      ? await getOrganizationCrmConnectionPublicStatus(supabase, profile.organization_id, 'hubspot')
-      : { connected: false, externalAccountId: null, lastSyncAt: null }
 
   return (
     <div className="flex flex-col space-y-6">
