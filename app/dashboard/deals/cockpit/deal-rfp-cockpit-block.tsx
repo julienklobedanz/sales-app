@@ -7,7 +7,6 @@ import { COPY } from '@/lib/copy'
 import type { DealWithReferences } from '../types'
 import { loadDealRfpCockpitData } from '@/lib/deals/load-deal-rfp-cockpit-data'
 
-import { DealRfpDraftsSection } from './deal-rfp-drafts-section'
 import { DealRfpEligibilitySection } from './deal-rfp-eligibility-section'
 import { DealRfpMetricsRow } from './deal-rfp-metrics-row'
 import { DealRfpRecommendationBanner } from './deal-rfp-recommendation-banner'
@@ -79,7 +78,6 @@ export async function DealRfpCockpitBlock({
       <DealRfpMetricsRow data={data} />
       <DealRfpEligibilitySection data={data} />
       <DealRfpRisksSection data={data} />
-      <DealRfpDraftsSection data={data} deal={deal} />
     </section>
   )
 }

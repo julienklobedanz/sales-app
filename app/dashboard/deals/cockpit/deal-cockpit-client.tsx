@@ -55,12 +55,7 @@ export function DealCockpitClient({
         briefingButton={showRfpBlock ? briefingButton : undefined}
       />
 
-      <DealDeadlinesCard dealId={deal.id} deadlines={deadlines} />
-
-      <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <DealFactsCard deal={deal} hubspotPortalId={hubspotPortalId} />
-        <DealActivityCard activities={activities} />
-      </div>
+      <DealDeadlinesCard dealId={deal.id} dealTitle={deal.title} deadlines={deadlines} />
 
       <DealDocumentsSection
         dealId={deal.id}
@@ -69,15 +64,22 @@ export function DealCockpitClient({
         isRfpMode={showRfpBlock}
       />
 
-      {showRfpBlock && rfpBlock ? <div className="mb-6">{rfpBlock}</div> : null}
+      <DealProofSection deal={deal} onFindReference={() => setMatchDrawerOpen(true)} />
+
+      <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <DealFactsCard deal={deal} hubspotPortalId={hubspotPortalId} />
+        <DealActivityCard activities={activities} />
+      </div>
+
+      {showRfpBlock && rfpBlock ? (
+        <div className="mb-6 border-t border-border/70 pt-8">{rfpBlock}</div>
+      ) : null}
 
       {!showRfpBlock ? (
-        <div className="mb-6">
+        <div className="mb-6 border-t border-border/70 pt-8">
           <DealCockpitPromoteCard dealId={deal.id} />
         </div>
       ) : null}
-
-      <DealProofSection deal={deal} onFindReference={() => setMatchDrawerOpen(true)} />
 
       <DealSmartMatchDrawer deal={deal} open={matchDrawerOpen} onOpenChange={setMatchDrawerOpen} />
     </div>

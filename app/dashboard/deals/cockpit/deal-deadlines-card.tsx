@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { ArrowRight01Icon, CirclePlus, PencilEdit01Icon, Trash2 } from '@hugeicons/core-free-icons'
+import { ArrowRight01Icon, CirclePlus, FileDownloadIcon, PencilEdit01Icon, Trash2 } from '@hugeicons/core-free-icons'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -33,6 +33,10 @@ import {
   pickNextDeadline,
   type DealDeadlineRow,
 } from '@/lib/deals/deadline-display'
+import {
+  dealDeadlinesExportableForIcs,
+  downloadDealDeadlinesIcs,
+} from '@/lib/deals/deal-deadline-ics'
 import { DEAL_DEADLINE_KIND_LABELS, type DealDeadlineKind } from '@/lib/deals/deadline-types'
 
 import {
@@ -45,9 +49,11 @@ const KIND_OPTIONS = Object.entries(DEAL_DEADLINE_KIND_LABELS) as [DealDeadlineK
 
 export function DealDeadlinesCard({
   dealId,
+  dealTitle,
   deadlines,
 }: {
   dealId: string
+  dealTitle: string
   deadlines: DealDeadlineRow[]
 }) {
   const [expanded, setExpanded] = useState(false)
@@ -65,6 +71,16 @@ export function DealDeadlinesCard({
 
   const next = useMemo(() => pickNextDeadline(sorted), [sorted])
   const headline = next ? formatNextDeadlineHeadline(next) : null
+  const exportableForIcs = useMemo(() => dealDeadlinesExportableForIcs(sorted), [sorted])
+
+  function handleDownloadIcs() {
+    if (exportableForIcs.length === 0) {
+      toast.message(COPY.deals.cockpit.downloadDeadlinesIcsEmpty)
+      return
+    }
+    downloadDealDeadlinesIcs({ dealId, dealTitle, deadlines: sorted })
+    toast.success('Kalenderdatei wird heruntergeladen.')
+  }
 
   return (
     <Card className="mb-6">
@@ -96,7 +112,21 @@ export function DealDeadlinesCard({
               </button>
             </CollapsibleTrigger>
 
-            <Popover open={addOpen} onOpenChange={setAddOpen}>
+            <div className="flex shrink-0 items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="shrink-0"
+                disabled={exportableForIcs.length === 0}
+                onClick={handleDownloadIcs}
+                aria-label={COPY.deals.cockpit.downloadDeadlinesIcsAria}
+                title={COPY.deals.cockpit.downloadDeadlinesIcsAria}
+              >
+                <AppIcon icon={FileDownloadIcon} size={16} className="mr-1 shrink-0" />
+                {COPY.deals.cockpit.downloadDeadlinesIcs}
+              </Button>
+              <Popover open={addOpen} onOpenChange={setAddOpen}>
               <PopoverTrigger asChild>
                 <Button type="button" size="sm" variant="outline" className="shrink-0">
                   <AppIcon icon={CirclePlus} size={16} className="mr-1" />
@@ -118,6 +148,7 @@ export function DealDeadlinesCard({
                 />
               </PopoverContent>
             </Popover>
+            </div>
           </div>
 
           <CollapsibleContent className="mt-4 border-t pt-3">

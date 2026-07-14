@@ -68,7 +68,7 @@ export function DealProofSection({
   }
 
   return (
-    <Card>
+    <Card className="mb-6">
       <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 pb-2">
         <CardTitle className="text-base">{COPY.deals.cockpit.proofTitle}</CardTitle>
         <Button type="button" size="sm" variant="outline" className="shrink-0" onClick={onFindReference}>
