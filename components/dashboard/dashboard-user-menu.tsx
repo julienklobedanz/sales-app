@@ -46,6 +46,7 @@ export function DashboardUserMenu({
   userRole,
   devRolePreviewEnabled = false,
   devRolePreviewActive = false,
+  compact = false,
 }: {
   userName: string
   userEmail: string
@@ -53,6 +54,7 @@ export function DashboardUserMenu({
   userRole: AppRole
   devRolePreviewEnabled?: boolean
   devRolePreviewActive?: boolean
+  compact?: boolean
 }) {
   const router = useRouter()
   const hydrated = useHydrated()
@@ -176,6 +178,16 @@ export function DashboardUserMenu({
   )
 
   if (!hydrated) {
+    if (compact) {
+      return (
+        <button type="button" className="cognism-sidebar-icon-btn overflow-hidden p-0" tabIndex={-1} aria-label={userName}>
+          <Avatar className="size-7 rounded-md">
+            <AvatarFallback className="rounded-md text-xs">{userInitials}</AvatarFallback>
+          </Avatar>
+        </button>
+      )
+    }
+
     return (
       <SidebarMenuItem>
         <SidebarMenuButton size="lg" className="rounded-xl" tabIndex={-1}>
@@ -185,6 +197,25 @@ export function DashboardUserMenu({
           <span className="truncate font-medium">{userName}</span>
         </SidebarMenuButton>
       </SidebarMenuItem>
+    )
+  }
+
+  if (compact) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className="cognism-sidebar-icon-btn overflow-hidden p-0 hover:bg-muted/60 data-[state=open]:bg-muted"
+            aria-label={userName}
+          >
+            <Avatar className="size-7 rounded-md">
+              <AvatarFallback className="rounded-md text-xs">{userInitials}</AvatarFallback>
+            </Avatar>
+          </button>
+        </DropdownMenuTrigger>
+        {menuContent}
+      </DropdownMenu>
     )
   }
 

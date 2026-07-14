@@ -1,61 +1,70 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { Suspense, useEffect, useState } from 'react'
-import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Handshake, Radar } from 'lucide-react'
-import {
-  Building2,
-  FileText,
-  SettingsIcon,
-  GalleryHorizontalEndIcon,
-  HeadsetIcon,
-  Send,
-  Sparkles,
-} from '@hugeicons/core-free-icons'
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider,
-  SidebarInset,
-  SidebarRail,
-  SidebarTrigger,
-} from '@/components/ui/sidebar'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { SupportTicketModal } from '@/components/dashboard/SupportTicketModal'
-import { SupportChannelsDialog } from '@/components/dashboard/SupportChannelsDialog'
-import { DashboardUserMenu } from '@/components/dashboard/dashboard-user-menu'
-import { SidebarCommandSearch } from '@/components/dashboard/sidebar-command-search'
-import { SidebarNotificationsSection } from '@/components/dashboard/sidebar-notifications-button'
-import { DashboardListPageHeader } from '@/components/dashboard/dashboard-list-page-header'
-import { type User } from '@supabase/supabase-js'
-import { RoleProvider, type AppRole, type Capability, type FunctionRole, type SystemRole } from '@/hooks/useRole'
-import { CommandPalette } from '@/components/ui/command-palette'
-import { AppIcon } from '@/lib/icons'
-import { COPY } from '@/lib/copy'
-import {
-  DASHBOARD_SCROLL_AREA_BLEED_CLASS,
-  DASHBOARD_SCROLL_AREA_CLASS,
-  detailRouteNeedsBottomPadding,
-  routeExcludesDashboardContentPadding,
-} from '@/lib/dashboard-ui'
-import { ROUTES } from '@/lib/routes'
-import { legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
-import { cn } from '@/lib/utils'
-import type { DashboardNotificationItem } from './actions'
 
-export type Profile = {
-  full_name: string | null
-  role: AppRole
-  systemRole: SystemRole
-  functionRole: FunctionRole
-  capabilities: Partial<Record<Capability, boolean>>
+import { CognismAppSidebar } from '@/components/dashboard/cognism/cognism-app-sidebar'
+import { CognismShellFrame } from '@/components/dashboard/cognism/cognism-shell-frame'
+import { DashboardListPageHeader } from '@/components/dashboard/dashboard-list-page-header'
+import { SupportChannelsDialog } from '@/components/dashboard/SupportChannelsDialog'
+import { SupportTicketModal } from '@/components/dashboard/SupportTicketModal'
+import { CommandPalette } from '@/components/ui/command-palette'
+import { Button } from '@/components/ui/button'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { SidebarProvider, useSidebar } from '@/components/ui/sidebar'
+import { RoleProvider } from '@/hooks/useRole'
+import type { User } from '@supabase/supabase-js'
+import {
+  COGNISM_CONTENT_AREA_CLASS,
+  COGNISM_CONTENT_BLEED_CLASS,
+  COGNISM_SIDEBAR_EXPANDED,
+} from '@/lib/cognism-shell-styles'
+import { detailRouteNeedsBottomPadding, routeExcludesDashboardContentPadding } from '@/lib/dashboard-ui'
+import { ROUTES } from '@/lib/routes'
+import { cn } from '@/lib/utils'
+import { PanelLeft } from 'lucide-react'
+import type { DashboardNotificationItem } from './actions'
+import type { Profile } from './dashboard-types'
+
+export type { Profile } from './dashboard-types'
+
+function CognismMobileMenuButton() {
+  const { setOpenMobile, isMobile } = useSidebar()
+  if (!isMobile) return null
+
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="icon"
+      className="fixed left-4 top-4 z-40 size-9 bg-white shadow-sm md:hidden"
+      onClick={() => setOpenMobile(true)}
+      aria-label="Menü öffnen"
+    >
+      <PanelLeft className="size-4" />
+    </Button>
+  )
+}
+
+function CognismMobileSidebarSheet({
+  sidebar,
+}: {
+  sidebar: ReactNode
+}) {
+  const { openMobile, setOpenMobile, isMobile } = useSidebar()
+  if (!isMobile) return null
+
+  return (
+    <Sheet open={openMobile} onOpenChange={setOpenMobile}>
+      <SheetContent side="left" className="w-[min(18rem,90vw)] p-0 [&>button]:hidden">
+        <SheetHeader className="sr-only">
+          <SheetTitle>Navigation</SheetTitle>
+        </SheetHeader>
+        <div className="flex h-full flex-col">{sidebar}</div>
+      </SheetContent>
+    </Sheet>
+  )
 }
 
 export function DashboardShell({
@@ -67,7 +76,7 @@ export function DashboardShell({
   devRolePreviewEnabled = false,
   devRolePreviewActive = false,
 }: {
-  children: React.ReactNode
+  children: ReactNode
   user: User
   profile: Profile
   initialNotifications?: DashboardNotificationItem[]
@@ -82,7 +91,6 @@ export function DashboardShell({
   const [ticketModalType, setTicketModalType] = useState<'support' | 'feedback'>('support')
   const [supportChannelsOpen, setSupportChannelsOpen] = useState(false)
 
-  // Prefetch wichtige Routen für snappige Navigation
   useEffect(() => {
     router.prefetch(ROUTES.home)
     router.prefetch(ROUTES.accounts)
@@ -115,15 +123,34 @@ export function DashboardShell({
 
   const brandingStyle = workspaceBranding?.enabled
     ? ({
-        // shadcn token variables (used by bg-primary/text-primary/ring-primary etc.)
         ['--primary' as never]: workspaceBranding.primary,
         ['--sidebar-primary' as never]: workspaceBranding.primary,
         ['--ring' as never]: workspaceBranding.secondary,
+        ['--cognism-nav-active-border' as never]: workspaceBranding.primary,
+        ['--cognism-nav-active-text' as never]: workspaceBranding.primary,
+        ['--cognism-btn-top' as never]: workspaceBranding.primary,
+        ['--cognism-btn-bottom' as never]: workspaceBranding.secondary,
+        ['--cognism-btn-hover-bottom' as never]: workspaceBranding.secondary,
       } as React.CSSProperties)
     : undefined
 
-  const navButtonClass =
-    'group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-gradient-to-b data-[active=true]:from-blue-600 data-[active=true]:to-blue-700 data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] data-[active=true]:hover:translate-x-0'
+  const sidebarProps = {
+    profile,
+    userId: user.id,
+    userName,
+    userEmail,
+    userInitials,
+    initialNotifications,
+    devRolePreviewEnabled,
+    devRolePreviewActive,
+    onSupportOpen: () => setSupportChannelsOpen(true),
+    onFeedbackOpen: () => {
+      setTicketModalType('feedback')
+      setTicketModalOpen(true)
+    },
+  }
+
+  const sidebar = <CognismAppSidebar {...sidebarProps} />
 
   return (
     <RoleProvider
@@ -132,261 +159,42 @@ export function DashboardShell({
       functionRole={profile.functionRole}
       capabilities={profile.capabilities}
     >
-      <div style={brandingStyle}>
-        <SidebarProvider>
-          <Sidebar
-            collapsible="icon"
-            className="border-r border-sidebar-border/90 bg-sidebar"
-          >
-        <SidebarHeader className="flex h-[84px] shrink-0 flex-col justify-center px-3">
-          <div className="flex w-full items-center justify-between gap-2 group-data-[collapsible=icon]:justify-center">
-            <Link
-              href={ROUTES.home}
-              className="group-data-[collapsible=icon]:hidden flex min-w-0 items-center gap-2.5"
-            >
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-b from-blue-600 to-blue-700 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)]">
-                <AppIcon icon={GalleryHorizontalEndIcon} size={16} strokeWidth={2.5} />
-              </div>
-              <span className="text-sm font-semibold tracking-tight">RefStack</span>
-            </Link>
-            <SidebarTrigger
-              className="hidden size-8 shrink-0 text-muted-foreground hover:text-foreground md:inline-flex group-data-[collapsible=icon]:flex"
-              aria-label="Sidebar ein-/ausklappen"
-            />
-          </div>
-        </SidebarHeader>
-
-        <SidebarContent className="gap-0">
-          <SidebarGroup className="space-y-0 px-2 pb-2 pt-1">
-            <SidebarGroupContent>
-              <SidebarCommandSearch />
-            </SidebarGroupContent>
-          </SidebarGroup>
-
-          <SidebarGroup className="space-y-0 px-2 py-0">
-            <SidebarGroupContent>
-              <SidebarMenu className="gap-0.5">
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === ROUTES.home}
-                    tooltip={COPY.pages.dashboard}
-                    className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-gradient-to-b data-[active=true]:from-blue-600 data-[active=true]:to-blue-700 data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] data-[active=true]:hover:translate-x-0"
-                  >
-                    <Link href={ROUTES.home} className="flex items-center gap-2.5">
-                      <span className="relative z-10">
-                        <AppIcon
-                          icon={GalleryHorizontalEndIcon}
-                          size={16}
-                          strokeWidth={pathname === ROUTES.home ? 2.5 : 2}
-                        />
-                      </span>
-                      <span className="relative z-10">{COPY.pages.dashboard}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname?.startsWith(ROUTES.match)}
-                    tooltip={COPY.nav.match}
-                    className="group relative overflow-hidden rounded-xl px-2 py-1.5 text-sm font-medium transition-all duration-200 ease-in-out hover:translate-x-1 hover:bg-muted/60 data-[active=true]:bg-gradient-to-b data-[active=true]:from-blue-600 data-[active=true]:to-blue-700 data-[active=true]:text-white data-[active=true]:font-semibold data-[active=true]:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] data-[active=true]:hover:translate-x-0"
-                  >
-                    <Link href={ROUTES.match} className="flex items-center gap-2.5">
-                      <span className="relative z-10">
-                        <AppIcon
-                          icon={Sparkles}
-                          size={16}
-                          strokeWidth={pathname?.startsWith(ROUTES.match) ? 2.5 : 2}
-                        />
-                      </span>
-                      <span className="relative z-10">{COPY.nav.match}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname?.startsWith(ROUTES.marketSignals)}
-                    tooltip={COPY.nav.marketSignals}
-                    className={navButtonClass}
-                  >
-                    <Link href={ROUTES.marketSignals} className="flex items-center gap-2.5">
-                      <span className="relative z-10">
-                        <Radar
-                          className="size-4 shrink-0"
-                          strokeWidth={pathname?.startsWith(ROUTES.marketSignals) ? 2.5 : 2}
-                        />
-                      </span>
-                      <span className="relative z-10">{COPY.nav.marketSignals}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname?.startsWith(ROUTES.references.root)}
-                    tooltip={COPY.nav.references}
-                    className={navButtonClass}
-                  >
-                    <Link href={ROUTES.references.root} className="flex items-center gap-2.5">
-                      <span className="relative z-10">
-                        <AppIcon
-                          icon={FileText}
-                          size={16}
-                          strokeWidth={pathname?.startsWith(ROUTES.references.root) ? 2.5 : 2}
-                        />
-                      </span>
-                      <span className="relative z-10">{COPY.nav.references}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname?.startsWith(ROUTES.deals.root)}
-                    tooltip={COPY.nav.deals}
-                    className={navButtonClass}
-                  >
-                    <Link href={ROUTES.deals.root} className="flex items-center gap-2.5">
-                      <span className="relative z-10">
-                        <Handshake
-                          className="size-4 shrink-0"
-                          strokeWidth={pathname?.startsWith(ROUTES.deals.root) ? 2.5 : 2}
-                        />
-                      </span>
-                      <span className="relative z-10">{COPY.nav.deals}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname?.startsWith(ROUTES.accounts)}
-                    tooltip={COPY.nav.accounts}
-                    className={navButtonClass}
-                  >
-                    <Link href={ROUTES.accounts} className="flex items-center gap-2.5">
-                      <span className="relative z-10">
-                        <AppIcon
-                          icon={Building2}
-                          size={16}
-                          strokeWidth={pathname?.startsWith(ROUTES.accounts) ? 2.5 : 2}
-                        />
-                      </span>
-                      <span className="relative z-10">{COPY.nav.accounts}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-
-          <SidebarGroup className="mt-auto space-y-0 px-2 pb-2 pt-2">
-            <div className="mb-1.5 flex w-full gap-1.5 group-data-[collapsible=icon]:hidden">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    onClick={() => setSupportChannelsOpen(true)}
-                    className="flex h-9 min-w-0 flex-1 items-center justify-center rounded-xl border border-border/50 bg-muted/20 transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    aria-label="Support erhalten"
-                  >
-                    <AppIcon icon={HeadsetIcon} size={16} />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top">Support erhalten</TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setTicketModalType('feedback')
-                      setTicketModalOpen(true)
-                    }}
-                    className="flex h-9 min-w-0 flex-1 items-center justify-center rounded-xl border border-border/50 bg-muted/20 transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    aria-label="Feedback senden"
-                  >
-                    <AppIcon icon={Send} size={16} />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top">Feedback senden</TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Link
-                    href={ROUTES.settings}
-                    className={cn(
-                      'flex h-9 min-w-0 flex-1 items-center justify-center rounded-xl border border-border/50 bg-muted/20 transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-                      pathname?.startsWith(ROUTES.settings) && 'border-primary/30 bg-muted text-foreground'
-                    )}
-                    aria-label="Einstellungen"
-                  >
-                    <AppIcon icon={SettingsIcon} size={16} />
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="top">Einstellungen</TooltipContent>
-              </Tooltip>
-            </div>
-
-            <SidebarNotificationsSection
-              userId={user.id}
-              userRole={legacyAppRoleFrom(profile.systemRole, profile.functionRole)}
-              initialNotifications={initialNotifications}
-            />
-
-            <SidebarGroupContent>
-              <SidebarMenu className="gap-0.5">
-                <DashboardUserMenu
-                  userName={userName}
-                  userEmail={userEmail}
-                  userInitials={userInitials}
-                  userRole={legacyAppRoleFrom(profile.systemRole, profile.functionRole)}
-                  devRolePreviewEnabled={devRolePreviewEnabled}
-                  devRolePreviewActive={devRolePreviewActive}
-                />
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </SidebarContent>
-
-        <SidebarRail />
-      </Sidebar>
-      <SidebarInset className="relative">
-        <SidebarTrigger
-          className="fixed left-4 top-4 z-40 size-9 bg-background shadow-sm md:hidden"
-          aria-label="Menü öffnen"
-        />
-        <div
-          className={cn(
-            routeExcludesDashboardContentPadding(pathname)
-              ? DASHBOARD_SCROLL_AREA_BLEED_CLASS
-              : DASHBOARD_SCROLL_AREA_CLASS,
-            'bg-background',
-            detailRouteNeedsBottomPadding(pathname) && 'pb-10'
-          )}
+      <div className="w-full min-w-0" style={brandingStyle}>
+        <SidebarProvider
+          className="block min-h-0 w-full"
+          style={
+            {
+              '--sidebar-width': COGNISM_SIDEBAR_EXPANDED,
+            } as React.CSSProperties
+          }
         >
-          <Suspense fallback={null}>
-            <DashboardListPageHeader />
-          </Suspense>
-          {children}
-        </div>
-      </SidebarInset>
-      <CommandPalette />
-      <SupportChannelsDialog open={supportChannelsOpen} onOpenChange={setSupportChannelsOpen} />
-      <SupportTicketModal
-        isOpen={ticketModalOpen}
-        onOpenChange={setTicketModalOpen}
-        type={ticketModalType}
-      />
+          <CognismShellFrame className="min-h-0 flex-1" sidebar={sidebar}>
+            <CognismMobileMenuButton />
+            <CognismMobileSidebarSheet
+              sidebar={<CognismAppSidebar {...sidebarProps} forceExpanded />}
+            />
+            <div
+              className={cn(
+                routeExcludesDashboardContentPadding(pathname)
+                  ? COGNISM_CONTENT_BLEED_CLASS
+                  : COGNISM_CONTENT_AREA_CLASS,
+                detailRouteNeedsBottomPadding(pathname) && 'pb-10',
+                'h-full min-h-0 overflow-y-auto'
+              )}
+            >
+              <Suspense fallback={null}>
+                <DashboardListPageHeader />
+              </Suspense>
+              {children}
+            </div>
+          </CognismShellFrame>
+          <CommandPalette />
+          <SupportChannelsDialog open={supportChannelsOpen} onOpenChange={setSupportChannelsOpen} />
+          <SupportTicketModal
+            isOpen={ticketModalOpen}
+            onOpenChange={setTicketModalOpen}
+            type={ticketModalType}
+          />
         </SidebarProvider>
       </div>
     </RoleProvider>

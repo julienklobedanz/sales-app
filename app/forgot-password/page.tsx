@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { AuthShell } from '@/components/auth-shell'
 import { AUTH_BRAND_CONTENT } from '@/lib/auth/brand-content'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { getAuthPageUser } from '@/lib/supabase/safe-auth'
 import { ROUTES } from '@/lib/routes'
 import { ForgotPasswordForm } from './forgot-password-form'
 
@@ -10,9 +11,7 @@ export const dynamic = 'force-dynamic'
 
 export default async function ForgotPasswordPage() {
   const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthPageUser(supabase)
   if (user) redirect(ROUTES.home)
 
   return (

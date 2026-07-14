@@ -1,0 +1,175 @@
+/**
+ * Harmonisiert bestehende Dashboard-Seiteninhalte innerhalb der Cognism-Shell.
+ * Ersetzt harte slate/blau-Stellen durch Design-Tokens — nur unter .theme-cognism.
+ */
+
+.theme-cognism {
+  --background: oklch(1 0 0);
+}
+
+.theme-cognism .cognism-page-content {
+  color: var(--foreground);
+  width: 100%;
+  max-width: none;
+}
+
+.theme-cognism [data-slot='sidebar-wrapper'] {
+  display: block;
+  width: 100%;
+  min-height: 0;
+}
+
+.theme-cognism .cognism-page-content > * {
+  width: 100%;
+  max-width: none;
+}
+
+/* Hauptseiten: volle Breite im weißen Content-Panel */
+.theme-cognism .cognism-page-content [class*='max-w-5xl'],
+.theme-cognism .cognism-page-content [class*='max-w-6xl'],
+.theme-cognism .cognism-page-content [class*='max-w-7xl'],
+.theme-cognism .cognism-page-content [class*='max-w-[1000px]'],
+.theme-cognism .cognism-page-content [class*='1000px]'] {
+  max-width: none !important;
+  width: 100%;
+}
+
+.theme-cognism .cognism-page-content .mx-auto[class*='max-w-'] {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* Kein Doppel-Padding auf Bleed-Detailseiten */
+.theme-cognism .cognism-page-content > div[class*='px-6'][class*='py-6'] {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.theme-cognism .cognism-page-content [class*='max-w-6xl'][class*='p-6'] {
+  padding: 0 !important;
+}
+
+.theme-cognism .cognism-page-content [class*='max-w-5xl'][class*='px-4'] {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* Seitentitel (DashboardListPageHeader + inline h1) */
+.theme-cognism .cognism-page-content header h1,
+.theme-cognism .cognism-page-content > h1:first-child {
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--foreground);
+}
+
+.theme-cognism .cognism-page-content header p,
+.theme-cognism .cognism-page-content .text-muted-foreground {
+  color: var(--muted-foreground);
+}
+
+/* Cards & Tabellen-Container */
+.theme-cognism [data-slot='card'] {
+  border-color: var(--border) !important;
+  background-color: var(--card) !important;
+  box-shadow: 0 1px 2px oklch(0.45 0.02 285 / 0.05) !important;
+}
+
+.theme-cognism [data-slot='table-container'],
+.theme-cognism .rounded-lg.border,
+.theme-cognism .rounded-xl.border {
+  border-color: var(--border);
+}
+
+/* Slate → Token (häufigste Legacy-Klassen) */
+.theme-cognism [class*='border-slate-'] {
+  border-color: var(--border) !important;
+}
+
+.theme-cognism [class*='bg-slate-50'] {
+  background-color: var(--muted) !important;
+}
+
+.theme-cognism [class*='bg-slate-100'] {
+  background-color: oklch(0.96 0.008 285) !important;
+}
+
+.theme-cognism [class*='text-slate-400'],
+.theme-cognism [class*='text-slate-500'],
+.theme-cognism [class*='text-slate-600'] {
+  color: var(--muted-foreground) !important;
+}
+
+.theme-cognism [class*='text-slate-700'],
+.theme-cognism [class*='text-slate-800'],
+.theme-cognism [class*='text-slate-900'] {
+  color: var(--foreground) !important;
+}
+
+.theme-cognism [class*='hover:bg-slate-50']:hover,
+.theme-cognism [class*='hover:bg-slate-100']:hover,
+.theme-cognism [class*='aria-selected:bg-slate-50'][aria-selected='true'],
+.theme-cognism [class*='data-[selected=true]:bg-slate-50'][data-selected='true'] {
+  background-color: var(--accent) !important;
+}
+
+/* Inputs & Selects */
+.theme-cognism [data-slot='input'],
+.theme-cognism input:not([type='checkbox']):not([type='radio']),
+.theme-cognism textarea {
+  border-color: var(--border);
+}
+
+.theme-cognism [data-slot='select-trigger'] {
+  border-color: var(--border);
+  background-color: var(--card);
+}
+
+/* Tabs (Settings, Account-Detail, …) */
+.theme-cognism [role='tab'][data-state='active'] {
+  color: var(--cognism-nav-active-border) !important;
+  background-color: var(--cognism-nav-active-bg) !important;
+}
+
+.theme-cognism [role='tab']:not([data-state='active']) {
+  color: var(--muted-foreground);
+}
+
+/* Primary actions — auch hardcoded utility gradients */
+.theme-cognism [data-slot='button'][data-variant='default'],
+.theme-cognism [class*='from-blue-600'] {
+  border: none !important;
+  background-image: linear-gradient(
+    to bottom,
+    var(--cognism-btn-top),
+    var(--cognism-btn-bottom)
+  ) !important;
+  color: #fff !important;
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12) !important;
+}
+
+.theme-cognism [data-slot='button'][data-variant='default']:hover,
+.theme-cognism [class*='from-blue-600']:hover {
+  background-image: linear-gradient(
+    to bottom,
+    var(--cognism-btn-top),
+    var(--cognism-btn-hover-bottom)
+  ) !important;
+}
+
+.theme-cognism [data-slot='button'][data-variant='outline'] {
+  border-color: var(--border);
+  background-color: var(--card);
+}
+
+.theme-cognism [data-slot='button'][data-variant='outline']:hover {
+  background-color: var(--accent);
+  color: var(--accent-foreground);
+}
+
+/* Links */
+.theme-cognism a.text-primary,
+.theme-cognism .text-primary {
+  color: var(--cognism-nav-active-border) !important;
+}

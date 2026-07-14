@@ -1,7 +1,7 @@
 import { ROUTES } from './routes'
 
 /**
- * Einheitlicher Inhaltsbereich unter {@link DashboardShell} (Sidebar).
+ * Einheitlicher Inhaltsbereich unter {@link DashboardShell} (Cognism-Shell).
  * Horizontale/vertikale Außenabstände nur hier bzw. in `dashboard-shell.tsx` anpassen.
  */
 export const DASHBOARD_SCROLL_AREA_CLASS =

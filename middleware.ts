@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { ROUTES } from '@/lib/routes'
+import { safeAuthGetUser } from '@/lib/supabase/safe-auth'
 
 type WindowLimit = { count: number; resetAt: number }
 type RateStore = Map<string, WindowLimit>
@@ -77,9 +78,7 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await safeAuthGetUser(supabase)
 
   const isAuthRoute =
     request.nextUrl.pathname.startsWith(ROUTES.login) ||

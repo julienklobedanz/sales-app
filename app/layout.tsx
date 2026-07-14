@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist_Mono, Inter, Manrope } from "next/font/google";
 import { Providers } from "@/components/providers";
 import "./globals.css";
+import "../styles/theme-cognism.css";
+import "../styles/theme-cognism-content.css";
 import { cn } from "@/lib/utils";
 
 const manropeHeading = Manrope({subsets:['latin'],variable:'--font-heading'});

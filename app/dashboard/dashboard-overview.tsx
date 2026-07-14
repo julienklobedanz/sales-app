@@ -46,7 +46,7 @@ import {
   getReferenceAssets,
   toggleFavorite,
 } from './actions'
-import type { Profile } from './dashboard-shell'
+import type { Profile } from './dashboard-types'
 import {
   Cancel01Icon,
   ChevronLeft,

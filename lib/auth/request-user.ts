@@ -12,6 +12,7 @@ import { legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import type { Tables } from '@/lib/database.types'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { safeAuthGetUser } from '@/lib/supabase/safe-auth'
 
 export const REQUEST_PROFILE_SELECT =
   'organization_id, system_role, function_role, capabilities, full_name' as const
@@ -24,10 +25,8 @@ export type RequestProfile = Pick<
 /** Verifiziertes Auth pro Request (React cache — ein Roundtrip pro Render). */
 export const getRequestUser = cache(async () => {
   const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  log.info('auth.getUser', { action: 'getRequestUser', source: 'fetch' })
+  const user = await safeAuthGetUser(supabase)
+  log.info('auth.getUser', { action: 'getRequestUser', source: 'fetch', hasUser: Boolean(user) })
   return user
 })
 

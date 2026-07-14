@@ -2,6 +2,7 @@ import { AuthShell } from '@/components/auth-shell'
 import { LoginForm } from './login-form'
 import { AUTH_BRAND_CONTENT } from '@/lib/auth/brand-content'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { getAuthPageUser } from '@/lib/supabase/safe-auth'
 import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
 
@@ -9,9 +10,7 @@ type Props = { searchParams: Promise<{ invite?: string }> }
 
 export default async function LoginPage({ searchParams }: Props) {
   const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthPageUser(supabase)
   if (user) {
     const { data: profile } = await supabase
       .from('profiles')

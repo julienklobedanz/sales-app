@@ -59,7 +59,7 @@ import { profileCanManageOrgData, profileIsSalesRestricted } from '@/lib/roles/p
 
 import type { ReferenceAssetRow, ReferenceRow } from '../actions'
 import { updateReferenceAssetCategory } from '../actions'
-import type { Profile } from '../dashboard-shell'
+import type { Profile } from '../dashboard-types'
 
 export function ReferenceDetailSheet({
   open,

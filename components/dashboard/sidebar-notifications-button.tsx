@@ -21,17 +21,26 @@ import { cn } from '@/lib/utils'
 const INBOX_POLL_MS = 120_000
 
 const triggerClassName =
-  'relative flex w-full items-center justify-center rounded-xl border border-border/50 bg-muted/20 transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
+  'relative flex items-center justify-center rounded-xl border border-border/50 bg-muted/20 transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
 
 const NotificationTrigger = forwardRef<
   HTMLButtonElement,
-  React.ComponentProps<'button'> & { unreadCount: number; compact?: boolean }
->(function NotificationTrigger({ unreadCount, compact = false, className, ...props }, ref) {
+  React.ComponentProps<'button'> & {
+    unreadCount: number
+    compact?: boolean
+    rail?: boolean
+  }
+>(function NotificationTrigger({ unreadCount, compact = false, rail = false, className, ...props }, ref) {
   return (
     <button
       ref={ref}
       type="button"
-      className={cn(triggerClassName, compact ? 'size-8' : 'h-9', className)}
+      className={cn(
+        rail ? 'cognism-sidebar-icon-btn' : triggerClassName,
+        compact && !rail && 'size-9 shrink-0 rounded-lg border-border/40 bg-muted/45 shadow-none hover:bg-muted/75',
+        !compact && !rail && 'h-9 w-full',
+        className
+      )}
       aria-label="Benachrichtigungen"
       {...props}
     >
@@ -57,6 +66,7 @@ function NotificationsPopover({
   onMarkAllRead,
   onOpenNotification,
   compact = false,
+  rail = false,
 }: {
   unreadCount: number
   notifications: DashboardNotificationItem[]
@@ -64,11 +74,12 @@ function NotificationsPopover({
   onMarkAllRead: () => void
   onOpenNotification: (id: string) => void
   compact?: boolean
+  rail?: boolean
 }) {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <NotificationTrigger unreadCount={unreadCount} compact={compact} />
+        <NotificationTrigger unreadCount={unreadCount} compact={compact} rail={rail} />
       </PopoverTrigger>
       <PopoverContent
         side="top"
@@ -137,10 +148,12 @@ export function SidebarNotificationsSection({
   userId,
   userRole,
   initialNotifications = [],
+  layout = 'footer',
 }: {
   userId: string
   userRole: AppRole
   initialNotifications?: DashboardNotificationItem[]
+  layout?: 'footer' | 'inline' | 'rail'
 }) {
   const hydrated = useHydrated()
   const [notifications, setNotifications] =
@@ -209,6 +222,17 @@ export function SidebarNotificationsSection({
     markNotificationsPending,
     onMarkAllRead: markAllNotificationsRead,
     onOpenNotification: handleOpenNotification,
+  }
+
+  const isInline = layout === 'inline'
+  const isRail = layout === 'rail'
+
+  if (isInline || isRail) {
+    return hydrated ? (
+      <NotificationsPopover {...popoverProps} compact rail={isRail} />
+    ) : (
+      <NotificationTrigger unreadCount={unreadCount} compact rail={isRail} disabled />
+    )
   }
 
   return (
