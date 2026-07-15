@@ -1,4 +1,5 @@
-import { daysUntil, formatCountdown, formatDateDe } from '@/lib/deal-desk/timeline-display'
+import { daysUntil, formatCountdown } from '@/lib/deal-desk/timeline-display'
+import { formatReferenceDate, type OrgDateDisplayFormat } from '@/lib/format'
 
 export const DEFAULT_DEADLINE_TIMEZONE = 'Europe/Berlin'
 
@@ -28,20 +29,49 @@ export function deadlineDaysUntil(deadline: Pick<DealDeadlineRow, 'due_at'>, now
   return daysUntil(dueAtToDateIso(deadline.due_at), now)
 }
 
+function formatDeadlineDate(
+  iso: string,
+  dateDisplayFormat: OrgDateDisplayFormat = 'de-DE'
+): string {
+  return formatReferenceDate(iso, dateDisplayFormat)
+}
+
 export function formatDeadlineCountdownLabel(
   deadline: Pick<DealDeadlineRow, 'due_at' | 'due_text' | 'is_approximate' | 'label'>,
-  now = new Date()
+  options?: { now?: Date; dateDisplayFormat?: OrgDateDisplayFormat }
 ): string {
+  const now = options?.now ?? new Date()
+  const dateDisplayFormat = options?.dateDisplayFormat ?? 'de-DE'
+  const parts = formatDeadlineRowParts(deadline, { now, dateDisplayFormat })
+  if (parts.countdown) {
+    return `${parts.labelDate} ${parts.countdown}`
+  }
+  return parts.labelDate
+}
+
+export function formatDeadlineRowParts(
+  deadline: Pick<DealDeadlineRow, 'due_at' | 'due_text' | 'is_approximate' | 'label'>,
+  options?: { now?: Date; dateDisplayFormat?: OrgDateDisplayFormat }
+): { labelDate: string; countdown: string | null } {
+  const now = options?.now ?? new Date()
+  const dateDisplayFormat = options?.dateDisplayFormat ?? 'de-DE'
+
   if (deadline.due_at) {
     const iso = dueAtToDateIso(deadline.due_at)
     const d = deadlineDaysUntil({ due_at: deadline.due_at }, now)
-    if (d === null) return formatDateDe(iso)
-    return `${formatDateDe(iso)} ${formatCountdown(d)}`
+    const dateLabel = formatDeadlineDate(iso, dateDisplayFormat)
+    return {
+      labelDate: `${deadline.label} · ${dateLabel}`,
+      countdown: d === null ? null : formatCountdown(d),
+    }
   }
   if (deadline.due_text?.trim()) {
-    return deadline.due_text.trim()
+    return {
+      labelDate: `${deadline.label} · ${deadline.due_text.trim()}`,
+      countdown: null,
+    }
   }
-  return deadline.label
+  return { labelDate: deadline.label, countdown: null }
 }
 
 export function pickNextDeadline(deadlines: DealDeadlineRow[], now = new Date()): DealDeadlineRow | null {
@@ -61,26 +91,32 @@ export function pickNextDeadline(deadlines: DealDeadlineRow[], now = new Date())
   return active[0] ?? null
 }
 
-export function formatNextDeadlineHeadline(deadline: DealDeadlineRow, now = new Date()): {
+export function formatNextDeadlineHeadline(
+  deadline: DealDeadlineRow,
+  options?: { now?: Date; dateDisplayFormat?: OrgDateDisplayFormat }
+): {
   title: string
   subtitle: string
 } {
+  const now = options?.now ?? new Date()
+  const dateDisplayFormat = options?.dateDisplayFormat ?? 'de-DE'
   const days = deadline.due_at ? deadlineDaysUntil(deadline, now) : null
   if (days !== null) {
     const abs = Math.abs(days)
     const unit = abs === 1 ? 'Tag' : 'Tage'
+    const dateLabel = formatDeadlineDate(dueAtToDateIso(deadline.due_at!), dateDisplayFormat)
     if (days < 0) {
       return {
         title: `${abs} ${unit} überfällig`,
-        subtitle: `${deadline.label} · ${formatDateDe(dueAtToDateIso(deadline.due_at!))}`,
+        subtitle: `${deadline.label} · ${dateLabel}`,
       }
     }
     if (days === 0) {
-      return { title: 'Heute', subtitle: deadline.label }
+      return { title: 'Heute', subtitle: `${deadline.label} · ${dateLabel}` }
     }
     return {
       title: `${days} ${unit}`,
-      subtitle: `${deadline.label} · ${formatDateDe(dueAtToDateIso(deadline.due_at!))}`,
+      subtitle: `${deadline.label} · ${dateLabel}`,
     }
   }
   return {

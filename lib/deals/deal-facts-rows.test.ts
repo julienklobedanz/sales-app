@@ -24,6 +24,11 @@ describe('buildDealFactRows', () => {
     sales_manager_name: 'Sam Sales',
   }
 
+  it('formats close date with org preset', () => {
+    const rows = buildDealFactRows(base, { dateDisplayFormat: 'de-DE' })
+    expect(rows.find((r) => r.label === 'Close')?.value).toBe('18.04.2026')
+  })
+
   it('omits CRM rows without CRM sync', () => {
     const rows = buildDealFactRows(base)
     expect(rows.some((r) => r.label === 'CRM-Stage')).toBe(false)

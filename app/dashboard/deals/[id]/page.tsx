@@ -23,6 +23,7 @@ import { getHubSpotPortalIdForOrganization } from '@/lib/crm/connections'
 import { listDealDeadlines } from '@/lib/deals/deadlines'
 import { canManageDealDocuments } from '@/lib/deals/can-manage-deal-documents'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
+import { normalizeOrgDateDisplayFormat } from '@/lib/format'
 
 export default function DealDetailPage({
   params,
@@ -65,6 +66,13 @@ async function DealDetailPageContent({
 
   const deadlines = await listDealDeadlines(supabase, id)
   const hubspotPortalId = await getHubSpotPortalIdForOrganization(supabase, orgId)
+
+  const { data: orgRow } = await supabase
+    .from('organizations')
+    .select('date_display_format')
+    .eq('id', orgId)
+    .maybeSingle()
+  const orgDateDisplayFormat = normalizeOrgDateDisplayFormat(orgRow?.date_display_format)
 
   const { systemRole, functionRole } = parseProfileRoles(profile)
   const canManageDocuments = canManageDealDocuments(
@@ -144,6 +152,7 @@ async function DealDetailPageContent({
       companies={(companies ?? []) as Array<{ id: string; name: string }>}
       orgProfiles={(orgProfiles ?? []) as Array<{ id: string; full_name: string | null }>}
       hubspotPortalId={hubspotPortalId}
+      orgDateDisplayFormat={orgDateDisplayFormat}
     />
   )
 }

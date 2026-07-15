@@ -15,6 +15,7 @@ import { DealProofSection } from './deal-proof-section'
 import { DealSmartMatchDrawer } from './deal-smart-match-drawer'
 import { isRfpDeal } from '@/lib/deals/is-rfp-deal'
 import type { DealDeadlineRow } from '@/lib/deals/deadline-display'
+import type { OrgDateDisplayFormat } from '@/lib/format'
 
 type Company = { id: string; name: string }
 type OrgProfile = { id: string; full_name: string | null }
@@ -30,6 +31,7 @@ export function DealCockpitClient({
   rfpBlock,
   briefingButton,
   hubspotPortalId = null,
+  orgDateDisplayFormat = 'de-DE',
 }: {
   deal: DealWithReferences
   activities: DealActivityItem[]
@@ -41,6 +43,7 @@ export function DealCockpitClient({
   rfpBlock?: ReactNode
   briefingButton?: ReactNode
   hubspotPortalId?: string | null
+  orgDateDisplayFormat?: OrgDateDisplayFormat
 }) {
   const showRfpBlock = isRfpDeal(deal)
   const [matchDrawerOpen, setMatchDrawerOpen] = useState(false)
@@ -55,7 +58,12 @@ export function DealCockpitClient({
         briefingButton={showRfpBlock ? briefingButton : undefined}
       />
 
-      <DealDeadlinesCard dealId={deal.id} dealTitle={deal.title} deadlines={deadlines} />
+      <DealDeadlinesCard
+        dealId={deal.id}
+        dealTitle={deal.title}
+        deadlines={deadlines}
+        orgDateDisplayFormat={orgDateDisplayFormat}
+      />
 
       <DealDocumentsSection
         dealId={deal.id}
@@ -67,7 +75,11 @@ export function DealCockpitClient({
       <DealProofSection deal={deal} onFindReference={() => setMatchDrawerOpen(true)} />
 
       <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <DealFactsCard deal={deal} hubspotPortalId={hubspotPortalId} />
+        <DealFactsCard
+          deal={deal}
+          hubspotPortalId={hubspotPortalId}
+          orgDateDisplayFormat={orgDateDisplayFormat}
+        />
         <DealActivityCard activities={activities} />
       </div>
 

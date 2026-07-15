@@ -1,7 +1,7 @@
 import { formatIndustryDisplay } from '@/lib/constants/industries'
 import { buildCrmDealUrl, dealHasCrmSync } from '@/lib/crm/deal-links'
 import { formatCrmStageLabel } from '@/lib/crm/format-crm-stage-label'
-import { formatDealVolume } from '@/lib/format'
+import { formatDealVolume, formatReferenceDate, type OrgDateDisplayFormat } from '@/lib/format'
 import { COPY } from '@/lib/copy'
 
 export type DealFactsDeal = {
@@ -23,15 +23,18 @@ export type DealFactRow =
 
 export function buildDealFactRows(
   deal: DealFactsDeal,
-  options?: { hubspotPortalId?: string | null }
+  options?: { hubspotPortalId?: string | null; dateDisplayFormat?: OrgDateDisplayFormat }
 ): DealFactRow[] {
   const industry = deal.industry ? formatIndustryDisplay(deal.industry) : '—'
+  const closeDate = deal.expiry_date
+    ? formatReferenceDate(deal.expiry_date, options?.dateDisplayFormat)
+    : '—'
 
   const rows: DealFactRow[] = [
     { kind: 'text', label: 'Account', value: deal.company_name ?? '—' },
     { kind: 'text', label: 'Branche', value: industry },
     { kind: 'text', label: 'Volumen', value: formatDealVolume(deal.volume) },
-    { kind: 'text', label: 'Close', value: deal.expiry_date ?? '—' },
+    { kind: 'text', label: 'Close', value: closeDate },
     { kind: 'text', label: COPY.roles.accountManager, value: deal.account_manager_name ?? '—' },
     { kind: 'text', label: COPY.roles.salesManager, value: deal.sales_manager_name ?? '—' },
   ]

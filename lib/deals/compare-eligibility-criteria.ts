@@ -252,7 +252,7 @@ function buildSummary(verdict: EligibilityVerdict, results: EligibilityCriterion
       return 'Teilweise Lücken — Partner oder Nachweise prüfen, bevor geboten wird.'
     default:
       return unknownCount > 0
-        ? `${unknownCount} Kriterium${unknownCount === 1 ? '' : 'ien'} ohne Profildaten — bitte Fähigkeitsprofil ergänzen.`
+        ? `${unknownCount} ${unknownCount === 1 ? 'Kriterium' : 'Kriterien'} ohne Profildaten — bitte Fähigkeitsprofil ergänzen.`
         : 'Eignung noch nicht belastbar bewertbar.'
   }
 }

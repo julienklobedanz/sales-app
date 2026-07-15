@@ -5,17 +5,20 @@ import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { COPY } from '@/lib/copy'
 import { buildDealFactRows } from '@/lib/deals/deal-facts-rows'
+import type { OrgDateDisplayFormat } from '@/lib/format'
 
 import type { DealWithReferences } from '../types'
 
 export function DealFactsCard({
   deal,
   hubspotPortalId = null,
+  orgDateDisplayFormat = 'de-DE',
 }: {
   deal: DealWithReferences
   hubspotPortalId?: string | null
+  orgDateDisplayFormat?: OrgDateDisplayFormat
 }) {
-  const rows = buildDealFactRows(deal, { hubspotPortalId })
+  const rows = buildDealFactRows(deal, { hubspotPortalId, dateDisplayFormat: orgDateDisplayFormat })
 
   return (
     <Card>

@@ -6,8 +6,7 @@ import Link from 'next/link'
 import { DealStatusBadge } from '@/components/deal-status-badge'
 import { ROUTES } from '@/lib/routes'
 import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
-import { formatDealVolume } from '@/lib/format'
-import { formatIndustryDisplay } from '@/lib/constants/industries'
+import { COPY } from '@/lib/copy'
 
 import type { DealWithReferences } from '../types'
 import { DealCockpitActions } from './deal-cockpit-actions'
@@ -28,13 +27,7 @@ export function DealCockpitHeader({
   briefingButton?: ReactNode
   canManageDocuments: boolean
 }) {
-  const owner = deal.sales_manager_name ?? deal.account_manager_name ?? '—'
-  const subtitleParts = [
-    deal.industry ? formatIndustryDisplay(deal.industry) : null,
-    deal.company_name,
-    formatDealVolume(deal.volume),
-    owner !== '—' ? `Owner: ${owner}` : null,
-  ].filter(Boolean)
+  const owner = deal.sales_manager_name ?? deal.account_manager_name ?? null
 
   return (
     <div className="mb-6 space-y-3">
@@ -47,13 +40,19 @@ export function DealCockpitHeader({
       </nav>
 
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 space-y-1">
-          <h1 className={`${DASHBOARD_PAGE_TITLE_CLASS} flex flex-wrap items-center gap-2 break-words`}>
+        <div className="min-w-0 space-y-1.5">
+          <h1 className={`${DASHBOARD_PAGE_TITLE_CLASS} flex flex-wrap items-center gap-x-2 break-words`}>
             <span>{deal.title}</span>
+            <span className="text-muted-foreground" aria-hidden>
+              ·
+            </span>
             <DealStatusBadge status={deal.status} />
           </h1>
-          {subtitleParts.length ? (
-            <p className="text-sm text-muted-foreground">{subtitleParts.join(' · ')}</p>
+          {owner ? (
+            <p className="text-sm text-muted-foreground">
+              {COPY.roleDimensions.functionRoles.sales_leader}:{' '}
+              <span className="text-foreground">{owner}</span>
+            </p>
           ) : null}
         </div>
 

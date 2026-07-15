@@ -28,11 +28,12 @@ import {
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
 import {
-  formatDeadlineCountdownLabel,
+  formatDeadlineRowParts,
   formatNextDeadlineHeadline,
   pickNextDeadline,
   type DealDeadlineRow,
 } from '@/lib/deals/deadline-display'
+import type { OrgDateDisplayFormat } from '@/lib/format'
 import {
   dealDeadlinesExportableForIcs,
   downloadDealDeadlinesIcs,
@@ -51,10 +52,12 @@ export function DealDeadlinesCard({
   dealId,
   dealTitle,
   deadlines,
+  orgDateDisplayFormat = 'de-DE',
 }: {
   dealId: string
   dealTitle: string
   deadlines: DealDeadlineRow[]
+  orgDateDisplayFormat?: OrgDateDisplayFormat
 }) {
   const [expanded, setExpanded] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
@@ -70,7 +73,9 @@ export function DealDeadlinesCard({
   }, [deadlines])
 
   const next = useMemo(() => pickNextDeadline(sorted), [sorted])
-  const headline = next ? formatNextDeadlineHeadline(next) : null
+  const headline = next
+    ? formatNextDeadlineHeadline(next, { dateDisplayFormat: orgDateDisplayFormat })
+    : null
   const exportableForIcs = useMemo(() => dealDeadlinesExportableForIcs(sorted), [sorted])
 
   function handleDownloadIcs() {
@@ -100,10 +105,12 @@ export function DealDeadlinesCard({
                 <div className="min-w-0">
                   {headline ? (
                     <>
-                      <div className="text-2xl font-bold tabular-nums tracking-tight">
+                      <div className="text-lg font-semibold tabular-nums tracking-tight">
                         {headline.title}
                       </div>
-                      <div className="text-sm text-muted-foreground">{headline.subtitle}</div>
+                      <div className="text-sm font-medium text-muted-foreground">
+                        {headline.subtitle}
+                      </div>
                     </>
                   ) : (
                     <div className="text-sm text-muted-foreground">{COPY.deals.cockpit.deadlinesEmpty}</div>
@@ -155,16 +162,24 @@ export function DealDeadlinesCard({
             {sorted.length === 0 ? (
               <p className="text-sm text-muted-foreground">{COPY.deals.cockpit.deadlinesEmptyHint}</p>
             ) : (
-              <ul className="space-y-0">
-                {sorted.map((d) => (
+              <ul className="space-y-0 pl-7">
+                {sorted.map((d) => {
+                  const rowParts = formatDeadlineRowParts(d, {
+                    dateDisplayFormat: orgDateDisplayFormat,
+                  })
+                  return (
                   <li
                     key={d.id}
-                    className="flex flex-wrap items-center gap-2 border-t border-dashed py-2.5 first:border-t-0 text-sm"
+                    className="flex flex-wrap items-start gap-2 border-t border-dashed py-2.5 first:border-t-0"
                   >
-                    <span className="min-w-[140px] font-medium">{d.label}</span>
-                    <span className="text-muted-foreground">
-                      {formatDeadlineCountdownLabel(d)}
-                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-medium">{rowParts.labelDate}</div>
+                      {rowParts.countdown ? (
+                        <div className="text-sm tabular-nums text-muted-foreground">
+                          {rowParts.countdown}
+                        </div>
+                      ) : null}
+                    </div>
                     <Badge variant="outline" className="text-[10px]">
                       {d.source === 'manual' ? 'Manuell' : 'RFP'}
                     </Badge>
@@ -201,7 +216,8 @@ export function DealDeadlinesCard({
                       </Button>
                     </div>
                   </li>
-                ))}
+                  )
+                })}
               </ul>
             )}
           </CollapsibleContent>

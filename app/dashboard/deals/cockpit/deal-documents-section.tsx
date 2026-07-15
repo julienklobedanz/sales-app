@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { CirclePlus, Loader, MoreHorizontal, UploadIcon } from '@hugeicons/core-free-icons'
+import { CirclePlus, Loader, MoreHorizontal, UploadIcon, ArrowRight01Icon } from '@hugeicons/core-free-icons'
 import { Download, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -19,6 +19,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import {
   Dialog,
   DialogContent,
@@ -228,6 +229,7 @@ export function DealDocumentsSection({
   const [deletePending, setDeletePending] = useState(false)
   const [downloadPendingId, setDownloadPendingId] = useState<string | null>(null)
   const [analyzingId, setAnalyzingId] = useState<string | null>(null)
+  const [expanded, setExpanded] = useState(false)
 
   async function handleUpload() {
     if (!uploadFile) {
@@ -339,25 +341,44 @@ export function DealDocumentsSection({
   return (
     <>
       <Card id="dokumente" className="mb-6">
-        <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0 pb-2">
-          <CardTitle className="text-base">{title}</CardTitle>
-          {canManage ? (
-            <Button type="button" variant="outline" size="sm" onClick={() => setUploadOpen(true)}>
-              <AppIcon icon={CirclePlus} size={16} className="mr-1" />
-              {COPY.deals.cockpit.documentsUpload}
-            </Button>
-          ) : null}
-        </CardHeader>
-        <CardContent>
+        <Collapsible open={expanded} onOpenChange={setExpanded}>
+          <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0 pb-2">
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
+                className="flex min-w-0 flex-1 items-center gap-2 text-left"
+              >
+                <AppIcon
+                  icon={ArrowRight01Icon}
+                  size={16}
+                  className={cn(
+                    'shrink-0 text-muted-foreground transition-transform',
+                    expanded && 'rotate-90'
+                  )}
+                />
+                <CardTitle className="text-base">{title}</CardTitle>
+              </button>
+            </CollapsibleTrigger>
+            {canManage ? (
+              <Button type="button" variant="outline" size="sm" onClick={() => setUploadOpen(true)}>
+                <AppIcon icon={CirclePlus} size={16} className="mr-1" />
+                {COPY.deals.cockpit.documentsUpload}
+              </Button>
+            ) : null}
+          </CardHeader>
           {documents.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{COPY.deals.cockpit.documentsEmpty}</p>
+            <CardContent className="pt-0">
+              <p className="pl-7 text-sm text-muted-foreground">{COPY.deals.cockpit.documentsEmpty}</p>
+            </CardContent>
           ) : (
-            <ul className="divide-y divide-border">
-              {documents.map((doc) => (
-                <li
-                  key={doc.id}
-                  className="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0"
-                >
+          <CollapsibleContent>
+            <CardContent className="pt-0">
+                <ul className="divide-y divide-border pl-7">
+                  {documents.map((doc) => (
+                    <li
+                      key={doc.id}
+                      className="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0"
+                    >
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="truncate text-sm font-medium">{doc.file_name}</span>
@@ -454,8 +475,10 @@ export function DealDocumentsSection({
                 </li>
               ))}
             </ul>
+            </CardContent>
+          </CollapsibleContent>
           )}
-        </CardContent>
+        </Collapsible>
       </Card>
 
       <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
