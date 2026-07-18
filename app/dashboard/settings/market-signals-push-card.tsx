@@ -91,15 +91,6 @@ export function MarketSignalsPushCard() {
           {pending ? 'Wird eingerichtet …' : 'Push erlauben & registrieren'}
         </Button>
       </div>
-      <details className="mt-3 rounded-md border border-slate-200 p-2">
-        <summary className="cursor-pointer text-xs text-slate-600">Details einblenden</summary>
-        <p className="mt-2 text-xs text-slate-500">
-          Einmalig erlauben – danach „Web Push für Markt-Signale“ aktivieren. Erfordert{' '}
-          <code className="text-[11px]">NEXT_PUBLIC_VAPID_PUBLIC_KEY</code>,{' '}
-          <code className="text-[11px]">VAPID_PRIVATE_KEY</code> und optional{' '}
-          <code className="text-[11px]">VAPID_SUBJECT</code>.
-        </p>
-      </details>
     </div>
   )
 }

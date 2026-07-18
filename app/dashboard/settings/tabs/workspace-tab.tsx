@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { TabsContent } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -21,6 +21,11 @@ import {
 import { AppIcon } from '@/lib/icons'
 import { ShieldAlert } from '@hugeicons/core-free-icons'
 import { SettingsWorkspaceCard } from '../settings-workspace-card'
+import { SettingsTeamCard } from '../settings-team-card'
+import { SettingsRolesPermissionsCard } from '../settings-roles-permissions-card'
+import { SettingsBillingCard } from '../settings-billing-card'
+import { SettingsCapabilityProfile } from '../settings-capability-profile'
+import type { RolesPermissionsSettings } from '@/lib/roles/roles-permissions-settings'
 import {
   SETTINGS_CARD_CLASS,
   SETTINGS_DANGER_ZONE_CLASS,
@@ -37,13 +42,31 @@ type WorkspaceTabProps = {
     secondaryColor: string
     subdomain: string
     dateDisplayFormat: string
+    uiLocale: string
+    subscriptionStatus: string | null
+    subscriptionId: string | null
+    capabilitySettings: {
+      capabilityProfile: import('@/lib/organizations/capability-profile-types').CapabilityProfile
+      icpDefinition: import('@/lib/deals/icp-rubric').IcpDefinition
+    }
   }
   subdomain: string
   onSubdomainChange: (value: string) => void
+  teamMembers: Parameters<typeof SettingsTeamCard>[0]['initialMembers']
+  isServerAdmin: boolean
+  rolesPermissions: RolesPermissionsSettings
   register: RegisterSettingsTab
 }
 
-export function WorkspaceTab({ org, subdomain, onSubdomainChange, register }: WorkspaceTabProps) {
+export function WorkspaceTab({
+  org,
+  subdomain,
+  onSubdomainChange,
+  teamMembers,
+  isServerAdmin,
+  rolesPermissions,
+  register,
+}: WorkspaceTabProps) {
   const [workspaceCardDirty, setWorkspaceCardDirty] = useState(false)
   const [workspaceSaveSignal, setWorkspaceSaveSignal] = useState(0)
   const [workspaceDeleteStep, setWorkspaceDeleteStep] = useState<1 | 2 | 3>(1)
@@ -95,6 +118,7 @@ export function WorkspaceTab({ org, subdomain, onSubdomainChange, register }: Wo
             primaryColor={org.primaryColor}
             secondaryColor={org.secondaryColor}
             dateDisplayFormat={org.dateDisplayFormat}
+            uiLocale={org.uiLocale}
             hideSubmitButton
             saveSignal={workspaceSaveSignal}
             onDirtyChange={setWorkspaceCardDirty}
@@ -103,20 +127,16 @@ export function WorkspaceTab({ org, subdomain, onSubdomainChange, register }: Wo
         <div className={SETTINGS_CARD_CLASS}>
           <CardHeader className="space-y-2 px-0 pt-0">
             <CardTitle className="text-base">Subdomain</CardTitle>
-            <CardDescription className="text-slate-500">
-              Definiere deine Workspace-URL, z. B. <span className="font-medium">company.refstack.io</span>.
-            </CardDescription>
           </CardHeader>
           <CardContent className="px-0 pb-0 pt-1">
-            <div className="max-w-md space-y-2">
-              <Label htmlFor="workspace-subdomain">Subdomain</Label>
+            <div className="max-w-md">
               <Input
                 id="workspace-subdomain"
                 value={subdomain}
                 onChange={(e) => onSubdomainChange(e.target.value)}
                 placeholder="company"
+                aria-label="Subdomain"
               />
-              <p className="text-xs text-slate-500">Die endgültige Domain-Konfiguration erfolgt über das Deployment.</p>
             </div>
           </CardContent>
         </div>
@@ -184,6 +204,31 @@ export function WorkspaceTab({ org, subdomain, onSubdomainChange, register }: Wo
             </AlertDialogContent>
           </AlertDialog>
         </div>
+
+        <div className={SETTINGS_CARD_CLASS}>
+          <SettingsTeamCard initialMembers={teamMembers} />
+        </div>
+
+        {isServerAdmin ? (
+          <div className={SETTINGS_CARD_CLASS}>
+            <SettingsRolesPermissionsCard initialSettings={rolesPermissions} />
+          </div>
+        ) : null}
+
+        <div className={SETTINGS_CARD_CLASS}>
+          <SettingsBillingCard
+            subscriptionStatus={org.subscriptionStatus}
+            subscriptionId={org.subscriptionId}
+          />
+        </div>
+
+        {isServerAdmin ? (
+          <SettingsCapabilityProfile
+            initialProfile={org.capabilitySettings.capabilityProfile}
+            initialIcp={org.capabilitySettings.icpDefinition}
+            canEdit={isServerAdmin}
+          />
+        ) : null}
       </div>
     </TabsContent>
   )

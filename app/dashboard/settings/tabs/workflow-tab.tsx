@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { TabsContent } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
@@ -204,7 +204,7 @@ export function WorkflowTab({ org, register }: WorkflowTabProps) {
   }
 
   useRegisterSettingsTab(
-    'workflow',
+    'process',
     {
       dirty: workflowDirty,
       pending: workflowPending,
@@ -214,7 +214,7 @@ export function WorkflowTab({ org, register }: WorkflowTabProps) {
   )
 
   return (
-    <TabsContent value="workflow">
+    <TabsContent value="process">
       <div className="space-y-6">
         <div className={SETTINGS_CARD_CLASS}>
           <CardHeader className="px-0 pt-0">
@@ -239,9 +239,6 @@ export function WorkflowTab({ org, register }: WorkflowTabProps) {
         <div className={SETTINGS_CARD_CLASS}>
           <CardHeader className="px-0 pt-0">
             <CardTitle className="text-base">Automation</CardTitle>
-            <CardDescription className="text-slate-500">
-              Trigger-Regeln für operative Benachrichtigungen.
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2 px-0 pb-0">
             <div className="rounded-md border border-slate-200 p-3 text-sm">
@@ -255,9 +252,6 @@ export function WorkflowTab({ org, register }: WorkflowTabProps) {
         <div className={SETTINGS_CARD_CLASS}>
           <CardHeader className="px-0 pt-0">
             <CardTitle className="text-base">MEDDPICC</CardTitle>
-            <CardDescription className="text-slate-500">
-              Pflichtfelder für „Ready“ im Strategie-Tab.
-            </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2 px-0 pb-0 sm:grid-cols-2">
             {([
@@ -290,16 +284,10 @@ export function WorkflowTab({ org, register }: WorkflowTabProps) {
         <div className={SETTINGS_CARD_CLASS}>
           <CardHeader className="space-y-2 px-0 pt-0">
             <CardTitle className="text-base">Freigabe-Workflow</CardTitle>
-            <CardDescription className="text-slate-500">
-              Verwalte deinen Freigabeprozess wie eine kompakte Sequence: Trigger, interne Prüfung, Versand, Follow-ups und Abschluss.
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 px-0 pb-0 pt-2">
             <div className="rounded-lg border border-slate-200 p-4">
               <p className="text-sm font-semibold text-slate-900">1. Entry</p>
-              <p className="mt-1 text-xs text-slate-500">
-                Standard-Gültigkeit für Freigabe-Links aus dem Dialog `Freigabe anfordern`.
-              </p>
               <div className="mt-3 max-w-sm space-y-2">
                 <Label htmlFor="link-expiry-days">Link Expiry (Tage)</Label>
                 <Input
@@ -313,15 +301,9 @@ export function WorkflowTab({ org, register }: WorkflowTabProps) {
 
             <div className="rounded-lg border border-slate-200 p-4">
               <p className="text-sm font-semibold text-slate-900">2. Interne Prüfung</p>
-              <p className="mt-1 text-xs text-slate-500">
-                Definiert, ob vor externem Versand zwingend ein internes Review nötig ist.
-              </p>
               <div className="mt-3 flex items-center justify-between rounded-lg border border-slate-200 p-3">
                 <div>
                   <p className="text-sm font-medium">Vier-Augen-Prinzip aktiv</p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    Bei aktivem Modus bleibt die Anfrage in `pending_internal` bis zur Freigabe.
-                  </p>
                 </div>
                 <Switch checked={requireInternalApproval} onCheckedChange={setRequireInternalApproval} />
               </div>
@@ -329,15 +311,9 @@ export function WorkflowTab({ org, register }: WorkflowTabProps) {
 
             <div className="rounded-lg border border-slate-200 p-4">
               <p className="text-sm font-semibold text-slate-900">3. Externer Versand</p>
-              <p className="mt-1 text-xs text-slate-500">
-                Delegation für Kundenkontakt steuern.
-              </p>
               <div className="mt-3 flex items-center justify-between rounded-lg border border-slate-200 p-3">
                 <div>
                   <p className="text-sm font-medium">Delegation erlauben</p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    Empfänger kann Freigabeanfrage an Kollegen weiterdelegieren.
-                  </p>
                 </div>
                 <Switch checked={autoAllowDelegation} onCheckedChange={setAutoAllowDelegation} />
               </div>
@@ -345,9 +321,6 @@ export function WorkflowTab({ org, register }: WorkflowTabProps) {
 
             <div className="rounded-lg border border-slate-200 p-4">
               <p className="text-sm font-semibold text-slate-900">4. Follow-up Sequenz</p>
-              <p className="mt-1 text-xs text-slate-500">
-                Reminder- und Eskalationspunkte für ausstehende Freigaben.
-              </p>
               <div className="mt-3 grid gap-3 sm:grid-cols-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="approval-reminder-1">Reminder #1 (Tage)</Label>
@@ -381,15 +354,9 @@ export function WorkflowTab({ org, register }: WorkflowTabProps) {
 
             <div className="rounded-lg border border-slate-200 p-4">
               <p className="text-sm font-semibold text-slate-900">5. Abschluss & Transparenz</p>
-              <p className="mt-1 text-xs text-slate-500">
-                Wer bei Eskalation informiert wird.
-              </p>
               <div className="mt-3 flex items-center justify-between rounded-lg border border-slate-200 p-3">
                 <div>
                   <p className="text-sm font-medium">Requester bei Eskalation benachrichtigen</p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    Informiert die anfragende Person automatisch über überfällige Freigaben.
-                  </p>
                 </div>
                 <Switch
                   checked={autoNotifyRequesterOnEscalation}
@@ -411,9 +378,6 @@ export function WorkflowTab({ org, register }: WorkflowTabProps) {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold text-slate-900">Testlauf</p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    Simuliert einen Freigabe-Case mit den aktuellen Workflow-Regeln.
-                  </p>
                 </div>
                 <Button type="button" size="sm" variant="outline" onClick={runWorkflowSimulation}>
                   Testlauf starten
@@ -423,9 +387,6 @@ export function WorkflowTab({ org, register }: WorkflowTabProps) {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-slate-900">What-if-Sandbox</p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      Teste alternative Werte ohne deine gespeicherten Workflow-Einstellungen zu ändern.
-                    </p>
                   </div>
                   <Switch checked={simulationSandboxEnabled} onCheckedChange={setSimulationSandboxEnabled} />
                 </div>
@@ -545,11 +506,7 @@ export function WorkflowTab({ org, register }: WorkflowTabProps) {
                     </li>
                   ))}
                 </ul>
-              ) : (
-                <p className="mt-3 text-xs text-slate-500">
-                  Noch kein Testlauf ausgeführt. Nutze „Testlauf starten“, um die Timeline zu prüfen.
-                </p>
-              )}
+              ) : null}
             </div>
           </CardContent>
         </div>

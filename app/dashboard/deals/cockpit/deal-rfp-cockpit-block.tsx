@@ -66,13 +66,15 @@ export async function DealRfpCockpitBlock({
   return (
     <section id="ausschreibung" className="mb-6 space-y-4">
       <h2 className="text-base font-semibold">{COPY.deals.cockpit.rfpBlockTitle}</h2>
-      <DealRfpRecommendationBanner
-        data={data}
-        dealId={dealId}
-        documents={documents}
-        canManage={canManageDocuments}
-      />
-      <DealRfpMetricsRow data={data} />
+      <div className="space-y-6">
+        <DealRfpRecommendationBanner
+          data={data}
+          dealId={dealId}
+          documents={documents}
+          canManage={canManageDocuments}
+        />
+        <DealRfpMetricsRow data={data} />
+      </div>
       <DealRfpEligibilitySection data={data} />
       <DealRfpRisksSection data={data} />
     </section>

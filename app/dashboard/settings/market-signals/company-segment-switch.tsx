@@ -1,54 +1,47 @@
 'use client'
 
-import { Building2, Target } from 'lucide-react'
-
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
-export type CompanyWatchSegment = 'bestand' | 'neu'
+export type CompanyWatchSegment = 'all' | 'neu' | 'bestand'
 
 type Props = {
   value: CompanyWatchSegment
   onChange: (value: CompanyWatchSegment) => void
 }
 
-/** Rund wie EntityKindSwitch: links Neukunden (Target), rechts Bestandskunden (Building2). */
-export function CompanySegmentSwitch({ value, onChange }: Props) {
-  const isBestand = value === 'bestand'
-  const label = isBestand ? 'Bestandskunden' : 'Neukunden'
+const SEGMENTS: { value: CompanyWatchSegment; label: string }[] = [
+  { value: 'all', label: 'Alle' },
+  { value: 'neu', label: 'Neukunden' },
+  { value: 'bestand', label: 'Bestand' },
+]
 
+/** Segment-Chips für die Watchlist: Alle | Neukunden | Bestand. */
+export function CompanySegmentSwitch({ value, onChange }: Props) {
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={isBestand}
-          aria-label={isBestand ? 'Zu Neukunden wechseln' : 'Zu Bestandskunden wechseln'}
-          onClick={() => onChange(isBestand ? 'neu' : 'bestand')}
-          className="relative inline-flex h-8 w-[3.25rem] shrink-0 cursor-pointer items-center rounded-full border border-border/80 bg-muted/50 p-0.5 transition-colors hover:bg-muted/70"
-        >
-          <span
+    <div
+      role="group"
+      aria-label="Account-Segment"
+      className="inline-flex h-10 shrink-0 items-center gap-1 rounded-xl border border-border/70 bg-muted/30 p-1"
+    >
+      {SEGMENTS.map((segment) => {
+        const active = value === segment.value
+        return (
+          <button
+            key={segment.value}
+            type="button"
+            aria-pressed={active}
+            onClick={() => onChange(segment.value)}
             className={cn(
-              'flex size-7 items-center justify-center rounded-full bg-background shadow-sm transition-transform duration-200 ease-out',
-              isBestand ? 'translate-x-[1.125rem]' : 'translate-x-0'
+              'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
+              active
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
             )}
           >
-            {isBestand ? (
-              <Building2 className="size-3.5 text-slate-600" aria-hidden />
-            ) : (
-              <Target className="size-3.5 text-slate-600" aria-hidden />
-            )}
-          </span>
-        </button>
-      </TooltipTrigger>
-      <TooltipContent side="bottom" className="text-xs">
-        {label}
-      </TooltipContent>
-    </Tooltip>
+            {segment.label}
+          </button>
+        )
+      })}
+    </div>
   )
 }

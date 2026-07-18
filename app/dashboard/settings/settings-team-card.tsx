@@ -244,6 +244,10 @@ export function SettingsTeamCard({
 
   return (
     <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-semibold tracking-tight">Team</h2>
+      </div>
+
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <form
           onSubmit={handleInvite}
@@ -276,7 +280,6 @@ export function SettingsTeamCard({
       </div>
 
       <div>
-        <h3 className="mb-2 text-sm font-medium text-foreground">Team</h3>
         {members.length === 0 ? (
           <p className="rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 py-6 text-center text-sm text-muted-foreground">
             Noch keine Mitglieder. Lade jemanden per E-Mail ein.

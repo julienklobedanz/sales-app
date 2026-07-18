@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { resolveChampionPersonTitle } from '@/lib/market-signals/champion-display'
 import { MarketSignalsManageClient } from './watchlist-manage-client'
 
 type CompanyRow = {
@@ -15,7 +16,9 @@ type ChampionWatchRow = {
   person_key: string
   person_name: string
   company_name: string | null
+  person_title: string | null
   created_at: string
+  is_active: boolean | null
 }
 
 export default async function MarketSignalsManagePage() {
@@ -75,7 +78,7 @@ export default async function MarketSignalsManagePage() {
 
   const { data: championWatchRows } = await supabase
     .from('market_signal_champion_watchlist')
-    .select('person_key, person_name, company_name, created_at')
+    .select('person_key, person_name, company_name, person_title, created_at, is_active')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(500)
@@ -88,12 +91,35 @@ export default async function MarketSignalsManagePage() {
     accountStatus: row.account_status ?? null,
   }))
 
-  const watchedStakeholders = ((championWatchRows ?? []) as ChampionWatchRow[]).map((row) => ({
-    key: row.person_key,
-    personName: row.person_name,
-    companyName: row.company_name?.trim() || null,
-    createdAt: row.created_at,
-  }))
+  const championRows = (championWatchRows ?? []) as ChampionWatchRow[]
+  const watchedStakeholders = await Promise.all(
+    championRows.map(async (row) => {
+      let title = row.person_title?.trim() || null
+      if (!title) {
+        title = await resolveChampionPersonTitle(
+          supabase,
+          orgId,
+          row.person_name,
+          row.company_name
+        )
+        if (title) {
+          await supabase
+            .from('market_signal_champion_watchlist')
+            .update({ person_title: title })
+            .eq('user_id', user.id)
+            .eq('person_key', row.person_key)
+        }
+      }
+      return {
+        key: row.person_key,
+        personName: row.person_name,
+        companyName: row.company_name?.trim() || null,
+        personTitle: title,
+        createdAt: row.created_at,
+        isFollowing: row.is_active !== false,
+      }
+    })
+  )
 
   return <MarketSignalsManageClient companies={companies} watchedStakeholders={watchedStakeholders} />
 }

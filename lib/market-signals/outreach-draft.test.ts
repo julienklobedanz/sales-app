@@ -21,7 +21,7 @@ describe('formatOutreachEmail', () => {
 })
 
 describe('buildHeuristicOutreachDraft', () => {
-  it('includes signal headline context and sender name', () => {
+  it('includes signal headline context and sender name without forcing reference titles', () => {
     const draft = buildHeuristicOutreachDraft({
       headline: 'Neuer CIO bei Acme',
       signalKind: 'exec',
@@ -34,7 +34,7 @@ describe('buildHeuristicOutreachDraft', () => {
     })
     expect(draft).toContain('Guten Tag Herr/Frau Hoffmann,')
     expect(draft).toContain('Neuer CIO bei Acme')
-    expect(draft).toContain('Cloud Migration Retail')
+    expect(draft).not.toContain('Cloud Migration Retail')
     expect(draft.endsWith('Max Mustermann')).toBe(true)
     expect(draft.split('\n\n\n').length).toBeGreaterThanOrEqual(2)
   })

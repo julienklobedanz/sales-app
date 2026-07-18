@@ -15,6 +15,7 @@ import { SettingsTabs } from './settings-tabs'
 import { getOrganizationCrmConnectionPublicStatus } from '@/lib/crm/connections'
 import { isHubSpotConfigured } from '@/lib/crm/hubspot/config'
 import { parseOrgCapabilitySettings } from '@/lib/organizations/capability-profile-types'
+import { uiLocaleFromApiSettings } from '@/lib/i18n/ui-locale'
 
 type AuditLogRow = {
   id: string
@@ -309,6 +310,9 @@ export default async function SettingsPage() {
           dateDisplayFormat:
             (orgRow as { date_display_format?: string | null } | null)?.date_display_format ??
             'de-DE',
+          uiLocale: uiLocaleFromApiSettings(
+            (orgRow as { api_settings?: unknown } | null)?.api_settings
+          ),
           exportSettings: parseExportSettings(
             (orgRow as { export_settings?: unknown } | null)?.export_settings
           ),

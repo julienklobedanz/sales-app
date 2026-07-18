@@ -228,6 +228,7 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
     .from('market_signal_champion_watchlist')
     .select('person_key')
     .eq('user_id', user.id)
+    .eq('is_active', true)
     .limit(500)
   const championWatchlist = Array.from(
     new Set(

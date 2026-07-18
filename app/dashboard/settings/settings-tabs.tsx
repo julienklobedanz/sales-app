@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type { DevRolePreview } from '@/lib/dev-role-preview'
-import { COPY } from '@/lib/copy'
 import type { RolesPermissionsSettings } from '@/lib/roles/roles-permissions-settings'
 import { SettingsTeamCard } from './settings-team-card'
 import type { ExportSettings } from './settings-export-templates-actions'
@@ -12,8 +11,6 @@ import { StickySaveBar } from './sticky-save-bar'
 import { ProfileTab } from './tabs/profile-tab'
 import { WorkspaceTab } from './tabs/workspace-tab'
 import { AdminTab } from './tabs/admin-tab'
-import { TeamTab } from './tabs/team-tab'
-import { RolesTab } from './tabs/roles-tab'
 import { IntegrationsTab } from './tabs/integrations-tab'
 import { WorkflowTab } from './tabs/workflow-tab'
 import type {
@@ -21,6 +18,7 @@ import type {
   SettingsTabHandlers,
   SettingsTabId,
 } from './tabs/settings-tab-shared'
+import { resolveSettingsTabId } from './tabs/settings-tab-shared'
 
 export function SettingsTabs({
   devRolePreviewEnabled = false,
@@ -89,6 +87,7 @@ export function SettingsTabs({
       icpDefinition: import('@/lib/deals/icp-rubric').IcpDefinition
     }
     dateDisplayFormat: string
+    uiLocale: string
   }
   teamMembers: Parameters<typeof SettingsTeamCard>[0]['initialMembers']
   auditLogs: Array<{
@@ -115,18 +114,8 @@ export function SettingsTabs({
   const handlerPartsRef = useRef<Partial<Record<SettingsTabId, Map<string, SettingsTabHandlers>>>>({})
 
   useEffect(() => {
-    const tab = searchParams.get('tab')
-    if (
-      tab === 'profile' ||
-      tab === 'workspace' ||
-      tab === 'team' ||
-      tab === 'roles' ||
-      tab === 'integrations' ||
-      tab === 'workflow' ||
-      tab === 'admin'
-    ) {
-      setActiveTab(tab)
-    }
+    const resolved = resolveSettingsTabId(searchParams.get('tab'))
+    if (resolved) setActiveTab(resolved)
   }, [searchParams])
 
   const registerTab = useCallback<RegisterSettingsTab>((tabId, handlers, partKey = 'default') => {
@@ -159,13 +148,6 @@ export function SettingsTabs({
         dirty: partList.some((p) => p.dirty),
         pending: partList.some((p) => p.pending),
         save: () => {
-          if (tabId === 'workspace') {
-            const security = parts.get('security')
-            const card = parts.get('card')
-            if (security?.dirty) security.save()
-            if (card?.dirty) card.save()
-            return
-          }
           for (const part of partList) {
             if (part.dirty) part.save()
           }
@@ -187,15 +169,18 @@ export function SettingsTabs({
   return (
     <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as SettingsTabId)} className="gap-6 pb-20">
       <TabsList variant="line" className="w-full justify-start">
-        <TabsTrigger value="profile">Profil</TabsTrigger>
-        <TabsTrigger value="workspace">Workspace</TabsTrigger>
-        <TabsTrigger value="team">Team</TabsTrigger>
-        {roleSwitcher.isServerAdmin ? (
-          <TabsTrigger value="roles">{COPY.settings.rolesPermissions.title}</TabsTrigger>
-        ) : null}
-        <TabsTrigger value="integrations">Integrationen</TabsTrigger>
-        <TabsTrigger value="workflow">Workflow</TabsTrigger>
-        <TabsTrigger value="admin">Admin</TabsTrigger>
+        <TabsTrigger value="profile" className="after:hidden">
+          Persönlich
+        </TabsTrigger>
+        <TabsTrigger value="workspace" className="after:hidden">
+          Workspace
+        </TabsTrigger>
+        <TabsTrigger value="integrations" className="after:hidden">
+          Verbindungen
+        </TabsTrigger>
+        <TabsTrigger value="process" className="after:hidden">
+          Prozess
+        </TabsTrigger>
       </TabsList>
 
       <ProfileTab profile={profile} register={registerTab} />
@@ -203,20 +188,21 @@ export function SettingsTabs({
         org={org}
         subdomain={subdomain}
         onSubdomainChange={setSubdomain}
+        teamMembers={teamMembers}
+        isServerAdmin={roleSwitcher.isServerAdmin}
+        rolesPermissions={rolesPermissions}
         register={registerTab}
       />
+      <IntegrationsTab hubspotIntegration={hubspotIntegration} />
+      {/* Same tab value: both panels render under Prozess */}
+      <WorkflowTab org={org} register={registerTab} />
       <AdminTab
         devRolePreviewEnabled={devRolePreviewEnabled}
         roleSwitcher={roleSwitcher}
         org={org}
-        subdomain={subdomain}
         auditLogs={auditLogs}
         register={registerTab}
       />
-      <TeamTab teamMembers={teamMembers} />
-      <RolesTab isServerAdmin={roleSwitcher.isServerAdmin} rolesPermissions={rolesPermissions} />
-      <IntegrationsTab hubspotIntegration={hubspotIntegration} />
-      <WorkflowTab org={org} register={registerTab} />
 
       <StickySaveBar
         visible={stickyVisible}

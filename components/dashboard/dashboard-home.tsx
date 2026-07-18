@@ -41,7 +41,7 @@ const STEPS: StepDef[] = [
   {
     id: 'hasTeamInvites',
     label: '3. Team einladen: Bringe deine Sales-Kollegen auf die Plattform.',
-    href: `${ROUTES.settings}?tab=team`,
+    href: `${ROUTES.settings}?tab=workspace`,
   },
   {
     id: 'hasMarketSignals',

@@ -56,9 +56,6 @@ export function SettingsBillingCard({ subscriptionStatus, subscriptionId }: Prop
           Abonnement
         </span>
       </div>
-      <p className="text-sm text-muted-foreground">
-        Verwalte dein Abo, Zahlungsmethode und Rechnungen sicher über das Stripe Customer Portal.
-      </p>
 
       {!stripeConfigured ? (
         <Button size="sm" variant="outline" disabled>

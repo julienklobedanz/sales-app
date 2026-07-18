@@ -62,7 +62,6 @@ export function DealRfpEligibilitySection({ data }: { data: DealRfpCockpitData }
     <Card id="eligCard" className="shadow-sm">
       <CardHeader>
         <CardTitle className="text-base">{COPY.deals.cockpit.eligibilityTitle}</CardTitle>
-        <CardDescription>{COPY.deals.cockpit.eligibilitySubtitle}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="overflow-x-auto">
@@ -107,7 +106,7 @@ export function DealRfpEligibilitySection({ data }: { data: DealRfpCockpitData }
           </div>
           {data.capabilityProfileEmpty ? (
             <Button type="button" size="sm" variant="outline" asChild>
-              <Link href={`${ROUTES.settings}?tab=admin`}>{COPY.deals.cockpit.eligibilityProfileCta}</Link>
+              <Link href={`${ROUTES.settings}?tab=workspace`}>{COPY.deals.cockpit.eligibilityProfileCta}</Link>
             </Button>
           ) : null}
         </div>

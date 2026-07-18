@@ -131,9 +131,6 @@ export function SettingsExportTemplatesCard({
             <AppIcon icon={ExternalLink} size={16} />
             Layout-Vorschau
           </Button>
-          <p className="text-xs text-muted-foreground">
-            Öffnet eine Beispiel-PDF mit dem gewählten Layout in einem neuen Tab.
-          </p>
         </div>
       </div>
 

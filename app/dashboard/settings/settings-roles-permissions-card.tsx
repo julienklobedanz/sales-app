@@ -116,9 +116,6 @@ export function SettingsRolesPermissionsCard({
         <h2 className="text-lg font-semibold tracking-tight">
           {COPY.settings.rolesPermissions.title}
         </h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {COPY.settings.rolesPermissions.description}
-        </p>
       </div>
 
       <div className="rounded-lg border bg-muted/20 p-4">

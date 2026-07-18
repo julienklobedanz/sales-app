@@ -54,7 +54,6 @@ export function SettingsDevRoleCard({
     <div className="space-y-6">
       <div>
         <h2 className="text-lg font-semibold tracking-tight">{COPY.settings.roleSwitcherCardTitle}</h2>
-        <p className="mt-2 text-sm text-muted-foreground">{COPY.settings.roleSwitcherCardDescription}</p>
       </div>
 
       <dl className="grid gap-3 text-sm sm:grid-cols-2">

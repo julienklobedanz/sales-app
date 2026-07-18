@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { Building2, ExternalLink, MoreHorizontal } from '@hugeicons/core-free-icons'
 
@@ -14,9 +14,11 @@ import type {
 import {
   markMarketSignalNotificationsRead,
   markMarketSignalsIrrelevant,
+  matchReferencesForSignals,
 } from '@/app/dashboard/market-signals/actions'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -40,6 +42,12 @@ import {
   parseLeadershipMoveFromTitle,
 } from '@/lib/market-signals/leadership-move'
 import { formatRoleChangeFact } from '@/lib/market-signals/signal-intelligence'
+import {
+  buildSignalMatchQuery,
+  composeOutreachWithProofBlocks,
+  formatReferenceProofBlock,
+  type SignalMatchHit,
+} from '@/lib/market-signals/signal-reference-match'
 import { ROUTES } from '@/lib/routes'
 import { cn } from '@/lib/utils'
 
@@ -169,7 +177,7 @@ export function MarketSignalsFeed({
   activeDeals,
   initialReadKeys,
   senderFullName,
-  referenceSnippetsByCompanyId,
+  referenceSnippetsByCompanyId: _referenceSnippetsByCompanyId,
   sort,
 }: {
   executives: ExecutiveTrackingRow[]
@@ -193,9 +201,14 @@ export function MarketSignalsFeed({
   )
   const [outreachOpen, setOutreachOpen] = useState(false)
   const [outreachLoading, setOutreachLoading] = useState(false)
+  const [outreachBase, setOutreachBase] = useState('')
   const [outreachText, setOutreachText] = useState('')
   const [outreachTitle, setOutreachTitle] = useState('')
   const [outreachReadKey, setOutreachReadKey] = useState<string | null>(null)
+  const [outreachMatches, setOutreachMatches] = useState<SignalMatchHit[]>([])
+  const [outreachSelectedIds, setOutreachSelectedIds] = useState<string[]>([])
+  const [matchesByKey, setMatchesByKey] = useState<Record<string, SignalMatchHit[]>>({})
+  const [matchFetchDone, setMatchFetchDone] = useState<Set<string>>(() => new Set())
 
   const championSet = useMemo(
     () => new Set(championWatchlist.map(normalizeText)),
@@ -319,6 +332,57 @@ export function MarketSignalsFeed({
   }, [championSet, dealMetaByCompany, executives, irrelevantKeys, news, readKeys, sort])
 
   const visibleItems = items.slice(0, visibleCount)
+  const visibleKeySig = visibleItems.map((i) => i.key).join('|')
+
+  useEffect(() => {
+    const pending = visibleItems.filter((item) => !matchFetchDone.has(item.key))
+    if (!pending.length) return
+
+    let cancelled = false
+
+    void (async () => {
+      const payload = pending.map((item) => ({
+        key: item.key,
+        query: buildSignalMatchQuery({
+          headline: item.headline,
+          compellingEvent: item.compellingEvent,
+          companyName: item.companyName,
+        }),
+        excludeCompanyId: item.companyId,
+      }))
+      const result = await matchReferencesForSignals(payload)
+      if (cancelled) return
+      if (result.success) {
+        setMatchesByKey((prev) => ({ ...prev, ...result.byKey }))
+      }
+      setMatchFetchDone((prev) => {
+        const next = new Set(prev)
+        pending.forEach((item) => next.add(item.key))
+        return next
+      })
+    })()
+
+    return () => {
+      cancelled = true
+    }
+    // visibleKeySig deckt sichtbare Keys ab; matchFetchDone absichtlich nicht als Dep,
+    // damit nach dem Markieren kein Loop entsteht.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- siehe Kommentar
+  }, [visibleKeySig])
+
+  function rebuildOutreachText(base: string, matches: SignalMatchHit[], selectedIds: string[]) {
+    const selected = matches.filter((m) => selectedIds.includes(m.id))
+    const blocks = selected.map(formatReferenceProofBlock)
+    return composeOutreachWithProofBlocks(base, blocks)
+  }
+
+  function toggleOutreachMatch(id: string, checked: boolean) {
+    setOutreachSelectedIds((prev) => {
+      const next = checked ? [...prev.filter((x) => x !== id), id] : prev.filter((x) => x !== id)
+      setOutreachText(rebuildOutreachText(outreachBase, outreachMatches, next))
+      return next
+    })
+  }
 
   async function markRead(keys: string[]) {
     if (!keys.length) return
@@ -352,15 +416,47 @@ export function MarketSignalsFeed({
   }
 
   async function openOutreach(item: FeedItem) {
+    const matches = matchesByKey[item.key] ?? []
+    const defaultSelected = matches.slice(0, Math.min(2, matches.length)).map((m) => m.id)
+
     setOutreachTitle(item.headline)
+    setOutreachBase('')
     setOutreachText('')
+    setOutreachMatches(matches)
+    setOutreachSelectedIds(defaultSelected)
     setOutreachReadKey(item.readKey)
     setOutreachOpen(true)
     setOutreachLoading(true)
+
     try {
-      const refs = (referenceSnippetsByCompanyId[item.companyId] ?? [])
-        .slice(0, 3)
-        .map((r) => r.title)
+      // Falls Matches für die Karte noch nicht geladen: jetzt nachziehen
+      let resolvedMatches = matches
+      if (!matchFetchDone.has(item.key)) {
+        const result = await matchReferencesForSignals([
+          {
+            key: item.key,
+            query: buildSignalMatchQuery({
+              headline: item.headline,
+              compellingEvent: item.compellingEvent,
+              companyName: item.companyName,
+            }),
+            excludeCompanyId: item.companyId,
+          },
+        ])
+        if (result.success) {
+          resolvedMatches = result.byKey[item.key] ?? []
+          setMatchesByKey((prev) => ({ ...prev, ...result.byKey }))
+          setMatchFetchDone((prev) => new Set(prev).add(item.key))
+        }
+      }
+
+      const selected =
+        resolvedMatches !== matches
+          ? resolvedMatches.slice(0, Math.min(2, resolvedMatches.length)).map((m) => m.id)
+          : defaultSelected
+      setOutreachMatches(resolvedMatches)
+      setOutreachSelectedIds(selected)
+
       const res = await fetch('/api/market-signals/intro-strategy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -370,7 +466,7 @@ export function MarketSignalsFeed({
           companyName: item.companyName,
           introTone: 'advisory',
           summarySnippet: (item.compellingEvent || item.headline).slice(0, 1200),
-          referenceTitles: refs,
+          referenceTitles: [],
           recipientFullName: item.personName,
           senderFullName,
         }),
@@ -381,7 +477,8 @@ export function MarketSignalsFeed({
         setOutreachOpen(false)
         return
       }
-      setOutreachText(json.strategy)
+      setOutreachBase(json.strategy)
+      setOutreachText(rebuildOutreachText(json.strategy, resolvedMatches, selected))
     } catch {
       toast.error(COPY.marketSignals.outreachFailed)
       setOutreachOpen(false)
@@ -482,6 +579,27 @@ export function MarketSignalsFeed({
 
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                     <span>{item.companyName}</span>
+                    {(() => {
+                      const matchCount = matchesByKey[item.key]?.length ?? 0
+                      if (matchCount <= 0) return null
+                      return (
+                        <>
+                          <span aria-hidden>·</span>
+                          <button
+                            type="button"
+                            className="font-medium text-foreground/80 hover:text-foreground hover:underline"
+                            onClick={() => void openOutreach(item)}
+                          >
+                            {matchCount === 1
+                              ? COPY.marketSignals.matchingRefsSingular
+                              : COPY.marketSignals.matchingRefsPlural.replace(
+                                  '{count}',
+                                  String(matchCount)
+                                )}
+                          </button>
+                        </>
+                      )
+                    })()}
                     {dealLabel && item.dealHref ? (
                       <>
                         <span aria-hidden>·</span>
@@ -577,21 +695,62 @@ export function MarketSignalsFeed({
       ) : null}
 
       <Dialog open={outreachOpen} onOpenChange={setOutreachOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>{COPY.marketSignals.outreachDialogTitle}</DialogTitle>
           </DialogHeader>
           <p className="text-xs text-muted-foreground line-clamp-2">{outreachTitle}</p>
-          <Textarea
-            value={outreachLoading ? 'Entwurf wird erstellt …' : outreachText}
-            onChange={(e) => setOutreachText(e.target.value)}
-            rows={12}
-            disabled={outreachLoading}
-            className="font-mono text-sm"
-          />
+          <div className="grid gap-4 sm:grid-cols-[1fr_240px]">
+            <Textarea
+              value={outreachLoading ? COPY.marketSignals.outreachGenerating : outreachText}
+              onChange={(e) => setOutreachText(e.target.value)}
+              rows={14}
+              disabled={outreachLoading}
+              className="min-h-[280px] font-mono text-sm"
+            />
+            <div className="rounded-lg border border-border/70 bg-muted/20 p-3">
+              <p className="text-xs font-semibold text-foreground">
+                {COPY.marketSignals.outreachMatchingRefsTitle}
+              </p>
+              <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
+                {COPY.marketSignals.outreachMatchingRefsHint}
+              </p>
+              {outreachMatches.length === 0 ? (
+                <p className="mt-3 text-xs text-muted-foreground">
+                  {COPY.marketSignals.outreachMatchingRefsEmpty}
+                </p>
+              ) : (
+                <ul className="mt-3 space-y-3">
+                  {outreachMatches.map((hit) => {
+                    const checked = outreachSelectedIds.includes(hit.id)
+                    return (
+                      <li key={hit.id} className="flex items-start gap-2">
+                        <Checkbox
+                          id={`outreach-ref-${hit.id}`}
+                          checked={checked}
+                          disabled={outreachLoading || !outreachBase}
+                          onCheckedChange={(value) => toggleOutreachMatch(hit.id, value === true)}
+                          className="mt-0.5"
+                        />
+                        <label
+                          htmlFor={`outreach-ref-${hit.id}`}
+                          className="min-w-0 cursor-pointer text-xs leading-snug"
+                        >
+                          <span className="font-medium text-foreground">{hit.title}</span>
+                          {hit.companyName ? (
+                            <span className="mt-0.5 block text-muted-foreground">{hit.companyName}</span>
+                          ) : null}
+                        </label>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </div>
+          </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOutreachOpen(false)}>
-              Schließen
+              {COPY.marketSignals.outreachClose}
             </Button>
             <Button
               type="button"

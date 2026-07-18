@@ -100,6 +100,7 @@ export async function runExecutiveIntelIngest(
   const { data: watchRaw, error: watchErr } = await supabase
     .from('market_signal_champion_watchlist')
     .select('person_key, person_name, company_name, user_id')
+    .eq('is_active', true)
     .limit(4000)
 
   if (watchErr) {

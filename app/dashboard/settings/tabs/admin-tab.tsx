@@ -4,15 +4,13 @@ import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { TabsContent } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import type { DevRolePreview } from '@/lib/dev-role-preview'
-import { SettingsBillingCard } from '../settings-billing-card'
 import { SettingsDevRoleCard } from '../settings-dev-role-card'
-import { SettingsCapabilityProfile } from '../settings-capability-profile'
 import {
   updateWorkspaceAdminSettings,
   updateWorkspaceReferenceHighlightGlossary,
@@ -45,12 +43,7 @@ type AdminTabProps = {
       auditLogRetentionDays: number
       referenceHighlightGlossary: string
     }
-    capabilitySettings: {
-      capabilityProfile: import('@/lib/organizations/capability-profile-types').CapabilityProfile
-      icpDefinition: import('@/lib/deals/icp-rubric').IcpDefinition
-    }
   }
-  subdomain: string
   auditLogs: Array<{
     id: string
     action: string
@@ -66,7 +59,6 @@ export function AdminTab({
   devRolePreviewEnabled = false,
   roleSwitcher,
   org,
-  subdomain,
   auditLogs,
   register,
 }: AdminTabProps) {
@@ -101,7 +93,6 @@ export function AdminTab({
     auditRetentionDays !== String(org.workflowSettings.auditLogRetentionDays)
 
   const adminDirty =
-    subdomain !== org.subdomain ||
     apiKeyMask !== org.apiSettings.apiKeyMask ||
     useWorkspaceBranding !== org.apiSettings.useWorkspaceBranding ||
     referenceHighlightGlossary !== org.workflowSettings.referenceHighlightGlossary
@@ -109,7 +100,7 @@ export function AdminTab({
   function saveWorkspaceAdmin() {
     startWorkspaceTransition(async () => {
       const result = await updateWorkspaceAdminSettings({
-        subdomain,
+        subdomain: org.subdomain,
         apiKeyMask,
         useWorkspaceBranding,
       })
@@ -151,7 +142,10 @@ export function AdminTab({
   }
 
   function saveAdminTab() {
-    if (subdomain !== org.subdomain || apiKeyMask !== org.apiSettings.apiKeyMask || useWorkspaceBranding !== org.apiSettings.useWorkspaceBranding) {
+    if (
+      apiKeyMask !== org.apiSettings.apiKeyMask ||
+      useWorkspaceBranding !== org.apiSettings.useWorkspaceBranding
+    ) {
       saveWorkspaceAdmin()
     }
     if (referenceHighlightGlossary !== org.workflowSettings.referenceHighlightGlossary) {
@@ -166,7 +160,7 @@ export function AdminTab({
   }
 
   useRegisterSettingsTab(
-    'admin',
+    'process',
     {
       dirty: adminDirty,
       pending: workspacePending || glossaryPending,
@@ -176,7 +170,7 @@ export function AdminTab({
   )
 
   useRegisterSettingsTab(
-    'workspace',
+    'process',
     {
       dirty: workspaceSecurityDirty,
       pending: securityPending,
@@ -239,29 +233,16 @@ export function AdminTab({
   }
 
   return (
-    <TabsContent value="admin">
+    <TabsContent value="process">
       <div className="space-y-6">
-        <div className={SETTINGS_CARD_CLASS}>
-          <SettingsBillingCard
-            subscriptionStatus={org.subscriptionStatus}
-            subscriptionId={org.subscriptionId}
-          />
-        </div>
-
         <div className={SETTINGS_CARD_CLASS}>
           <CardHeader className="space-y-2 px-0 pt-0">
             <CardTitle className="text-base">Entwicklung / API-Keys</CardTitle>
-            <CardDescription className="text-slate-500">
-              Technische Konfiguration für Workspace-Integrationen.
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 px-0 pb-0 pt-1">
             <div className="flex items-center justify-between rounded-lg border border-slate-200 p-4">
               <div>
                 <p className="text-sm font-medium">Workspace Branding (opt-in)</p>
-                <p className="mt-1.5 text-xs text-slate-500">
-                  Nutzt Primär-/Sekundärfarbe für Links, Badges und Akzente.
-                </p>
               </div>
               <Switch
                 checked={useWorkspaceBranding}
@@ -271,9 +252,6 @@ export function AdminTab({
             </div>
             <div className="rounded-lg border border-slate-200 p-4">
               <p className="text-sm font-medium">Workspace API Key</p>
-              <p className="mt-2 text-xs text-slate-500">
-                Aus Sicherheitsgründen maskiert. Rotation über sicheren Backend-Flow.
-              </p>
               <Input
                 value={apiKeyMask}
                 onChange={(e) => setApiKeyMask(e.target.value)}
@@ -330,14 +308,6 @@ export function AdminTab({
             </div>
           </CardContent>
         </div>
-
-        {roleSwitcher.isServerAdmin ? (
-          <SettingsCapabilityProfile
-            initialProfile={org.capabilitySettings.capabilityProfile}
-            initialIcp={org.capabilitySettings.icpDefinition}
-            canEdit={roleSwitcher.isServerAdmin}
-          />
-        ) : null}
 
         {roleSwitcher.isServerAdmin ? (
           <div className={SETTINGS_CARD_CLASS}>

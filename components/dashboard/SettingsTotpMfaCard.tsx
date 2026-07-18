@@ -191,13 +191,13 @@ export function SettingsTotpMfaCard() {
       <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-medium text-slate-900">Zwei-Faktor-Authentifizierung (TOTP)</p>
-          <p className="mt-1 text-xs text-slate-600">
-            {loading
-              ? 'Status wird geladen …'
-              : verifiedFactor
-                ? 'Authenticator ist eingerichtet. Bei der Anmeldung wird ein Code abgefragt.'
-                : 'Schützt dein Konto mit einer App wie Google Authenticator, 1Password oder Microsoft Authenticator.'}
-          </p>
+          {loading || verifiedFactor ? (
+            <p className="mt-1 text-xs text-slate-600">
+              {loading
+                ? 'Status wird geladen …'
+                : 'Authenticator ist eingerichtet. Bei der Anmeldung wird ein Code abgefragt.'}
+            </p>
+          ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {loading ? (

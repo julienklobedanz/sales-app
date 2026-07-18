@@ -1391,22 +1391,28 @@ export type Database = {
         Row: {
           company_name: string | null
           created_at: string
+          is_active: boolean
           person_key: string
           person_name: string
+          person_title: string | null
           user_id: string
         }
         Insert: {
           company_name?: string | null
           created_at?: string
+          is_active?: boolean
           person_key: string
           person_name: string
+          person_title?: string | null
           user_id: string
         }
         Update: {
           company_name?: string | null
           created_at?: string
+          is_active?: boolean
           person_key?: string
           person_name?: string
+          person_title?: string | null
           user_id?: string
         }
         Relationships: []

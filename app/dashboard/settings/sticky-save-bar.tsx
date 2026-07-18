@@ -1,6 +1,5 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
 import { Save } from 'lucide-react'
 
 export function StickySaveBar({
@@ -17,15 +16,26 @@ export function StickySaveBar({
   if (!visible) return null
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-3 md:px-6">
-        <p className="text-sm text-muted-foreground">Ungespeicherte Änderungen</p>
-        <Button type="button" size="sm" onClick={onSave} disabled={pending}>
-          <Save className="mr-2 h-4 w-4" />
-          {pending ? 'Speichert …' : label}
-        </Button>
+    <div
+      className="fixed bottom-6 left-1/2 z-50 w-[min(720px,calc(100vw-24px))] -translate-x-1/2"
+      role="region"
+      aria-label="Ungespeicherte Änderungen"
+    >
+      <div className="flex min-w-[min(450px,100%)] items-center justify-between rounded-2xl border border-gray-100 bg-white p-3 shadow-lg">
+        <p className="px-2 text-sm font-medium text-gray-600">Ungespeicherte Änderungen</p>
+
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <button
+            type="button"
+            disabled={pending}
+            onClick={onSave}
+            className="flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50"
+          >
+            <Save className="size-4 shrink-0" aria-hidden />
+            {pending ? 'Speichert …' : label}
+          </button>
+        </div>
       </div>
     </div>
   )
 }
-

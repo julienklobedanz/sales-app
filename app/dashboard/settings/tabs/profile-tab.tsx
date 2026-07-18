@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { TabsContent } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -159,9 +159,6 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
         <div className={SETTINGS_CARD_CLASS}>
           <CardHeader className="px-0 pt-0">
             <CardTitle className="text-base">Benachrichtigungen</CardTitle>
-            <CardDescription className="text-slate-500">
-              Lege fest, bei welchen Ereignissen du direkt informiert wirst.
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 px-0 pb-0 pt-2">
             <div className="overflow-x-auto rounded-lg border border-slate-200">
@@ -257,9 +254,6 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
         <div className={SETTINGS_CARD_CLASS}>
           <CardHeader className="px-0 pt-0">
             <CardTitle className="text-base">Passwort ändern</CardTitle>
-            <CardDescription className="text-slate-500">
-              Für Enterprise-Sicherheit gilt eine starke Passwortpolicy (mindestens 12 Zeichen).
-            </CardDescription>
           </CardHeader>
           <CardContent className="px-0 pb-0">
             <form action={saveOwnPassword} className="grid gap-3 sm:grid-cols-3">
@@ -275,10 +269,7 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
                 <Label htmlFor="confirmPassword">Neues Passwort bestätigen</Label>
                 <Input id="confirmPassword" name="confirmPassword" type="password" minLength={12} autoComplete="new-password" />
               </div>
-              <div className="sm:col-span-3 flex items-center justify-between gap-2">
-                <p className="text-xs text-slate-500">
-                  Mindestens 12 Zeichen inkl. Groß-/Kleinbuchstaben, Zahl und Sonderzeichen.
-                </p>
+              <div className="sm:col-span-3 flex justify-end">
                 <Button type="submit" size="sm" disabled={passwordPending}>
                   {passwordPending ? 'Speichert …' : 'Passwort speichern'}
                 </Button>
@@ -289,9 +280,6 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
         <div className={SETTINGS_CARD_CLASS}>
           <CardHeader className="px-0 pt-0">
             <CardTitle className="text-base">Sicherheit (2FA)</CardTitle>
-            <CardDescription className="text-slate-500">
-              Authenticator-App (TOTP) über Supabase Auth. Nach Aktivierung wird beim Login ein Code abgefragt.
-            </CardDescription>
           </CardHeader>
           <CardContent className="px-0 pb-0">
             <SettingsTotpMfaCard />

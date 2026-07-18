@@ -81,21 +81,17 @@ function signalAngle(input: OutreachDraftInput): string {
 
 export function buildHeuristicOutreachDraft(input: OutreachDraftInput): string {
   const angle = signalAngle(input)
-  const ref = input.referenceTitles[0]
   const { lead, cta } = toneBodyStyle(input.introTone)
   const company = input.companyName.trim() || 'Ihrem Unternehmen'
   const signalRef = input.headline.trim()
     ? ` (${input.headline.trim().slice(0, 120)}${input.headline.length > 120 ? '…' : ''})`
     : ''
 
-  const refSentence = ref
-    ? ` Ähnliche Situationen haben wir mit „${ref}" begleitet — ohne Marketing-Sprech, sondern mit messbarem Nutzen.`
-    : ''
-
+  // Proof-Sätze zu Referenzen hängen clientseitig per Checkbox an — hier nur Basis-Entwurf.
   const body = [
     `${lead} Aufgrund des aktuellen Signals bei ${company}${signalRef} sehe ich, dass ${angle}.`,
     `${input.summarySnippet.trim().slice(0, 280)}${input.summarySnippet.length > 280 ? '…' : ''}`,
-    `${refSentence} ${cta}`.replace(/\s+/g, ' ').trim(),
+    cta,
   ]
     .filter(Boolean)
     .join('\n\n')

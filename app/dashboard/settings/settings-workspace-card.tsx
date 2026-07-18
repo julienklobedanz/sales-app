@@ -19,6 +19,7 @@ import { updateOrganization } from './settings-workspace-actions'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
 import { normalizeOrgDateDisplayFormat, type OrgDateDisplayFormat } from '@/lib/format'
+import { normalizeUiLocale, type UiLocale } from '@/lib/i18n/ui-locale'
 
 export function SettingsWorkspaceCard({
   organizationId,
@@ -27,6 +28,7 @@ export function SettingsWorkspaceCard({
   primaryColor = '#0f172a',
   secondaryColor = '#334155',
   dateDisplayFormat = 'de-DE',
+  uiLocale = 'de',
   hideSubmitButton = false,
   saveSignal = 0,
   onDirtyChange,
@@ -37,6 +39,7 @@ export function SettingsWorkspaceCard({
   primaryColor?: string | null
   secondaryColor?: string | null
   dateDisplayFormat?: OrgDateDisplayFormat | string | null
+  uiLocale?: UiLocale | string | null
   hideSubmitButton?: boolean
   saveSignal?: number
   onDirtyChange?: (dirty: boolean) => void
@@ -49,6 +52,7 @@ export function SettingsWorkspaceCard({
   const [dateFormat, setDateFormat] = useState<OrgDateDisplayFormat>(() =>
     normalizeOrgDateDisplayFormat(dateDisplayFormat)
   )
+  const [locale, setLocale] = useState<UiLocale>(() => normalizeUiLocale(uiLocale))
   const [logoLoading, setLogoLoading] = useState(false)
   const [dragActive, setDragActive] = useState(false)
   const [lastHandledSaveSignal, setLastHandledSaveSignal] = useState(0)
@@ -57,11 +61,16 @@ export function SettingsWorkspaceCard({
     primary !== (primaryColor ?? '#0f172a') ||
     secondary !== (secondaryColor ?? '#334155') ||
     dateFormat !== normalizeOrgDateDisplayFormat(dateDisplayFormat) ||
+    locale !== normalizeUiLocale(uiLocale) ||
     (logoPreview ?? '') !== (logoUrl ?? '')
 
   useEffect(() => {
     setDateFormat(normalizeOrgDateDisplayFormat(dateDisplayFormat))
   }, [dateDisplayFormat])
+
+  useEffect(() => {
+    setLocale(normalizeUiLocale(uiLocale))
+  }, [uiLocale])
 
   useEffect(() => {
     onDirtyChange?.(isDirty)
@@ -86,7 +95,8 @@ export function SettingsWorkspaceCard({
       logoPreview,
       primary.trim() || '#0f172a',
       secondary.trim() || '#334155',
-      dateFormat
+      dateFormat,
+      locale
     )
     setPending(false)
     if (result.success) {
@@ -151,20 +161,9 @@ export function SettingsWorkspaceCard({
           {COPY.misc.workspace}-Branding
         </span>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="workspace-name">Organisation</Label>
-        <Input
-          id="workspace-name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder={organizationId ? `Mein ${COPY.misc.workspace}` : `Kein ${COPY.misc.workspace} zugeordnet`}
-          disabled={!organizationId}
-          className={organizationId ? 'bg-background' : 'bg-muted/50 cursor-not-allowed'}
-        />
-      </div>
-      <div className="space-y-2.5">
-        <Label className="text-muted-foreground">Logo</Label>
-        <div className="flex items-center gap-5">
+
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
+        <div className="flex shrink-0 flex-col items-start gap-2">
           <button
             type="button"
             className="group relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-muted-foreground/25 bg-muted/30"
@@ -187,7 +186,10 @@ export function SettingsWorkspaceCard({
                 />
                 <button
                   type="button"
-                  onClick={handleLogoDelete}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleLogoDelete()
+                  }}
                   className="absolute -right-1 -top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-destructive/10 text-destructive opacity-0 shadow-sm ring-1 ring-destructive/20 transition-opacity duration-150 group-hover:opacity-100"
                   aria-label="Logo entfernen"
                 >
@@ -207,7 +209,7 @@ export function SettingsWorkspaceCard({
             }}
           >
             <AppIcon icon={Upload} size={14} />
-            Logo hochladen
+            Logo
           </button>
           <input
             id="workspace-logo-input"
@@ -220,25 +222,59 @@ export function SettingsWorkspaceCard({
             }}
           />
         </div>
+
+        <div className="min-w-0 flex-1 sm:pt-2">
+          <Input
+            id="workspace-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={
+              organizationId ? 'Name deines Unternehmens' : `Kein ${COPY.misc.workspace} zugeordnet`
+            }
+            disabled={!organizationId}
+            className={organizationId ? 'bg-background' : 'bg-muted/50 cursor-not-allowed'}
+            aria-label="Organisation"
+          />
+        </div>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="date-display-format">Datumsformat (Referenzen &amp; Übersicht)</Label>
-        <Select
-          value={dateFormat}
-          onValueChange={(v) => setDateFormat(normalizeOrgDateDisplayFormat(v))}
-          disabled={!organizationId}
-        >
-          <SelectTrigger id="date-display-format" className="max-w-md">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="de-DE">Deutsch (TT.MM.JJJJ)</SelectItem>
-            <SelectItem value="en-GB">UK (TT/MM/JJJJ)</SelectItem>
-            <SelectItem value="en-US">US (MM/TT/JJJJ)</SelectItem>
-            <SelectItem value="iso">ISO (JJJJ-MM-TT)</SelectItem>
-          </SelectContent>
-        </Select>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="ui-locale">Sprache</Label>
+          <Select
+            value={locale}
+            onValueChange={(v) => setLocale(normalizeUiLocale(v))}
+            disabled={!organizationId}
+          >
+            <SelectTrigger id="ui-locale">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="de">Deutsch</SelectItem>
+              <SelectItem value="en">Englisch</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="date-display-format">Datumsformat</Label>
+          <Select
+            value={dateFormat}
+            onValueChange={(v) => setDateFormat(normalizeOrgDateDisplayFormat(v))}
+            disabled={!organizationId}
+          >
+            <SelectTrigger id="date-display-format">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="de-DE">Deutsch (TT.MM.JJJJ)</SelectItem>
+              <SelectItem value="en-GB">UK (TT/MM/JJJJ)</SelectItem>
+              <SelectItem value="en-US">US (MM/TT/JJJJ)</SelectItem>
+              <SelectItem value="iso">ISO (JJJJ-MM-TT)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
+
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="primary-color">Primärfarbe</Label>
@@ -261,6 +297,7 @@ export function SettingsWorkspaceCard({
           />
         </div>
       </div>
+
       {!hideSubmitButton ? (
         <Button type="submit" size="sm" disabled={pending || !organizationId}>
           Speichern

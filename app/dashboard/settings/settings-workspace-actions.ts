@@ -1,10 +1,12 @@
 'use server'
 
+import { cookies } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { asTableUpdate } from '@/lib/supabase/db-types'
 import { ROUTES } from '@/lib/routes'
 import { normalizeOrgDateDisplayFormat } from '@/lib/format'
+import { normalizeUiLocale, UI_LOCALE_COOKIE, type UiLocale } from '@/lib/i18n/ui-locale'
 
 export type UpdateOrganizationResult =
   | { success: true }
@@ -16,7 +18,8 @@ export async function updateOrganization(
   logoDataUrl?: string | null,
   primaryColor?: string | null,
   secondaryColor?: string | null,
-  dateDisplayFormat?: string | null
+  dateDisplayFormat?: string | null,
+  uiLocale?: string | null
 ): Promise<UpdateOrganizationResult> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -55,12 +58,37 @@ export async function updateOrganization(
     updates.date_display_format = normalizeOrgDateDisplayFormat(dateDisplayFormat)
   }
 
+  let nextLocale: UiLocale | null = null
+  if (uiLocale !== undefined) {
+    nextLocale = normalizeUiLocale(uiLocale)
+    const { data: orgRow } = await supabase
+      .from('organizations')
+      .select('api_settings')
+      .eq('id', organizationId)
+      .maybeSingle()
+    const prev =
+      orgRow?.api_settings && typeof orgRow.api_settings === 'object' && !Array.isArray(orgRow.api_settings)
+        ? { ...(orgRow.api_settings as Record<string, unknown>) }
+        : {}
+    updates.api_settings = { ...prev, ui_locale: nextLocale }
+  }
+
   const { error } = await supabase
     .from('organizations')
     .update(asTableUpdate<'organizations'>(updates))
     .eq('id', organizationId)
 
   if (error) return { success: false, error: error.message }
+
+  if (nextLocale) {
+    const jar = await cookies()
+    jar.set(UI_LOCALE_COOKIE, nextLocale, {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: 'lax',
+    })
+  }
+
   revalidatePath(ROUTES.settings)
   revalidatePath(ROUTES.references.root)
   return { success: true }
