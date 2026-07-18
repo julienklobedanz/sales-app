@@ -3,6 +3,9 @@ import { buildCompanyNewsRssQuery } from '@/lib/market-signals/google-news-rss'
 /** Standard: nur Signale der letzten N Tage (Sales-Relevanz). */
 export const RSS_MAX_AGE_DAYS_DEFAULT = 30
 
+/** Leadership-/Job-Moves länger behalten (CEO-Wechsel bleibt relevant). */
+export const RSS_MAX_AGE_DAYS_LEADERSHIP = 120
+
 /**
  * Offensichtliches Rauschen für B2B-Vertrieb — vor LLM-Aufruf verwerfen.
  * Fokus: Stellenanzeigen, Karriere-Seiten, HR-/Facility-Routine ohne Account-Trigger.
@@ -78,6 +81,32 @@ export function buildSalesFocusedCompanyNewsRssQuery(
     '-Werkstudent',
   ].join(' ')
   return `${base} ${exclusions}`
+}
+
+/**
+ * Zusätzliche Queries für Newsroom / Presse des Accounts (über Google News site:).
+ * Kein Scraping der Seite — nur Index-Suche.
+ */
+export function buildNewsroomRssQueries(companyName: string, websiteHost: string | null): string[] {
+  const name = companyName.trim()
+  const host = (websiteHost ?? '')
+    .replace(/^https?:\/\//i, '')
+    .replace(/^www\./i, '')
+    .split('/')[0]
+    ?.trim()
+  if (!host || !host.includes('.')) return []
+
+  const queries = [
+    `site:${host} (newsroom OR presse OR "press release" OR "pressemitteilung" OR mitteilung OR /news/)`,
+    `site:${host}/newsroom`,
+    `site:${host}/de/newsroom`,
+    `site:${host}/press`,
+    `site:${host}/presse`,
+  ]
+  if (name) {
+    queries.unshift(`"${name}" (CEO OR CTO OR CIO OR Vorstand OR "Executive Chairman" OR Nachfolger) site:${host}`)
+  }
+  return queries
 }
 
 export function irrelevantEnrichment(): {

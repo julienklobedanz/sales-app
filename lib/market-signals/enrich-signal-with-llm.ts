@@ -1,4 +1,5 @@
 import { MARKET_SIGNAL_INTELLIGENCE_SYSTEM_PROMPT } from '@/lib/market-signals/signal-intelligence-prompt'
+import { truncateToCompleteSentences } from '@/lib/market-signals/compelling-event'
 import {
   hasSalesTriggerHint,
   isLowValueRssTitle,
@@ -73,7 +74,7 @@ function parseLlmEnrichmentJson(
 
   const row = parsed as Record<string, unknown>
   const fact = clampText(row.insight_signal_fact, 280)
-  const whyNow = clampText(row.insight_why_now, 420)
+  const whyNow = truncateToCompleteSentences(String(row.insight_why_now ?? ''), 180) ?? ''
   if (!fact || !whyNow) return null
 
   return {
@@ -111,13 +112,17 @@ export function buildHeuristicSignalEnrichment(input: EnrichSignalInput): Signal
         })
       : clampText(hook, 280) || `Account-Signal bei ${companyName}.`
 
-  const insight_why_now = buildSalesWhyNow({
-    signalKind,
-    personName: personName || undefined,
-    companyName,
-    changeSummary: title,
-    newsBody: title,
-  })
+  const insight_why_now =
+    truncateToCompleteSentences(
+      buildSalesWhyNow({
+        signalKind,
+        personName: personName || undefined,
+        companyName,
+        changeSummary: title,
+        newsBody: title,
+      }),
+      180
+    ) ?? ''
 
   const signal_category: SignalCategory = personName ? 'people' : inferNewsCategory(title)
 
@@ -158,7 +163,7 @@ Regeln für dieses RSS-Ingest-Format:
 - is_relevant=true nur bei echten Vertriebs-Triggern, z. B.: Führungswechsel (CEO/CTO/CIO), Werkseröffnung/Expansion/Investition, M&A/Partnerschaft, Quartalszahlen/Budget, Digitalisierung/Strategie, große Aufträge, Standort-/Markteintritt.
 - signal_category: people bei Personal/Führungswechsel; finance bei Finanzen, M&A, Budget, Quartalszahlen; strategy bei Strategie, Produkt, Expansion, Digitalisierung.
 - insight_signal_fact: knackiges Kurzfazit für UI-Label (max. 2 Sätze).
-- insight_why_now: analytischer Zweizeiler für den Vertriebler (max. 2–3 Sätze, harte Vertriebslogik wie im System-Prompt).`
+- insight_why_now: beschreibender Inhalt der News in 1–2 ganzen Sätzen (max. ~180 Zeichen). Immer mit Satzende (. ! ?) abschließen — niemals mit Auslassungspunkten kürzen.`
 
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)

@@ -507,6 +507,7 @@ export type TriggerMarketSignalsIngestResult =
       news: {
         companiesScanned: number
         articlesInserted: number
+        leadershipMovesInserted: number
         errors: string[]
       }
       executives: {
@@ -590,6 +591,7 @@ export async function triggerMarketSignalsIngestForMyOrg(args?: {
       purge,
       newsCompaniesScanned: news.companiesScanned,
       newsInserted: news.articlesInserted,
+      leadershipMovesInserted: news.leadershipMovesInserted,
       newsErrors: news.errors.length,
       execPeopleScanned: executives.peopleScanned,
       execInserted: executives.signalsInserted,
@@ -608,6 +610,7 @@ export async function triggerMarketSignalsIngestForMyOrg(args?: {
     news: {
       companiesScanned: news.companiesScanned,
       articlesInserted: news.articlesInserted,
+      leadershipMovesInserted: news.leadershipMovesInserted,
       errors: news.errors,
     },
     executives: {

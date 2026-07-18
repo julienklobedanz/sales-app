@@ -62,5 +62,42 @@ export async function GET(request: Request) {
     })
   }
 
+  const finishedAt = new Date().toISOString()
+  const { data: favoriteOrgs } = await admin
+    .from('companies')
+    .select('organization_id')
+    .eq('is_favorite', true)
+    .not('organization_id', 'is', null)
+    .limit(500)
+  const orgIds = Array.from(
+    new Set(
+      (favoriteOrgs ?? [])
+        .map((row) => String((row as { organization_id?: string | null }).organization_id ?? ''))
+        .filter(Boolean)
+    )
+  )
+  if (orgIds.length) {
+    await admin.from('audit_logs').insert(
+      orgIds.map((orgId) => ({
+        org_id: orgId,
+        user_id: null,
+        action: 'market_signals_ingest_run',
+        entity_id: orgId,
+        action_details: {
+          mode: 'focus_only',
+          source: 'cron',
+          newsCompaniesScanned: news.companiesScanned,
+          newsInserted: news.articlesInserted,
+          leadershipMovesInserted: news.leadershipMovesInserted,
+          newsErrors: news.errors.length,
+          execPeopleScanned: executives.peopleScanned,
+          execInserted: executives.signalsInserted,
+          execErrors: executives.errors.length,
+          at: finishedAt,
+        },
+      }))
+    )
+  }
+
   return NextResponse.json({ ok: true, news, executives, instant })
 }

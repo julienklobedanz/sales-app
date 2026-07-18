@@ -93,7 +93,7 @@ export type PurgeRssIngestResult = {
 
 /**
  * Löscht RSS-ingestierte Zeilen für einen Neu-Abruf (Dedupe-Blockade aufheben).
- * Manuelle Einträge (ingest_source != google_news_rss) bleiben erhalten.
+ * Manuelle Einträge (ohne content_hash / ingest_source != RSS) bleiben erhalten.
  */
 export async function purgeRssIngestedSignalsForCompanies(
   supabase: SupabaseClient,
@@ -111,15 +111,15 @@ export async function purgeRssIngestedSignalsForCompanies(
       .from('market_signal_account_news')
       .delete({ count: 'exact' })
       .in('company_id', chunk)
-      .eq('ingest_source', 'google_news_rss')
+      .in('ingest_source', ['google_news_rss', 'newsroom_rss'])
     if (newsErr) throw new Error(newsErr.message)
     accountNewsDeleted += newsCount ?? 0
 
+    // RSS-Moves (role_change + content_hash) und news_mention gemeinsam zurücksetzen
     const { count: execCount, error: execErr } = await supabase
       .from('market_signal_executive_events')
       .delete({ count: 'exact' })
       .in('company_id', chunk)
-      .eq('event_kind', 'news_mention')
       .not('content_hash', 'is', null)
     if (execErr) throw new Error(execErr.message)
     executiveDeleted += execCount ?? 0

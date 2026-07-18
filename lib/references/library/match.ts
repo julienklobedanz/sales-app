@@ -5,6 +5,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { embedTextWithOpenAICached } from '@/lib/embeddings/cached-embed-query'
 import { rpcMatchReferences } from '@/lib/match-references-rpc'
 import { snippetFromSummary } from '@/lib/match-reference-snippet'
+import { fetchCompanyFieldsForReferenceIds } from '@/lib/references/enrich-match-hits-company'
 import { logReferenceMatched } from '@/lib/events/log-reference-matched'
 import { formatIndustryDisplay } from '@/lib/constants/industries'
 import { withTiming } from '@/lib/observability/timing'
@@ -146,6 +147,23 @@ export async function matchReferencesImpl(
       { organizationId: orgId, resultCount: matches.length }
     )
     matches = reranked
+  }
+
+  if (matches.length > 0) {
+    const companyByRef = await fetchCompanyFieldsForReferenceIds(
+      supabase,
+      matches.map((m) => m.id)
+    )
+    matches = matches.map((m) => {
+      const co = companyByRef.get(m.id)
+      if (!co) return m
+      return {
+        ...m,
+        companyId: co.companyId,
+        companyName: m.companyName ?? co.companyName,
+        companyLogoUrl: co.companyLogoUrl,
+      }
+    })
   }
 
   const totalMs = Math.round(performance.now() - totalStart)

@@ -9,7 +9,7 @@
  * Offen (mit `TODO(wiring:*)` markiert): Deal-Kontext-Picker (B), Filter (C).
  */
 
-import { useState, type ReactNode } from 'react'
+import { useState, useLayoutEffect, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Search01Icon } from '@hugeicons/core-free-icons'
@@ -46,6 +46,55 @@ type FiltersState = {
   monthsBack: number | null
 }
 const EMPTY_FILTERS: FiltersState = { industries: [], minVolume: null, statuses: [], monthsBack: null }
+
+/** Session-Persistenz: Browser-Zurück nach Referenz-Details behält Treffer. */
+const SMART_MATCH_SESSION_KEY = 'refstack:smart-match:last-search:v2'
+
+type SmartMatchSessionState = {
+  query: string
+  filters: FiltersState
+  selectedDealId: string | null
+  results: MatchReferenceHit[]
+}
+
+function readSmartMatchSession(): SmartMatchSessionState | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = sessionStorage.getItem(SMART_MATCH_SESSION_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as Partial<SmartMatchSessionState>
+    if (typeof parsed.query !== 'string' || !Array.isArray(parsed.results)) return null
+    return {
+      query: parsed.query,
+      filters: {
+        industries: Array.isArray(parsed.filters?.industries) ? parsed.filters.industries : [],
+        minVolume:
+          typeof parsed.filters?.minVolume === 'number' ? parsed.filters.minVolume : null,
+        statuses: Array.isArray(parsed.filters?.statuses) ? parsed.filters.statuses : [],
+        monthsBack:
+          typeof parsed.filters?.monthsBack === 'number' ? parsed.filters.monthsBack : null,
+      },
+      selectedDealId:
+        typeof parsed.selectedDealId === 'string' ? parsed.selectedDealId : null,
+      results: parsed.results as MatchReferenceHit[],
+    }
+  } catch {
+    return null
+  }
+}
+
+function writeSmartMatchSession(state: SmartMatchSessionState | null) {
+  if (typeof window === 'undefined') return
+  try {
+    if (!state) {
+      sessionStorage.removeItem(SMART_MATCH_SESSION_KEY)
+      return
+    }
+    sessionStorage.setItem(SMART_MATCH_SESSION_KEY, JSON.stringify(state))
+  } catch {
+    // Quota / private mode — Suche funktioniert weiter ohne Persistenz.
+  }
+}
 
 const VOLUME_OPTIONS: { label: string; value: number | null }[] = [
   { label: 'Alle', value: null },
@@ -180,6 +229,42 @@ export function SmartMatchShell({
   const [selectedDealId, setSelectedDealId] = useState<string | null>(initialDealId)
   const [dealPickerOpen, setDealPickerOpen] = useState(false)
   const [dealQuery, setDealQuery] = useState('')
+  const [sessionReady, setSessionReady] = useState(embedded)
+
+  useLayoutEffect(() => {
+    if (embedded) return
+    const restored = readSmartMatchSession()
+    if (restored) {
+      setQuery(restored.query)
+      setFilters(restored.filters)
+      setResults(restored.results)
+      if (!initialDealId) setSelectedDealId(restored.selectedDealId)
+    }
+    setSessionReady(true)
+  }, [embedded, initialDealId])
+
+  function persistSession(
+    next: Partial<{
+      query: string
+      filters: FiltersState
+      selectedDealId: string | null
+      results: MatchReferenceHit[] | null
+    }>
+  ) {
+    if (embedded) return
+    const nextResults = next.results !== undefined ? next.results : results
+    if (nextResults === null) {
+      writeSmartMatchSession(null)
+      return
+    }
+    writeSmartMatchSession({
+      query: next.query ?? query,
+      filters: next.filters ?? filters,
+      selectedDealId:
+        next.selectedDealId !== undefined ? next.selectedDealId : selectedDealId,
+      results: nextResults,
+    })
+  }
 
   const selectedDeal = deals.find((d) => d.id === selectedDealId) ?? null
   const linkedIds = new Set(selectedDeal?.linked_refs?.map((r) => r.id) ?? [])
@@ -206,9 +291,21 @@ export function SmartMatchShell({
       if (!res.success) {
         toast.error(res.error)
         setResults([])
+        persistSession({
+          query: q,
+          filters: f,
+          selectedDealId: dealId,
+          results: [],
+        })
         return
       }
       setResults(res.matches)
+      persistSession({
+        query: q,
+        filters: f,
+        selectedDealId: dealId,
+        results: res.matches,
+      })
     } finally {
       setLoading(false)
     }
@@ -247,6 +344,7 @@ export function SmartMatchShell({
   }
 
   const hasSearched = loading || results !== null
+  const showResultsPanel = sessionReady && hasSearched
   const firstName =
     dashboardFirstName(greetingName) || COPY.dashboard.home.shellGreetingFallback
 
@@ -355,7 +453,7 @@ export function SmartMatchShell({
             </div>
           </div>
 
-          {hasSearched ? (
+          {showResultsPanel ? (
             <div className="space-y-3">
               {/* Filter + Meta — TODO(wiring:C): Filter funktional */}
               <div className="flex flex-wrap items-center justify-between gap-2.5 text-[13px] text-muted-foreground">
@@ -464,7 +562,14 @@ export function SmartMatchShell({
                     <Button variant="outline" size="sm" onClick={() => toast.success('Referenz angefragt (folgt)')}>
                       Referenz anfragen
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => setResults(null)}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setResults(null)
+                        persistSession({ results: null })
+                      }}
+                    >
                       Bedarf verfeinern
                     </Button>
                   </span>

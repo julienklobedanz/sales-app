@@ -4,9 +4,14 @@ import { isMissingEnrichmentColumnsError, stripEnrichmentFields } from '@/lib/ma
 import { enrichSignal } from '@/lib/market-signals/enrich-signal-with-llm'
 import { fetchGoogleNewsRssItems, type GoogleNewsRssItem } from '@/lib/market-signals/google-news-rss'
 import {
+  isLeadershipMoveTitle,
+  parseLeadershipMoveFromTitle,
+} from '@/lib/market-signals/leadership-move'
+import {
   isLowValueRssTitle,
   isRssPubDateWithinDays,
   RSS_MAX_AGE_DAYS_DEFAULT,
+  RSS_MAX_AGE_DAYS_LEADERSHIP,
 } from '@/lib/market-signals/sales-signal-relevance'
 
 function normalizeChampionKey(raw: string | null | undefined) {
@@ -240,7 +245,9 @@ export async function runExecutiveIntelIngest(
             const title = item.title.trim()
             if (title.length < 10) continue
             if (isLowValueRssTitle(title)) continue
-            if (!isRssPubDateWithinDays(item.pubDate, RSS_MAX_AGE_DAYS_DEFAULT)) continue
+            const leadership = isLeadershipMoveTitle(title)
+            const ageDays = leadership ? RSS_MAX_AGE_DAYS_LEADERSHIP : RSS_MAX_AGE_DAYS_DEFAULT
+            if (!isRssPubDateWithinDays(item.pubDate, ageDays)) continue
 
             const enrichment = await enrichSignal({
               title,
@@ -249,6 +256,7 @@ export async function runExecutiveIntelIngest(
             })
             if (!enrichment.is_relevant) continue
 
+            const move = parseLeadershipMoveFromTitle(title, rssCompanyName || companyNameFromDb)
             const hash = intelContentHash(companyId, w.personKey, item.link)
             const detectedAt = item.pubDate && Number.isFinite(item.pubDate.getTime())
               ? item.pubDate.toISOString()
@@ -257,11 +265,11 @@ export async function runExecutiveIntelIngest(
             const insertPayload = {
               company_id: companyId,
               person_name: w.personName,
-              person_title_before: null,
-              person_title_after: null,
+              person_title_before: move.titleBefore,
+              person_title_after: move.titleAfter,
               change_summary: title,
               detected_at: detectedAt,
-              event_kind: 'news_mention',
+              event_kind: move.eventKind === 'role_change' || leadership ? 'role_change' : 'news_mention',
               source_url: item.link,
               content_hash: hash,
               signal_category: enrichment.signal_category,

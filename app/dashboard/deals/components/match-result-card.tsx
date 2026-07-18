@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { LinkIcon, Loader, Sparkles, FileText } from '@hugeicons/core-free-icons'
+import { LinkIcon, Loader, Sparkles, FileText, InformationCircleIcon } from '@hugeicons/core-free-icons'
 
 import { Button } from '@/components/ui/button'
 import { CompanyLogo } from '@/components/ui/company-logo'
@@ -96,8 +96,8 @@ export function MatchResultCard({
 
   const companyName = hit.companyName?.trim() || null
   const meta = [
-    formatIndustryDisplay(hit.industry) || null,
     hit.volumeEur ? formatReferenceVolume(hit.volumeEur) || '—' : null,
+    formatIndustryDisplay(hit.industry) || null,
   ]
     .filter(Boolean)
     .join(' · ')
@@ -173,7 +173,10 @@ export function MatchResultCard({
               </Button>
             </div>
             <Button type="button" variant="secondary" size="sm" className="h-8 shrink-0 text-xs" asChild>
-              <Link href={ROUTES.references.detail(hit.id)}>→ Details</Link>
+              <Link href={ROUTES.references.detail(hit.id)}>
+                <AppIcon icon={InformationCircleIcon} size={14} className="mr-1" />
+                Details
+              </Link>
             </Button>
           </div>
         ) : (
@@ -202,7 +205,10 @@ export function MatchResultCard({
               KI-Entwurf
             </Button>
             <Button type="button" variant="secondary" size="sm" className="h-8 text-xs" asChild>
-              <Link href={ROUTES.references.detail(hit.id)}>→ Details</Link>
+              <Link href={ROUTES.references.detail(hit.id)}>
+                <AppIcon icon={InformationCircleIcon} size={14} className="mr-1" />
+                Details
+              </Link>
             </Button>
             {dealId ? (
               <Button

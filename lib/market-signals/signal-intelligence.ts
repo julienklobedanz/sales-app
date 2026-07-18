@@ -214,14 +214,17 @@ export function buildSalesWhyNow(input: {
   if (input.signalKind === 'exec') {
     const roleLabel = after || 'neue Führungsrolle'
     if (transition.is_step_down && !transition.is_demission) {
-      return `${name} übernimmt ${roleLabel} bei ${company}. Auch bei Rückzug aus dem C-Level entstehen oft neue Prioritäten in den ersten 90 Tagen — guter Zeitpunkt für ein fokussiertes Gespräch zu ${solution}, bevor die Roadmap feststeht.`
+      return `${name} übernimmt ${roleLabel} bei ${company}. In den ersten 90 Tagen entstehen oft neue Prioritäten für ${solution}.`
     }
-    return `${name} wechselt auf den ${roleLabel}-Posten. Neue Entscheider strukturieren in den ersten 90 Tagen die IT-Infrastruktur um und evaluieren bestehende Dienstleister. Zeitfenster, ${solution} zu platzieren, bevor die Budgetplanung bei ${company} schließt.`
+    return `${name} wechselt auf den ${roleLabel}-Posten bei ${company}. Neue Entscheider evaluieren in den ersten 90 Tagen oft bestehende Dienstleister und ${solution}.`
   }
 
-  const hook = normalizeTitle(input.newsBody ?? input.changeSummary ?? '').slice(0, 120)
-  const fact = hook ? `${hook}. ` : ''
-  return `${fact}Veränderung bei ${company} erhöht kurzfristig den Bedarf an belastbaren Referenzen und einem klaren Business Case für ${solution} — ideal für einen konkreten Erstkontakt mit Entscheiderbezug.`
+  const hook = normalizeTitle(input.newsBody ?? input.changeSummary ?? '').slice(0, 140)
+  if (hook) {
+    const sentence = /[.!?]$/.test(hook) ? hook : `${hook}.`
+    return `${sentence} Das erhöht kurzfristig den Bedarf an einem klaren Business Case für ${solution}.`
+  }
+  return `Veränderung bei ${company} erhöht kurzfristig den Bedarf an belastbaren Referenzen für ${solution}.`
 }
 
 export function buildReferenceInsightLine(input: {

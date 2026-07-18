@@ -2,12 +2,19 @@ import { createHash } from 'crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { isMissingEnrichmentColumnsError, stripEnrichmentFields } from '@/lib/market-signals/enrichment-db'
 import { enrichSignal } from '@/lib/market-signals/enrich-signal-with-llm'
-import { fetchGoogleNewsRssItems } from '@/lib/market-signals/google-news-rss'
+import { fetchGoogleNewsRssItems, type GoogleNewsRssItem } from '@/lib/market-signals/google-news-rss'
 import {
+  formatSignalSourceLabel,
+  isLeadershipMoveTitle,
+  parseLeadershipMoveFromTitle,
+} from '@/lib/market-signals/leadership-move'
+import {
+  buildNewsroomRssQueries,
   buildSalesFocusedCompanyNewsRssQuery,
   isLowValueRssTitle,
   isRssPubDateWithinDays,
   RSS_MAX_AGE_DAYS_DEFAULT,
+  RSS_MAX_AGE_DAYS_LEADERSHIP,
 } from '@/lib/market-signals/sales-signal-relevance'
 
 export type CompanyNewsIngestCompanyRow = {
@@ -39,9 +46,20 @@ function contentHash(companyId: string, articleUrl: string): string {
   return createHash('sha256').update(`${companyId}|${articleUrl}`, 'utf8').digest('hex')
 }
 
+function execContentHash(companyId: string, personKey: string, articleUrl: string): string {
+  return createHash('sha256').update(`${companyId}|${personKey}|${articleUrl}`, 'utf8').digest('hex')
+}
+
 function publishedOnIso(itemPub: Date | null): string {
   const d = itemPub ?? new Date()
   return d.toISOString().slice(0, 10)
+}
+
+function normalizePersonKey(raw: string) {
+  return raw
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
 }
 
 export function isActiveDealStatus(raw: unknown): boolean {
@@ -57,14 +75,39 @@ export function isActiveDealStatus(raw: unknown): boolean {
 export type RunCompanyNewsIngestResult = {
   companiesScanned: number
   articlesInserted: number
+  leadershipMovesInserted: number
   errors: string[]
+}
+
+async function fetchMergedCompanyArticles(
+  companyName: string,
+  websiteHost: string | null,
+  opts: { signal: AbortSignal; maxItems: number }
+): Promise<GoogleNewsRssItem[]> {
+  const primary = buildSalesFocusedCompanyNewsRssQuery(companyName, websiteHost)
+  const newsroomQs = buildNewsroomRssQueries(companyName, websiteHost)
+  const queries = [primary, ...newsroomQs].filter(Boolean)
+  const perQuery = Math.max(4, Math.ceil(opts.maxItems / Math.max(1, queries.length)) + 2)
+
+  const batches = await Promise.all(
+    queries.map((q) =>
+      fetchGoogleNewsRssItems(q, { signal: opts.signal, maxItems: perQuery }).catch(() => [])
+    )
+  )
+
+  const byLink = new Map<string, GoogleNewsRssItem>()
+  for (const item of batches.flat()) {
+    if (item.link) byLink.set(item.link, item)
+  }
+  return Array.from(byLink.values()).slice(0, opts.maxItems)
 }
 
 /**
  * Lädt Google-News-RSS für Firmen im gewählten Ingest-Mode:
  * - all_accounts: alle Accounts der Organisation
  * - focus_only: nur Favoriten (is_favorite)
- * und legt neue Zeilen in market_signal_account_news an (Dedupe über content_hash).
+ * inkl. Newsroom/Presse-Queries über site:website_host.
+ * Leadership-Titel → market_signal_executive_events (Move), nicht nur Company-News.
  */
 export async function runCompanyNewsIngest(
   supabase: SupabaseClient,
@@ -80,10 +123,11 @@ export async function runCompanyNewsIngest(
   const ingestMode = options?.ingestMode ?? 'focus_only'
   const maxCompanies = Math.min(200, Math.max(1, options?.maxCompanies ?? 60))
   const perCompanyMax = Math.min(8, Math.max(1, options?.perCompanyMaxArticles ?? 5))
-  const maxAgeDays = Math.min(90, Math.max(7, options?.maxAgeDays ?? RSS_MAX_AGE_DAYS_DEFAULT))
+  const maxAgeDays = Math.min(180, Math.max(7, options?.maxAgeDays ?? RSS_MAX_AGE_DAYS_DEFAULT))
   const pauseMs = Math.max(0, options?.pauseMsBetweenCompanies ?? 400)
   const errors: string[] = []
   let articlesInserted = 0
+  let leadershipMovesInserted = 0
 
   const dealCompanyIds = new Set<string>()
   let dealQuery = supabase.from('deals').select('company_id,status,organization_id').not('company_id', 'is', null)
@@ -113,7 +157,12 @@ export async function runCompanyNewsIngest(
 
   const { data: allCompanies, error: coErr } = await coQuery.limit(8000)
   if (coErr) {
-    return { companiesScanned: 0, articlesInserted: 0, errors: [`companies: ${coErr.message}`] }
+    return {
+      companiesScanned: 0,
+      articlesInserted: 0,
+      leadershipMovesInserted: 0,
+      errors: [`companies: ${coErr.message}`],
+    }
   }
 
   const candidates =
@@ -140,27 +189,26 @@ export async function runCompanyNewsIngest(
   }
 
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 120_000)
+  const timeout = setTimeout(() => controller.abort(), 180_000)
 
   try {
     for (const company of uniqueList) {
       const host = hostFromWebsiteUrl(company.website_url)
-      const q = buildSalesFocusedCompanyNewsRssQuery(company.name, host)
-      if (!q) continue
       try {
-        const items = await fetchGoogleNewsRssItems(q, {
+        const items = await fetchMergedCompanyArticles(company.name, host, {
           signal: controller.signal,
-          maxItems: Math.min(20, perCompanyMax * 4),
+          maxItems: Math.min(28, perCompanyMax * 5),
         })
         let insertedForCompany = 0
         for (const item of items) {
           if (insertedForCompany >= perCompanyMax) break
-          const hash = contentHash(company.id, item.link)
-          const segment = segmentFromAccountStatus(company.account_status)
           const body = item.title.trim()
           if (body.length < 8) continue
           if (isLowValueRssTitle(body)) continue
-          if (!isRssPubDateWithinDays(item.pubDate, maxAgeDays)) continue
+
+          const leadership = isLeadershipMoveTitle(body)
+          const ageLimit = leadership ? RSS_MAX_AGE_DAYS_LEADERSHIP : maxAgeDays
+          if (!isRssPubDateWithinDays(item.pubDate, ageLimit)) continue
 
           const enrichment = await enrichSignal({
             title: body,
@@ -168,15 +216,70 @@ export async function runCompanyNewsIngest(
           })
           if (!enrichment.is_relevant) continue
 
+          const sourceLabel = formatSignalSourceLabel({
+            url: item.link,
+            sourceLabel: item.sourceLabel,
+            title: body,
+            companyName: company.name,
+          })
+
+          // Company-News mit Leadership → Move (auch ohne Champion-Watchlist)
+          if (leadership) {
+            const move = parseLeadershipMoveFromTitle(body, company.name)
+            const personName =
+              move.personName?.trim() ||
+              (move.titleAfter ? `Neuer ${move.titleAfter}` : 'Führungswechsel')
+            const personKey = normalizePersonKey(personName)
+            const hash = execContentHash(company.id, personKey, item.link)
+            const detectedAt =
+              item.pubDate && Number.isFinite(item.pubDate.getTime())
+                ? item.pubDate.toISOString()
+                : new Date().toISOString()
+
+            const execPayload = {
+              company_id: company.id,
+              person_name: personName,
+              person_title_before: move.titleBefore,
+              person_title_after: move.titleAfter,
+              change_summary: body,
+              detected_at: detectedAt,
+              event_kind: 'role_change',
+              source_url: item.link,
+              content_hash: hash,
+              signal_category: enrichment.signal_category === 'people' ? 'people' : enrichment.signal_category,
+              insight_signal_fact: enrichment.insight_signal_fact,
+              insight_why_now: enrichment.insight_why_now,
+              created_by: null,
+            }
+            let insErr = (await supabase.from('market_signal_executive_events').insert(execPayload)).error
+            if (insErr && isMissingEnrichmentColumnsError(insErr.message)) {
+              insErr = (
+                await supabase.from('market_signal_executive_events').insert(stripEnrichmentFields(execPayload))
+              ).error
+            }
+            if (insErr) {
+              const code = (insErr as { code?: string }).code
+              if (code !== '23505' && !/duplicate key|unique constraint/i.test(insErr.message)) {
+                errors.push(`${company.name}: ${insErr.message}`)
+              }
+            } else {
+              leadershipMovesInserted += 1
+              insertedForCompany += 1
+            }
+            continue
+          }
+
+          const hash = contentHash(company.id, item.link)
+          const segment = segmentFromAccountStatus(company.account_status)
           const insertPayload = {
             company_id: company.id,
             body,
-            source_label: item.sourceLabel?.trim() || 'Google News',
+            source_label: sourceLabel,
             published_on: publishedOnIso(item.pubDate),
             segment,
             source_url: item.link,
             content_hash: hash,
-            ingest_source: 'google_news_rss',
+            ingest_source: host && item.link.includes(host) ? 'newsroom_rss' : 'google_news_rss',
             signal_category: enrichment.signal_category,
             insight_signal_fact: enrichment.insight_signal_fact,
             insight_why_now: enrichment.insight_why_now,
@@ -211,6 +314,7 @@ export async function runCompanyNewsIngest(
   return {
     companiesScanned: uniqueList.length,
     articlesInserted,
+    leadershipMovesInserted,
     errors: errors.slice(0, 25),
   }
 }

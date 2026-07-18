@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  buildNewsroomRssQueries,
   buildSalesFocusedCompanyNewsRssQuery,
   hasSalesTriggerHint,
   isLowValueRssTitle,
   isRssPubDateWithinDays,
+  RSS_MAX_AGE_DAYS_LEADERSHIP,
 } from './sales-signal-relevance'
 
 describe('isLowValueRssTitle', () => {
@@ -45,5 +47,24 @@ describe('buildSalesFocusedCompanyNewsRssQuery', () => {
     const q = buildSalesFocusedCompanyNewsRssQuery('Aurubis', 'aurubis.com')
     expect(q).toContain('-Stellenanzeige')
     expect(q).toContain('Aurubis')
+  })
+})
+
+describe('buildNewsroomRssQueries', () => {
+  it('baut site:-Queries für Newsroom/Presse', () => {
+    const qs = buildNewsroomRssQueries('Apple', 'apple.com')
+    expect(qs.some((q) => q.includes('site:apple.com'))).toBe(true)
+    expect(qs.some((q) => /newsroom|presse|press/i.test(q))).toBe(true)
+  })
+
+  it('ohne Host leer', () => {
+    expect(buildNewsroomRssQueries('Apple', null)).toEqual([])
+  })
+})
+
+describe('RSS_MAX_AGE_DAYS_LEADERSHIP', () => {
+  it('liegt im Fenster 90–180 Tage', () => {
+    expect(RSS_MAX_AGE_DAYS_LEADERSHIP).toBeGreaterThanOrEqual(90)
+    expect(RSS_MAX_AGE_DAYS_LEADERSHIP).toBeLessThanOrEqual(180)
   })
 })

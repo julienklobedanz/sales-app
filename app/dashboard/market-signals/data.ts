@@ -54,6 +54,8 @@ export type MarketSignalsPageModel = {
   signalReadKeys: string[]
   activeDealCompanyIds: string[]
   championWatchlist: string[]
+  /** ISO-Timestamp des neuesten Signals (Exec oder News) — für „Zuletzt aktualisiert“. */
+  lastUpdatedAt: string | null
   referenceSnippetsByCompanyId: Record<
     string,
     Array<{
@@ -166,6 +168,7 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
       signalReadKeys: [],
       activeDealCompanyIds: [],
       championWatchlist: [],
+      lastUpdatedAt: null,
       referenceSnippetsByCompanyId: {},
       activeDeals: [],
     }
@@ -188,6 +191,7 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
       signalReadKeys: [],
       activeDealCompanyIds: [],
       championWatchlist: [],
+      lastUpdatedAt: null,
       referenceSnippetsByCompanyId: {},
       activeDeals: [],
     }
@@ -427,6 +431,34 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
     }
   }
 
+  const lastUpdatedMs = [
+    ...executives.map((row) => new Date(row.detectedAt).getTime()),
+    ...news.map((row) => {
+      const iso = row.publishedOn.includes('T') ? row.publishedOn : `${row.publishedOn}T12:00:00.000Z`
+      return new Date(iso).getTime()
+    }),
+  ].filter((t) => Number.isFinite(t) && t > 0)
+  const newestSignalAt =
+    lastUpdatedMs.length > 0 ? new Date(Math.max(...lastUpdatedMs)).toISOString() : null
+
+  const { data: ingestAudit } = await supabase
+    .from('audit_logs')
+    .select('timestamp, action_details')
+    .eq('org_id', orgId)
+    .eq('action', 'market_signals_ingest_run')
+    .order('timestamp', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  const auditAt = ingestAudit?.timestamp ? String(ingestAudit.timestamp) : null
+  const detailsAt =
+    ingestAudit?.action_details &&
+    typeof ingestAudit.action_details === 'object' &&
+    typeof (ingestAudit.action_details as { at?: unknown }).at === 'string'
+      ? String((ingestAudit.action_details as { at: string }).at)
+      : null
+  const lastUpdatedAt = detailsAt || auditAt || newestSignalAt
+
   return {
     senderFullName: (profile?.full_name as string | null) ?? null,
     executives,
@@ -436,6 +468,7 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
     signalReadKeys,
     activeDealCompanyIds,
     championWatchlist,
+    lastUpdatedAt,
     referenceSnippetsByCompanyId,
     activeDeals,
   }
