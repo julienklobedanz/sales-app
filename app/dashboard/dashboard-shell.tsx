@@ -194,6 +194,7 @@ export function DashboardShell({
             isOpen={ticketModalOpen}
             onOpenChange={setTicketModalOpen}
             type={ticketModalType}
+            defaultEmail={userEmail}
           />
         </SidebarProvider>
       </div>

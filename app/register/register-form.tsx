@@ -4,6 +4,7 @@ import { useActionState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { PasswordInput } from '@/components/ui/password-input'
 import { signUp, type SignUpResult } from './actions'
 
 function formAction(_prev: SignUpResult | null, formData: FormData) {
@@ -44,10 +45,9 @@ export function RegisterForm({ inviteToken = null }: { inviteToken?: string | nu
       </div>
       <div className="space-y-2">
         <Label htmlFor="password">Passwort</Label>
-        <Input
+        <PasswordInput
           id="password"
           name="password"
-          type="password"
           placeholder="Mindestens 12 Zeichen"
           required
           minLength={12}

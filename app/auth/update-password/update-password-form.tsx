@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/ui/password-input'
 import { Label } from '@/components/ui/label'
 import { updatePasswordAfterReset, type UpdatePasswordResult } from './actions'
 
@@ -20,10 +20,9 @@ export function UpdatePasswordForm() {
     <form action={formActionWithState} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="password">Neues Passwort</Label>
-        <Input
+        <PasswordInput
           id="password"
           name="password"
-          type="password"
           placeholder="••••••••"
           required
           minLength={12}
@@ -34,10 +33,9 @@ export function UpdatePasswordForm() {
       </div>
       <div className="space-y-2">
         <Label htmlFor="confirm">Passwort bestätigen</Label>
-        <Input
+        <PasswordInput
           id="confirm"
           name="confirm"
-          type="password"
           placeholder="••••••••"
           required
           minLength={12}
