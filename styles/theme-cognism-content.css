@@ -54,12 +54,12 @@
   padding-right: 0 !important;
 }
 
-/* Seitentitel (DashboardListPageHeader + inline h1) */
+/* Seitentitel (DashboardListPageHeader + inline h1) — text-2xl / semibold */
 .theme-cognism .cognism-page-content header h1,
 .theme-cognism .cognism-page-content > h1:first-child {
-  font-size: 1.875rem;
-  line-height: 2.25rem;
-  font-weight: 700;
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 600;
   letter-spacing: -0.025em;
   color: var(--foreground);
 }

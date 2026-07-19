@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState, useTransition } from 'react'
-import { Radar, RefreshCw, Settings } from 'lucide-react'
+import { RefreshCw, Settings } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { MarketSignalsFeed, type FeedSort } from '@/components/market-signals/market-signals-feed'
@@ -164,10 +164,9 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Radar className="size-5 text-primary" aria-hidden />
-            <h1 className="text-2xl font-semibold tracking-tight">{COPY.nav.marketSignals}</h1>
-          </div>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+            {COPY.nav.marketSignals}
+          </h1>
           <p className="text-sm text-muted-foreground">{COPY.marketSignals.pageSubtitle}</p>
           {hasWatchlist ? (
             <p className="text-[11px] text-muted-foreground/70">{briefingLine}</p>

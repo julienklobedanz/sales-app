@@ -40,7 +40,7 @@ export function RoleDashboardShell({
     <div className={cn('mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 pb-8')}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="flex flex-wrap items-center gap-2 text-xl font-semibold tracking-tight">
+          <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-tight text-foreground">
             {COPY.dashboard.home.shellGreeting} {firstName}
             <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[11.5px] font-semibold text-primary">
               {roleBadgeLabel(functionRole)}

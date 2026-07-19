@@ -11,9 +11,9 @@ export const DASHBOARD_SCROLL_AREA_CLASS =
 export const DASHBOARD_SCROLL_AREA_BLEED_CLASS =
   'flex min-h-0 w-full flex-1 flex-col'
 
-/** Einheitliche Seitentitel im Dashboard (Linear/Vercel-ähnliche Hierarchie). */
+/** Einheitliche Seitentitel im Dashboard (Listen + Home: text-2xl wie Marktsignale). */
 export const DASHBOARD_PAGE_TITLE_CLASS =
-  'text-2xl md:text-3xl font-semibold tracking-tight text-foreground'
+  'text-2xl font-semibold tracking-tight text-foreground'
 
 /** Einheitlicher Untertitel / Secondary Copy direkt unter Seitentiteln. */
 export const DASHBOARD_PAGE_SUBTITLE_CLASS =

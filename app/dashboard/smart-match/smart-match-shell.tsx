@@ -17,7 +17,6 @@ import { Search01Icon } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 import { COPY } from '@/lib/copy'
-import { dashboardFirstName } from '@/lib/dashboard-home/dashboard-home-pure'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
@@ -206,12 +205,10 @@ function SingleSelect({
 export function SmartMatchShell({
   deals,
   initialDealId,
-  greetingName = null,
   variant = 'page',
 }: {
   deals: DealRow[]
   initialDealId: string | null
-  greetingName?: string | null
   /** `embedded`: Drawer im Deal-Cockpit — fester Deal-Kontext, kein Seiten-Titel. */
   variant?: 'page' | 'embedded'
 }) {
@@ -345,15 +342,11 @@ export function SmartMatchShell({
 
   const hasSearched = loading || results !== null
   const showResultsPanel = sessionReady && hasSearched
-  const firstName =
-    dashboardFirstName(greetingName) || COPY.dashboard.home.shellGreetingFallback
 
   return (
     <div className={embedded ? 'space-y-3' : 'max-w-[1000px] space-y-4'}>
       {!embedded ? (
-        <h1 className={DASHBOARD_PAGE_TITLE_CLASS}>
-          {COPY.dashboard.home.shellGreeting} {firstName}
-        </h1>
+        <h1 className={DASHBOARD_PAGE_TITLE_CLASS}>{COPY.nav.match}</h1>
       ) : null}
 
       <section className="space-y-4">

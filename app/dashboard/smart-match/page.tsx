@@ -22,22 +22,10 @@ export default async function SmartMatchPage({
   } = await supabase.auth.getUser()
   if (!user) redirect(ROUTES.login)
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('full_name')
-    .eq('id', user.id)
-    .maybeSingle()
-
   const params = await searchParams
   const deals = await getDeals()
   const wanted = params.deal?.trim()
   const initialDealId = wanted && deals.some((d) => d.id === wanted) ? wanted : null
 
-  return (
-    <SmartMatchShell
-      deals={deals}
-      initialDealId={initialDealId}
-      greetingName={profile?.full_name ?? user.user_metadata?.full_name ?? null}
-    />
-  )
+  return <SmartMatchShell deals={deals} initialDealId={initialDealId} />
 }
