@@ -84,9 +84,13 @@ import {
 } from '@/lib/accounts/accounts-list-view-store'
 import { type CompanyEntityKind, type NdaDisplayStatus, partnerCategoryLabel } from '@/lib/accounts/company-entity'
 import { NdaStatusBadge } from './components/nda-status-badge'
-import { AccountCardNdaLine } from './components/account-card-nda-line'
 import { AccountStatusPicker } from './components/account-status-picker'
 import type { CompanyAccountStatusValue } from '@/lib/accounts/company-account-status'
+import type { AccountCardPrimaryAction } from '@/lib/accounts/account-card-primary-action'
+import {
+  accountStatusSortRank,
+  nextUrgencySortKey,
+} from '@/lib/accounts/account-status-sort'
 import { useCrmOAuthCallback } from '@/hooks/use-crm-oauth-callback'
 import { getHubSpotConnectHref } from '@/lib/crm/hubspot/oauth-return'
 import { toast } from 'sonner'
@@ -112,6 +116,9 @@ export type CompanyCard = {
   stakeholder_count?: number | null
   strategy_filled?: boolean | null
   signal_count?: number | null
+  primary_action?: AccountCardPrimaryAction | null
+  secondary_meta?: string | null
+  sort_urgency_at?: string | null
 }
 
 export function CompaniesGrid({
@@ -281,9 +288,12 @@ export function CompaniesGrid({
       })
     return [...searched].sort((a, b) => {
       if (sortMode === 'az') return String(a.name ?? '').localeCompare(String(b.name ?? ''), 'de')
-      const scoreA = (a.signal_count ?? 0) * 100 + (a.open_deals_count ?? 0) * 10 + (a.reference_count ?? 0)
-      const scoreB = (b.signal_count ?? 0) * 100 + (b.open_deals_count ?? 0) * 10 + (b.reference_count ?? 0)
-      if (scoreA !== scoreB) return scoreB - scoreA
+      const rankA = accountStatusSortRank(a.account_status)
+      const rankB = accountStatusSortRank(b.account_status)
+      if (rankA !== rankB) return rankA - rankB
+      const urgencyA = nextUrgencySortKey([a.sort_urgency_at, a.primary_action?.date])
+      const urgencyB = nextUrgencySortKey([b.sort_urgency_at, b.primary_action?.date])
+      if (urgencyA !== urgencyB) return urgencyA - urgencyB
       return String(a.name ?? '').localeCompare(String(b.name ?? ''), 'de')
     })
   }, [
@@ -325,20 +335,25 @@ export function CompaniesGrid({
     ? COPY.accounts.searchPartnersPlaceholder
     : COPY.accounts.searchCompaniesPlaceholder
 
-  function accountMetricsLine(company: CompanyCard): string {
-    const parts = [
-      `${company.open_deals_count ?? 0} Deal${(company.open_deals_count ?? 0) === 1 ? '' : 's'}`,
-      `${company.stakeholder_count ?? 0} Stakeholder`,
-      `${company.signal_count ?? 0} Signal${(company.signal_count ?? 0) === 1 ? '' : 'e'}`,
-      `${company.reference_count ?? 0} Referenz${(company.reference_count ?? 0) === 1 ? '' : 'en'}`,
-    ]
-    return parts.join(' · ')
+  function primaryLineClass(primary: AccountCardPrimaryAction): string {
+    // Fallback/Signal = Meta-Stil wie Secondary (AT&T); Risk-Zeilen etwas größer, aber nicht fett.
+    if (primary.kind === 'fallback' || primary.kind === 'signal') {
+      return 'line-clamp-2 text-xs font-normal leading-snug text-muted-foreground'
+    }
+    if (primary.tone === 'danger') {
+      return 'line-clamp-2 text-sm font-normal leading-snug text-red-600/80 dark:text-red-400/75'
+    }
+    if (primary.tone === 'warning') {
+      return 'line-clamp-2 text-sm font-normal leading-snug text-amber-700/85 dark:text-amber-400/80'
+    }
+    return 'line-clamp-2 text-xs font-normal leading-snug text-muted-foreground'
   }
 
   function renderAccountCardBody(company: CompanyCard) {
-    const employeeText = employeeLabel(company.employee_count)
+    const primary = company.primary_action
+    const secondary = (company.secondary_meta ?? '').trim()
     return (
-      <div className="p-3.5">
+      <div className="flex min-h-[132px] flex-col p-3.5">
         <div className="flex items-start gap-2.5">
           <CompanyLogo
             src={company.logo_url}
@@ -348,30 +363,16 @@ export function CompaniesGrid({
             fallbackIconSize={20}
             fallbackText={company.name}
           />
-          <div className="min-w-0 flex-1 space-y-1">
+          <div className="min-w-0 flex-1 space-y-1.5">
             <CardTitle className="truncate text-left text-base font-semibold leading-tight">
               {company.name}
             </CardTitle>
-            <AccountCardNdaLine ndaStatus={company.nda_status ?? 'none'} />
-            {(company.industry || employeeText) && (
-              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs text-muted-foreground">
-                {company.industry ? (
-                  <div className="flex min-w-0 max-w-full items-center gap-1">
-                    <AppIcon icon={Building2} size={12} className="shrink-0 opacity-70" />
-                    <span className="truncate">{formatIndustryDisplay(company.industry)}</span>
-                  </div>
-                ) : null}
-                {employeeText ? (
-                  <div className="flex items-center gap-1">
-                    <AppIcon icon={Users} size={12} className="shrink-0 opacity-70" />
-                    <span className="whitespace-nowrap">{employeeText}</span>
-                  </div>
-                ) : null}
-              </div>
+            {primary ? <p className={primaryLineClass(primary)}>{primary.label}</p> : null}
+            {secondary ? (
+              <p className="line-clamp-1 text-xs text-muted-foreground">{secondary}</p>
+            ) : (
+              <p className="text-xs text-transparent">—</p>
             )}
-            <p className="text-[11px] leading-snug text-muted-foreground">
-              {accountMetricsLine(company)}
-            </p>
           </div>
           <div className="relative -mt-0.5 shrink-0">
             <AccountStatusPicker

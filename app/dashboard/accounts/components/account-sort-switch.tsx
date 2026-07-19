@@ -13,7 +13,7 @@ type Props = {
 
 export function AccountSortSwitch({ value, onChange }: Props) {
   const isActivity = value === 'activity'
-  const label = isActivity ? 'Letzte Aktivität' : 'A-Z'
+  const label = isActivity ? 'Nach Priorität' : 'A-Z'
 
   return (
     <AccountsToolbarTooltip label={label}>
@@ -22,7 +22,7 @@ export function AccountSortSwitch({ value, onChange }: Props) {
         role="switch"
         aria-checked={isActivity}
         aria-label={
-          isActivity ? 'Nach letzter Aktivität sortieren' : 'Alphabetisch sortieren (A-Z)'
+          isActivity ? 'Nach Priorität sortieren' : 'Alphabetisch sortieren (A-Z)'
         }
         onClick={() => onChange(isActivity ? 'az' : 'activity')}
         className="relative inline-flex h-8 w-[3.25rem] shrink-0 cursor-pointer items-center rounded-full border border-border/80 bg-muted/50 p-0.5 transition-colors hover:bg-muted/70"

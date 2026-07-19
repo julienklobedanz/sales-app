@@ -45,6 +45,8 @@ export interface OrganizationCrmConnectionRow {
   refresh_token_enc: string | null
   expires_at: string | null
   external_account_id: string | null
+  /** HubSpot Deal-Property für Vertragsende; null/leer = Default. */
+  hubspot_contract_end_property?: string | null
   connected_by: string | null
   last_sync_at: string | null
   created_at: string

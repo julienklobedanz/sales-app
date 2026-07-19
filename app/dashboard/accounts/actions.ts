@@ -14,6 +14,7 @@ import {
   parseCompaniesImportRow,
 } from '@/lib/accounts/companies-import-parse'
 import { enrichBulkImportRowFromBrandfetch } from '@/lib/accounts/resolve-company-for-import'
+import { ensureBrandfetchDarkLogoUrl } from '@/lib/brandfetch/logo-theme-url'
 import { formatIndustryDisplay, resolveIndustryId } from '@/lib/constants/industries'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { profileIsSalesRestricted } from '@/lib/roles/profile-guards'
@@ -905,7 +906,7 @@ export async function createCompany(payload: {
       website_url: payload.website_url?.trim() || null,
       industry: payload.industry?.trim() || null,
       headquarters: payload.headquarters?.trim() || null,
-      logo_url: payload.logo_url?.trim() || null,
+      logo_url: ensureBrandfetchDarkLogoUrl(payload.logo_url?.trim() || null),
       employee_count: payload.employee_count ?? null,
       description: payload.description?.trim() || null,
       account_status: normalizeCompanyAccountStatus(payload.account_status),
@@ -955,7 +956,7 @@ export async function createPartner(payload: {
     website_url: payload.website_url?.trim() || null,
     industry: payload.industry?.trim() || null,
     headquarters: payload.headquarters?.trim() || null,
-    logo_url: payload.logo_url?.trim() || null,
+    logo_url: ensureBrandfetchDarkLogoUrl(payload.logo_url?.trim() || null),
     description: payload.description?.trim() || null,
   }
 
@@ -1090,7 +1091,7 @@ export async function bulkCreateCompaniesFromSheet(
         enriched.employeeCount != null && Number.isFinite(enriched.employeeCount)
           ? enriched.employeeCount
           : null,
-      logo_url: enriched.logo_url,
+      logo_url: ensureBrandfetchDarkLogoUrl(enriched.logo_url),
       description: enriched.description?.trim() || null,
       account_status: null,
       ...(entityKind === 'partner' ? { partner_category } : {}),
@@ -1156,7 +1157,7 @@ export async function updateCompany(payload: {
       website_url: payload.website_url?.trim() || null,
       industry: payload.industry?.trim() || null,
       headquarters: payload.headquarters?.trim() || null,
-      logo_url: payload.logo_url?.trim() || null,
+      logo_url: ensureBrandfetchDarkLogoUrl(payload.logo_url?.trim() || null),
       employee_count: payload.employee_count ?? null,
       description: payload.description?.trim() || null,
       account_status,

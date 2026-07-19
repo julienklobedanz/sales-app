@@ -5,6 +5,14 @@ import { CompaniesGrid } from './companies-grid'
 import { resolveNdaDisplayStatus, type NdaDisplayStatus } from '@/lib/accounts/company-entity'
 import type { CompanyAccountStatusValue } from '@/lib/accounts/company-account-status'
 import { normalizeCompanyAccountStatus } from '@/lib/accounts/company-account-status'
+import {
+  buildAccountCardSecondaryMeta,
+  resolveAccountCardPrimaryAction,
+  type NextApprovalExpiry,
+  type NextContractEnd,
+} from '@/lib/accounts/account-card-primary-action'
+import { isContractEndWithinWarningWindow } from '@/lib/accounts/contract-end'
+import { NDA_EXPIRY_WARNING_DAYS, ndaDaysUntilExpiry } from '@/lib/accounts/nda-expiry'
 import { syncComputedAccountStatuses } from '@/lib/accounts/sync-computed-account-statuses'
 import { getOrganizationCrmConnectionPublicStatus } from '@/lib/crm/connections'
 import { isHubSpotConfigured } from '@/lib/crm/hubspot/config'
@@ -149,6 +157,7 @@ export default async function AccountsPage() {
   const companyIds = (companies ?? []).map((c) => c.id)
 
   const ndaStatusByCompany: Record<string, NdaDisplayStatus> = {}
+  const nextNdaExpiryByCompany: Record<string, string | null> = {}
   if (companyIds.length) {
     const ndaRes = await supabase
       .from('nda_agreements')
@@ -172,6 +181,17 @@ export default async function AccountsPage() {
       }
       for (const [companyId, rows] of Object.entries(grouped)) {
         ndaStatusByCompany[companyId] = resolveNdaDisplayStatus(rows)
+        let soonest: string | null = null
+        let soonestDays = Number.POSITIVE_INFINITY
+        for (const row of rows) {
+          if (!row.valid_until) continue
+          const days = ndaDaysUntilExpiry(row.valid_until)
+          if (days < soonestDays) {
+            soonestDays = days
+            soonest = row.valid_until
+          }
+        }
+        nextNdaExpiryByCompany[companyId] = soonest
       }
     }
   }
@@ -197,7 +217,7 @@ export default async function AccountsPage() {
       companyIds.length
         ? supabase
             .from('deals')
-            .select('id, company_id, status, expiry_date, updated_at, created_at')
+            .select('id, company_id, status, title, expiry_date, contract_end_date, updated_at, created_at')
             .in('company_id', companyIds)
             .eq('organization_id', orgId)
         : Promise.resolve({
@@ -205,7 +225,9 @@ export default async function AccountsPage() {
               id: string
               company_id: string | null
               status: string
+              title: string
               expiry_date: string | null
+              contract_end_date: string | null
               updated_at: string | null
               created_at: string | null
             }[] | null,
@@ -213,13 +235,14 @@ export default async function AccountsPage() {
       companyIds.length
         ? supabase
             .from('references')
-            .select('id, company_id, approval_expires_at, approval_grace_until')
+            .select('id, company_id, title, approval_expires_at, approval_grace_until')
             .in('company_id', companyIds)
             .is('deleted_at', null)
         : Promise.resolve({
             data: [] as {
               id: string
               company_id: string | null
+              title: string | null
               approval_expires_at: string | null
               approval_grace_until: string | null
             }[] | null,
@@ -247,21 +270,78 @@ export default async function AccountsPage() {
       companyIds.length
         ? supabase
             .from('market_signal_executive_events')
-            .select('company_id')
+            .select(
+              'company_id, change_summary, person_name, person_title_after, detected_at, insight_signal_fact'
+            )
             .in('company_id', companyIds)
+            .order('detected_at', { ascending: false })
             .limit(4000)
-        : Promise.resolve({ data: [] as { company_id: string | null }[] | null }),
+        : Promise.resolve({
+            data: [] as {
+              company_id: string | null
+              change_summary: string
+              person_name: string
+              person_title_after: string | null
+              detected_at: string
+              insight_signal_fact: string | null
+            }[] | null,
+          }),
       companyIds.length
         ? supabase
             .from('market_signal_account_news')
-            .select('company_id')
+            .select('company_id, body, insight_signal_fact, published_on')
             .in('company_id', companyIds)
+            .order('published_on', { ascending: false })
             .limit(4000)
-        : Promise.resolve({ data: [] as { company_id: string | null }[] | null }),
+        : Promise.resolve({
+            data: [] as {
+              company_id: string | null
+              body: string
+              insight_signal_fact: string | null
+              published_on: string
+            }[] | null,
+          }),
     ])
 
-  const dealsData = dealsRows.data ?? []
-  const refsData = refRows.data ?? []
+  type DealEnrichRow = {
+    id: string
+    company_id: string | null
+    status: string
+    title?: string
+    expiry_date: string | null
+    contract_end_date?: string | null
+    updated_at: string | null
+    created_at: string | null
+  }
+
+  let dealsData = (dealsRows.data ?? []) as DealEnrichRow[]
+  if (
+    dealsRows &&
+    'error' in dealsRows &&
+    dealsRows.error &&
+    String(dealsRows.error.message ?? '').includes('contract_end_date')
+  ) {
+    const fallback = companyIds.length
+      ? await supabase
+          .from('deals')
+          .select('id, company_id, status, title, expiry_date, updated_at, created_at')
+          .in('company_id', companyIds)
+          .eq('organization_id', orgId)
+      : { data: [] as DealEnrichRow[] }
+    dealsData = ((fallback.data ?? []) as DealEnrichRow[]).map((d) => ({
+      ...d,
+      contract_end_date: null,
+    }))
+  }
+
+  type RefEnrichRow = {
+    id: string
+    company_id: string | null
+    title?: string | null
+    approval_expires_at: string | null
+    approval_grace_until: string | null
+  }
+  const refsData = (refRows.data ?? []) as RefEnrichRow[]
 
   let effectiveStatusByCompany: Record<string, CompanyAccountStatusValue | null> = {}
   try {
@@ -320,31 +400,117 @@ export default async function AccountsPage() {
     strategyFilledByCompany[st.company_id] = filled
   }
   const signalCountByCompany: Record<string, number> = {}
+  const latestSignalByCompany: Record<string, { at: number; summary: string }> = {}
+
   for (const row of executiveSignalRows.data ?? []) {
     if (!row.company_id) continue
     signalCountByCompany[row.company_id] = (signalCountByCompany[row.company_id] ?? 0) + 1
+    const summary =
+      (row.insight_signal_fact ?? '').trim() ||
+      (row.change_summary ?? '').trim() ||
+      [row.person_name, row.person_title_after].filter(Boolean).join(' · ')
+    if (!summary) continue
+    const at = new Date(row.detected_at).getTime()
+    const prev = latestSignalByCompany[row.company_id]
+    if (!prev || at > prev.at) {
+      latestSignalByCompany[row.company_id] = { at, summary: summary.slice(0, 80) }
+    }
   }
   for (const row of newsSignalRows.data ?? []) {
     if (!row.company_id) continue
     signalCountByCompany[row.company_id] = (signalCountByCompany[row.company_id] ?? 0) + 1
+    const summary =
+      (row.insight_signal_fact ?? '').trim() || (row.body ?? '').trim().slice(0, 80)
+    if (!summary) continue
+    const at = new Date(`${row.published_on}T12:00:00`).getTime()
+    const prev = latestSignalByCompany[row.company_id]
+    if (!prev || at > prev.at) {
+      latestSignalByCompany[row.company_id] = { at, summary: summary.slice(0, 80) }
+    }
+  }
+
+  const nextApprovalByCompany: Record<string, NextApprovalExpiry | null> = {}
+  const now = new Date()
+  for (const r of refsData) {
+    if (!r.company_id) continue
+    const candidates = [r.approval_expires_at, r.approval_grace_until].filter(
+      (v): v is string => Boolean(v?.trim())
+    )
+    for (const expiresAt of candidates) {
+      const end = new Date(expiresAt.includes('T') ? expiresAt : `${expiresAt}T12:00:00`)
+      if (Number.isNaN(end.getTime())) continue
+      const days = Math.round((end.getTime() - now.getTime()) / (24 * 60 * 60 * 1000))
+      if (days > NDA_EXPIRY_WARNING_DAYS) continue
+      const prev = nextApprovalByCompany[r.company_id]
+      if (!prev || new Date(expiresAt).getTime() < new Date(prev.expiresAt).getTime()) {
+        nextApprovalByCompany[r.company_id] = {
+          title: r.title ?? null,
+          expiresAt,
+        }
+      }
+    }
+  }
+
+  const nextContractByCompany: Record<string, NextContractEnd | null> = {}
+  for (const d of dealsData) {
+    if (!d.company_id || d.status !== 'won') continue
+    const endDate = d.contract_end_date ?? null
+    if (!isContractEndWithinWarningWindow(endDate, now)) continue
+    const prev = nextContractByCompany[d.company_id]
+    if (
+      !prev ||
+      new Date(endDate!).getTime() < new Date(prev.contractEndDate).getTime()
+    ) {
+      nextContractByCompany[d.company_id] = {
+        title: d.title ?? 'Vertrag',
+        contractEndDate: endDate!,
+      }
+    }
   }
 
   const enrichedCompanies =
-    (companies ?? []).map((c) => ({
-      ...c,
-      entity_kind: (c.entity_kind === 'partner' ? 'partner' : 'account') as 'account' | 'partner',
-      account_status:
-        effectiveStatusByCompany[c.id] ?? normalizeCompanyAccountStatus(c.account_status),
-      open_deals_count: dealCountByCompany[c.id] ?? 0,
-      reference_count: refCountByCompany[c.id] ?? 0,
-      stakeholder_count: stakeholderCountByCompany[c.id] ?? 0,
-      strategy_filled: strategyFilledByCompany[c.id] ?? false,
-      signal_count: signalCountByCompany[c.id] ?? 0,
-      nda_status: ndaStatusByCompany[c.id] ?? 'none',
-      linked_account_name: c.linked_account_id
-        ? linkedAccountNameById[c.linked_account_id] ?? null
-        : null,
-    })) ?? []
+    (companies ?? []).map((c) => {
+      const accountStatus =
+        effectiveStatusByCompany[c.id] ?? normalizeCompanyAccountStatus(c.account_status)
+      const openDealsCount = dealCountByCompany[c.id] ?? 0
+      const referenceCount = refCountByCompany[c.id] ?? 0
+      const ndaStatus = ndaStatusByCompany[c.id] ?? 'none'
+      const primary_action = resolveAccountCardPrimaryAction({
+        accountStatus,
+        nextApproval: nextApprovalByCompany[c.id] ?? null,
+        nextContract: nextContractByCompany[c.id] ?? null,
+        nextNdaExpiry: nextNdaExpiryByCompany[c.id] ?? null,
+        ndaStatus,
+        latestSignalSummary: latestSignalByCompany[c.id]?.summary ?? null,
+        openDealsCount,
+        referenceCount,
+      })
+      return {
+        ...c,
+        entity_kind: (c.entity_kind === 'partner' ? 'partner' : 'account') as 'account' | 'partner',
+        account_status: accountStatus,
+        open_deals_count: openDealsCount,
+        reference_count: referenceCount,
+        stakeholder_count: stakeholderCountByCompany[c.id] ?? 0,
+        strategy_filled: strategyFilledByCompany[c.id] ?? false,
+        signal_count: signalCountByCompany[c.id] ?? 0,
+        nda_status: ndaStatus,
+        linked_account_name: c.linked_account_id
+          ? linkedAccountNameById[c.linked_account_id] ?? null
+          : null,
+        primary_action,
+        secondary_meta: buildAccountCardSecondaryMeta({
+          ndaStatus,
+          openDealsCount,
+          referenceCount,
+          primaryKind: primary_action.kind,
+        }),
+        sort_urgency_at:
+          nextApprovalByCompany[c.id]?.expiresAt ??
+          nextContractByCompany[c.id]?.contractEndDate ??
+          null,
+      }
+    }) ?? []
 
   return (
     <div className="flex flex-col space-y-6">

@@ -1,6 +1,5 @@
-"use client"
-
 import { CompanyLogo } from "@/components/ui/company-logo"
+import { rewriteBrandfetchLogoUrlForLightBackground } from '@/lib/brandfetch/logo-theme-url'
 
 export function AccountCell({
   companyName,
@@ -17,7 +16,7 @@ export function AccountCell({
   return (
     <div className="flex h-9 min-w-0 items-center gap-2.5">
       <CompanyLogo
-        src={companyLogoUrl}
+        src={rewriteBrandfetchLogoUrlForLightBackground(companyLogoUrl) ?? companyLogoUrl}
         companyId={companyId}
         fallbackText={companyName}
         containerClassName="size-9 shrink-0 rounded-md"

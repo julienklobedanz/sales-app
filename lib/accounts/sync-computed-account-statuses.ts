@@ -20,6 +20,7 @@ type DealRow = {
   company_id: string | null
   status: string
   expiry_date: string | null
+  contract_end_date?: string | null
   updated_at: string | null
   created_at: string | null
 }
@@ -31,7 +32,8 @@ type ReferenceRow = {
 }
 
 /**
- * Wendet berechneten Status auf Accounts an, deren Status nicht manuell gesetzt wurde.
+ * Wendet berechneten Status auf Accounts an.
+ * Manuelle Status bleiben erhalten — außer At-Risk-Druck (Freigabe/Vertrag) überschreibt auf at_risk.
  */
 export async function syncComputedAccountStatuses(
   supabase: SupabaseClient,
@@ -63,20 +65,33 @@ export async function syncComputedAccountStatuses(
     const companyDeals = dealsByCompany.get(company.id) ?? []
     const companyRefs = refsByCompany.get(company.id) ?? []
 
-    if (company.account_status_source === 'manual') {
-      const manual = company.account_status as CompanyAccountStatusValue | null
-      effectiveStatus[company.id] = manual
-      continue
-    }
-
     const computed = computeAccountStatusFromSignals({
       crmAccountId: company.crm_account_id,
       deals: companyDeals.map((d) => ({
         status: d.status,
         closedOn: dealClosedOnForStatus(d),
+        contractEndDate: d.contract_end_date ?? null,
       })),
       references: companyRefs,
     })
+
+    if (company.account_status_source === 'manual') {
+      if (computed === 'at_risk') {
+        effectiveStatus[company.id] = 'at_risk'
+        if (company.account_status !== 'at_risk') {
+          await supabase
+            .from('companies')
+            .update({
+              account_status: 'at_risk',
+              account_status_source: 'crm',
+            } as { account_status: string | null; account_status_source: string })
+            .eq('id', company.id)
+        }
+      } else {
+        effectiveStatus[company.id] = company.account_status as CompanyAccountStatusValue | null
+      }
+      continue
+    }
 
     effectiveStatus[company.id] = computed
 

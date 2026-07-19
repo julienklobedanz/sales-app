@@ -971,6 +971,7 @@ export type Database = {
           crm_source: string | null
           crm_stage: string | null
           crm_synced_at: string | null
+          contract_end_date: string | null
           expiry_date: string | null
           id: string
           incumbent_provider: string | null
@@ -994,6 +995,7 @@ export type Database = {
           crm_source?: string | null
           crm_stage?: string | null
           crm_synced_at?: string | null
+          contract_end_date?: string | null
           expiry_date?: string | null
           id?: string
           incumbent_provider?: string | null
@@ -1017,6 +1019,7 @@ export type Database = {
           crm_source?: string | null
           crm_stage?: string | null
           crm_synced_at?: string | null
+          contract_end_date?: string | null
           expiry_date?: string | null
           id?: string
           incumbent_provider?: string | null
@@ -1685,6 +1688,7 @@ export type Database = {
           created_at: string
           expires_at: string | null
           external_account_id: string | null
+          hubspot_contract_end_property: string | null
           id: string
           last_sync_at: string | null
           organization_id: string
@@ -1699,6 +1703,7 @@ export type Database = {
           created_at?: string
           expires_at?: string | null
           external_account_id?: string | null
+          hubspot_contract_end_property?: string | null
           id?: string
           last_sync_at?: string | null
           organization_id: string
@@ -1713,6 +1718,7 @@ export type Database = {
           created_at?: string
           expires_at?: string | null
           external_account_id?: string | null
+          hubspot_contract_end_property?: string | null
           id?: string
           last_sync_at?: string | null
           organization_id?: string

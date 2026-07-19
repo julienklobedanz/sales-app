@@ -1,4 +1,5 @@
 import type { CompanyAccountStatusValue } from './company-account-status'
+import { isContractEndWithinWarningWindow } from './contract-end'
 import { NDA_EXPIRY_WARNING_DAYS } from './nda-expiry'
 
 export const ACTIVE_CUSTOMER_WON_WINDOW_MS = 2 * 365 * 24 * 60 * 60 * 1000
@@ -7,6 +8,8 @@ export type DealStatusInput = {
   status: string
   /** Close-Datum aus CRM (expiry_date) oder Fallback */
   closedOn: string | null
+  /** Vertrags-/Renewal-Ende (nicht Closing) */
+  contractEndDate?: string | null
 }
 
 export type ReferenceExpiryInput = {
@@ -47,6 +50,13 @@ function referenceExpiresSoon(ref: ReferenceExpiryInput, now: Date): boolean {
   return false
 }
 
+function hasExpiringWonContract(deals: DealStatusInput[], now: Date): boolean {
+  return deals.some(
+    (d) =>
+      d.status === 'won' && isContractEndWithinWarningWindow(d.contractEndDate ?? null, now)
+  )
+}
+
 function latestWonDate(deals: DealStatusInput[], now: Date): Date | null {
   let latest: Date | null = null
   for (const deal of deals) {
@@ -59,8 +69,8 @@ function latestWonDate(deals: DealStatusInput[], now: Date): Date | null {
 }
 
 /**
- * Berechnet den Account-Status aus CRM-/Deal-/Referenz-Signalen (Phase 2).
- * Priorität: At Risk (Referenz) → Aktiver Kunde → Ehemaliger → Target.
+ * Berechnet den Account-Status aus CRM-/Deal-/Referenz-Signalen.
+ * Priorität: At Risk (Referenz oder Vertragsende ≤9 Monate) → Aktiver Kunde → Ehemaliger → Target.
  */
 export function computeAccountStatusFromSignals(
   input: ComputeAccountStatusInput
@@ -69,6 +79,8 @@ export function computeAccountStatusFromSignals(
 
   const hasExpiringReference = input.references.some((r) => referenceExpiresSoon(r, now))
   if (hasExpiringReference) return 'at_risk'
+
+  if (hasExpiringWonContract(input.deals, now)) return 'at_risk'
 
   const latestWon = latestWonDate(input.deals, now)
   if (latestWon) {
@@ -89,7 +101,6 @@ export function computeAccountStatusFromSignals(
   const hasAnyDeal = input.deals.length > 0
   if (!hasCrmLink && !hasAnyDeal) return 'target'
 
-  // CRM-verknüpft oder Deal-Historie ohne klares Won/Lost-Signal → Target bis manuell gesetzt
   if (hasCrmLink || hasAnyDeal) return 'target'
 
   return 'target'

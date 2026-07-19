@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { mapBrandfetchIndustriesArrayToGermanCategory } from '@/lib/brandfetch/map-brandfetch-industry-to-de'
+import { rewriteBrandfetchLogoUrlForLightBackground } from '@/lib/brandfetch/logo-theme-url'
 
 export type BrandfetchCompanyPayload = {
   companyName: string | null
@@ -206,44 +207,131 @@ async function fetchHeadquartersFallbackByName(companyName: string, domain: stri
 type BrandfetchLogoJson = {
   theme?: string | null
   type?: string | null
-  formats?: { src?: string | null; format?: string | null; width?: number | null }[]
+  formats?: {
+    src?: string | null
+    format?: string | null
+    width?: number | null
+    background?: string | null
+  }[]
 }
 
-/** Alle Logo-URLs aus Brandfetch (svg/png bevorzugt, Reihenfolge = Priorität). */
-export function listLogoUrlsFromBrandfetchJson(json: {
-  logos?: BrandfetchLogoJson[] | null
-}): string[] {
-  const candidates: string[] = []
+type RankedLogoCandidate = {
+  src: string
+  score: number
+}
+
+/**
+ * Score for logos shown on light/white UI (Referenzen, Accounts, …).
+ * Brandfetch: theme "dark" = dunkles Logo für helle Hintergründe; "light" = helles Logo für dunkle Hintergründe.
+ */
+export function scoreBrandfetchLogoCandidate(opts: {
+  theme?: string | null
+  type?: string | null
+  format?: string | null
+  background?: string | null
+}): number {
+  const theme = String(opts.theme ?? '').trim().toLowerCase()
+  const type = String(opts.type ?? '').trim().toLowerCase()
+  const format = String(opts.format ?? '').trim().toLowerCase()
+  const background = String(opts.background ?? '').trim().toLowerCase()
+
+  let score = 0
+  if (theme === 'dark') score += 300
+  else if (theme === 'light') score += 0
+  else score += 120
+
+  // Icon oft mit eigenem (hellem) Hintergrund — gut in weißen Listen-Zellen; Logo für Wortmarken.
+  if (type === 'logo') score += 40
+  else if (type === 'icon') score += 35
+  else if (type === 'symbol') score += 15
+  else score += 5
+
+  if (format === 'svg') score += 3
+  else if (format === 'png') score += 2
+  else if (format === 'webp') score += 1
+
+  // Opaker heller Hintergrund hinter dunklem Markenzeichen (z. B. Apple-Icon) bleibt sichtbar.
+  if (background && background !== 'transparent' && theme === 'dark') score += 8
+
+  return score
+}
+
+/** Alle Logo-URLs aus Brandfetch, bestes zuerst (dunkle Themes vor hellen). */
+export function listLogoUrlsFromBrandfetchJson(
+  json: {
+    logos?: BrandfetchLogoJson[] | null
+  },
+  options?: { forLightBackground?: boolean }
+): string[] {
+  const ranked: RankedLogoCandidate[] = []
   for (const logo of json.logos ?? []) {
-    const formats = [...(logo.formats ?? [])].sort((a, b) => {
-      const score = (f: typeof a) => {
-        const fmt = String(f?.format ?? '').toLowerCase()
-        if (fmt === 'svg') return 0
-        if (fmt === 'png') return 1
-        return 2
-      }
-      return score(a) - score(b)
-    })
+    const theme = String(logo.theme ?? '').trim().toLowerCase()
+    // Helle UI (weiße Logo-Zellen): light-Theme nur als letzter Fallback, wenn kein dark existiert.
+    if (options?.forLightBackground !== false && theme === 'light') {
+      // vorerst mit niedrigem Score aufnehmen; ggf. unten entfernen
+    }
+    const formats = [...(logo.formats ?? [])]
     for (const fmt of formats) {
       const src = String(fmt?.src ?? '').trim()
-      if (src.startsWith('http')) candidates.push(src)
+      if (!src.startsWith('http')) continue
+      ranked.push({
+        src,
+        score: scoreBrandfetchLogoCandidate({
+          theme: logo.theme,
+          type: logo.type,
+          format: fmt?.format,
+          background: fmt?.background,
+        }),
+      })
     }
   }
-  return candidates
+  ranked.sort((a, b) => b.score - a.score || a.src.localeCompare(b.src))
+
+  const hasDarkOrNeutral = ranked.some((item) => item.score >= 120)
+  const filtered =
+    options?.forLightBackground === false
+      ? ranked
+      : hasDarkOrNeutral
+        ? ranked.filter((item) => item.score >= 120)
+        : ranked
+
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const item of filtered) {
+    if (seen.has(item.src)) continue
+    seen.add(item.src)
+    out.push(item.src)
+  }
+  return out
 }
 
-/** Bestes Logo; optional defekte URL überspringen und nächstes Format wählen. */
+/** Bestes Logo für helle UI; optional defekte/helle URL überspringen. Immer theme/dark. */
 export function pickBestLogoUrlFromBrandfetchJson(
   json: { logos?: BrandfetchLogoJson[] | null },
   excludeUrl?: string | null
 ): string | null {
   const candidates = listLogoUrlsFromBrandfetchJson(json)
   const exclude = String(excludeUrl ?? '').trim()
-  if (exclude) {
-    const alt = candidates.find((url) => url !== exclude)
-    if (alt) return alt
+  const picked = exclude
+    ? (candidates.find((url) => url !== exclude) ?? null)
+    : (candidates[0] ?? null)
+  return rewriteBrandfetchLogoUrlForLightBackground(picked)
+}
+
+/** True, wenn die URL in Brandfetch als theme=light geführt wird (helles Logo für dunkle Hintergründe). */
+export function logoUrlIsBrandfetchLightTheme(
+  json: { logos?: BrandfetchLogoJson[] | null },
+  logoUrl: string | null | undefined
+): boolean {
+  const target = String(logoUrl ?? '').trim()
+  if (!target) return false
+  for (const logo of json.logos ?? []) {
+    if (String(logo.theme ?? '').trim().toLowerCase() !== 'light') continue
+    for (const fmt of logo.formats ?? []) {
+      if (String(fmt?.src ?? '').trim() === target) return true
+    }
   }
-  return candidates[0] ?? null
+  return false
 }
 
 /** Brandfetch-Domain-Lookup (z. B. Bulk-Import, Cron). */
@@ -376,7 +464,11 @@ export async function refreshCompanyRowFromBrandfetch(
 
   const currentLogo = String(company.logo_url ?? '').trim()
   const fetchedLogo = String(fetched.data.logoUrl ?? '').trim()
-  const logoNeedsUpdate = Boolean(fetchedLogo) && (scheduled || fetchedLogo !== currentLogo)
+  const rewrittenCurrent = rewriteBrandfetchLogoUrlForLightBackground(currentLogo)
+  const lightRewriteNeeded = Boolean(rewrittenCurrent && rewrittenCurrent !== currentLogo)
+  const logoNeedsUpdate =
+    lightRewriteNeeded ||
+    (Boolean(fetchedLogo) && (scheduled || fetchedLogo !== currentLogo))
 
   const employeeFromApi =
     typeof fetched.data.employeeCount === 'number' && Number.isFinite(fetched.data.employeeCount)
@@ -415,7 +507,9 @@ export async function refreshCompanyRowFromBrandfetch(
   }
 
   const payload = {
-    logo_url: logoNeedsUpdate ? fetched.data.logoUrl : company.logo_url,
+    logo_url: rewriteBrandfetchLogoUrlForLightBackground(
+      logoNeedsUpdate ? fetched.data.logoUrl || rewrittenCurrent || company.logo_url : company.logo_url
+    ),
     industry: industryNeedsUpdate ? fetched.data.industry : company.industry,
     headquarters: headquartersNeedsUpdate ? fetchedHeadquarters.trim() || company.headquarters : company.headquarters,
     employee_count:

@@ -6,7 +6,11 @@ import { REVALIDATE, ROUTES } from '@/lib/routes'
 import { revalidateOrgCachesForReference, revalidateOrgCompanies, revalidateOrgReferences } from '@/lib/cache/revalidate-org'
 import { narrativeFieldLengthError } from '@/lib/references/reference-narrative-limits'
 import { resolveDomainForCompanyName } from '@/lib/accounts/resolve-company-for-import'
-import { fetchBrandfetchCompany } from '@/lib/accounts/brandfetch-accounts-refresh'
+import { fetchBrandfetchCompany, pickBestLogoUrlFromBrandfetchJson } from '@/lib/accounts/brandfetch-accounts-refresh'
+import {
+  ensureBrandfetchDarkLogoUrl,
+  rewriteBrandfetchLogoUrlForLightBackground,
+} from '@/lib/brandfetch/logo-theme-url'
 import { mapBrandfetchIndustriesArrayToGermanCategory } from '@/lib/brandfetch/map-brandfetch-industry-to-de'
 import { normalizeNarrativeText } from '@/lib/references/narrative-normalize'
 import { normalizeContractType } from '@/lib/references/contract-type'
@@ -149,7 +153,7 @@ async function brandfetchSuggestionsForQuery(
         out.push({
           id: `brandfetch:${domain}`,
           name: (item.name?.trim() || domain) as string,
-          logo_url: item.icon ?? null,
+          logo_url: ensureBrandfetchDarkLogoUrl(item.icon) ?? item.icon ?? null,
           source: 'brandfetch',
         })
         if (out.length >= 8) break
@@ -179,7 +183,7 @@ async function brandfetchSuggestionsForQuery(
       out.push({
         id: `brandfetch:${domain}`,
         name: displayName,
-        logo_url: fetched.data.logoUrl,
+        logo_url: ensureBrandfetchDarkLogoUrl(fetched.data.logoUrl),
         source: 'brandfetch',
       })
     }
@@ -406,7 +410,11 @@ async function fetchBrandfetchData(normalizedDomain: string): Promise<FetchEnric
       industries?: { name?: string }[]
       location?: { city?: string; country?: string; countryCode?: string; region?: string }
     }
-    logos?: { formats?: { src?: string }[] }[]
+    logos?: {
+      theme?: string | null
+      type?: string | null
+      formats?: { src?: string; format?: string; background?: string | null }[]
+    }[]
   }
   try {
     data = await res.json()
@@ -428,8 +436,7 @@ async function fetchBrandfetchData(normalizedDomain: string): Promise<FetchEnric
   const loc = data.company?.location
   const headquarters = [loc?.city, loc?.country].filter(Boolean).join(', ') || null
   const country = mapBrandfetchCountry(loc?.country, loc?.countryCode)
-  const logoUrl =
-    data.logos?.[0]?.formats?.[0]?.src ?? data.logos?.find((l) => l.formats?.length)?.formats?.[0]?.src ?? null
+  const logoUrl = ensureBrandfetchDarkLogoUrl(pickBestLogoUrlFromBrandfetchJson(data))
 
   return {
     success: true,
@@ -495,7 +502,9 @@ export async function createReference(
   const employee_count = parseGermanEmployeeCountInput(employeeCountRaw)
   const companyHeadquarters = formData.get('company_headquarters')?.toString()?.trim() || null
   const companyLogoUrlRaw = formData.get('company_logo_url')?.toString()?.trim() || null
-  const company_logo_url = companyLogoUrlRaw || null
+  const company_logo_url = companyLogoUrlRaw
+    ? ensureBrandfetchDarkLogoUrl(companyLogoUrlRaw) ?? companyLogoUrlRaw
+    : null
   const volume_eur = formData.get('volume_eur')?.toString()?.trim() || null
   const contract_type = normalizeContractType(formData.get('contract_type')?.toString())
   const incumbent_provider = formData.get('incumbent_provider')?.toString()?.trim() || null

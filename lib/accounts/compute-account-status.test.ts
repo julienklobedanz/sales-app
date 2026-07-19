@@ -48,4 +48,38 @@ describe('computeAccountStatusFromSignals', () => {
       })
     ).toBe('at_risk')
   })
+
+  it('returns at_risk when won contract ends within 9 months', () => {
+    expect(
+      computeAccountStatusFromSignals({
+        crmAccountId: 'hs-1',
+        deals: [
+          {
+            status: 'won',
+            closedOn: '2025-06-01',
+            contractEndDate: '2027-01-15',
+          },
+        ],
+        references: [],
+        now,
+      })
+    ).toBe('at_risk')
+  })
+
+  it('keeps active_customer when contract end is beyond 9 months', () => {
+    expect(
+      computeAccountStatusFromSignals({
+        crmAccountId: 'hs-1',
+        deals: [
+          {
+            status: 'won',
+            closedOn: '2025-06-01',
+            contractEndDate: '2027-08-01',
+          },
+        ],
+        references: [],
+        now,
+      })
+    ).toBe('active_customer')
+  })
 })

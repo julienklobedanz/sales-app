@@ -11,6 +11,7 @@ import {
   inputToDomain,
   type BrandfetchCompanyPayload,
 } from '@/lib/accounts/brandfetch-accounts-refresh'
+import { rewriteBrandfetchLogoUrlForLightBackground } from '@/lib/brandfetch/logo-theme-url'
 
 function normalizeDomain(raw: string) {
   return raw
@@ -157,7 +158,7 @@ export async function enrichBulkImportRowFromBrandfetch(
     industry: row.industry || data.industry || '',
     headquarters: row.headquarters || data.headquarters || '',
     employeeCount: employeeCount ?? null,
-    logo_url: data.logoUrl ?? null,
+    logo_url: rewriteBrandfetchLogoUrlForLightBackground(data.logoUrl ?? null),
     description: data.description ?? null,
   }
 }
@@ -192,7 +193,7 @@ function payloadFromBrandfetch(
   return {
     name: displayName,
     website_url: data?.websiteUrl ?? existing?.website_url ?? (domain ? `https://${domain}` : null),
-    logo_url: data?.logoUrl ?? existing?.logo_url ?? null,
+    logo_url: rewriteBrandfetchLogoUrlForLightBackground(data?.logoUrl ?? existing?.logo_url ?? null),
     industry: data?.industry ?? existing?.industry ?? null,
     headquarters: data?.headquarters ?? existing?.headquarters ?? null,
     employee_count: data?.employeeCount ?? existing?.employee_count ?? null,
@@ -398,7 +399,7 @@ export async function syncExistingCompanyBrandfetch(
   supabase: SupabaseClient,
   organizationId: string,
   companyId: string,
-  options?: { excludeLogoUrl?: string | null }
+  options?: { excludeLogoUrl?: string | null; upgradeLogoForLightUi?: boolean }
 ): Promise<ResolveCompanyForImportResult> {
   const { data: row } = await supabase
     .from('companies')
@@ -416,9 +417,12 @@ export async function syncExistingCompanyBrandfetch(
     row.website_url
   )
   const failedLogo = String(options?.excludeLogoUrl ?? '').trim()
-  if (failedLogo && brandfetch.domain) {
+
+  // Defektes Logo: diese URL überspringen.
+  // Light-UI-Upgrade: frischer Brandfetch-Call (pickBest bevorzugt dark) → ersetzt helle DB-URLs.
+  if ((failedLogo || options?.upgradeLogoForLightUi) && brandfetch.domain) {
     const refetched = await fetchBrandfetchCompany(brandfetch.domain, {
-      excludeLogoUrl: failedLogo,
+      excludeLogoUrl: failedLogo || null,
     })
     if (refetched.success) {
       brandfetch = { domain: brandfetch.domain, data: refetched.data }

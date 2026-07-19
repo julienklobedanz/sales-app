@@ -1,10 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
+import { resolveHubSpotContractEndProperty } from '@/lib/accounts/contract-end'
 import { hubSpotApiFetch } from '@/lib/crm/hubspot/client'
 import {
   formatHubSpotAmount,
   mapHubSpotStageToDealStatus,
 } from '@/lib/crm/hubspot/map-deal-stage'
+import { getOrganizationCrmConnection } from '@/lib/crm/connections'
 import type { CrmProvider } from '@/lib/crm/types'
 
 type HubSpotDealSearchResponse = {
@@ -22,12 +24,25 @@ type HubSpotAssociationBatchResponse = {
   }>
 }
 
-const DEAL_PROPERTIES = ['dealname', 'amount', 'dealstage', 'closedate', 'hs_is_closed']
+const BASE_DEAL_PROPERTIES = ['dealname', 'amount', 'dealstage', 'closedate', 'hs_is_closed']
+
+function parseHubSpotDate(raw: string | null | undefined): string | null {
+  if (!raw?.trim()) return null
+  const sliced = raw.trim().slice(0, 10)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(sliced)) return null
+  return sliced
+}
 
 async function fetchClosedWonDeals(
   supabase: SupabaseClient,
-  organizationId: string
+  organizationId: string,
+  contractEndProperty: string
 ): Promise<HubSpotDealSearchResponse['results']> {
+  const properties = [...BASE_DEAL_PROPERTIES]
+  if (!properties.includes(contractEndProperty)) {
+    properties.push(contractEndProperty)
+  }
+
   const deals: NonNullable<HubSpotDealSearchResponse['results']> = []
   let after: string | undefined
 
@@ -44,7 +59,7 @@ async function fetchClosedWonDeals(
           ],
         },
       ],
-      properties: DEAL_PROPERTIES,
+      properties,
       limit: 100,
       ...(after ? { after } : {}),
     }
@@ -71,7 +86,8 @@ async function fetchClosedWonDeals(
 }
 
 /**
- * Upsert gewonnene HubSpot-Opportunities für verknüpfte Accounts (Close-Datum → expiry_date).
+ * Upsert gewonnene HubSpot-Opportunities für verknüpfte Accounts.
+ * Close-Datum → expiry_date; konfigurierbares Vertragsende-Property → contract_end_date.
  */
 export async function syncHubSpotWonDealsForOrganization(
   supabase: SupabaseClient,
@@ -80,7 +96,12 @@ export async function syncHubSpotWonDealsForOrganization(
 ): Promise<{ upserted: number; skipped: number }> {
   if (provider !== 'hubspot') return { upserted: 0, skipped: 0 }
 
-  const deals = await fetchClosedWonDeals(supabase, organizationId)
+  const connection = await getOrganizationCrmConnection(supabase, organizationId, provider)
+  const contractEndProperty = resolveHubSpotContractEndProperty(
+    connection?.hubspot_contract_end_property
+  )
+
+  const deals = await fetchClosedWonDeals(supabase, organizationId, contractEndProperty)
   if (!deals?.length) return { upserted: 0, skipped: 0 }
 
   const dealIds = deals.map((d) => d.id)
@@ -132,7 +153,8 @@ export async function syncHubSpotWonDealsForOrganization(
     }
 
     const oppId = deal.id
-    const closeDate = deal.properties?.closedate?.slice(0, 10) ?? null
+    const closeDate = parseHubSpotDate(deal.properties?.closedate)
+    const contractEndDate = parseHubSpotDate(deal.properties?.[contractEndProperty])
     const payload = {
       organization_id: organizationId,
       company_id: companyId,
@@ -140,6 +162,7 @@ export async function syncHubSpotWonDealsForOrganization(
       volume: formatHubSpotAmount(deal.properties?.amount ? Number(deal.properties.amount) : null),
       status: 'won' as const,
       expiry_date: closeDate,
+      contract_end_date: contractEndDate,
       crm_source: provider,
       crm_opportunity_id: oppId,
       crm_stage: deal.properties?.dealstage?.trim() || null,
@@ -155,16 +178,24 @@ export async function syncHubSpotWonDealsForOrganization(
       .maybeSingle()
 
     if (existing?.id) {
-      const { error } = await supabase
-        .from('deals')
-        .update({
-          status: 'won',
-          expiry_date: closeDate,
-          crm_stage: payload.crm_stage,
-          crm_synced_at: payload.crm_synced_at,
-          company_id: companyId,
-        })
-        .eq('id', existing.id)
+      const updateFull = {
+        status: 'won' as const,
+        expiry_date: closeDate,
+        contract_end_date: contractEndDate,
+        crm_stage: payload.crm_stage,
+        crm_synced_at: payload.crm_synced_at,
+        company_id: companyId,
+        title: payload.title,
+        volume: payload.volume,
+      }
+      let { error } = await supabase.from('deals').update(updateFull).eq('id', existing.id)
+      if (
+        error?.code === 'PGRST204' &&
+        error.message?.includes('contract_end_date')
+      ) {
+        const { contract_end_date: _c, ...withoutContract } = updateFull
+        ;({ error } = await supabase.from('deals').update(withoutContract).eq('id', existing.id))
+      }
       if (error) skipped += 1
       else upserted += 1
       continue
@@ -173,9 +204,16 @@ export async function syncHubSpotWonDealsForOrganization(
     let { error: insertError } = await supabase.from('deals').insert(payload)
     if (
       insertError?.code === 'PGRST204' &&
+      insertError.message?.includes('contract_end_date')
+    ) {
+      const { contract_end_date: _c, ...withoutContract } = payload
+      ;({ error: insertError } = await supabase.from('deals').insert(withoutContract))
+    }
+    if (
+      insertError?.code === 'PGRST204' &&
       insertError.message?.includes('crm_stage')
     ) {
-      const { crm_stage: _s, ...withoutStage } = payload
+      const { crm_stage: _s, contract_end_date: _c, ...withoutStage } = payload
       ;({ error: insertError } = await supabase.from('deals').insert(withoutStage))
     }
     if (insertError) skipped += 1

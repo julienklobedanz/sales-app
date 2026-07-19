@@ -28,6 +28,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { rewriteBrandfetchLogoUrlForLightBackground } from '@/lib/brandfetch/logo-theme-url'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent } from '@/components/ui/tabs'
 import {
@@ -499,7 +500,16 @@ export function MarketSignalsManageClient({
                     )}
                   >
                     {company.logoUrl ? (
-                      <Image src={company.logoUrl} alt="" fill sizes="36px" className="object-contain p-1" />
+                      <Image
+                        src={
+                          rewriteBrandfetchLogoUrlForLightBackground(company.logoUrl) ??
+                          company.logoUrl
+                        }
+                        alt=""
+                        fill
+                        sizes="36px"
+                        className="object-contain p-1"
+                      />
                     ) : (
                       <span className="text-[10px] font-semibold text-muted-foreground">
                         {company.name.slice(0, 2).toUpperCase()}

@@ -2,32 +2,61 @@
 
 import { useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { enrichReferencedCompaniesMissingBrandfetch } from '@/lib/references/library/sync-company-brandfetch'
+import {
+  enrichReferencedCompaniesMissingBrandfetch,
+  upgradeAllOrganizationBrandfetchLogosToDark,
+} from '@/lib/references/library/sync-company-brandfetch'
 import { resetCompanyBrandfetchRetryCache } from '@/lib/accounts/company-brandfetch-retry-client'
 
+const LOGO_DARK_UPGRADE_SESSION_KEY = 'refstack:org-logo-dark-upgrade-v2'
+
 /**
- * Nachladen fehlender Logos/Branchen beim Öffnen der Referenzen-Übersicht.
+ * Nachladen fehlender Logos/Branchen + einmaliges Org-weites theme/light → theme/dark.
  */
 export function ReferencesOverviewBrandfetchSync({
   companyIds,
 }: {
   companyIds: string[]
+  /** @deprecated Ignoriert — Upgrade läuft org-weit. */
+  companyIdsWithLogos?: string[]
 }) {
   const router = useRouter()
   const started = useRef(false)
 
   useEffect(() => {
-    const ids = [...new Set(companyIds.filter(Boolean))]
-    if (ids.length === 0 || started.current) return
+    const missingIds = [...new Set(companyIds.filter(Boolean))]
+    if (started.current) return
     started.current = true
 
     resetCompanyBrandfetchRetryCache()
 
-    void enrichReferencedCompaniesMissingBrandfetch(ids).then((result) => {
-      if (result.synced > 0) {
-        router.refresh()
+    void (async () => {
+      let shouldRefresh = false
+
+      if (missingIds.length > 0) {
+        const result = await enrichReferencedCompaniesMissingBrandfetch(missingIds)
+        if (result.synced > 0) shouldRefresh = true
       }
-    })
+
+      let alreadyDone = false
+      try {
+        alreadyDone = sessionStorage.getItem(LOGO_DARK_UPGRADE_SESSION_KEY) === '1'
+      } catch {
+        alreadyDone = false
+      }
+
+      if (!alreadyDone) {
+        const upgrade = await upgradeAllOrganizationBrandfetchLogosToDark()
+        try {
+          sessionStorage.setItem(LOGO_DARK_UPGRADE_SESSION_KEY, '1')
+        } catch {
+          // ignore
+        }
+        if (upgrade.updated > 0) shouldRefresh = true
+      }
+
+      if (shouldRefresh) router.refresh()
+    })()
   }, [companyIds, router])
 
   return null

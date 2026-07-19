@@ -8,6 +8,7 @@ import { AppIcon } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 import { requestCompanyBrandfetchRetry } from '@/lib/accounts/company-brandfetch-retry-client'
 import { refreshCompanyBrandfetchOnLogoIssue } from '@/lib/references/library/sync-company-brandfetch'
+import { rewriteBrandfetchLogoUrlForLightBackground } from '@/lib/brandfetch/logo-theme-url'
 
 /** Einheitlicher Logo-Container — kein dynamischer Dark-Mode-Rahmen (vermeidet schwarze Boxen bei einzelnen Marken). */
 export const COMPANY_LOGO_CONTAINER_CLASS =
@@ -63,12 +64,16 @@ export function CompanyLogo({
   companyId,
 }: CompanyLogoProps) {
   const router = useRouter()
-  const [localSrc, setLocalSrc] = useState<string | null>(() => String(srcProp ?? '').trim() || null)
+  const [localSrc, setLocalSrc] = useState<string | null>(() => {
+    const raw = String(srcProp ?? '').trim() || null
+    return raw ? rewriteBrandfetchLogoUrlForLightBackground(raw) ?? raw : null
+  })
   const [imageFailed, setImageFailed] = useState(false)
   const mountedRetry = useRef(false)
 
   useEffect(() => {
-    const next = String(srcProp ?? '').trim() || null
+    const nextRaw = String(srcProp ?? '').trim() || null
+    const next = nextRaw ? rewriteBrandfetchLogoUrlForLightBackground(nextRaw) ?? nextRaw : null
     queueMicrotask(() => {
       setLocalSrc(next)
       setImageFailed(false)
@@ -85,7 +90,9 @@ export function CompanyLogo({
         refreshCompanyBrandfetchOnLogoIssue(cid, failed)
       ).then((result) => {
         if (result?.logo_url) {
-          setLocalSrc(result.logo_url)
+          const rewritten =
+            rewriteBrandfetchLogoUrlForLightBackground(result.logo_url) ?? result.logo_url
+          setLocalSrc(rewritten)
           setImageFailed(false)
         }
         if (result) router.refresh()
