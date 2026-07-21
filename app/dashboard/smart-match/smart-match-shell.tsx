@@ -12,7 +12,7 @@
 import { useState, useLayoutEffect, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { ArrowUp, Plus, RotateCcw } from 'lucide-react'
+import { ArrowUp, ChevronDown, Plus, RotateCcw } from 'lucide-react'
 import { Loader } from '@hugeicons/core-free-icons'
 
 import { AppIcon } from '@/lib/icons'
@@ -271,13 +271,14 @@ function FilterMenu({
         <button
           type="button"
           className={
-            'rounded-lg border px-2.5 py-1 transition-colors ' +
+            'inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[13px] transition-colors ' +
             (active
-              ? 'border-primary/40 bg-primary/5 text-primary'
-              : 'border-border bg-background text-foreground hover:bg-accent')
+              ? 'border-primary/40 bg-primary/5 font-medium text-primary'
+              : 'border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground')
           }
         >
-          {label} ▾
+          <span>{label}</span>
+          <ChevronDown className="size-3.5 shrink-0 opacity-70" strokeWidth={2} aria-hidden />
         </button>
       </PopoverTrigger>
       <PopoverContent
@@ -457,6 +458,9 @@ export function SmartMatchShell({
 
   const hasSearched = loading || results !== null
   const showResultsPanel = sessionReady && hasSearched
+  const showSuggestions = !query.trim()
+  const hasDealChip = Boolean(selectedDeal || (embedded && initialDeal))
+  const showMetaRow = showSuggestions || hasDealChip
 
   return (
     <div
@@ -586,7 +590,7 @@ export function SmartMatchShell({
         )}
 
         {/* Prompt-Bar unten — Abstand Kapseln↔Card-Rand = Abstand Kapseln↔Bar (je 0.75rem) */}
-        <div className="mt-auto shrink-0 space-y-3 pt-3">
+        <div className="mt-auto shrink-0 pt-3">
             <div
               className={cn(
                 'flex items-center gap-2 rounded-full border border-border/80 bg-card px-2 py-1.5 shadow-sm',
@@ -680,43 +684,69 @@ export function SmartMatchShell({
               </button>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-2.5 px-1">
-              <div className="flex min-h-7 items-center gap-2 text-[13px] text-muted-foreground">
-                {selectedDeal ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[13px] text-primary">
-                    <span className="max-w-[220px] truncate">Deal: {selectedDeal.title}</span>
-                    {!embedded ? (
-                      <button
-                        type="button"
-                        onClick={clearDeal}
-                        aria-label="Deal-Kontext entfernen"
-                        className="opacity-70 hover:opacity-100"
-                      >
-                        ✕
-                      </button>
-                    ) : null}
-                  </span>
-                ) : embedded && initialDeal ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[13px] text-primary">
-                    <span className="max-w-[220px] truncate">Deal: {initialDeal.title}</span>
-                  </span>
-                ) : null}
-              </div>
-              <div className="flex flex-wrap items-center gap-1.5 text-[13px] text-muted-foreground">
-                Vorschläge:
-                {SUGGESTIONS.map((s) => (
-                  <button
-                    key={s.label}
-                    type="button"
-                    onClick={() => {
-                      setQuery(s.q)
-                      void runSearch({ text: s.q })
-                    }}
-                    className="rounded-full border border-border bg-background px-2.5 py-0.5 text-foreground transition-colors hover:bg-accent"
+            {/* Meta-Zeile: Höhe weich kollabieren → Bar gleitet nach unten statt zu springen */}
+            <div
+              className={cn(
+                'grid transition-[grid-template-rows] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]',
+                showMetaRow ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+              )}
+            >
+              <div className="min-h-0 overflow-hidden">
+                <div
+                  className={cn(
+                    'flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 pt-3 transition-opacity duration-200 ease-out',
+                    showMetaRow ? 'opacity-100' : 'opacity-0'
+                  )}
+                >
+                  <div className="flex min-h-6 items-center gap-2 text-xs text-muted-foreground">
+                    {selectedDeal ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                        <span className="max-w-[220px] truncate">Deal: {selectedDeal.title}</span>
+                        {!embedded ? (
+                          <button
+                            type="button"
+                            onClick={clearDeal}
+                            aria-label="Deal-Kontext entfernen"
+                            className="opacity-70 hover:opacity-100"
+                          >
+                            ✕
+                          </button>
+                        ) : null}
+                      </span>
+                    ) : embedded && initialDeal ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                        <span className="max-w-[220px] truncate">Deal: {initialDeal.title}</span>
+                      </span>
+                    ) : (
+                      <span className="min-w-0" aria-hidden />
+                    )}
+                  </div>
+                  <div
+                    className={cn(
+                      'ml-auto flex flex-wrap items-center justify-end gap-1 text-[11px] leading-none text-muted-foreground transition-opacity duration-200 ease-out',
+                      showSuggestions
+                        ? 'opacity-100'
+                        : 'pointer-events-none opacity-0'
+                    )}
+                    aria-hidden={!showSuggestions}
                   >
-                    {s.label}
-                  </button>
-                ))}
+                    <span className="pr-0.5">Vorschläge</span>
+                    {SUGGESTIONS.map((s) => (
+                      <button
+                        key={s.label}
+                        type="button"
+                        tabIndex={showSuggestions ? 0 : -1}
+                        onClick={() => {
+                          setQuery(s.q)
+                          void runSearch({ text: s.q })
+                        }}
+                        className="rounded-full border border-border/80 bg-background px-2 py-0.5 text-[11px] leading-none text-foreground/90 transition-colors hover:bg-accent"
+                      >
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
         </div>
