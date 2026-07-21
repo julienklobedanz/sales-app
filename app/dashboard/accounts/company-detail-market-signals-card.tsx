@@ -5,7 +5,6 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatDateUtcDe } from '@/lib/format'
-import { ROUTES } from '@/lib/routes'
 import type { CompanyDetailClientProps } from './company-detail-types'
 
 type Props = {

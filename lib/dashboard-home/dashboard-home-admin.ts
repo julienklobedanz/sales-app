@@ -524,9 +524,9 @@ export async function loadAdminDashboardData(
     minDealsRequired
   )
 
-  let riskDeals = buildLeaderRiskDeals(allDealsForSignals, { dateDisplayFormat })
+  const riskDeals = buildLeaderRiskDeals(allDealsForSignals, { dateDisplayFormat })
   let coachingSignals: AdminDashboardModel['coachingSignals'] = []
-  let coveragePipeline = buildLeaderCoveragePipeline(
+  const coveragePipeline = buildLeaderCoveragePipeline(
     pipelineSignals,
     contentRoi.gapAlert?.term ?? null
   )
@@ -542,9 +542,7 @@ export async function loadAdminDashboardData(
 
     const matchCounts = aggregateTeamMatches(teamActivity)
     const pendingByUser = new Map<string, number>()
-    for (const req of openRequests) {
-      // requester not in openRequests type - skip detailed pending by user
-    }
+    void openRequests
 
     coachingSignals = buildLeaderCoaching(
       (profileRows ?? []) as Array<{ id: string; full_name: string | null; function_role: string | null }>,

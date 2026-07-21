@@ -275,7 +275,6 @@ function logEnrichResult(
  */
 export async function enrichSignal(input: EnrichSignalInput): Promise<SignalEnrichment> {
   const title = String(input.title ?? '').trim()
-  const companyName = String(input.companyName ?? '').trim()
   const personName = String(input.personName ?? '').trim()
   let snippet = String(input.snippet ?? '').trim() || null
   const fallbackCategory: SignalCategory = personName ? 'people' : inferNewsCategory(title)

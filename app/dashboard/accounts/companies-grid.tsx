@@ -55,7 +55,6 @@ import { CompanyLogo } from '@/components/ui/company-logo'
 import { bulkCreateCompaniesFromSheet, deleteCompanyWithData, toggleCompanyFavorite } from './actions'
 import {
   formatIndustryDisplay,
-  getIndustryLabelDe,
   MASTER_INDUSTRIES,
   resolveIndustryId,
 } from '@/lib/constants/industries'

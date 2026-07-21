@@ -76,7 +76,7 @@ export async function loadInsightsPageData(
   const orgId = profile?.organization_id as string | undefined
 
   let usage = { views: 0, shares: 0, matches: 0 }
-  let adoption = { wau: 0, teamSize: 0 }
+  const adoption = { wau: 0, teamSize: 0 }
   const topReferences: InsightsPageModel['topReferences'] = []
   const coverageGaps: InsightsPageModel['coverageGaps'] = []
 

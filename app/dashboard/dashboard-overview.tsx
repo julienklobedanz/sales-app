@@ -38,7 +38,6 @@ import { ROUTES } from '@/lib/routes'
 import { isSalesAppView, userCanCreateReference } from '@/lib/roles/reference-access'
 import { isSystemAdmin, legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
 import { isReferenceVisibleToSales } from '@/lib/references/sales-reference-visibility'
-import { cn } from '@/lib/utils'
 import {
   createSharedPortfolio,
   deleteReference,
@@ -48,24 +47,17 @@ import {
 } from './actions'
 import type { Profile } from './dashboard-types'
 import {
-  Cancel01Icon,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  CirclePlus,
   CopyIcon,
-  FileDownIcon,
   FileText,
-  Filter,
   LinkIcon,
   MoreHorizontal,
   Pencil,
-  Send,
-  TrendingUp,
   StarIcon,
   Trash2,
-  UploadIcon,
 } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { BulkImportDialog, type BulkImportGroupItem } from './overview/bulk-import-dialog'
@@ -84,8 +76,6 @@ import {
 } from '@/lib/references/library/reference-library-mode-store'
 import type { ComplianceDocumentRow } from '@/app/dashboard/settings/compliance-actions'
 import { NewReferenceDialog } from './overview/new-reference-dialog'
-import { AccountsToolbarTooltip } from '@/app/dashboard/accounts/components/accounts-toolbar-tooltip'
-import { TooltipProvider } from '@/components/ui/tooltip'
 import { ShareLinkDialog } from './overview/share-link-dialog'
 import { BulkDeleteReferencesDialog } from './overview/bulk-delete-references-dialog'
 import { TrashDialog } from './overview/trash-dialog'
@@ -97,7 +87,6 @@ import {
 import { ReferencesOverviewBrandfetchSync } from './overview/references-overview-brandfetch-sync'
 import { ReferencesBulkActionsBar } from './overview/references-bulk-actions-bar'
 import { ReferenceOnboardingEmptyState } from '@/app/dashboard/references/components/reference-onboarding-empty-state'
-import { FilterMenuCheckboxOption } from '@/components/table/filter-menu-checkbox-option'
 import { TableRowCheckbox } from '@/components/table/table-row-checkbox'
 import { TableRowAlign } from '@/components/table/table-row-align'
 import { toast } from 'sonner'
@@ -860,7 +849,6 @@ export function DashboardOverview({
     () => filteredReferences.filter((r) => selectedRefIds.has(r.id)).length,
     [filteredReferences, selectedRefIds]
   )
-  const selectedCount = selectedRefs.length
   useEffect(() => {
     const el = selectAllCheckboxRef.current
     if (!el) return

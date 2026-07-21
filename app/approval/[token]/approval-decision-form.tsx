@@ -29,7 +29,6 @@ import {
   quickChoiceGrantsApproval,
   quickChoiceToScope,
   scopeToQuickChoice,
-  type QuickApprovalChoice,
   type QuickApprovalChoiceValue,
 } from '@/lib/references/quick-approval-choice'
 import type { CustomerApprovalScopeSelection } from '@/lib/references/customer-approval-scope'
