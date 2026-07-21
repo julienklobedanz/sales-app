@@ -15,21 +15,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { submitTicket } from '@/app/dashboard/actions'
 import { AppIcon } from '@/lib/icons'
+import { BRAND_PRIMARY_PILL_ACTIVE_CLASS } from '@/lib/cognism-shell-styles'
 import { cn } from '@/lib/utils'
-
-const TITLE_BY_TYPE: Record<'support' | 'feedback', string> = {
-  support: 'Ticket einreichen',
-  feedback: 'Dein Feedback',
-}
 
 type FeedbackKind = 'idea' | 'bug' | 'other'
 
@@ -52,29 +41,20 @@ function deriveSubject(message: string): string {
 export function SupportTicketModal({
   isOpen,
   onOpenChange,
-  type,
-  title,
+  title = 'Dein Feedback',
   defaultEmail = '',
 }: {
   isOpen: boolean
   onOpenChange: (open: boolean) => void
-  type: 'support' | 'feedback'
   title?: string
   defaultEmail?: string
 }) {
   const [message, setMessage] = useState('')
-  const [subject, setSubject] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [sent, setSent] = useState(false)
   const [email, setEmail] = useState(defaultEmail)
   const [editingEmail, setEditingEmail] = useState(false)
   const [feedbackKind, setFeedbackKind] = useState<FeedbackKind>('idea')
-  const [category, setCategory] = useState<'sales' | 'technical' | 'billing' | 'account' | 'other'>(
-    'other'
-  )
-  const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'critical'>('medium')
-
-  const displayTitle = title ?? TITLE_BY_TYPE[type]
 
   useEffect(() => {
     if (!isOpen) return
@@ -85,12 +65,9 @@ export function SupportTicketModal({
 
   function resetForm() {
     setMessage('')
-    setSubject('')
     setEmail(defaultEmail)
     setEditingEmail(false)
     setFeedbackKind('idea')
-    setCategory('other')
-    setPriority('medium')
     setSent(false)
   }
 
@@ -102,29 +79,17 @@ export function SupportTicketModal({
       return
     }
     if (!message.trim()) {
-      toast.error(type === 'feedback' ? 'Bitte dein Feedback eingeben.' : 'Bitte eine Beschreibung eingeben.')
-      return
-    }
-    if (type === 'support' && !subject.trim()) {
-      toast.error('Bitte einen Betreff angeben.')
+      toast.error('Bitte dein Feedback eingeben.')
       return
     }
 
     setSubmitting(true)
     try {
-      const resolvedSubject =
-        type === 'feedback'
-          ? `[${feedbackKindLabel(feedbackKind)}] ${deriveSubject(message)}`
-          : `[${priorityLabel(priority)}] ${categoryLabel(category)} – ${subject.trim()}`
+      const page = typeof window !== 'undefined' ? window.location.pathname : '—'
+      const resolvedSubject = `[${feedbackKindLabel(feedbackKind)}] ${deriveSubject(message)}`
+      const fullMessage = `E-Mail: ${safeEmail}\n\nArt: ${feedbackKindLabel(feedbackKind)}\nSeite: ${page}\n\n${message.trim()}`
 
-      const fullMessage =
-        type === 'feedback'
-          ? `E-Mail: ${safeEmail}\n\nArt: ${feedbackKindLabel(feedbackKind)}\nSeite: ${typeof window !== 'undefined' ? window.location.pathname : '—'}\n\n${message.trim()}`
-          : `E-Mail: ${safeEmail}\n\nKategorie: ${categoryLabel(category)}\nPriorität: ${priorityLabel(
-              priority
-            )}\n\nBeschreibung:\n${message.trim()}`
-
-      const result = await submitTicket(type, resolvedSubject, fullMessage, { replyToEmail: safeEmail })
+      const result = await submitTicket('feedback', resolvedSubject, fullMessage, { replyToEmail: safeEmail })
       if (result.success) {
         setSent(true)
         toast.success('Nachricht gesendet! Wir melden uns.')
@@ -144,36 +109,6 @@ export function SupportTicketModal({
     onOpenChange(open)
   }
 
-  function priorityLabel(v: typeof priority) {
-    switch (v) {
-      case 'low':
-        return 'Niedrig'
-      case 'high':
-        return 'Hoch'
-      case 'critical':
-        return 'Kritisch'
-      case 'medium':
-      default:
-        return 'Mittel'
-    }
-  }
-
-  function categoryLabel(v: typeof category) {
-    switch (v) {
-      case 'sales':
-        return 'Sales'
-      case 'technical':
-        return 'Technischer Support'
-      case 'billing':
-        return 'Abrechnung'
-      case 'account':
-        return 'Konto'
-      case 'other':
-      default:
-        return 'Sonstiges'
-    }
-  }
-
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-lg" showCloseButton={!submitting}>
@@ -183,13 +118,9 @@ export function SupportTicketModal({
               <AppIcon icon={CheckmarkCircle02Icon} size={28} />
             </span>
             <div className="space-y-1.5">
-              <DialogTitle className="text-lg">
-                {type === 'feedback' ? 'Danke für dein Feedback' : 'Ticket gesendet'}
-              </DialogTitle>
+              <DialogTitle className="text-lg">Danke für dein Feedback</DialogTitle>
               <DialogDescription className="text-sm text-muted-foreground">
-                {type === 'feedback'
-                  ? 'Wir lesen jede Nachricht und melden uns bei Bedarf.'
-                  : 'Unser Team meldet sich so schnell wie möglich bei dir.'}
+                Wir lesen jede Nachricht und melden uns bei Bedarf.
               </DialogDescription>
             </div>
             <Button
@@ -204,129 +135,49 @@ export function SupportTicketModal({
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle>{displayTitle}</DialogTitle>
-              <DialogDescription>
-                {type === 'support'
-                  ? 'Beschreibe dein Anliegen. Unser Team meldet sich so schnell wie möglich.'
-                  : 'Was möchtest du uns sagen?'}
-              </DialogDescription>
+              <DialogTitle>{title}</DialogTitle>
+              <DialogDescription>Was möchtest du uns sagen?</DialogDescription>
             </DialogHeader>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {type === 'feedback' ? (
-                <>
-                  <div
-                    className="flex flex-wrap gap-2"
-                    role="group"
-                    aria-label="Feedback-Art"
-                  >
-                    {FEEDBACK_KINDS.map((kind) => {
-                      const active = feedbackKind === kind.value
-                      return (
-                        <button
-                          key={kind.value}
-                          type="button"
-                          disabled={submitting}
-                          onClick={() => setFeedbackKind(kind.value)}
-                          className={cn(
-                            'rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors',
-                            active
-                              ? 'border-primary bg-primary text-white'
-                              : 'border-border bg-background text-foreground hover:bg-muted/60'
-                          )}
-                        >
-                          {kind.label}
-                        </button>
-                      )
-                    })}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="ticket-message" className="sr-only">
-                      Feedback
-                    </Label>
-                    <Textarea
-                      id="ticket-message"
-                      placeholder="Was ist passiert oder was fehlt?"
-                      rows={6}
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
+              <div className="flex flex-wrap gap-2" role="group" aria-label="Feedback-Art">
+                {FEEDBACK_KINDS.map((kind) => {
+                  const active = feedbackKind === kind.value
+                  return (
+                    <button
+                      key={kind.value}
+                      type="button"
                       disabled={submitting}
-                      required
-                      autoFocus
-                      className="min-h-[140px] resize-none text-base"
-                    />
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label>Kategorie</Label>
-                      <Select
-                        value={category}
-                        onValueChange={(v) => setCategory(v as typeof category)}
-                        disabled={submitting}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Kategorie wählen" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="sales">Sales</SelectItem>
-                          <SelectItem value="technical">Technischer Support</SelectItem>
-                          <SelectItem value="billing">Abrechnung</SelectItem>
-                          <SelectItem value="account">Konto</SelectItem>
-                          <SelectItem value="other">Sonstiges</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Priorität</Label>
-                      <Select
-                        value={priority}
-                        onValueChange={(v) => setPriority(v as typeof priority)}
-                        disabled={submitting}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Priorität wählen" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="low">Niedrig</SelectItem>
-                          <SelectItem value="medium">Mittel</SelectItem>
-                          <SelectItem value="high">Hoch</SelectItem>
-                          <SelectItem value="critical">Kritisch</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+                      onClick={() => setFeedbackKind(kind.value)}
+                      className={cn(
+                        'rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors',
+                        active
+                          ? BRAND_PRIMARY_PILL_ACTIVE_CLASS
+                          : 'border-border bg-background text-foreground hover:bg-muted/60'
+                      )}
+                    >
+                      {kind.label}
+                    </button>
+                  )
+                })}
+              </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="ticket-subject">Betreff</Label>
-                    <Input
-                      id="ticket-subject"
-                      placeholder="Kurze Zusammenfassung"
-                      value={subject}
-                      onChange={(e) => setSubject(e.target.value)}
-                      disabled={submitting}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="ticket-message">Beschreibung</Label>
-                    <Textarea
-                      id="ticket-message"
-                      placeholder="Was ist passiert oder was fehlt?"
-                      rows={5}
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      disabled={submitting}
-                      required
-                      className="resize-none"
-                    />
-                  </div>
-                </>
-              )}
+              <div className="space-y-2">
+                <Label htmlFor="ticket-message" className="sr-only">
+                  Feedback
+                </Label>
+                <Textarea
+                  id="ticket-message"
+                  placeholder="Was ist passiert oder was fehlt?"
+                  rows={6}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  disabled={submitting}
+                  required
+                  autoFocus
+                  className="min-h-[140px] resize-none text-base"
+                />
+              </div>
 
               <div className="rounded-lg border border-border/80 bg-muted/30 px-3 py-2.5">
                 {editingEmail ? (
@@ -397,10 +248,8 @@ export function SupportTicketModal({
                       <AppIcon icon={Loader} size={16} className="animate-spin" />
                       Wird gesendet…
                     </>
-                  ) : type === 'feedback' ? (
-                    'Feedback senden'
                   ) : (
-                    'Ticket einreichen'
+                    'Feedback senden'
                   )}
                 </Button>
               </DialogFooter>

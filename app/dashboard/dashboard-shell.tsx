@@ -88,7 +88,6 @@ export function DashboardShell({
   const router = useRouter()
 
   const [ticketModalOpen, setTicketModalOpen] = useState(false)
-  const [ticketModalType, setTicketModalType] = useState<'support' | 'feedback'>('support')
   const [supportChannelsOpen, setSupportChannelsOpen] = useState(false)
 
   useEffect(() => {
@@ -101,6 +100,32 @@ export function DashboardShell({
     router.prefetch(ROUTES.deals.requestNew)
     router.prefetch(ROUTES.settings)
   }, [router])
+
+  useEffect(() => {
+    if (!workspaceBranding?.enabled) return
+
+    const root = document.documentElement
+    const vars: [string, string][] = [
+      ['--primary', workspaceBranding.primary],
+      ['--sidebar-primary', workspaceBranding.primary],
+      ['--ring', workspaceBranding.secondary],
+      ['--cognism-nav-active-border', workspaceBranding.primary],
+      ['--cognism-nav-active-text', workspaceBranding.primary],
+      ['--cognism-btn-top', workspaceBranding.primary],
+      ['--cognism-btn-bottom', workspaceBranding.secondary],
+      ['--cognism-btn-hover-bottom', workspaceBranding.secondary],
+    ]
+
+    for (const [key, value] of vars) {
+      root.style.setProperty(key, value)
+    }
+
+    return () => {
+      for (const [key] of vars) {
+        root.style.removeProperty(key)
+      }
+    }
+  }, [workspaceBranding])
 
   const userName =
     profile.full_name ?? user.user_metadata?.full_name ?? user.email ?? 'Benutzer'
@@ -144,10 +169,7 @@ export function DashboardShell({
     devRolePreviewEnabled,
     devRolePreviewActive,
     onSupportOpen: () => setSupportChannelsOpen(true),
-    onFeedbackOpen: () => {
-      setTicketModalType('feedback')
-      setTicketModalOpen(true)
-    },
+    onFeedbackOpen: () => setTicketModalOpen(true),
   }
 
   const sidebar = <CognismAppSidebar {...sidebarProps} />
@@ -189,11 +211,15 @@ export function DashboardShell({
             </div>
           </CognismShellFrame>
           <CommandPalette />
-          <SupportChannelsDialog open={supportChannelsOpen} onOpenChange={setSupportChannelsOpen} />
+          <SupportChannelsDialog
+            open={supportChannelsOpen}
+            onOpenChange={setSupportChannelsOpen}
+            defaultEmail={userEmail}
+            onFeedbackOpen={() => setTicketModalOpen(true)}
+          />
           <SupportTicketModal
             isOpen={ticketModalOpen}
             onOpenChange={setTicketModalOpen}
-            type={ticketModalType}
             defaultEmail={userEmail}
           />
         </SidebarProvider>

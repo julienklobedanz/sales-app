@@ -20,6 +20,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { FilterMenuCheckboxOption } from '@/components/table/filter-menu-checkbox-option'
 import { COPY } from '@/lib/copy'
 import { AppIcon } from '@/lib/icons'
+import { BRAND_PRIMARY_BUTTON_CLASS } from '@/lib/cognism-shell-styles'
 import { cn } from '@/lib/utils'
 import {
   CirclePlus,
@@ -41,8 +42,10 @@ const SLOT_COLLAPSED = 'pointer-events-none m-0 w-0 min-w-0 max-w-0 overflow-hid
 
 const TOOLBAR_ICON_CLASS = 'shrink-0 text-muted-foreground'
 
-const PRIMARY_CTA_CLASS =
-  'h-10 min-w-0 shrink-0 justify-center gap-1.5 rounded-lg bg-gradient-to-b from-blue-600 to-blue-700 px-3 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] hover:from-blue-600 hover:to-blue-700/95'
+const PRIMARY_CTA_CLASS = cn(
+  BRAND_PRIMARY_BUTTON_CLASS,
+  'h-10 min-w-0 shrink-0 justify-center gap-1.5 rounded-lg px-3'
+)
 
 type ColumnKey = string
 

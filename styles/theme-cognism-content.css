@@ -136,26 +136,35 @@
   color: var(--muted-foreground);
 }
 
-/* Primary actions — auch hardcoded utility gradients */
-.theme-cognism [data-slot='button'][data-variant='default'],
-.theme-cognism [class*='from-blue-600'] {
-  border: none !important;
+/* Brand primary — gilt auch in Dialog-Portalen außerhalb von .theme-cognism */
+.brand-primary-button {
+  border: none;
   background-image: linear-gradient(
     to bottom,
     var(--cognism-btn-top),
     var(--cognism-btn-bottom)
-  ) !important;
-  color: #fff !important;
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12) !important;
+  );
+  color: #fff;
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
 }
 
-.theme-cognism [data-slot='button'][data-variant='default']:hover,
-.theme-cognism [class*='from-blue-600']:hover {
+.brand-primary-button:hover:not(:disabled) {
   background-image: linear-gradient(
     to bottom,
     var(--cognism-btn-top),
     var(--cognism-btn-hover-bottom)
-  ) !important;
+  );
+}
+
+.brand-primary-pill-active {
+  border-color: var(--cognism-btn-top);
+  background-color: var(--cognism-btn-top);
+  color: #fff;
+}
+
+.brand-primary-pill-active:hover:not(:disabled) {
+  background-color: var(--cognism-btn-top);
+  color: #fff;
 }
 
 .theme-cognism [data-slot='button'][data-variant='outline'] {

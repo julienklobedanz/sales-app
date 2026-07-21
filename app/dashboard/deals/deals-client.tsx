@@ -624,7 +624,6 @@ export function DealsClientContent({
             <Button
               type="button"
               size="toolbar"
-              className="rounded-lg bg-gradient-to-b from-blue-600 to-blue-700 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] hover:from-blue-600 hover:to-blue-700/95"
               onClick={() => setCreateOpen(true)}
             >
               <AppIcon icon={CirclePlus} size={16} />

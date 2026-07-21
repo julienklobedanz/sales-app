@@ -1,6 +1,8 @@
 'use client'
 
 import { Save } from 'lucide-react'
+import { BRAND_PRIMARY_BUTTON_CLASS } from '@/lib/cognism-shell-styles'
+import { cn } from '@/lib/utils'
 
 export function StickySaveBar({
   visible,
@@ -29,7 +31,10 @@ export function StickySaveBar({
             type="button"
             disabled={pending}
             onClick={onSave}
-            className="flex items-center gap-1.5 rounded-lg bg-gradient-to-b from-blue-600 to-blue-700 px-3 py-1.5 text-sm font-medium text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] transition-colors hover:from-blue-600 hover:to-blue-700/95 disabled:pointer-events-none disabled:opacity-50"
+            className={cn(
+              BRAND_PRIMARY_BUTTON_CLASS,
+              'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50'
+            )}
           >
             <Save className="size-4 shrink-0" aria-hidden />
             {pending ? 'Speichert …' : label}

@@ -25,3 +25,9 @@ export const COGNISM_CONTENT_AREA_CLASS =
 /** Detail/Wizard-Seiten im weißen Panel ohne Shell-Padding. */
 export const COGNISM_CONTENT_BLEED_CLASS =
   'cognism-page-content flex min-h-0 w-full flex-1 flex-col bg-white'
+
+/** Primär-CTA — nutzt --cognism-btn-* (auch in Dialog-Portalen). */
+export const BRAND_PRIMARY_BUTTON_CLASS = 'brand-primary-button'
+
+/** Aktiver Pill-/Segment-Button in Markenfarbe. */
+export const BRAND_PRIMARY_PILL_ACTIVE_CLASS = 'brand-primary-pill-active'

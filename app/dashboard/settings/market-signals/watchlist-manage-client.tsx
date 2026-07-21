@@ -42,6 +42,7 @@ import {
   formatExecutiveMetaLine,
   personInitials,
 } from '@/lib/market-signals/champion-display'
+import { BRAND_PRIMARY_PILL_ACTIVE_CLASS } from '@/lib/cognism-shell-styles'
 import { ROUTES } from '@/lib/routes'
 import { cn } from '@/lib/utils'
 
@@ -347,7 +348,7 @@ export function MarketSignalsManageClient({
                 className={cn(
                   MANAGE_TAB_BUTTON_CLASS,
                   activeTab === 'companies'
-                    ? 'border-primary bg-primary text-white shadow-sm hover:bg-primary hover:text-white'
+                    ? cn(BRAND_PRIMARY_PILL_ACTIVE_CLASS, 'shadow-sm')
                     : null
                 )}
               >
@@ -371,7 +372,7 @@ export function MarketSignalsManageClient({
                 className={cn(
                   MANAGE_TAB_BUTTON_CLASS,
                   activeTab === 'executives'
-                    ? 'border-primary bg-primary text-white shadow-sm hover:bg-primary hover:text-white'
+                    ? cn(BRAND_PRIMARY_PILL_ACTIVE_CLASS, 'shadow-sm')
                     : null
                 )}
               >

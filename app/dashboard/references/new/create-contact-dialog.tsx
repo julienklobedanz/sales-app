@@ -193,7 +193,6 @@ export function CreateContactDialog({
           type="button"
           variant="default"
           size="icon"
-          className="rounded-lg bg-gradient-to-b from-blue-600 to-blue-700 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] hover:from-blue-600 hover:to-blue-700/95"
           title={variant === 'external' && disabled ? 'Bitte zuerst ein Unternehmen auswählen' : 'Neuen Kontakt anlegen'}
           disabled={disabled}
         >
@@ -314,7 +313,6 @@ export function CreateContactDialog({
             <Button
               type="submit"
               disabled={loading}
-              className="rounded-lg bg-gradient-to-b from-blue-600 to-blue-700 text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] hover:from-blue-600 hover:to-blue-700/95"
             >
               {loading && <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />}
               Speichern
