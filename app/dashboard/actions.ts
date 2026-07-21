@@ -429,11 +429,21 @@ export type MatchReferenceFilters = {
   minVolume?: number | null
   /** Höchst-Volumen in Euro (numerisch). */
   maxVolume?: number | null
+  /**
+   * Mehrere Volumen-Bänder (OR). Wenn gesetzt, hat Vorrang vor min/max
+   * in der Client-Nachfilterung.
+   */
+  volumeBands?: Array<'lt1' | 'gte1' | 'gte2' | 'gte5' | 'gte10'> | null
   statuses?: string[] | null
   /** ISO-Timestamp; nur Referenzen mit created_at >= createdAfter. */
   createdAfter?: string | null
   /** ISO-Timestamp; nur Referenzen mit created_at < createdBefore (z. B. älter als 36 Monate). */
   createdBefore?: string | null
+  /**
+   * Mehrere Aktualitäts-Fenster (OR): positiv = letzte N Monate,
+   * negativ = älter als |N| Monate. Hat Vorrang vor createdAfter/Before clientseitig.
+   */
+  monthsBackList?: number[] | null
 }
 
 export type MatchReferencesOptions = {

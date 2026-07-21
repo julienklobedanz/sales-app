@@ -12,13 +12,12 @@
 import { useState, useLayoutEffect, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { ArrowUp, Plus } from 'lucide-react'
+import { ArrowUp, Plus, RotateCcw } from 'lucide-react'
 import { Loader } from '@hugeicons/core-free-icons'
 
 import { AppIcon } from '@/lib/icons'
 import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 import { COPY } from '@/lib/copy'
-import { Button } from '@/components/ui/button'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import {
   Tooltip,
@@ -37,6 +36,13 @@ import {
 import type { DealRow } from '@/app/dashboard/deals/types'
 import { cn } from '@/lib/utils'
 import { parseSmartMatchQuery } from '@/lib/match/parse-smart-match-query'
+import {
+  VOLUME_BAND_OPTIONS,
+  volumeBandFromMinVolume,
+  rpcVolumeBoundsFromBands,
+  rpcRecencyBoundsFromMonthsBackList,
+  type VolumeBandId,
+} from '@/lib/match/smart-match-multi-filters'
 
 const SUGGESTIONS = [
   { label: '>2 Mio €', q: 'Projekte über 2 Mio Euro im Enterprise-Umfeld' },
@@ -48,22 +54,19 @@ const SUGGESTIONS = [
 
 type FiltersState = {
   industries: string[]
-  minVolume: number | null
-  /** Exklusiv zu minVolume: z. B. &lt; 1 Mio → maxVolume = 999_999 */
-  maxVolume: number | null
+  volumeBands: VolumeBandId[]
   statuses: string[]
-  monthsBack: number | null
+  monthsBackList: number[]
 }
 const EMPTY_FILTERS: FiltersState = {
   industries: [],
-  minVolume: null,
-  maxVolume: null,
+  volumeBands: [],
   statuses: [],
-  monthsBack: null,
+  monthsBackList: [],
 }
 
 /** Session-Persistenz: Browser-Zurück nach Referenz-Details behält Treffer. */
-const SMART_MATCH_SESSION_KEY = 'refstack:smart-match:last-search:v2'
+const SMART_MATCH_SESSION_KEY = 'refstack:smart-match:last-search:v3'
 
 type SmartMatchSessionState = {
   query: string
@@ -72,25 +75,51 @@ type SmartMatchSessionState = {
   results: MatchReferenceHit[]
 }
 
+function normalizeFilters(raw: Partial<FiltersState> | undefined): FiltersState {
+  const legacy = raw as Partial<FiltersState> & {
+    minVolume?: number | null
+    maxVolume?: number | null
+    monthsBack?: number | null
+  }
+  let volumeBands = Array.isArray(legacy?.volumeBands)
+    ? legacy.volumeBands.filter((b): b is VolumeBandId =>
+        VOLUME_BAND_OPTIONS.some((o) => o.value === b)
+      )
+    : []
+  if (!volumeBands.length) {
+    if (typeof legacy?.maxVolume === 'number' && legacy.minVolume == null) {
+      volumeBands = ['lt1']
+    } else if (typeof legacy?.minVolume === 'number') {
+      const band = volumeBandFromMinVolume(legacy.minVolume)
+      if (band) volumeBands = [band]
+    }
+  }
+  let monthsBackList = Array.isArray(legacy?.monthsBackList)
+    ? legacy.monthsBackList.filter((n): n is number => typeof n === 'number')
+    : []
+  if (!monthsBackList.length && typeof legacy?.monthsBack === 'number') {
+    monthsBackList = [legacy.monthsBack]
+  }
+  return {
+    industries: Array.isArray(legacy?.industries) ? legacy.industries.map(String) : [],
+    volumeBands,
+    statuses: Array.isArray(legacy?.statuses) ? legacy.statuses.map(String) : [],
+    monthsBackList,
+  }
+}
+
 function readSmartMatchSession(): SmartMatchSessionState | null {
   if (typeof window === 'undefined') return null
   try {
-    const raw = sessionStorage.getItem(SMART_MATCH_SESSION_KEY)
+    const raw =
+      sessionStorage.getItem(SMART_MATCH_SESSION_KEY) ??
+      sessionStorage.getItem('refstack:smart-match:last-search:v2')
     if (!raw) return null
     const parsed = JSON.parse(raw) as Partial<SmartMatchSessionState>
     if (typeof parsed.query !== 'string' || !Array.isArray(parsed.results)) return null
     return {
       query: parsed.query,
-      filters: {
-        industries: Array.isArray(parsed.filters?.industries) ? parsed.filters.industries : [],
-        minVolume:
-          typeof parsed.filters?.minVolume === 'number' ? parsed.filters.minVolume : null,
-        maxVolume:
-          typeof parsed.filters?.maxVolume === 'number' ? parsed.filters.maxVolume : null,
-        statuses: Array.isArray(parsed.filters?.statuses) ? parsed.filters.statuses : [],
-        monthsBack:
-          typeof parsed.filters?.monthsBack === 'number' ? parsed.filters.monthsBack : null,
-      },
+      filters: normalizeFilters(parsed.filters),
       selectedDealId:
         typeof parsed.selectedDealId === 'string' ? parsed.selectedDealId : null,
       results: parsed.results as MatchReferenceHit[],
@@ -113,133 +142,103 @@ function writeSmartMatchSession(state: SmartMatchSessionState | null) {
   }
 }
 
-type VolumeSelectValue = 'all' | 'lt1' | 'gte1' | 'gte2' | 'gte5' | 'gte10'
-
-const VOLUME_OPTIONS: { label: string; value: VolumeSelectValue }[] = [
-  { label: 'Alle', value: 'all' },
-  { label: '< 1 Mio €', value: 'lt1' },
-  { label: '≥ 1 Mio €', value: 'gte1' },
-  { label: '≥ 2 Mio €', value: 'gte2' },
-  { label: '≥ 5 Mio €', value: 'gte5' },
-  { label: '≥ 10 Mio €', value: 'gte10' },
-]
-
-function volumeSelectFromFilters(f: FiltersState): VolumeSelectValue {
-  if (f.maxVolume != null && f.minVolume == null) return 'lt1'
-  if (f.minVolume === 10_000_000) return 'gte10'
-  if (f.minVolume === 5_000_000) return 'gte5'
-  if (f.minVolume === 2_000_000) return 'gte2'
-  if (f.minVolume === 1_000_000) return 'gte1'
-  return 'all'
-}
-
-function volumeFiltersFromSelect(value: VolumeSelectValue): Pick<FiltersState, 'minVolume' | 'maxVolume'> {
-  switch (value) {
-    case 'lt1':
-      return { minVolume: null, maxVolume: 999_999 }
-    case 'gte1':
-      return { minVolume: 1_000_000, maxVolume: null }
-    case 'gte2':
-      return { minVolume: 2_000_000, maxVolume: null }
-    case 'gte5':
-      return { minVolume: 5_000_000, maxVolume: null }
-    case 'gte10':
-      return { minVolume: 10_000_000, maxVolume: null }
-    case 'all':
-    default:
-      return { minVolume: null, maxVolume: null }
-  }
-}
-
-function volumeFilterLabel(f: FiltersState): string {
-  if (f.maxVolume != null && f.minVolume == null) return '< 1 Mio €'
-  if (f.minVolume != null) return `≥ ${f.minVolume / 1_000_000} Mio €`
-  return 'Volumen'
-}
-
-const RECENCY_OPTIONS: { label: string; value: number | null }[] = [
-  { label: 'Alle', value: null },
+const RECENCY_OPTIONS: { label: string; value: number }[] = [
   { label: 'Letzte 12 Monate', value: 12 },
   { label: 'Letzte 24 Monate', value: 24 },
   { label: 'Letzte 36 Monate', value: 36 },
   { label: 'Älter als 36 Monate', value: -36 },
 ]
-const STATUS_OPTIONS: { label: string; value: string | null }[] = [
-  { label: 'Alle', value: null },
+const STATUS_OPTIONS: { label: string; value: string }[] = [
   { label: 'Freigegeben', value: 'approved' },
   { label: 'Intern', value: 'internal_only' },
   { label: 'Anonymisiert', value: 'anonymized' },
   { label: 'Extern', value: 'external' },
   { label: 'Entwurf', value: 'draft' },
 ]
-const INDUSTRY_OPTIONS: { label: string; value: string | null }[] = [
-  { label: 'Alle', value: null },
-  ...MASTER_INDUSTRIES.map((ind) => ({ label: ind.labelDe, value: ind.id })),
-]
+const INDUSTRY_OPTIONS: { label: string; value: string }[] = MASTER_INDUSTRIES.map((ind) => ({
+  label: ind.labelDe,
+  value: ind.id,
+}))
 
 function toApiFilters(f: FiltersState): MatchReferenceFilters {
-  let createdAfter: string | null = null
-  let createdBefore: string | null = null
-  if (f.monthsBack != null && f.monthsBack > 0) {
-    const d = new Date()
-    d.setMonth(d.getMonth() - f.monthsBack)
-    createdAfter = d.toISOString()
-  } else if (f.monthsBack != null && f.monthsBack < 0) {
-    const d = new Date()
-    d.setMonth(d.getMonth() - Math.abs(f.monthsBack))
-    createdBefore = d.toISOString()
-  }
+  const volumeBounds = rpcVolumeBoundsFromBands(f.volumeBands)
+  const recencyBounds = rpcRecencyBoundsFromMonthsBackList(f.monthsBackList)
   return {
     industries: f.industries.length ? f.industries : null,
-    minVolume: f.minVolume,
-    maxVolume: f.maxVolume,
+    minVolume: volumeBounds.minVolume,
+    maxVolume: volumeBounds.maxVolume,
+    volumeBands: f.volumeBands.length ? f.volumeBands : null,
     statuses: f.statuses.length ? f.statuses : null,
-    createdAfter,
-    createdBefore,
+    createdAfter: recencyBounds.createdAfter,
+    createdBefore: recencyBounds.createdBefore,
+    monthsBackList: f.monthsBackList.length ? f.monthsBackList : null,
   }
 }
 
 function filtersActive(f: FiltersState): boolean {
   return (
     f.industries.length > 0 ||
-    f.minVolume !== null ||
-    f.maxVolume !== null ||
+    f.volumeBands.length > 0 ||
     f.statuses.length > 0 ||
-    f.monthsBack !== null
+    f.monthsBackList.length > 0
   )
 }
 
-function mergeFiltersFromQuery(current: FiltersState, query: string): FiltersState {
+/** Filter kommen ausschließlich aus der aktuellen Query — nichts von der vorherigen Suche. */
+function filtersFromQuery(query: string): FiltersState {
   const parsed = parseSmartMatchQuery(query)
+  const band =
+    parsed.minVolume != null ? volumeBandFromMinVolume(parsed.minVolume) : null
   return {
-    industries: parsed.found.industry
-      ? parsed.industryId
-        ? [parsed.industryId]
-        : []
-      : current.industries,
-    minVolume: parsed.found.volume ? parsed.minVolume : current.minVolume,
-    maxVolume: parsed.found.volume ? null : current.maxVolume,
-    statuses: current.statuses,
-    monthsBack: parsed.found.recency ? parsed.monthsBack : current.monthsBack,
+    industries: parsed.industryId ? [parsed.industryId] : [],
+    volumeBands: band ? [band] : [],
+    statuses: [],
+    monthsBackList: parsed.monthsBack != null ? [parsed.monthsBack] : [],
   }
 }
 
+function multiFilterLabel(
+  emptyLabel: string,
+  selectedLabels: string[]
+): string {
+  if (!selectedLabels.length) return emptyLabel
+  if (selectedLabels.length === 1) return selectedLabels[0]!
+  return `${emptyLabel} (${selectedLabels.length})`
+}
+
 function industryFilterLabel(f: FiltersState): string {
-  if (!f.industries.length) return 'Branche'
-  const id = f.industries[0]!
-  return MASTER_INDUSTRIES.find((i) => i.id === id)?.labelDe ?? 'Branche'
+  return multiFilterLabel(
+    'Branche',
+    f.industries.map(
+      (id) => MASTER_INDUSTRIES.find((i) => i.id === id)?.labelDe ?? id
+    )
+  )
+}
+
+function volumeFilterLabel(f: FiltersState): string {
+  return multiFilterLabel(
+    'Volumen',
+    f.volumeBands.map(
+      (b) => VOLUME_BAND_OPTIONS.find((o) => o.value === b)?.label ?? b
+    )
+  )
 }
 
 function statusFilterLabel(f: FiltersState): string {
-  if (!f.statuses.length) return 'Status'
-  const id = f.statuses[0]!
-  return STATUS_OPTIONS.find((s) => s.value === id)?.label ?? 'Status'
+  return multiFilterLabel(
+    'Status',
+    f.statuses.map((id) => STATUS_OPTIONS.find((s) => s.value === id)?.label ?? id)
+  )
 }
 
 function recencyFilterLabel(f: FiltersState): string {
-  if (f.monthsBack == null) return 'Aktualität'
-  if (f.monthsBack < 0) return `Älter als ${Math.abs(f.monthsBack)} Mon.`
-  return `Letzte ${f.monthsBack} Mon.`
+  return multiFilterLabel(
+    'Aktualität',
+    f.monthsBackList.map((m) => {
+      if (m < 0) return `Älter als ${Math.abs(m)} Mon.`
+      return `Letzte ${m} Mon.`
+    })
+  )
 }
 
 /** Deal-Kontext für den KI-Entwurf (Ghostwriter) — aus den DealRow-Feldern. */
@@ -291,33 +290,40 @@ function FilterMenu({
   )
 }
 
-function SingleSelect<T extends string | number | null>({
+function MultiSelect<T extends string | number>({
   options,
-  value,
-  onSelect,
+  values,
+  onChange,
   truncateLabels = true,
 }: {
   options: { label: string; value: T }[]
-  value: T
-  onSelect: (v: T) => void
+  values: T[]
+  onChange: (next: T[]) => void
   truncateLabels?: boolean
 }) {
+  function toggle(v: T) {
+    if (values.includes(v)) onChange(values.filter((x) => x !== v))
+    else onChange([...values, v])
+  }
   return (
     <div className="space-y-0.5">
-      {options.map((o) => (
-        <button
-          key={String(o.value)}
-          type="button"
-          onClick={() => onSelect(o.value)}
-          className={
-            'flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent ' +
-            (o.value === value ? 'font-medium text-primary' : 'text-foreground')
-          }
-        >
-          <span className={cn('pr-2', truncateLabels && 'truncate')}>{o.label}</span>
-          {o.value === value ? <span className="shrink-0">✓</span> : null}
-        </button>
-      ))}
+      {options.map((o) => {
+        const selected = values.includes(o.value)
+        return (
+          <button
+            key={String(o.value)}
+            type="button"
+            onClick={() => toggle(o.value)}
+            className={
+              'flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent ' +
+              (selected ? 'font-medium text-primary' : 'text-foreground')
+            }
+          >
+            <span className={cn('pr-2', truncateLabels && 'truncate')}>{o.label}</span>
+            {selected ? <span className="shrink-0">✓</span> : null}
+          </button>
+        )
+      })}
     </div>
   )
 }
@@ -393,8 +399,7 @@ export function SmartMatchShell({
 
   async function runSearch(opts?: { text?: string; filters?: FiltersState; dealId?: string | null }) {
     const q = (opts?.text ?? query).trim()
-    const f =
-      opts?.filters ?? mergeFiltersFromQuery(filters, opts?.text ?? query)
+    const f = opts?.filters ?? filtersFromQuery(opts?.text ?? query)
     if (opts?.filters === undefined) {
       setFilters(f)
     }
@@ -472,7 +477,7 @@ export function SmartMatchShell({
 
       <div className="flex min-h-0 flex-1 flex-col">
         {showResultsPanel ? (
-          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-4">
+          <div className="mt-3 min-h-0 flex-1 space-y-3 overflow-y-auto pb-4 md:mt-4">
               {/* Filter + Meta */}
               <div className="flex flex-wrap items-center justify-between gap-2.5 text-[13px] text-muted-foreground">
                 <div className="flex flex-wrap items-center gap-2">
@@ -481,26 +486,22 @@ export function SmartMatchShell({
                     active={filters.industries.length > 0}
                     contentClassName="w-[22rem] max-w-[min(22rem,calc(100vw-2rem))]"
                   >
-                    <SingleSelect
+                    <MultiSelect
                       options={INDUSTRY_OPTIONS}
-                      value={filters.industries[0] ?? null}
+                      values={filters.industries}
                       truncateLabels={false}
-                      onSelect={(v) =>
-                        updateFilters({ ...filters, industries: v ? [v] : [] })
-                      }
+                      onChange={(industries) => updateFilters({ ...filters, industries })}
                     />
                   </FilterMenu>
 
                   <FilterMenu
                     label={volumeFilterLabel(filters)}
-                    active={filters.minVolume !== null || filters.maxVolume !== null}
+                    active={filters.volumeBands.length > 0}
                   >
-                    <SingleSelect
-                      options={VOLUME_OPTIONS}
-                      value={volumeSelectFromFilters(filters)}
-                      onSelect={(v) =>
-                        updateFilters({ ...filters, ...volumeFiltersFromSelect(v) })
-                      }
+                    <MultiSelect
+                      options={VOLUME_BAND_OPTIONS}
+                      values={filters.volumeBands}
+                      onChange={(volumeBands) => updateFilters({ ...filters, volumeBands })}
                     />
                   </FilterMenu>
 
@@ -508,23 +509,23 @@ export function SmartMatchShell({
                     label={statusFilterLabel(filters)}
                     active={filters.statuses.length > 0}
                   >
-                    <SingleSelect
+                    <MultiSelect
                       options={STATUS_OPTIONS}
-                      value={filters.statuses[0] ?? null}
-                      onSelect={(v) =>
-                        updateFilters({ ...filters, statuses: v ? [v] : [] })
-                      }
+                      values={filters.statuses}
+                      onChange={(statuses) => updateFilters({ ...filters, statuses })}
                     />
                   </FilterMenu>
 
                   <FilterMenu
                     label={recencyFilterLabel(filters)}
-                    active={filters.monthsBack !== null}
+                    active={filters.monthsBackList.length > 0}
                   >
-                    <SingleSelect
+                    <MultiSelect
                       options={RECENCY_OPTIONS}
-                      value={filters.monthsBack}
-                      onSelect={(v) => updateFilters({ ...filters, monthsBack: v })}
+                      values={filters.monthsBackList}
+                      onChange={(monthsBackList) =>
+                        updateFilters({ ...filters, monthsBackList })
+                      }
                     />
                   </FilterMenu>
 
@@ -532,9 +533,11 @@ export function SmartMatchShell({
                     <button
                       type="button"
                       onClick={() => updateFilters(EMPTY_FILTERS)}
-                      className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                      aria-label="Filter zurücksetzen"
+                      title="Filter zurücksetzen"
+                      className="inline-flex size-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                     >
-                      Zurücksetzen
+                      <RotateCcw className="size-3.5" strokeWidth={2} aria-hidden />
                     </button>
                   ) : null}
                 </div>
@@ -573,23 +576,8 @@ export function SmartMatchShell({
                 </div>
               ) : (
                 /* Ehrlicher Leerzustand statt Fake-Treffer (Proof over Promise) */
-                <div className="flex items-center justify-between gap-3 rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-[13.5px] text-destructive">
-                  <span>⚠ Keine passenden Referenzen für diese Anfrage gefunden.</span>
-                  <span className="flex gap-1.5">
-                    <Button variant="outline" size="sm" onClick={() => toast.success('Referenz angefragt (folgt)')}>
-                      Referenz anfragen
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setResults(null)
-                        persistSession({ results: null })
-                      }}
-                    >
-                      Bedarf verfeinern
-                    </Button>
-                  </span>
+                <div className="rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-[13.5px] text-destructive">
+                  ⚠ Keine passenden Referenzen für diese Anfrage gefunden.
                 </div>
               )}
           </div>
