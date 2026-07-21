@@ -9,6 +9,8 @@ export type HomepageSemanticReferenceHit = {
   companyId: string | null
   companyLogoUrl: string | null
   volumeEur: string | null
+  /** ISO-Timestamp für Meta-Zeile (Aktualität). */
+  createdAt: string | null
 }
 
 export type HomepageSemanticSearchResult =

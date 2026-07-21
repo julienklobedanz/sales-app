@@ -38,4 +38,10 @@ describe('getMatchStrength', () => {
     expect(s.labelShort).toBe('Hoch')
     expect(s.tier).toBe('good')
   })
+
+  it('browse sentinel has no fake relevance label', () => {
+    const s = getMatchStrength(-1)
+    expect(s.tier).toBe('low')
+    expect(s.labelShort).toBe('—')
+  })
 })

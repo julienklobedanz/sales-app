@@ -55,11 +55,20 @@ function bumpTier(strength: MatchStrengthDisplay): MatchStrengthDisplay {
 /**
  * Match-Stärke für UI (Label im Kreis). Basiert auf Roh-Cosine-Similarity;
  * optional eine Stufe hoch für Top-1 bei großem Abstand zum nächsten Treffer.
+ * Negativ / NaN = Browse-Übersicht ohne Score.
  */
 export function getMatchStrength(
   similarity01: number,
   options?: { rank?: number; gapToNext?: number | null }
 ): MatchStrengthDisplay {
+  if (!Number.isFinite(similarity01) || similarity01 < 0) {
+    return {
+      tier: 'low',
+      labelShort: '—',
+      ariaLabel: 'Übersicht ohne Relevanz-Score',
+    }
+  }
+
   let strength = bandForSimilarity(similarity01)
 
   const rank = options?.rank ?? 1

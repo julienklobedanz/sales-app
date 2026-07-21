@@ -432,6 +432,8 @@ export type MatchReferenceFilters = {
   statuses?: string[] | null
   /** ISO-Timestamp; nur Referenzen mit created_at >= createdAfter. */
   createdAfter?: string | null
+  /** ISO-Timestamp; nur Referenzen mit created_at < createdBefore (z. B. älter als 36 Monate). */
+  createdBefore?: string | null
 }
 
 export type MatchReferencesOptions = {

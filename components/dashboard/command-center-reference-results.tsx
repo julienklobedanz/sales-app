@@ -20,6 +20,7 @@ function toMatchHit(hit: HomepageSemanticReferenceHit): MatchReferenceHit {
     companyId: hit.companyId,
     companyLogoUrl: hit.companyLogoUrl,
     volumeEur: hit.volumeEur,
+    createdAt: hit.createdAt,
   }
 }
 

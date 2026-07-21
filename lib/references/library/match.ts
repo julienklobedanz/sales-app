@@ -10,6 +10,8 @@ import { logReferenceMatched } from '@/lib/events/log-reference-matched'
 import { formatIndustryDisplay } from '@/lib/constants/industries'
 import { withTiming } from '@/lib/observability/timing'
 import { log } from '@/lib/observability/logger'
+import { RPC_SALES_VISIBLE_REFERENCE_STATUSES } from '@/lib/roles/reference-visibility-scope'
+import { parseStoredVolumeEur } from '@/lib/match/parse-smart-match-query'
 
 import type {
   MatchReferenceHit,
@@ -36,9 +38,6 @@ export async function matchReferencesImpl(
   options?: MatchReferencesOptions
 ): Promise<MatchReferencesResult> {
   const raw = input?.trim() ?? ''
-  if (!raw) {
-    return { success: false, error: 'Bitte eine Suchanfrage eingeben.' }
-  }
 
   const supabase = await createServerSupabaseClient()
   const {
@@ -55,6 +54,25 @@ export async function matchReferencesImpl(
 
   const orgId = visibility.organizationId
   const salesVisibleOnly = visibility.salesVisibleOnly
+  const matchCount = options?.matchCount ?? MATCH_DEFAULT_COUNT
+  const needsOverFetch =
+    typeof options?.filters?.minVolume === 'number' ||
+    typeof options?.filters?.maxVolume === 'number' ||
+    Boolean(options?.filters?.createdBefore)
+  const fetchCount = needsOverFetch
+    ? Math.min(Math.max(matchCount * 4, 24), 50)
+    : matchCount
+
+  // Leere Anfrage = Browse: neueste Referenzen der Org (kein Embedding-Score).
+  if (!raw) {
+    return browseRecentReferences(supabase, {
+      orgId,
+      salesVisibleOnly,
+      matchCount: fetchCount,
+      filters: options?.filters,
+      dealId: dealId ?? null,
+    })
+  }
 
   let queryText = raw
 
@@ -101,7 +119,6 @@ export async function matchReferencesImpl(
   const embedding = emb.embedding
 
   const matchThreshold = options?.matchThreshold ?? MATCH_DEFAULT_THRESHOLD
-  const matchCount = options?.matchCount ?? MATCH_DEFAULT_COUNT
 
   const { result: rpcResult, ms: rpcMs } = await withTiming(
     'match.rpc',
@@ -109,10 +126,17 @@ export async function matchReferencesImpl(
       rpcMatchReferences(supabase, {
         queryEmbedding: embedding,
         matchThreshold,
-        matchCount,
+        matchCount: fetchCount,
         organizationId: orgId,
         salesVisibleOnly,
-        filters: options?.filters,
+        // Volumen nur clientseitig (volume_eur ist Freitext, SQL-Ziffernstrip zu ungenau).
+        filters: options?.filters
+          ? {
+              ...options.filters,
+              minVolume: null,
+              maxVolume: null,
+            }
+          : undefined,
       }),
     { organizationId: orgId }
   )
@@ -148,6 +172,11 @@ export async function matchReferencesImpl(
     )
     matches = reranked
   }
+
+  matches = applyClientSideStructuralFilters(matches, options?.filters)
+
+  // Score-Ranking für die UI: bestes Match zuerst (auch nach optionalem Rerank).
+  matches = sortMatchesBySimilarityDesc(matches).slice(0, matchCount)
 
   if (matches.length > 0) {
     const companyByRef = await fetchCompanyFieldsForReferenceIds(
@@ -187,6 +216,171 @@ export async function matchReferencesImpl(
   })
 
   return { success: true, matches }
+}
+
+/** Sentinel: Browse/Übersicht ohne semantischen Score (UI zeigt „—“). */
+const BROWSE_SIMILARITY_SENTINEL = -1
+
+async function browseRecentReferences(
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+  params: {
+    orgId: string
+    salesVisibleOnly: boolean
+    matchCount: number
+    filters?: MatchReferencesOptions['filters']
+    dealId: string | null
+  }
+): Promise<MatchReferencesResult> {
+  const { orgId, salesVisibleOnly, matchCount, filters, dealId } = params
+  const start = performance.now()
+
+  let q = supabase
+    .from('references')
+    .select('id, title, summary, industry, volume_eur, status, created_at, company_id')
+    .eq('organization_id', orgId)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false })
+    .limit(Math.min(Math.max(matchCount, 1), 50))
+
+  if (salesVisibleOnly) {
+    q = q.in('status', [...RPC_SALES_VISIBLE_REFERENCE_STATUSES])
+  }
+
+  const f = filters
+  if (f?.industries?.length) {
+    q = q.in('industry', f.industries)
+  }
+  if (f?.statuses?.length) {
+    q = q.in('status', f.statuses)
+  }
+  if (f?.createdAfter) {
+    q = q.gte('created_at', f.createdAfter)
+  }
+  if (f?.createdBefore) {
+    q = q.lt('created_at', f.createdBefore)
+  }
+
+  const { data, error } = await q
+  if (error) {
+    return { success: false, error: error.message }
+  }
+
+  let rows = data ?? []
+
+  // Volumen-Filter clientseitig (volume_eur ist Freitext).
+  if (typeof f?.minVolume === 'number') {
+    const min = f.minVolume
+    rows = rows.filter((r) => {
+      const n = parseStoredVolumeEur(r.volume_eur)
+      return n != null && n >= min
+    })
+  }
+  if (typeof f?.maxVolume === 'number') {
+    const max = f.maxVolume
+    rows = rows.filter((r) => {
+      const n = parseStoredVolumeEur(r.volume_eur)
+      return n != null && n <= max
+    })
+  }
+
+  let matches: MatchReferenceHit[] = rows.map((r) => {
+    const summary = typeof r.summary === 'string' ? r.summary.trim() || null : null
+    const title = typeof r.title === 'string' ? r.title : ''
+    const volRaw = typeof r.volume_eur === 'string' ? r.volume_eur.trim() : null
+    return {
+      id: String(r.id),
+      title,
+      summary,
+      industry: typeof r.industry === 'string' ? r.industry : null,
+      similarity: BROWSE_SIMILARITY_SENTINEL,
+      snippet: snippetFromSummary(summary, title),
+      companyName: null,
+      volumeEur: volRaw && volRaw.length > 0 ? volRaw : null,
+      status: typeof r.status === 'string' ? r.status : null,
+      createdAt: typeof r.created_at === 'string' ? r.created_at : null,
+    }
+  })
+
+  if (matches.length > 0) {
+    const companyByRef = await fetchCompanyFieldsForReferenceIds(
+      supabase,
+      matches.map((m) => m.id)
+    )
+    matches = matches.map((m) => {
+      const co = companyByRef.get(m.id)
+      if (!co) return m
+      return {
+        ...m,
+        companyId: co.companyId,
+        companyName: m.companyName ?? co.companyName,
+        companyLogoUrl: co.companyLogoUrl,
+      }
+    })
+  }
+
+  const totalMs = Math.round(performance.now() - start)
+  log.info('match.browse', {
+    label: 'match.browse',
+    ms: totalMs,
+    organizationId: orgId,
+    resultCount: matches.length,
+  })
+
+  void logReferenceMatched({
+    organizationId: orgId,
+    matchedReferenceIds: matches.map((m) => m.id),
+    source: dealId ? 'deal_context' : 'match_page',
+    dealId,
+    rerank: false,
+    matchThreshold: 0,
+    durationMs: totalMs,
+  })
+
+  return { success: true, matches }
+}
+
+function sortMatchesBySimilarityDesc(matches: MatchReferenceHit[]): MatchReferenceHit[] {
+  return [...matches].sort((a, b) => {
+    // Browse-Sentinel (-1) ans Ende; sonst absteigend nach Score
+    if (a.similarity < 0 && b.similarity < 0) return 0
+    if (a.similarity < 0) return 1
+    if (b.similarity < 0) return -1
+    return b.similarity - a.similarity
+  })
+}
+
+function applyClientSideStructuralFilters(
+  matches: MatchReferenceHit[],
+  filters: MatchReferencesOptions['filters'] | undefined
+): MatchReferenceHit[] {
+  if (!filters) return matches
+  let next = matches
+
+  if (typeof filters.minVolume === 'number') {
+    const min = filters.minVolume
+    next = next.filter((m) => {
+      const n = parseStoredVolumeEur(m.volumeEur)
+      return n != null && n >= min
+    })
+  }
+  if (typeof filters.maxVolume === 'number') {
+    const max = filters.maxVolume
+    next = next.filter((m) => {
+      const n = parseStoredVolumeEur(m.volumeEur)
+      return n != null && n <= max
+    })
+  }
+  if (filters.createdBefore) {
+    const before = filters.createdBefore
+    next = next.filter((m) => m.createdAt != null && m.createdAt < before)
+  }
+  if (filters.createdAfter) {
+    // RPC filtert bereits; hier Absicherung falls createdAfter nur clientseitig gesetzt wurde
+    const after = filters.createdAfter
+    next = next.filter((m) => m.createdAt != null && m.createdAt >= after)
+  }
+
+  return next
 }
 
 /**

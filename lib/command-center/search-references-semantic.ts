@@ -119,6 +119,7 @@ export async function searchHomepageReferencesSemantic(
       companyId: null,
       companyLogoUrl: null,
       volumeEur: volRaw && volRaw.length > 0 ? volRaw : null,
+      createdAt: r.created_at ?? null,
     }
   })
 

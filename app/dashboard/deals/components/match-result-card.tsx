@@ -9,11 +9,10 @@ import { Button } from '@/components/ui/button'
 import { CompanyLogo } from '@/components/ui/company-logo'
 import { AppIcon } from '@/lib/icons'
 import { ROUTES } from '@/lib/routes'
-import { formatIndustryDisplay } from '@/lib/constants/industries'
-import { formatReferenceVolume } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { MatchScoreCircle } from '@/components/match/match-score-circle'
 import { getMatchStrength } from '@/lib/match/match-strength'
+import { formatMatchReferenceMetaLine } from '@/lib/match/match-reference-meta'
 import type { MatchReferenceHit } from '@/app/dashboard/actions'
 import { createSharedPortfolio } from '@/app/dashboard/actions'
 import { addReferenceToDealWithScore } from '../actions'
@@ -95,12 +94,11 @@ export function MatchResultCard({
   }
 
   const companyName = hit.companyName?.trim() || null
-  const meta = [
-    hit.volumeEur ? formatReferenceVolume(hit.volumeEur) || '—' : null,
-    formatIndustryDisplay(hit.industry) || null,
-  ]
-    .filter(Boolean)
-    .join(' · ')
+  const meta = formatMatchReferenceMetaLine({
+    industry: hit.industry,
+    volumeEur: hit.volumeEur,
+    createdAt: hit.createdAt,
+  })
 
   const matchStrength = getMatchStrength(hit.similarity, { rank, gapToNext })
 
