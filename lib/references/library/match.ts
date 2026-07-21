@@ -12,6 +12,7 @@ import { withTiming } from '@/lib/observability/timing'
 import { log } from '@/lib/observability/logger'
 import { RPC_SALES_VISIBLE_REFERENCE_STATUSES } from '@/lib/roles/reference-visibility-scope'
 import { parseStoredVolumeEur } from '@/lib/match/parse-smart-match-query'
+import type { Database } from '@/lib/database.types'
 
 import type {
   MatchReferenceHit,
@@ -251,7 +252,7 @@ async function browseRecentReferences(
     q = q.in('industry', f.industries)
   }
   if (f?.statuses?.length) {
-    q = q.in('status', f.statuses)
+    q = q.in('status', f.statuses as Database['public']['Enums']['reference_status'][])
   }
   if (f?.createdAfter) {
     q = q.gte('created_at', f.createdAfter)
