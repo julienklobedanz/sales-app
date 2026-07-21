@@ -24,6 +24,15 @@ describe('isLowValueRssTitle', () => {
     ).toBe(false)
     expect(isLowValueRssTitle('Siemens eröffnet neues Werk in Bayern')).toBe(false)
   })
+
+  it('filtert Sport, Entertainment und Safety-Sheets', () => {
+    expect(isLowValueRssTitle('Apple stellt mit 89 Emmy Award Nominierungen einen neuen Rekord auf')).toBe(
+      true
+    )
+    expect(isLowValueRssTitle('Madden NFL 27 Arcade Edition auf Apple Arcade')).toBe(true)
+    expect(isLowValueRssTitle('Sicherheitsdatenblatt - download.basf.com')).toBe(true)
+    expect(isLowValueRssTitle('Newsroom - Aurubis')).toBe(true)
+  })
 })
 
 describe('hasSalesTriggerHint', () => {

@@ -8,6 +8,8 @@ export type GoogleNewsRssItem = {
   link: string
   pubDate: Date | null
   sourceLabel: string | null
+  /** Kurztext aus RSS <description>, falls vorhanden (kein Full-Article). */
+  description: string | null
 }
 
 function stripTags(raw: string): string {
@@ -34,18 +36,26 @@ export function parseGoogleNewsRssXml(xml: string): GoogleNewsRssItem[] {
     const link = firstMatch(block, /<link[^>]*>([\s\S]*?)<\/link>/i)
     const pubRaw = firstMatch(block, /<pubDate[^>]*>([\s\S]*?)<\/pubDate>/i)
     const sourceFromTag = firstMatch(block, /<source[^>]*>([\s\S]*?)<\/source>/i)
+    const descriptionRaw =
+      firstMatch(block, /<description[^>]*>([\s\S]*?)<\/description>/i) ||
+      firstMatch(block, /<content:encoded[^>]*>([\s\S]*?)<\/content:encoded>/i)
     let sourceLabel = sourceFromTag || null
     if (!sourceLabel && title.includes(' - ')) {
       const parts = title.split(' - ')
       sourceLabel = parts[parts.length - 1]?.trim() || null
     }
     const pubDate = pubRaw ? new Date(pubRaw) : null
+    const description =
+      descriptionRaw && descriptionRaw.length >= 24 && descriptionRaw !== title
+        ? descriptionRaw.slice(0, 400)
+        : null
     if (title && link) {
       items.push({
         title,
         link: link.trim(),
         pubDate: pubDate && Number.isFinite(pubDate.getTime()) ? pubDate : null,
         sourceLabel,
+        description,
       })
     }
   }

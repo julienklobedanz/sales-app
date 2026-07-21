@@ -18,6 +18,20 @@ describe('parseGoogleNewsRssXml', () => {
     expect(items[0]!.link).toContain('google.com')
     expect(items[0]!.sourceLabel).toBe('Handelsblatt')
     expect(items[0]!.pubDate?.getUTCFullYear()).toBe(2025)
+    expect(items[0]!.description).toBeNull()
+  })
+
+  it('parst description als Snippet', () => {
+    const xml = `<?xml version="1.0"?>
+      <rss><channel>
+        <item>
+          <title>Siemens eröffnet Werk</title>
+          <link>https://news.google.com/rss/articles/x</link>
+          <description><![CDATA[Das Unternehmen investiert 200 Millionen Euro in Bayern.]]></description>
+        </item>
+      </channel></rss>`
+    const items = parseGoogleNewsRssXml(xml)
+    expect(items[0]!.description).toContain('200 Millionen')
   })
 })
 

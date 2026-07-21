@@ -254,6 +254,8 @@ export async function runExecutiveIntelIngest(
               title,
               companyName: rssCompanyName || companyNameFromDb,
               personName: w.personName,
+              snippet: item.description,
+              sourceUrl: item.link,
             })
             if (!enrichment.is_relevant) continue
 

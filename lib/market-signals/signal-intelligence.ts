@@ -50,8 +50,6 @@ export type MarketSignalIntelligence = {
   is_demission: boolean
 }
 
-const DEFAULT_SOLUTION = 'unsere Cloud-Infrastruktur-Lösung'
-
 const DEMISSION_RE =
   /\b(demission|zurückgetreten|tritt zurück|verlässt|ausgeschieden|ruhestand|resign|step(s|ped)? down|left the (role|company)|departed)\b/i
 
@@ -199,32 +197,31 @@ export function buildSalesWhyNow(input: {
   personTitleAfter?: string | null
   changeSummary?: string
   newsBody?: string
+  /** Optional: nur setzen, wenn die Org eine echte Solution-Bezeichnung hat — nie hardcoden. */
   solutionLabel?: string
 }): string {
-  const solution = normalizeTitle(input.solutionLabel ?? '') || DEFAULT_SOLUTION
+  const solution = normalizeTitle(input.solutionLabel ?? '')
   const company = normalizeTitle(input.companyName) || 'dem Account'
-  const name = normalizeTitle(input.personName ?? '') || 'Der neue Entscheider'
+  const name = normalizeTitle(input.personName ?? '') || 'Die Führungskraft'
   const after = normalizeTitle(input.personTitleAfter ?? '')
-  const transition = classifyRoleTransition(
-    input.personTitleBefore,
-    input.personTitleAfter,
-    input.changeSummary
-  )
 
   if (input.signalKind === 'exec') {
-    const roleLabel = after || 'neue Führungsrolle'
-    if (transition.is_step_down && !transition.is_demission) {
-      return `${name} übernimmt ${roleLabel} bei ${company}. In den ersten 90 Tagen entstehen oft neue Prioritäten für ${solution}.`
+    const summary = normalizeTitle(input.changeSummary ?? '').slice(0, 160)
+    if (summary) {
+      const sentence = /[.!?]$/.test(summary) ? summary : `${summary}.`
+      return solution ? `${sentence} Zeitfenster, ${solution} anzusprechen.` : sentence
     }
-    return `${name} wechselt auf den ${roleLabel}-Posten bei ${company}. Neue Entscheider evaluieren in den ersten 90 Tagen oft bestehende Dienstleister und ${solution}.`
+    const roleLabel = after || 'eine neue Führungsrolle'
+    const base = `${name} übernimmt ${roleLabel} bei ${company}.`
+    return solution ? `${base} Zeitfenster, ${solution} anzusprechen.` : base
   }
 
-  const hook = normalizeTitle(input.newsBody ?? input.changeSummary ?? '').slice(0, 140)
+  const hook = normalizeTitle(input.newsBody ?? input.changeSummary ?? '').slice(0, 160)
   if (hook) {
     const sentence = /[.!?]$/.test(hook) ? hook : `${hook}.`
-    return `${sentence} Das erhöht kurzfristig den Bedarf an einem klaren Business Case für ${solution}.`
+    return solution ? `${sentence} Das kann den Bedarf an ${solution} kurzfristig erhöhen.` : sentence
   }
-  return `Veränderung bei ${company} erhöht kurzfristig den Bedarf an belastbaren Referenzen für ${solution}.`
+  return `Aktuelle Entwicklung bei ${company}.`
 }
 
 export function buildReferenceInsightLine(input: {

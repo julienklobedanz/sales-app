@@ -8,7 +8,7 @@ export const RSS_MAX_AGE_DAYS_LEADERSHIP = 120
 
 /**
  * Offensichtliches Rauschen für B2B-Vertrieb — vor LLM-Aufruf verwerfen.
- * Fokus: Stellenanzeigen, Karriere-Seiten, HR-/Facility-Routine ohne Account-Trigger.
+ * Fokus: Stellenanzeigen, Karriere, Sport/Entertainment, Katalog-/Safety-Seiten.
  */
 export function isLowValueRssTitle(title: string): boolean {
   const raw = String(title ?? '').trim()
@@ -33,6 +33,23 @@ export function isLowValueRssTitle(title: string): boolean {
     return true
   }
   if (/\b(bauingenieur|koordinator legal|teamleiter|spezialist|sachbearbeiter)\s*\(m/i.test(t)) return true
+
+  // Sport / Entertainment / Consumer-PR
+  if (
+    /\b(emmy|oscars?|grammy|nfl|nba|mlb|mls|bundesliga|champions league|apple arcade|apple tv\+|streaming|filmpremiere|serienstart)\b/i.test(
+      t
+    )
+  ) {
+    return true
+  }
+  if (/\b(madden|fifa|call of duty|fortnite|playstation|xbox)\b/i.test(t)) return true
+
+  // Katalog / Safety / leere Newsroom-Listings
+  if (/\b(sicherheitsdatenblatt|safety data sheet|sds\b|produktkatalog|data sheet)\b/i.test(t)) {
+    return true
+  }
+  if (/^newsroom\s*[-–—:]\s*\w+/i.test(raw) && raw.length < 48) return true
+  if (/^presse\s*[-–—:]\s*\w+/i.test(raw) && raw.length < 48) return true
 
   return false
 }

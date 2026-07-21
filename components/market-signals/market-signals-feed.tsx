@@ -35,7 +35,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { COPY } from '@/lib/copy'
 import { AppIcon } from '@/lib/icons'
-import { truncateToCompleteSentences } from '@/lib/market-signals/compelling-event'
+import { sanitizeCompellingEventForDisplay } from '@/lib/market-signals/compelling-event'
 import {
   formatSignalSourceLabel,
   isLeadershipMoveTitle,
@@ -78,7 +78,7 @@ type FeedItem = {
 const COMPELLING_EVENT_MAX = 180
 
 function clampCompellingEvent(raw: string | null | undefined): string | null {
-  return truncateToCompleteSentences(raw, COMPELLING_EVENT_MAX)
+  return sanitizeCompellingEventForDisplay(raw, COMPELLING_EVENT_MAX)
 }
 
 function relativeTimeLabel(iso: string) {

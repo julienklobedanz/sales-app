@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { truncateToCompleteSentences } from '@/lib/market-signals/compelling-event'
+import {
+  sanitizeCompellingEventForDisplay,
+  truncateToCompleteSentences,
+} from '@/lib/market-signals/compelling-event'
 
 describe('truncateToCompleteSentences', () => {
   it('returns null for empty input', () => {
@@ -33,5 +36,23 @@ describe('truncateToCompleteSentences', () => {
       'Mit der Übernahme wird Apple seine KI-Strategie vorantreiben und neue Technologien integrieren bevor die Budgetplanung für das nächste Jahr abgeschlossen ist und weitere Partner eingebunden werden.'
     )
     expect(out).not.toContain('…')
+  })
+})
+
+describe('sanitizeCompellingEventForDisplay', () => {
+  it('strips legacy cloud boilerplate suffix', () => {
+    const raw =
+      'Apple stellt mit 89 Emmy Award Nominierungen einen neuen Rekord auf - Apple. Das erhöht kurzfristig den Bedarf an einem klaren Business Case für unsere Cloud-Infrastruktur-Lösung.'
+    const out = sanitizeCompellingEventForDisplay(raw)
+    expect(out).toContain('Emmy')
+    expect(out).not.toMatch(/Cloud-Infrastruktur/i)
+  })
+
+  it('hides generic Führungsrolle template', () => {
+    expect(
+      sanitizeCompellingEventForDisplay(
+        'Tim Cook wechselt auf den neue Führungsrolle-Posten bei Apple.'
+      )
+    ).toBeNull()
   })
 })

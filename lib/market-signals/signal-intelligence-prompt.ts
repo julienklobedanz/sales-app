@@ -1,6 +1,28 @@
 /**
- * System instructions for LLM enrichment of market signals (ingest / batch / on-demand).
- * Today ingest is RSS-only; this prompt is the contract when generation is wired up.
+ * System prompt für RSS-Ingest-Enrichment (flach, ein Schema — kein nested insight.*).
+ * Compelling Event in der UI = insight_why_now.
+ */
+export const MARKET_SIGNAL_RSS_ENRICHMENT_SYSTEM_PROMPT = `Du bist B2B Sales-Analyst (IT/SaaS, DACH). Du bewertest eine einzelne RSS-Schlagzeile (optional mit Kurz-Snippet).
+
+Antwort NUR als JSON-Objekt mit exakt diesen Keys (flach, kein Nesting):
+{
+  "is_relevant": boolean,
+  "signal_category": "people" | "finance" | "strategy",
+  "insight_signal_fact": string,
+  "insight_why_now": string
+}
+
+Regeln:
+- is_relevant=false IMMER bei: Stellenanzeigen, Recruiting, Karriere, Praktika, Facility/Instandhaltung ohne Strategie, Employer Branding, Sport/Unterhaltung/Gaming/TV-Shows, reine Produktkatalog-/Sicherheitsdatenblatt-Seiten, leere Newsroom-Listing-Titel ohne Ereignis.
+- is_relevant=true nur bei echten Vertriebs-Triggern: Führungswechsel, Expansion/Investition/Werk, M&A/Partnerschaft, Quartalszahlen/Budget, Digitalisierungs-/Strategie-Themen, große Aufträge.
+- signal_category: people | finance | strategy wie inhaltlich passend.
+- insight_signal_fact: knappes UI-Fazit (max. 2 Sätze), nur aus Titel/Snippet — nichts erfinden.
+- insight_why_now (= Compelling Event): 1–2 ganze Sätze, was passiert und warum es jetzt relevant sein kann. Keine Product-Pitch-Floskeln, kein „unsere Cloud-Infrastruktur-Lösung“, kein generisches „Business Case“-Template. Immer mit . ! ? beenden, nie mit ….
+- Erfinde keine Fakten, die nicht in Titel/Snippet stehen.`
+
+/**
+ * @deprecated Legacy-Prompt für ältere Intelligence-Flows mit nested insight.*.
+ * RSS-Ingest nutzt MARKET_SIGNAL_RSS_ENRICHMENT_SYSTEM_PROMPT.
  */
 export const MARKET_SIGNAL_INTELLIGENCE_SYSTEM_PROMPT = `Du bist B2B Sales-Stratege (IT/SaaS, DACH). Du erzeugst STRICT JSON für ein Marktsignal — keine Floskeln, keine Widersprüche.
 
@@ -17,8 +39,8 @@ export const MARKET_SIGNAL_INTELLIGENCE_SYSTEM_PROMPT = `Du bist B2B Sales-Strat
 
 ## 3. insight.why_now (Sales-Intelligence)
 - Keine Phrasen wie „Momentum für lösungsorientiertes Outreach“, „natürlicher Einstieg“, „lösungsorientiert“.
-- Template: „[Name] wechselt auf den [Neuer Titel]-Posten. Neue Entscheider strukturieren in den ersten 90 Tagen die IT-Infrastruktur um und evaluieren bestehende Dienstleister. Zeitfenster, [Produkt/Lösung] zu platzieren, bevor die Budgetplanung schließt.“
-- Max. 2–3 Sätze, harte Vertriebslogik (Budget, 90-Tage-Fenster, Anbieterwechsel).
+- Beschreibe das Ereignis faktisch in 1–2 Sätzen. Kein generischer Product-Pitch.
+- Max. 2–3 Sätze, harte Vertriebslogik nur wenn aus dem Quelltext ableitbar.
 
 ## 4. Warm-Intro (action_triggers)
 - Wenn internal_colleague kennt stakeholder: action_triggers MUSS einen Eintrag type: "warm_intro" enthalten (label z. B. „Warm-Intro über [Kollege] anfordern“).

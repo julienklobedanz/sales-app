@@ -213,6 +213,8 @@ export async function runCompanyNewsIngest(
           const enrichment = await enrichSignal({
             title: body,
             companyName: company.name,
+            snippet: item.description,
+            sourceUrl: item.link,
           })
           if (!enrichment.is_relevant) continue
 

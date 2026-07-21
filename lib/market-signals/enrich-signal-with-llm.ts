@@ -1,5 +1,8 @@
-import { MARKET_SIGNAL_INTELLIGENCE_SYSTEM_PROMPT } from '@/lib/market-signals/signal-intelligence-prompt'
-import { truncateToCompleteSentences } from '@/lib/market-signals/compelling-event'
+import { MARKET_SIGNAL_RSS_ENRICHMENT_SYSTEM_PROMPT } from '@/lib/market-signals/signal-intelligence-prompt'
+import {
+  sanitizeCompellingEventForDisplay,
+  truncateToCompleteSentences,
+} from '@/lib/market-signals/compelling-event'
 import {
   hasSalesTriggerHint,
   isLowValueRssTitle,
@@ -10,6 +13,11 @@ import {
   extractEmbeddedSignalHook,
   formatRoleChangeFact,
 } from '@/lib/market-signals/signal-intelligence'
+import {
+  fetchUrlMetaSnippet,
+  shouldFetchMetaSnippets,
+} from '@/lib/market-signals/fetch-url-meta-snippet'
+import { log } from '@/lib/observability/logger'
 
 const MODEL = 'gpt-4o-mini'
 const REQUEST_TIMEOUT_MS = 20_000
@@ -28,6 +36,10 @@ export type EnrichSignalInput = {
   title: string
   companyName: string
   personName?: string
+  /** Optional: RSS-Description / Kurzsnippet — kein Full-Article. */
+  snippet?: string | null
+  /** Optional: Artikel-URL für Meta-Fetch wenn MARKET_SIGNALS_FETCH_META=1. */
+  sourceUrl?: string | null
 }
 
 function inferNewsCategory(raw: string): 'finance' | 'strategy' {
@@ -60,7 +72,30 @@ function parseRelevanceFlag(raw: unknown): boolean {
   return true
 }
 
-function parseLlmEnrichmentJson(
+function pickWhyNowField(row: Record<string, unknown>): string {
+  const flat = row.insight_why_now
+  if (typeof flat === 'string' && flat.trim()) return flat
+  const insight = row.insight
+  if (insight && typeof insight === 'object') {
+    const nested = (insight as Record<string, unknown>).why_now
+    if (typeof nested === 'string' && nested.trim()) return nested
+  }
+  return ''
+}
+
+function pickFactField(row: Record<string, unknown>): string {
+  const flat = row.insight_signal_fact
+  if (typeof flat === 'string' && flat.trim()) return flat
+  const insight = row.insight
+  if (insight && typeof insight === 'object') {
+    const nested = (insight as Record<string, unknown>).signal_fact
+    if (typeof nested === 'string' && nested.trim()) return nested
+  }
+  return ''
+}
+
+/** Export für Tests. */
+export function parseLlmEnrichmentJson(
   raw: string,
   fallbackCategory: SignalCategory
 ): Omit<SignalEnrichment, 'enrichment_source'> | null {
@@ -73,8 +108,11 @@ function parseLlmEnrichmentJson(
   if (!parsed || typeof parsed !== 'object') return null
 
   const row = parsed as Record<string, unknown>
-  const fact = clampText(row.insight_signal_fact, 280)
-  const whyNow = truncateToCompleteSentences(String(row.insight_why_now ?? ''), 180) ?? ''
+  const fact = clampText(pickFactField(row), 280)
+  const whyNow =
+    sanitizeCompellingEventForDisplay(pickWhyNowField(row), 180) ??
+    truncateToCompleteSentences(pickWhyNowField(row), 180) ??
+    ''
   if (!fact || !whyNow) return null
 
   return {
@@ -85,12 +123,17 @@ function parseLlmEnrichmentJson(
   }
 }
 
-/** Heuristischer Fallback wenn kein API-Key oder LLM-Aufruf fehlschlägt. */
+/**
+ * Heuristischer Fallback: faktische Headline, kein Product-Pitch-Boilerplate.
+ * Lieber knapper Why-now als Einheits-„Cloud-Infrastruktur“-Text.
+ */
 export function buildHeuristicSignalEnrichment(input: EnrichSignalInput): SignalEnrichment {
   const title = String(input.title ?? '').trim()
   const companyName = String(input.companyName ?? '').trim() || 'dem Account'
   const personName = String(input.personName ?? '').trim()
+  const snippet = String(input.snippet ?? '').trim()
   const signalKind = personName ? 'exec' : 'news'
+  const bodyForWhy = snippet && snippet.length > title.length ? `${title}. ${snippet}` : title
 
   const hook =
     extractEmbeddedSignalHook({
@@ -112,17 +155,20 @@ export function buildHeuristicSignalEnrichment(input: EnrichSignalInput): Signal
         })
       : clampText(hook, 280) || `Account-Signal bei ${companyName}.`
 
+  // Kein solutionLabel → kein Cloud-Pitch in buildSalesWhyNow
   const insight_why_now =
-    truncateToCompleteSentences(
+    sanitizeCompellingEventForDisplay(
       buildSalesWhyNow({
         signalKind,
         personName: personName || undefined,
         companyName,
         changeSummary: title,
-        newsBody: title,
+        newsBody: bodyForWhy.slice(0, 200),
       }),
       180
-    ) ?? ''
+    ) ??
+    truncateToCompleteSentences(title, 180) ??
+    ''
 
   const signal_category: SignalCategory = personName ? 'people' : inferNewsCategory(title)
 
@@ -143,14 +189,16 @@ async function callOpenAiEnrichment(
   const title = String(input.title ?? '').trim()
   const companyName = String(input.companyName ?? '').trim()
   const personName = String(input.personName ?? '').trim()
+  const snippet = String(input.snippet ?? '').trim().slice(0, 400)
 
   const userPrompt = `Analysiere diese RSS-Schlagzeile für B2B-Vertrieb (IT/SaaS, DACH).
 
 Firma: ${companyName || '—'}
 ${personName ? `Person (Executive): ${personName}` : 'Kontext: Unternehmens-News (kein Executive-Fokus)'}
 Schlagzeile: ${title}
+${snippet ? `Snippet: ${snippet}` : 'Snippet: —'}
 
-Antworte NUR mit JSON (kein Markdown, keine Code-Fences):
+Antworte NUR mit JSON (kein Markdown, keine Code-Fences) im flachen Schema:
 {
   "is_relevant": boolean,
   "signal_category": "people" | "finance" | "strategy",
@@ -158,12 +206,8 @@ Antworte NUR mit JSON (kein Markdown, keine Code-Fences):
   "insight_why_now": string
 }
 
-Regeln für dieses RSS-Ingest-Format:
-- is_relevant=false IMMER bei: Stellenanzeigen (m/w/d), Recruiting, Karriere-Seiten, Praktika, Facility/Instandhaltung ohne strategischen Kontext, Employer Branding, Sport/Unterhaltung, generisches PR.
-- is_relevant=true nur bei echten Vertriebs-Triggern, z. B.: Führungswechsel (CEO/CTO/CIO), Werkseröffnung/Expansion/Investition, M&A/Partnerschaft, Quartalszahlen/Budget, Digitalisierung/Strategie, große Aufträge, Standort-/Markteintritt.
-- signal_category: people bei Personal/Führungswechsel; finance bei Finanzen, M&A, Budget, Quartalszahlen; strategy bei Strategie, Produkt, Expansion, Digitalisierung.
-- insight_signal_fact: knackiges Kurzfazit für UI-Label (max. 2 Sätze).
-- insight_why_now: beschreibender Inhalt der News in 1–2 ganzen Sätzen (max. ~180 Zeichen). Immer mit Satzende (. ! ?) abschließen — niemals mit Auslassungspunkten kürzen.`
+- insight_why_now = Compelling Event (1–2 Sätze, satzvollständig).
+- Keine Product-Pitch-Floskeln, nichts erfinden.`
 
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
@@ -179,7 +223,7 @@ Regeln für dieses RSS-Ingest-Format:
       body: JSON.stringify({
         model: MODEL,
         messages: [
-          { role: 'system', content: MARKET_SIGNAL_INTELLIGENCE_SYSTEM_PROMPT },
+          { role: 'system', content: MARKET_SIGNAL_RSS_ENRICHMENT_SYSTEM_PROMPT },
           { role: 'user', content: userPrompt },
         ],
         temperature: 0.2,
@@ -190,9 +234,9 @@ Regeln für dieses RSS-Ingest-Format:
 
     if (!res.ok) {
       const body = await res.text()
-      const snippet = body.trim().slice(0, 240)
+      const snippetBody = body.trim().slice(0, 240)
       throw new Error(
-        `Marktsignal-Enrichment: HTTP ${res.status}${snippet ? ` — ${snippet}` : ''}`
+        `Marktsignal-Enrichment: HTTP ${res.status}${snippetBody ? ` — ${snippetBody}` : ''}`
       )
     }
 
@@ -208,54 +252,103 @@ Regeln für dieses RSS-Ingest-Format:
   }
 }
 
+function logEnrichResult(
+  input: EnrichSignalInput,
+  result: SignalEnrichment,
+  extra?: Record<string, unknown>
+) {
+  log.info('market_signal.enrich', {
+    label: 'market_signal.enrich',
+    source: result.enrichment_source,
+    relevant: result.is_relevant,
+    category: result.signal_category,
+    hasSnippet: Boolean(input.snippet?.trim()),
+    titleLen: input.title.trim().length,
+    ...extra,
+  })
+}
+
 /**
- * Reichert eine RSS-Schlagzeile per LLM an. Bei Fehler oder fehlendem API-Key: heuristischer Fallback.
- * Bei LLM-Erfolg und is_relevant=false soll der Aufrufer den Eintrag überspringen.
+ * Reichert eine RSS-Schlagzeile per LLM an.
+ * Bei Fehler/fehlendem Key: faktische Heuristik ohne Product-Boilerplate.
+ * Bei is_relevant=false soll der Aufrufer den Eintrag überspringen.
  */
 export async function enrichSignal(input: EnrichSignalInput): Promise<SignalEnrichment> {
   const title = String(input.title ?? '').trim()
   const companyName = String(input.companyName ?? '').trim()
   const personName = String(input.personName ?? '').trim()
+  let snippet = String(input.snippet ?? '').trim() || null
   const fallbackCategory: SignalCategory = personName ? 'people' : inferNewsCategory(title)
 
+  if (
+    !snippet &&
+    shouldFetchMetaSnippets() &&
+    input.sourceUrl &&
+    /^https?:\/\//i.test(input.sourceUrl)
+  ) {
+    snippet = await fetchUrlMetaSnippet(input.sourceUrl)
+  }
+
+  const enrichedInput: EnrichSignalInput = { ...input, snippet }
+
   if (title.length < 8) {
-    return { ...buildHeuristicSignalEnrichment(input), is_relevant: false }
+    const result = { ...buildHeuristicSignalEnrichment(enrichedInput), is_relevant: false }
+    logEnrichResult(enrichedInput, result, { reason: 'title_too_short' })
+    return result
   }
 
   if (isLowValueRssTitle(title)) {
-    return irrelevantEnrichment()
+    const result = irrelevantEnrichment()
+    logEnrichResult(enrichedInput, result, { reason: 'low_value_title' })
+    return result
   }
 
   const apiKey = process.env.OPENAI_API_KEY?.trim()
   if (!apiKey) {
-    const heuristic = buildHeuristicSignalEnrichment(input)
-    if (!personName && !hasSalesTriggerHint(title)) {
-      return { ...heuristic, is_relevant: false }
-    }
-    return heuristic
+    const heuristic = buildHeuristicSignalEnrichment(enrichedInput)
+    const result =
+      !personName && !hasSalesTriggerHint(title)
+        ? { ...heuristic, is_relevant: false }
+        : heuristic
+    logEnrichResult(enrichedInput, result, { reason: 'missing_api_key' })
+    return result
   }
 
   try {
-    const llm = await callOpenAiEnrichment(apiKey, input, fallbackCategory)
+    const llm = await callOpenAiEnrichment(apiKey, enrichedInput, fallbackCategory)
     if (!llm) {
-      const heuristic = buildHeuristicSignalEnrichment(input)
-      if (!personName && !hasSalesTriggerHint(title)) {
-        return { ...heuristic, is_relevant: false }
-      }
-      return heuristic
+      const heuristic = buildHeuristicSignalEnrichment(enrichedInput)
+      const result =
+        !personName && !hasSalesTriggerHint(title)
+          ? { ...heuristic, is_relevant: false }
+          : heuristic
+      logEnrichResult(enrichedInput, result, { reason: 'llm_parse_null' })
+      return result
     }
+    let result: SignalEnrichment = { ...llm, enrichment_source: 'llm' }
     if (!llm.is_relevant) {
-      return { ...llm, enrichment_source: 'llm' }
+      logEnrichResult(enrichedInput, result, { reason: 'llm_irrelevant' })
+      return result
     }
     if (!personName && !hasSalesTriggerHint(title)) {
-      return { ...llm, is_relevant: false, enrichment_source: 'llm' }
+      result = { ...llm, is_relevant: false, enrichment_source: 'llm' }
+      logEnrichResult(enrichedInput, result, { reason: 'no_sales_trigger_hint' })
+      return result
     }
-    return { ...llm, enrichment_source: 'llm' }
+    logEnrichResult(enrichedInput, result)
+    return result
   } catch (err) {
-    if (process.env.NODE_ENV === 'development') {
-      const msg = err instanceof Error ? err.message : String(err)
-      console.warn('[enrichSignal] LLM fallback:', msg)
-    }
-    return buildHeuristicSignalEnrichment(input)
+    const msg = err instanceof Error ? err.message : String(err)
+    log.warn('market_signal.enrich_llm_error', {
+      label: 'market_signal.enrich_llm_error',
+      message: msg.slice(0, 240),
+    })
+    const heuristic = buildHeuristicSignalEnrichment(enrichedInput)
+    const result =
+      !personName && !hasSalesTriggerHint(title)
+        ? { ...heuristic, is_relevant: false }
+        : heuristic
+    logEnrichResult(enrichedInput, result, { reason: 'llm_exception' })
+    return result
   }
 }
