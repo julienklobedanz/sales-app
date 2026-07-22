@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { extractPlainTextFromBuffer } from '@/lib/document-extraction'
 import { parseReferenceHeuristicsFromText } from '@/lib/references/heuristic-reference-extract'
+import {
+  extractCompanyNameFromFileName,
+  extractProjectTitleHintFromFileName,
+} from '@/lib/references/bulk-import-grouping'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -30,9 +34,11 @@ export async function POST(request: Request) {
     }
 
     const parsed = parseReferenceHeuristicsFromText(plain.text, { fileName: file.name })
+    const fileNameCompany = extractCompanyNameFromFileName(file.name)
+    const fileNameTitle = extractProjectTitleHintFromFileName(file.name)
     const projectName =
-      parsed.title?.trim() || file.name.replace(/\.[^.]+$/, '').trim() || file.name
-    const companyName = parsed.company_name?.trim() || null
+      parsed.title?.trim() || fileNameTitle || file.name.replace(/\.[^.]+$/, '').trim() || file.name
+    const companyName = parsed.company_name?.trim() || fileNameCompany || null
 
     return NextResponse.json({
       success: true,

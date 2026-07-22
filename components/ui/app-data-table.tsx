@@ -21,6 +21,12 @@ import {
   useReactTable,
 } from "@tanstack/react-table"
 
+import { ColumnHeaderDragHandle } from "@/components/table/column-header-drag-handle"
+import {
+  TABLE_COLUMN_HEAD_CLASS,
+  TABLE_COLUMN_HEAD_SELECT_CLASS,
+  TABLE_SELECT_COLUMN_CELL_CLASS,
+} from "@/components/table/table-column-head-styles"
 import {
   Table,
   TableBody,
@@ -29,6 +35,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { cn } from "@/lib/utils"
 import { DataTablePagination } from "@/components/ui/data-table-pagination"
 import { DataTableViewOptions } from "@/components/ui/data-table-view-options"
 import { COPY } from "@/lib/copy"
@@ -173,7 +180,12 @@ export function AppDataTable<TData, TValue>({
 
   function renderBodyRow(row: Row<TData>) {
     const cells = row.getVisibleCells().map((cell) => (
-      <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+      <TableCell
+        key={cell.id}
+        className={cell.column.id === "select" ? TABLE_SELECT_COLUMN_CELL_CLASS : undefined}
+      >
+        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+      </TableCell>
     ))
 
     const isNavVariant = tableVariant === "references" || tableVariant === "deals"
@@ -304,51 +316,69 @@ export function AppDataTable<TData, TValue>({
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    style={{ width: header.getSize() }}
-                    className={
-                      "h-9 text-xs font-semibold text-muted-foreground " +
-                      (enableColumnDrag && header.column.id !== "select"
-                        ? "cursor-grab select-none"
-                        : "") +
-                      (dragOverColumnId === header.column.id ? " bg-accent/40" : "")
-                    }
-                    draggable={enableColumnDrag && header.column.id !== "select"}
-                    onDragStart={(event) => {
-                      if (!enableColumnDrag || header.column.id === "select") return
-                      event.dataTransfer.setData("text/plain", header.column.id)
-                      event.dataTransfer.effectAllowed = "move"
-                    }}
-                    onDragOver={(event) => {
-                      if (!enableColumnDrag || header.column.id === "select") return
-                      event.preventDefault()
-                      setDragOverColumnId(header.column.id)
-                    }}
-                    onDragLeave={() => {
-                      if (!enableColumnDrag) return
-                      setDragOverColumnId((prev) =>
-                        prev === header.column.id ? null : prev,
-                      )
-                    }}
-                    onDrop={(event) => {
-                      if (!enableColumnDrag || header.column.id === "select") return
-                      event.preventDefault()
-                      const sourceId = event.dataTransfer.getData("text/plain")
-                      moveColumnOrder(sourceId, header.column.id)
-                      setDragOverColumnId(null)
-                    }}
-                    onDragEnd={() => {
-                      if (!enableColumnDrag) return
-                      setDragOverColumnId(null)
-                    }}
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
-                  </TableHead>
-                ))}
+                {headerGroup.headers.map((header) => {
+                  const columnId = header.column.id
+                  const canDragColumn = enableColumnDrag && columnId !== "select"
+                  const headerAlign = (
+                    header.column.columnDef.meta as { headerAlign?: "center" | "end" } | undefined
+                  )?.headerAlign
+                  const isDropTarget = dragOverColumnId === columnId
+
+                  const isSelectColumn = columnId === "select"
+
+                  return (
+                    <TableHead
+                      key={header.id}
+                      style={{ width: header.getSize() }}
+                      className={cn(
+                        isSelectColumn ? TABLE_COLUMN_HEAD_SELECT_CLASS : TABLE_COLUMN_HEAD_CLASS,
+                        headerAlign === "end" && "text-right",
+                        isDropTarget &&
+                          canDragColumn &&
+                          "bg-primary/10 ring-1 ring-inset ring-primary/40",
+                      )}
+                      onDragOver={(event) => {
+                        if (!canDragColumn) return
+                        event.preventDefault()
+                        event.stopPropagation()
+                        event.dataTransfer.dropEffect = "move"
+                        setDragOverColumnId(columnId)
+                      }}
+                      onDragLeave={(event) => {
+                        if (!canDragColumn) return
+                        if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+                          setDragOverColumnId((prev) => (prev === columnId ? null : prev))
+                        }
+                      }}
+                      onDrop={(event) => {
+                        if (!canDragColumn) return
+                        event.preventDefault()
+                        event.stopPropagation()
+                        const sourceId = event.dataTransfer.getData("text/plain")
+                        moveColumnOrder(sourceId, columnId)
+                        setDragOverColumnId(null)
+                      }}
+                    >
+                      <div
+                        className={cn(
+                          "flex min-w-0 items-center gap-1",
+                          headerAlign === "center" && "w-full justify-center",
+                          headerAlign === "end" && "w-full justify-end",
+                        )}
+                      >
+                        {canDragColumn ? (
+                          <ColumnHeaderDragHandle
+                            columnKey={columnId}
+                            onDragEnd={() => setDragOverColumnId(null)}
+                          />
+                        ) : null}
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(header.column.columnDef.header, header.getContext())}
+                      </div>
+                    </TableHead>
+                  )
+                })}
               </TableRow>
             ))}
           </TableHeader>

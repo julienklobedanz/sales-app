@@ -43,6 +43,8 @@ const BULK_IMPORT_ROW_GRID_CLASS =
 const BULK_IMPORT_HEADER_CLASS =
   'text-xs font-medium text-muted-foreground'
 
+const BULK_IMPORT_FILE_DRAG_MIME = 'application/x-refstack-bulk-import-file'
+
 export function BulkImportDialog({
   open,
   onOpenChange,
@@ -53,6 +55,7 @@ export function BulkImportDialog({
   dropRef,
   addFiles,
   removeFile,
+  moveFile,
   setGroupName,
   setCompanyName,
   mergeSelectedGroups,
@@ -67,6 +70,7 @@ export function BulkImportDialog({
   dropRef: React.RefObject<HTMLInputElement | null>
   addFiles: (files: File[]) => void
   removeFile: (groupId: string, fileIndex: number) => void
+  moveFile: (fromGroupId: string, fileIndex: number, toGroupId: string) => void
   setGroupName: (groupId: string, projectName: string) => void
   setCompanyName: (groupId: string, companyName: string) => void
   mergeSelectedGroups: (groupIds: string[]) => void
@@ -83,6 +87,8 @@ export function BulkImportDialog({
   const [selectedGroupIds, setSelectedGroupIds] = useState<Set<string>>(() => new Set())
   const [editingCompanyId, setEditingCompanyId] = useState<string | null>(null)
   const [companyDraft, setCompanyDraft] = useState('')
+  const [dragOverGroupId, setDragOverGroupId] = useState<string | null>(null)
+  const [draggingFileKey, setDraggingFileKey] = useState<string | null>(null)
 
   const hasFiles = groups.length > 0
   const selectedCount = selectedGroupIds.size
@@ -93,6 +99,8 @@ export function BulkImportDialog({
       setSelectedGroupIds(new Set())
       setEditingCompanyId(null)
       setCompanyDraft('')
+      setDragOverGroupId(null)
+      setDraggingFileKey(null)
     }
   }, [open])
 
@@ -126,6 +134,52 @@ export function BulkImportDialog({
 
   function isGroupPreviewPending(group: BulkImportGroupItem) {
     return group.files.some((file) => previewPendingFiles.has(file))
+  }
+
+  function fileChipKey(groupId: string, file: File) {
+    return `${groupId}:${file.name}:${file.size}:${file.lastModified}`
+  }
+
+  function handleFileChipDragStart(
+    event: React.DragEvent<HTMLDivElement>,
+    groupId: string,
+    fileIndex: number,
+    chipKey: string,
+  ) {
+    if (loading) {
+      event.preventDefault()
+      return
+    }
+    event.dataTransfer.setData(
+      BULK_IMPORT_FILE_DRAG_MIME,
+      JSON.stringify({ fromGroupId: groupId, fileIndex }),
+    )
+    event.dataTransfer.effectAllowed = 'move'
+    setDraggingFileKey(chipKey)
+  }
+
+  function handleDocumentsDragOver(event: React.DragEvent<HTMLDivElement>, groupId: string) {
+    event.preventDefault()
+    event.stopPropagation()
+    event.dataTransfer.dropEffect = 'move'
+    setDragOverGroupId(groupId)
+  }
+
+  function handleDocumentsDrop(event: React.DragEvent<HTMLDivElement>, toGroupId: string) {
+    event.preventDefault()
+    event.stopPropagation()
+    setDragOverGroupId(null)
+    setDraggingFileKey(null)
+
+    try {
+      const raw = event.dataTransfer.getData(BULK_IMPORT_FILE_DRAG_MIME)
+      if (!raw) return
+      const payload = JSON.parse(raw) as { fromGroupId: string; fileIndex: number }
+      if (!payload.fromGroupId || typeof payload.fileIndex !== 'number') return
+      moveFile(payload.fromGroupId, payload.fileIndex, toGroupId)
+    } catch {
+      // Ungültige Drag-Daten ignorieren
+    }
   }
 
   const handleImport = async () => {
@@ -451,11 +505,37 @@ export function BulkImportDialog({
                             ) : null}
                           </div>
 
-                          <div className="flex min-w-0 flex-wrap gap-1.5 lg:justify-end">
-                            {group.files.map((file, fileIndex) => (
+                          <div
+                            className={cn(
+                              'flex min-h-9 min-w-0 flex-wrap gap-1.5 rounded-md transition-colors lg:justify-end',
+                              dragOverGroupId === group.id &&
+                                'bg-primary/10 ring-1 ring-inset ring-primary/40'
+                            )}
+                            onDragOver={(event) => handleDocumentsDragOver(event, group.id)}
+                            onDragLeave={(event) => {
+                              if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+                                setDragOverGroupId((prev) => (prev === group.id ? null : prev))
+                              }
+                            }}
+                            onDrop={(event) => handleDocumentsDrop(event, group.id)}
+                          >
+                            {group.files.map((file, fileIndex) => {
+                              const chipKey = fileChipKey(group.id, file)
+                              return (
                               <div
-                                key={`${group.id}-${fileIndex}-${file.name}`}
-                                className="flex max-w-full items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs shadow-sm"
+                                key={chipKey}
+                                draggable={!loading}
+                                onDragStart={(event) =>
+                                  handleFileChipDragStart(event, group.id, fileIndex, chipKey)
+                                }
+                                onDragEnd={() => {
+                                  setDraggingFileKey(null)
+                                  setDragOverGroupId(null)
+                                }}
+                                className={cn(
+                                  'flex max-w-full cursor-grab items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs shadow-sm active:cursor-grabbing',
+                                  draggingFileKey === chipKey && 'opacity-50'
+                                )}
                               >
                                 <AppIcon
                                   icon={FileText}
@@ -469,13 +549,14 @@ export function BulkImportDialog({
                                   type="button"
                                   disabled={loading}
                                   onClick={() => removeFile(group.id, fileIndex)}
+                                  onMouseDown={(event) => event.stopPropagation()}
                                   className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                                   aria-label={`${file.name} entfernen`}
                                 >
                                   <AppIcon icon={Cancel01Icon} size={12} />
                                 </button>
                               </div>
-                            ))}
+                            )})}
                           </div>
                         </div>
                       </div>

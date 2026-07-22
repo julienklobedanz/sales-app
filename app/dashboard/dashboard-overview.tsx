@@ -88,9 +88,11 @@ import { ReferencesOverviewBrandfetchSync } from './overview/references-overview
 import { ReferencesBulkActionsBar } from './overview/references-bulk-actions-bar'
 import { ReferenceOnboardingEmptyState } from '@/app/dashboard/references/components/reference-onboarding-empty-state'
 import { TableRowCheckbox } from '@/components/table/table-row-checkbox'
+import { TABLE_COLUMN_HEAD_SELECT_CLASS, TABLE_SELECT_COLUMN_CELL_CLASS } from '@/components/table/table-column-head-styles'
 import { TableRowAlign } from '@/components/table/table-row-align'
 import { toast } from 'sonner'
 import { BULK_IMPORT_MAX_FILES } from '@/lib/references/bulk-import-limits'
+import { autoGroupBulkImportByFileName } from '@/lib/references/bulk-import-grouping'
 import { copyTableRowsSelected } from '@/lib/copy'
 import { parseReferenceVolume, type OrgDateDisplayFormat } from '@/lib/format'
 import { canViewComplianceReferenceSegment } from '@/lib/references/library/reference-proof-segment-access'
@@ -338,7 +340,6 @@ export function DashboardOverview({
   const [pageSize, setPageSize] = useState(30)
   const [pageIndex, setPageIndex] = useState(0)
   const [shareLinkPopoverRef, setShareLinkPopoverRef] = useState<ReferenceRow | null>(null)
-  const selectAllCheckboxRef = useRef<HTMLInputElement | null>(null)
   const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false)
   const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false)
   const [visibleColumns, setVisibleColumns] = useState<
@@ -449,7 +450,15 @@ export function DashboardOverview({
         projectName: file.name.replace(/\.[^.]+$/, '').trim() || file.name,
         files: [file],
       }))
-      const next = autoGroupByPrefix([...prev, ...newGroups])
+      const next = autoGroupBulkImportByFileName([...prev, ...newGroups])
+      const autoGroupedCount = next
+        .filter((g) => g.files.length > 1)
+        .reduce((s, g) => s + g.files.length, 0)
+      if (autoGroupedCount > 0) {
+        toast.info(
+          `${autoGroupedCount} Dateien wurden automatisch gruppiert, da sie zum gleichen Kunden gehören.`
+        )
+      }
 
       for (const file of capped) {
         setBulkImportPreviewPendingFiles((prev) => new Set(prev).add(file))
@@ -476,49 +485,6 @@ export function DashboardOverview({
     })
   }
 
-  function autoGroupByPrefix(groups: BulkImportGroupItem[]): BulkImportGroupItem[] {
-    const metaByFile = new Map<File, { projectName: string; companyName?: string }>()
-    for (const group of groups) {
-      for (const file of group.files) {
-        metaByFile.set(file, {
-          projectName: group.projectName,
-          companyName: group.companyName,
-        })
-      }
-    }
-
-    const byPrefix = new Map<string, File[]>()
-    for (const group of groups) {
-      for (const file of group.files) {
-        const baseName = file.name.replace(/\.[^.]+$/, '').trim()
-        const prefix = baseName.includes('_') ? baseName.split('_')[0]!.trim() : baseName || file.name
-        if (!byPrefix.has(prefix)) byPrefix.set(prefix, [])
-        byPrefix.get(prefix)!.push(file)
-      }
-    }
-    const result: BulkImportGroupItem[] = Array.from(byPrefix.entries()).map(
-      ([prefix, files]) => {
-        const first = files[0]
-        const meta = first ? metaByFile.get(first) : undefined
-        return {
-          id: `g-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-          projectName:
-            meta?.projectName ??
-            first?.name.replace(/\.[^.]+$/, '').trim() ??
-            prefix ??
-            'Referenz',
-          companyName: meta?.companyName,
-          files,
-        }
-      }
-    )
-    const autoGroupedCount = result.filter((g) => g.files.length > 1).reduce((s, g) => s + g.files.length, 0)
-    if (autoGroupedCount > 0) {
-      toast.info(`${autoGroupedCount} Dateien wurden automatisch gruppiert, da sie zusammenzugehören scheinen.`)
-    }
-    return result
-  }
-
   function removeBulkImportFile(groupId: string, fileIndex: number) {
     setBulkImportGroups((prev) =>
       prev
@@ -529,6 +495,28 @@ export function DashboardOverview({
         )
         .filter((g) => g.files.length > 0)
     )
+  }
+
+  function moveBulkImportFile(fromGroupId: string, fileIndex: number, toGroupId: string) {
+    if (fromGroupId === toGroupId) return
+    setBulkImportGroups((prev) => {
+      const sourceGroup = prev.find((g) => g.id === fromGroupId)
+      const file = sourceGroup?.files[fileIndex]
+      if (!sourceGroup || !file) return prev
+      if (!prev.some((g) => g.id === toGroupId)) return prev
+
+      return prev
+        .map((g) => {
+          if (g.id === fromGroupId) {
+            return { ...g, files: g.files.filter((_, i) => i !== fileIndex) }
+          }
+          if (g.id === toGroupId) {
+            return { ...g, files: [...g.files, file] }
+          }
+          return g
+        })
+        .filter((g) => g.files.length > 0)
+    })
   }
 
   function setBulkImportGroupName(groupId: string, projectName: string) {
@@ -869,15 +857,6 @@ export function DashboardOverview({
     () => filteredReferences.filter((r) => selectedRefIds.has(r.id)).length,
     [filteredReferences, selectedRefIds]
   )
-  useEffect(() => {
-    const el = selectAllCheckboxRef.current
-    if (!el) return
-    el.indeterminate =
-      selectedRefIds.size > 0 &&
-      filteredReferences.length > 0 &&
-      selectedRefIds.size < filteredReferences.length
-  }, [selectedRefIds.size, filteredReferences.length])
-
   const handleDelete = async (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation()
 
@@ -984,6 +963,7 @@ export function DashboardOverview({
               dropRef={bulkImportDropRef}
               addFiles={addBulkImportFiles}
               removeFile={removeBulkImportFile}
+              moveFile={moveBulkImportFile}
               setGroupName={setBulkImportGroupName}
               setCompanyName={setBulkImportCompanyName}
               mergeSelectedGroups={mergeBulkImportGroups}
@@ -1102,13 +1082,16 @@ export function DashboardOverview({
           <Table className="w-full table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[32px] align-middle p-2 pr-0">
+                <TableHead className={TABLE_COLUMN_HEAD_SELECT_CLASS}>
                   <TableRowCheckbox
-                    ref={selectAllCheckboxRef}
                     rowHeight={10}
                     checked={
                       filteredReferences.length > 0 &&
                       filteredReferences.every((r) => selectedRefIds.has(r.id))
+                        ? true
+                        : filteredSelectedCount > 0
+                          ? 'indeterminate'
+                          : false
                     }
                     onChange={() => {
                       if (
@@ -1203,7 +1186,7 @@ export function DashboardOverview({
                     }}
                   >
                     <TableCell
-                      className="w-[32px] align-middle p-2 pr-0"
+                      className={TABLE_SELECT_COLUMN_CELL_CLASS}
                       onClick={(e) => e.stopPropagation()}
                     >
                       <TableRowCheckbox
@@ -1476,6 +1459,7 @@ export function DashboardOverview({
           dropRef={bulkImportDropRef}
           addFiles={addBulkImportFiles}
           removeFile={removeBulkImportFile}
+          moveFile={moveBulkImportFile}
           setGroupName={setBulkImportGroupName}
           setCompanyName={setBulkImportCompanyName}
           mergeSelectedGroups={mergeBulkImportGroups}

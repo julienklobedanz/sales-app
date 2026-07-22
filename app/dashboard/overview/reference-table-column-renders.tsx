@@ -2,11 +2,6 @@
 
 import type * as React from "react"
 
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card"
 import { Input } from "@/components/ui/input"
 import {
   Popover,
@@ -16,10 +11,10 @@ import {
 import { TableCell } from "@/components/ui/table"
 import { TableDataCell } from "@/components/table/table-row-align"
 import { ReferenceStatusBadge } from "@/components/reference-status-badge"
-import { AccountCell } from "@/components/table/account-cell"
+import { TableAccountLinkContent } from "@/components/table/table-account-link-content"
+import { TableTitleHoverContent } from "@/components/table/table-title-hover-content"
 import { FilterMenuCheckboxOption } from "@/components/table/filter-menu-checkbox-option"
 import { DraggableColumnHead } from "@/components/table/draggable-column-head"
-import { ROUTES } from "@/lib/routes"
 import {
   formatReferenceDate,
   formatReferenceVolumeCompact,
@@ -34,7 +29,6 @@ import {
 } from "@hugeicons/core-free-icons"
 import { formatIndustryDisplay, formatIndustryDisplayCompact, getIndustryLabelDe } from "@/lib/constants/industries"
 import { AppIcon } from "@/lib/icons"
-import Link from "next/link"
 
 import type { ReferenceVolumeFilter } from "@/lib/references/reference-volume-filter"
 import { ReferenceVolumeFilterMenu } from "@/components/references/reference-volume-filter-menu"
@@ -928,50 +922,23 @@ export function renderReferenceColumnCell(
     case "company":
       return (
         <TableDataCell>
-          <Link
-            href={ROUTES.accountsDetail(ref.company_id)}
-            onClick={(e) => e.stopPropagation()}
-            className="inline-flex min-w-0 max-w-full items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label={`${ref.company_name} öffnen`}
-          >
-            <AccountCell
-              companyName={ref.company_name}
-              companyId={ref.company_id}
-              companyLogoUrl={
-                companyLogoById.get(ref.company_id) ?? ref.company_logo_url ?? null
-              }
-            />
-          </Link>
+          <TableAccountLinkContent
+            companyId={ref.company_id}
+            companyName={ref.company_name}
+            companyLogoUrl={companyLogoById.get(ref.company_id) ?? ref.company_logo_url ?? null}
+          />
         </TableDataCell>
       )
     case "title": {
       const summaryText = String(ref.summary ?? "").trim()
       return (
         <TableDataCell className="min-w-0 max-w-[min(100%,280px)]">
-          <HoverCard openDelay={200} closeDelay={80}>
-            <HoverCardTrigger asChild>
-              <span
-                className="block min-w-0 cursor-default truncate text-sm font-semibold leading-snug text-foreground decoration-foreground/30 underline-offset-2 hover:underline"
-                title={ref.title}
-              >
-                {ref.title}
-              </span>
-            </HoverCardTrigger>
-            <HoverCardContent
-              align="start"
-              className="w-[min(100vw-2rem,380px)] max-h-[260px] overflow-y-auto"
-            >
-              <p className="mb-2 text-xs font-medium text-muted-foreground">Projekt-Zusammenfassung</p>
-              {summaryText ? (
-                <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{summaryText}</p>
-              ) : (
-                <p className="text-sm leading-relaxed text-muted-foreground">
-                  Noch keine Kurz-Zusammenfassung hinterlegt. Sie wird beim Anlegen der Referenz automatisch
-                  ergänzt, sobald ausreichend Kontext vorliegt — oder kann in der Referenz bearbeitet werden.
-                </p>
-              )}
-            </HoverCardContent>
-          </HoverCard>
+          <TableTitleHoverContent
+            title={ref.title}
+            previewLabel="Projekt-Zusammenfassung"
+            previewText={summaryText}
+            emptyPreviewText="Noch keine Kurz-Zusammenfassung hinterlegt. Sie wird beim Anlegen der Referenz automatisch ergänzt, sobald ausreichend Kontext vorliegt — oder kann in der Referenz bearbeitet werden."
+          />
         </TableDataCell>
       )
     }

@@ -5,11 +5,12 @@
 export const TABLE_TOOLBAR = {
   /** Referenzen/Evidence, Deals (`AppDataTable`) */
   list: {
-    searchWrap: "relative w-full min-w-0",
+    searchWrap: "relative w-full min-w-0 overflow-visible",
     searchInput: "h-10 w-full rounded-lg border bg-white pl-10 pr-4 shadow-sm",
   },
   /** Dashboard-Übersicht, Accounts: Suche + Buttons in einer Zeile (h-10) */
   dashboard: {
+    searchWrap: "relative w-full min-w-0 overflow-visible",
     searchInput:
       "h-10 w-full min-w-0 rounded-lg border bg-white pl-10 pr-4 shadow-sm",
     /** Ohne min-w-0 (z. B. schmale Spalten) */

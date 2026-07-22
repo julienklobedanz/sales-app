@@ -1,41 +1,53 @@
 'use client'
 
 import { forwardRef } from 'react'
+import type { CheckedState } from '@radix-ui/react-checkbox'
+
+import { Checkbox } from '@/components/ui/checkbox'
 
 type Props = {
-  checked: boolean
-  onChange: () => void
-  onClick?: (e: React.MouseEvent<HTMLInputElement>) => void
+  checked: boolean | 'indeterminate'
+  onCheckedChange?: (checked: boolean) => void
+  /** Legacy-Toggle ohne expliziten Wert (z. B. Warenkorb). */
+  onChange?: () => void
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void
   'aria-label': string
   disabled?: boolean
-  /** Höhe des Wrappers — `9` für Datenzeilen (Logo), `10` für Tabellenkopf. */
+  /** Höhe des Wrappers — `10` für Tabellenkopf, `9` für Datenzeilen. */
   rowHeight?: 9 | 10
 }
 
-export const TableRowCheckbox = forwardRef<HTMLInputElement, Props>(function TableRowCheckbox(
+export const TableRowCheckbox = forwardRef<HTMLButtonElement, Props>(function TableRowCheckbox(
   {
     checked,
+    onCheckedChange,
     onChange,
     onClick,
     'aria-label': ariaLabel,
     disabled = false,
     rowHeight = 9,
   },
-  ref
+  ref,
 ) {
-  const heightClass = rowHeight === 10 ? 'h-10' : 'h-9'
+  const heightClass = rowHeight === 10 ? 'h-10' : 'min-h-9'
+  const resolvedChecked: CheckedState = checked === 'indeterminate' ? 'indeterminate' : checked
 
   return (
-    <div className={`flex ${heightClass} items-center justify-center`}>
-      <input
+    <div className={`flex ${heightClass} w-full items-center justify-center`}>
+      <Checkbox
         ref={ref}
-        type="checkbox"
-        checked={checked}
-        onChange={onChange}
+        checked={resolvedChecked}
+        onCheckedChange={(value) => {
+          if (value === 'indeterminate') return
+          if (onCheckedChange) {
+            onCheckedChange(value)
+            return
+          }
+          onChange?.()
+        }}
         onClick={onClick}
         disabled={disabled}
         aria-label={ariaLabel}
-        className="size-4 shrink-0 rounded border-muted-foreground/50"
       />
     </div>
   )

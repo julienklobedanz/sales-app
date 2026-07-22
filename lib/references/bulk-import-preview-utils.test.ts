@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { isSuspiciousBulkImportProjectName } from './bulk-import-preview-utils'
+import {
+  isSuspiciousBulkImportProjectName,
+  sanitizeExtractedProjectTitle,
+} from './bulk-import-preview-utils'
 
 describe('isSuspiciousBulkImportProjectName', () => {
   it('erkennt Projektzeitraum und Datumsbereiche', () => {
@@ -12,5 +15,14 @@ describe('isSuspiciousBulkImportProjectName', () => {
     expect(
       isSuspiciousBulkImportProjectName('Managed Cloud Platform – Financial Services')
     ).toBe(false)
+  })
+
+  it('entfernt „es“-Präfix von PDF-Zeilenumbruch in References', () => {
+    expect(
+      sanitizeExtractedProjectTitle('es Next-Gen Customer Data Platform & Churn Prevention')
+    ).toBe('Next-Gen Customer Data Platform & Churn Prevention')
+    expect(sanitizeExtractedProjectTitle('Cloud-Native Integration Gateway')).toBe(
+      'Cloud-Native Integration Gateway'
+    )
   })
 })

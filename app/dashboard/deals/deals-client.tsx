@@ -8,11 +8,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import type { DealRow, DealStatus } from './types'
 import { DealForm } from './new/deal-form'
 import { importDealsFromXlsx } from './actions'
-import { ArrowUpDown, CirclePlus, Loader, UploadIcon } from '@hugeicons/core-free-icons'
+import { CirclePlus, Loader, UploadIcon } from '@hugeicons/core-free-icons'
 import { toast } from 'sonner'
 import { AppDataTable } from '@/components/ui/app-data-table'
 import type { ColumnDef } from '@tanstack/react-table'
-import { Checkbox } from '@/components/ui/checkbox'
+import { TableRowCheckbox } from '@/components/table/table-row-checkbox'
 import { AppIcon } from '@/lib/icons'
 import { DealStatusBadge } from '@/components/deal-status-badge'
 import { MatchScoreCircle } from '@/components/match/match-score-circle'
@@ -21,6 +21,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { COPY } from '@/lib/copy'
 import { formatDealVolume } from '@/lib/format'
 import { AccountCell } from '@/components/table/account-cell'
+import { TableAccountLinkContent } from '@/components/table/table-account-link-content'
+import { TableRowAlign } from '@/components/table/table-row-align'
+import { TableSortableHeader } from '@/components/table/table-sortable-header'
+import { TableTitleHoverContent } from '@/components/table/table-title-hover-content'
 import {
   Select,
   SelectContent,
@@ -173,22 +177,26 @@ export function DealsClientContent({
       {
         id: 'select',
         header: ({ table }) => (
-          <div className="flex items-center justify-center">
-            <Checkbox
-              checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')}
-              onCheckedChange={(v) => table.toggleAllPageRowsSelected(Boolean(v))}
-              aria-label="Alle auswählen"
-            />
-          </div>
+          <TableRowCheckbox
+            rowHeight={10}
+            checked={
+              table.getIsAllPageRowsSelected()
+                ? true
+                : table.getIsSomePageRowsSelected()
+                  ? 'indeterminate'
+                  : false
+            }
+            onCheckedChange={(checked) => table.toggleAllPageRowsSelected(checked)}
+            aria-label="Alle auswählen"
+          />
         ),
         cell: ({ row }) => (
-          <div className="flex items-center justify-center">
-            <Checkbox
-              checked={row.getIsSelected()}
-              onCheckedChange={(v) => row.toggleSelected(Boolean(v))}
-              aria-label="Zeile auswählen"
-            />
-          </div>
+          <TableRowCheckbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(checked) => row.toggleSelected(checked)}
+            onClick={(e) => e.stopPropagation()}
+            aria-label="Zeile auswählen"
+          />
         ),
         enableSorting: false,
         enableHiding: false,
@@ -199,86 +207,42 @@ export function DealsClientContent({
       {
         accessorKey: 'status',
         meta: { viewLabel: DEAL_COL_LABELS.status },
-        header: ({ column }) => (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="-ml-2"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          >
-            Status
-            <span className="ml-2">
-              <AppIcon icon={ArrowUpDown} size={16} />
-            </span>
-          </Button>
-        ),
+        header: ({ column }) => <TableSortableHeader label="Status" column={column} />,
         cell: ({ row }) => <DealStatusBadge status={row.original.status} />,
       },
       {
         accessorKey: 'title',
         meta: { viewLabel: DEAL_COL_LABELS.title },
-        header: ({ column }) => (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="-ml-2"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          >
-            Titel
-            <span className="ml-2">
-              <AppIcon icon={ArrowUpDown} size={16} />
-            </span>
-          </Button>
-        ),
+        header: ({ column }) => <TableSortableHeader label="Titel" column={column} />,
         cell: ({ row }) => (
-          <span className="block max-w-[360px] truncate font-medium">
-            {row.original.title}
-          </span>
+          <TableRowAlign className="min-w-0 max-w-[min(100%,280px)]">
+            <TableTitleHoverContent
+              title={row.original.title}
+              previewLabel="Anforderungen"
+              previewText={row.original.requirements_text}
+              emptyPreviewText="Keine Anforderungen hinterlegt."
+            />
+          </TableRowAlign>
         ),
       },
       {
         accessorKey: 'company_name',
         meta: { viewLabel: DEAL_COL_LABELS.company_name },
-        header: ({ column }) => (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="-ml-2"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          >
-            Account
-            <span className="ml-2">
-              <AppIcon icon={ArrowUpDown} size={16} />
-            </span>
-          </Button>
-        ),
+        header: ({ column }) => <TableSortableHeader label="Account" column={column} />,
         cell: ({ row }) => (
-          <AccountCell
-            companyName={row.original.company_name}
-            companyLogoUrl={row.original.company_logo_url}
-          />
+          <TableRowAlign>
+            <TableAccountLinkContent
+              companyId={row.original.company_id}
+              companyName={row.original.company_name}
+              companyLogoUrl={row.original.company_logo_url}
+            />
+          </TableRowAlign>
         ),
       },
       {
         accessorKey: 'volume',
         meta: { viewLabel: DEAL_COL_LABELS.volume },
-        header: ({ column }) => (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="-ml-2"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          >
-            Volumen
-            <span className="ml-2">
-              <AppIcon icon={ArrowUpDown} size={16} />
-            </span>
-          </Button>
-        ),
+        header: ({ column }) => <TableSortableHeader label="Volumen" column={column} />,
         cell: ({ row }) => (
           <span className="text-muted-foreground tabular-nums">
             {formatDealVolume(row.original.volume)}
@@ -288,25 +252,12 @@ export function DealsClientContent({
       {
         id: 'reference_count',
         accessorFn: (row) => row.linked_refs?.length ?? 0,
-        meta: { viewLabel: DEAL_COL_LABELS.reference_count },
+        meta: { viewLabel: DEAL_COL_LABELS.reference_count, headerAlign: 'center' as const },
         size: 96,
         minSize: 80,
         maxSize: 120,
         header: ({ column }) => (
-          <div className="flex justify-center">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="justify-center px-2"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            >
-              {COPY.deals.referenceCountColumn}
-              <span className="ml-2">
-                <AppIcon icon={ArrowUpDown} size={16} />
-              </span>
-            </Button>
-          </div>
+          <TableSortableHeader label={COPY.deals.referenceCountColumn} column={column} />
         ),
         cell: ({ row }) => (
           <div className="text-center tabular-nums text-muted-foreground">
@@ -317,7 +268,7 @@ export function DealsClientContent({
       {
         id: 'match',
         accessorFn: (row) => row.best_match_score,
-        meta: { viewLabel: DEAL_COL_LABELS.match },
+        meta: { viewLabel: DEAL_COL_LABELS.match, headerAlign: 'center' as const },
         sortingFn: (rowA, rowB) => {
           const a = rowA.original.best_match_score
           const b = rowB.original.best_match_score
@@ -330,20 +281,7 @@ export function DealsClientContent({
         minSize: 72,
         maxSize: 96,
         header: ({ column }) => (
-          <div className="flex justify-center">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="justify-center px-2"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            >
-              {COPY.deals.matchColumn}
-              <span className="ml-2">
-                <AppIcon icon={ArrowUpDown} size={16} />
-              </span>
-            </Button>
-          </div>
+          <TableSortableHeader label={COPY.deals.matchColumn} column={column} />
         ),
         cell: ({ row }) => {
           const refCount = row.original.linked_refs?.length ?? 0
@@ -401,38 +339,14 @@ export function DealsClientContent({
         accessorKey: 'account_manager_name',
         meta: { viewLabel: DEAL_COL_LABELS.account_manager_name },
         header: ({ column }) => (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="-ml-2"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          >
-            {COPY.roles.accountManager}
-            <span className="ml-2">
-              <AppIcon icon={ArrowUpDown} size={16} />
-            </span>
-          </Button>
+          <TableSortableHeader label={COPY.roles.accountManager} column={column} />
         ),
         cell: ({ row }) => <span className="text-muted-foreground">{row.original.account_manager_name ?? '—'}</span>,
       },
       {
         accessorKey: 'expiry_date',
         meta: { viewLabel: DEAL_COL_LABELS.expiry_date },
-        header: ({ column }) => (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="-ml-2"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          >
-            Ablauf
-            <span className="ml-2">
-              <AppIcon icon={ArrowUpDown} size={16} />
-            </span>
-          </Button>
-        ),
+        header: ({ column }) => <TableSortableHeader label="Ablauf" column={column} />,
         cell: ({ row }) => {
           const isHot = isExpiringIn30Days(row.original.expiry_date)
           return (
@@ -446,18 +360,7 @@ export function DealsClientContent({
         accessorKey: 'sales_manager_name',
         meta: { viewLabel: DEAL_COL_LABELS.sales_manager_name },
         header: ({ column }) => (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="-ml-2"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          >
-            {COPY.roles.salesManager}
-            <span className="ml-2">
-              <AppIcon icon={ArrowUpDown} size={16} />
-            </span>
-          </Button>
+          <TableSortableHeader label={COPY.roles.salesManager} column={column} />
         ),
         cell: ({ row }) => <span className="text-muted-foreground">{row.original.sales_manager_name ?? '—'}</span>,
       },
@@ -568,13 +471,14 @@ export function DealsClientContent({
         onColumnOrderChange={setColumnOrder}
         enableColumnDrag
         toolbar={() => (
-          <div className="flex w-full min-w-0 flex-wrap items-center gap-2.5 sm:gap-3.5 overflow-x-hidden">
+          <div className="flex min-h-10 w-full min-w-0 flex-wrap items-center gap-2.5 sm:gap-3">
             <ToolbarSearchField
-              variant="list"
+              variant="dashboard"
               value={query}
               onChange={setQuery}
               placeholder={COPY.deals.searchPlaceholder}
               wrapperClassName="min-w-0 flex-1 basis-[min(100%,24rem)]"
+              className="bg-white"
             />
             <Select
               value={statusFilter}

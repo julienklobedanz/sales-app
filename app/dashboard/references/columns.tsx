@@ -7,7 +7,6 @@ import { ArrowUpDown, MoreHorizontal } from "@hugeicons/core-free-icons"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,25 +20,30 @@ import { AppIcon } from "@/lib/icons"
 import { ReferenceStatusBadge } from "@/components/reference-status-badge"
 import { ROUTES } from "@/lib/routes"
 import { AccountCell } from "@/components/table/account-cell"
+import { TableRowCheckbox } from "@/components/table/table-row-checkbox"
 
 export function referenceColumns(): ColumnDef<ReferenceRow>[] {
   return [
     {
       id: "select",
       header: ({ table }) => (
-        <Checkbox
+        <TableRowCheckbox
+          rowHeight={10}
           checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
+            table.getIsAllPageRowsSelected()
+              ? true
+              : table.getIsSomePageRowsSelected()
+                ? 'indeterminate'
+                : false
           }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          onCheckedChange={(checked) => table.toggleAllPageRowsSelected(checked)}
           aria-label="Alle auswählen"
         />
       ),
       cell: ({ row }) => (
-        <Checkbox
+        <TableRowCheckbox
           checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          onCheckedChange={(checked) => row.toggleSelected(checked)}
           aria-label="Zeile auswählen"
         />
       ),

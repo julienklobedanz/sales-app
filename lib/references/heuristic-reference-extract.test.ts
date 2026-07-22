@@ -54,4 +54,24 @@ Projektzeitraum 01.02.2025 – 31.08.2025`
     const parsed = parseReferenceHeuristicsFromText(text)
     expect(parsed.title).toBe('GxP-konforme Infrastruktur für Produktionssysteme')
   })
+
+  it('liest Kunde und Titel aus Referenz-Dateinamen', () => {
+    const parsed = parseReferenceHeuristicsFromText('Referenz\n\n', {
+      fileName: 'Referenz_SAP_SE_Cloud_Migration.pdf',
+    })
+    expect(parsed.company_name).toBe('SAP SE')
+    expect(parsed.title).toBe('Cloud Migration')
+  })
+
+  it('bereinigt „es“-Artefakt aus extrahiertem Projekttitel', () => {
+    const text = `Referenz
+Deutsche Telekom AG
+es Next-Gen Customer Data Platform & Churn Prevention
+
+Herausforderung
+Der Kunde benötigte eine moderne Datenplattform.`
+
+    const parsed = parseReferenceHeuristicsFromText(text)
+    expect(parsed.title).toBe('Next-Gen Customer Data Platform & Churn Prevention')
+  })
 })

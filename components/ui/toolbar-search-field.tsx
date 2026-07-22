@@ -36,7 +36,7 @@ export function ToolbarSearchField({
   const wrap =
     variant === "list"
       ? cn(TABLE_TOOLBAR.list.searchWrap, wrapperClassName)
-      : cn("relative w-full", wrapperClassName)
+      : cn(TABLE_TOOLBAR.dashboard.searchWrap, wrapperClassName)
 
   const inputClass =
     variant === "list"

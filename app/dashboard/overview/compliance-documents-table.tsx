@@ -34,6 +34,10 @@ import {
 import { TableBulkActionsBar } from '@/components/table/table-bulk-actions-bar'
 import { TableRowCheckbox } from '@/components/table/table-row-checkbox'
 import {
+  TABLE_COLUMN_HEAD_SELECT_CLASS,
+  TABLE_SELECT_COLUMN_CELL_CLASS,
+} from '@/components/table/table-column-head-styles'
+import {
   filterComplianceDocumentsForTable,
   groupComplianceDocumentsForTable,
 } from '@/lib/compliance/compliance-table-rows'
@@ -74,7 +78,6 @@ export function ComplianceDocumentsTable({
   const [versionsSheetOpen, setVersionsSheetOpen] = useState(false)
   const [versionsSheetType, setVersionsSheetType] = useState<string | null>(null)
   const [versionsSheetFocusId, setVersionsSheetFocusId] = useState<string | null>(null)
-  const selectAllCheckboxRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
     const ids = documents.filter((d) => d.file_storage_path).map((d) => d.id)
@@ -184,13 +187,6 @@ export function ComplianceDocumentsTable({
       return next.size === prev.size ? prev : next
     })
   }, [filteredIdSet])
-
-  useEffect(() => {
-    const el = selectAllCheckboxRef.current
-    if (!el) return
-    el.indeterminate =
-      selectedFilteredCount > 0 && selectedFilteredCount < filtered.length
-  }, [selectedFilteredCount, filtered.length])
 
   function openVersionsSheet(doc: ComplianceDocumentRow) {
     setVersionsSheetType(doc.document_type)
@@ -397,11 +393,16 @@ export function ComplianceDocumentsTable({
         <Table className="min-w-[800px] w-full">
           <TableHeader>
             <TableRow>
-              <TableHead className="h-9 w-[32px] align-middle p-2 pr-0 text-xs font-semibold text-muted-foreground">
+              <TableHead className={TABLE_COLUMN_HEAD_SELECT_CLASS}>
                 <TableRowCheckbox
-                  ref={selectAllCheckboxRef}
                   rowHeight={10}
-                  checked={allFilteredSelected}
+                  checked={
+                    allFilteredSelected
+                      ? true
+                      : selectedFilteredCount > 0
+                        ? 'indeterminate'
+                        : false
+                  }
                   onChange={toggleSelectAllFiltered}
                   aria-label="Alle auswählen"
                   disabled={filtered.length === 0}
@@ -454,7 +455,7 @@ export function ComplianceDocumentsTable({
                     onClick={(event) => handleRowClick(event, doc)}
                   >
                     <TableCell
-                      className="w-[32px] align-middle p-2 pr-0"
+                      className={TABLE_SELECT_COLUMN_CELL_CLASS}
                       data-compliance-skip-row-click
                       onClick={(event) => event.stopPropagation()}
                     >

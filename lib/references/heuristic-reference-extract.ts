@@ -1,5 +1,10 @@
 import type { ExtractedReferenceData } from '@/app/dashboard/references/new/types'
+import {
+  extractCompanyNameFromFileName,
+  extractProjectTitleHintFromFileName,
+} from '@/lib/references/bulk-import-grouping'
 import { clampNarrativeTextNullable } from '@/lib/references/reference-narrative-limits'
+import { sanitizeExtractedProjectTitle } from '@/lib/references/bulk-import-preview-utils'
 
 const COMPANY_SUFFIX =
   /\b(AG|GmbH|SE|KG|Inc\.?|Ltd\.?|LLC|Corp\.?|Group|Gruppe|Holding|plc)\b/i
@@ -254,6 +259,11 @@ export function parseReferenceHeuristicsFromText(
     }
   }
 
+  if (!company_name) {
+    const fileCompany = extractCompanyNameFromFileName(options?.fileName)
+    if (fileCompany) company_name = fileCompany
+  }
+
   const labeledTitle = extractLabeledProjectTitle(lines, company_name)
   if (labeledTitle) {
     title = labeledTitle
@@ -264,6 +274,11 @@ export function parseReferenceHeuristicsFromText(
     if (scoredTitle) {
       title = scoredTitle
     }
+  }
+
+  if (!title) {
+    const fileTitle = extractProjectTitleHintFromFileName(options?.fileName)
+    if (fileTitle) title = fileTitle
   }
 
   if (!title) {
@@ -293,7 +308,7 @@ export function parseReferenceHeuristicsFromText(
   }
 
   return {
-    title,
+    title: sanitizeExtractedProjectTitle(title),
     summary,
     industry: null,
     volume_eur: null,

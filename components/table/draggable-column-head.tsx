@@ -1,11 +1,11 @@
 "use client"
 
 import type * as React from "react"
-import { DragDropHorizontalIcon } from "@hugeicons/core-free-icons"
 
 import { TableHead } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
-import { AppIcon } from "@/lib/icons"
+import { ColumnHeaderDragHandle } from "@/components/table/column-header-drag-handle"
+import { TABLE_COLUMN_HEAD_CLASS } from "@/components/table/table-column-head-styles"
 
 type DraggableColumnHeadProps = {
   columnKey: string
@@ -33,7 +33,7 @@ export function DraggableColumnHead({
   return (
     <TableHead
       className={cn(
-        "h-9 text-xs font-semibold text-muted-foreground",
+        TABLE_COLUMN_HEAD_CLASS,
         alignEnd && "text-right",
         className,
         isDropTarget && "bg-primary/10 ring-1 ring-inset ring-primary/40"
@@ -65,21 +65,10 @@ export function DraggableColumnHead({
           alignEnd && "justify-end"
         )}
       >
-        <button
-          type="button"
-          tabIndex={-1}
-          draggable
-          onDragStart={(e) => {
-            e.dataTransfer.setData("text/plain", columnKey)
-            e.dataTransfer.effectAllowed = "move"
-          }}
+        <ColumnHeaderDragHandle
+          columnKey={columnKey}
           onDragEnd={() => onDragOverColumn(null)}
-          onClick={(ev) => ev.stopPropagation()}
-          className="cursor-grab text-muted-foreground hover:text-foreground active:cursor-grabbing touch-none shrink-0"
-          aria-label="Spalte verschieben"
-        >
-          <AppIcon icon={DragDropHorizontalIcon} size={14} />
-        </button>
+        />
         <div className="flex min-w-0 items-center gap-1">{children}</div>
       </div>
     </TableHead>
