@@ -14,6 +14,13 @@ const INLINE_CHALLENGE =
 const INLINE_SOLUTION =
   /^(?:unsere\s+lösung|lösung|unsere\s+leistung|vorgehen|umsetzung)(?:\s+von\s+controlware)?\s*[:–-]?\s*(.+)/i
 
+const PROJECT_NAME_LABEL =
+  /^(?:projektname|project\s*name|referenztitel|projekttitel|titel\s+des\s+projekts?)\s*[:–-]?\s*(.*)$/i
+const PROJECT_PERIOD_LABEL =
+  /^(?:projektzeitraum|zeitraum|projektlaufzeit|laufzeit|project\s*period|duration)\b/i
+const DATE_RANGE_IN_LINE =
+  /\b\d{1,2}[./]\d{1,2}[./]\d{2,4}\s*[–—-]\s*\d{1,2}[./]\d{1,2}[./]\d{2,4}\b/
+
 function normalizeLines(text: string): string[] {
   return text
     .replace(/\r\n/g, '\n')
@@ -49,8 +56,11 @@ function scoreProjectTitle(line: string, companyName: string | null): number {
   const t = line.trim()
   if (t.length < 10 || t.length > 150) return -100
   if (/^referenz$/i.test(t)) return -100
+  if (PROJECT_PERIOD_LABEL.test(t)) return -100
+  if (DATE_RANGE_IN_LINE.test(t) && t.length < 80) return -100
+  if (/^(?:kunde|customer|auftraggeber|mandant)\s*[:–-]/i.test(t)) return -100
   if (companyName && t.toLowerCase() === companyName.toLowerCase()) return -100
-  if (looksLikeCompanyName(t) && !/\b(service|infrastructure|cloud|migration)\b/i.test(t)) {
+  if (looksLikeCompanyName(t) && !/\b(service|infrastructure|infrastruktur|cloud|migration)\b/i.test(t)) {
     return -80
   }
   if (isBoilerplateCompanyDescription(t, companyName)) return -100
@@ -61,7 +71,7 @@ function scoreProjectTitle(line: string, companyName: string | null): number {
   if (/[–—]/.test(t)) score += 35
   if (/\s[-–]\s/.test(t)) score += 25
   if (
-    /\b(service|infrastructure|cloud|migration|konsolidierung|digitalisierung|rollout|modernisierung|plattform|transformation)\b/i.test(
+    /\b(service|infrastructure|infrastruktur|cloud|migration|konsolidierung|digitalisierung|rollout|modernisierung|plattform|transformation)\b/i.test(
       t
     )
   ) {
@@ -87,6 +97,48 @@ function pickBestProjectTitle(lines: string[], companyName: string | null): stri
     }
   }
   return best
+}
+
+function isUsableProjectTitleLine(line: string, companyName: string | null): boolean {
+  const t = line.trim()
+  if (t.length < 3 || t.length > 150) return false
+  if (PROJECT_PERIOD_LABEL.test(t)) return false
+  if (/^(?:kunde|customer|auftraggeber|mandant)\s*[:–-]/i.test(t)) return false
+  if (DATE_RANGE_IN_LINE.test(t) && !/\b(service|infrastructure|cloud|migration)\b/i.test(t)) {
+    return false
+  }
+  if (companyName && t.toLowerCase() === companyName.toLowerCase()) return false
+  if (looksLikeCompanyName(t) && !/\b(service|infrastructure|infrastruktur|cloud|migration)\b/i.test(t)) {
+    return false
+  }
+  return scoreProjectTitle(t, companyName) > 0
+}
+
+function extractLabeledProjectTitle(lines: string[], companyName: string | null): string | null {
+  for (let i = 0; i < Math.min(lines.length, 60); i++) {
+    const line = lines[i]!
+    const labelMatch = line.match(PROJECT_NAME_LABEL)
+    if (!labelMatch) continue
+
+    const inline = labelMatch[1]?.trim()
+    if (inline && !PROJECT_PERIOD_LABEL.test(inline) && !DATE_RANGE_IN_LINE.test(inline)) {
+      if (inline.length >= 5) return inline
+    }
+
+    for (let j = i + 1; j < Math.min(lines.length, i + 4); j++) {
+      const candidate = lines[j]!.trim()
+      if (!candidate) continue
+      if (PROJECT_NAME_LABEL.test(candidate) || PROJECT_PERIOD_LABEL.test(candidate)) break
+      if (isUsableProjectTitleLine(candidate, companyName)) {
+        return candidate
+      }
+      if (candidate.length >= 8 && !DATE_RANGE_IN_LINE.test(candidate)) {
+        return candidate
+      }
+      break
+    }
+  }
+  return null
 }
 
 function extractSectionInline(
@@ -202,9 +254,16 @@ export function parseReferenceHeuristicsFromText(
     }
   }
 
-  const scoredTitle = pickBestProjectTitle(lines, company_name)
-  if (scoredTitle) {
-    title = scoredTitle
+  const labeledTitle = extractLabeledProjectTitle(lines, company_name)
+  if (labeledTitle) {
+    title = labeledTitle
+  }
+
+  if (!title) {
+    const scoredTitle = pickBestProjectTitle(lines, company_name)
+    if (scoredTitle) {
+      title = scoredTitle
+    }
   }
 
   if (!title) {

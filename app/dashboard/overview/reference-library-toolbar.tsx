@@ -37,14 +37,17 @@ import { ReferenceProofSegmentSwitch } from '@/components/references/reference-p
 import type { ReferenceLibraryMode } from './reference-library-switch'
 import { REFERENCE_PROOF_SEGMENT_LABELS } from '@/lib/references/library/reference-library-mode'
 
-/** Entfernt Elemente aus dem Flex-Layout (Zertifikatsmodus), ohne die rechte Button-Gruppe zu verschieben. */
-const SLOT_COLLAPSED = 'pointer-events-none m-0 w-0 min-w-0 max-w-0 overflow-hidden border-0 p-0 opacity-0'
+/** Feste Toolbar-Slots: Moduswechsel per Conditional Render — kein sichtbares Ausblenden. */
+const REFERENCE_FILTERS_SLOT_CLASS = 'relative h-10 min-w-[11.5rem] shrink-0'
+const REFERENCE_TOOLS_SLOT_CLASS = 'relative h-10 min-w-[5.75rem] shrink-0'
+const TOOLBAR_IMPORT_SLOT_CLASS = 'relative h-10 w-10 shrink-0'
+const TOOLBAR_CTA_SLOT_CLASS = 'relative h-10 min-w-[10.5rem] shrink-0'
 
 const TOOLBAR_ICON_CLASS = 'shrink-0 text-muted-foreground'
 
 const PRIMARY_CTA_CLASS = cn(
   BRAND_PRIMARY_BUTTON_CLASS,
-  'h-10 min-w-0 shrink-0 justify-center gap-1.5 rounded-lg px-3'
+  'h-10 w-full min-w-0 justify-center gap-1.5 rounded-lg px-3'
 )
 
 type ColumnKey = string
@@ -113,7 +116,7 @@ export function ReferenceLibraryToolbar({
   const isReferencesLibrary = libraryMode === 'references'
 
   return (
-    <div className="flex w-full min-w-0 items-center gap-2.5 sm:gap-3">
+    <div className="flex min-h-10 w-full min-w-0 items-center gap-2.5 sm:gap-3">
       <ToolbarSearchField
         variant="dashboard"
         wrapperClassName="min-w-0 flex-1"
@@ -129,13 +132,9 @@ export function ReferenceLibraryToolbar({
 
       <TooltipProvider delayDuration={300}>
         <div className="flex shrink-0 flex-nowrap items-center gap-2 sm:gap-2.5">
-        <div
-          className={cn(
-            'flex shrink-0 items-center gap-2.5',
-            !isReferencesLibrary && SLOT_COLLAPSED
-          )}
-          aria-hidden={!isReferencesLibrary}
-        >
+        <div className={REFERENCE_FILTERS_SLOT_CLASS} aria-hidden={!isReferencesLibrary}>
+          {isReferencesLibrary ? (
+            <div key="reference-filters" className="flex h-10 items-center gap-2.5">
           <AccountsToolbarTooltip label={COPY.dashboard.tooltipFavorites}>
             <Button
               type="button"
@@ -148,7 +147,6 @@ export function ReferenceLibraryToolbar({
               onClick={() => onFavoritesOnlyChange(!favoritesOnly)}
               aria-pressed={favoritesOnly}
               aria-label={COPY.dashboard.tooltipFavorites}
-              tabIndex={isReferencesLibrary ? 0 : -1}
             >
               <AppIcon
                 icon={StarIcon}
@@ -173,7 +171,6 @@ export function ReferenceLibraryToolbar({
                     statusFilter !== 'all' && 'bg-primary/10 text-primary'
                   )}
                   aria-label={COPY.dashboard.tooltipStatus}
-                  tabIndex={isReferencesLibrary ? 0 : -1}
                 >
                   <AppIcon icon={TrendingUp} size={16} className={TOOLBAR_ICON_CLASS} />
                 </Button>
@@ -209,7 +206,6 @@ export function ReferenceLibraryToolbar({
                     volumeFilter !== 'all' && 'bg-primary/10 text-primary'
                   )}
                   aria-label="Volumen filtern"
-                  tabIndex={isReferencesLibrary ? 0 : -1}
                 >
                   <Banknote className="size-4 shrink-0 text-muted-foreground" aria-hidden />
                 </Button>
@@ -229,7 +225,6 @@ export function ReferenceLibraryToolbar({
                   size="toolbar"
                   className="shrink-0 px-2.5 hover:bg-muted/70"
                   aria-label={COPY.dashboard.columnsToggleAria}
-                  tabIndex={isReferencesLibrary ? 0 : -1}
                 >
                   <AppIcon icon={Filter} size={16} className={TOOLBAR_ICON_CLASS} />
                 </Button>
@@ -263,87 +258,82 @@ export function ReferenceLibraryToolbar({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+            </div>
+          ) : null}
         </div>
 
         <div className="flex shrink-0 items-center gap-2.5">
           {isAdmin ? (
-            <div
-              className={cn(!isReferencesLibrary && SLOT_COLLAPSED)}
-              aria-hidden={!isReferencesLibrary}
-            >
-              <AccountsToolbarTooltip label={COPY.dashboard.tooltipImport}>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="toolbar"
-                  className="shrink-0 px-2.5 hover:bg-muted/70"
-                  onClick={onImportClick}
-                  aria-label={COPY.dashboard.tooltipImport}
-                  tabIndex={isReferencesLibrary ? 0 : -1}
-                >
-                  <AppIcon icon={UploadIcon} size={16} className={TOOLBAR_ICON_CLASS} />
-                </Button>
-              </AccountsToolbarTooltip>
+            <div className={TOOLBAR_IMPORT_SLOT_CLASS} aria-hidden={!isReferencesLibrary && !onBulkUploadCertificatesClick}>
+              {isReferencesLibrary ? (
+                <AccountsToolbarTooltip label={COPY.dashboard.tooltipImport}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="toolbar"
+                    className="shrink-0 px-2.5 hover:bg-muted/70"
+                    onClick={onImportClick}
+                    aria-label={COPY.dashboard.tooltipImport}
+                  >
+                    <AppIcon icon={UploadIcon} size={16} className={TOOLBAR_ICON_CLASS} />
+                  </Button>
+                </AccountsToolbarTooltip>
+              ) : onBulkUploadCertificatesClick ? (
+                <AccountsToolbarTooltip label="Zertifikate importieren">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="toolbar"
+                    className="shrink-0 px-2.5 hover:bg-muted/70"
+                    onClick={onBulkUploadCertificatesClick}
+                    aria-label="Zertifikate importieren"
+                  >
+                    <AppIcon icon={UploadIcon} size={16} className={TOOLBAR_ICON_CLASS} />
+                  </Button>
+                </AccountsToolbarTooltip>
+              ) : null}
             </div>
           ) : null}
 
-          <div
-            className={cn(!isReferencesLibrary && SLOT_COLLAPSED)}
-            aria-hidden={!isReferencesLibrary}
-          >
-            <ReferenceLayoutSwitch value={referenceLayout} onChange={onReferenceLayoutChange} />
-          </div>
-
-          <div
-            className={cn(isReferencesLibrary && SLOT_COLLAPSED)}
-            aria-hidden={isReferencesLibrary}
-          >
-            {onShowExpiredCertificatesChange ? (
-              <AccountsToolbarTooltip
-                label={
-                  showExpiredCertificates
-                    ? 'Abgelaufene Zertifikate ausblenden'
-                    : 'Abgelaufene Zertifikate anzeigen'
-                }
-              >
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="toolbar"
-                  className={cn(
-                    'shrink-0 px-2.5 hover:bg-muted/70',
-                    showExpiredCertificates && 'bg-muted/80'
-                  )}
-                  aria-pressed={showExpiredCertificates}
-                  aria-label={
+          <div className={REFERENCE_TOOLS_SLOT_CLASS}>
+            {isReferencesLibrary ? (
+              <ReferenceLayoutSwitch value={referenceLayout} onChange={onReferenceLayoutChange} />
+            ) : (
+              <div key="certificate-tools" className="flex h-10 items-center gap-2.5">
+              {onShowExpiredCertificatesChange ? (
+                <AccountsToolbarTooltip
+                  label={
                     showExpiredCertificates
                       ? 'Abgelaufene Zertifikate ausblenden'
                       : 'Abgelaufene Zertifikate anzeigen'
                   }
-                  onClick={() => onShowExpiredCertificatesChange(!showExpiredCertificates)}
                 >
-                  {showExpiredCertificates ? (
-                    <Eye className="size-4 text-muted-foreground" aria-hidden />
-                  ) : (
-                    <EyeOff className="size-4 text-muted-foreground" aria-hidden />
-                  )}
-                </Button>
-              </AccountsToolbarTooltip>
-            ) : null}
-            {onBulkUploadCertificatesClick ? (
-              <AccountsToolbarTooltip label="Zertifikate importieren">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="toolbar"
-                  className="shrink-0 px-2.5 hover:bg-muted/70"
-                  onClick={onBulkUploadCertificatesClick}
-                  aria-label="Zertifikate importieren"
-                >
-                  <AppIcon icon={UploadIcon} size={16} className={TOOLBAR_ICON_CLASS} />
-                </Button>
-              </AccountsToolbarTooltip>
-            ) : null}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="toolbar"
+                    className={cn(
+                      'shrink-0 px-2.5 hover:bg-muted/70',
+                      showExpiredCertificates && 'bg-muted/80'
+                    )}
+                    aria-pressed={showExpiredCertificates}
+                    aria-label={
+                      showExpiredCertificates
+                        ? 'Abgelaufene Zertifikate ausblenden'
+                        : 'Abgelaufene Zertifikate anzeigen'
+                    }
+                    onClick={() => onShowExpiredCertificatesChange(!showExpiredCertificates)}
+                  >
+                    {showExpiredCertificates ? (
+                      <Eye className="size-4 text-muted-foreground" aria-hidden />
+                    ) : (
+                      <EyeOff className="size-4 text-muted-foreground" aria-hidden />
+                    )}
+                  </Button>
+                </AccountsToolbarTooltip>
+              ) : null}
+              </div>
+            )}
           </div>
 
           {showProofSegmentSwitch && onLibraryModeChange ? (
@@ -354,21 +344,33 @@ export function ReferenceLibraryToolbar({
           ) : null}
 
           {isAdmin ? (
-            <Button
-              type="button"
-              size="toolbar"
-              className={PRIMARY_CTA_CLASS}
-              onClick={
-                isReferencesLibrary ? onCreateReferenceClick : onUploadCertificateClick
-              }
-            >
-              <AppIcon icon={CirclePlus} size={16} className="shrink-0" />
-              <span className="max-w-[9rem] truncate sm:max-w-none">
-                {isReferencesLibrary
-                  ? COPY.dashboard.tooltipCreateReference
-                  : `${REFERENCE_PROOF_SEGMENT_LABELS.certificates} hochladen`}
-              </span>
-            </Button>
+            <div className={TOOLBAR_CTA_SLOT_CLASS}>
+              {isReferencesLibrary ? (
+                <Button
+                  type="button"
+                  size="toolbar"
+                  className={PRIMARY_CTA_CLASS}
+                  onClick={onCreateReferenceClick}
+                >
+                  <AppIcon icon={CirclePlus} size={16} className="shrink-0" />
+                  <span className="max-w-[9rem] truncate sm:max-w-none">
+                    {COPY.dashboard.tooltipCreateReference}
+                  </span>
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  size="toolbar"
+                  className={PRIMARY_CTA_CLASS}
+                  onClick={onUploadCertificateClick}
+                >
+                  <AppIcon icon={CirclePlus} size={16} className="shrink-0" />
+                  <span className="max-w-[9rem] truncate sm:max-w-none">
+                    {`${REFERENCE_PROOF_SEGMENT_LABELS.certificates} hochladen`}
+                  </span>
+                </Button>
+              )}
+            </div>
           ) : null}
         </div>
         </div>

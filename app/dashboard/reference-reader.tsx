@@ -29,7 +29,6 @@ export function ReferenceReader({ reference }: { reference: ReferenceRow }) {
             fallbackText={reference.company_name}
             containerClassName="h-12 w-12 rounded-xl"
             fallbackIconSize={24}
-            imageClassName="p-1"
           />
         )}
         <div className="min-w-0">

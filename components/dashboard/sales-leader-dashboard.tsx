@@ -44,7 +44,6 @@ function RiskDealRow({
         fallbackText={deal.companyName}
         containerClassName="size-9 shrink-0 rounded-md"
         fallbackIconSize={18}
-        imageClassName="p-0.5"
       />
       <div className="min-w-0 flex-1 text-sm">
         <Link href={deal.href} className="font-medium hover:underline">

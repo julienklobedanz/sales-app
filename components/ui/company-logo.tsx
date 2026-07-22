@@ -10,9 +10,8 @@ import { requestCompanyBrandfetchRetry } from '@/lib/accounts/company-brandfetch
 import { refreshCompanyBrandfetchOnLogoIssue } from '@/lib/references/library/sync-company-brandfetch'
 import { rewriteBrandfetchLogoUrlForLightBackground } from '@/lib/brandfetch/logo-theme-url'
 
-/** Einheitlicher Logo-Container — kein dynamischer Dark-Mode-Rahmen (vermeidet schwarze Boxen bei einzelnen Marken). */
-export const COMPANY_LOGO_CONTAINER_CLASS =
-  'relative overflow-hidden border border-border/50 bg-muted/35'
+/** Layout-Anker für geladene Logos — ohne sichtbaren Kasten (Fallback behält eigenen Rahmen). */
+export const COMPANY_LOGO_CONTAINER_CLASS = 'relative overflow-hidden'
 
 type CompanyLogoProps = {
   src?: string | null

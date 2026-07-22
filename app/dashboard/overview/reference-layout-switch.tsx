@@ -28,12 +28,12 @@ export function ReferenceLayoutSwitch({ value, onChange }: Props) {
           isInbox ? 'Zur Tabellenansicht wechseln' : 'Zur Inbox-Ansicht wechseln'
         }
         onClick={() => onChange(isInbox ? 'table' : 'inbox')}
-        className="relative inline-flex h-8 w-[3.25rem] shrink-0 cursor-pointer items-center rounded-full border border-border/80 bg-muted/50 p-0.5 transition-colors hover:bg-muted/70"
+        className="relative inline-flex h-10 w-16 shrink-0 cursor-pointer items-center rounded-full border border-border/80 bg-muted/50 p-0.5 transition-colors hover:bg-muted/70"
       >
         <span
           className={cn(
-            'flex size-7 items-center justify-center rounded-full bg-background shadow-sm transition-transform duration-200 ease-out',
-            isInbox ? 'translate-x-[1.125rem]' : 'translate-x-0'
+            'flex size-9 items-center justify-center rounded-full bg-background shadow-sm transition-transform duration-200 ease-out',
+            isInbox ? 'translate-x-6' : 'translate-x-0'
           )}
         >
           {isInbox ? (

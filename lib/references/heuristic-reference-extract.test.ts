@@ -26,4 +26,32 @@ Controlware implementierte ein Managed Service mit Cloud-Anbindung und 24/7-Betr
     expect(parsed.summary).toContain('Betriebsmodell')
     expect(parsed.summary).not.toMatch(/^Die Aurubis AG ist/)
   })
+
+  it('liest explizites Projektname-Label und ignoriert Projektzeitraum', () => {
+    const text = `Referenz
+Kunde: Apex Financial Health AG
+Projektname
+Managed Cloud Platform – Financial Services
+
+Projektzeitraum 01.09.2023 – 28.02.2025
+
+Herausforderung
+Der Kunde benötigte eine skalierbare Cloud-Plattform.`
+
+    const parsed = parseReferenceHeuristicsFromText(text, {
+      fileName: 'Apex_Financial_Health.pdf',
+    })
+    expect(parsed.company_name).toBe('Apex Financial Health AG')
+    expect(parsed.title).toBe('Managed Cloud Platform – Financial Services')
+    expect(parsed.title).not.toMatch(/Projektzeitraum/)
+  })
+
+  it('bevorzugt inline Projektname vor Datumszeile', () => {
+    const text = `Kunde: BioHealth Pharma Systems
+Projektname: GxP-konforme Infrastruktur für Produktionssysteme
+Projektzeitraum 01.02.2025 – 31.08.2025`
+
+    const parsed = parseReferenceHeuristicsFromText(text)
+    expect(parsed.title).toBe('GxP-konforme Infrastruktur für Produktionssysteme')
+  })
 })

@@ -323,6 +323,9 @@ export function DashboardOverview({
   const [bulkImportOpen, setBulkImportOpen] = useState(false)
   const [bulkImportGroups, setBulkImportGroups] = useState<BulkImportGroupItem[]>([])
   const [bulkImportLoading, setBulkImportLoading] = useState(false)
+  const [bulkImportPreviewPendingFiles, setBulkImportPreviewPendingFiles] = useState<Set<File>>(
+    () => new Set()
+  )
   const bulkImportDropRef = useRef<HTMLInputElement>(null)
   const [trashOpen, setTrashOpen] = useState(false)
   const [trashItems, setTrashItems] = useState<DeletedReferenceRow[]>([])
@@ -449,7 +452,13 @@ export function DashboardOverview({
       const next = autoGroupByPrefix([...prev, ...newGroups])
 
       for (const file of capped) {
+        setBulkImportPreviewPendingFiles((prev) => new Set(prev).add(file))
         void previewBulkImportFile(file).then((meta) => {
+          setBulkImportPreviewPendingFiles((prev) => {
+            const next = new Set(prev)
+            next.delete(file)
+            return next
+          })
           setBulkImportGroups((current) =>
             current.map((g) => {
               if (!g.files.includes(file)) return g
@@ -522,27 +531,38 @@ export function DashboardOverview({
     )
   }
 
-  function moveFileToGroup(
-    fromGroupIndex: number,
-    fromFileIndex: number,
-    toGroupIndex: number
-  ) {
-    if (fromGroupIndex === toGroupIndex) return
-    setBulkImportGroups((prev) => {
-      const next = prev.map((g) => ({ ...g, files: [...g.files] }))
-      const file = next[fromGroupIndex]?.files[fromFileIndex]
-      if (!file) return prev
-      next[fromGroupIndex]!.files = next[fromGroupIndex]!.files.filter((_, i) => i !== fromFileIndex)
-      const target = next[toGroupIndex]
-      if (target) target.files.push(file)
-      return next.filter((g) => g.files.length > 0)
-    })
-  }
-
   function setBulkImportGroupName(groupId: string, projectName: string) {
     setBulkImportGroups((prev) =>
       prev.map((g) => (g.id === groupId ? { ...g, projectName } : g))
     )
+  }
+
+  function setBulkImportCompanyName(groupId: string, companyName: string) {
+    setBulkImportGroups((prev) =>
+      prev.map((g) => (g.id === groupId ? { ...g, companyName: companyName.trim() || undefined } : g))
+    )
+  }
+
+  function mergeBulkImportGroups(selectedIds: string[]) {
+    if (selectedIds.length < 2) return
+    setBulkImportGroups((prev) => {
+      const idSet = new Set(selectedIds)
+      const selected = prev.filter((g) => idSet.has(g.id))
+      if (selected.length < 2) return prev
+      const rest = prev.filter((g) => !idSet.has(g.id))
+      const primary = selected[0]!
+      const mergedCompany =
+        primary.companyName?.trim() ||
+        selected.find((g) => g.companyName?.trim())?.companyName?.trim()
+      return [
+        ...rest,
+        {
+          ...primary,
+          companyName: mergedCompany || undefined,
+          files: selected.flatMap((g) => g.files),
+        },
+      ]
+    })
   }
 
   useEffect(() => {
@@ -951,7 +971,10 @@ export function DashboardOverview({
             <BulkImportDialog
               open={bulkImportOpen}
               onOpenChange={(open) => {
-                if (!open) setBulkImportLoading(false)
+                if (!open) {
+                  setBulkImportLoading(false)
+                  setBulkImportPreviewPendingFiles(new Set())
+                }
                 setBulkImportOpen(open)
               }}
               loading={bulkImportLoading}
@@ -961,8 +984,10 @@ export function DashboardOverview({
               dropRef={bulkImportDropRef}
               addFiles={addBulkImportFiles}
               removeFile={removeBulkImportFile}
-              moveFileToGroup={moveFileToGroup}
               setGroupName={setBulkImportGroupName}
+              setCompanyName={setBulkImportCompanyName}
+              mergeSelectedGroups={mergeBulkImportGroups}
+              previewPendingFiles={bulkImportPreviewPendingFiles}
             />
           </>
         ) : null}
@@ -973,8 +998,8 @@ export function DashboardOverview({
   return (
     <div className="flex min-w-0 flex-col space-y-5">
       <ReferencesOverviewBrandfetchSync companyIds={companyIdsNeedingBrandfetch} />
-      {/* Toolbar & Tabelle */}
-      <div className="min-w-0 space-y-2">
+      {/* Toolbar & Tabelle — einheitlicher Abstand zwischen Toolbar und Listeninhalt */}
+      <div className="flex min-w-0 flex-col gap-4">
         <ReferenceLibraryToolbar
           libraryMode={libraryMode}
           onLibraryModeChange={handleLibraryModeChange}
@@ -1438,7 +1463,10 @@ export function DashboardOverview({
         <BulkImportDialog
           open={bulkImportOpen}
           onOpenChange={(open) => {
-            if (!open) setBulkImportLoading(false)
+            if (!open) {
+              setBulkImportLoading(false)
+              setBulkImportPreviewPendingFiles(new Set())
+            }
             setBulkImportOpen(open)
           }}
           loading={bulkImportLoading}
@@ -1448,8 +1476,10 @@ export function DashboardOverview({
           dropRef={bulkImportDropRef}
           addFiles={addBulkImportFiles}
           removeFile={removeBulkImportFile}
-          moveFileToGroup={moveFileToGroup}
           setGroupName={setBulkImportGroupName}
+          setCompanyName={setBulkImportCompanyName}
+          mergeSelectedGroups={mergeBulkImportGroups}
+          previewPendingFiles={bulkImportPreviewPendingFiles}
         />
       )}
     </div>

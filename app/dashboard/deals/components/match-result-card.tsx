@@ -117,7 +117,6 @@ export function MatchResultCard({
               fallbackText={companyName}
               containerClassName="size-11 shrink-0 rounded-xl"
               fallbackIconSize={20}
-              imageClassName="p-1"
             />
             <div className="min-w-0 flex-1 text-left">
               {companyName ? (
