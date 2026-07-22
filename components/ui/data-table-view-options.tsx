@@ -1,8 +1,9 @@
 "use client"
 
 import { type Table } from "@tanstack/react-table"
-import { Settings2 } from "@hugeicons/core-free-icons"
+import { Filter } from "@hugeicons/core-free-icons"
 
+import { AccountsToolbarTooltip } from "@/app/dashboard/accounts/components/accounts-toolbar-tooltip"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -15,7 +16,10 @@ import {
 import { COPY } from "@/lib/copy"
 import { AppIcon } from "@/lib/icons"
 
-function columnViewLabel<TData>(column: { id: string; columnDef: { header?: unknown; meta?: unknown } }): string {
+function columnViewLabel<TData>(column: {
+  id: string
+  columnDef: { header?: unknown; meta?: unknown }
+}): string {
   const meta = column.columnDef.meta as { viewLabel?: string } | undefined
   if (meta?.viewLabel) return meta.viewLabel
   if (typeof column.columnDef.header === "string") return column.columnDef.header
@@ -25,12 +29,19 @@ function columnViewLabel<TData>(column: { id: string; columnDef: { header?: unkn
 export function DataTableViewOptions<TData>({ table }: { table: Table<TData> }) {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="toolbar" className="hover:bg-muted/70">
-          <AppIcon icon={Settings2} size={16} />
-          {COPY.table.columns}
-        </Button>
-      </DropdownMenuTrigger>
+      <AccountsToolbarTooltip label={COPY.dashboard.tooltipColumns}>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="toolbar"
+            className="shrink-0 px-2.5 hover:bg-muted/70"
+            aria-label={COPY.dashboard.columnsToggleAria}
+          >
+            <AppIcon icon={Filter} size={16} className="shrink-0 text-muted-foreground" />
+          </Button>
+        </DropdownMenuTrigger>
+      </AccountsToolbarTooltip>
       <DropdownMenuContent align="end" className="w-[min(100vw-2rem,13rem)]">
         <DropdownMenuLabel>{COPY.table.columns}</DropdownMenuLabel>
         <DropdownMenuSeparator />

@@ -35,6 +35,7 @@ import { ExternalLink, FolderOpen } from 'lucide-react'
 import { TableBulkActionsBar } from '@/components/table/table-bulk-actions-bar'
 import { CrmOnboardingEmptyState } from '@/app/dashboard/components/crm-onboarding-empty-state'
 import { CrmImportPreviewDialog } from '@/app/dashboard/accounts/components/crm-import-preview-dialog'
+import { AccountsToolbarTooltip } from '@/app/dashboard/accounts/components/accounts-toolbar-tooltip'
 import { useRole } from '@/hooks/useRole'
 import { useCrmOAuthCallback } from '@/hooks/use-crm-oauth-callback'
 import { getHubSpotConnectHref } from '@/lib/crm/hubspot/oauth-return'
@@ -526,7 +527,10 @@ export function DealsClientContent({
               value={statusFilter}
               onValueChange={(v) => setStatusFilter(v as StatusFilterValue)}
             >
-              <SelectTrigger className="w-full sm:w-[200px] shrink-0" data-row-nav-ignore>
+              <SelectTrigger
+                className="w-full shrink-0 rounded-lg border bg-white shadow-sm data-[size=default]:h-10 sm:w-[200px]"
+                data-row-nav-ignore
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -552,21 +556,23 @@ export function DealsClientContent({
                 e.target.value = ''
               }}
             />
-            <Button
-              type="button"
-              variant="ghost"
-              size="toolbar"
-              disabled={importing}
-              className="hover:bg-muted/70"
-              onClick={() => xlsxInputRef.current?.click()}
-            >
-              {importing ? (
-                <AppIcon icon={Loader} size={16} className="animate-spin" />
-              ) : (
-                <AppIcon icon={UploadIcon} size={16} />
-              )}
-              Listen importieren
-            </Button>
+            <AccountsToolbarTooltip label="Listen importieren">
+              <Button
+                type="button"
+                variant="ghost"
+                size="toolbar"
+                disabled={importing}
+                className="shrink-0 px-2.5 hover:bg-muted/70"
+                onClick={() => xlsxInputRef.current?.click()}
+                aria-label="Listen importieren"
+              >
+                {importing ? (
+                  <AppIcon icon={Loader} size={16} className="animate-spin text-muted-foreground" />
+                ) : (
+                  <AppIcon icon={UploadIcon} size={16} className="shrink-0 text-muted-foreground" />
+                )}
+              </Button>
+            </AccountsToolbarTooltip>
             <Button
               type="button"
               size="toolbar"
