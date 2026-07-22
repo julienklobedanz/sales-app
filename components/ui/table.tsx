@@ -23,7 +23,12 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
   return (
     <thead
       data-slot="table-header"
-      className={cn("[&_tr]:border-b", className)}
+      className={cn(
+        // group: Spalten-Trenner nur beim Hover über die Titelzeile
+        // Header-tr ohne Zeilen-Hover — Highlight liegt auf den einzelnen th
+        "group/table-header [&_tr]:border-b [&_tr]:hover:bg-transparent",
+        className
+      )}
       {...props}
     />
   )

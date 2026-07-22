@@ -51,10 +51,28 @@ export type ReferenceColumnKey =
   | "duration_months"
   | "created_at"
 
+export const DEFAULT_REFERENCE_COLUMN_WIDTHS: Record<ReferenceColumnKey, number> = {
+  company: 180,
+  title: 280,
+  industry: 108,
+  volume_eur: 110,
+  status: 104,
+  project_status: 140,
+  updated_at: 130,
+  tags: 120,
+  country: 110,
+  project_start: 120,
+  project_end: 120,
+  duration_months: 110,
+  created_at: 130,
+}
+
 export type ReferenceTableHeaderRenderContext = {
   dragOverColumn: string | null
   setDragOverColumn: (key: string | null) => void
   moveColumnOrder: (from: string, to: string) => void
+  columnWidths: Record<ReferenceColumnKey, number>
+  onColumnWidthChange: (column: ReferenceColumnKey, width: number) => void
   COLUMN_LABELS: Record<ReferenceColumnKey, string>
   STATUS_LABELS: Record<string, string>
   filterOptions: {
@@ -102,6 +120,8 @@ export function renderReferenceColumnHeader(
     dragOverColumn,
     setDragOverColumn,
     moveColumnOrder,
+    columnWidths,
+    onColumnWidthChange,
     COLUMN_LABELS,
     STATUS_LABELS,
     filterOptions,
@@ -139,12 +159,15 @@ export function renderReferenceColumnHeader(
     dragOverColumn,
     onDragOverColumn: setDragOverColumn,
     onColumnMove: moveColumnOrder,
+    width: columnWidths[column],
+    onWidthChange: (key: string, width: number) =>
+      onColumnWidthChange(key as ReferenceColumnKey, width),
   }
 
   switch (column) {
     case "company":
       return (
-        <DraggableColumnHead {...dragProps} className="w-[180px]">
+        <DraggableColumnHead {...dragProps}>
           <Popover>
             <PopoverTrigger asChild>
               <button
@@ -237,7 +260,7 @@ export function renderReferenceColumnHeader(
       )
     case "title":
       return (
-        <DraggableColumnHead {...dragProps} className="min-w-0">
+        <DraggableColumnHead {...dragProps}>
           <button
             type="button"
             className="flex items-center gap-0.5 hover:opacity-80"
@@ -322,7 +345,7 @@ export function renderReferenceColumnHeader(
       )
     case "industry":
       return (
-        <DraggableColumnHead {...dragProps} className="w-[108px] max-w-[108px]">
+        <DraggableColumnHead {...dragProps}>
           <Popover>
             <PopoverTrigger asChild>
               <button
@@ -415,7 +438,7 @@ export function renderReferenceColumnHeader(
       )
     case "status":
       return (
-        <DraggableColumnHead {...dragProps} className="w-[104px] max-w-[104px]">
+        <DraggableColumnHead {...dragProps}>
           <Popover>
             <PopoverTrigger asChild>
               <button
@@ -599,7 +622,7 @@ export function renderReferenceColumnHeader(
       )
     case "tags":
       return (
-        <DraggableColumnHead {...dragProps} className="max-w-[120px]">
+        <DraggableColumnHead {...dragProps}>
           <Popover>
             <PopoverTrigger asChild>
               <button
@@ -909,6 +932,11 @@ export type ReferenceTableCellRenderContext = {
   companyLogoById: Map<string, string>
   companyIndustryById: Map<string, string>
   orgDateDisplayFormat?: OrgDateDisplayFormat | string
+  columnWidths: Record<ReferenceColumnKey, number>
+}
+
+function columnWidthStyle(width: number): React.CSSProperties {
+  return { width, minWidth: width, maxWidth: width }
 }
 
 export function renderReferenceColumnCell(
@@ -916,12 +944,13 @@ export function renderReferenceColumnCell(
   ref: ReferenceRow,
   ctx: ReferenceTableCellRenderContext
 ): React.ReactNode {
-  const { PROJECT_STATUS_LABELS, companyLogoById, companyIndustryById } = ctx
+  const { PROJECT_STATUS_LABELS, companyLogoById, companyIndustryById, columnWidths } = ctx
   const dateFmt = normalizeOrgDateDisplayFormat(ctx.orgDateDisplayFormat)
+  const widthStyle = columnWidthStyle(columnWidths[column])
   switch (column) {
     case "company":
       return (
-        <TableDataCell>
+        <TableDataCell style={widthStyle}>
           <TableAccountLinkContent
             companyId={ref.company_id}
             companyName={ref.company_name}
@@ -932,7 +961,7 @@ export function renderReferenceColumnCell(
     case "title": {
       const summaryText = String(ref.summary ?? "").trim()
       return (
-        <TableDataCell className="min-w-0 max-w-[min(100%,280px)]">
+        <TableDataCell className="min-w-0" style={widthStyle}>
           <TableTitleHoverContent
             title={ref.title}
             previewLabel="Projekt-Zusammenfassung"
@@ -949,8 +978,8 @@ export function renderReferenceColumnCell(
         ''
       const { compact, full } = formatIndustryDisplayCompact(industryRaw)
       return (
-        <TableDataCell className="max-w-[108px] text-muted-foreground">
-          <span className="block truncate leading-none" title={full || undefined}>
+        <TableDataCell className="text-muted-foreground" style={widthStyle}>
+          <span className="block truncate leading-normal" title={full || undefined}>
             {compact}
           </span>
         </TableDataCell>
@@ -961,6 +990,7 @@ export function renderReferenceColumnCell(
         <TableDataCell
           className="text-right text-muted-foreground text-sm tabular-nums"
           alignClassName="justify-end"
+          style={widthStyle}
         >
           <span className="leading-none">
             {formatReferenceVolumeCompact(ref.volume_eur) || ''}
@@ -969,7 +999,7 @@ export function renderReferenceColumnCell(
       )
     case "status":
       return (
-        <TableDataCell>
+        <TableDataCell style={widthStyle}>
           <ReferenceStatusBadge
             status={ref.status}
             customerApprovalStatus={ref.customer_approval_status}
@@ -980,7 +1010,7 @@ export function renderReferenceColumnCell(
       )
     case "project_status":
       return (
-        <TableDataCell className="text-sm text-muted-foreground">
+        <TableDataCell className="text-sm text-muted-foreground" style={widthStyle}>
           <span className="leading-none">
             {ref.project_status
               ? PROJECT_STATUS_LABELS[ref.project_status] ?? ref.project_status
@@ -993,6 +1023,7 @@ export function renderReferenceColumnCell(
         <TableDataCell
           className="text-right text-muted-foreground text-sm"
           alignClassName="justify-end"
+          style={widthStyle}
         >
           <span className="leading-none">
             {ref.updated_at ? formatReferenceDate(ref.updated_at, dateFmt) : ''}
@@ -1001,7 +1032,7 @@ export function renderReferenceColumnCell(
       )
     case "tags":
       return (
-        <TableDataCell className="max-w-[140px]">
+        <TableDataCell style={widthStyle}>
           {ref.tags ? (
             <div className="flex flex-wrap gap-1">
               {ref.tags
@@ -1023,7 +1054,7 @@ export function renderReferenceColumnCell(
       )
     case "country":
       return (
-        <TableDataCell className="text-muted-foreground">
+        <TableDataCell className="text-muted-foreground" style={widthStyle}>
           <span className="leading-none">{ref.country ?? ''}</span>
         </TableDataCell>
       )
@@ -1032,6 +1063,7 @@ export function renderReferenceColumnCell(
         <TableDataCell
           className="text-right text-muted-foreground text-sm"
           alignClassName="justify-end"
+          style={widthStyle}
         >
           <span className="leading-none">
             {ref.project_start ? formatReferenceDate(ref.project_start, dateFmt) : ''}
@@ -1043,6 +1075,7 @@ export function renderReferenceColumnCell(
         <TableDataCell
           className="text-right text-muted-foreground text-sm"
           alignClassName="justify-end"
+          style={widthStyle}
         >
           <span className="leading-none">
             {ref.project_end ? formatReferenceDate(ref.project_end, dateFmt) : ''}
@@ -1054,6 +1087,7 @@ export function renderReferenceColumnCell(
         <TableDataCell
           className="text-right text-muted-foreground text-sm"
           alignClassName="justify-end"
+          style={widthStyle}
         >
           <span className="leading-none">
             {ref.duration_months != null ? `${ref.duration_months}` : ''}
@@ -1065,6 +1099,7 @@ export function renderReferenceColumnCell(
         <TableDataCell
           className="text-right text-muted-foreground text-sm"
           alignClassName="justify-end"
+          style={widthStyle}
         >
           <span className="leading-none">{formatReferenceDate(ref.created_at, dateFmt)}</span>
         </TableDataCell>

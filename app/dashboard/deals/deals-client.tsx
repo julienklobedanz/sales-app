@@ -20,7 +20,6 @@ import { getMatchStrength } from '@/lib/match/match-strength'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { COPY } from '@/lib/copy'
 import { formatDealVolume } from '@/lib/format'
-import { AccountCell } from '@/components/table/account-cell'
 import { TableAccountLinkContent } from '@/components/table/table-account-link-content'
 import { TableRowAlign } from '@/components/table/table-row-align'
 import { TableSortableHeader } from '@/components/table/table-sortable-header'
@@ -39,10 +38,27 @@ import { CrmImportPreviewDialog } from '@/app/dashboard/accounts/components/crm-
 import { useRole } from '@/hooks/useRole'
 import { useCrmOAuthCallback } from '@/hooks/use-crm-oauth-callback'
 import { getHubSpotConnectHref } from '@/lib/crm/hubspot/oauth-return'
+import {
+  loadColumnWidthsFromStorage,
+  saveColumnWidthsToStorage,
+} from '@/lib/table-column-sizing'
+import type { ColumnSizingState } from '@tanstack/react-table'
 
 type StatusFilterValue = 'all' | DealStatus
 const DEAL_COLUMNS_STORAGE_KEY = 'refstack:deals:column-order-v2'
+const DEAL_COLUMN_SIZING_STORAGE_KEY = 'refstack:deals:column-sizing-v1'
 const DEAL_COL_LABELS = COPY.deals.columnViewLabels
+const DEAL_RESIZABLE_COLUMN_IDS = [
+  'status',
+  'title',
+  'company_name',
+  'volume',
+  'reference_count',
+  'match',
+  'expiry_date',
+  'account_manager_name',
+  'sales_manager_name',
+] as const
 const STATUS_FILTER_OPTIONS: { value: StatusFilterValue; label: string }[] = [
   { value: 'all', label: COPY.deals.filterStatusAll },
   { value: 'negotiation', label: COPY.deals.filterStatusNegotiation },
@@ -108,6 +124,7 @@ export function DealsClientContent({
     'account_manager_name',
     'sales_manager_name',
   ])
+  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({})
 
   const openCrmImport = useCallback(() => setCrmImportOpen(true), [])
 
@@ -135,6 +152,15 @@ export function DealsClientContent({
     if (typeof window === 'undefined') return
     window.localStorage.setItem(DEAL_COLUMNS_STORAGE_KEY, JSON.stringify(columnOrder))
   }, [columnOrder])
+
+  useEffect(() => {
+    setColumnSizing(loadColumnWidthsFromStorage(DEAL_COLUMN_SIZING_STORAGE_KEY, DEAL_RESIZABLE_COLUMN_IDS))
+  }, [])
+
+  useEffect(() => {
+    if (Object.keys(columnSizing).length === 0) return
+    saveColumnWidthsToStorage(DEAL_COLUMN_SIZING_STORAGE_KEY, columnSizing)
+  }, [columnSizing])
 
   async function handleXlsxImport(file: File) {
     const formData = new FormData()
@@ -200,6 +226,7 @@ export function DealsClientContent({
         ),
         enableSorting: false,
         enableHiding: false,
+        enableResizing: false,
         size: 32,
         minSize: 32,
         maxSize: 32,
@@ -207,15 +234,19 @@ export function DealsClientContent({
       {
         accessorKey: 'status',
         meta: { viewLabel: DEAL_COL_LABELS.status },
+        size: 120,
+        minSize: 88,
         header: ({ column }) => <TableSortableHeader label="Status" column={column} />,
         cell: ({ row }) => <DealStatusBadge status={row.original.status} />,
       },
       {
         accessorKey: 'title',
         meta: { viewLabel: DEAL_COL_LABELS.title },
+        size: 280,
+        minSize: 140,
         header: ({ column }) => <TableSortableHeader label="Titel" column={column} />,
         cell: ({ row }) => (
-          <TableRowAlign className="min-w-0 max-w-[min(100%,280px)]">
+          <TableRowAlign className="min-w-0">
             <TableTitleHoverContent
               title={row.original.title}
               previewLabel="Anforderungen"
@@ -228,6 +259,8 @@ export function DealsClientContent({
       {
         accessorKey: 'company_name',
         meta: { viewLabel: DEAL_COL_LABELS.company_name },
+        size: 220,
+        minSize: 140,
         header: ({ column }) => <TableSortableHeader label="Account" column={column} />,
         cell: ({ row }) => (
           <TableRowAlign>
@@ -242,6 +275,8 @@ export function DealsClientContent({
       {
         accessorKey: 'volume',
         meta: { viewLabel: DEAL_COL_LABELS.volume },
+        size: 120,
+        minSize: 88,
         header: ({ column }) => <TableSortableHeader label="Volumen" column={column} />,
         cell: ({ row }) => (
           <span className="text-muted-foreground tabular-nums">
@@ -255,7 +290,6 @@ export function DealsClientContent({
         meta: { viewLabel: DEAL_COL_LABELS.reference_count, headerAlign: 'center' as const },
         size: 96,
         minSize: 80,
-        maxSize: 120,
         header: ({ column }) => (
           <TableSortableHeader label={COPY.deals.referenceCountColumn} column={column} />
         ),
@@ -277,9 +311,8 @@ export function DealsClientContent({
           if (b == null) return -1
           return a - b
         },
-        size: 80,
+        size: 88,
         minSize: 72,
-        maxSize: 96,
         header: ({ column }) => (
           <TableSortableHeader label={COPY.deals.matchColumn} column={column} />
         ),
@@ -338,6 +371,8 @@ export function DealsClientContent({
       {
         accessorKey: 'account_manager_name',
         meta: { viewLabel: DEAL_COL_LABELS.account_manager_name },
+        size: 160,
+        minSize: 100,
         header: ({ column }) => (
           <TableSortableHeader label={COPY.roles.accountManager} column={column} />
         ),
@@ -346,6 +381,8 @@ export function DealsClientContent({
       {
         accessorKey: 'expiry_date',
         meta: { viewLabel: DEAL_COL_LABELS.expiry_date },
+        size: 120,
+        minSize: 88,
         header: ({ column }) => <TableSortableHeader label="Ablauf" column={column} />,
         cell: ({ row }) => {
           const isHot = isExpiringIn30Days(row.original.expiry_date)
@@ -359,6 +396,8 @@ export function DealsClientContent({
       {
         accessorKey: 'sales_manager_name',
         meta: { viewLabel: DEAL_COL_LABELS.sales_manager_name },
+        size: 160,
+        minSize: 100,
         header: ({ column }) => (
           <TableSortableHeader label={COPY.roles.salesManager} column={column} />
         ),
@@ -470,6 +509,9 @@ export function DealsClientContent({
         columnOrder={columnOrder}
         onColumnOrderChange={setColumnOrder}
         enableColumnDrag
+        enableColumnResize
+        columnSizing={columnSizing}
+        onColumnSizingChange={setColumnSizing}
         toolbar={() => (
           <div className="flex min-h-10 w-full min-w-0 flex-wrap items-center gap-2.5 sm:gap-3">
             <ToolbarSearchField

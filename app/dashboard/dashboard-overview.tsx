@@ -80,6 +80,7 @@ import { ShareLinkDialog } from './overview/share-link-dialog'
 import { BulkDeleteReferencesDialog } from './overview/bulk-delete-references-dialog'
 import { TrashDialog } from './overview/trash-dialog'
 import {
+  DEFAULT_REFERENCE_COLUMN_WIDTHS,
   renderReferenceColumnCell,
   renderReferenceColumnHeader,
   type ReferenceColumnKey,
@@ -93,6 +94,11 @@ import { TableRowAlign } from '@/components/table/table-row-align'
 import { toast } from 'sonner'
 import { BULK_IMPORT_MAX_FILES } from '@/lib/references/bulk-import-limits'
 import { autoGroupBulkImportByFileName } from '@/lib/references/bulk-import-grouping'
+import {
+  clampColumnWidth,
+  loadColumnWidthsFromStorage,
+  saveColumnWidthsToStorage,
+} from '@/lib/table-column-sizing'
 import { copyTableRowsSelected } from '@/lib/copy'
 import { parseReferenceVolume, type OrgDateDisplayFormat } from '@/lib/format'
 import { canViewComplianceReferenceSegment } from '@/lib/references/library/reference-proof-segment-access'
@@ -206,6 +212,7 @@ const COLUMN_LABELS: Record<(typeof COLUMN_KEYS)[number], string> = {
 
 const COLUMN_ORDER_STORAGE_KEY = 'dashboard-overview-column-order-v1'
 const COLUMN_VISIBLE_STORAGE_KEY = 'dashboard-overview-column-visible-v1'
+const COLUMN_SIZING_STORAGE_KEY = 'dashboard-overview-column-sizing-v1'
 const REFERENCE_SHOW_EXPIRED_CERTS_KEY = 'evidence-compliance-show-expired-v1'
 
 function loadVisibleColumnsFromStorage(): Record<(typeof COLUMN_KEYS)[number], boolean> {
@@ -251,6 +258,11 @@ function loadColumnOrderFromStorage(): ReferenceColumnKey[] {
   } catch {
     return [...COLUMN_KEYS] as ReferenceColumnKey[]
   }
+}
+
+function loadReferenceColumnWidthsFromStorage(): Record<ReferenceColumnKey, number> {
+  const stored = loadColumnWidthsFromStorage(COLUMN_SIZING_STORAGE_KEY, COLUMN_KEYS)
+  return { ...DEFAULT_REFERENCE_COLUMN_WIDTHS, ...stored }
 }
 
 // --- Hauptkomponente ---
@@ -347,6 +359,9 @@ export function DashboardOverview({
   >(loadVisibleColumnsFromStorage)
   const [columnOrder, setColumnOrder] = useState<ReferenceColumnKey[]>(() =>
     loadColumnOrderFromStorage()
+  )
+  const [columnWidths, setColumnWidths] = useState<Record<ReferenceColumnKey, number>>(
+    () => loadReferenceColumnWidthsFromStorage()
   )
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null)
 
@@ -560,6 +575,17 @@ export function DashboardOverview({
       /* ignore */
     }
   }, [columnOrder])
+
+  useEffect(() => {
+    saveColumnWidthsToStorage(COLUMN_SIZING_STORAGE_KEY, columnWidths)
+  }, [columnWidths])
+
+  const handleColumnWidthChange = useCallback((column: ReferenceColumnKey, width: number) => {
+    setColumnWidths((prev) => ({
+      ...prev,
+      [column]: clampColumnWidth(width),
+    }))
+  }, [])
 
   useEffect(() => {
     try {
@@ -1114,6 +1140,8 @@ export function DashboardOverview({
                       dragOverColumn,
                       setDragOverColumn,
                       moveColumnOrder,
+                      columnWidths,
+                      onColumnWidthChange: handleColumnWidthChange,
                       COLUMN_LABELS: COLUMN_LABELS as Record<ReferenceColumnKey, string>,
                       STATUS_LABELS,
                       filterOptions,
@@ -1147,7 +1175,7 @@ export function DashboardOverview({
                     })}
                   </React.Fragment>
                 ))}
-                <TableHead className="sticky right-0 z-10 w-[44px] min-w-[44px] bg-card p-2 text-right shadow-[-8px_0_12px_-8px_rgba(15,23,42,0.12)]">
+                <TableHead className="sticky right-0 z-10 w-[44px] min-w-[44px] bg-card p-2 text-right shadow-[-8px_0_12px_-8px_rgba(15,23,42,0.12)] transition-colors hover:bg-accent/45">
                   <span className="sr-only">Aktionen</span>
                 </TableHead>
               </TableRow>
@@ -1203,6 +1231,7 @@ export function DashboardOverview({
                           companyLogoById,
                           companyIndustryById,
                           orgDateDisplayFormat,
+                          columnWidths,
                         })}
                       </React.Fragment>
                     ))}

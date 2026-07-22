@@ -15,10 +15,13 @@ export function ComplianceMultiPdfDropzone({
   onFilesSelected,
   disabled = false,
   id = 'compliance-bulk-pdf-dropzone',
+  compact = false,
 }: {
   onFilesSelected: (files: File[]) => void
   disabled?: boolean
   id?: string
+  /** Kompakte Variante für den Dialog-Footer (wie Referenzen-Import). */
+  compact?: boolean
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragOver, setDragOver] = useState(false)
@@ -40,9 +43,14 @@ export function ComplianceMultiPdfDropzone({
       tabIndex={disabled ? -1 : 0}
       aria-disabled={disabled}
       className={cn(
-        'w-full rounded-lg border-2 border-dashed px-4 py-10 text-center transition-colors',
-        dragOver && !disabled ? 'border-primary/50 bg-primary/5' : 'border-border bg-muted/20',
-        disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:border-border hover:bg-muted/30'
+        'flex w-full min-w-0 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed transition-colors',
+        dragOver && !disabled
+          ? 'border-primary/50 bg-primary/5'
+          : 'border-muted-foreground/30 bg-muted/20 hover:border-muted-foreground/50 hover:bg-muted/30',
+        disabled ? 'pointer-events-none cursor-not-allowed opacity-60' : '',
+        compact
+          ? 'h-10 gap-2 px-3 text-left text-xs sm:text-sm'
+          : 'min-h-[160px] flex-col gap-2 p-6 text-center'
       )}
       onClick={() => !disabled && inputRef.current?.click()}
       onKeyDown={(e) => {
@@ -88,13 +96,25 @@ export function ComplianceMultiPdfDropzone({
           e.target.value = ''
         }}
       />
-      <div className="flex flex-col items-center gap-2">
-        <AppIcon icon={UploadIcon} size={24} className="text-muted-foreground" />
-        <p className="text-sm font-medium text-foreground">
-          PDFs hierher ziehen oder klicken zum Auswählen
-        </p>
-        <p className="text-xs text-muted-foreground">Mehrere Zertifikate gleichzeitig · max. 20 MB je Datei</p>
-      </div>
+      <AppIcon
+        icon={UploadIcon}
+        size={compact ? 16 : 32}
+        className="shrink-0 text-muted-foreground"
+      />
+      {compact ? (
+        <span className="min-w-0 truncate text-muted-foreground">
+          Weitere Dateien ablegen oder klicken
+        </span>
+      ) : (
+        <div className="flex flex-col items-center gap-1">
+          <p className="text-sm font-medium text-foreground">
+            PDFs hierher ziehen oder klicken zum Auswählen
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Mehrere Zertifikate gleichzeitig · max. 20 MB je Datei
+          </p>
+        </div>
+      )}
     </div>
   )
 }

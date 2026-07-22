@@ -413,7 +413,7 @@ export function ComplianceDocumentsTable({
                   {renderComplianceColumnHeader(column, headerCtx)}
                 </React.Fragment>
               ))}
-              <TableHead className="h-9 w-[88px] min-w-[88px] p-2 text-right text-xs font-semibold text-muted-foreground">
+              <TableHead className="relative h-10 w-[88px] min-w-[88px] p-2 text-right text-xs font-semibold text-muted-foreground transition-colors hover:bg-accent/45">
                 <span className="sr-only">Aktionen</span>
               </TableHead>
             </TableRow>

@@ -1,7 +1,8 @@
 'use client'
 
-import { useCallback, useState } from 'react'
-import { Loader2, X } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Loader2, RefreshCw } from 'lucide-react'
+import { Cancel01Icon, FileText, Loader } from '@hugeicons/core-free-icons'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
@@ -13,16 +14,17 @@ import { listComplianceDocumentTypeOptions } from '@/app/dashboard/settings/comp
 import { ComplianceDocumentTypeCombobox } from '@/app/dashboard/overview/compliance-document-type-combobox'
 import { ComplianceDocumentTypesDialog } from '@/app/dashboard/overview/compliance-document-types-dialog'
 import { ComplianceMultiPdfDropzone } from '@/app/dashboard/overview/compliance-multi-pdf-dropzone'
+import { AppIcon } from '@/lib/icons'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   getSystemComplianceDocumentTypes,
   type ComplianceDocumentTypeOption,
@@ -31,18 +33,33 @@ import { inferComplianceDocumentTypeFromUpload } from '@/lib/compliance/document
 import { buildDefaultComplianceTitle } from '@/lib/compliance/upload-filename'
 import { cn } from '@/lib/utils'
 
-type BulkRow = {
+const DIALOG_CLASS =
+  'flex max-h-[min(90vh,920px)] w-[calc(100vw-2rem)] max-w-[90vw] flex-col gap-0 overflow-hidden border-0 p-0 sm:max-w-[90vw] lg:max-w-7xl'
+
+const ROW_GRID_CLASS =
+  'grid flex-1 grid-cols-1 gap-2 lg:grid-cols-[minmax(160px,240px)_minmax(0,1fr)_minmax(180px,34%)] lg:items-center lg:gap-4'
+
+const HEADER_CLASS = 'text-xs font-medium text-muted-foreground'
+
+const FILE_DRAG_MIME = 'application/x-refstack-compliance-bulk-file'
+
+type BulkFileItem = {
   id: string
   file: File
-  documentType: string
-  title: string
   validUntil: string
-  titleManuallyEdited: boolean
   validUntilManuallyEdited: boolean
-  typeManuallyEdited: boolean
   extracting: boolean
   expiryAutoFilled: boolean
+}
+
+type BulkGroup = {
+  id: string
+  documentType: string
+  title: string
+  titleManuallyEdited: boolean
+  typeManuallyEdited: boolean
   typeAutoFilled: boolean
+  files: BulkFileItem[]
 }
 
 type Props = {
@@ -50,37 +67,77 @@ type Props = {
   onOpenChange: (open: boolean) => void
 }
 
-function createBulkRow(
+function createFileItem(file: File): BulkFileItem {
+  return {
+    id: crypto.randomUUID(),
+    file,
+    validUntil: '',
+    validUntilManuallyEdited: false,
+    extracting: true,
+    expiryAutoFilled: false,
+  }
+}
+
+function createGroupForFile(
   file: File,
   typeOptions: ComplianceDocumentTypeOption[]
-): BulkRow {
+): BulkGroup {
   const inferredType =
     inferComplianceDocumentTypeFromUpload({ title: '', fileName: file.name }) ?? 'iso_27001'
   return {
     id: crypto.randomUUID(),
-    file,
     documentType: inferredType,
     title: buildDefaultComplianceTitle(inferredType, typeOptions),
-    validUntil: '',
     titleManuallyEdited: false,
-    validUntilManuallyEdited: false,
     typeManuallyEdited: false,
-    extracting: true,
-    expiryAutoFilled: false,
     typeAutoFilled: Boolean(inferredType),
+    files: [createFileItem(file)],
   }
+}
+
+function autoGroupByDocumentType(incoming: BulkGroup[]): BulkGroup[] {
+  const byType = new Map<string, BulkGroup>()
+
+  for (const group of incoming) {
+    const key = group.documentType
+    const existing = byType.get(key)
+    if (!existing) {
+      byType.set(key, { ...group, files: [...group.files] })
+      continue
+    }
+    byType.set(key, {
+      ...existing,
+      files: [...existing.files, ...group.files],
+      typeAutoFilled: existing.typeAutoFilled || group.typeAutoFilled,
+      title: existing.titleManuallyEdited ? existing.title : existing.title || group.title,
+      titleManuallyEdited: existing.titleManuallyEdited,
+      typeManuallyEdited: existing.typeManuallyEdited || group.typeManuallyEdited,
+    })
+  }
+
+  return Array.from(byType.values())
 }
 
 export function ComplianceBulkUploadDialog({ open, onOpenChange }: Props) {
   const router = useRouter()
-  const [step, setStep] = useState<'drop' | 'review'>('drop')
-  const [rows, setRows] = useState<BulkRow[]>([])
+  const [groups, setGroups] = useState<BulkGroup[]>([])
   const [typeOptions, setTypeOptions] = useState<ComplianceDocumentTypeOption[]>(() =>
     getSystemComplianceDocumentTypes()
   )
   const [typesLoading, setTypesLoading] = useState(false)
   const [typesDialogOpen, setTypesDialogOpen] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [selectedGroupIds, setSelectedGroupIds] = useState<Set<string>>(() => new Set())
+  const [dragOverGroupId, setDragOverGroupId] = useState<string | null>(null)
+  const [draggingFileKey, setDraggingFileKey] = useState<string | null>(null)
+
+  const totalFiles = useMemo(
+    () => groups.reduce((sum, group) => sum + group.files.length, 0),
+    [groups]
+  )
+  const hasFiles = groups.length > 0
+  const canMergeSelected = selectedGroupIds.size >= 2
+  const anyExtracting = groups.some((group) => group.files.some((file) => file.extracting))
 
   const loadTypes = useCallback(async () => {
     setTypesLoading(true)
@@ -93,105 +150,254 @@ export function ComplianceBulkUploadDialog({ open, onOpenChange }: Props) {
     setTypeOptions(result.types)
   }, [])
 
-  const enrichRowFromPdf = useCallback(
-    async (rowId: string, file: File, options: ComplianceDocumentTypeOption[]) => {
-      const formData = new FormData()
-      formData.set('file', file)
-      const result = await extractComplianceCertificateMetadataFromPdf(formData)
+  useEffect(() => {
+    if (!open) {
+      setSelectedGroupIds(new Set())
+      setDragOverGroupId(null)
+      setDraggingFileKey(null)
+    }
+  }, [open])
 
-      setRows((prev) =>
-        prev.map((row) => {
-          if (row.id !== rowId) return row
-
-          let next = { ...row, extracting: false }
-          if (!result.success) return next
-
-          if (!row.typeManuallyEdited && result.documentType) {
-            next = {
-              ...next,
-              documentType: result.documentType,
-              typeAutoFilled: true,
-              title: row.titleManuallyEdited
-                ? row.title
-                : buildDefaultComplianceTitle(result.documentType, options),
-            }
-          }
-
-          if (
-            !row.validUntilManuallyEdited &&
-            result.validUntil &&
-            result.expiryConfidence !== 'none'
-          ) {
-            next = {
-              ...next,
-              validUntil: result.validUntil,
-              expiryAutoFilled: true,
-            }
-          }
-
-          return next
-        })
-      )
-    },
-    []
-  )
+  useEffect(() => {
+    setSelectedGroupIds((prev) => {
+      const valid = new Set(groups.map((g) => g.id))
+      const next = new Set([...prev].filter((id) => valid.has(id)))
+      return next.size === prev.size ? prev : next
+    })
+  }, [groups])
 
   function reset() {
-    setStep('drop')
-    setRows([])
+    setGroups([])
     setTypeOptions(getSystemComplianceDocumentTypes())
+    setSelectedGroupIds(new Set())
+    setDragOverGroupId(null)
+    setDraggingFileKey(null)
   }
 
-  function handleFilesSelected(files: File[]) {
-    const newRows = files.map((file) => createBulkRow(file, typeOptions))
-    setRows((prev) => [...prev, ...newRows])
-    setStep('review')
-    for (const row of newRows) {
-      void enrichRowFromPdf(row.id, row.file, typeOptions)
+  async function enrichAfterAdd(fileId: string, file: File, options: ComplianceDocumentTypeOption[]) {
+    const formData = new FormData()
+    formData.set('file', file)
+    const result = await extractComplianceCertificateMetadataFromPdf(formData)
+
+    setGroups((prev) => {
+      const hostIndex = prev.findIndex((g) => g.files.some((f) => f.id === fileId))
+      if (hostIndex < 0) return prev
+
+      const host = prev[hostIndex]!
+      const updatedFiles = host.files.map((item) => {
+        if (item.id !== fileId) return item
+        let next = { ...item, extracting: false }
+        if (!result.success) return next
+        if (
+          !item.validUntilManuallyEdited &&
+          result.validUntil &&
+          result.expiryConfidence !== 'none'
+        ) {
+          next = {
+            ...next,
+            validUntil: result.validUntil,
+            expiryAutoFilled: true,
+          }
+        }
+        return next
+      })
+
+      let updatedHost: BulkGroup = { ...host, files: updatedFiles }
+
+      if (
+        !host.typeManuallyEdited &&
+        result.success &&
+        result.documentType &&
+        updatedFiles.length === 1
+      ) {
+        updatedHost = {
+          ...updatedHost,
+          documentType: result.documentType,
+          typeAutoFilled: true,
+          title: host.titleManuallyEdited
+            ? host.title
+            : buildDefaultComplianceTitle(result.documentType, options),
+        }
+      }
+
+      const without = prev.filter((_, i) => i !== hostIndex)
+      return autoGroupByDocumentType([...without, updatedHost])
+    })
+  }
+
+  function addFiles(files: File[]) {
+    const prepared = files.map((file) => createGroupForFile(file, typeOptions))
+    const fileItems = prepared.flatMap((g) => g.files)
+
+    setGroups((prev) => {
+      const beforeCount = prev.length + prepared.length
+      const next = autoGroupByDocumentType([...prev, ...prepared])
+      if (beforeCount > next.length) {
+        const autoGroupedCount = next
+          .filter((g) => g.files.length > 1)
+          .reduce((s, g) => s + g.files.length, 0)
+        if (autoGroupedCount > 0) {
+          toast.info(
+            `${autoGroupedCount} Dateien wurden automatisch nach Zertifikatstyp gruppiert.`
+          )
+        }
+      }
+      return next
+    })
+
+    for (const item of fileItems) {
+      void enrichAfterAdd(item.id, item.file, typeOptions)
     }
   }
 
-  function updateRow(id: string, patch: Partial<BulkRow>) {
-    setRows((prev) => prev.map((row) => (row.id === id ? { ...row, ...patch } : row)))
-  }
-
-  function removeRow(id: string) {
-    setRows((prev) => {
-      const next = prev.filter((row) => row.id !== id)
-      if (next.length === 0) setStep('drop')
+  function toggleGroupSelection(groupId: string, checked: boolean) {
+    setSelectedGroupIds((prev) => {
+      const next = new Set(prev)
+      if (checked) next.add(groupId)
+      else next.delete(groupId)
       return next
     })
   }
 
-  function handleDocumentTypeChange(id: string, slug: string) {
-    setRows((prev) =>
-      prev.map((row) => {
-        if (row.id !== id) return row
-        return {
-          ...row,
-          documentType: slug,
-          typeManuallyEdited: true,
-          typeAutoFilled: false,
-          title: row.titleManuallyEdited
-            ? row.title
-            : buildDefaultComplianceTitle(slug, typeOptions),
-        }
-      })
+  function updateGroupTitle(groupId: string, title: string) {
+    setGroups((prev) =>
+      prev.map((g) =>
+        g.id === groupId ? { ...g, title, titleManuallyEdited: true } : g
+      )
     )
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!rows.length) {
+  function handleDocumentTypeChange(groupId: string, slug: string) {
+    setGroups((prev) => {
+      const host = prev.find((g) => g.id === groupId)
+      if (!host) return prev
+      const updated: BulkGroup = {
+        ...host,
+        documentType: slug,
+        typeManuallyEdited: true,
+        typeAutoFilled: false,
+        title: host.titleManuallyEdited
+          ? host.title
+          : buildDefaultComplianceTitle(slug, typeOptions),
+      }
+      const without = prev.filter((g) => g.id !== groupId)
+      return autoGroupByDocumentType([...without, updated])
+    })
+  }
+
+  function removeFile(groupId: string, fileIndex: number) {
+    setGroups((prev) =>
+      prev
+        .map((g) =>
+          g.id === groupId
+            ? { ...g, files: g.files.filter((_, i) => i !== fileIndex) }
+            : g
+        )
+        .filter((g) => g.files.length > 0)
+    )
+  }
+
+  function moveFile(fromGroupId: string, fileIndex: number, toGroupId: string) {
+    if (fromGroupId === toGroupId) return
+    setGroups((prev) => {
+      const source = prev.find((g) => g.id === fromGroupId)
+      const target = prev.find((g) => g.id === toGroupId)
+      const fileItem = source?.files[fileIndex]
+      if (!source || !target || !fileItem) return prev
+
+      return prev
+        .map((g) => {
+          if (g.id === fromGroupId) {
+            return { ...g, files: g.files.filter((_, i) => i !== fileIndex) }
+          }
+          if (g.id === toGroupId) {
+            return { ...g, files: [...g.files, fileItem] }
+          }
+          return g
+        })
+        .filter((g) => g.files.length > 0)
+    })
+  }
+
+  function mergeSelectedGroups(selectedIds: string[]) {
+    if (selectedIds.length < 2) return
+    setGroups((prev) => {
+      const idSet = new Set(selectedIds)
+      const selected = prev.filter((g) => idSet.has(g.id))
+      if (selected.length < 2) return prev
+      const rest = prev.filter((g) => !idSet.has(g.id))
+      const primary = selected[0]!
+      return [
+        ...rest,
+        {
+          ...primary,
+          files: selected.flatMap((g) => g.files),
+        },
+      ]
+    })
+  }
+
+  function fileChipKey(groupId: string, item: BulkFileItem) {
+    return `${groupId}:${item.id}`
+  }
+
+  function handleFileChipDragStart(
+    event: React.DragEvent<HTMLDivElement>,
+    groupId: string,
+    fileIndex: number,
+    chipKey: string
+  ) {
+    if (saving) {
+      event.preventDefault()
+      return
+    }
+    event.dataTransfer.setData(
+      FILE_DRAG_MIME,
+      JSON.stringify({ fromGroupId: groupId, fileIndex })
+    )
+    event.dataTransfer.effectAllowed = 'move'
+    setDraggingFileKey(chipKey)
+  }
+
+  function handleDocumentsDrop(event: React.DragEvent<HTMLDivElement>, toGroupId: string) {
+    event.preventDefault()
+    event.stopPropagation()
+    setDragOverGroupId(null)
+    setDraggingFileKey(null)
+    try {
+      const raw = event.dataTransfer.getData(FILE_DRAG_MIME)
+      if (!raw) return
+      const payload = JSON.parse(raw) as { fromGroupId: string; fileIndex: number }
+      if (!payload.fromGroupId || typeof payload.fileIndex !== 'number') return
+      moveFile(payload.fromGroupId, payload.fileIndex, toGroupId)
+    } catch {
+      // ignore
+    }
+  }
+
+  async function handleSubmit() {
+    if (!totalFiles) {
       toast.error('Bitte mindestens eine PDF-Datei auswählen.')
       return
     }
-    if (rows.some((row) => row.extracting)) {
+    if (anyExtracting) {
       toast.error('Bitte warten, bis alle PDFs analysiert wurden.')
       return
     }
 
-    const invalid = rows.find((row) => !row.title.trim())
+    const flat = groups.flatMap((group) =>
+      group.files.map((item, indexInGroup) => ({
+        title:
+          group.files.length === 1
+            ? group.title.trim()
+            : `${group.title.trim()} (${indexInGroup + 1})`,
+        documentType: group.documentType,
+        validUntil: item.validUntil.trim() || null,
+        file: item.file,
+      }))
+    )
+
+    const invalid = flat.find((row) => !row.title.trim())
     if (invalid) {
       toast.error('Jedes Zertifikat braucht einen Titel.')
       return
@@ -202,15 +408,15 @@ export function ComplianceBulkUploadDialog({ open, onOpenChange }: Props) {
     formData.set(
       'manifest',
       JSON.stringify(
-        rows.map((row, index) => ({
-          title: row.title.trim(),
+        flat.map((row, index) => ({
+          title: row.title,
           documentType: row.documentType,
-          validUntil: row.validUntil.trim() || null,
+          validUntil: row.validUntil,
           fileIndex: index,
         }))
       )
     )
-    rows.forEach((row, index) => {
+    flat.forEach((row, index) => {
       formData.set(`file_${index}`, row.file)
     })
 
@@ -246,150 +452,228 @@ export function ComplianceBulkUploadDialog({ open, onOpenChange }: Props) {
           onOpenChange(next)
         }}
       >
-        <DialogContent className="flex max-h-[min(90vh,52rem)] max-w-3xl flex-col gap-0 overflow-hidden p-0">
-          <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
-            <DialogHeader className="shrink-0 space-y-1 border-b px-6 py-4">
-              <DialogTitle className="text-xl">Zertifikate importieren</DialogTitle>
-              <p className="text-sm text-muted-foreground">
-                {step === 'drop'
-                  ? 'Schritt 1: PDFs per Drag & Drop auswählen'
-                  : `${rows.length} Zertifikat${rows.length !== 1 ? 'e' : ''} — Typ, Titel und Gültigkeit prüfen`}
-              </p>
+        <DialogContent className={DIALOG_CLASS} showCloseButton={!saving}>
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-6 py-4 md:px-10 md:py-5">
+            <DialogHeader className="shrink-0 space-y-1 text-left">
+              <DialogTitle>Zertifikate importieren</DialogTitle>
+              <DialogDescription>
+                Lege PDFs ab. Dateien werden automatisch nach Zertifikatstyp gruppiert.
+              </DialogDescription>
             </DialogHeader>
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
-              {step === 'drop' ? (
+            <div
+              className={cn(
+                'min-h-0 flex-1 pt-3',
+                hasFiles ? 'flex flex-col overflow-hidden' : 'overflow-y-auto'
+              )}
+            >
+              {!hasFiles ? (
                 <ComplianceMultiPdfDropzone
-                  onFilesSelected={handleFilesSelected}
+                  onFilesSelected={addFiles}
                   disabled={saving || typesLoading}
                 />
               ) : (
-                <div className="space-y-4">
-                  <ComplianceMultiPdfDropzone
-                    id="compliance-bulk-pdf-dropzone-more"
-                    onFilesSelected={handleFilesSelected}
-                    disabled={saving || typesLoading}
-                  />
+                <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-white">
+                  <div className="flex shrink-0 gap-3 border-b border-border bg-white px-3 py-2">
+                    <div className="size-4 shrink-0" aria-hidden />
+                    <div className={cn(ROW_GRID_CLASS, HEADER_CLASS)}>
+                      <span>Zertifikatstyp</span>
+                      <span>Titel</span>
+                      <span>Dokumente</span>
+                    </div>
+                  </div>
 
-                  <div className="space-y-3">
-                    {rows.map((row) => (
-                      <div
-                        key={row.id}
-                        className="relative rounded-lg border border-border/80 bg-card p-4 shadow-sm"
-                      >
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="absolute right-2 top-2 size-8 text-muted-foreground"
-                          onClick={() => removeRow(row.id)}
-                          disabled={saving}
-                          aria-label="Entfernen"
+                  <div className="min-h-0 flex-1 overflow-y-auto bg-white">
+                    {groups.map((group) => {
+                      const previewPending = group.files.some((f) => f.extracting)
+                      return (
+                        <div
+                          key={group.id}
+                          className="flex items-center gap-3 border-b border-border bg-white px-3 py-2.5 last:border-b-0"
                         >
-                          <X className="size-4" />
-                        </Button>
+                          <Checkbox
+                            className="self-center"
+                            checked={selectedGroupIds.has(group.id)}
+                            disabled={saving}
+                            onCheckedChange={(checked) =>
+                              toggleGroupSelection(group.id, checked === true)
+                            }
+                            aria-label={`${group.title || 'Zertifikat'} auswählen`}
+                          />
 
-                        <p className="mb-3 max-w-[calc(100%-2.5rem)] truncate text-sm font-medium text-foreground">
-                          {row.file.name}
-                        </p>
-
-                        <div className="grid gap-4 sm:grid-cols-2">
-                          <div className="space-y-2 sm:col-span-2">
-                            <Label>Dokumenttyp</Label>
-                            <ComplianceDocumentTypeCombobox
-                              options={typeOptions}
-                              value={row.documentType}
-                              onValueChange={(slug) => handleDocumentTypeChange(row.id, slug)}
-                              onOptionsChange={setTypeOptions}
-                              disabled={saving || row.extracting || typesLoading}
-                              onManageTypesClick={() => setTypesDialogOpen(true)}
-                            />
-                            {row.typeAutoFilled && !row.typeManuallyEdited ? (
-                              <p className="text-xs text-muted-foreground">
-                                Dokumenttyp automatisch erkannt.
-                              </p>
-                            ) : null}
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label>Titel</Label>
-                            <Input
-                              value={row.title}
-                              onChange={(e) =>
-                                updateRow(row.id, {
-                                  title: e.target.value,
-                                  titleManuallyEdited: true,
-                                })
-                              }
-                              disabled={saving || row.extracting}
-                            />
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label>Gültig bis (optional)</Label>
-                            <div className="relative">
-                              <Input
-                                type="date"
-                                value={row.validUntil}
-                                onChange={(e) =>
-                                  updateRow(row.id, {
-                                    validUntil: e.target.value,
-                                    validUntilManuallyEdited: true,
-                                    expiryAutoFilled: false,
-                                  })
+                          <div className={ROW_GRID_CLASS}>
+                            <div className="min-w-0">
+                              <ComplianceDocumentTypeCombobox
+                                options={typeOptions}
+                                value={group.documentType}
+                                onValueChange={(slug) =>
+                                  handleDocumentTypeChange(group.id, slug)
                                 }
-                                disabled={saving || row.extracting}
-                                className={row.extracting ? 'pr-10' : undefined}
+                                onOptionsChange={setTypeOptions}
+                                disabled={saving || previewPending || typesLoading}
+                                onManageTypesClick={() => setTypesDialogOpen(true)}
                               />
-                              {row.extracting ? (
-                                <Loader2
-                                  className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground"
+                            </div>
+
+                            <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                              <Input
+                                value={group.title}
+                                onChange={(e) => updateGroupTitle(group.id, e.target.value)}
+                                disabled={saving || previewPending}
+                                className="h-8 min-w-0 flex-1 text-sm"
+                                placeholder="Titel"
+                                aria-label="Zertifikatstitel"
+                              />
+                              {previewPending ? (
+                                <RefreshCw
+                                  className="size-4 shrink-0 animate-spin text-muted-foreground"
                                   aria-hidden
                                 />
                               ) : null}
                             </div>
-                            {row.extracting ? (
-                              <p className="text-xs text-muted-foreground">PDF wird analysiert…</p>
-                            ) : row.expiryAutoFilled && row.validUntil ? (
-                              <p className="text-xs text-muted-foreground">
-                                Ablaufdatum automatisch übernommen.
-                              </p>
-                            ) : null}
+
+                            <div
+                              className={cn(
+                                'flex min-h-9 min-w-0 flex-wrap gap-1.5 rounded-md transition-colors lg:justify-end',
+                                dragOverGroupId === group.id &&
+                                  'bg-primary/10 ring-1 ring-inset ring-primary/40'
+                              )}
+                              onDragOver={(event) => {
+                                event.preventDefault()
+                                event.stopPropagation()
+                                event.dataTransfer.dropEffect = 'move'
+                                setDragOverGroupId(group.id)
+                              }}
+                              onDragLeave={(event) => {
+                                if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+                                  setDragOverGroupId((prev) =>
+                                    prev === group.id ? null : prev
+                                  )
+                                }
+                              }}
+                              onDrop={(event) => handleDocumentsDrop(event, group.id)}
+                            >
+                              {group.files.map((item, fileIndex) => {
+                                const chipKey = fileChipKey(group.id, item)
+                                return (
+                                  <div
+                                    key={chipKey}
+                                    draggable={!saving}
+                                    onDragStart={(event) =>
+                                      handleFileChipDragStart(
+                                        event,
+                                        group.id,
+                                        fileIndex,
+                                        chipKey
+                                      )
+                                    }
+                                    onDragEnd={() => {
+                                      setDraggingFileKey(null)
+                                      setDragOverGroupId(null)
+                                    }}
+                                    className={cn(
+                                      'flex max-w-full cursor-grab items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs shadow-sm active:cursor-grabbing',
+                                      draggingFileKey === chipKey && 'opacity-50'
+                                    )}
+                                  >
+                                    <AppIcon
+                                      icon={FileText}
+                                      size={12}
+                                      className="shrink-0 text-muted-foreground"
+                                    />
+                                    <span className="max-w-[100px] truncate sm:max-w-[120px]">
+                                      {item.file.name}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      disabled={saving}
+                                      onClick={() => removeFile(group.id, fileIndex)}
+                                      onMouseDown={(event) => event.stopPropagation()}
+                                      className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                                      aria-label={`${item.file.name} entfernen`}
+                                    >
+                                      <AppIcon icon={Cancel01Icon} size={12} />
+                                    </button>
+                                  </div>
+                                )
+                              })}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
               )}
             </div>
 
-            <DialogFooter className={cn('shrink-0 border-t px-6 py-4')}>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={saving}
-              >
-                Abbrechen
-              </Button>
-              {step === 'review' ? (
-                <Button
-                  type="submit"
-                  disabled={saving || rows.length === 0 || rows.some((r) => r.extracting)}
-                >
-                  {saving ? (
-                    <>
-                      <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
-                      Speichern…
-                    </>
-                  ) : (
-                    `${rows.length} Zertifikat${rows.length !== 1 ? 'e' : ''} speichern`
-                  )}
-                </Button>
+            <div className="shrink-0 border-t border-border py-3">
+              <div className="flex items-center gap-3">
+                {hasFiles ? (
+                  <div className="min-w-0 flex-1">
+                    <ComplianceMultiPdfDropzone
+                      id="compliance-bulk-pdf-dropzone-more"
+                      compact
+                      onFilesSelected={addFiles}
+                      disabled={saving || typesLoading}
+                    />
+                  </div>
+                ) : (
+                  <div className="flex-1" aria-hidden />
+                )}
+
+                <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="toolbar"
+                    disabled={!canMergeSelected || saving}
+                    onClick={() => {
+                      mergeSelectedGroups(Array.from(selectedGroupIds))
+                      setSelectedGroupIds(new Set())
+                    }}
+                  >
+                    Ausgewählte gruppieren
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="toolbar"
+                    disabled={saving}
+                    onClick={() => onOpenChange(false)}
+                  >
+                    Abbrechen
+                  </Button>
+                  <Button
+                    type="button"
+                    size="toolbar"
+                    disabled={totalFiles === 0 || saving || anyExtracting}
+                    onClick={() => void handleSubmit()}
+                  >
+                    {saving ? (
+                      <>
+                        <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />
+                        Speichern…
+                      </>
+                    ) : anyExtracting ? (
+                      <>
+                        <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
+                        Analysiere…
+                      </>
+                    ) : (
+                      'Import starten'
+                    )}
+                  </Button>
+                </div>
+              </div>
+              {totalFiles > 0 ? (
+                <p className="mt-1.5 text-right text-xs text-muted-foreground">
+                  {groups.length} Typ{groups.length !== 1 ? 'en' : ''} · {totalFiles} Datei
+                  {totalFiles !== 1 ? 'en' : ''}
+                </p>
               ) : null}
-            </DialogFooter>
-          </form>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 

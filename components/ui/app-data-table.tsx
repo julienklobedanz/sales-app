@@ -6,6 +6,7 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import {
   type ColumnOrderState,
+  type ColumnSizingState,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
@@ -22,11 +23,16 @@ import {
 } from "@tanstack/react-table"
 
 import { ColumnHeaderDragHandle } from "@/components/table/column-header-drag-handle"
+import { ColumnResizeHandle } from "@/components/table/column-resize-handle"
 import {
   TABLE_COLUMN_HEAD_CLASS,
   TABLE_COLUMN_HEAD_SELECT_CLASS,
   TABLE_SELECT_COLUMN_CELL_CLASS,
 } from "@/components/table/table-column-head-styles"
+import {
+  TABLE_COLUMN_MAX_WIDTH,
+  TABLE_COLUMN_MIN_WIDTH,
+} from "@/lib/table-column-sizing"
 import {
   Table,
   TableBody,
@@ -84,6 +90,12 @@ export type AppDataTableProps<TData, TValue> = {
   onColumnOrderChange?: (order: string[]) => void
   /** Aktiviert Header Drag&Drop für Spalten-Reordering. */
   enableColumnDrag?: boolean
+  /** Aktiviert Spalten-Resize am rechten Header-Rand. */
+  enableColumnResize?: boolean
+  /** Initiale / kontrollierte Spaltenbreiten (TanStack column ids → px). */
+  columnSizing?: ColumnSizingState
+  /** Callback bei Breiten-Änderung (Persistenz). */
+  onColumnSizingChange?: (sizing: ColumnSizingState) => void
 }
 
 export function AppDataTable<TData, TValue>({
@@ -103,6 +115,9 @@ export function AppDataTable<TData, TValue>({
   columnOrder,
   onColumnOrderChange,
   enableColumnDrag = false,
+  enableColumnResize = false,
+  columnSizing,
+  onColumnSizingChange,
 }: AppDataTableProps<TData, TValue>) {
   const router = useRouter()
   const [sorting, setSorting] = React.useState<SortingState>([])
@@ -114,16 +129,26 @@ export function AppDataTable<TData, TValue>({
   const [internalColumnOrder, setInternalColumnOrder] = React.useState<ColumnOrderState>(
     () => initialColumnOrder ?? [],
   )
+  const [internalColumnSizing, setInternalColumnSizing] = React.useState<ColumnSizingState>(
+    () => columnSizing ?? {},
+  )
   const [dragOverColumnId, setDragOverColumnId] = React.useState<string | null>(null)
 
   const resolvedColumnOrder = columnOrder ?? internalColumnOrder
+  const resolvedColumnSizing = columnSizing ?? internalColumnSizing
 
   const table = useReactTable({
     data,
     columns,
     getRowId,
     enableRowSelection: true,
+    enableColumnResizing: enableColumnResize,
     columnResizeMode: "onChange",
+    defaultColumn: {
+      minSize: TABLE_COLUMN_MIN_WIDTH,
+      maxSize: TABLE_COLUMN_MAX_WIDTH,
+      size: 160,
+    },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
@@ -136,6 +161,14 @@ export function AppDataTable<TData, TValue>({
       setInternalColumnOrder(next)
       onColumnOrderChange?.(next)
     },
+    onColumnSizingChange: (updater) => {
+      const next =
+        typeof updater === "function"
+          ? updater({ ...resolvedColumnSizing })
+          : updater
+      setInternalColumnSizing(next)
+      onColumnSizingChange?.(next)
+    },
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -146,11 +179,13 @@ export function AppDataTable<TData, TValue>({
       columnVisibility,
       rowSelection,
       columnOrder: resolvedColumnOrder,
+      columnSizing: resolvedColumnSizing,
     },
     initialState: {
       pagination: { pageSize: initialPageSize },
       columnVisibility: initialColumnVisibility ?? {},
       columnOrder: initialColumnOrder ?? [],
+      columnSizing: columnSizing ?? {},
     },
   })
 
@@ -183,6 +218,11 @@ export function AppDataTable<TData, TValue>({
       <TableCell
         key={cell.id}
         className={cell.column.id === "select" ? TABLE_SELECT_COLUMN_CELL_CLASS : undefined}
+        style={
+          enableColumnResize
+            ? { width: cell.column.getSize(), minWidth: cell.column.getSize() }
+            : undefined
+        }
       >
         {flexRender(cell.column.columnDef.cell, cell.getContext())}
       </TableCell>
@@ -312,13 +352,20 @@ export function AppDataTable<TData, TValue>({
       </div>
 
       <div className="overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm shadow-slate-900/5">
-        <Table>
+        <Table
+          className={enableColumnResize ? "w-full table-fixed" : undefined}
+          style={
+            enableColumnResize ? { minWidth: Math.max(table.getTotalSize(), 640) } : undefined
+          }
+        >
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   const columnId = header.column.id
                   const canDragColumn = enableColumnDrag && columnId !== "select"
+                  const canResizeColumn =
+                    enableColumnResize && header.column.getCanResize() && columnId !== "select"
                   const headerAlign = (
                     header.column.columnDef.meta as { headerAlign?: "center" | "end" } | undefined
                   )?.headerAlign
@@ -329,7 +376,10 @@ export function AppDataTable<TData, TValue>({
                   return (
                     <TableHead
                       key={header.id}
-                      style={{ width: header.getSize() }}
+                      style={{
+                        width: header.getSize(),
+                        minWidth: header.getSize(),
+                      }}
                       className={cn(
                         isSelectColumn ? TABLE_COLUMN_HEAD_SELECT_CLASS : TABLE_COLUMN_HEAD_CLASS,
                         headerAlign === "end" && "text-right",
@@ -376,6 +426,13 @@ export function AppDataTable<TData, TValue>({
                           ? null
                           : flexRender(header.column.columnDef.header, header.getContext())}
                       </div>
+                      {canResizeColumn ? (
+                        <ColumnResizeHandle
+                          isResizing={header.column.getIsResizing()}
+                          onMouseDown={header.getResizeHandler()}
+                          onTouchStart={header.getResizeHandler()}
+                        />
+                      ) : null}
                     </TableHead>
                   )
                 })}

@@ -5,7 +5,6 @@ import { Check, ChevronDown, Loader2, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { createComplianceDocumentType } from '@/app/dashboard/settings/compliance-document-type-actions'
-import { Button } from '@/components/ui/button'
 import {
   Command,
   CommandEmpty,
@@ -14,7 +13,7 @@ import {
   CommandList,
 } from '@/components/ui/command'
 import { Input } from '@/components/ui/input'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
 import {
   sortComplianceDocumentTypeOptions,
   type ComplianceDocumentTypeOption,
@@ -41,12 +40,25 @@ export function ComplianceDocumentTypeCombobox({
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [creating, setCreating] = useState(false)
+  const [menuWidth, setMenuWidth] = useState<number | undefined>()
   const inputRef = useRef<HTMLInputElement>(null)
+  const anchorRef = useRef<HTMLDivElement>(null)
 
   const selected = options.find((o) => o.slug === value)
   const inputValue = open ? query : (selected?.label ?? '')
 
+  function openDropdown() {
+    if (disabled) return
+    setMenuWidth(anchorRef.current?.offsetWidth)
+    setQuery('')
+    setOpen(true)
+  }
+
   function handleOpenChange(next: boolean) {
+    // Nicht schließen, solange das Suchfeld fokussiert ist (verhindert Flackern im Dialog).
+    if (!next && document.activeElement === inputRef.current) {
+      return
+    }
     if (next) setQuery('')
     setOpen(next)
   }
@@ -83,8 +95,9 @@ export function ComplianceDocumentTypeCombobox({
 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
-      <PopoverTrigger asChild>
+      <PopoverAnchor asChild>
         <div
+          ref={anchorRef}
           className={cn(
             'relative flex min-w-0 flex-1 items-center',
             disabled && 'pointer-events-none opacity-60'
@@ -96,11 +109,13 @@ export function ComplianceDocumentTypeCombobox({
             value={inputValue}
             onChange={(e) => {
               setQuery(e.target.value)
-              setOpen(true)
+              if (!open) setOpen(true)
             }}
             onFocus={() => {
-              setQuery('')
-              setOpen(true)
+              if (!open) openDropdown()
+            }}
+            onClick={() => {
+              if (!open) openDropdown()
             }}
             placeholder={
               options.length > 0
@@ -110,20 +125,51 @@ export function ComplianceDocumentTypeCombobox({
             disabled={disabled}
             className="h-10 rounded-lg border bg-white pr-9 shadow-sm"
             autoComplete="off"
+            aria-expanded={open}
+            aria-haspopup="listbox"
           />
-          <ChevronDown
-            className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-            aria-hidden
-          />
+          <button
+            type="button"
+            tabIndex={-1}
+            disabled={disabled}
+            className="absolute right-2 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded text-muted-foreground hover:text-foreground"
+            aria-label={open ? 'Dokumenttyp-Liste schließen' : 'Dokumenttyp-Liste öffnen'}
+            onMouseDown={(e) => {
+              // Fokus im Input behalten, kein Toggle-Flackern durch Blur.
+              e.preventDefault()
+            }}
+            onClick={() => {
+              if (open) {
+                setOpen(false)
+              } else {
+                openDropdown()
+                inputRef.current?.focus()
+              }
+            }}
+          >
+            <ChevronDown className="size-4" aria-hidden />
+          </button>
         </div>
-      </PopoverTrigger>
+      </PopoverAnchor>
       <PopoverContent
-        className="w-[var(--radix-popover-trigger-width)] p-0"
+        className="min-w-[min(100vw-2rem,22rem)] overflow-hidden p-0"
+        style={menuWidth ? { width: Math.max(menuWidth, 352) } : undefined}
         align="start"
         onOpenAutoFocus={(e) => e.preventDefault()}
+        onCloseAutoFocus={(e) => e.preventDefault()}
+        onWheel={(e) => e.stopPropagation()}
+        onInteractOutside={(e) => {
+          // Klick ins Suchfeld soll die Liste nicht schließen.
+          if (e.target === inputRef.current || inputRef.current?.contains(e.target as Node)) {
+            e.preventDefault()
+          }
+        }}
       >
-        <Command shouldFilter={false}>
-          <CommandList className="max-h-[min(280px,50vh)]">
+        <Command shouldFilter={false} className="h-auto overflow-hidden">
+          <CommandList
+            className="max-h-[min(240px,40vh)] overflow-y-auto overscroll-contain"
+            onWheel={(e) => e.stopPropagation()}
+          >
             {options.length === 0 ? (
               <CommandEmpty className="py-3 text-center text-sm text-muted-foreground">
                 Dokumenttypen werden geladen…
@@ -133,7 +179,7 @@ export function ComplianceDocumentTypeCombobox({
                 Kein Treffer
               </CommandEmpty>
             ) : (
-              <CommandGroup>
+              <CommandGroup className="overflow-visible">
                 {filtered.map((type) => (
                   <CommandItem
                     key={type.slug}
@@ -161,41 +207,41 @@ export function ComplianceDocumentTypeCombobox({
                 ))}
               </CommandGroup>
             )}
-            {!exactMatch && query.trim() ? (
-              <div className="border-t border-border/70 p-1">
-                <button
-                  type="button"
-                  className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-accent"
-                  disabled={creating}
-                  onClick={() => void handleCreateType()}
-                >
-                  {creating ? (
-                    <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" />
-                  ) : (
-                    <Plus className="size-4 shrink-0 text-muted-foreground" />
-                  )}
-                  <span>
-                    „<span className="font-medium">{query.trim()}</span>“ als neuen Typ
-                    hinzufügen
-                  </span>
-                </button>
-              </div>
-            ) : null}
-            {onManageTypesClick ? (
-              <div className="border-t border-border/70 p-1">
-                <button
-                  type="button"
-                  className="w-full rounded-md px-2 py-2 text-left text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
-                  onClick={() => {
-                    setOpen(false)
-                    onManageTypesClick()
-                  }}
-                >
-                  Alle Dokumenttypen verwalten…
-                </button>
-              </div>
-            ) : null}
           </CommandList>
+          {!exactMatch && query.trim() ? (
+            <div className="shrink-0 border-t border-border/70 p-1">
+              <button
+                type="button"
+                className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-accent"
+                disabled={creating}
+                onClick={() => void handleCreateType()}
+              >
+                {creating ? (
+                  <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" />
+                ) : (
+                  <Plus className="size-4 shrink-0 text-muted-foreground" />
+                )}
+                <span>
+                  „<span className="font-medium">{query.trim()}</span>“ als neuen Typ
+                  hinzufügen
+                </span>
+              </button>
+            </div>
+          ) : null}
+          {onManageTypesClick ? (
+            <div className="shrink-0 border-t border-border/70 p-1">
+              <button
+                type="button"
+                className="w-full rounded-md px-2 py-2 text-left text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
+                onClick={() => {
+                  setOpen(false)
+                  onManageTypesClick()
+                }}
+              >
+                Alle Dokumenttypen verwalten…
+              </button>
+            </div>
+          ) : null}
         </Command>
       </PopoverContent>
     </Popover>
