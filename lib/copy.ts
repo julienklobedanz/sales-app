@@ -181,7 +181,7 @@ export const COPY = {
       promoteToRfp: 'Als Ausschreibung bearbeiten',
       demoteFromRfp: 'Kein Ausschreibungs-Deal',
       rfpBlockPlaceholder: 'Ausschreibungs-Analyse folgt in den nächsten Schritten.',
-      proofTitle: 'Passende Referenzen',
+      proofTitle: 'Verknüpfte Referenzen',
       proofEmpty: 'Noch keine Referenzen verknüpft — finde passende Beweise für diesen Deal.',
       findReference: 'Referenz finden',
       findReferenceTitle: 'Referenz finden',
@@ -263,6 +263,8 @@ export const COPY = {
       documentsEmpty:
         'Noch keine Dokumente — RFP, NDA, Vertrag, Angebot oder andere Dateien hochladen.',
       documentsUpload: 'Hochladen',
+      documentsOpenDealDesk: 'Deal Desk',
+      documentsOpenDealDeskAria: 'Deal Desk für diesen Deal öffnen',
       documentsUploadTitle: 'Dokument hochladen',
       documentsKindLabel: 'Dokumenttyp',
       documentsDropzoneHint: 'Datei hierher ziehen oder klicken',

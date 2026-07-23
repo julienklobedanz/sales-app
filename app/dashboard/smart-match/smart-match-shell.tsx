@@ -10,6 +10,7 @@
  */
 
 import { useState, useLayoutEffect, type ReactNode } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { ArrowUp, ChevronDown, Plus, RotateCcw } from 'lucide-react'
@@ -18,6 +19,7 @@ import { Loader } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 import { COPY } from '@/lib/copy'
+import { ROUTES } from '@/lib/routes'
 import { CheckIcon } from '@/components/ui/check-icon'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import {
@@ -29,6 +31,7 @@ import {
 import { MASTER_INDUSTRIES, formatIndustryDisplay } from '@/lib/constants/industries'
 import { MatchResultSkeleton } from '@/components/dashboard/match-result-skeleton'
 import { MatchResultCard } from '@/app/dashboard/deals/components/match-result-card'
+import { CompanyLogo } from '@/components/ui/company-logo'
 import {
   matchReferences,
   type MatchReferenceHit,
@@ -638,12 +641,18 @@ export function SmartMatchShell({
                               key={d.id}
                               type="button"
                               onClick={() => selectDeal(d.id)}
-                              className="flex w-full flex-col items-start rounded-md px-2 py-1.5 text-left hover:bg-accent"
+                              className="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left hover:bg-accent"
                             >
-                              <span className="text-sm text-foreground">{d.title}</span>
-                              {d.company_name ? (
-                                <span className="text-xs text-muted-foreground">{d.company_name}</span>
-                              ) : null}
+                              <CompanyLogo
+                                src={d.company_logo_url}
+                                companyId={d.company_id}
+                                fallbackText={d.company_name ?? d.title}
+                                containerClassName="size-7 shrink-0 rounded-md"
+                                fallbackIconSize={14}
+                              />
+                              <span className="min-w-0 truncate text-sm text-foreground">
+                                {d.title}
+                              </span>
                             </button>
                           ))
                         ) : (
@@ -703,23 +712,45 @@ export function SmartMatchShell({
                 >
                   <div className="flex min-h-6 items-center gap-2 text-xs text-muted-foreground">
                     {selectedDeal ? (
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs text-primary">
-                        <span className="max-w-[220px] truncate">Deal: {selectedDeal.title}</span>
+                      <span className="inline-flex max-w-[280px] items-center gap-1 rounded-full border border-primary/30 bg-primary/10 py-0.5 pl-1 pr-1.5 text-xs text-primary">
+                        <Link
+                          href={ROUTES.deals.detail(selectedDeal.id)}
+                          className="inline-flex min-w-0 items-center gap-1.5 rounded-full py-0.5 pl-0 pr-0.5 hover:underline"
+                        >
+                          <CompanyLogo
+                            src={selectedDeal.company_logo_url}
+                            companyId={selectedDeal.company_id}
+                            fallbackText={selectedDeal.company_name ?? selectedDeal.title}
+                            containerClassName="size-5 shrink-0 rounded-full"
+                            fallbackIconSize={10}
+                          />
+                          <span className="min-w-0 truncate">{selectedDeal.title}</span>
+                        </Link>
                         {!embedded ? (
                           <button
                             type="button"
                             onClick={clearDeal}
                             aria-label="Deal-Kontext entfernen"
-                            className="opacity-70 hover:opacity-100"
+                            className="shrink-0 rounded-full p-0.5 opacity-70 hover:bg-primary/10 hover:opacity-100"
                           >
                             ✕
                           </button>
                         ) : null}
                       </span>
                     ) : embedded && initialDeal ? (
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs text-primary">
-                        <span className="max-w-[220px] truncate">Deal: {initialDeal.title}</span>
-                      </span>
+                      <Link
+                        href={ROUTES.deals.detail(initialDeal.id)}
+                        className="inline-flex max-w-[280px] items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 py-0.5 pl-1 pr-2 text-xs text-primary hover:underline"
+                      >
+                        <CompanyLogo
+                          src={initialDeal.company_logo_url}
+                          companyId={initialDeal.company_id}
+                          fallbackText={initialDeal.company_name ?? initialDeal.title}
+                          containerClassName="size-5 shrink-0 rounded-full"
+                          fallbackIconSize={10}
+                        />
+                        <span className="min-w-0 truncate">{initialDeal.title}</span>
+                      </Link>
                     ) : (
                       <span className="min-w-0" aria-hidden />
                     )}

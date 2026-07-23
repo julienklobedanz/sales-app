@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { LinkIcon, Loader, Sparkles, FileText, InformationCircleIcon } from '@hugeicons/core-free-icons'
+import { LinkIcon, Loader, Sparkles, FileText, InformationCircleIcon, FileDownloadIcon } from '@hugeicons/core-free-icons'
 
 import { Button } from '@/components/ui/button'
 import { CompanyLogo } from '@/components/ui/company-logo'
@@ -217,7 +217,9 @@ export function MatchResultCard({
               >
                 {linkLoading ? (
                   <AppIcon icon={Loader} size={14} className="mr-1 animate-spin" />
-                ) : null}
+                ) : (
+                  <AppIcon icon={FileDownloadIcon} size={14} className="mr-1" />
+                )}
                 {alreadyLinked ? 'Bereits im Deal' : 'In Deal übernehmen'}
               </Button>
             ) : null}

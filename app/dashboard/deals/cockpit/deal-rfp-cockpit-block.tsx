@@ -1,12 +1,13 @@
 import Link from 'next/link'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { COPY } from '@/lib/copy'
 import type { DealWithReferences } from '../types'
 import { loadDealRfpCockpitData } from '@/lib/deals/load-deal-rfp-cockpit-data'
 
+import { DealRfpDraftsSection } from './deal-rfp-drafts-section'
 import { DealRfpEligibilitySection } from './deal-rfp-eligibility-section'
 import { DealRfpMetricsRow } from './deal-rfp-metrics-row'
 import { DealRfpRecommendationBanner } from './deal-rfp-recommendation-banner'
@@ -14,6 +15,7 @@ import { DealRfpRisksSection } from './deal-rfp-risks-section'
 import type { DealDocumentRow } from '../document-actions'
 import { DealRfpAnalyzeButton } from './deal-rfp-analyze-button'
 
+/** Analysis cards only — section chrome (title + documents) lives in DealCockpitClient. */
 export async function DealRfpCockpitBlock({
   dealId,
   orgId,
@@ -38,9 +40,8 @@ export async function DealRfpCockpitBlock({
 
   if (!data) {
     return (
-      <Card id="ausschreibung" className="mb-6">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-base">{COPY.deals.cockpit.rfpBlockTitle}</CardTitle>
           <CardDescription>{COPY.deals.cockpit.rfpBlockEmpty}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -64,8 +65,7 @@ export async function DealRfpCockpitBlock({
   }
 
   return (
-    <section id="ausschreibung" className="mb-6 space-y-4">
-      <h2 className="text-base font-semibold">{COPY.deals.cockpit.rfpBlockTitle}</h2>
+    <div className="space-y-4">
       <div className="space-y-6">
         <DealRfpRecommendationBanner
           data={data}
@@ -77,6 +77,7 @@ export async function DealRfpCockpitBlock({
       </div>
       <DealRfpEligibilitySection data={data} />
       <DealRfpRisksSection data={data} />
-    </section>
+      <DealRfpDraftsSection data={data} deal={deal} />
+    </div>
   )
 }
