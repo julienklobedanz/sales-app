@@ -384,7 +384,7 @@ export function DealsClientContent({
         meta: { viewLabel: DEAL_COL_LABELS.expiry_date },
         size: 120,
         minSize: 88,
-        header: ({ column }) => <TableSortableHeader label="Ablauf" column={column} />,
+        header: ({ column }) => <TableSortableHeader label="Deadline" column={column} />,
         cell: ({ row }) => {
           const isHot = isExpiringIn30Days(row.original.expiry_date)
           return (

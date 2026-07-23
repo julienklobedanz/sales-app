@@ -10,11 +10,41 @@ import {
   appRoleIsAdmin,
   appRoleIsSales,
 } from '@/lib/roles/legacy-mapping'
+import {
+  newsPersonNameFromBody,
+  resolveExecSignalBadge,
+  resolveNewsSignalBadge,
+  type MarketSignalBadge,
+} from '@/lib/market-signals/signal-badge'
+import { formatSignalSourceLabel } from '@/lib/market-signals/leadership-move'
+
+export type NotificationInboxGroup = 'signals' | 'approvals' | 'other'
+
+export type NotificationTypeKind =
+  | 'move'
+  | 'executive'
+  | 'company'
+  | 'approval'
+  | 'nda'
+  | 'request'
+  | 'other'
 
 export type DashboardNotificationItem = {
   id: string
+  /** Fett: Person oder kurzer Hook. */
   title: string
+  /** Zusammenfassung (UI clamp 1–2 Zeilen). */
   text: string
+  /** Meta-Chip: z. B. Executive Tracking, Company Update, Kunden-Freigabe. */
+  category: string
+  /** Typ-Chip: Move / Executive / Company / Freigabe / … */
+  typeLabel: string
+  typeKind: NotificationTypeKind
+  group: NotificationInboxGroup
+  logoUrl: string | null
+  companyName: string | null
+  sourceLabel: string | null
+  sourceUrl: string | null
   time: string
   href: string
   read: boolean
@@ -35,9 +65,41 @@ type InboxCandidate = {
   id: string
   title: string
   text: string
+  category: string
+  typeLabel: string
+  typeKind: NotificationTypeKind
+  group: NotificationInboxGroup
+  logoUrl: string | null
+  companyName: string | null
+  sourceLabel: string | null
+  sourceUrl: string | null
   href: string
   createdAt: string
   priority: number
+}
+
+function resolveSourceHref(url: string | null | undefined, fallbackQuery: string) {
+  const raw = String(url ?? '').trim()
+  if (raw && /^https?:\/\//i.test(raw)) return raw
+  const q = fallbackQuery.trim()
+  if (!q) return null
+  return `https://www.google.com/search?q=${encodeURIComponent(q)}`
+}
+
+function shortHook(raw: string, max = 90): string {
+  const compact = raw.replace(/\s+/g, ' ').trim()
+  if (!compact) return 'Neues Update'
+  if (compact.length <= max) return compact
+  return `${compact.slice(0, max - 1)}…`
+}
+
+function badgeToType(badge: MarketSignalBadge): {
+  typeLabel: string
+  typeKind: NotificationTypeKind
+} {
+  if (badge === 'Move') return { typeLabel: 'Move', typeKind: 'move' }
+  if (badge === 'Executive') return { typeLabel: 'Executive', typeKind: 'executive' }
+  return { typeLabel: 'Company', typeKind: 'company' }
 }
 
 function refTitleFromRow(row: {
@@ -69,6 +131,20 @@ type EventRowForCopy = {
 
 function mapEventToCopy(eventType: string, row: EventRowForCopy): InboxCandidate {
   const refTitle = refTitleFromRow(row)
+  const href = row.reference_id ? ROUTES.references.detail(row.reference_id) : ROUTES.references.root
+  const base = {
+    id: `approval:${row.id}`,
+    typeLabel: 'Freigabe',
+    typeKind: 'approval' as const,
+    group: 'approvals' as const,
+    logoUrl: null,
+    companyName: null,
+    sourceLabel: null,
+    sourceUrl: null,
+    href,
+    createdAt: row.created_at,
+    priority: 1,
+  }
 
   const payload = (row.payload ?? {}) as Record<string, unknown>
 
@@ -89,34 +165,28 @@ function mapEventToCopy(eventType: string, row: EventRowForCopy): InboxCandidate
               : `„${refTitle}“: Der Kunde wünscht Anpassungen vor der Freigabe.`
             : `Antwort zu „${refTitle}“.`
     return {
-      id: `approval:${row.id}`,
-      title: 'Kunden-Freigabe',
+      ...base,
+      title: shortHook(refTitle, 70),
       text,
-      href: row.reference_id ? ROUTES.references.detail(row.reference_id) : ROUTES.references.root,
-      createdAt: row.created_at,
-      priority: 1,
+      category: 'Kunden-Freigabe',
     }
   }
 
   if (eventType === 'reference_approval_updated') {
     return {
-      id: `approval:${row.id}`,
-      title: 'Kunden-Freigabe angepasst',
+      ...base,
+      title: shortHook(refTitle, 70),
       text: `Der Kunde hat Anmerkungen oder den Freigabe-Umfang bei „${refTitle}“ geändert.`,
-      href: row.reference_id ? ROUTES.references.detail(row.reference_id) : ROUTES.references.root,
-      createdAt: row.created_at,
-      priority: 1,
+      category: 'Kunden-Freigabe',
     }
   }
 
   if (eventType === 'customer_approval_requested') {
     return {
-      id: `approval:${row.id}`,
-      title: 'Kunden-Freigabe angefragt',
+      ...base,
+      title: shortHook(refTitle, 70),
       text: `Freigabe-E-Mail für „${refTitle}“ wurde an den Kunden versendet.`,
-      href: row.reference_id ? ROUTES.references.detail(row.reference_id) : ROUTES.references.root,
-      createdAt: row.created_at,
-      priority: 1,
+      category: 'Kunden-Freigabe',
     }
   }
 
@@ -128,21 +198,22 @@ function mapEventToCopy(eventType: string, row: EventRowForCopy): InboxCandidate
     else if (d === 'approve_internal') detail = 'Freigabe: nur intern.'
     else if (d === 'reject' || d === 'rejected') detail = 'Anfrage abgelehnt.'
     return {
-      id: `approval:${row.id}`,
-      title: 'Interne Freigabe',
-      text: `„${refTitle}“: ${detail}`,
-      href: row.reference_id ? ROUTES.references.detail(row.reference_id) : ROUTES.references.root,
-      createdAt: row.created_at,
-      priority: 1,
+      ...base,
+      title: shortHook(refTitle, 70),
+      text: detail,
+      category: 'Interne Freigabe',
     }
   }
 
   return {
-    id: `approval:${row.id}`,
+    ...base,
     title: 'Hinweis',
     text: 'Neues Ereignis in Ihrer Organisation.',
+    category: 'Hinweis',
+    typeLabel: 'Sonstiges',
+    typeKind: 'other',
+    group: 'other',
     href: ROUTES.home,
-    createdAt: row.created_at,
     priority: 4,
   }
 }
@@ -160,24 +231,38 @@ function buildExecutiveSentence(input: {
   const matched = summary.match(germanPattern) ?? summary.match(englishPattern)
   if (matched) {
     const [, oldRole, oldCompany, newRole, newCompany] = matched
-    return `${input.personName} wechselte von ${oldRole} bei ${oldCompany} zu ${newRole} bei ${newCompany}.`
+    return `Wechselte von ${oldRole} bei ${oldCompany} zu ${newRole} bei ${newCompany}.`
   }
   if (input.personTitleBefore && input.personTitleAfter) {
-    return `${input.personName} wechselte von ${input.personTitleBefore} zu ${input.personTitleAfter} bei ${input.companyName}.`
+    return `Wechselte von ${input.personTitleBefore} zu ${input.personTitleAfter} bei ${input.companyName}.`
   }
   if (input.personTitleAfter) {
-    return `${input.personName} ist jetzt ${input.personTitleAfter} bei ${input.companyName}.`
+    return `Ist jetzt ${input.personTitleAfter} bei ${input.companyName}.`
   }
   if (summary) {
-    return `${input.personName} (${input.companyName}): ${summary}`
+    return summary
   }
-  return `${input.personName} – Update bei ${input.companyName}.`
+  return `Update bei ${input.companyName}.`
 }
 
 function roleCanSeeApprovalEvent(role: AppRole, row: EventRowForCopy, userId: string) {
   if (appRoleCanManageOrg(role)) return true
-  // Sales sieht nur Freigabe-Events, die aus seinen eigenen Anfragen stammen.
   return row.created_by === userId
+}
+
+type CompanyJoin = {
+  name?: string | null
+  logo_url?: string | null
+  is_favorite?: boolean | null
+} | null
+
+function companyFromJoin(raw: unknown): { name: string; logoUrl: string | null; isFavorite: boolean } {
+  const co = (Array.isArray(raw) ? raw[0] : raw) as CompanyJoin
+  return {
+    name: String(co?.name ?? 'Account').trim() || 'Account',
+    logoUrl: (co?.logo_url as string | null | undefined) ?? null,
+    isFavorite: Boolean(co?.is_favorite),
+  }
 }
 
 export async function getInboxNotificationsImpl(
@@ -240,8 +325,16 @@ export async function getInboxNotificationsImpl(
     const preview = String(row.message ?? '').trim()
     return {
       id: `deal_request:${String(row.id)}`,
-      title: 'Meine Requests',
-      text: preview ? `„${dealTitle}“ — ${preview.slice(0, 120)}` : `Anfrage für „${dealTitle}“.`,
+      title: shortHook(dealTitle, 70),
+      text: preview ? preview.slice(0, 160) : `Anfrage für „${dealTitle}“.`,
+      category: 'Meine Requests',
+      typeLabel: 'Request',
+      typeKind: 'request',
+      group: 'other',
+      logoUrl: null,
+      companyName: null,
+      sourceLabel: null,
+      sourceUrl: null,
       href: row.deal_id ? ROUTES.deals.detail(String(row.deal_id)) : ROUTES.deals.requestNew,
       createdAt: String(row.created_at ?? ''),
       priority: 2,
@@ -258,8 +351,12 @@ export async function getInboxNotificationsImpl(
       person_title_after,
       change_summary,
       detected_at,
+      event_kind,
+      signal_category,
+      insight_signal_fact,
+      source_url,
       company_id,
-      companies ( name, is_favorite )
+      companies ( name, logo_url, is_favorite )
     `
     )
     .order('detected_at', { ascending: false })
@@ -273,9 +370,11 @@ export async function getInboxNotificationsImpl(
       id,
       body,
       source_label,
+      source_url,
       published_on,
+      insight_signal_fact,
       company_id,
-      companies ( name, is_favorite )
+      companies ( name, logo_url, is_favorite )
     `
     )
     .order('published_on', { ascending: false })
@@ -285,82 +384,169 @@ export async function getInboxNotificationsImpl(
   const favoriteCompanyNames = new Set(
     (executiveRows ?? [])
       .map((row) => {
-        const co = Array.isArray(row.companies) ? row.companies[0] : row.companies
-        if (!co?.is_favorite) return null
-        return normalizeText(String(co.name ?? ''))
+        const co = companyFromJoin(row.companies)
+        if (!co.isFavorite) return null
+        return normalizeText(co.name)
       })
       .filter((name): name is string => Boolean(name))
   )
 
   const executiveSeen = new Set<string>()
-  const executiveCandidates: InboxCandidate[] = (executiveRows ?? [])
-    .map((row) => {
-      const co = Array.isArray(row.companies) ? row.companies[0] : row.companies
-      const companyName = String(co?.name ?? 'Account')
-      const summary = String(row.change_summary ?? '')
-      const summaryNorm = normalizeText(summary)
-      const companyFavorite = Boolean(co?.is_favorite)
+  const executiveCandidates: InboxCandidate[] = (executiveRows ?? []).flatMap((row) => {
+      const co = companyFromJoin(row.companies)
+      const personName = String(row.person_name ?? '').trim()
+      const changeSummary = String(row.change_summary ?? '')
+      const summaryNorm = normalizeText(changeSummary)
       const mentionsFavorite = [...favoriteCompanyNames].some((name) => summaryNorm.includes(name))
-      const championMove = companyFavorite || mentionsFavorite
+      const championMove = co.isFavorite || mentionsFavorite
       const dayKey = String(row.detected_at ?? '').slice(0, 10)
       const dedupeKey = [
-        normalizeText(String(row.person_name ?? '')),
+        normalizeText(personName),
         normalizeText(String(row.person_title_before ?? '')),
         normalizeText(String(row.person_title_after ?? '')),
-        normalizeText(summary),
+        normalizeText(changeSummary),
         dayKey,
       ].join('|')
-      if (executiveSeen.has(dedupeKey)) return null
+      if (executiveSeen.has(dedupeKey)) return []
       executiveSeen.add(dedupeKey)
-      if (appRoleIsSales(role) && !championMove) return null
-      return {
-        id: `market_exec:${String(row.id)}`,
-        title: 'Executive Tracking',
-        text: buildExecutiveSentence({
-          personName: String(row.person_name ?? ''),
+      if (appRoleIsSales(role) && !championMove) return []
+
+      const badge = resolveExecSignalBadge({
+        personTitleBefore: (row.person_title_before as string | null) ?? null,
+        personTitleAfter: (row.person_title_after as string | null) ?? null,
+        eventKind: (row.event_kind as string | null) ?? null,
+        personName,
+        changeSummary,
+        insightSignalFact: (row.insight_signal_fact as string | null) ?? null,
+        signalCategory: (row.signal_category as string | null) ?? null,
+      })
+      const type = badgeToType(badge)
+      const signalSummary =
+        String(row.insight_signal_fact ?? '').trim() ||
+        buildExecutiveSentence({
+          personName,
           personTitleBefore: (row.person_title_before as string | null) ?? null,
           personTitleAfter: (row.person_title_after as string | null) ?? null,
-          companyName,
-          summary,
-        }),
-        href: ROUTES.accountsDetail(String(row.company_id)),
-        createdAt: String(row.detected_at ?? ''),
-        priority: championMove ? 0 : 2,
-      } satisfies InboxCandidate
+          companyName: co.name,
+          summary: changeSummary,
+        })
+      const sourceUrlRaw = (row.source_url as string | null) ?? null
+      const sourceLabel = formatSignalSourceLabel({
+        url: sourceUrlRaw,
+        sourceLabel: null,
+        title: signalSummary,
+        companyName: co.name,
+      })
+      const sourceHref = resolveSourceHref(
+        sourceUrlRaw,
+        [personName, signalSummary, co.name].filter(Boolean).join(' ')
+      )
+
+      return [
+        {
+          id: `market_exec:${String(row.id)}`,
+          title: personName || shortHook(signalSummary, 70),
+          text: personName
+            ? shortHook(signalSummary, 160)
+            : shortHook(`Signal bei ${co.name}. ${signalSummary}`, 160),
+          category: 'Executive Tracking',
+          typeLabel: type.typeLabel,
+          typeKind: type.typeKind,
+          group: 'signals' as const,
+          logoUrl: co.logoUrl,
+          companyName: co.name,
+          sourceLabel,
+          sourceUrl: sourceHref,
+          href: ROUTES.accountsDetail(String(row.company_id)),
+          createdAt: String(row.detected_at ?? ''),
+          priority: championMove ? 0 : 2,
+        } satisfies InboxCandidate,
+      ]
     })
-    .filter((row): row is InboxCandidate => Boolean(row))
 
   const newsSeen = new Set<string>()
-  const newsCandidates: InboxCandidate[] = (newsRows ?? [])
-    .map((row) => {
-      const co = Array.isArray(row.companies) ? row.companies[0] : row.companies
-      const companyName = String(co?.name ?? 'Account')
+  const newsCandidates: InboxCandidate[] = (newsRows ?? []).flatMap((row) => {
+      const co = companyFromJoin(row.companies)
       const body = String(row.body ?? '').trim()
-      const isFavorite = Boolean(co?.is_favorite)
-      if (appRoleIsSales(role) && !isFavorite) return null
+      if (appRoleIsSales(role) && !co.isFavorite) return []
       const dayKey = String(row.published_on ?? '').slice(0, 10)
-      const dedupeKey = [normalizeText(companyName), normalizeText(body), dayKey].join('|')
-      if (newsSeen.has(dedupeKey)) return null
+      const dedupeKey = [normalizeText(co.name), normalizeText(body), dayKey].join('|')
+      if (newsSeen.has(dedupeKey)) return []
       newsSeen.add(dedupeKey)
-      return {
-        id: `market_news:${String(row.id)}`,
-        title: isFavorite ? 'Company Update (Following)' : 'Company Update',
-        text: body || `Neues Signal bei ${companyName}.`,
-        href: ROUTES.accountsDetail(String(row.company_id)),
-        createdAt: String(row.published_on ?? ''),
-        priority: isFavorite ? 1 : 3,
-      } satisfies InboxCandidate
-    })
-    .filter((row): row is InboxCandidate => Boolean(row))
 
-  const ndaCandidates =
-    appRoleIsAdmin(role) ? await fetchNdaExpiryInboxCandidates(supabase, orgId) : []
+      const badge = resolveNewsSignalBadge(body, co.name)
+      const type = badgeToType(badge)
+      const personName = newsPersonNameFromBody(body, co.name)?.trim() || null
+      const insight = String(row.insight_signal_fact ?? '').trim()
+      const headline = personName || shortHook(body || `Update bei ${co.name}`, 70)
+      const signalSummary = insight
+        ? shortHook(insight, 160)
+        : personName
+          ? shortHook(body, 160)
+          : body.length > headline.length + 10
+            ? shortHook(body, 160)
+            : shortHook(`Neues Signal bei ${co.name}.`, 120)
+      const sourceUrlRaw = (row.source_url as string | null) ?? null
+      const sourceLabel = formatSignalSourceLabel({
+        url: sourceUrlRaw,
+        sourceLabel: (row.source_label as string | null) ?? null,
+        title: body,
+        companyName: co.name,
+      })
+      const sourceHref = resolveSourceHref(
+        sourceUrlRaw,
+        [sourceLabel, co.name, body].filter(Boolean).join(' ')
+      )
+
+      return [
+        {
+          id: `market_news:${String(row.id)}`,
+          title: headline,
+          text: signalSummary,
+          category: 'Company Update',
+          typeLabel: type.typeLabel,
+          typeKind: type.typeKind,
+          group: 'signals' as const,
+          logoUrl: co.logoUrl,
+          companyName: co.name,
+          sourceLabel,
+          sourceUrl: sourceHref,
+          href: ROUTES.accountsDetail(String(row.company_id)),
+          createdAt: String(row.published_on ?? ''),
+          priority: co.isFavorite ? 1 : 3,
+        } satisfies InboxCandidate,
+      ]
+    })
+
+  const ndaRaw = appRoleIsAdmin(role) ? await fetchNdaExpiryInboxCandidates(supabase, orgId) : []
+  const ndaCandidates: InboxCandidate[] = ndaRaw.map((entry) => ({
+    id: entry.id,
+    title: entry.title,
+    text: entry.text,
+    category: 'NDA',
+    typeLabel: 'NDA',
+    typeKind: 'nda',
+    group: 'other',
+    logoUrl: null,
+    companyName: null,
+    sourceLabel: null,
+    sourceUrl: null,
+    href: entry.href,
+    createdAt: entry.createdAt,
+    priority: entry.priority,
+  }))
 
   const nowMs = Date.now()
   const isMarketSignal = (id: string) =>
     id.startsWith('market_exec:') || id.startsWith('market_news:')
 
-  const merged = [...ndaCandidates, ...executiveCandidates, ...newsCandidates, ...approvalCandidates, ...requestCandidates]
+  const merged = [
+    ...ndaCandidates,
+    ...executiveCandidates,
+    ...newsCandidates,
+    ...approvalCandidates,
+    ...requestCandidates,
+  ]
     .filter((entry) => {
       if (!isMarketSignal(entry.id)) return true
       const ageMs = nowMs - new Date(entry.createdAt).getTime()
@@ -393,6 +579,14 @@ export async function getInboxNotificationsImpl(
     id: entry.id,
     title: entry.title,
     text: entry.text,
+    category: entry.category,
+    typeLabel: entry.typeLabel,
+    typeKind: entry.typeKind,
+    group: entry.group,
+    logoUrl: entry.logoUrl,
+    companyName: entry.companyName,
+    sourceLabel: entry.sourceLabel,
+    sourceUrl: entry.sourceUrl,
     time: formatRelativeTimeDe(entry.createdAt),
     href: entry.href,
     read: readSet.has(entry.id),

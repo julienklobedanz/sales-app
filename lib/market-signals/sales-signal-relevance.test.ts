@@ -32,6 +32,7 @@ describe('isLowValueRssTitle', () => {
     expect(isLowValueRssTitle('Madden NFL 27 Arcade Edition auf Apple Arcade')).toBe(true)
     expect(isLowValueRssTitle('Sicherheitsdatenblatt - download.basf.com')).toBe(true)
     expect(isLowValueRssTitle('Newsroom - Aurubis')).toBe(true)
+    expect(isLowValueRssTitle('World Matchplay | Matchplay der Damen Live bei DAZN')).toBe(true)
   })
 })
 

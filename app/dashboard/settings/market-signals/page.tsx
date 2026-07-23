@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { resolveChampionPersonTitle } from '@/lib/market-signals/champion-display'
 import { MarketSignalsManageClient } from './watchlist-manage-client'
+import type { NewsroomSummary } from './newsrooms-card'
 
 type CompanyRow = {
   id: string
@@ -10,6 +11,9 @@ type CompanyRow = {
   logo_url: string | null
   is_favorite: boolean | null
   account_status: string | null
+  website_url: string | null
+  newsroom_urls: string[] | null
+  newsroom_discovered_at: string | null
 }
 
 type ChampionWatchRow = {
@@ -26,7 +30,15 @@ export default async function MarketSignalsManagePage() {
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) return <MarketSignalsManageClient companies={[]} watchedStakeholders={[]} />
+  if (!user) {
+    return (
+      <MarketSignalsManageClient
+        companies={[]}
+        watchedStakeholders={[]}
+        newsroomSummary={{ withWebsite: 0, discovered: 0, withUrls: 0, entries: [] }}
+      />
+    )
+  }
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -34,11 +46,19 @@ export default async function MarketSignalsManagePage() {
     .eq('id', user.id)
     .maybeSingle()
   const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
-  if (!orgId) return <MarketSignalsManageClient companies={[]} watchedStakeholders={[]} />
+  if (!orgId) {
+    return (
+      <MarketSignalsManageClient
+        companies={[]}
+        watchedStakeholders={[]}
+        newsroomSummary={{ withWebsite: 0, discovered: 0, withUrls: 0, entries: [] }}
+      />
+    )
+  }
 
   const { data } = await supabase
     .from('companies')
-    .select('id,name,logo_url,is_favorite,account_status')
+    .select('id,name,logo_url,is_favorite,account_status,website_url,newsroom_urls,newsroom_discovered_at')
     .eq('organization_id', orgId)
     .order('name')
 
@@ -91,6 +111,31 @@ export default async function MarketSignalsManagePage() {
     accountStatus: row.account_status ?? null,
   }))
 
+  const companyRows = (data ?? []) as CompanyRow[]
+  const withWebsite = companyRows.filter((row) => Boolean(String(row.website_url ?? '').trim())).length
+  const discovered = companyRows.filter((row) => Boolean(row.newsroom_discovered_at)).length
+  const withUrls = companyRows.filter(
+    (row) => (row.newsroom_urls ?? []).filter(Boolean).length > 0
+  ).length
+  const newsroomSummary: NewsroomSummary = {
+    withWebsite,
+    discovered,
+    withUrls,
+    entries: companyRows
+      .filter((row) => Boolean(String(row.website_url ?? '').trim()))
+      .map((row) => ({
+        id: row.id,
+        name: row.name ?? 'Unbekannt',
+        urls: (row.newsroom_urls ?? []).filter(Boolean),
+      }))
+      .sort((a, b) => {
+        if ((a.urls.length > 0) !== (b.urls.length > 0)) {
+          return a.urls.length > 0 ? -1 : 1
+        }
+        return a.name.localeCompare(b.name, 'de', { sensitivity: 'base' })
+      }),
+  }
+
   const championRows = (championWatchRows ?? []) as ChampionWatchRow[]
   const watchedStakeholders = await Promise.all(
     championRows.map(async (row) => {
@@ -121,5 +166,11 @@ export default async function MarketSignalsManagePage() {
     })
   )
 
-  return <MarketSignalsManageClient companies={companies} watchedStakeholders={watchedStakeholders} />
+  return (
+    <MarketSignalsManageClient
+      companies={companies}
+      watchedStakeholders={watchedStakeholders}
+      newsroomSummary={newsroomSummary}
+    />
+  )
 }

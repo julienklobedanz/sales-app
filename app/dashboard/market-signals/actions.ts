@@ -8,6 +8,7 @@ import {
   runMarketSignalEnrichmentBackfill,
   type BackfillSignalEnrichmentResult,
 } from '@/lib/market-signals/backfill-signal-enrichment'
+import { discoverAndSaveCompanyNewsrooms } from '@/lib/market-signals/discover-company-newsroom'
 import { runCompanyNewsIngest } from '@/lib/market-signals/ingest-company-news'
 import { runExecutiveIntelIngest } from '@/lib/market-signals/ingest-executive-intel'
 import { prepareMarketSignalsFeedRefresh } from '@/lib/market-signals/purge-market-signals'
@@ -853,6 +854,166 @@ export async function backfillMarketSignalEnrichmentForMyOrg(args?: {
   revalidatePath(ROUTES.marketSignalsManage)
 
   return { success: true, ...result }
+}
+
+export type BackfillCompanyNewsroomsResult =
+  | {
+      success: true
+      scanned: number
+      withUrls: number
+      skipped: number
+      errors: string[]
+    }
+  | { success: false; error: string }
+
+/**
+ * Discover press/newsroom paths for all org accounts with website_url.
+ * Default skips companies that already have newsroom_discovered_at; force re-probes.
+ */
+export async function backfillCompanyNewsroomsForMyOrg(args?: {
+  force?: boolean
+  batchSize?: number
+}): Promise<BackfillCompanyNewsroomsResult> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
+  if (!orgId) return { success: false, error: 'Keine Organisation gefunden.' }
+
+  const force = Boolean(args?.force)
+  const batchSize = Math.min(12, Math.max(2, args?.batchSize ?? 6))
+
+  const { data: rows, error } = await supabase
+    .from('companies')
+    .select('id, website_url, newsroom_discovered_at')
+    .eq('organization_id', orgId)
+    .not('website_url', 'is', null)
+
+  if (error) return { success: false, error: error.message }
+
+  type CoRow = {
+    id: string
+    website_url: string | null
+    newsroom_discovered_at: string | null
+  }
+
+  const candidates = ((rows ?? []) as CoRow[]).filter((row) => {
+    const website = String(row.website_url ?? '').trim()
+    if (!website) return false
+    if (!force && row.newsroom_discovered_at) return false
+    return true
+  })
+
+  const skipped = ((rows ?? []) as CoRow[]).length - candidates.length
+  let scanned = 0
+  let withUrls = 0
+  const errors: string[] = []
+
+  for (let i = 0; i < candidates.length; i += batchSize) {
+    const batch = candidates.slice(i, i + batchSize)
+    const results = await Promise.all(
+      batch.map((row) =>
+        discoverAndSaveCompanyNewsrooms(supabase, row.id, {
+          websiteUrl: row.website_url,
+          force,
+        })
+      )
+    )
+    for (let j = 0; j < results.length; j++) {
+      const result = results[j]
+      const companyId = batch[j]?.id ?? '?'
+      scanned += 1
+      if (result.error) {
+        errors.push(`${companyId}: ${result.error}`)
+        continue
+      }
+      if (result.urls.length > 0) withUrls += 1
+    }
+  }
+
+  void writeAuditLog({
+    orgId,
+    action: 'market_signals_newsroom_backfill',
+    entityId: orgId,
+    actionDetails: {
+      force,
+      scanned,
+      withUrls,
+      skipped,
+      errorCount: errors.length,
+      at: new Date().toISOString(),
+    },
+  })
+
+  revalidatePath(ROUTES.marketSignalsManage)
+
+  return { success: true, scanned, withUrls, skipped, errors: errors.slice(0, 20) }
+}
+
+export async function updateCompanyNewsroomUrls(
+  companyId: string,
+  urls: string[]
+): Promise<{ success: true; urls: string[] } | { success: false; error: string }> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht angemeldet.' }
+
+  const id = String(companyId ?? '').trim()
+  if (!id) return { success: false, error: 'Ungültiger Account.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .maybeSingle()
+  const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
+  if (!orgId) return { success: false, error: 'Keine Organisation gefunden.' }
+
+  const cleaned: string[] = []
+  const seen = new Set<string>()
+  for (const raw of urls) {
+    const s = String(raw ?? '').trim()
+    if (!s) continue
+    let href = s
+    if (!/^https?:\/\//i.test(href)) href = `https://${href}`
+    try {
+      const u = new URL(href)
+      if (!u.hostname.includes('.')) continue
+      const normalized = u.href.replace(/\/$/, '')
+      const key = normalized.toLowerCase()
+      if (seen.has(key)) continue
+      seen.add(key)
+      cleaned.push(normalized)
+    } catch {
+      continue
+    }
+  }
+
+  const { error } = await supabase
+    .from('companies')
+    .update({
+      newsroom_urls: cleaned,
+      newsroom_discovered_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .eq('organization_id', orgId)
+
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath(ROUTES.marketSignalsManage)
+  return { success: true, urls: cleaned }
 }
 
 export async function requestReferenceApprovalForSignal(args: {

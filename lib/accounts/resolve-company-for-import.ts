@@ -12,6 +12,7 @@ import {
   type BrandfetchCompanyPayload,
 } from '@/lib/accounts/brandfetch-accounts-refresh'
 import { rewriteBrandfetchLogoUrlForLightBackground } from '@/lib/brandfetch/logo-theme-url'
+import { scheduleCompanyNewsroomDiscovery } from '@/lib/market-signals/discover-company-newsroom'
 
 function normalizeDomain(raw: string) {
   return raw
@@ -387,6 +388,12 @@ export async function resolveOrCreateCompanyForImport(
   if (error || !inserted?.id) {
     return { success: false, error: error?.message ?? 'Unternehmen konnte nicht angelegt werden.' }
   }
+
+  scheduleCompanyNewsroomDiscovery(
+    supabase,
+    inserted.id,
+    (inserted as { website_url?: string | null }).website_url ?? insertPayload.website_url ?? null
+  )
 
   return {
     success: true,

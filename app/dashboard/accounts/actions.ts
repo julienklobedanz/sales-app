@@ -16,6 +16,10 @@ import {
 import { enrichBulkImportRowFromBrandfetch } from '@/lib/accounts/resolve-company-for-import'
 import { ensureBrandfetchDarkLogoUrl } from '@/lib/brandfetch/logo-theme-url'
 import { formatIndustryDisplay, resolveIndustryId } from '@/lib/constants/industries'
+import {
+  discoverAndSaveCompanyNewsrooms,
+  scheduleCompanyNewsroomDiscovery,
+} from '@/lib/market-signals/discover-company-newsroom'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { profileIsSalesRestricted } from '@/lib/roles/profile-guards'
 
@@ -916,6 +920,10 @@ export async function createCompany(payload: {
 
   if (error) return { success: false, error: error.message }
 
+  if (data?.id) {
+    scheduleCompanyNewsroomDiscovery(supabase, data.id, payload.website_url?.trim() || null)
+  }
+
   revalidatePath(ROUTES.accounts)
   return { success: true, id: data?.id }
 }
@@ -975,6 +983,9 @@ export async function createPartner(payload: {
 
     if (accountError) return { success: false, error: accountError.message }
     linkedAccountId = accountRow?.id ?? null
+    if (linkedAccountId) {
+      scheduleCompanyNewsroomDiscovery(supabase, linkedAccountId, baseFields.website_url)
+    }
   }
 
   const { data: partnerRow, error: partnerError } = await supabase
@@ -1080,7 +1091,9 @@ export async function bulkCreateCompaniesFromSheet(
 
     const partner_category = parsed.partnerCategory
 
-    const { error } = await supabase.from('companies').insert({
+    const { data: inserted, error } = await supabase
+      .from('companies')
+      .insert({
       organization_id: profile.organization_id,
       entity_kind: entityKind,
       name: enriched.name,
@@ -1096,9 +1109,14 @@ export async function bulkCreateCompaniesFromSheet(
       account_status: null,
       ...(entityKind === 'partner' ? { partner_category } : {}),
     })
+      .select('id')
+      .maybeSingle()
     if (error) {
       failedCount += 1
       continue
+    }
+    if (inserted?.id && entityKind === 'account') {
+      scheduleCompanyNewsroomDiscovery(supabase, inserted.id, enriched.website.trim() || null)
     }
     existingNames.add(normalizedName)
     createdCount += 1
@@ -1141,7 +1159,7 @@ export async function updateCompany(payload: {
 
   const { data: row, error: fetchError } = await supabase
     .from('companies')
-    .select('id, organization_id')
+    .select('id, organization_id, website_url')
     .eq('id', payload.id)
     .single()
 
@@ -1150,11 +1168,14 @@ export async function updateCompany(payload: {
     return { success: false, error: 'Keine Berechtigung.' }
   }
 
+  const nextWebsite = payload.website_url?.trim() || null
+  const prevWebsite = (row as { website_url?: string | null }).website_url ?? null
+
   const { error } = await supabase
     .from('companies')
     .update({
       name,
-      website_url: payload.website_url?.trim() || null,
+      website_url: nextWebsite,
       industry: payload.industry?.trim() || null,
       headquarters: payload.headquarters?.trim() || null,
       logo_url: ensureBrandfetchDarkLogoUrl(payload.logo_url?.trim() || null),
@@ -1166,6 +1187,15 @@ export async function updateCompany(payload: {
     .eq('organization_id', profile.organization_id)
 
   if (error) return { success: false, error: error.message }
+
+  if (nextWebsite && nextWebsite !== prevWebsite) {
+    void discoverAndSaveCompanyNewsrooms(supabase, payload.id, {
+      websiteUrl: nextWebsite,
+      force: true,
+    }).catch((err) => {
+      console.error('[newsroom-discover]', payload.id, err instanceof Error ? err.message : err)
+    })
+  }
 
   revalidatePath(ROUTES.accounts)
   revalidatePath(ROUTES.accountsDetail(payload.id))

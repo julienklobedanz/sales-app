@@ -142,6 +142,8 @@ export type Database = {
           linked_account_id: string | null
           logo_url: string | null
           name: string
+          newsroom_discovered_at: string | null
+          newsroom_urls: string[] | null
           organization_id: string | null
           partner_category: string | null
           salesforce_account_id: string | null
@@ -166,6 +168,8 @@ export type Database = {
           linked_account_id?: string | null
           logo_url?: string | null
           name: string
+          newsroom_discovered_at?: string | null
+          newsroom_urls?: string[] | null
           organization_id?: string | null
           partner_category?: string | null
           salesforce_account_id?: string | null
@@ -190,6 +194,8 @@ export type Database = {
           linked_account_id?: string | null
           logo_url?: string | null
           name?: string
+          newsroom_discovered_at?: string | null
+          newsroom_urls?: string[] | null
           organization_id?: string | null
           partner_category?: string | null
           salesforce_account_id?: string | null

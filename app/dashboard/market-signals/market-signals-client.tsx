@@ -3,28 +3,33 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState, useTransition } from 'react'
-import { RefreshCw, Settings } from 'lucide-react'
+import { ChevronDown, RefreshCw, Settings } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { MarketSignalsFeed, type FeedSort } from '@/components/market-signals/market-signals-feed'
+import { FilterMenuCheckboxOption } from '@/components/table/filter-menu-checkbox-option'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { triggerMarketSignalsIngestForMyOrg } from '@/app/dashboard/market-signals/actions'
 import type { MarketSignalsPageModel } from '@/app/dashboard/market-signals/data'
 import { COPY } from '@/lib/copy'
-import { isLeadershipMoveTitle, parseLeadershipMoveFromTitle } from '@/lib/market-signals/leadership-move'
+import {
+  newsPersonNameFromBody,
+  resolveExecSignalBadge,
+  resolveNewsSignalBadge,
+  type MarketSignalBadge,
+} from '@/lib/market-signals/signal-badge'
 import { ROUTES } from '@/lib/routes'
 import { cn } from '@/lib/utils'
 
-type FeedFilter = 'all' | 'people' | 'company' | 'champions' | 'with_deal'
+type SignalTypeFilter = 'all' | MarketSignalBadge
 
-const FEED_FILTERS: { id: FeedFilter; label: string }[] = [
+const SIGNAL_TYPE_FILTERS: { id: SignalTypeFilter; label: string }[] = [
   { id: 'all', label: COPY.marketSignals.filterChipAll },
-  { id: 'people', label: COPY.marketSignals.filterChipPeople },
-  { id: 'company', label: COPY.marketSignals.filterChipCompany },
-  { id: 'champions', label: COPY.marketSignals.filterChipChampions },
-  { id: 'with_deal', label: COPY.marketSignals.filterChipWithDeal },
+  { id: 'Move', label: COPY.marketSignals.filterChipMove },
+  { id: 'Executive', label: COPY.marketSignals.filterChipExecutive },
+  { id: 'Company', label: COPY.marketSignals.filterChipCompany },
 ]
 
 function formatLastUpdatedAt(iso: string | null): string {
@@ -54,7 +59,9 @@ function normalizePersonKey(value: string | null | undefined) {
 export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }) {
   const router = useRouter()
   const [isRefreshing, startRefresh] = useTransition()
-  const [feedFilter, setFeedFilter] = useState<FeedFilter>('all')
+  const [typeFilter, setTypeFilter] = useState<SignalTypeFilter>('all')
+  const [championsOnly, setChampionsOnly] = useState(false)
+  const [withDealOnly, setWithDealOnly] = useState(false)
   const [sort, setSort] = useState<FeedSort>('relevance')
   const [accountFilter, setAccountFilter] = useState<string>('all')
   const [accountPickerOpen, setAccountPickerOpen] = useState(false)
@@ -104,28 +111,35 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
   const filteredNews = useMemo(() => {
     return watchlistNews.filter((row) => {
       if (accountFilter !== 'all' && row.companyId !== accountFilter) return false
-      if (feedFilter === 'with_deal' && !dealCompanySet.has(row.companyId)) return false
-      if (feedFilter === 'company') return !isLeadershipMoveTitle(row.body)
-      if (feedFilter === 'people') return isLeadershipMoveTitle(row.body)
-      if (feedFilter === 'champions') {
-        const parsed = parseLeadershipMoveFromTitle(row.body, row.companyName)
-        return Boolean(parsed.personName && championSet.has(normalizePersonKey(parsed.personName)))
+      if (withDealOnly && !dealCompanySet.has(row.companyId)) return false
+      if (typeFilter !== 'all' && resolveNewsSignalBadge(row.body, row.companyName) !== typeFilter) {
+        return false
+      }
+      if (championsOnly) {
+        const personName = newsPersonNameFromBody(row.body, row.companyName)
+        if (!personName || !championSet.has(normalizePersonKey(personName))) return false
       }
       return true
     })
-  }, [accountFilter, championSet, dealCompanySet, feedFilter, watchlistNews])
+  }, [accountFilter, championSet, championsOnly, dealCompanySet, typeFilter, watchlistNews, withDealOnly])
 
   const filteredExecutives = useMemo(() => {
     return watchlistExecutives.filter((row) => {
       if (accountFilter !== 'all' && row.companyId !== accountFilter) return false
-      if (feedFilter === 'company') return false
-      if (feedFilter === 'champions' && !championSet.has(normalizePersonKey(row.personName))) {
-        return false
-      }
-      if (feedFilter === 'with_deal' && !dealCompanySet.has(row.companyId)) return false
+      if (withDealOnly && !dealCompanySet.has(row.companyId)) return false
+      if (typeFilter !== 'all' && resolveExecSignalBadge(row) !== typeFilter) return false
+      if (championsOnly && !championSet.has(normalizePersonKey(row.personName))) return false
       return true
     })
-  }, [accountFilter, championSet, dealCompanySet, feedFilter, watchlistExecutives])
+  }, [
+    accountFilter,
+    championSet,
+    championsOnly,
+    dealCompanySet,
+    typeFilter,
+    watchlistExecutives,
+    withDealOnly,
+  ])
 
   const hasWatchlist = model.followingCompanyIds.length > 0
 
@@ -203,121 +217,147 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
         </div>
       ) : (
         <>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="order-2 flex flex-wrap items-center gap-2 sm:order-1">
-              <Popover open={accountPickerOpen} onOpenChange={setAccountPickerOpen}>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className={cn(
-                      'rounded-[5px] border border-border/80 px-2 py-1 text-xs font-medium transition-colors',
-                      accountFilter !== 'all'
-                        ? 'border-primary/30 bg-primary/5 text-primary'
-                        : 'bg-muted/40 text-muted-foreground hover:bg-background/60 hover:text-foreground'
-                    )}
-                  >
-                    {COPY.marketSignals.filterAccount}:{' '}
-                    <span className="text-foreground">{selectedAccountName}</span>
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent align="start" className="w-72 p-2">
-                  <Input
-                    value={accountQuery}
-                    onChange={(e) => setAccountQuery(e.target.value)}
-                    placeholder={COPY.marketSignals.filterAccountSearch}
-                    className="mb-2 h-8 text-sm"
+          <div className="flex min-w-0 items-center gap-2 overflow-x-auto pb-0.5">
+            <Popover open={accountPickerOpen} onOpenChange={setAccountPickerOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={COPY.marketSignals.filterAccount}
+                  className="flex h-10 w-[200px] shrink-0 items-center justify-between gap-2 rounded-lg border border-input bg-white px-3 text-sm shadow-sm outline-none transition-[color,box-shadow] hover:bg-white focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                >
+                  <span className="min-w-0 truncate text-left">{selectedAccountName}</span>
+                  <ChevronDown className="size-4 shrink-0 opacity-50" aria-hidden />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-[200px] p-2">
+                <Input
+                  value={accountQuery}
+                  onChange={(e) => setAccountQuery(e.target.value)}
+                  placeholder={COPY.marketSignals.filterAccountSearch}
+                  className="mb-2 h-8 text-sm"
+                />
+                <div className="max-h-56 space-y-0.5 overflow-auto">
+                  <FilterMenuCheckboxOption
+                    label={COPY.marketSignals.filterAccountAll}
+                    selected={accountFilter === 'all'}
+                    onSelect={() => {
+                      setAccountFilter('all')
+                      setAccountPickerOpen(false)
+                      setAccountQuery('')
+                    }}
                   />
-                  <div className="max-h-56 space-y-0.5 overflow-auto">
-                    <button
-                      type="button"
-                      className="flex w-full rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent"
-                      onClick={() => {
-                        setAccountFilter('all')
+                  {accountOptions.map((company) => (
+                    <FilterMenuCheckboxOption
+                      key={company.id}
+                      label={company.name}
+                      selected={accountFilter === company.id}
+                      onSelect={() => {
+                        setAccountFilter(company.id)
                         setAccountPickerOpen(false)
                         setAccountQuery('')
                       }}
-                    >
-                      {COPY.marketSignals.filterAccountAll}
-                    </button>
-                    {accountOptions.map((company) => (
-                      <button
-                        key={company.id}
-                        type="button"
-                        className="flex w-full rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent"
-                        onClick={() => {
-                          setAccountFilter(company.id)
-                          setAccountPickerOpen(false)
-                          setAccountQuery('')
-                        }}
-                      >
-                        {company.name}
-                      </button>
-                    ))}
-                    {accountOptions.length === 0 ? (
-                      <p className="px-2 py-2 text-xs text-muted-foreground">Keine Treffer</p>
-                    ) : null}
-                  </div>
-                </PopoverContent>
-              </Popover>
-
-              <div
-                role="tablist"
-                aria-label="Sortierung"
-                className="inline-flex shrink-0 gap-0.5 rounded-md border border-border/80 bg-muted/40 p-0.5"
-              >
-                {(
-                  [
-                    { id: 'relevance' as const, label: COPY.marketSignals.sortRelevance },
-                    { id: 'date' as const, label: COPY.marketSignals.sortDate },
-                  ] as const
-                ).map((option) => {
-                  const selected = sort === option.id
-                  return (
-                    <button
-                      key={option.id}
-                      type="button"
-                      role="tab"
-                      aria-selected={selected}
-                      onClick={() => setSort(option.id)}
-                      className={cn(
-                        'shrink-0 rounded-[5px] px-2 py-1 text-xs font-medium transition-colors',
-                        selected
-                          ? 'bg-background text-foreground shadow-sm'
-                          : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'
-                      )}
-                    >
-                      {option.label}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
+                    />
+                  ))}
+                  {accountOptions.length === 0 ? (
+                    <p className="px-2 py-2 text-xs text-muted-foreground">Keine Treffer</p>
+                  ) : null}
+                </div>
+              </PopoverContent>
+            </Popover>
 
             <div
               role="tablist"
-              aria-label="Signal-Filter"
-              className="order-1 inline-flex w-full max-w-full flex-wrap justify-start gap-0.5 rounded-md border border-border/80 bg-muted/40 p-0.5 sm:order-2 sm:ml-auto sm:w-auto sm:justify-end"
+              aria-label="Sortierung"
+              className="inline-flex h-10 shrink-0 items-stretch gap-0.5 rounded-lg border border-border/80 bg-muted/40 p-0.5"
             >
-              {FEED_FILTERS.map((filter) => {
-                const selected = feedFilter === filter.id
+              {(
+                [
+                  { id: 'relevance' as const, label: COPY.marketSignals.sortRelevance },
+                  { id: 'date' as const, label: COPY.marketSignals.sortDate },
+                ] as const
+              ).map((option) => {
+                const selected = sort === option.id
                 return (
                   <button
-                    key={filter.id}
+                    key={option.id}
                     type="button"
                     role="tab"
                     aria-selected={selected}
-                    onClick={() => setFeedFilter(filter.id)}
+                    onClick={() => setSort(option.id)}
                     className={cn(
-                      'shrink-0 rounded-[5px] px-2 py-1 text-xs font-medium transition-colors',
+                      'flex h-full shrink-0 items-center rounded-md px-2.5 text-xs font-medium transition-colors',
                       selected
                         ? 'bg-background text-foreground shadow-sm'
                         : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'
                     )}
                   >
-                    {filter.label}
+                    {option.label}
                   </button>
                 )
               })}
+            </div>
+
+            <div className="ml-auto flex shrink-0 items-center gap-2">
+              <div
+                role="tablist"
+                aria-label="Signal-Typ"
+                className="inline-flex h-10 shrink-0 items-stretch gap-0.5 rounded-lg border border-border/80 bg-muted/40 p-0.5"
+              >
+                {SIGNAL_TYPE_FILTERS.map((filter) => {
+                  const selected = typeFilter === filter.id
+                  return (
+                    <button
+                      key={filter.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={selected}
+                      onClick={() => setTypeFilter(filter.id)}
+                      className={cn(
+                        'flex h-full shrink-0 items-center rounded-md px-2.5 text-xs font-medium transition-colors',
+                        selected
+                          ? 'bg-background text-foreground shadow-sm'
+                          : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'
+                      )}
+                    >
+                      {filter.label}
+                    </button>
+                  )
+                })}
+              </div>
+
+              <div className="inline-flex h-10 shrink-0 items-center gap-2" aria-label="Kontext-Filter">
+                {(
+                  [
+                    {
+                      id: 'champions' as const,
+                      label: COPY.marketSignals.filterContextChampions,
+                      pressed: championsOnly,
+                      onToggle: () => setChampionsOnly((v) => !v),
+                    },
+                    {
+                      id: 'with_deal' as const,
+                      label: COPY.marketSignals.filterContextWithDeal,
+                      pressed: withDealOnly,
+                      onToggle: () => setWithDealOnly((v) => !v),
+                    },
+                  ] as const
+                ).map((filter) => (
+                  <button
+                    key={filter.id}
+                    type="button"
+                    aria-pressed={filter.pressed}
+                    onClick={filter.onToggle}
+                    className={cn(
+                      'inline-flex h-10 shrink-0 items-center rounded-lg border px-3 text-xs font-medium transition-colors',
+                      filter.pressed
+                        ? 'border-primary/40 bg-primary/5 text-primary'
+                        : 'border-border/80 bg-muted/40 text-muted-foreground hover:bg-background/60 hover:text-foreground'
+                    )}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 

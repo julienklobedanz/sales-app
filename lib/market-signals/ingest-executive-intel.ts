@@ -13,6 +13,7 @@ import {
   RSS_MAX_AGE_DAYS_DEFAULT,
   RSS_MAX_AGE_DAYS_LEADERSHIP,
 } from '@/lib/market-signals/sales-signal-relevance'
+import { buildPeoplePackRssQueries, isPeoplePackHost } from '@/lib/market-signals/source-packs'
 
 function normalizeChampionKey(raw: string | null | undefined) {
   return String(raw ?? '')
@@ -42,33 +43,52 @@ export function rssQueryPersonAndCompany(personName: string, companyName: string
 }
 
 /**
- * Fach-/IT-Presse (DACH) über Google News – kein Scraping von cio.de o. Ä.,
- * nur site:-Einschränkung in der News-Suche.
+ * Fach-/IT-/Karriere-Presse (DACH) über Google News – Personen-Source-Pack.
+ * Kein Scraping, nur site:-Einschränkung in der News-Suche.
  */
-function rssQueryTradePress(personName: string): string {
-  const p = personName.trim()
-  if (!p) return ''
-  return `"${p}" (site:cio.de OR site:computerwoche.de OR site:heise.de OR site:golem.de)`
+function rssQueryTradePress(personName: string, companyName?: string | null): string[] {
+  return buildPeoplePackRssQueries(personName, companyName)
 }
 
 async function fetchMergedExecutiveArticles(
   personName: string,
   companyName: string,
   opts: { signal: AbortSignal; maxTotal?: number }
-): Promise<GoogleNewsRssItem[]> {
+): Promise<Array<GoogleNewsRssItem & { fromPack: boolean }>> {
   const maxTotal = Math.min(16, Math.max(4, opts.maxTotal ?? 8))
-  const perQuery = Math.ceil(maxTotal / 2) + 2
-  const q1 = rssQueryPersonAndCompany(personName, companyName)
-  const q2 = rssQueryTradePress(personName)
-  const [a, b] = await Promise.all([
-    q1 ? fetchGoogleNewsRssItems(q1, { signal: opts.signal, maxItems: perQuery }) : Promise.resolve([]),
-    fetchGoogleNewsRssItems(q2, { signal: opts.signal, maxItems: perQuery }),
-  ])
-  const byLink = new Map<string, GoogleNewsRssItem>()
-  for (const x of [...a, ...b]) {
-    if (x.link) byLink.set(x.link, x)
+  const packQs = rssQueryTradePress(personName, companyName)
+  const broad = rssQueryPersonAndCompany(personName, companyName)
+  const queries = [...packQs, broad].filter(Boolean)
+  const perQuery = Math.max(3, Math.ceil(maxTotal / Math.max(1, Math.min(queries.length, 6))) + 1)
+
+  const batches = await Promise.all(
+    queries.map(async (q, index) => {
+      const items = await fetchGoogleNewsRssItems(q, {
+        signal: opts.signal,
+        maxItems: perQuery,
+      }).catch(() => [] as GoogleNewsRssItem[])
+      const fromPack = index < packQs.length
+      return items.map((item) => ({ ...item, fromPack }))
+    })
+  )
+
+  const byLink = new Map<string, GoogleNewsRssItem & { fromPack: boolean }>()
+  for (const item of batches.flat()) {
+    if (!item.link) continue
+    const prev = byLink.get(item.link)
+    if (!prev || (item.fromPack && !prev.fromPack)) {
+      byLink.set(item.link, item)
+    }
   }
-  return Array.from(byLink.values()).slice(0, maxTotal)
+
+  return Array.from(byLink.values())
+    .sort((a, b) => {
+      const aPack = a.fromPack || isPeoplePackHost(a.link)
+      const bPack = b.fromPack || isPeoplePackHost(b.link)
+      if (aPack !== bPack) return aPack ? -1 : 1
+      return (b.pubDate?.getTime() ?? 0) - (a.pubDate?.getTime() ?? 0)
+    })
+    .slice(0, maxTotal)
 }
 
 export type RunExecutiveIntelIngestResult = {

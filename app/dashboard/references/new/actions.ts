@@ -12,6 +12,10 @@ import {
   rewriteBrandfetchLogoUrlForLightBackground,
 } from '@/lib/brandfetch/logo-theme-url'
 import { mapBrandfetchIndustriesArrayToGermanCategory } from '@/lib/brandfetch/map-brandfetch-industry-to-de'
+import {
+  discoverAndSaveCompanyNewsrooms,
+  scheduleCompanyNewsroomDiscovery,
+} from '@/lib/market-signals/discover-company-newsroom'
 import { normalizeNarrativeText } from '@/lib/references/narrative-normalize'
 import { normalizeContractType } from '@/lib/references/contract-type'
 import { extractDataFromDocument } from '@/lib/document-extraction'
@@ -348,6 +352,12 @@ export async function enrichAndSaveCompany(domain: string): Promise<EnrichCompan
   if (existing?.id) {
     const { error } = await supabase.from('companies').update(payload).eq('id', existing.id)
     if (error) return { success: false, error: error.message }
+    if (websiteUrl) {
+      void discoverAndSaveCompanyNewsrooms(supabase, existing.id, {
+        websiteUrl: websiteUrl || null,
+        force: true,
+      }).catch(() => {})
+    }
     revalidatePath(ROUTES.references.new)
     return {
       success: true,
@@ -365,6 +375,7 @@ export async function enrichAndSaveCompany(domain: string): Promise<EnrichCompan
   const { data: inserted, error } = await supabase.from('companies').insert(payload).select('id').single()
   if (error) return { success: false, error: error.message }
   if (!inserted?.id) return { success: false, error: 'Firma konnte nicht angelegt werden.' }
+  scheduleCompanyNewsroomDiscovery(supabase, inserted.id, websiteUrl || null)
   revalidatePath(ROUTES.references.new)
   return {
     success: true,

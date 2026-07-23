@@ -1,8 +1,9 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { forwardRef, useEffect, useMemo, useState, useTransition } from 'react'
-import { Bell, MailOpen } from '@hugeicons/core-free-icons'
+import { Bell, Building2, ExternalLink, MailOpen } from '@hugeicons/core-free-icons'
 
 import {
   getInboxNotificationsForLayout,
@@ -10,6 +11,7 @@ import {
   markNotificationRead,
   type DashboardNotificationItem,
 } from '@/app/dashboard/actions'
+import type { NotificationInboxGroup } from '@/app/dashboard/notifications/inbox'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useHydrated } from '@/hooks/use-hydrated'
@@ -22,6 +24,15 @@ const INBOX_POLL_MS = 120_000
 
 const triggerClassName =
   'relative flex items-center justify-center rounded-xl border border-border/50 bg-muted/20 transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
+
+function typeChipClass(kind: DashboardNotificationItem['typeKind']) {
+  if (kind === 'move') return 'bg-blue-600/10 text-blue-700 dark:text-blue-300 border-0'
+  if (kind === 'executive') return 'bg-violet-600/10 text-violet-700 dark:text-violet-300 border-0'
+  if (kind === 'company') return 'bg-muted text-foreground border-0'
+  if (kind === 'approval') return 'bg-emerald-600/10 text-emerald-700 dark:text-emerald-300 border-0'
+  if (kind === 'nda') return 'bg-amber-600/10 text-amber-800 dark:text-amber-300 border-0'
+  return 'bg-muted text-muted-foreground border-0'
+}
 
 const NotificationTrigger = forwardRef<
   HTMLButtonElement,
@@ -59,6 +70,27 @@ const NotificationTrigger = forwardRef<
   )
 })
 
+function NotificationLogo({
+  logoUrl,
+  companyName,
+}: {
+  logoUrl: string | null
+  companyName: string | null
+}) {
+  const initials = (companyName || '?').slice(0, 2).toUpperCase()
+  return (
+    <div className="relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border/60 bg-muted/40">
+      {logoUrl ? (
+        <Image src={logoUrl} alt="" fill sizes="36px" className="object-contain p-1" />
+      ) : companyName ? (
+        <span className="text-[10px] font-semibold text-muted-foreground">{initials}</span>
+      ) : (
+        <AppIcon icon={Building2} size={14} className="text-muted-foreground" />
+      )}
+    </div>
+  )
+}
+
 function NotificationsPopover({
   unreadCount,
   notifications,
@@ -76,6 +108,50 @@ function NotificationsPopover({
   compact?: boolean
   rail?: boolean
 }) {
+  const tabs = useMemo(
+    () =>
+      [
+        { id: 'signals' as const, label: COPY.notifications.tabSignals },
+        { id: 'approvals' as const, label: COPY.notifications.tabApprovals },
+        { id: 'other' as const, label: COPY.notifications.tabOther },
+      ] as const,
+    []
+  )
+
+  const unreadByGroup = useMemo(() => {
+    const counts: Record<NotificationInboxGroup, number> = {
+      signals: 0,
+      approvals: 0,
+      other: 0,
+    }
+    for (const n of notifications) {
+      if (!n.read) counts[n.group] += 1
+    }
+    return counts
+  }, [notifications])
+
+  const defaultTab = useMemo((): NotificationInboxGroup => {
+    if (unreadByGroup.signals > 0) return 'signals'
+    if (unreadByGroup.approvals > 0) return 'approvals'
+    if (unreadByGroup.other > 0) return 'other'
+    if (notifications.some((n) => n.group === 'signals')) return 'signals'
+    if (notifications.some((n) => n.group === 'approvals')) return 'approvals'
+    return 'other'
+  }, [notifications, unreadByGroup])
+
+  const [activeTab, setActiveTab] = useState<NotificationInboxGroup>(defaultTab)
+
+  useEffect(() => {
+    setActiveTab(defaultTab)
+  }, [defaultTab])
+
+  const filtered = useMemo(
+    () => notifications.filter((n) => n.group === activeTab),
+    [activeTab, notifications]
+  )
+
+  const unreadLabel = COPY.notifications.unreadCount.replace('{count}', String(unreadCount))
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -85,10 +161,15 @@ function NotificationsPopover({
         side="top"
         align="center"
         sideOffset={8}
-        className="z-[200] w-96 p-0"
+        className="z-[200] w-[min(100vw-1.5rem,26rem)] p-0"
       >
         <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
-          <h3 className="text-sm font-semibold">{COPY.notifications.title}</h3>
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold">{COPY.notifications.title}</h3>
+            {unreadCount > 0 ? (
+              <p className="text-[11px] text-muted-foreground">{unreadLabel}</p>
+            ) : null}
+          </div>
           <Button
             type="button"
             variant="ghost"
@@ -102,41 +183,141 @@ function NotificationsPopover({
             <AppIcon icon={MailOpen} size={18} />
           </Button>
         </div>
+
+        <div
+          role="tablist"
+          aria-label={COPY.notifications.title}
+          className="flex gap-0.5 border-b px-2 py-2"
+        >
+          {tabs.map((tab) => {
+            const selected = activeTab === tab.id
+            const count = unreadByGroup[tab.id]
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={selected}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  'relative flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-2 text-xs font-medium transition-colors',
+                  selected
+                    ? 'bg-muted/70 text-foreground'
+                    : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground'
+                )}
+              >
+                <span>{tab.label}</span>
+                {count > 0 ? (
+                  <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                    {count}
+                  </span>
+                ) : null}
+              </button>
+            )
+          })}
+        </div>
+
         <div className="max-h-[28rem] overflow-auto">
           {notifications.length === 0 ? (
             <p className="px-4 py-6 text-center text-sm text-muted-foreground">
-              Keine Benachrichtigungen.
+              {COPY.notifications.empty}
+            </p>
+          ) : filtered.length === 0 ? (
+            <p className="px-4 py-6 text-center text-sm text-muted-foreground">
+              {COPY.notifications.emptyTab}
             </p>
           ) : (
-            notifications.map((notification) => (
-              <div
-                key={notification.id}
-                className="flex items-start gap-2 border-b px-4 py-3 last:border-b-0"
-              >
-                <div className="min-w-0 flex-1">
+            filtered.map((notification) => {
+              const unread = !notification.read
+              const chipLabel =
+                notification.group === 'signals'
+                  ? notification.typeLabel
+                  : notification.category &&
+                      notification.category.toLowerCase() !== notification.typeLabel.toLowerCase()
+                    ? notification.category
+                    : notification.typeLabel
+              const summary =
+                notification.text &&
+                notification.text.trim().toLowerCase() !== notification.title.trim().toLowerCase()
+                  ? notification.text
+                  : null
+              const sourceLabel = notification.sourceLabel?.trim() || null
+              const sourceUrl = notification.sourceUrl?.trim() || null
+              return (
+                <div
+                  key={notification.id}
+                  className={cn(
+                    'relative border-b last:border-b-0 transition-colors',
+                    unread
+                      ? 'bg-accent/25 hover:bg-accent/35'
+                      : 'opacity-60 hover:opacity-80 hover:bg-muted/30'
+                  )}
+                >
                   <Link
                     href={notification.href}
                     onClick={() => onOpenNotification(notification.id)}
-                    className={cn(
-                      'inline-block max-w-full truncate rounded-sm text-sm font-medium text-foreground underline-offset-2 transition-colors',
-                      'hover:text-primary hover:underline',
-                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
-                    )}
-                  >
-                    {notification.title}
-                  </Link>
-                  <p className="text-xs text-muted-foreground">{notification.text}</p>
-                  <p className="mt-1 text-[11px] text-muted-foreground">{notification.time}</p>
-                </div>
-                {!notification.read ? (
-                  <span
-                    className="mt-1.5 size-2 shrink-0 rounded-full bg-sidebar-primary"
-                    title={COPY.notifications.unreadBadgeAria}
-                    aria-label={COPY.notifications.unreadBadgeAria}
+                    className="absolute inset-0 z-0"
+                    aria-label={notification.title}
                   />
-                ) : null}
-              </div>
-            ))
+                  <div className="relative z-10 flex pointer-events-none items-start gap-2.5 px-3 py-2.5">
+                    <NotificationLogo
+                      logoUrl={notification.logoUrl}
+                      companyName={notification.companyName}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span
+                          className={cn(
+                            'inline-flex max-w-full items-center truncate rounded-full px-1.5 py-0.5 text-[10px] font-medium',
+                            typeChipClass(notification.typeKind)
+                          )}
+                        >
+                          {chipLabel}
+                        </span>
+                        {unread ? (
+                          <span
+                            className="size-2 shrink-0 rounded-full bg-primary"
+                            title={COPY.notifications.unreadBadgeAria}
+                            aria-label={COPY.notifications.unreadBadgeAria}
+                          />
+                        ) : null}
+                      </div>
+                      <p
+                        className={cn(
+                          'mt-1 truncate text-sm leading-snug',
+                          unread ? 'font-semibold text-foreground' : 'font-medium text-foreground'
+                        )}
+                      >
+                        {notification.title}
+                      </p>
+                      {summary ? (
+                        <p className="mt-0.5 line-clamp-2 text-xs leading-snug text-muted-foreground">
+                          {summary}
+                        </p>
+                      ) : null}
+                      <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 text-[11px] text-muted-foreground">
+                        <span>{notification.time}</span>
+                        {sourceLabel && sourceUrl ? (
+                          <>
+                            <span aria-hidden>·</span>
+                            <a
+                              href={sourceUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="pointer-events-auto inline-flex max-w-full items-center gap-1 truncate hover:text-foreground hover:underline"
+                            >
+                              <span className="truncate">{sourceLabel}</span>
+                              <AppIcon icon={ExternalLink} size={12} className="shrink-0" />
+                            </a>
+                          </>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })
           )}
         </div>
       </PopoverContent>

@@ -34,7 +34,7 @@ export function isLowValueRssTitle(title: string): boolean {
   }
   if (/\b(bauingenieur|koordinator legal|teamleiter|spezialist|sachbearbeiter)\s*\(m/i.test(t)) return true
 
-  // Sport / Entertainment / Consumer-PR
+  // Sport / Entertainment / Consumer-PR / Live-Streams
   if (
     /\b(emmy|oscars?|grammy|nfl|nba|mlb|mls|bundesliga|champions league|apple arcade|apple tv\+|streaming|filmpremiere|serienstart)\b/i.test(
       t
@@ -43,6 +43,14 @@ export function isLowValueRssTitle(title: string): boolean {
     return true
   }
   if (/\b(madden|fifa|call of duty|fortnite|playstation|xbox)\b/i.test(t)) return true
+  if (
+    /\b(livestream|live stream|liveübertragung|matchday|matchplay|weltmeisterschaft|wm\b|em\b|dazn|sky sport|sportdeutschland)\b/i.test(
+      t
+    )
+  ) {
+    return true
+  }
+  if (/\b(ticketverkauf|fanshop|fantasy\s*liga|tippspiel)\b/i.test(t)) return true
 
   // Katalog / Safety / leere Newsroom-Listings
   if (/\b(sicherheitsdatenblatt|safety data sheet|sds\b|produktkatalog|data sheet)\b/i.test(t)) {

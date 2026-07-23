@@ -16,6 +16,15 @@ import {
   RSS_MAX_AGE_DAYS_DEFAULT,
   RSS_MAX_AGE_DAYS_LEADERSHIP,
 } from '@/lib/market-signals/sales-signal-relevance'
+import {
+  buildIndustryPackRssQueries,
+  isIndustryPackHost,
+  isPeoplePackHost,
+} from '@/lib/market-signals/source-packs'
+import {
+  buildStoredNewsroomRssQueries,
+  isStoredNewsroomHost,
+} from '@/lib/market-signals/discover-company-newsroom'
 
 export type CompanyNewsIngestCompanyRow = {
   id: string
@@ -23,6 +32,8 @@ export type CompanyNewsIngestCompanyRow = {
   name: string
   website_url: string | null
   account_status: string | null
+  industry: string | null
+  newsroom_urls: string[] | null
 }
 
 function hostFromWebsiteUrl(raw: string | null | undefined): string | null {
@@ -82,32 +93,76 @@ export type RunCompanyNewsIngestResult = {
 async function fetchMergedCompanyArticles(
   companyName: string,
   websiteHost: string | null,
+  industry: string | null,
+  newsroomUrls: string[] | null,
   opts: { signal: AbortSignal; maxItems: number }
-): Promise<GoogleNewsRssItem[]> {
+): Promise<Array<GoogleNewsRssItem & { fromPack: boolean; fromNewsroom: boolean }>> {
+  const storedNewsroomQs = buildStoredNewsroomRssQueries(companyName, newsroomUrls)
+  const packQs = buildIndustryPackRssQueries(companyName, industry)
   const primary = buildSalesFocusedCompanyNewsRssQuery(companyName, websiteHost)
-  const newsroomQs = buildNewsroomRssQueries(companyName, websiteHost)
-  const queries = [primary, ...newsroomQs].filter(Boolean)
-  const perQuery = Math.max(4, Math.ceil(opts.maxItems / Math.max(1, queries.length)) + 2)
+  const newsroomQs =
+    storedNewsroomQs.length > 0 ? [] : buildNewsroomRssQueries(companyName, websiteHost)
+  // Gespeicherte Newsrooms zuerst, dann Industry-Pack, dann Fallback.
+  const queries = [...storedNewsroomQs, ...packQs, primary, ...newsroomQs].filter(Boolean)
+  const perQuery = Math.max(3, Math.ceil(opts.maxItems / Math.max(1, Math.min(queries.length, 8))) + 1)
 
   const batches = await Promise.all(
-    queries.map((q) =>
-      fetchGoogleNewsRssItems(q, { signal: opts.signal, maxItems: perQuery }).catch(() => [])
-    )
+    queries.map(async (q, index) => {
+      const items = await fetchGoogleNewsRssItems(q, {
+        signal: opts.signal,
+        maxItems: perQuery,
+      }).catch(() => [] as GoogleNewsRssItem[])
+      const fromNewsroom = index < storedNewsroomQs.length
+      const fromPack =
+        !fromNewsroom &&
+        index < storedNewsroomQs.length + packQs.length
+      return items.map((item) => ({ ...item, fromPack, fromNewsroom }))
+    })
   )
 
-  const byLink = new Map<string, GoogleNewsRssItem>()
+  const byLink = new Map<string, GoogleNewsRssItem & { fromPack: boolean; fromNewsroom: boolean }>()
   for (const item of batches.flat()) {
-    if (item.link) byLink.set(item.link, item)
+    if (!item.link) continue
+    const prev = byLink.get(item.link)
+    if (
+      !prev ||
+      (item.fromNewsroom && !prev.fromNewsroom) ||
+      (item.fromPack && !prev.fromPack && !prev.fromNewsroom)
+    ) {
+      byLink.set(item.link, item)
+    }
   }
-  return Array.from(byLink.values()).slice(0, opts.maxItems)
+
+  return Array.from(byLink.values())
+    .sort((a, b) => {
+      const aScore =
+        (a.fromNewsroom || isStoredNewsroomHost(a.link, newsroomUrls) ? 2 : 0) +
+        (a.fromPack ||
+        isIndustryPackHost(a.link, industry) ||
+        isPeoplePackHost(a.link)
+          ? 1
+          : 0)
+      const bScore =
+        (b.fromNewsroom || isStoredNewsroomHost(b.link, newsroomUrls) ? 2 : 0) +
+        (b.fromPack ||
+        isIndustryPackHost(b.link, industry) ||
+        isPeoplePackHost(b.link)
+          ? 1
+          : 0)
+      if (aScore !== bScore) return bScore - aScore
+      const aMs = a.pubDate?.getTime() ?? 0
+      const bMs = b.pubDate?.getTime() ?? 0
+      return bMs - aMs
+    })
+    .slice(0, opts.maxItems)
 }
 
 /**
  * Lädt Google-News-RSS für Firmen im gewählten Ingest-Mode:
  * - all_accounts: alle Accounts der Organisation
  * - focus_only: nur Favoriten (is_favorite)
- * inkl. Newsroom/Presse-Queries über site:website_host.
- * Leadership-Titel → market_signal_executive_events (Move), nicht nur Company-News.
+ * Priorität: Industrie-Source-Pack (site:Fachmedien), dann Newsroom/Presse,
+ * zuletzt breites Google News. Leadership-Titel → executive_events.
  */
 export async function runCompanyNewsIngest(
   supabase: SupabaseClient,
@@ -148,7 +203,9 @@ export async function runCompanyNewsIngest(
 
   let coQuery = supabase
     .from('companies')
-    .select('id, organization_id, name, website_url, account_status, is_favorite')
+    .select(
+      'id, organization_id, name, website_url, account_status, is_favorite, industry, newsroom_urls'
+    )
     .not('organization_id', 'is', null)
 
   if (options?.organizationId) {
@@ -184,6 +241,10 @@ export async function runCompanyNewsIngest(
       name: String(row.name ?? ''),
       website_url: (row.website_url as string | null) ?? null,
       account_status: (row.account_status as string | null) ?? null,
+      industry: (row as { industry?: string | null }).industry ?? null,
+      newsroom_urls: ((row as { newsroom_urls?: string[] | null }).newsroom_urls ?? null) as
+        | string[]
+        | null,
     })
     if (uniqueList.length >= maxCompanies) break
   }
@@ -195,10 +256,16 @@ export async function runCompanyNewsIngest(
     for (const company of uniqueList) {
       const host = hostFromWebsiteUrl(company.website_url)
       try {
-        const items = await fetchMergedCompanyArticles(company.name, host, {
-          signal: controller.signal,
-          maxItems: Math.min(28, perCompanyMax * 5),
-        })
+        const items = await fetchMergedCompanyArticles(
+          company.name,
+          host,
+          company.industry,
+          company.newsroom_urls,
+          {
+            signal: controller.signal,
+            maxItems: Math.min(28, perCompanyMax * 5),
+          }
+        )
         let insertedForCompany = 0
         for (const item of items) {
           if (insertedForCompany >= perCompanyMax) break
@@ -224,6 +291,19 @@ export async function runCompanyNewsIngest(
             title: body,
             companyName: company.name,
           })
+          const newsroomHit =
+            item.fromNewsroom || isStoredNewsroomHost(item.link, company.newsroom_urls)
+          const packHit =
+            item.fromPack ||
+            isIndustryPackHost(item.link, company.industry) ||
+            isPeoplePackHost(item.link)
+          const ingestSource = newsroomHit
+            ? 'company_newsroom_rss'
+            : packHit
+              ? 'industry_pack_rss'
+              : host && item.link.includes(host)
+                ? 'newsroom_rss'
+                : 'google_news_rss'
 
           // Company-News mit Leadership → Move (auch ohne Champion-Watchlist)
           if (leadership) {
@@ -281,7 +361,7 @@ export async function runCompanyNewsIngest(
             segment,
             source_url: item.link,
             content_hash: hash,
-            ingest_source: host && item.link.includes(host) ? 'newsroom_rss' : 'google_news_rss',
+            ingest_source: ingestSource,
             signal_category: enrichment.signal_category,
             insight_signal_fact: enrichment.insight_signal_fact,
             insight_why_now: enrichment.insight_why_now,

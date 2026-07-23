@@ -3,7 +3,7 @@
 import { CheckIcon } from '@/components/ui/check-icon'
 import { cn } from '@/lib/utils'
 
-/** Eine Zeile wie `DropdownMenuCheckboxItem`: Haken links, Label rechts (für Popover-Filter). */
+/** Smart-Match-Stil: Label links, Haken rechts — beides primary wenn ausgewählt. */
 export function FilterMenuCheckboxOption({
   label,
   selected,
@@ -20,14 +20,13 @@ export function FilterMenuCheckboxOption({
       type="button"
       onClick={onSelect}
       className={cn(
-        'relative flex w-full cursor-default items-center rounded-sm py-1.5 pr-2 pl-8 text-left text-sm outline-none select-none hover:bg-accent hover:text-accent-foreground',
+        'flex w-full cursor-default items-center justify-between rounded-md px-2 py-1.5 text-left text-sm outline-none select-none hover:bg-accent',
+        selected ? 'font-medium text-primary' : 'text-foreground',
         className
       )}
     >
-      <span className="pointer-events-none absolute left-2 flex size-3.5 items-center justify-center">
-        {selected ? <CheckIcon className="size-3.5" /> : null}
-      </span>
-      <span className="min-w-0 truncate">{label}</span>
+      <span className="min-w-0 truncate pr-2">{label}</span>
+      {selected ? <CheckIcon className="size-3.5 shrink-0 text-primary" /> : null}
     </button>
   )
 }

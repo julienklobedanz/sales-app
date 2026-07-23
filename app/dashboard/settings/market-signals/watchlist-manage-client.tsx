@@ -18,6 +18,10 @@ import {
   CompanySegmentSwitch,
   type CompanyWatchSegment,
 } from '@/app/dashboard/settings/market-signals/company-segment-switch'
+import {
+  NewsroomsSidebar,
+  type NewsroomSummary,
+} from '@/app/dashboard/settings/market-signals/newsrooms-card'
 import { CompanyNameSuggestField } from '@/app/dashboard/accounts/components/company-name-suggest-field'
 import type { CompanySearchSuggestion } from '@/app/dashboard/references/new/actions'
 import { Button } from '@/components/ui/button'
@@ -84,9 +88,11 @@ function compareStakeholders(a: WatchedStakeholder, b: WatchedStakeholder): numb
 export function MarketSignalsManageClient({
   companies,
   watchedStakeholders,
+  newsroomSummary,
 }: {
   companies: ManageCompany[]
   watchedStakeholders: WatchedStakeholder[]
+  newsroomSummary: NewsroomSummary
 }) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -387,7 +393,9 @@ export function MarketSignalsManageClient({
           </Tooltip>
         </div>
 
-        <TabsContent value="companies" className="mt-0 space-y-4">
+        <TabsContent value="companies" className="mt-0">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-start">
+            <div className="min-w-0 flex-1 space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
             <div className="relative w-full md:w-[calc((100%-2rem)/3)]">
               <AppIcon
@@ -554,6 +562,12 @@ export function MarketSignalsManageClient({
               />
             </DialogContent>
           </Dialog>
+            </div>
+
+            <div className="w-full shrink-0 xl:w-72 2xl:w-80">
+              <NewsroomsSidebar summary={newsroomSummary} />
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="executives" className="mt-0 space-y-6">

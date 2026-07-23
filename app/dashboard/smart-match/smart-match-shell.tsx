@@ -18,6 +18,7 @@ import { Loader } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
 import { COPY } from '@/lib/copy'
+import { CheckIcon } from '@/components/ui/check-icon'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import {
   Tooltip,
@@ -321,7 +322,9 @@ function MultiSelect<T extends string | number>({
             }
           >
             <span className={cn('pr-2', truncateLabels && 'truncate')}>{o.label}</span>
-            {selected ? <span className="shrink-0">✓</span> : null}
+            {selected ? (
+              <CheckIcon className="size-3.5 shrink-0 text-primary" />
+            ) : null}
           </button>
         )
       })}

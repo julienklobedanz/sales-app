@@ -38,9 +38,13 @@ import { AppIcon } from '@/lib/icons'
 import { sanitizeCompellingEventForDisplay } from '@/lib/market-signals/compelling-event'
 import {
   formatSignalSourceLabel,
-  isLeadershipMoveTitle,
   parseLeadershipMoveFromTitle,
 } from '@/lib/market-signals/leadership-move'
+import {
+  resolveExecSignalBadge,
+  resolveNewsSignalBadge,
+  type MarketSignalBadge,
+} from '@/lib/market-signals/signal-badge'
 import { formatRoleChangeFact } from '@/lib/market-signals/signal-intelligence'
 import {
   buildSignalMatchQuery,
@@ -63,7 +67,7 @@ type FeedItem = {
   companyName: string
   companyLogoUrl: string | null
   at: string
-  badge: 'Move' | 'Executive' | 'Company'
+  badge: MarketSignalBadge
   headline: string
   compellingEvent: string | null
   sourceLabel: string
@@ -119,24 +123,6 @@ function resolveSourceUrl(url: string | null | undefined, fallbackQuery: string)
 }
 
 /** Move bei Rollenwechsel; Leadership-Titel auch ohne gespeicherte Titles → Move. */
-function resolveExecBadge(row: ExecutiveTrackingRow): 'Move' | 'Executive' | 'Company' {
-  const before = row.personTitleBefore?.trim()
-  const after = row.personTitleAfter?.trim()
-  if (before || after) return 'Move'
-  if (row.eventKind === 'role_change' && row.personName?.trim()) return 'Move'
-  if (
-    isLeadershipMoveTitle(row.changeSummary) ||
-    isLeadershipMoveTitle(row.insightSignalFact ?? '')
-  ) {
-    return 'Move'
-  }
-  if (row.eventKind === 'news_mention') {
-    if (row.signalCategory === 'people') return 'Executive'
-    return 'Company'
-  }
-  return 'Executive'
-}
-
 function execHeadline(row: ExecutiveTrackingRow) {
   const insight = row.insightSignalFact?.trim()
   if (insight) return insight
@@ -158,7 +144,7 @@ function newsHeadline(row: AccountNewsRow) {
   return `${compact.slice(0, 137)}…`
 }
 
-function badgeClass(badge: FeedItem['badge']) {
+function badgeClass(badge: MarketSignalBadge) {
   if (badge === 'Move') return 'bg-blue-600/10 text-blue-700 dark:text-blue-300 border-0'
   if (badge === 'Executive') return 'bg-violet-600/10 text-violet-700 dark:text-violet-300 border-0'
   return 'bg-muted text-foreground border-0'
@@ -237,7 +223,7 @@ export function MarketSignalsFeed({
   const items = useMemo(() => {
     const execItems: FeedItem[] = executives.map((row) => {
       const isChampion = championSet.has(normalizeText(row.personName))
-      const badge = resolveExecBadge(row)
+      const badge = resolveExecSignalBadge(row)
       const move = badge === 'Move'
       const dealMeta = dealMetaByCompany.get(row.companyId)
       const dealCount = dealMeta?.count ?? 0
@@ -283,7 +269,7 @@ export function MarketSignalsFeed({
       const dealCount = dealMeta?.count ?? 0
       const unread = !readKeys.has(`market_news:${row.id}`)
       const moveParse = parseLeadershipMoveFromTitle(row.body, row.companyName)
-      const badge: FeedItem['badge'] = moveParse.isLeadershipMove ? 'Move' : 'Company'
+      const badge: MarketSignalBadge = resolveNewsSignalBadge(row.body, row.companyName)
       const personName = moveParse.personName
       const isChampion = personName ? championSet.has(normalizeText(personName)) : false
       let relevanceScore = 0
