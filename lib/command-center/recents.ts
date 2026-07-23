@@ -5,6 +5,8 @@ export type CommandRecentItem = {
   id: string
   title: string
   accountName?: string | null
+  /** Account-Logo (optional; ältere Recents ohne Feld werden beim Öffnen hydriert). */
+  logoUrl?: string | null
   at: number
 }
 

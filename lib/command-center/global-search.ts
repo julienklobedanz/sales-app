@@ -16,6 +16,7 @@ import { parseProfileRoles } from '@/lib/roles/profile-roles'
 
 export type CommandSearchResult =
   | { kind: 'account'; id: string; title: string; logoUrl: string | null }
+  | { kind: 'partner'; id: string; title: string; logoUrl: string | null }
   | {
       kind: 'rfp'
       id: string
@@ -83,6 +84,7 @@ export type CommandSearchResult =
 
 export type CommandSearchGroups = {
   accounts: CommandSearchResult[]
+  partners: CommandSearchResult[]
   rfps: CommandSearchResult[]
   ndas: CommandSearchResult[]
   references: CommandSearchResult[]
@@ -94,6 +96,7 @@ export type CommandSearchGroups = {
 export const COMMAND_SEARCH_GROUP_ORDER: (keyof CommandSearchGroups)[] = [
   'references',
   'accounts',
+  'partners',
   'rfps',
   'ndas',
   'marketSignals',
@@ -103,6 +106,7 @@ export const COMMAND_SEARCH_GROUP_ORDER: (keyof CommandSearchGroups)[] = [
 
 export const COMMAND_SEARCH_GROUP_LABELS: Record<keyof CommandSearchGroups, string> = {
   accounts: 'Accounts',
+  partners: 'Partner',
   rfps: 'Offene RFPs & Ausschreibungen',
   ndas: 'NDA & Vertragsdokumente',
   references: 'Referenzen (Case Studies)',
@@ -184,6 +188,7 @@ export function hrefForGlobalSearchResult(result: {
 export function emptyCommandSearchGroups(): CommandSearchGroups {
   return {
     accounts: [],
+    partners: [],
     rfps: [],
     ndas: [],
     references: [],
@@ -197,15 +202,15 @@ export function hasAnyCommandSearchHit(groups: CommandSearchGroups): boolean {
   return COMMAND_SEARCH_GROUP_ORDER.some((key) => groups[key].length > 0)
 }
 
-/** Accounts-Gruppe: nur echte Accounts, keine Doppelten (gleiche ID oder gleicher Name). */
-export function dedupeAccountSearchResults(
-  items: Extract<CommandSearchResult, { kind: 'account' }>[]
-): Extract<CommandSearchResult, { kind: 'account' }>[] {
-  const byId = new Map<string, Extract<CommandSearchResult, { kind: 'account' }>>()
+/** Accounts/Partner-Gruppe: keine Doppelten (gleiche ID oder gleicher Name). */
+export function dedupeCompanySearchResults<
+  T extends { id: string; title: string },
+>(items: T[]): T[] {
+  const byId = new Map<string, T>()
   for (const item of items) {
     if (!byId.has(item.id)) byId.set(item.id, item)
   }
-  const byName = new Map<string, Extract<CommandSearchResult, { kind: 'account' }>>()
+  const byName = new Map<string, T>()
   for (const item of byId.values()) {
     const key = item.title.trim().toLowerCase()
     if (!key) {
@@ -215,6 +220,13 @@ export function dedupeAccountSearchResults(
     if (!byName.has(key)) byName.set(key, item)
   }
   return [...byName.values()]
+}
+
+/** @deprecated Prefer dedupeCompanySearchResults */
+export function dedupeAccountSearchResults(
+  items: Extract<CommandSearchResult, { kind: 'account' }>[]
+): Extract<CommandSearchResult, { kind: 'account' }>[] {
+  return dedupeCompanySearchResults(items)
 }
 
 export type SearchCommandCenterOptions = {
@@ -302,17 +314,22 @@ export async function searchCommandCenter(
   const groups = emptyCommandSearchGroups()
 
   const accountCandidates: Extract<CommandSearchResult, { kind: 'account' }>[] = []
+  const partnerCandidates: Extract<CommandSearchResult, { kind: 'partner' }>[] = []
   for (const row of accountsRes.data ?? []) {
-    const kind = String((row as { entity_kind?: string }).entity_kind ?? 'account')
-    if (kind !== 'account') continue
-    accountCandidates.push({
-      kind: 'account',
+    const entityKind = String((row as { entity_kind?: string }).entity_kind ?? 'account')
+    const base = {
       id: String(row.id),
       title: String(row.name ?? ''),
       logoUrl: (row.logo_url as string | null) ?? null,
-    })
+    }
+    if (entityKind === 'partner') {
+      partnerCandidates.push({ kind: 'partner', ...base })
+    } else {
+      accountCandidates.push({ kind: 'account', ...base })
+    }
   }
-  groups.accounts.push(...dedupeAccountSearchResults(accountCandidates))
+  groups.accounts.push(...dedupeCompanySearchResults(accountCandidates))
+  groups.partners.push(...dedupeCompanySearchResults(partnerCandidates))
 
   for (const row of deskRes.data ?? []) {
     const title = String(row.project_name ?? 'Projekt')
@@ -438,15 +455,15 @@ async function fetchAccountSearchRows(supabase: SupabaseClient, likePat: string)
   const withKind = await supabase
     .from('companies')
     .select('id,name,logo_url,entity_kind')
-    .eq('entity_kind', 'account')
+    .in('entity_kind', ['account', 'partner'])
     .ilike('name', likePat)
-    .limit(8)
+    .limit(10)
 
   if (!withKind.error || !(withKind.error.message ?? '').includes('entity_kind')) {
     return withKind
   }
 
-  return supabase.from('companies').select('id,name,logo_url').ilike('name', likePat).limit(8)
+  return supabase.from('companies').select('id,name,logo_url').ilike('name', likePat).limit(10)
 }
 
 type NdaSearchRow = {
@@ -545,6 +562,10 @@ export async function searchGlobalEntities(
   for (const a of groups.accounts) {
     if (a.kind !== 'account') continue
     flat.push({ kind: 'account', id: a.id, title: a.title })
+  }
+  for (const p of groups.partners) {
+    if (p.kind !== 'partner') continue
+    flat.push({ kind: 'account', id: p.id, title: p.title })
   }
   for (const d of dealsRes.data ?? []) {
     flat.push({ kind: 'deal', id: String(d.id), title: String(d.title) })

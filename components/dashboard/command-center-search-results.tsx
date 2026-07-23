@@ -36,11 +36,49 @@ type Props = {
   loading: boolean
   groups: CommandSearchGroups
   onSelect: (item: CommandSearchResult) => void
+  /** Ohne eigenen Command/CommandList-Wrapper (z. B. in der Sidebar-Command-Palette). */
+  embedded?: boolean
 }
 
-export function CommandCenterSearchResults({ query, loading, groups, onSelect }: Props) {
+export function CommandCenterSearchResults({
+  query,
+  loading,
+  groups,
+  onSelect,
+  embedded = false,
+}: Props) {
   const trimmed = query.trim()
   const showEmpty = !loading && trimmed.length > 0 && !hasAnyCommandSearchHit(groups)
+
+  const groupBlocks = !loading
+    ? COMMAND_SEARCH_GROUP_ORDER.map((key) => {
+        const items = groups[key]
+        if (!items.length) return null
+        return (
+          <CommandGroup
+            key={key}
+            heading={COMMAND_SEARCH_GROUP_LABELS[key]}
+            className="overflow-hidden p-0 [&_[cmdk-group-heading]]:hidden"
+          >
+            <p className={GROUP_HEADING_CLASS}>{COMMAND_SEARCH_GROUP_LABELS[key]}</p>
+            {items.map((item) => (
+              <CommandItem
+                key={`${item.kind}:${item.id}`}
+                value={`${item.kind}-${item.id}`}
+                onSelect={() => onSelect(item)}
+                className={ITEM_CLASS}
+              >
+                <SearchResultRow item={item} />
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )
+      })
+    : null
+
+  if (embedded) {
+    return <>{groupBlocks}</>
+  }
 
   return (
     <Command shouldFilter={false} className="rounded-none bg-transparent">
@@ -58,31 +96,7 @@ export function CommandCenterSearchResults({ query, loading, groups, onSelect }:
           </CommandEmpty>
         ) : null}
 
-        {!loading
-          ? COMMAND_SEARCH_GROUP_ORDER.map((key) => {
-              const items = groups[key]
-              if (!items.length) return null
-              return (
-                <CommandGroup
-                  key={key}
-                  heading={COMMAND_SEARCH_GROUP_LABELS[key]}
-                  className="overflow-hidden p-0 [&_[cmdk-group-heading]]:hidden"
-                >
-                  <p className={GROUP_HEADING_CLASS}>{COMMAND_SEARCH_GROUP_LABELS[key]}</p>
-                  {items.map((item) => (
-                    <CommandItem
-                      key={`${item.kind}:${item.id}`}
-                      value={`${item.kind}-${item.id}`}
-                      onSelect={() => onSelect(item)}
-                      className={ITEM_CLASS}
-                    >
-                      <SearchResultRow item={item} />
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              )
-            })
-          : null}
+        {groupBlocks}
       </CommandList>
     </Command>
   )
@@ -91,6 +105,7 @@ export function CommandCenterSearchResults({ query, loading, groups, onSelect }:
 export function SearchResultRow({ item }: { item: CommandSearchResult }) {
   switch (item.kind) {
     case 'account':
+    case 'partner':
       return (
         <>
           <span className="flex min-w-0 items-center gap-3">

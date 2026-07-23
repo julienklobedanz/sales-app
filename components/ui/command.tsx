@@ -7,12 +7,14 @@ import { Search01Icon } from "@hugeicons/core-free-icons"
 import { cn } from "@/lib/utils"
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
 import { AppIcon } from "@/lib/icons"
+import { Cancel01Icon } from "@hugeicons/core-free-icons"
 
 function Command({
   className,
@@ -58,16 +60,25 @@ function CommandDialog({
       </DialogHeader>
       <DialogContent
         className={cn("overflow-hidden p-0", className)}
-        showCloseButton={showCloseButton}
+        showCloseButton={false}
         overlayClassName={overlayClassName}
       >
         <Command
           className={cn(
-            "[&_[cmdk-group-heading]]:text-muted-foreground **:data-[slot=command-input-wrapper]:h-12 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group]]:px-2 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5",
+            "relative [&_[cmdk-group-heading]]:text-muted-foreground **:data-[slot=command-input-wrapper]:h-12 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group]]:px-2 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5",
             commandClassName
           )}
           {...commandProps}
         >
+          {showCloseButton ? (
+            <DialogClose
+              data-slot="dialog-close"
+              className="ring-offset-background focus:ring-ring absolute top-4 right-4 z-10 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none"
+            >
+              <AppIcon icon={Cancel01Icon} size={16} />
+              <span className="sr-only">Close</span>
+            </DialogClose>
+          ) : null}
           {children}
         </Command>
       </DialogContent>

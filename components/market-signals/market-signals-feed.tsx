@@ -545,7 +545,7 @@ export function MarketSignalsFeed({
                     </div>
                     {unread ? (
                       <span
-                        className="mt-1 size-2 shrink-0 rounded-full bg-blue-500"
+                        className="mt-1 size-2 shrink-0 rounded-full bg-primary"
                         title={COPY.marketSignals.newBadge}
                         aria-label={COPY.marketSignals.newBadge}
                       />

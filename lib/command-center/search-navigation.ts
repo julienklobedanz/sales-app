@@ -1,10 +1,13 @@
 import { ROUTES } from '@/lib/routes'
+import { accountsDetailHref } from '@/lib/accounts/accounts-list-view'
 import type { CommandSearchResult } from '@/lib/command-center/global-search'
 
 export function hrefForCommandSearchResult(result: CommandSearchResult): string {
   switch (result.kind) {
     case 'account':
-      return ROUTES.accountsDetail(result.id)
+      return accountsDetailHref(result.id, 'account')
+    case 'partner':
+      return accountsDetailHref(result.id, 'partner')
     case 'rfp':
       return ROUTES.dealDeskProject(result.id)
     case 'nda':

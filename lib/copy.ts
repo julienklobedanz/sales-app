@@ -564,7 +564,7 @@ export const COPY = {
     quickActions: 'Schnellaktionen',
     recents: 'Zuletzt besucht',
     noRecentsYet: 'Noch keine Einträge',
-    actionStartMatch: 'Suche starten',
+    actionStartMatch: 'Smart Match',
     actionNewDeal: 'Neuen Deal erstellen',
     actionNewReference: 'Neue Referenz erstellen',
     actionNewAccount: 'Account erstellen',

@@ -159,6 +159,7 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
   }, [model.lastUpdatedAt, watchlistExecutives.length, watchlistNews.length])
 
   function handleRefresh() {
+    if (isRefreshing || !hasWatchlist) return
     toast.message(COPY.marketSignals.feedsRefreshPending)
     startRefresh(async () => {
       const result = await triggerMarketSignalsIngestForMyOrg({
@@ -191,17 +192,30 @@ export function MarketSignalsClient({ model }: { model: MarketSignalsPageModel }
           <Button
             type="button"
             variant="outline"
-            size="sm"
+            size="icon"
+            className="size-9 cursor-default"
             onClick={handleRefresh}
-            disabled={isRefreshing || !hasWatchlist}
+            disabled={!hasWatchlist}
+            aria-busy={isRefreshing}
+            aria-label={isRefreshing ? 'Feeds werden abgerufen' : 'Feeds abrufen'}
+            title={isRefreshing ? 'Feeds werden abgerufen' : 'Feeds abrufen'}
           >
-            <RefreshCw className={`mr-2 size-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            {isRefreshing ? 'Wird abgerufen …' : 'Feeds abrufen'}
+            <RefreshCw className={`size-4 ${isRefreshing ? 'animate-spin' : ''}`} />
           </Button>
-          <Button type="button" variant="outline" size="sm" asChild>
-            <Link href={ROUTES.marketSignalsManage}>
-              <Settings className="mr-2 size-4" />
-              {COPY.marketSignals.manage}
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="size-9 cursor-default"
+            asChild
+          >
+            <Link
+              href={ROUTES.marketSignalsManage}
+              className="cursor-default"
+              aria-label={COPY.marketSignals.manage}
+              title={COPY.marketSignals.manage}
+            >
+              <Settings className="size-4" />
             </Link>
           </Button>
         </div>

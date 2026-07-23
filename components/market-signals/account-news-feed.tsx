@@ -241,7 +241,7 @@ export function AccountNewsFeed({
                   </Button>
                   <div className="relative">
                     {!readKeys.has(`market_news:${row.id}`) ? (
-                      <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-blue-500" />
+                        <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-primary" />
                     ) : null}
                     <Button
                       type="button"
