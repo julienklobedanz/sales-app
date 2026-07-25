@@ -12,6 +12,7 @@ import { DealRfpEligibilitySection } from './deal-rfp-eligibility-section'
 import { DealRfpMetricsRow } from './deal-rfp-metrics-row'
 import { DealRfpRecommendationBanner } from './deal-rfp-recommendation-banner'
 import { DealRfpRisksSection } from './deal-rfp-risks-section'
+import { DealRfpStammdatenSection } from './deal-rfp-stammdaten-section'
 import type { DealDocumentRow } from '../document-actions'
 import { DealRfpAnalyzeButton } from './deal-rfp-analyze-button'
 
@@ -75,6 +76,7 @@ export async function DealRfpCockpitBlock({
         />
         <DealRfpMetricsRow data={data} />
       </div>
+      <DealRfpStammdatenSection data={data} />
       <DealRfpEligibilitySection data={data} />
       <DealRfpRisksSection data={data} />
       <DealRfpDraftsSection data={data} deal={deal} />

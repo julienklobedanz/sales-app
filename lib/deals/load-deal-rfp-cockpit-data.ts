@@ -23,6 +23,10 @@ import {
   isRfpMetricsStale,
   resolveBidRecommendation,
 } from './rfp-cockpit-metrics'
+import {
+  buildRfpStammdatenRows,
+  type RfpStammdatenRow,
+} from './build-rfp-stammdaten-rows'
 
 export type DealRfpCockpitData = {
   projectId: string
@@ -42,6 +46,7 @@ export type DealRfpCockpitData = {
   capabilityProfileEmpty: boolean
   risks: DealRfpRisksData | null
   draftRows: DealDeskDraftRow[]
+  stammdatenRows: RfpStammdatenRow[]
   recommendation: ReturnType<typeof resolveBidRecommendation>
 }
 
@@ -150,6 +155,7 @@ export async function loadDealRfpCockpitData(
     capabilityProfileEmpty,
     risks,
     draftRows: Array.isArray(snap.draftRows) ? snap.draftRows : [],
+    stammdatenRows: buildRfpStammdatenRows(snap),
     recommendation: resolveBidRecommendation({
       winProbability,
       hasAnalysis,
