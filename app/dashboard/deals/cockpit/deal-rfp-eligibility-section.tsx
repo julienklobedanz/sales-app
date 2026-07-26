@@ -46,7 +46,7 @@ export function DealRfpEligibilitySection({ data }: { data: DealRfpCockpitData }
 
   if (!assessment || assessment.criteria.length === 0) {
     return (
-      <Card id="eligCard" className="shadow-sm">
+      <Card id="eligCard" className="scroll-mt-24 shadow-sm">
         <CardHeader>
           <CardTitle className="text-base">{COPY.deals.cockpit.eligibilityTitle}</CardTitle>
           <CardDescription>{COPY.deals.cockpit.eligibilityEmpty}</CardDescription>
@@ -59,7 +59,7 @@ export function DealRfpEligibilitySection({ data }: { data: DealRfpCockpitData }
   const label = eligibilityVerdictLabel(assessment.verdict)
 
   return (
-    <Card id="eligCard" className="shadow-sm">
+    <Card id="eligCard" className="scroll-mt-24 shadow-sm">
       <CardHeader>
         <CardTitle className="text-base">{COPY.deals.cockpit.eligibilityTitle}</CardTitle>
       </CardHeader>

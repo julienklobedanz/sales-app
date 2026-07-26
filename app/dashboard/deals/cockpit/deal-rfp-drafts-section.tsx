@@ -1,21 +1,52 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { ArrowRight01Icon, PencilEdit01Icon } from '@hugeicons/core-free-icons'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Textarea } from '@/components/ui/textarea'
 import { KiEntwurfSheet } from '@/app/dashboard/deals/components/ki-entwurf-sheet'
 import type { DealWithReferences } from '@/app/dashboard/deals/types'
+import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
 import type { DealRfpCockpitData } from '@/lib/deals/load-deal-rfp-cockpit-data'
 import type { DealDeskDraftRow } from '@/lib/deal-desk/mock-analysis'
 import { buildDealContextForKiEntwurf } from '@/lib/deals/build-deal-context-for-ki-entwurf'
+import { cn } from '@/lib/utils'
 
-type ActiveDraft = {
+import { updateDealRfpDraftAnswer } from './deal-rfp-draft-actions'
+
+export function draftRowStatus(row: DealDeskDraftRow): 'ready' | 'draft' | 'gap' {
+  if (!row.reference) return 'gap'
+  if (row.answer?.trim()) return 'ready'
+  return 'draft'
+}
+
+export function draftStatusLabel(status: 'ready' | 'draft' | 'gap'): string {
+  if (status === 'ready') return COPY.deals.cockpit.draftsStatusReady
+  if (status === 'draft') return COPY.deals.cockpit.draftsStatusDraft
+  return COPY.deals.cockpit.draftsStatusGap
+}
+
+type ActiveKi = {
   row: DealDeskDraftRow
   referenceId: string
   referenceTitle: string
   matchScore: number
+}
+
+function referenceHoverLabel(row: DealDeskDraftRow): string | null {
+  if (!row.reference) return null
+  return row.reference.companyName
+    ? `${row.reference.title} · ${row.reference.companyName}`
+    : row.reference.title
+}
+
+function statusDotTitle(row: DealDeskDraftRow, status: 'ready' | 'draft' | 'gap'): string | undefined {
+  if (status === 'gap') return COPY.deals.cockpit.draftsNoReference
+  return referenceHoverLabel(row) ?? undefined
 }
 
 export function DealRfpDraftsSection({
@@ -26,30 +57,84 @@ export function DealRfpDraftsSection({
   deal: DealWithReferences
 }) {
   const showSection = data.hasAnalysis && !data.isStale
-  const drafts = data.draftRows
+  const [rows, setRows] = useState(data.draftRows)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [draftText, setDraftText] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [kiOpen, setKiOpen] = useState(false)
+  const [activeKi, setActiveKi] = useState<ActiveKi | null>(null)
 
-  const [sheetOpen, setSheetOpen] = useState(false)
-  const [activeDraft, setActiveDraft] = useState<ActiveDraft | null>(null)
+  useEffect(() => {
+    setRows(data.draftRows)
+  }, [data.draftRows])
 
   if (!showSection) return null
 
   const dealContext = buildDealContextForKiEntwurf(deal)
+  const covered = rows.filter((d) => Boolean(d.reference)).length
+  const gaps = rows.length - covered
+
+  function toggleExpand(id: string) {
+    setExpandedId((prev) => {
+      const next = prev === id ? null : id
+      if (next !== editingId) {
+        setEditingId(null)
+        setDraftText('')
+      }
+      return next
+    })
+  }
+
+  function startEdit(row: DealDeskDraftRow) {
+    setExpandedId(row.id)
+    setEditingId(row.id)
+    setDraftText(row.answer ?? '')
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setDraftText('')
+  }
+
+  async function saveEdit(row: DealDeskDraftRow) {
+    setSaving(true)
+    try {
+      const res = await updateDealRfpDraftAnswer({
+        dealId: deal.id,
+        draftId: row.id,
+        answer: draftText,
+      })
+      if (!res.success) {
+        toast.error(res.error ?? COPY.deals.cockpit.draftsSaveFailed)
+        return
+      }
+      const nextAnswer = draftText.trim() || null
+      setRows((prev) =>
+        prev.map((r) => (r.id === row.id ? { ...r, answer: nextAnswer } : r))
+      )
+      setEditingId(null)
+      toast.success(COPY.deals.cockpit.draftsSaveSuccess)
+    } finally {
+      setSaving(false)
+    }
+  }
 
   function openKiEntwurf(row: DealDeskDraftRow) {
     const ref = row.reference
     if (!ref?.id) return
-    setActiveDraft({
+    setActiveKi({
       row,
       referenceId: ref.id,
       referenceTitle: ref.title,
       matchScore: ref.matchPercent,
     })
-    setSheetOpen(true)
+    setKiOpen(true)
   }
 
-  if (drafts.length === 0) {
+  if (rows.length === 0) {
     return (
-      <Card id="drafts" className="shadow-sm">
+      <Card id="drafts" className="scroll-mt-24 shadow-sm">
         <CardHeader>
           <CardTitle className="text-base">{COPY.deals.cockpit.draftsTitle}</CardTitle>
           <CardDescription>{COPY.deals.cockpit.draftsEmpty}</CardDescription>
@@ -58,55 +143,175 @@ export function DealRfpDraftsSection({
     )
   }
 
+  const coveredLabel = COPY.deals.cockpit.draftsCoveredCount
+    .replace('{covered}', String(covered))
+    .replace('{total}', String(rows.length))
+  const gapsLabel =
+    gaps > 0 ? COPY.deals.cockpit.draftsGapsCount.replace('{count}', String(gaps)) : null
+
   return (
     <>
-      <Card id="drafts" className="shadow-sm">
-        <CardHeader>
+      <Card id="drafts" className="scroll-mt-24 shadow-sm">
+        <CardHeader className="pb-3">
           <CardTitle className="text-base">{COPY.deals.cockpit.draftsTitle}</CardTitle>
-          <CardDescription>{COPY.deals.cockpit.draftsSubtitle}</CardDescription>
+          <CardDescription>
+            {coveredLabel}
+            {gapsLabel ? ` · ${gapsLabel}` : ''}
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
-          {drafts.map((row) => (
-            <div
-              key={row.id}
-              className="rounded-lg border border-border/60 bg-muted/10 px-4 py-3"
-            >
-              <p className="text-sm font-semibold">{row.requirement}</p>
-              {row.answer ? (
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
-                  {row.answer}
-                </p>
-              ) : null}
-              {row.reference ? (
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-100">
-                    ✓ {row.reference.title} ({row.reference.matchPercent}%)
-                  </span>
-                  {row.reference.id ? (
-                    <Button type="button" size="sm" variant="outline" onClick={() => openKiEntwurf(row)}>
-                      {COPY.deals.cockpit.draftsGenerateCta}
-                    </Button>
+        <CardContent className="p-0">
+          <ul className="divide-y divide-border/60">
+            {rows.map((row) => {
+              const status = draftRowStatus(row)
+              const expanded = expandedId === row.id
+              const editing = editingId === row.id
+              const dotTitle = statusDotTitle(row, status)
+              const refLabel = referenceHoverLabel(row)
+
+              return (
+                <li key={row.id} className={cn(expanded && 'bg-muted/20')}>
+                  <button
+                    type="button"
+                    onClick={() => toggleExpand(row.id)}
+                    aria-expanded={expanded}
+                    aria-label={COPY.deals.cockpit.draftsOpenDetail}
+                    className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40"
+                  >
+                    <span
+                      className={cn(
+                        'size-2.5 shrink-0 rounded-full',
+                        status === 'ready' && 'bg-emerald-500',
+                        status === 'draft' && 'bg-amber-500',
+                        status === 'gap' && 'bg-red-500'
+                      )}
+                      title={dotTitle}
+                      aria-label={dotTitle}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="min-w-0 flex-1 truncate text-sm font-medium">
+                          {row.requirement}
+                        </p>
+                        {status === 'ready' || status === 'gap' ? (
+                          <span className="shrink-0 rounded-full border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                            {draftStatusLabel(status)}
+                          </span>
+                        ) : (
+                          <span className="shrink-0 text-[11px] font-medium text-muted-foreground">
+                            {draftStatusLabel(status)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <AppIcon
+                      icon={ArrowRight01Icon}
+                      size={16}
+                      className={cn(
+                        'shrink-0 text-muted-foreground transition-transform',
+                        expanded && 'rotate-90'
+                      )}
+                    />
+                  </button>
+
+                  {expanded ? (
+                    <div className="space-y-3 border-t border-border/50 px-4 pb-4 pt-3 pl-9">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          {COPY.deals.cockpit.draftsAnswerLabel}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {!editing ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 px-2"
+                              onClick={() => startEdit(row)}
+                              aria-label={COPY.deals.cockpit.draftsEditAria}
+                            >
+                              <AppIcon icon={PencilEdit01Icon} size={14} />
+                            </Button>
+                          ) : null}
+                          {row.reference?.id ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="h-8"
+                              onClick={() => openKiEntwurf(row)}
+                            >
+                              {COPY.deals.cockpit.draftsGenerateCta}
+                            </Button>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      {editing ? (
+                        <div className="space-y-2">
+                          <Textarea
+                            value={draftText}
+                            onChange={(e) => setDraftText(e.target.value)}
+                            rows={5}
+                            className="min-h-[120px] text-sm"
+                          />
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              disabled={saving}
+                              onClick={() => void saveEdit(row)}
+                            >
+                              {COPY.deals.cockpit.draftsSave}
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={saving}
+                              onClick={cancelEdit}
+                            >
+                              {COPY.deals.cockpit.draftsCancelEdit}
+                            </Button>
+                          </div>
+                        </div>
+                      ) : row.answer?.trim() ? (
+                        <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+                          {row.answer}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          {COPY.deals.cockpit.draftsAnswerEmpty}
+                        </p>
+                      )}
+
+                      {refLabel ? (
+                        <p className="text-xs text-muted-foreground">
+                          {refLabel}
+                          {row.reference ? ` · ${row.reference.matchPercent}%` : ''}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          {COPY.deals.cockpit.draftsNoReference}
+                        </p>
+                      )}
+                    </div>
                   ) : null}
-                </div>
-              ) : (
-                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-100">
-                  <span>{COPY.deals.cockpit.draftsNoReference}</span>
-                </div>
-              )}
-            </div>
-          ))}
+                </li>
+              )
+            })}
+          </ul>
         </CardContent>
       </Card>
 
-      {activeDraft ? (
+      {activeKi ? (
         <KiEntwurfSheet
-          open={sheetOpen}
-          onOpenChange={setSheetOpen}
-          referenceId={activeDraft.referenceId}
-          referenceTitle={activeDraft.referenceTitle}
-          matchScore={activeDraft.matchScore}
+          open={kiOpen}
+          onOpenChange={setKiOpen}
+          referenceId={activeKi.referenceId}
+          referenceTitle={activeKi.referenceTitle}
+          matchScore={activeKi.matchScore}
           dealId={deal.id}
-          dealContext={`${dealContext}\n\nRFP-Anforderung:\n${activeDraft.row.requirement}`}
+          dealContext={`${dealContext}\n\nRFP-Anforderung:\n${activeKi.row.requirement}`}
         />
       ) : null}
     </>

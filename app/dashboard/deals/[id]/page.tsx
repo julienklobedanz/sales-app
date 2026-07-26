@@ -12,13 +12,6 @@ import { DealCockpitClient } from '../cockpit/deal-cockpit-client'
 import { DealRfpCockpitBlock } from '../cockpit/deal-rfp-cockpit-block'
 import { DealRfpCockpitSkeleton } from '../cockpit/deal-rfp-cockpit-skeleton'
 import { DealCockpitBriefingTrigger } from '../cockpit/deal-cockpit-briefing-trigger'
-import type { DealActivityItem } from '../cockpit/deal-activity-card'
-import {
-  DEAL_ACTIVITY_VISIBLE_EVENT_TYPES,
-  mapEvidenceEventsToDealActivities,
-  sortDealActivitiesNewestFirst,
-  type DealActivityEvidenceRow,
-} from '@/lib/deals/deal-activity-events'
 import { getHubSpotPortalIdForOrganization } from '@/lib/crm/connections'
 import { listDealDeadlines } from '@/lib/deals/deadlines'
 import { canManageDealDocuments } from '@/lib/deals/can-manage-deal-documents'
@@ -99,28 +92,9 @@ async function DealDetailPageContent({
     .eq('organization_id', orgId)
     .order('full_name')
 
-  const { data: events } = await supabase
-    .from('evidence_events')
-    .select('id, event_type, payload, created_at')
-    .eq('deal_id', id)
-    .in('event_type', [...DEAL_ACTIVITY_VISIBLE_EVENT_TYPES])
-    .order('created_at', { ascending: false })
-    .limit(25)
-
-  const activities: DealActivityItem[] = sortDealActivitiesNewestFirst([
-    {
-      id: 'deal-created',
-      at: new Date(deal.created_at),
-      title: 'Deal erstellt',
-      detail: 'Der Deal wurde angelegt.',
-    },
-    ...mapEvidenceEventsToDealActivities((events ?? []) as DealActivityEvidenceRow[]),
-  ])
-
   return (
     <DealCockpitClient
       deal={deal}
-      activities={activities}
       deadlines={deadlines}
       documents={documents}
       canManageDocuments={canManageDocuments}

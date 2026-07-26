@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { DealStatusBadge } from '@/components/deal-status-badge'
 import { ROUTES } from '@/lib/routes'
 import { DASHBOARD_PAGE_TITLE_CLASS } from '@/lib/dashboard-ui'
-import { COPY } from '@/lib/copy'
+import { formatDealVolume } from '@/lib/format'
 
 import type { DealWithReferences } from '../types'
 import { DealCockpitActions } from './deal-cockpit-actions'
@@ -28,6 +28,11 @@ export function DealCockpitHeader({
   canManageDocuments: boolean
 }) {
   const owner = deal.sales_manager_name ?? deal.account_manager_name ?? null
+  const volumeLabel =
+    deal.volume && String(deal.volume).trim() ? formatDealVolume(deal.volume) : null
+  const metaParts = [deal.company_name, volumeLabel, owner].filter(
+    (v): v is string => Boolean(v && String(v).trim() && v !== '—')
+  )
 
   return (
     <div className="mb-6 space-y-3">
@@ -48,11 +53,8 @@ export function DealCockpitHeader({
             </span>
             <DealStatusBadge status={deal.status} />
           </h1>
-          {owner ? (
-            <p className="text-sm text-muted-foreground">
-              {COPY.roleDimensions.functionRoles.sales_leader}:{' '}
-              <span className="text-foreground">{owner}</span>
-            </p>
+          {metaParts.length > 0 ? (
+            <p className="text-sm text-muted-foreground">{metaParts.join(' · ')}</p>
           ) : null}
         </div>
 

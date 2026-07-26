@@ -7,10 +7,8 @@ import {
   CirclePlus,
   Loader,
   MoreHorizontal,
-  Rocket01Icon,
   UploadIcon,
 } from '@hugeicons/core-free-icons'
-import Link from 'next/link'
 import { Download, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -56,7 +54,6 @@ import {
 } from '@/components/ui/select'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
-import { ROUTES } from '@/lib/routes'
 import { cn } from '@/lib/utils'
 import {
   DEAL_DOCUMENT_KINDS,
@@ -349,7 +346,7 @@ export function DealDocumentsSection({
 
   return (
     <>
-      <Card id="dokumente" className="mb-6">
+      <Card id="dokumente" className="mb-6 scroll-mt-24">
         <Collapsible open={expanded} onOpenChange={setExpanded}>
           <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0 pb-2">
             <CollapsibleTrigger asChild>
@@ -368,26 +365,11 @@ export function DealDocumentsSection({
                 <CardTitle className="text-base">{title}</CardTitle>
               </button>
             </CollapsibleTrigger>
-            {canManage || (documents.length >= 1 && isRfpMode) ? (
-              <div className="flex shrink-0 items-center gap-2">
-                {canManage ? (
-                  <Button type="button" variant="outline" size="sm" onClick={() => setUploadOpen(true)}>
-                    <AppIcon icon={CirclePlus} size={16} className="mr-1" />
-                    {COPY.deals.cockpit.documentsUpload}
-                  </Button>
-                ) : null}
-                {documents.length >= 1 && isRfpMode ? (
-                  <Button type="button" size="sm" asChild>
-                    <Link
-                      href={ROUTES.deals.detailTab(dealId, 'desk')}
-                      aria-label={COPY.deals.cockpit.documentsOpenDealDeskAria}
-                    >
-                      <AppIcon icon={Rocket01Icon} size={16} className="mr-1" />
-                      {COPY.deals.cockpit.documentsOpenDealDesk}
-                    </Link>
-                  </Button>
-                ) : null}
-              </div>
+            {canManage ? (
+              <Button type="button" variant="outline" size="sm" onClick={() => setUploadOpen(true)}>
+                <AppIcon icon={CirclePlus} size={16} className="mr-1" />
+                {COPY.deals.cockpit.documentsUpload}
+              </Button>
             ) : null}
           </CardHeader>
           {documents.length === 0 ? (

@@ -53,7 +53,7 @@ export function DealProofSection({
   onFindReference: () => void
 }) {
   const router = useRouter()
-  const [expanded, setExpanded] = useState(true)
+  const [expanded, setExpanded] = useState(deal.references.length > 0)
   const title = `${COPY.deals.cockpit.proofTitle} · ${deal.references.length}`
 
   async function handleRemoveReference(referenceId: string) {

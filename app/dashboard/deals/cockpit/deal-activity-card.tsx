@@ -10,7 +10,7 @@ export type DealActivityItem = {
   detail: string
 }
 
-export function DealActivityCard({ activities }: { activities: DealActivityItem[] }) {
+export function DealActivityCard({ activities = [] }: { activities?: DealActivityItem[] }) {
   return (
     <Card>
       <CardHeader className="pb-2">

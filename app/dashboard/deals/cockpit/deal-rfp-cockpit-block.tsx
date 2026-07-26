@@ -7,16 +7,19 @@ import { COPY } from '@/lib/copy'
 import type { DealWithReferences } from '../types'
 import { loadDealRfpCockpitData } from '@/lib/deals/load-deal-rfp-cockpit-data'
 
+import { buildAusschreibungNavItems } from '@/lib/deals/build-ausschreibung-nav-items'
+
+import { DealRfpAusschreibungNav } from './deal-rfp-ausschreibung-nav'
 import { DealRfpDraftsSection } from './deal-rfp-drafts-section'
 import { DealRfpEligibilitySection } from './deal-rfp-eligibility-section'
-import { DealRfpMetricsRow } from './deal-rfp-metrics-row'
 import { DealRfpRecommendationBanner } from './deal-rfp-recommendation-banner'
 import { DealRfpRisksSection } from './deal-rfp-risks-section'
 import { DealRfpStammdatenSection } from './deal-rfp-stammdaten-section'
+import { DealDocumentsSection } from './deal-documents-section'
 import type { DealDocumentRow } from '../document-actions'
 import { DealRfpAnalyzeButton } from './deal-rfp-analyze-button'
 
-/** Analysis cards only — section chrome (title + documents) lives in DealCockpitClient. */
+/** Full Ausschreibung stack: sticky nav → documents → analysis cards. */
 export async function DealRfpCockpitBlock({
   dealId,
   orgId,
@@ -39,47 +42,68 @@ export async function DealRfpCockpitBlock({
   const supabase = await createServerSupabaseClient()
   const data = await loadDealRfpCockpitData(supabase, orgId, dealId, dealContext)
 
-  if (!data) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardDescription>{COPY.deals.cockpit.rfpBlockEmpty}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {documents.length > 0 && canManageDocuments ? (
-            <DealRfpAnalyzeButton
-              dealId={dealId}
-              documents={documents}
-              canManage={canManageDocuments}
-              hasAnalysis={false}
-              isStale={false}
-              variant="outline"
-            />
-          ) : (
-            <Button type="button" size="sm" variant="outline" asChild>
-              <Link href="#dokumente">{COPY.deals.cockpit.rfpAnalyzeCta}</Link>
-            </Button>
-          )}
-        </CardContent>
-      </Card>
-    )
-  }
+  const draftsCovered = data ? data.draftRows.filter((r) => Boolean(r.reference)).length : 0
+  const risksCount = data?.risks
+    ? data.risks.redFlags.length + data.risks.smeOpenCount
+    : 0
+  const eligibilityCount = data?.eligibilityAssessment?.criteria.length ?? 0
 
   return (
     <div className="space-y-4">
-      <div className="space-y-6">
-        <DealRfpRecommendationBanner
-          data={data}
-          dealId={dealId}
-          documents={documents}
-          canManage={canManageDocuments}
-        />
-        <DealRfpMetricsRow data={data} />
-      </div>
-      <DealRfpStammdatenSection data={data} />
-      <DealRfpEligibilitySection data={data} />
-      <DealRfpRisksSection data={data} />
-      <DealRfpDraftsSection data={data} deal={deal} />
+      <DealRfpAusschreibungNav
+        items={buildAusschreibungNavItems({
+          stammdatenCount: data?.stammdatenRows.length ?? 0,
+          eligibilityCount,
+          risksCount,
+          draftsCovered,
+          draftsTotal: data?.draftRows.length ?? 0,
+          showAnalysisLinks: Boolean(data),
+        })}
+      />
+
+      <DealDocumentsSection
+        dealId={dealId}
+        documents={documents}
+        canManage={canManageDocuments}
+        isRfpMode
+      />
+
+      {!data ? (
+        <Card>
+          <CardHeader>
+            <CardDescription>{COPY.deals.cockpit.rfpBlockEmpty}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {documents.length > 0 && canManageDocuments ? (
+              <DealRfpAnalyzeButton
+                dealId={dealId}
+                documents={documents}
+                canManage={canManageDocuments}
+                hasAnalysis={false}
+                isStale={false}
+                variant="outline"
+              />
+            ) : (
+              <Button type="button" size="sm" variant="outline" asChild>
+                <Link href="#dokumente">{COPY.deals.cockpit.rfpAnalyzeCta}</Link>
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <DealRfpRecommendationBanner
+            data={data}
+            dealId={dealId}
+            documents={documents}
+            canManage={canManageDocuments}
+          />
+          <DealRfpStammdatenSection data={data} />
+          <DealRfpEligibilitySection data={data} />
+          <DealRfpRisksSection data={data} />
+          <DealRfpDraftsSection data={data} deal={deal} />
+        </>
+      )}
     </div>
   )
 }

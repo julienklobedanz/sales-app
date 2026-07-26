@@ -3,8 +3,6 @@
 import type { ReactNode } from 'react'
 import { useState } from 'react'
 import type { DealWithReferences } from '../types'
-import type { DealActivityItem } from './deal-activity-card'
-import { DealActivityCard } from './deal-activity-card'
 import { DealCockpitHeader } from './deal-cockpit-header'
 import { DealCockpitPromoteCard } from './deal-cockpit-promote-card'
 import { DealDocumentsSection } from './deal-documents-section'
@@ -23,7 +21,6 @@ type OrgProfile = { id: string; full_name: string | null }
 
 export function DealCockpitClient({
   deal,
-  activities,
   companies,
   orgProfiles,
   deadlines,
@@ -35,7 +32,6 @@ export function DealCockpitClient({
   orgDateDisplayFormat = 'de-DE',
 }: {
   deal: DealWithReferences
-  activities: DealActivityItem[]
   companies: Company[]
   orgProfiles: OrgProfile[]
   deadlines: DealDeadlineRow[]
@@ -83,12 +79,6 @@ export function DealCockpitClient({
       {showRfpBlock && rfpBlock ? (
         <section id="ausschreibung" className="mb-6 space-y-4 border-t border-border/70 pt-8">
           <h2 className="text-base font-semibold">{COPY.deals.cockpit.rfpBlockTitle}</h2>
-          <DealDocumentsSection
-            dealId={deal.id}
-            documents={documents}
-            canManage={canManageDocuments}
-            isRfpMode
-          />
           {rfpBlock}
         </section>
       ) : (
@@ -104,10 +94,6 @@ export function DealCockpitClient({
           </div>
         </>
       )}
-
-      <div className="border-t border-border/70 pt-8">
-        <DealActivityCard activities={activities} />
-      </div>
 
       <DealSmartMatchDrawer deal={deal} open={matchDrawerOpen} onOpenChange={setMatchDrawerOpen} />
     </div>

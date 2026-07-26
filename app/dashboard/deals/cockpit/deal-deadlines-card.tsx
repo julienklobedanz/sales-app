@@ -88,7 +88,7 @@ export function DealDeadlinesCard({
   }
 
   return (
-    <Card className="mb-6">
+    <Card>
       <Collapsible open={expanded} onOpenChange={setExpanded}>
         <CardContent className="py-4">
           <div className="flex flex-wrap items-start gap-4">
@@ -105,6 +105,9 @@ export function DealDeadlinesCard({
                 <div className="min-w-0">
                   {headline ? (
                     <>
+                      <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        {COPY.deals.cockpit.nextDeadlineLabel}
+                      </div>
                       <div className="text-lg font-semibold tabular-nums tracking-tight">
                         {headline.title}
                       </div>
