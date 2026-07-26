@@ -30,7 +30,7 @@ export function TableAccountLinkContent({
     <Link
       href={ROUTES.accountsDetail(companyId)}
       onClick={(e) => e.stopPropagation()}
-      className="inline-flex min-w-0 max-w-full items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="flex w-full min-w-0 max-w-full items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       aria-label={`${companyName ?? 'Account'} öffnen`}
     >
       {accountCell}

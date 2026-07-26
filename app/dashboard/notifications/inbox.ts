@@ -381,6 +381,21 @@ export async function getInboxNotificationsImpl(
     .limit(80)
   if (newsError) console.error('[getInboxNotifications/news]', newsError.message)
 
+  const { data: championRows } = await supabase
+    .from('market_signal_champion_watchlist')
+    .select('person_key, person_name')
+    .eq('user_id', userId)
+    .eq('is_active', true)
+    .limit(500)
+  const championPersonKeys = new Set(
+    (championRows ?? [])
+      .flatMap((row) => {
+        const key = normalizeText((row as { person_key?: string | null }).person_key ?? '')
+        const name = normalizeText((row as { person_name?: string | null }).person_name ?? '')
+        return [key, name].filter(Boolean)
+      })
+  )
+
   const favoriteCompanyNames = new Set(
     (executiveRows ?? [])
       .map((row) => {
@@ -397,11 +412,13 @@ export async function getInboxNotificationsImpl(
       const personName = String(row.person_name ?? '').trim()
       const changeSummary = String(row.change_summary ?? '')
       const summaryNorm = normalizeText(changeSummary)
+      const personKey = normalizeText(personName)
+      const isWatchedPerson = Boolean(personKey && championPersonKeys.has(personKey))
       const mentionsFavorite = [...favoriteCompanyNames].some((name) => summaryNorm.includes(name))
-      const championMove = co.isFavorite || mentionsFavorite
+      const isRelevant = co.isFavorite || mentionsFavorite || isWatchedPerson
       const dayKey = String(row.detected_at ?? '').slice(0, 10)
       const dedupeKey = [
-        normalizeText(personName),
+        personKey,
         normalizeText(String(row.person_title_before ?? '')),
         normalizeText(String(row.person_title_after ?? '')),
         normalizeText(changeSummary),
@@ -409,7 +426,6 @@ export async function getInboxNotificationsImpl(
       ].join('|')
       if (executiveSeen.has(dedupeKey)) return []
       executiveSeen.add(dedupeKey)
-      if (appRoleIsSales(role) && !championMove) return []
 
       const badge = resolveExecSignalBadge({
         personTitleBefore: (row.person_title_before as string | null) ?? null,
@@ -420,6 +436,13 @@ export async function getInboxNotificationsImpl(
         insightSignalFact: (row.insight_signal_fact as string | null) ?? null,
         signalCategory: (row.signal_category as string | null) ?? null,
       })
+      const isMove = badge === 'Move'
+
+      // Sales: Favoriten-Accounts + beobachtete Champions; Moves von Champions immer.
+      if (appRoleIsSales(role) && !isRelevant) return []
+      // Allgemeine Executive-Mentions ohne Move nur bei Favoriten-/Watchlist-Bezug — Moves priorisieren.
+      if (appRoleIsSales(role) && !isMove && !co.isFavorite && !isWatchedPerson) return []
+
       const type = badgeToType(badge)
       const signalSummary =
         String(row.insight_signal_fact ?? '').trim() ||
@@ -459,7 +482,7 @@ export async function getInboxNotificationsImpl(
           sourceUrl: sourceHref,
           href: ROUTES.accountsDetail(String(row.company_id)),
           createdAt: String(row.detected_at ?? ''),
-          priority: championMove ? 0 : 2,
+          priority: isMove ? (isRelevant ? 0 : 1) : isRelevant ? 2 : 3,
         } satisfies InboxCandidate,
       ]
     })
@@ -468,15 +491,18 @@ export async function getInboxNotificationsImpl(
   const newsCandidates: InboxCandidate[] = (newsRows ?? []).flatMap((row) => {
       const co = companyFromJoin(row.companies)
       const body = String(row.body ?? '').trim()
-      if (appRoleIsSales(role) && !co.isFavorite) return []
+      const badge = resolveNewsSignalBadge(body, co.name)
+      const personName = newsPersonNameFromBody(body, co.name)?.trim() || null
+      const personKey = normalizeText(personName)
+      const isWatchedPerson = Boolean(personKey && championPersonKeys.has(personKey))
+      const isMove = badge === 'Move'
+      if (appRoleIsSales(role) && !co.isFavorite && !(isMove && isWatchedPerson)) return []
       const dayKey = String(row.published_on ?? '').slice(0, 10)
       const dedupeKey = [normalizeText(co.name), normalizeText(body), dayKey].join('|')
       if (newsSeen.has(dedupeKey)) return []
       newsSeen.add(dedupeKey)
 
-      const badge = resolveNewsSignalBadge(body, co.name)
       const type = badgeToType(badge)
-      const personName = newsPersonNameFromBody(body, co.name)?.trim() || null
       const insight = String(row.insight_signal_fact ?? '').trim()
       const headline = personName || shortHook(body || `Update bei ${co.name}`, 70)
       const signalSummary = insight
@@ -513,7 +539,7 @@ export async function getInboxNotificationsImpl(
           sourceUrl: sourceHref,
           href: ROUTES.accountsDetail(String(row.company_id)),
           createdAt: String(row.published_on ?? ''),
-          priority: co.isFavorite ? 1 : 3,
+          priority: isMove ? (co.isFavorite || isWatchedPerson ? 0 : 1) : co.isFavorite ? 1 : 3,
         } satisfies InboxCandidate,
       ]
     })
@@ -561,6 +587,11 @@ export async function getInboxNotificationsImpl(
       }
       if (aNda) return -1
       if (bNda) return 1
+      const aSignal = isMarketSignal(a.id)
+      const bSignal = isMarketSignal(b.id)
+      if (aSignal && bSignal && a.priority !== b.priority) {
+        return a.priority - b.priority
+      }
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     })
     .slice(0, 80)

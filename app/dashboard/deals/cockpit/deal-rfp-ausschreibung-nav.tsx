@@ -23,38 +23,43 @@ const NAV_ICONS: Record<string, typeof File02Icon> = {
   drafts: NoteEditIcon,
 }
 
+/** Visual language aligned with References `TableBulkActionsBar` (pill actions, soft card). */
 export function DealRfpAusschreibungNav({ items }: { items: AusschreibungNavItem[] }) {
   if (items.length === 0) return null
 
   return (
     <nav
       aria-label={COPY.deals.cockpit.rfpBlockTitle}
-      className="sticky top-0 z-20 -mx-1 mb-2 border-b border-border/70 bg-background/95 px-1 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/80"
+      className="sticky top-0 z-20 mb-3"
     >
-      <ul className="flex gap-1 overflow-x-auto pb-0.5">
-        {items.map((item) => {
-          const icon = NAV_ICONS[item.id]
-          return (
-            <li key={item.id} className="shrink-0">
-              <a
-                href={item.href}
-                className={cn(
-                  'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors',
-                  'hover:bg-muted hover:text-foreground'
-                )}
-              >
-                {icon ? (
-                  <AppIcon icon={icon} size={14} className="shrink-0 opacity-80" />
-                ) : null}
-                {item.label}
-                {item.count ? (
-                  <span className="tabular-nums text-muted-foreground/80">{item.count}</span>
-                ) : null}
-              </a>
-            </li>
-          )
-        })}
-      </ul>
+      <div className="rounded-2xl border border-gray-100 bg-white p-2 shadow-lg dark:border-border dark:bg-card sm:p-3">
+        <ul className="flex gap-1 overflow-x-auto pb-0.5">
+          {items.map((item) => {
+            const icon = NAV_ICONS[item.id]
+            return (
+              <li key={item.id} className="shrink-0">
+                <a
+                  href={item.href}
+                  className={cn(
+                    'inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors',
+                    'hover:bg-gray-50 dark:text-foreground dark:hover:bg-muted'
+                  )}
+                >
+                  {icon ? (
+                    <AppIcon icon={icon} size={16} className="shrink-0 text-gray-500 dark:text-muted-foreground" />
+                  ) : null}
+                  <span>{item.label}</span>
+                  {item.count ? (
+                    <span className="tabular-nums text-gray-500 dark:text-muted-foreground">
+                      {item.count}
+                    </span>
+                  ) : null}
+                </a>
+              </li>
+            )
+          })}
+        </ul>
+      </div>
     </nav>
   )
 }

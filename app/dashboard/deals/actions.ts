@@ -503,6 +503,7 @@ export async function addReferenceToDealWithScore(args: {
   if (error) return { success: false, error: error.message }
   revalidatePath(ROUTES.deals.root)
   revalidatePath(ROUTES.deals.detail(args.dealId))
+  revalidatePath(ROUTES.match)
   return { success: true }
 }
 
@@ -749,6 +750,7 @@ export async function removeReferenceFromDeal(dealId: string, referenceId: strin
   if (error) return { error: error.message }
   revalidatePath(ROUTES.deals.root)
   revalidatePath(ROUTES.deals.detail(dealId))
+  revalidatePath(ROUTES.match)
   return {}
 }
 

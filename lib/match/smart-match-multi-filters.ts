@@ -1,4 +1,5 @@
 import { parseStoredVolumeEur } from '@/lib/match/parse-smart-match-query'
+import { resolveIndustryId } from '@/lib/constants/industries'
 
 /** Volumen-Bänder für Smart-Match-Mehrfachfilter (OR). */
 export type VolumeBandId = 'lt1' | 'gte1' | 'gte2' | 'gte5' | 'gte10'
@@ -84,7 +85,8 @@ export function createdAtMatchesAnyRecency(
 ): boolean {
   if (!monthsBackList?.length) return true
   if (!createdAt) return false
-  return monthsBackList.some((m) => {
+  // AND: widersprüchliche Fenster (z. B. „letzte 12“ + „älter als 36“) → kein Treffer.
+  return monthsBackList.every((m) => {
     const w = recencyWindowFromMonthsBack(m, now)
     if (w.after && createdAt < w.after) return false
     if (w.before && createdAt >= w.before) return false
@@ -92,7 +94,7 @@ export function createdAtMatchesAnyRecency(
   })
 }
 
-/** Einzelnes Fenster → RPC-Vorfilter; mehrere → null (Client-OR). */
+/** Einzelnes Fenster → RPC-Vorfilter; mehrere → null (Client-AND). */
 export function rpcRecencyBoundsFromMonthsBackList(
   monthsBackList: number[]
 ): { createdAfter: string | null; createdBefore: string | null } {
@@ -101,4 +103,42 @@ export function rpcRecencyBoundsFromMonthsBackList(
   }
   const w = recencyWindowFromMonthsBack(monthsBackList[0]!)
   return { createdAfter: w.after, createdBefore: w.before }
+}
+
+/** True wenn Ankerdatum in keinem der ausgeschlossenen Kalenderjahre liegt. */
+export function createdAtMatchesExcludeYears(
+  createdAt: string | null | undefined,
+  excludeYears: number[] | null | undefined
+): boolean {
+  if (!excludeYears?.length) return true
+  if (!createdAt) return false
+  const year = new Date(createdAt).getUTCFullYear()
+  if (!Number.isFinite(year)) return false
+  return !excludeYears.includes(year)
+}
+
+export function industryMatchesExcludeList(
+  industry: string | null | undefined,
+  excludeIndustries: string[] | null | undefined
+): boolean {
+  if (!excludeIndustries?.length) return true
+  const raw = String(industry ?? '').trim()
+  if (!raw) return true
+  const resolved = resolveIndustryId(raw) ?? raw.toLowerCase()
+  return !excludeIndustries.some((id) => {
+    const ex = id.toLowerCase()
+    return resolved === ex || raw.toLowerCase().includes(ex)
+  })
+}
+
+export function textMatchesExcludeTerms(
+  haystack: string,
+  excludeTerms: string[] | null | undefined
+): boolean {
+  if (!excludeTerms?.length) return true
+  const h = haystack.toLowerCase()
+  return !excludeTerms.some((term) => {
+    const t = term.trim().toLowerCase()
+    return t.length >= 2 && h.includes(t)
+  })
 }

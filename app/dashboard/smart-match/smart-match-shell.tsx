@@ -28,7 +28,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { MASTER_INDUSTRIES, formatIndustryDisplay } from '@/lib/constants/industries'
+import { MASTER_INDUSTRIES, formatIndustryDisplay, resolveIndustryId } from '@/lib/constants/industries'
 import { MatchResultSkeleton } from '@/components/dashboard/match-result-skeleton'
 import { MatchResultCard } from '@/app/dashboard/deals/components/match-result-card'
 import { CompanyLogo } from '@/components/ui/company-logo'
@@ -39,7 +39,9 @@ import {
 } from '@/app/dashboard/actions'
 import type { DealRow } from '@/app/dashboard/deals/types'
 import { cn } from '@/lib/utils'
-import { parseSmartMatchQuery } from '@/lib/match/parse-smart-match-query'
+import { parseSmartMatchQuery, parseStoredVolumeEur } from '@/lib/match/parse-smart-match-query'
+import type { ParsedSmartMatchConstraints } from '@/lib/match/parse-smart-match-query'
+import { parseSmartMatchFiltersAction } from '@/app/dashboard/smart-match/parse-filters-action'
 import {
   VOLUME_BAND_OPTIONS,
   volumeBandFromMinVolume,
@@ -61,12 +63,18 @@ type FiltersState = {
   volumeBands: VolumeBandId[]
   statuses: string[]
   monthsBackList: number[]
+  excludeYears: number[]
+  excludeIndustryIds: string[]
+  excludeTerms: string[]
 }
 const EMPTY_FILTERS: FiltersState = {
   industries: [],
   volumeBands: [],
   statuses: [],
   monthsBackList: [],
+  excludeYears: [],
+  excludeIndustryIds: [],
+  excludeTerms: [],
 }
 
 /** Session-Persistenz: Browser-Zurück nach Referenz-Details behält Treffer. */
@@ -109,6 +117,13 @@ function normalizeFilters(raw: Partial<FiltersState> | undefined): FiltersState 
     volumeBands,
     statuses: Array.isArray(legacy?.statuses) ? legacy.statuses.map(String) : [],
     monthsBackList,
+    excludeYears: Array.isArray(legacy?.excludeYears)
+      ? legacy.excludeYears.filter((n): n is number => typeof n === 'number' && n >= 2000 && n <= 2100)
+      : [],
+    excludeIndustryIds: Array.isArray(legacy?.excludeIndustryIds)
+      ? legacy.excludeIndustryIds.map(String)
+      : [],
+    excludeTerms: Array.isArray(legacy?.excludeTerms) ? legacy.excludeTerms.map(String) : [],
   }
 }
 
@@ -150,6 +165,8 @@ const RECENCY_OPTIONS: { label: string; value: number }[] = [
   { label: 'Letzte 12 Monate', value: 12 },
   { label: 'Letzte 24 Monate', value: 24 },
   { label: 'Letzte 36 Monate', value: 36 },
+  { label: 'Älter als 12 Monate', value: -12 },
+  { label: 'Älter als 24 Monate', value: -24 },
   { label: 'Älter als 36 Monate', value: -36 },
 ]
 const STATUS_OPTIONS: { label: string; value: string }[] = [
@@ -169,6 +186,8 @@ function toApiFilters(f: FiltersState): MatchReferenceFilters {
   const recencyBounds = rpcRecencyBoundsFromMonthsBackList(f.monthsBackList)
   return {
     industries: f.industries.length ? f.industries : null,
+    excludeIndustries: f.excludeIndustryIds.length ? f.excludeIndustryIds : null,
+    excludeTerms: f.excludeTerms.length ? f.excludeTerms : null,
     minVolume: volumeBounds.minVolume,
     maxVolume: volumeBounds.maxVolume,
     volumeBands: f.volumeBands.length ? f.volumeBands : null,
@@ -176,6 +195,7 @@ function toApiFilters(f: FiltersState): MatchReferenceFilters {
     createdAfter: recencyBounds.createdAfter,
     createdBefore: recencyBounds.createdBefore,
     monthsBackList: f.monthsBackList.length ? f.monthsBackList : null,
+    excludeCreatedYears: f.excludeYears.length ? f.excludeYears : null,
   }
 }
 
@@ -184,13 +204,14 @@ function filtersActive(f: FiltersState): boolean {
     f.industries.length > 0 ||
     f.volumeBands.length > 0 ||
     f.statuses.length > 0 ||
-    f.monthsBackList.length > 0
+    f.monthsBackList.length > 0 ||
+    f.excludeYears.length > 0 ||
+    f.excludeIndustryIds.length > 0 ||
+    f.excludeTerms.length > 0
   )
 }
 
-/** Filter kommen ausschließlich aus der aktuellen Query — nichts von der vorherigen Suche. */
-function filtersFromQuery(query: string): FiltersState {
-  const parsed = parseSmartMatchQuery(query)
+function filtersFromParsed(parsed: ParsedSmartMatchConstraints): FiltersState {
   const band =
     parsed.minVolume != null ? volumeBandFromMinVolume(parsed.minVolume) : null
   return {
@@ -198,6 +219,34 @@ function filtersFromQuery(query: string): FiltersState {
     volumeBands: band ? [band] : [],
     statuses: [],
     monthsBackList: parsed.monthsBack != null ? [parsed.monthsBack] : [],
+    excludeYears: parsed.excludeYears,
+    excludeIndustryIds: parsed.excludeIndustryIds,
+    excludeTerms: parsed.excludeTerms,
+  }
+}
+
+function filtersFromDeal(deal: DealRow | null): Partial<FiltersState> {
+  if (!deal) return {}
+  const industryId = resolveIndustryId(deal.industry)
+  const vol = parseStoredVolumeEur(deal.volume)
+  const band = vol != null ? volumeBandFromMinVolume(vol) : null
+  return {
+    industries: industryId ? [industryId] : [],
+    volumeBands: band ? [band] : [],
+  }
+}
+
+/** Query-Filter haben Vorrang; Deal füllt leere Dimensionen hart vor. */
+function mergeDealPrefills(queryFilters: FiltersState, deal: DealRow | null): FiltersState {
+  const dealF = filtersFromDeal(deal)
+  return {
+    ...queryFilters,
+    industries: queryFilters.industries.length
+      ? queryFilters.industries
+      : (dealF.industries ?? []),
+    volumeBands: queryFilters.volumeBands.length
+      ? queryFilters.volumeBands
+      : (dealF.volumeBands ?? []),
   }
 }
 
@@ -236,13 +285,95 @@ function statusFilterLabel(f: FiltersState): string {
 }
 
 function recencyFilterLabel(f: FiltersState): string {
-  return multiFilterLabel(
-    'Aktualität',
-    f.monthsBackList.map((m) => {
+  const parts = [
+    ...f.monthsBackList.map((m) => {
       if (m < 0) return `Älter als ${Math.abs(m)} Mon.`
       return `Letzte ${m} Mon.`
+    }),
+    ...f.excludeYears.map((y) => `Ohne ${y}`),
+  ]
+  return multiFilterLabel('Aktualität', parts)
+}
+
+type ConstraintChip = {
+  key: string
+  label: string
+  clear: (f: FiltersState) => FiltersState
+}
+
+function constraintChips(f: FiltersState): ConstraintChip[] {
+  const chips: ConstraintChip[] = []
+  for (const id of f.industries) {
+    chips.push({
+      key: `ind:${id}`,
+      label: MASTER_INDUSTRIES.find((i) => i.id === id)?.labelDe ?? id,
+      clear: (prev) => ({
+        ...prev,
+        industries: prev.industries.filter((x) => x !== id),
+      }),
     })
-  )
+  }
+  for (const id of f.excludeIndustryIds) {
+    chips.push({
+      key: `exind:${id}`,
+      label: `Ohne ${MASTER_INDUSTRIES.find((i) => i.id === id)?.labelDe ?? id}`,
+      clear: (prev) => ({
+        ...prev,
+        excludeIndustryIds: prev.excludeIndustryIds.filter((x) => x !== id),
+      }),
+    })
+  }
+  for (const b of f.volumeBands) {
+    chips.push({
+      key: `vol:${b}`,
+      label: VOLUME_BAND_OPTIONS.find((o) => o.value === b)?.label ?? b,
+      clear: (prev) => ({
+        ...prev,
+        volumeBands: prev.volumeBands.filter((x) => x !== b),
+      }),
+    })
+  }
+  for (const m of f.monthsBackList) {
+    chips.push({
+      key: `rec:${m}`,
+      label: m < 0 ? `Älter als ${Math.abs(m)} Mon.` : `Letzte ${m} Mon.`,
+      clear: (prev) => ({
+        ...prev,
+        monthsBackList: prev.monthsBackList.filter((x) => x !== m),
+      }),
+    })
+  }
+  for (const y of f.excludeYears) {
+    chips.push({
+      key: `year:${y}`,
+      label: `Ohne ${y}`,
+      clear: (prev) => ({
+        ...prev,
+        excludeYears: prev.excludeYears.filter((x) => x !== y),
+      }),
+    })
+  }
+  for (const t of f.excludeTerms) {
+    chips.push({
+      key: `term:${t}`,
+      label: `Ohne ${t}`,
+      clear: (prev) => ({
+        ...prev,
+        excludeTerms: prev.excludeTerms.filter((x) => x !== t),
+      }),
+    })
+  }
+  for (const s of f.statuses) {
+    chips.push({
+      key: `st:${s}`,
+      label: STATUS_OPTIONS.find((o) => o.value === s)?.label ?? s,
+      clear: (prev) => ({
+        ...prev,
+        statuses: prev.statuses.filter((x) => x !== s),
+      }),
+    })
+  }
+  return chips
 }
 
 /** Deal-Kontext für den KI-Entwurf (Ghostwriter) — aus den DealRow-Feldern. */
@@ -400,17 +531,34 @@ export function SmartMatchShell({
 
   const selectedDeal = deals.find((d) => d.id === selectedDealId) ?? null
   const linkedIds = new Set(selectedDeal?.linked_refs?.map((r) => r.id) ?? [])
-  const filteredDeals = deals.filter((d) =>
-    `${d.title} ${d.company_name ?? ''}`.toLowerCase().includes(dealQuery.trim().toLowerCase())
-  )
+  const filteredDeals = deals.filter((d) => {
+    const matchesQuery = `${d.title} ${d.company_name ?? ''}`
+      .toLowerCase()
+      .includes(dealQuery.trim().toLowerCase())
+    if (!matchesQuery) return false
+    if (filters.excludeYears.length > 0) {
+      const year = new Date(d.created_at).getUTCFullYear()
+      if (filters.excludeYears.includes(year)) return false
+    }
+    return true
+  })
 
   async function runSearch(opts?: { text?: string; filters?: FiltersState; dealId?: string | null }) {
     const q = (opts?.text ?? query).trim()
-    const f = opts?.filters ?? filtersFromQuery(opts?.text ?? query)
-    if (opts?.filters === undefined) {
+    const dealId = opts?.dealId !== undefined ? opts.dealId : selectedDealId
+    const dealForPrefill =
+      dealId != null ? (deals.find((d) => d.id === dealId) ?? null) : null
+
+    let f: FiltersState
+    if (opts?.filters !== undefined) {
+      f = opts.filters
+    } else {
+      // Natürliche Sprache → Filter (Heuristik + optional LLM), dann Deal-Prefills.
+      const parsed = q ? await parseSmartMatchFiltersAction(q) : parseSmartMatchQuery('')
+      f = mergeDealPrefills(filtersFromParsed(parsed), dealForPrefill)
       setFilters(f)
     }
-    const dealId = opts?.dealId !== undefined ? opts.dealId : selectedDealId
+
     setLoading(true)
     setResults(null)
     try {
@@ -454,7 +602,10 @@ export function SmartMatchShell({
     setSelectedDealId(id)
     setDealPickerOpen(false)
     setDealQuery('')
-    if (results !== null || query.trim()) void runSearch({ dealId: id })
+    const deal = deals.find((d) => d.id === id) ?? null
+    const nextFilters = mergeDealPrefills(filters, deal)
+    setFilters(nextFilters)
+    if (results !== null || query.trim()) void runSearch({ dealId: id, filters: nextFilters })
   }
   function clearDeal() {
     if (embedded) return
@@ -462,6 +613,7 @@ export function SmartMatchShell({
     if (results !== null) void runSearch({ dealId: null })
   }
 
+  const activeChips = constraintChips(filters)
   const hasSearched = loading || results !== null
   const showResultsPanel = sessionReady && hasSearched
   const showSuggestions = !query.trim()
@@ -528,7 +680,7 @@ export function SmartMatchShell({
 
                   <FilterMenu
                     label={recencyFilterLabel(filters)}
-                    active={filters.monthsBackList.length > 0}
+                    active={filters.monthsBackList.length > 0 || filters.excludeYears.length > 0}
                   >
                     <MultiSelect
                       options={RECENCY_OPTIONS}
@@ -559,6 +711,25 @@ export function SmartMatchShell({
                       : null}
                 </div>
               </div>
+
+              {activeChips.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {activeChips.map((chip) => (
+                    <button
+                      key={chip.key}
+                      type="button"
+                      onClick={() => updateFilters(chip.clear(filters))}
+                      className="inline-flex items-center gap-1 rounded-full border bg-background px-2.5 py-1 text-[12px] text-foreground transition-colors hover:bg-accent"
+                      title="Constraint entfernen"
+                    >
+                      <span>{chip.label}</span>
+                      <span className="text-muted-foreground" aria-hidden>
+                        ×
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
 
               {loading ? (
                 <MatchResultSkeleton count={3} />

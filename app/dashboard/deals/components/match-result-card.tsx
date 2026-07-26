@@ -15,7 +15,7 @@ import { getMatchStrength } from '@/lib/match/match-strength'
 import { formatMatchReferenceMetaLine } from '@/lib/match/match-reference-meta'
 import type { MatchReferenceHit } from '@/app/dashboard/actions'
 import { createSharedPortfolio } from '@/app/dashboard/actions'
-import { addReferenceToDealWithScore } from '../actions'
+import { addReferenceToDealWithScore, removeReferenceFromDeal } from '../actions'
 import { PdfExportDialog } from '@/app/dashboard/references/[id]/pdf-export-dialog'
 import { KiEntwurfSheet } from './ki-entwurf-sheet'
 
@@ -58,16 +58,9 @@ export function MatchResultCard({
       }
       const abs =
         typeof window !== 'undefined' ? new URL(res.url, window.location.origin).href : res.url
+      // Kundenlink ist immer /p/{slug} — ohne ?manage=
       await navigator.clipboard.writeText(abs)
       toast.success('Kundenlink in die Zwischenablage kopiert.')
-      if (res.manageToken && typeof window !== 'undefined') {
-        const manage = new URL(res.url, window.location.origin)
-        manage.searchParams.set('manage', res.manageToken)
-        toast.message('Sperr-Link (nur Freigeber)', {
-          description: manage.toString(),
-          duration: 18000,
-        })
-      }
     } finally {
       setShareLoading(false)
     }
@@ -77,6 +70,16 @@ export function MatchResultCard({
     if (!dealId) return
     setLinkLoading(true)
     try {
+      if (alreadyLinked) {
+        const res = await removeReferenceFromDeal(dealId, hit.id)
+        if (res.error) {
+          toast.error(res.error)
+          return
+        }
+        toast.success('Referenz aus Deal entfernt.')
+        onLinked()
+        return
+      }
       const res = await addReferenceToDealWithScore({
         dealId,
         referenceId: hit.id,
@@ -98,6 +101,8 @@ export function MatchResultCard({
     industry: hit.industry,
     volumeEur: hit.volumeEur,
     createdAt: hit.createdAt,
+    projectStart: hit.projectStart,
+    projectEnd: hit.projectEnd,
   })
 
   const matchStrength = getMatchStrength(hit.similarity, { rank, gapToNext })
@@ -211,8 +216,10 @@ export function MatchResultCard({
               <Button
                 type="button"
                 size="sm"
+                variant={alreadyLinked ? 'outline' : 'default'}
                 className="h-8 text-xs"
-                disabled={alreadyLinked || linkLoading}
+                disabled={linkLoading}
+                title={alreadyLinked ? 'Klicken, um die Referenz aus dem Deal zu entfernen' : undefined}
                 onClick={() => void handleDealLink()}
               >
                 {linkLoading ? (

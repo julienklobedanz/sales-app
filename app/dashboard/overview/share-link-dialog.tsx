@@ -115,15 +115,13 @@ export function ShareLinkDialog({
                       try {
                         const result = await createSharedPortfolio([reference.id])
                         if (result.success) {
-                          setShareLinkUrl(toAbsoluteUrl(result.url))
-                          toast.success('Kundenlink erstellt')
-                          if (result.manageToken) {
-                            const u = new URL(toAbsoluteUrl(result.url))
-                            u.searchParams.set('manage', result.manageToken)
-                            toast.message('Sperr-Link für die freigebende Person', {
-                              description: u.toString(),
-                              duration: 20000,
-                            })
+                          const publicUrl = toAbsoluteUrl(result.url)
+                          setShareLinkUrl(publicUrl)
+                          try {
+                            await navigator.clipboard.writeText(publicUrl)
+                            toast.success('Kundenlink in die Zwischenablage kopiert.')
+                          } catch {
+                            toast.success('Kundenlink erstellt')
                           }
                         } else {
                           toast.error(result.error ?? 'Erstellen fehlgeschlagen')

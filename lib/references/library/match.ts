@@ -21,8 +21,12 @@ import {
 } from '@/lib/match/lexical-reference-match'
 import {
   createdAtMatchesAnyRecency,
+  createdAtMatchesExcludeYears,
+  industryMatchesExcludeList,
+  textMatchesExcludeTerms,
   volumeMatchesAnyBand,
 } from '@/lib/match/smart-match-multi-filters'
+import { matchReferenceDateAnchor } from '@/lib/match/reference-date-anchor'
 import type { Database } from '@/lib/database.types'
 
 import type {
@@ -73,7 +77,10 @@ export async function matchReferencesImpl(
     typeof options?.filters?.maxVolume === 'number' ||
     Boolean(options?.filters?.createdBefore) ||
     Boolean(options?.filters?.volumeBands?.length) ||
-    Boolean(options?.filters?.monthsBackList?.length)
+    Boolean(options?.filters?.monthsBackList?.length) ||
+    Boolean(options?.filters?.excludeCreatedYears?.length) ||
+    Boolean(options?.filters?.excludeIndustries?.length) ||
+    Boolean(options?.filters?.excludeTerms?.length)
   const fetchCount = needsOverFetch
     ? Math.min(Math.max(matchCount * 4, 24), 50)
     : matchCount
@@ -240,6 +247,8 @@ export async function matchReferencesImpl(
     matches = reranked
   }
 
+  // Projektzeiten vor Datumsfiltern anreichern (RPC liefert sie nicht).
+  matches = await attachProjectDates(supabase, matches)
   matches = applyClientSideStructuralFilters(matches, options?.filters)
 
   // Score-Ranking für die UI: bestes Match zuerst (auch nach optionalem Rerank).
@@ -291,6 +300,40 @@ async function attachCompanyFields(
   })
 }
 
+async function attachProjectDates(
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+  matches: MatchReferenceHit[]
+): Promise<MatchReferenceHit[]> {
+  if (matches.length === 0) return matches
+  const missing = matches.filter((m) => m.projectStart == null && m.projectEnd == null)
+  if (!missing.length) return matches
+  const { data } = await supabase
+    .from('references')
+    .select('id, project_start, project_end')
+    .in(
+      'id',
+      missing.map((m) => m.id)
+    )
+  const byId = new Map(
+    (data ?? []).map((r) => [
+      String(r.id),
+      {
+        projectStart: (r.project_start as string | null) ?? null,
+        projectEnd: (r.project_end as string | null) ?? null,
+      },
+    ])
+  )
+  return matches.map((m) => {
+    const row = byId.get(m.id)
+    if (!row) return m
+    return {
+      ...m,
+      projectStart: m.projectStart ?? row.projectStart,
+      projectEnd: m.projectEnd ?? row.projectEnd,
+    }
+  })
+}
+
 async function fetchLexicalReferenceHits(
   supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
   params: {
@@ -315,10 +358,13 @@ async function fetchLexicalReferenceHits(
     volume_eur: string | null
     status: string | null
     created_at: string | null
+    project_start: string | null
+    project_end: string | null
     company_id: string
   }
 
-  const selectCols = 'id, title, summary, industry, volume_eur, status, created_at, company_id'
+  const selectCols =
+    'id, title, summary, industry, volume_eur, status, created_at, project_start, project_end, company_id'
 
   function baseRefQuery() {
     let q = supabase
@@ -412,6 +458,8 @@ async function fetchLexicalReferenceHits(
       volumeEur: row.volume_eur?.trim() || null,
       status: row.status ?? null,
       createdAt: row.created_at ?? null,
+      projectStart: row.project_start ?? null,
+      projectEnd: row.project_end ?? null,
     })
   }
 
@@ -439,13 +487,19 @@ async function browseRecentReferences(
     Boolean(filters?.monthsBackList && filters.monthsBackList.length > 1) ||
     Boolean(filters?.volumeBands?.length) ||
     Boolean(filters?.monthsBackList?.length) ||
+    Boolean(filters?.excludeCreatedYears?.length) ||
+    Boolean(filters?.excludeCreatedYears?.length) ||
+    Boolean(filters?.excludeIndustries?.length) ||
+    Boolean(filters?.excludeTerms?.length) ||
     typeof filters?.minVolume === 'number' ||
     typeof filters?.maxVolume === 'number'
   const fetchLimit = Math.min(Math.max(needsClientOr ? matchCount * 4 : matchCount, 1), 80)
 
   let q = supabase
     .from('references')
-    .select('id, title, summary, industry, volume_eur, status, created_at, company_id')
+    .select(
+      'id, title, summary, industry, volume_eur, status, created_at, project_start, project_end, company_id'
+    )
     .eq('organization_id', orgId)
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
@@ -462,7 +516,7 @@ async function browseRecentReferences(
   if (f?.statuses?.length) {
     q = q.in('status', f.statuses as Database['public']['Enums']['reference_status'][])
   }
-  // Nur einzelnes Aktualitäts-Fenster serverseitig; Mehrfach = Client-OR.
+  // Nur einzelnes Aktualitäts-Fenster serverseitig; Mehrfach = Client-AND.
   if (!f?.monthsBackList?.length || f.monthsBackList.length === 1) {
     if (f?.createdAfter) {
       q = q.gte('created_at', f.createdAfter)
@@ -494,6 +548,8 @@ async function browseRecentReferences(
       volumeEur: volRaw && volRaw.length > 0 ? volRaw : null,
       status: typeof r.status === 'string' ? r.status : null,
       createdAt: typeof r.created_at === 'string' ? r.created_at : null,
+      projectStart: typeof r.project_start === 'string' ? r.project_start : null,
+      projectEnd: typeof r.project_end === 'string' ? r.project_end : null,
     }
   })
 
@@ -575,17 +631,50 @@ function applyClientSideStructuralFilters(
 
   if (filters.monthsBackList?.length) {
     next = next.filter((m) =>
-      createdAtMatchesAnyRecency(m.createdAt, filters.monthsBackList)
+      createdAtMatchesAnyRecency(
+        matchReferenceDateAnchor(m),
+        filters.monthsBackList
+      )
     )
   } else {
     if (filters.createdBefore) {
       const before = filters.createdBefore
-      next = next.filter((m) => m.createdAt != null && m.createdAt < before)
+      next = next.filter((m) => {
+        const anchor = matchReferenceDateAnchor(m)
+        return anchor != null && anchor < before
+      })
     }
     if (filters.createdAfter) {
       const after = filters.createdAfter
-      next = next.filter((m) => m.createdAt != null && m.createdAt >= after)
+      next = next.filter((m) => {
+        const anchor = matchReferenceDateAnchor(m)
+        return anchor != null && anchor >= after
+      })
     }
+  }
+
+  if (filters.excludeCreatedYears?.length) {
+    next = next.filter((m) =>
+      createdAtMatchesExcludeYears(
+        matchReferenceDateAnchor(m),
+        filters.excludeCreatedYears
+      )
+    )
+  }
+
+  if (filters.excludeIndustries?.length) {
+    next = next.filter((m) =>
+      industryMatchesExcludeList(m.industry, filters.excludeIndustries)
+    )
+  }
+
+  if (filters.excludeTerms?.length) {
+    next = next.filter((m) =>
+      textMatchesExcludeTerms(
+        [m.title, m.summary ?? '', m.snippet, m.companyName ?? ''].join(' '),
+        filters.excludeTerms
+      )
+    )
   }
 
   return next

@@ -18,7 +18,7 @@ export function TableRowAlign({
   className?: string
 }) {
   return (
-    <div className={cn('flex w-full items-center', TABLE_ROW_INNER_HEIGHT_CLASS, className)}>
+    <div className={cn('flex w-full min-w-0 items-center', TABLE_ROW_INNER_HEIGHT_CLASS, className)}>
       {children}
     </div>
   )

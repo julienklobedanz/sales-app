@@ -27,7 +27,7 @@ import {
   ArrowUpDown,
   Filter,
 } from "@hugeicons/core-free-icons"
-import { formatIndustryDisplay, formatIndustryDisplayCompact, getIndustryLabelDe } from "@/lib/constants/industries"
+import { formatIndustryDisplay, getIndustryLabelDe } from "@/lib/constants/industries"
 import { AppIcon } from "@/lib/icons"
 
 import type { ReferenceVolumeFilter } from "@/lib/references/reference-volume-filter"
@@ -950,7 +950,7 @@ export function renderReferenceColumnCell(
   switch (column) {
     case "company":
       return (
-        <TableDataCell style={widthStyle}>
+        <TableDataCell className="min-w-0 overflow-hidden" style={widthStyle}>
           <TableAccountLinkContent
             companyId={ref.company_id}
             companyName={ref.company_name}
@@ -976,11 +976,11 @@ export function renderReferenceColumnCell(
         String(ref.industry ?? '').trim() ||
         companyIndustryById.get(ref.company_id) ||
         ''
-      const { compact, full } = formatIndustryDisplayCompact(industryRaw)
+      const industryLabel = formatIndustryDisplay(industryRaw)
       return (
-        <TableDataCell className="text-muted-foreground" style={widthStyle}>
-          <span className="block truncate leading-normal" title={full || undefined}>
-            {compact}
+        <TableDataCell className="min-w-0 overflow-hidden text-muted-foreground" style={widthStyle}>
+          <span className="block min-w-0 truncate leading-normal" title={industryLabel || undefined}>
+            {industryLabel}
           </span>
         </TableDataCell>
       )

@@ -1,20 +1,21 @@
 import { CompanyLogo } from "@/components/ui/company-logo"
 import { rewriteBrandfetchLogoUrlForLightBackground } from '@/lib/brandfetch/logo-theme-url'
+import { cn } from '@/lib/utils'
 
 export function AccountCell({
   companyName,
   companyLogoUrl,
   companyId,
-  nameMaxWidthClass = 'max-w-[260px]',
+  className,
 }: {
   companyName: string | null | undefined
   companyLogoUrl: string | null | undefined
   companyId?: string | null
-  nameMaxWidthClass?: string
+  className?: string
 }) {
   const label = companyName ?? 'Kein Account'
   return (
-    <div className="flex min-h-9 min-w-0 items-center gap-2.5">
+    <div className={cn('flex w-full min-h-9 min-w-0 items-center gap-2.5', className)}>
       <CompanyLogo
         src={rewriteBrandfetchLogoUrlForLightBackground(companyLogoUrl) ?? companyLogoUrl}
         companyId={companyId}
@@ -23,7 +24,7 @@ export function AccountCell({
         fallbackIconSize={18}
       />
       <span
-        className={`truncate text-sm font-semibold leading-normal text-foreground ${nameMaxWidthClass}`}
+        className="min-w-0 flex-1 truncate text-sm font-semibold leading-normal text-foreground"
         title={companyName ?? undefined}
       >
         {label}

@@ -20,15 +20,20 @@ export type MatchReferenceMetaFields = {
   industry?: string | null
   volumeEur?: string | null
   createdAt?: string | null
+  projectStart?: string | null
+  projectEnd?: string | null
 }
 
 /**
  * Einheitliche Meta-Zeile für Match-/Referenz-Karten:
- * Branche · Volumen · Aktualität (MM/YYYY)
+ * Branche · Volumen · Aktualität (MM/YYYY, Projektende → Start → created)
  */
 export function formatMatchReferenceMetaLine(fields: MatchReferenceMetaFields): string {
   const industry = formatIndustryDisplay(fields.industry) || null
   const volume = fields.volumeEur ? formatReferenceVolume(fields.volumeEur) || null : null
-  const when = formatMatchReferenceMetaMonthYear(fields.createdAt) || null
+  const when =
+    formatMatchReferenceMetaMonthYear(
+      fields.projectEnd || fields.projectStart || fields.createdAt
+    ) || null
   return [industry, volume, when].filter(Boolean).join(' · ')
 }

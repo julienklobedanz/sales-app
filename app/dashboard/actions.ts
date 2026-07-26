@@ -414,8 +414,12 @@ export type MatchReferenceHit = {
   volumeEur: string | null
   /** Lifecycle-Status (draft/approved/internal_only/anonymized/external). */
   status?: string | null
-  /** ISO-Timestamp der Erstellung (Aktualitäts-Filter/Anzeige). */
+  /** ISO-Timestamp der Erstellung (Fallback für Aktualität). */
   createdAt?: string | null
+  /** Projektstart (ISO/Date). */
+  projectStart?: string | null
+  /** Projektende (ISO/Date) — bevorzugter Anker für Aktualitätsfilter. */
+  projectEnd?: string | null
 }
 
 export type MatchReferencesResult =
@@ -425,6 +429,10 @@ export type MatchReferencesResult =
 /** Strukturelle Vorfilter (Stufe C) — jeweils weggelassen/null = kein Filter. */
 export type MatchReferenceFilters = {
   industries?: string[] | null
+  /** Branchen-Ids ausschließen. */
+  excludeIndustries?: string[] | null
+  /** Freitext-Negationen (Titel/Summary/Snippet). */
+  excludeTerms?: string[] | null
   /** Mindest-Volumen in Euro (numerisch). */
   minVolume?: number | null
   /** Höchst-Volumen in Euro (numerisch). */
@@ -435,15 +443,17 @@ export type MatchReferenceFilters = {
    */
   volumeBands?: Array<'lt1' | 'gte1' | 'gte2' | 'gte5' | 'gte10'> | null
   statuses?: string[] | null
-  /** ISO-Timestamp; nur Referenzen mit created_at >= createdAfter. */
+  /** ISO-Timestamp; nur Referenzen mit Ankerdatum >= createdAfter. */
   createdAfter?: string | null
-  /** ISO-Timestamp; nur Referenzen mit created_at < createdBefore (z. B. älter als 36 Monate). */
+  /** ISO-Timestamp; nur Referenzen mit Ankerdatum < createdBefore (z. B. älter als 36 Monate). */
   createdBefore?: string | null
   /**
-   * Mehrere Aktualitäts-Fenster (OR): positiv = letzte N Monate,
+   * Mehrere Aktualitäts-Fenster (AND): positiv = letzte N Monate,
    * negativ = älter als |N| Monate. Hat Vorrang vor createdAfter/Before clientseitig.
    */
   monthsBackList?: number[] | null
+  /** Kalenderjahre (UTC, Ankerdatum), die ausgeschlossen werden. */
+  excludeCreatedYears?: number[] | null
 }
 
 export type MatchReferencesOptions = {
