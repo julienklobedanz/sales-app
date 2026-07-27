@@ -20,6 +20,7 @@ import { getMatchStrength } from '@/lib/match/match-strength'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { COPY } from '@/lib/copy'
 import { formatDealVolume } from '@/lib/format'
+import { ROUTES } from '@/lib/routes'
 import { TableAccountLinkContent } from '@/components/table/table-account-link-content'
 import { TableRowAlign } from '@/components/table/table-row-align'
 import { TableSortableHeader } from '@/components/table/table-sortable-header'
@@ -250,6 +251,7 @@ export function DealsClientContent({
           <TableRowAlign className="min-w-0">
             <TableTitleHoverContent
               title={row.original.title}
+              href={ROUTES.deals.detail(row.original.id)}
               previewLabel="Anforderungen"
               previewText={row.original.requirements_text}
               emptyPreviewText="Keine Anforderungen hinterlegt."

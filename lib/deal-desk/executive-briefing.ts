@@ -108,60 +108,101 @@ export function buildExecutiveBriefingText(params: {
   if (submissionDeadline) lines.push(`Abgabedatum (Deadline): ${submissionDeadline}`)
   if (desiredServiceStart) lines.push(`Gewünschter Servicebeginn: ${desiredServiceStart}`)
 
-  lines.push(
-    '',
-    '— ENTSCHEIDUNG —',
-    `Win-Probability: ${winPct}% (Empfehlung: ${recommendation})`,
-    `ICP-Fit: ${analysis.icpFitLabel}`,
-    '',
-    '— COMMERCIALS & BIETER-AUFWAND —'
-  )
+  const decisionReasons = takeaways.slice(0, 3).filter(Boolean)
 
   const commercialLines = [
     bulletLine('Erwartetes Deal-Volumen', briefing?.expectedDealVolume),
     bulletLine('Bid-Investment', briefing?.bidInvestment),
   ].filter((l): l is string => Boolean(l))
 
-  if (commercialLines.length) {
-    lines.push(...commercialLines)
-  } else {
-    lines.push('• Erwartetes Deal-Volumen: — (nicht im Dokument extrahiert)')
-    lines.push('• Bid-Investment: — (nicht im Dokument extrahiert)')
-  }
-
-  lines.push('', '— STRATEGISCHE EINSCHÄTZUNG —', strategicAssessment)
-
-  if (hasSuitabilityContent(suitability)) {
-    lines.push('', '— EIGNUNG & RAHMENBEDINGUNGEN —')
-    if (suitability.bidderRequirements.length) {
-      lines.push('', 'Anforderungen an den Bieter:')
-      lines.push(...suitability.bidderRequirements.map((t) => `• ${t}`))
-    }
-    if (suitability.roleQualifications.length) {
-      lines.push('', 'Rollenqualifikationen:')
-      lines.push(...suitability.roleQualifications.map((t) => `• ${t}`))
-    }
-    if (suitability.specialConditions.length) {
-      lines.push('', 'Besondere Bedingungen:')
-      lines.push(...suitability.specialConditions.map((t) => `• ${t}`))
-    }
-  }
-
-  lines.push('', '— SCOPE & COMPLIANCE —')
   const scopeLines = [
     bulletLine('Tech-Fokus', briefing?.techFocus),
     bulletLine('Governance', briefing?.governance),
   ].filter((l): l is string => Boolean(l))
-  if (scopeLines.length) lines.push(...scopeLines)
-  else lines.push('• Tech-Fokus: —', '• Governance: —')
 
-  lines.push('', '— BUYING CENTER & COMPETITION —')
   const buyingLines = [
     bulletLine('Wirtschaftlicher Entscheider', briefing?.economicDecisionMaker),
     bulletLine('Wettbewerb', briefing?.competition),
     bulletLine('Unser Hebel', briefing?.ourLeverage),
     bulletLine('Tender-Verfahren', briefing?.tenderProcedure),
   ].filter((l): l is string => Boolean(l))
+
+  type RiskItem = {
+    rank: number
+    label: string
+    title: string
+    detail?: string
+  }
+
+  const severityRank = (k: 'critical' | 'high' | 'delivery'): number =>
+    k === 'critical' ? 0 : k === 'high' ? 1 : 2
+
+  const riskByTitle = new Map<string, RiskItem>()
+  for (const r of capabilityFromBriefing) {
+    riskByTitle.set(r.title, {
+      rank: severityRank(r.kind),
+      label: riskKindLabel(r.kind),
+      title: r.title,
+      detail: r.detail,
+    })
+  }
+  for (const f of contractFlags) {
+    if (riskByTitle.has(f.title)) continue
+    riskByTitle.set(f.title, {
+      rank: severityRank(f.severity),
+      label: riskKindLabel(f.severity),
+      title: f.title,
+      detail: f.excerpt,
+    })
+  }
+
+  const topRiskItems = [...riskByTitle.values()]
+    .sort((a, b) => a.rank - b.rank || a.title.localeCompare(b.title))
+    .slice(0, 6)
+
+  // 1) Entscheidung (kurz)
+  lines.push('', '— ENTSCHEIDUNG —')
+  lines.push(recommendation)
+  lines.push(`Win-Probability: ${winPct}%`)
+  lines.push(`ICP-Fit: ${analysis.icpFitLabel}`)
+  if (decisionReasons.length) {
+    lines.push('', 'Gründe (kurz):')
+    lines.push(...decisionReasons.map((t) => `• ${t}`))
+  }
+
+  // 2) Deal-Fakten & Commercials
+  lines.push('', '— DEAL-FAKTEN & COMMERCIALS —')
+  if (commercialLines.length) {
+    lines.push(...commercialLines)
+  } else {
+    lines.push('• Erwartetes Deal-Volumen: — (nicht im Dokument extrahiert)')
+    lines.push('• Bid-Investment: — (nicht im Dokument extrahiert)')
+  }
+  if (scopeLines.length) lines.push(...scopeLines)
+  else lines.push('• Tech-Fokus: —', '• Governance: —')
+
+  // 3) Fit & Gap (ohne tiefe Qualification)
+  lines.push('', '— FIT & GAP —')
+  lines.push(strategicAssessment)
+  if (hasSuitabilityContent(suitability)) {
+    const koCandidates = [
+      ...suitability.bidderRequirements,
+      ...suitability.roleQualifications,
+      ...suitability.specialConditions,
+    ]
+    const shown = koCandidates.slice(0, 6)
+    if (shown.length) {
+      lines.push('', 'K.O.- / Eignungsrahmen (kompakt):')
+      lines.push(...shown.map((t) => `• ${t}`))
+      const remaining = koCandidates.length - shown.length
+      if (remaining > 0) {
+        lines.push(`• +${remaining} weitere Details (siehe Deal Desk)`)
+      }
+    }
+  }
+
+  // 4) Buying Center & Wettbewerb (kurz, vor Risiken)
+  lines.push('', '— BUYING CENTER & VERFAHREN —')
   if (buyingLines.length) lines.push(...buyingLines)
   else {
     lines.push(
@@ -172,40 +213,23 @@ export function buildExecutiveBriefingText(params: {
     )
   }
 
-  lines.push('', '— KEY TAKEAWAYS —')
-  if (takeaways.length) {
-    lines.push(...takeaways.map((t) => `• ${t}`))
-  } else {
-    lines.push('• —')
-  }
-
-  lines.push('', '— KRITISCHE RISIKEN & CAPABILITIES —')
-  const riskBlocks: string[] = []
-
-  for (const r of capabilityFromBriefing.slice(0, 6)) {
-    riskBlocks.push(`• [${riskKindLabel(r.kind)}] ${r.title}`)
-    if (r.detail) riskBlocks.push(`  ${r.detail.replace(/\s+/g, ' ').slice(0, 280)}`)
-  }
-
-  for (const f of contractFlags.slice(0, 8)) {
-    if (capabilityFromBriefing.some((r) => r.title === f.title)) continue
-    riskBlocks.push(`• [${riskKindLabel(f.severity)}] ${f.title}`)
-    if (f.excerpt) riskBlocks.push(`  ${f.excerpt.replace(/\s+/g, ' ').slice(0, 280)}`)
-  }
-
-  if (riskBlocks.length === 0) {
+  // 5) Top-Risiken
+  lines.push('', '— TOP-RISIKEN —')
+  if (topRiskItems.length === 0) {
     lines.push('• Keine kritischen Risiken extrahiert.')
   } else {
-    lines.push(...riskBlocks)
+    for (const r of topRiskItems) {
+      lines.push(`• [${r.label}] ${r.title}`)
+      if (r.detail) lines.push(`  ${r.detail.replace(/\s+/g, ' ').slice(0, 280)}`)
+    }
   }
 
-  lines.push('', '— NÄCHSTE FRISTEN —')
+  // 6) Fristen (alle)
+  lines.push('', '— FRISTEN —')
   if (deadlines.length === 0) {
     lines.push('• Keine extrahierten Deadlines.')
   } else {
-    for (const d of deadlines) {
-      lines.push(`• ${formatDealDeadlineLabel(d)}`)
-    }
+    for (const d of deadlines) lines.push(`• ${formatDealDeadlineLabel(d)}`)
   }
 
   const openSme = (analysis.smeTasks ?? []).length

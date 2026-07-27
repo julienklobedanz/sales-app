@@ -34,6 +34,7 @@ import type { ReferenceVolumeFilter } from "@/lib/references/reference-volume-fi
 import { ReferenceVolumeFilterMenu } from "@/components/references/reference-volume-filter-menu"
 
 import type { ReferenceRow } from "../actions"
+import { ROUTES } from "@/lib/routes"
 
 /** Muss mit COLUMN_KEYS in dashboard-overview übereinstimmen */
 export type ReferenceColumnKey =
@@ -964,6 +965,7 @@ export function renderReferenceColumnCell(
         <TableDataCell className="min-w-0" style={widthStyle}>
           <TableTitleHoverContent
             title={ref.title}
+            href={ROUTES.references.detail(ref.id)}
             previewLabel="Projekt-Zusammenfassung"
             previewText={summaryText}
             emptyPreviewText="Noch keine Kurz-Zusammenfassung hinterlegt. Sie wird beim Anlegen der Referenz automatisch ergänzt, sobald ausreichend Kontext vorliegt — oder kann in der Referenz bearbeitet werden."

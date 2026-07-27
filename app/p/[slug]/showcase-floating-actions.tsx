@@ -2,10 +2,13 @@
 
 import { Suspense } from 'react'
 
-import { cn } from '@/lib/utils'
 import { ShowcaseContactFab } from './showcase-contact-fab'
 import { ShowcaseRevokeAction } from './showcase-revoke-action'
 
+/**
+ * Floating-Actions in Sperr-/Manage-Ansicht (unten rechts).
+ * Reihenfolge (oben → unten): Zugriff sperren, dann Sales-Ansprechpartner.
+ */
 export function ShowcaseFloatingActions({
   slug,
   showRevoke,
@@ -28,31 +31,22 @@ export function ShowcaseFloatingActions({
   if (!showRevoke && !showContact) return null
 
   return (
-    <>
-      {showContact ? (
-        <div
-          className={cn(
-            'fixed right-8 z-50',
-            showRevoke ? 'bottom-[4.75rem]' : 'bottom-6'
-          )}
-        >
-          <ShowcaseContactFab
-            name={shareOwnerName}
-            position={shareOwnerPosition}
-            avatarUrl={shareOwnerAvatar}
-            email={shareOwnerEmail}
-            phone={shareOwnerPhone}
-          />
-        </div>
+    <div className="fixed bottom-6 right-8 z-50 flex flex-col items-end gap-3">
+      {showRevoke ? (
+        <Suspense fallback={null}>
+          <ShowcaseRevokeAction slug={slug} />
+        </Suspense>
       ) : null}
 
-      {showRevoke ? (
-        <div className="fixed bottom-6 right-8 z-40">
-          <Suspense fallback={null}>
-            <ShowcaseRevokeAction slug={slug} />
-          </Suspense>
-        </div>
+      {showContact ? (
+        <ShowcaseContactFab
+          name={shareOwnerName}
+          position={shareOwnerPosition}
+          avatarUrl={shareOwnerAvatar}
+          email={shareOwnerEmail}
+          phone={shareOwnerPhone}
+        />
       ) : null}
-    </>
+    </div>
   )
 }
