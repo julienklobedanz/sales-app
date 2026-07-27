@@ -7,6 +7,8 @@ export type BulkImportReviewSuggestions = {
   volume_eur?: string[]
   customer_challenge?: string[]
   our_solution?: string[]
+  incumbent_provider?: string[]
+  competitors?: string[]
 }
 
 export type BulkImportExtractionResult =

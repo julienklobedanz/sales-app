@@ -254,7 +254,7 @@ export function MagicImportDropzone({
   const [isDragging, setIsDragging] = useState(false)
 
   const acceptTypes =
-    'application/pdf,.pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,application/msword,.doc,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx'
+    'application/pdf,.pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,application/msword,.doc,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,image/png,.png,image/jpeg,.jpg,.jpeg,image/webp,.webp'
 
   const MAX_SIZE_BYTES = 4.5 * 1024 * 1024
   const validateAndAccept = (file: File) => {
@@ -267,9 +267,13 @@ export function MagicImportDropzone({
       file.type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
       file.type === 'application/msword' ||
       file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-      /\.(pdf|pptx|doc|docx)$/i.test(file.name)
+      file.type === 'image/png' ||
+      file.type === 'image/jpeg' ||
+      file.type === 'image/jpg' ||
+      file.type === 'image/webp' ||
+      /\.(pdf|pptx|doc|docx|png|jpe?g|webp)$/i.test(file.name)
     if (ok) onFileAccept(file)
-    else toast.error('Nur Word-, PowerPoint- oder PDF-Dateien werden unterstützt.')
+    else toast.error('Nur Word-, PowerPoint-, PDF- oder Bild-Dateien (PNG/JPEG/WebP) werden unterstützt.')
   }
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -341,8 +345,8 @@ export function MagicImportDropzone({
               Hast du schon ein Referenzdokument?
             </p>
             <p className="text-muted-foreground max-w-md text-sm">
-              Lege jetzt deine Word, PowerPoint, oder PDF-Datei hier ab, um das Formular
-              automatisch zu befüllen.
+              Lege jetzt deine Word-, PowerPoint-, PDF- oder Bild-Datei (PNG/JPEG) hier ab, um das
+              Formular automatisch zu befüllen.
             </p>
           </>
         )}

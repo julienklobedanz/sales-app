@@ -447,6 +447,32 @@ export function useReferenceForm({
         if (d.company_name != null) setNewCompanyName(d.company_name)
         if (d.customer_challenge != null) setCustomerChallenge(d.customer_challenge)
         if (d.our_solution != null) setOurSolution(d.our_solution)
+        if (d.incumbent_provider?.trim()) setIncumbentProvider(d.incumbent_provider.trim())
+        if (d.competitors?.trim()) setCompetitors(d.competitors.trim())
+        if (d.contract_type?.trim()) {
+          const display = formatContractTypeDisplay(d.contract_type) || d.contract_type.trim()
+          setContractType(display)
+        }
+
+        const addMonthsIso = (iso: string, months: number): string => {
+          const dte = new Date(`${iso}T12:00:00Z`)
+          dte.setUTCMonth(dte.getUTCMonth() + months)
+          return dte.toISOString().slice(0, 10)
+        }
+        let start = d.project_start?.trim() || null
+        let end = d.project_end?.trim() || null
+        const months =
+          typeof d.duration_months === 'number' && d.duration_months > 0
+            ? Math.round(d.duration_months)
+            : null
+        if (months && start && !end) end = addMonthsIso(start, months)
+        if (months && end && !start) start = addMonthsIso(end, -months)
+        if (start) setProjectStart(start)
+        if (end) setProjectEnd(end)
+        if ((start || end) && (projectStatus === '__none__' || !projectStatus)) {
+          setProjectStatus('completed')
+        }
+
         toast.success('Daten aus dem Dokument übernommen. Bitte prüfen und ggf. anpassen.')
       } else {
         toast.error(

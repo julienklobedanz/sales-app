@@ -30,6 +30,8 @@ const SUGGESTION_LABELS: Record<keyof BulkImportReviewSuggestions, string> = {
   volume_eur: 'Volumen',
   customer_challenge: 'Herausforderung',
   our_solution: 'Lösung',
+  incumbent_provider: 'Bestandsdienstleister',
+  competitors: 'Wettbewerber',
 }
 
 export type BulkImportReviewItem = {

@@ -9,11 +9,14 @@ import { toast } from 'sonner'
 import { ROUTES } from '@/lib/routes'
 import { cn } from '@/lib/utils'
 
-const ACCEPTED_EXTENSIONS = ['.pdf', '.pptx', '.ppt']
+const ACCEPTED_EXTENSIONS = ['.pdf', '.pptx', '.ppt', '.png', '.jpg', '.jpeg', '.webp']
 const ACCEPTED_MIME_TYPES = new Set([
   'application/pdf',
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   'application/vnd.ms-powerpoint',
+  'image/png',
+  'image/jpeg',
+  'image/webp',
 ])
 
 function isAcceptedReferenceFile(file: File): boolean {
@@ -26,7 +29,7 @@ function filterAcceptedFiles(files: FileList | File[]): File[] {
   const list = Array.from(files)
   const accepted = list.filter(isAcceptedReferenceFile)
   if (accepted.length < list.length) {
-    toast.error('Nur PDF- und PPTX-Dateien werden unterstützt.')
+    toast.error('Nur PDF-, PPTX- und Bild-Dateien (PNG/JPEG/WebP) werden unterstützt.')
   }
   return accepted
 }
@@ -84,7 +87,7 @@ export function ReferenceOnboardingEmptyState({
           <input
             ref={inputRef}
             type="file"
-            accept=".pdf,.pptx,.ppt"
+            accept=".pdf,.pptx,.ppt,.png,.jpg,.jpeg,.webp"
             multiple
             className="sr-only"
             onChange={(e) => {

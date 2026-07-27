@@ -5,7 +5,7 @@ import { extractDataFromDocument } from '@/lib/document-extraction'
 export const runtime = 'nodejs'
 export const maxDuration = 120
 
-/** KI-Import aus PDF/DOCX/PPTX (Node-Runtime, native pdf-parse). */
+/** KI-Import aus PDF/DOCX/PPTX/PNG (Node-Runtime, native pdf-parse + Vision-OCR). */
 export async function POST(request: Request) {
   const supabase = await createServerSupabaseClient()
   const {

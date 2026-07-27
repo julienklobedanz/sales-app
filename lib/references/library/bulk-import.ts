@@ -127,18 +127,43 @@ export async function bulkCreateReferencesFromFilesImpl(
         contact_id: null,
         file_path: null,
         tags: parsed?.tags?.length ? parsed.tags.join(', ') : null,
-        project_status: null,
-        project_start: null,
-        project_end: null,
         website: co.website_url,
         employee_count: co.employee_count ?? parsed?.employee_count ?? null,
         volume_eur: parsed?.volume_eur?.trim() || null,
-        contract_type: null,
+        contract_type: parsed?.contract_type?.trim() || null,
+        incumbent_provider: parsed?.incumbent_provider?.trim() || null,
+        competitors: parsed?.competitors?.trim() || null,
         customer_contact: null,
         customer_challenge: parsed?.customer_challenge
           ? normalizeNarrativeText(parsed.customer_challenge)
           : null,
         our_solution: parsed?.our_solution ? normalizeNarrativeText(parsed.our_solution) : null,
+        project_status:
+          parsed?.project_start || parsed?.project_end || parsed?.duration_months
+            ? 'completed'
+            : null,
+        project_start: (() => {
+          let start = parsed?.project_start?.trim() || null
+          let end = parsed?.project_end?.trim() || null
+          const months = parsed?.duration_months
+          if (months && end && !start) {
+            const dte = new Date(`${end}T12:00:00Z`)
+            dte.setUTCMonth(dte.getUTCMonth() - months)
+            start = dte.toISOString().slice(0, 10)
+          }
+          return start
+        })(),
+        project_end: (() => {
+          let start = parsed?.project_start?.trim() || null
+          let end = parsed?.project_end?.trim() || null
+          const months = parsed?.duration_months
+          if (months && start && !end) {
+            const dte = new Date(`${start}T12:00:00Z`)
+            dte.setUTCMonth(dte.getUTCMonth() + months)
+            end = dte.toISOString().slice(0, 10)
+          }
+          return end
+        })(),
       })
       .select('id')
       .single()

@@ -395,7 +395,7 @@ export function BulkImportDialog({
                 ref={dropRef as React.RefObject<HTMLInputElement>}
                 type="file"
                 multiple
-                accept=".pdf,.pptx,.ppt"
+                accept=".pdf,.pptx,.ppt,.png,.jpg,.jpeg,.webp"
                 className="hidden"
                 onChange={(e) => {
                   const list = e.target.files ? Array.from(e.target.files) : []

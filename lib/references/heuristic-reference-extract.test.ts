@@ -74,4 +74,20 @@ Der Kunde benötigte eine moderne Datenplattform.`
     const parsed = parseReferenceHeuristicsFromText(text)
     expect(parsed.title).toBe('Next-Gen Customer Data Platform & Churn Prevention')
   })
+
+  it('liest Laufzeit, Bestandsdienstleister und Wettbewerber', () => {
+    const text = `Großanlage mit 224 Einheiten – gewonnen.
+42 Monate Laufzeit · gegen zwei Mitbewerber durchgesetzt.
+Gesamtvolumen 290.413 €
+Bestandsdienstleister: Hausverwaltung Süd (22,50 €)
+Wettbewerber: Competitor GmbH (22,50 €)
+München 2026`
+
+    const parsed = parseReferenceHeuristicsFromText(text)
+    expect(parsed.duration_months).toBe(42)
+    expect(parsed.incumbent_provider).toMatch(/Hausverwaltung Süd/)
+    expect(parsed.competitors).toMatch(/Competitor GmbH/)
+    expect(parsed.project_end).toBe('2026-12-31')
+    expect(parsed.project_start).toBeTruthy()
+  })
 })

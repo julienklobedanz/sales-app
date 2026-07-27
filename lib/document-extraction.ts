@@ -5,77 +5,30 @@ import type {
 import { MASTER_INDUSTRIES, resolveIndustryId } from '@/lib/constants/industries'
 import { parseReferenceHeuristicsFromText } from '@/lib/references/heuristic-reference-extract'
 import { clampNarrativeTextNullable } from '@/lib/references/reference-narrative-limits'
+import {
+  isSupportedReferenceImageMime,
+  ocrImageBufferWithOpenAi,
+} from '@/lib/image-ocr-openai'
 
 const INDUSTRY_IDS_LIST = MASTER_INDUSTRIES.map((item) => item.id).join(', ')
 
-async function extractTextFromPdf(buffer: Buffer): Promise<string> {
-  const { extractPdfPlainTextWithOcrFallback } = await import('@/lib/pdf-text-extract')
-  const result = await extractPdfPlainTextWithOcrFallback(buffer, { maxOcrPages: 40 })
-  return result.text
+function parseIsoDateOrNull(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  const t = value.trim()
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(t)) return null
+  const d = new Date(`${t}T12:00:00Z`)
+  return Number.isNaN(d.getTime()) ? null : t
 }
 
-function mapDocumentExtractError(err: Error, format: 'pdf' | 'pptx' | 'docx' | 'doc'): string {
-  const msg = err.message || ''
-  if (err.message === 'DOCX_EXTRACT_FAILED') {
-    return 'Text konnte nicht aus der Word-Datei gelesen werden. Bitte als PDF oder PowerPoint exportieren und erneut versuchen.'
+function parsePositiveIntOrNull(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+    return Math.round(value)
   }
-  if (err.message === 'DOC_FORMAT_UNSUPPORTED') {
-    return 'Ältere Word-Dateien (.doc) werden nicht unterstützt. Bitte als DOCX, PDF oder PowerPoint speichern und erneut hochladen.'
+  if (typeof value === 'string' && value.trim()) {
+    const n = Number.parseInt(value.trim(), 10)
+    if (Number.isFinite(n) && n > 0) return n
   }
-  if (/password|passwort|encrypted|verschlüsselt/i.test(msg)) {
-    return 'PDF ist passwortgeschützt oder verschlüsselt. Bitte ohne Kennwort exportieren oder die Felder manuell ausfüllen.'
-  }
-  if (/invalid pdf|invalidpdf|not a pdf|pdf header/i.test(msg)) {
-    return 'Die PDF-Datei ist beschädigt oder kein gültiges PDF. Bitte erneut exportieren oder die Felder manuell ausfüllen.'
-  }
-  if (process.env.NODE_ENV === 'development' && msg) {
-    console.error(`[document-extraction] ${format} parse failed:`, err)
-  }
-  if (format === 'pdf') {
-    return 'PDF-Text konnte nicht gelesen werden. Bitte erneut hochladen oder die Felder manuell ausfüllen.'
-  }
-  return 'Text konnte nicht aus dem Dokument gelesen werden. Bitte die Felder manuell ausfüllen.'
-}
-
-/** Extrahiert Text aus PPTX (ZIP mit ppt/slides/slideN.xml; Text in <a:t>-Elementen). */
-async function extractTextFromPptx(buffer: Buffer): Promise<string> {
-  const JSZip = (await import('jszip')).default
-  const zip = await JSZip.loadAsync(buffer)
-  const slideFiles = Object.keys(zip.files).filter((n) =>
-    /^ppt\/slides\/slide\d+\.xml$/i.test(n)
-  )
-  const texts: string[] = []
-  for (const name of slideFiles.sort()) {
-    const file = zip.files[name]
-    if (!file || file.dir) continue
-    const xml = await file.async('string')
-    const matches = xml.match(/<a:t>([^<]*)<\/a:t>/g)
-    if (matches)
-      texts.push(
-        matches
-          .map((m) => m.replace(/<\/?a:t>/g, '').trim())
-          .filter(Boolean)
-          .join(' ')
-      )
-  }
-  return texts.join('\n\n')
-}
-
-/** Extrahiert Text aus DOCX mit mammoth. */
-async function extractTextFromDocx(buffer: Buffer): Promise<string> {
-  try {
-    // mammoth erwartet ein Objekt mit Buffer-Eigenschaft
-    const mammoth = await import('mammoth')
-    const result = await (
-      mammoth as unknown as {
-        extractRawText: (args: { buffer: Buffer }) => Promise<{ value: string }>
-      }
-    ).extractRawText({ buffer })
-    return typeof result?.value === 'string' ? result.value : ''
-  } catch (e) {
-    console.error('extractTextFromDocx: error', e)
-    throw new Error('DOCX_EXTRACT_FAILED')
-  }
+  return null
 }
 
 async function extractWithLLM(documentText: string): Promise<ExtractedReferenceData> {
@@ -95,15 +48,25 @@ JSON-Schema:
   "title": "string oder null",
   "summary": "sehr kurze Zusammenfassung (max. 2 Sätze) oder null",
   "industry": "genau eine der erlaubten ID-Strings oder null — KEIN Freitext, KEINE Langlabels",
-  "volume_eur": "string z.B. '5M' oder '500000' oder null",
+  "volume_eur": "Gesamtvolumen als string z.B. '290413' oder '5M' oder null — bevorzuge Gesamtvertragswert vor MRR/ARR",
   "employee_count": Zahl oder null,
   "tags": ["tag1", "tag2"],
-  "company_name": "Firmenname / Kundenname aus dem Dokument oder null",
+  "company_name": "Kundenname / Auftraggeber aus dem Dokument oder null — NICHT der Anbieter/eigene Firma, wenn unterscheidbar",
   "customer_challenge": "Herausforderung des Kunden (sehr kurz, 1 Satz) oder null",
-  "our_solution": "Unsere Lösung / angebotene Lösung (sehr kurz, 1 Satz) oder null"
+  "our_solution": "Unsere Lösung / angebotene Lösung (sehr kurz, 1 Satz) oder null",
+  "duration_months": "Laufzeit in Monaten als Zahl oder null (z.B. 42)",
+  "project_start": "ISO-Datum YYYY-MM-DD oder null",
+  "project_end": "ISO-Datum YYYY-MM-DD oder null",
+  "incumbent_provider": "Bestandsdienstleister / bisheriger Anbieter (Name, optional Preis in Klammern) oder null",
+  "competitors": "Wettbewerber komma-getrennt (Namen, optional Preis/Hinweis in Klammern) oder null",
+  "contract_type": "Vertrags-/Leistungsart kurz (z.B. Managed Services) oder null"
 }
 
-Schreibe alle Textfelder so knapp wie möglich. Verwende KEINE Zeilenumbrüche in Strings.
+Regeln:
+- Schreibe alle Textfelder so knapp wie möglich. Keine Zeilenumbrüche in Strings.
+- Wenn nur eine Laufzeit bekannt ist (z.B. „42 Monate“) und ein Jahr genannt wird, setze project_end auf YYYY-12-31 dieses Jahres und project_start = Ende minus Laufzeit.
+- Wenn Laufzeit und Start ODER Ende bekannt sind, ergänze das fehlende Datum.
+- incumbent_provider / competitors: Namen beibehalten; Preisvergleiche kurz in Klammern erlauben.
 
 Dokumenttext (Ausschnitt):
 ---
@@ -122,12 +85,12 @@ Dokumenttext (Ausschnitt):
         {
           role: 'system',
           content:
-            'Du extrahierst aus deutschen Consulting-Case-Studies kompakte, strukturierte Referenzdaten für ein Sales-Tool. Antworte immer nur mit gültigem JSON. Für "industry" gib ausschließlich eine der vorgegebenen ID-Strings zurück (fin, ret, man, tech, media, energy, health, pub, log, cons, prop, other) — niemals Branchennamen oder Freitext.',
+            'Du extrahierst aus deutschen Consulting-Case-Studies und Win-Slides kompakte, strukturierte Referenzdaten für ein Sales-Tool. Antworte immer nur mit gültigem JSON. Für "industry" gib ausschließlich eine der vorgegebenen ID-Strings zurück (fin, ret, man, tech, media, energy, health, pub, log, cons, prop, other) — niemals Branchennamen oder Freitext.',
         },
         { role: 'user', content: prompt },
       ],
       temperature: 0.2,
-      max_tokens: 600,
+      max_tokens: 900,
     }),
   })
 
@@ -189,6 +152,21 @@ Dokumenttext (Ausschnitt):
       typeof parsed.our_solution === 'string'
         ? clampNarrativeTextNullable(parsed.our_solution)
         : null,
+    duration_months: parsePositiveIntOrNull(parsed.duration_months),
+    project_start: parseIsoDateOrNull(parsed.project_start),
+    project_end: parseIsoDateOrNull(parsed.project_end),
+    incumbent_provider:
+      typeof parsed.incumbent_provider === 'string' && parsed.incumbent_provider.trim()
+        ? parsed.incumbent_provider.trim()
+        : null,
+    competitors:
+      typeof parsed.competitors === 'string' && parsed.competitors.trim()
+        ? parsed.competitors.trim()
+        : null,
+    contract_type:
+      typeof parsed.contract_type === 'string' && parsed.contract_type.trim()
+        ? parsed.contract_type.trim()
+        : null,
   }
 }
 
@@ -198,6 +176,85 @@ export type ExtractFromBufferOptions = {
   /** Bei LLM-Fehler/Quota: Heuristik aus Klartext (kein OpenAI). */
   allowHeuristicFallback?: boolean
   pdfTitle?: string | null
+}
+
+async function extractTextFromPdf(buffer: Buffer): Promise<string> {
+  const { extractPdfPlainTextWithOcrFallback } = await import('@/lib/pdf-text-extract')
+  const result = await extractPdfPlainTextWithOcrFallback(buffer, { maxOcrPages: 40 })
+  return result.text
+}
+
+function mapDocumentExtractError(
+  err: Error,
+  format: 'pdf' | 'pptx' | 'docx' | 'doc' | 'image'
+): string {
+  const msg = err.message || ''
+  if (err.message === 'DOCX_EXTRACT_FAILED') {
+    return 'Text konnte nicht aus der Word-Datei gelesen werden. Bitte als PDF oder PowerPoint exportieren und erneut versuchen.'
+  }
+  if (err.message === 'DOC_FORMAT_UNSUPPORTED') {
+    return 'Ältere Word-Dateien (.doc) werden nicht unterstützt. Bitte als DOCX, PDF oder PowerPoint speichern und erneut hochladen.'
+  }
+  if (/password|passwort|encrypted|verschlüsselt/i.test(msg)) {
+    return 'PDF ist passwortgeschützt oder verschlüsselt. Bitte ohne Kennwort exportieren oder die Felder manuell ausfüllen.'
+  }
+  if (/invalid pdf|invalidpdf|not a pdf|pdf header/i.test(msg)) {
+    return 'Die PDF-Datei ist beschädigt oder kein gültiges PDF. Bitte erneut exportieren oder die Felder manuell ausfüllen.'
+  }
+  if (process.env.NODE_ENV === 'development' && msg) {
+    console.error(`[document-extraction] ${format} parse failed:`, err)
+  }
+  if (format === 'image') {
+    return (
+      msg ||
+      'Bild-Text konnte nicht gelesen werden. Bitte erneut versuchen, als PDF exportieren oder die Felder manuell ausfüllen.'
+    )
+  }
+  if (format === 'pdf') {
+    return 'PDF-Text konnte nicht gelesen werden. Bitte erneut hochladen oder die Felder manuell ausfüllen.'
+  }
+  return 'Text konnte nicht aus dem Dokument gelesen werden. Bitte die Felder manuell ausfüllen.'
+}
+
+/** Extrahiert Text aus PPTX (ZIP mit ppt/slides/slideN.xml; Text in <a:t>-Elementen). */
+async function extractTextFromPptx(buffer: Buffer): Promise<string> {
+  const JSZip = (await import('jszip')).default
+  const zip = await JSZip.loadAsync(buffer)
+  const slideFiles = Object.keys(zip.files).filter((n) =>
+    /^ppt\/slides\/slide\d+\.xml$/i.test(n)
+  )
+  const texts: string[] = []
+  for (const name of slideFiles.sort()) {
+    const file = zip.files[name]
+    if (!file || file.dir) continue
+    const xml = await file.async('string')
+    const matches = xml.match(/<a:t>([^<]*)<\/a:t>/g)
+    if (matches)
+      texts.push(
+        matches
+          .map((m) => m.replace(/<\/?a:t>/g, '').trim())
+          .filter(Boolean)
+          .join(' ')
+      )
+  }
+  return texts.join('\n\n')
+}
+
+/** Extrahiert Text aus DOCX mit mammoth. */
+async function extractTextFromDocx(buffer: Buffer): Promise<string> {
+  try {
+    // mammoth erwartet ein Objekt mit Buffer-Eigenschaft
+    const mammoth = await import('mammoth')
+    const result = await (
+      mammoth as unknown as {
+        extractRawText: (args: { buffer: Buffer }) => Promise<{ value: string }>
+      }
+    ).extractRawText({ buffer })
+    return typeof result?.value === 'string' ? result.value : ''
+  } catch (e) {
+    console.error('extractTextFromDocx: error', e)
+    throw new Error('DOCX_EXTRACT_FAILED')
+  }
 }
 
 /** Nur Klartext — für Bulk-Import-Vorschau und Heuristik. */
@@ -224,30 +281,41 @@ export async function extractPlainTextFromBuffer(
     mt === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
     /\.docx$/i.test(name)
   const isDoc = mt === 'application/msword' || /\.doc$/i.test(name)
+  const isImage = isSupportedReferenceImageMime(mt, name)
 
-  if (!isPdf && !isPptx && !isDocx && !isDoc) {
-    return { ok: false, error: 'Nur Word-, PowerPoint- oder PDF-Dateien werden unterstützt.' }
+  if (!isPdf && !isPptx && !isDocx && !isDoc && !isImage) {
+    return {
+      ok: false,
+      error: 'Nur Word-, PowerPoint-, PDF- oder Bild-Dateien (PNG/JPEG/WebP) werden unterstützt.',
+    }
   }
 
-  const format: 'pdf' | 'pptx' | 'docx' | 'doc' = isPdf
+  const format: 'pdf' | 'pptx' | 'docx' | 'doc' | 'image' = isPdf
     ? 'pdf'
     : isPptx
       ? 'pptx'
       : isDocx
         ? 'docx'
-        : 'doc'
+        : isImage
+          ? 'image'
+          : 'doc'
 
   try {
     let documentText: string
     if (isPdf) documentText = await extractTextFromPdf(buffer)
     else if (isPptx) documentText = await extractTextFromPptx(buffer)
     else if (isDocx) documentText = await extractTextFromDocx(buffer)
-    else throw new Error('DOC_FORMAT_UNSUPPORTED')
+    else if (isImage) {
+      documentText = await ocrImageBufferWithOpenAi(buffer, {
+        mimeType: mt,
+        fileName: name,
+      })
+    } else throw new Error('DOC_FORMAT_UNSUPPORTED')
     if (!documentText?.trim() || documentText.trim().length < 50) {
       return {
         ok: false,
         error:
-          'Zu wenig erkennbarer Text (evtl. Scan-PDF). Bitte Felder manuell ausfüllen.',
+          'Zu wenig erkennbarer Text (evtl. Scan/Bildqualität). Bitte Felder manuell ausfüllen.',
       }
     }
     return { ok: true, text: documentText }
@@ -285,6 +353,12 @@ export async function extractDataFromBuffer(
     company_name: data.company_name?.trim() || heuristicData.company_name,
     customer_challenge: data.customer_challenge?.trim() || heuristicData.customer_challenge,
     our_solution: data.our_solution?.trim() || heuristicData.our_solution,
+    duration_months: data.duration_months ?? heuristicData.duration_months,
+    project_start: data.project_start ?? heuristicData.project_start,
+    project_end: data.project_end ?? heuristicData.project_end,
+    incumbent_provider: data.incumbent_provider?.trim() || heuristicData.incumbent_provider,
+    competitors: data.competitors?.trim() || heuristicData.competitors,
+    contract_type: data.contract_type?.trim() || heuristicData.contract_type,
   })
 
   try {
@@ -323,4 +397,3 @@ export async function extractDataFromDocument(
     }
   }
 }
-

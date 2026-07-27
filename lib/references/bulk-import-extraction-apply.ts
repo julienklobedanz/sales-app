@@ -52,13 +52,20 @@ export async function applyBulkImportExtractionFromBuffer(
   const { data: ref, error: refErr } = await supabase
     .from('references')
     .select(
-      'id, title, company_id, summary, industry, volume_eur, customer_challenge, our_solution, tags, employee_count, website, country'
+      'id, title, company_id, summary, industry, volume_eur, customer_challenge, our_solution, tags, employee_count, website, country, incumbent_provider, competitors, contract_type, project_start, project_end, project_status'
     )
     .eq('id', id)
     .maybeSingle()
 
   if (refErr || !ref) return { success: false, error: 'Referenz nicht gefunden.' }
-  const refRow = ref as RefRow
+  const refRow = ref as RefRow & {
+    incumbent_provider: string | null
+    competitors: string | null
+    contract_type: string | null
+    project_start: string | null
+    project_end: string | null
+    project_status: string | null
+  }
 
   const { data: company } = await supabase
     .from('companies')
@@ -175,6 +182,42 @@ export async function applyBulkImportExtractionFromBuffer(
 
   if (d.employee_count != null && refRow.employee_count == null) {
     patch.employee_count = d.employee_count
+  }
+
+  if (d.incumbent_provider?.trim() && !String(refRow.incumbent_provider ?? '').trim()) {
+    patch.incumbent_provider = d.incumbent_provider.trim()
+  } else if (d.incumbent_provider?.trim()) {
+    pushSuggestion(suggestions, 'incumbent_provider', d.incumbent_provider.trim())
+  }
+
+  if (d.competitors?.trim() && !String(refRow.competitors ?? '').trim()) {
+    patch.competitors = d.competitors.trim()
+  } else if (d.competitors?.trim()) {
+    pushSuggestion(suggestions, 'competitors', d.competitors.trim())
+  }
+
+  if (d.contract_type?.trim() && !String(refRow.contract_type ?? '').trim()) {
+    patch.contract_type = d.contract_type.trim()
+  }
+
+  const addMonthsIso = (iso: string, months: number): string => {
+    const dte = new Date(`${iso}T12:00:00Z`)
+    dte.setUTCMonth(dte.getUTCMonth() + months)
+    return dte.toISOString().slice(0, 10)
+  }
+  let start = d.project_start?.trim() || null
+  let end = d.project_end?.trim() || null
+  const months =
+    typeof d.duration_months === 'number' && d.duration_months > 0
+      ? Math.round(d.duration_months)
+      : null
+  if (months && start && !end) end = addMonthsIso(start, months)
+  if (months && end && !start) start = addMonthsIso(end, -months)
+
+  if (start && !String(refRow.project_start ?? '').trim()) patch.project_start = start
+  if (end && !String(refRow.project_end ?? '').trim()) patch.project_end = end
+  if ((start || end) && !String(refRow.project_status ?? '').trim()) {
+    patch.project_status = 'completed'
   }
 
   const { data: companyFull } = await supabase

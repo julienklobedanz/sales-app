@@ -307,6 +307,56 @@ export function parseReferenceHeuristicsFromText(
     summary = clampNarrativeTextNullable(`Referenzprojekt: ${title}`)
   }
 
+  const joined = lines.join('\n')
+
+  let duration_months: number | null = null
+  const durationMatch = joined.match(
+    /\b(\d{1,3})\s*(?:monate|months|monat)\b|\b(?:laufzeit|duration)\s*[:–-]?\s*(\d{1,3})\b/i
+  )
+  if (durationMatch) {
+    const n = Number.parseInt(durationMatch[1] || durationMatch[2] || '', 10)
+    if (Number.isFinite(n) && n > 0 && n <= 600) duration_months = n
+  }
+
+  let incumbent_provider: string | null = null
+  const incumbentMatch = joined.match(
+    /(?:bestandsdienstleister|bisheriger\s+anbieter|incumbent(?:\s+provider)?)\s*[:–-]\s*([^\n|;]{2,80})/i
+  )
+  if (incumbentMatch?.[1]) {
+    incumbent_provider = incumbentMatch[1].replace(/\s+/g, ' ').trim() || null
+  }
+
+  let competitors: string | null = null
+  const competitorMatch = joined.match(
+    /(?:wettbewerber|mitbewerber|competitors?)\s*[:–-]\s*([^\n]{2,160})/i
+  )
+  if (competitorMatch?.[1]) {
+    competitors = competitorMatch[1].replace(/\s+/g, ' ').trim() || null
+  }
+
+  let project_start: string | null = null
+  let project_end: string | null = null
+  const rangeMatch = joined.match(
+    /\b(\d{1,2})[./](\d{1,2})[./](\d{2,4})\s*[–—-]\s*(\d{1,2})[./](\d{1,2})[./](\d{2,4})\b/
+  )
+  if (rangeMatch) {
+    const toIso = (d: string, m: string, y: string) => {
+      const year = y.length === 2 ? `20${y}` : y
+      return `${year}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`
+    }
+    project_start = toIso(rangeMatch[1]!, rangeMatch[2]!, rangeMatch[3]!)
+    project_end = toIso(rangeMatch[4]!, rangeMatch[5]!, rangeMatch[6]!)
+  } else if (duration_months) {
+    const yearMatch = joined.match(/\b(20\d{2})\b/)
+    if (yearMatch?.[1]) {
+      const endYear = yearMatch[1]
+      project_end = `${endYear}-12-31`
+      const end = new Date(`${project_end}T12:00:00Z`)
+      end.setUTCMonth(end.getUTCMonth() - duration_months)
+      project_start = end.toISOString().slice(0, 10)
+    }
+  }
+
   return {
     title: sanitizeExtractedProjectTitle(title),
     summary,
@@ -317,5 +367,11 @@ export function parseReferenceHeuristicsFromText(
     company_name,
     customer_challenge,
     our_solution,
+    duration_months,
+    project_start,
+    project_end,
+    incumbent_provider,
+    competitors,
+    contract_type: null,
   }
 }
