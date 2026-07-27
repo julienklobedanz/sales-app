@@ -134,8 +134,13 @@ export function buildExecutiveBriefingText(params: {
     detail?: string
   }
 
-  const severityRank = (k: 'critical' | 'high' | 'delivery'): number =>
-    k === 'critical' ? 0 : k === 'high' ? 1 : 2
+  const severityRank = (
+    k: DealDeskCapabilityRisk['kind'] | DealDeskRedFlag['severity']
+  ): number => {
+    if (k === 'critical') return 0
+    if (k === 'high') return 1
+    return 2
+  }
 
   const riskByTitle = new Map<string, RiskItem>()
   for (const r of capabilityFromBriefing) {
