@@ -1,6 +1,11 @@
 export const SETTINGS_CARD_CLASS = 'rounded-xl border border-slate-200 bg-white p-6 shadow-sm'
+/** Kompaktere Card für den Persönlich-Tab (weniger Padding, gleicher Card-Look). */
+export const SETTINGS_CARD_CLASS_COMPACT =
+  'rounded-xl border border-slate-200 bg-white p-4 shadow-sm'
 export const SETTINGS_DANGER_ZONE_CLASS =
   'rounded-xl border border-red-300 bg-red-50/50 p-6 shadow-sm'
+export const SETTINGS_DANGER_ZONE_CLASS_COMPACT =
+  'rounded-xl border border-red-300 bg-red-50/50 p-4 shadow-sm'
 
 /** Canonical settings tabs (4). Legacy query params map onto these. */
 export type SettingsTabId = 'profile' | 'workspace' | 'integrations' | 'process'

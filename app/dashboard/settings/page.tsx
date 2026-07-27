@@ -16,6 +16,7 @@ import { getOrganizationCrmConnectionPublicStatus } from '@/lib/crm/connections'
 import { isHubSpotConfigured } from '@/lib/crm/hubspot/config'
 import { parseOrgCapabilitySettings } from '@/lib/organizations/capability-profile-types'
 import { uiLocaleFromApiSettings } from '@/lib/i18n/ui-locale'
+import { parseOrganizationBillingSettings } from '@/lib/organizations/billing-settings'
 
 type AuditLogRow = {
   id: string
@@ -320,6 +321,9 @@ export default async function SettingsPage() {
           subscriptionId: orgRow?.stripe_subscription_id ?? null,
           subdomain:
             (orgRow as { subdomain?: string | null } | null)?.subdomain ?? '',
+          billingSettings: parseOrganizationBillingSettings(
+            (orgRow as { api_settings?: unknown } | null)?.api_settings
+          ),
           apiSettings: {
             apiKeyMask: apiSettingsParsed.apiKeyMask,
             useWorkspaceBranding: apiSettingsParsed.useWorkspaceBranding,

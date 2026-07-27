@@ -20,6 +20,7 @@ type HubSpotIntegrationCardProps = {
   canManage: boolean
   externalAccountId: string | null
   lastSyncAt: string | null
+  compact?: boolean
 }
 
 export function HubSpotIntegrationCard({
@@ -29,6 +30,7 @@ export function HubSpotIntegrationCard({
   canManage,
   externalAccountId,
   lastSyncAt,
+  compact = false,
 }: HubSpotIntegrationCardProps) {
   const router = useRouter()
   const [pending, setPending] = useState(false)
@@ -62,30 +64,40 @@ export function HubSpotIntegrationCard({
 
   return (
     <div className={cardClassName}>
-      <CardHeader className="px-0 pt-0">
-        <div className="flex items-center gap-2.5">
-          <div className="relative size-7 overflow-hidden rounded-md border border-slate-200 bg-white">
-            <Image
-              src="/brands/hubspot.png"
-              alt="HubSpot Logo"
-              fill
-              sizes="28px"
-              className="object-contain p-1"
-            />
+      <CardHeader className={compact ? 'space-y-1.5 px-0 pt-0 pb-0' : 'px-0 pt-0'}>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <div className="relative size-7 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-white">
+              <Image
+                src="/brands/hubspot.png"
+                alt="HubSpot Logo"
+                fill
+                sizes="28px"
+                className="object-contain p-1"
+              />
+            </div>
+            <CardTitle className={compact ? 'truncate text-sm font-semibold' : 'text-base'}>
+              HubSpot
+            </CardTitle>
           </div>
-          <CardTitle className="text-base">HubSpot</CardTitle>
+          <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-800">
+            Live
+          </span>
         </div>
-        <CardDescription className="text-slate-500">
+        <CardDescription
+          className={compact ? 'line-clamp-1 text-xs text-slate-500' : 'text-slate-500'}
+          title="Verbinde CRM-Kontakte und Deal-Daten mit RefStack."
+        >
           Verbinde CRM-Kontakte und Deal-Daten mit RefStack.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-5 px-0 pb-0 pt-5">
+      <CardContent className={compact ? 'space-y-2.5 px-0 pb-0 pt-3' : 'space-y-5 px-0 pb-0 pt-5'}>
         <div
-          className={`inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-xs ${
+          className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] ${
             connected ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'
           }`}
         >
-          <AppIcon icon={connected ? Tick01Icon : PlugSocketIcon} size={14} />
+          <AppIcon icon={connected ? Tick01Icon : PlugSocketIcon} size={12} />
           {connected ? 'Verbunden' : 'Nicht verbunden'}
         </div>
 
@@ -107,12 +119,12 @@ export function HubSpotIntegrationCard({
 
         {canManage && configured ? (
           connected ? (
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-1.5">
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                className="w-full justify-center"
+                className="h-8 w-full justify-center"
                 disabled={pending}
                 onClick={() => setCrmImportOpen(true)}
               >
@@ -122,7 +134,7 @@ export function HubSpotIntegrationCard({
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="w-full justify-center text-slate-600"
+                className="h-8 w-full justify-center text-slate-600"
                 disabled={pending}
                 onClick={handleDisconnect}
               >
@@ -130,12 +142,20 @@ export function HubSpotIntegrationCard({
               </Button>
             </div>
           ) : (
-            <Button type="button" variant="outline" size="sm" className="w-full justify-center" asChild>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 w-full justify-center"
+              asChild
+            >
               <a href={getHubSpotConnectHref('settings')}>Verbindung einrichten</a>
             </Button>
           )
         ) : !canManage ? (
-          <p className="text-xs text-slate-500">Nur Administratoren können CRM-Verbindungen verwalten.</p>
+          <p className="text-xs text-slate-500">
+            Nur Administratoren können CRM-Verbindungen verwalten.
+          </p>
         ) : null}
       </CardContent>
 

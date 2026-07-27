@@ -115,9 +115,31 @@ export async function inviteByEmail(
 
   const { data: org } = await supabase
     .from('organizations')
-    .select('name')
+    .select('name, api_settings')
     .eq('id', organizationId)
     .single()
+
+  const apiSettings =
+    org?.api_settings && typeof org.api_settings === 'object' && !Array.isArray(org.api_settings)
+      ? (org.api_settings as Record<string, unknown>)
+      : {}
+  const allowedDomainsRaw =
+    typeof apiSettings.invite_allowed_email_domains === 'string'
+      ? apiSettings.invite_allowed_email_domains
+      : ''
+  const allowedDomains = allowedDomainsRaw
+    .split(/[,\s]+/)
+    .map((d) => d.trim().toLowerCase().replace(/^@/, ''))
+    .filter(Boolean)
+  if (allowedDomains.length > 0) {
+    const domain = normalizedEmail.split('@')[1] ?? ''
+    if (!allowedDomains.includes(domain)) {
+      return {
+        success: false,
+        error: `Einladungen sind nur für Domains erlaubt: ${allowedDomains.join(', ')}`,
+      }
+    }
+  }
 
   const token = crypto.randomUUID()
   const expiresAt = new Date()

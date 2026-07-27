@@ -2,12 +2,14 @@
 
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
 import { asTableUpdate } from '@/lib/supabase/db-types'
+import { getAppOrigin } from '@/lib/env/app-origin'
 import { ROUTES } from '@/lib/routes'
 import { validatePasswordPolicy } from '@/lib/security/password-policy'
 import { isValidSalesPhone, salesContactValidationMessage } from '@/lib/profile/sales-contact'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
-import { legacyRoleToDimensions } from '@/lib/roles/legacy-mapping'
+import { isSystemAdmin, legacyRoleToDimensions } from '@/lib/roles/legacy-mapping'
 import { isSalesAppView } from '@/lib/roles/reference-access'
 
 function normalizeHttpsBookingUrl(raw: string | null | undefined): string | null {
@@ -180,5 +182,138 @@ export async function changeOwnPassword(formData: FormData): Promise<{ success?:
   if (updateError) return { error: updateError.message }
 
   revalidatePath(ROUTES.settings)
+  return { success: true }
+}
+
+export async function requestEmailChange(input: {
+  newEmail: string
+  currentPassword: string
+}): Promise<{ success: true; pendingEmail: string } | { success: false; error: string }> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user?.email) return { success: false, error: 'Nicht authentifiziert.' }
+
+  const newEmail = input.newEmail.trim().toLowerCase()
+  const currentPassword = input.currentPassword
+  if (!newEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+    return { success: false, error: 'Bitte eine gültige E-Mail-Adresse eingeben.' }
+  }
+  if (newEmail === user.email.toLowerCase()) {
+    return { success: false, error: 'Das ist bereits deine aktuelle E-Mail-Adresse.' }
+  }
+  if (!currentPassword) {
+    return { success: false, error: 'Bitte aktuelles Passwort eingeben.' }
+  }
+
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password: currentPassword,
+  })
+  if (signInError) {
+    return { success: false, error: 'Aktuelles Passwort ist ungültig.' }
+  }
+
+  const { error: updateError } = await supabase.auth.updateUser(
+    { email: newEmail },
+    { emailRedirectTo: `${getAppOrigin()}${ROUTES.authCallback}?next=${encodeURIComponent(ROUTES.settings)}` }
+  )
+  if (updateError) return { success: false, error: updateError.message }
+
+  revalidatePath(ROUTES.settings)
+  return { success: true, pendingEmail: newEmail }
+}
+
+export async function signOutOtherSessions(): Promise<{ success: true } | { success: false; error: string }> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht authentifiziert.' }
+
+  const { error } = await supabase.auth.signOut({ scope: 'others' })
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}
+
+export async function signOutAllSessions(): Promise<{ success: true } | { success: false; error: string }> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Nicht authentifiziert.' }
+
+  const { error } = await supabase.auth.signOut({ scope: 'global' })
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}
+
+export async function deleteOwnAccount(confirmEmail: string): Promise<
+  { success: true } | { success: false; error: string }
+> {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user?.email) return { success: false, error: 'Nicht authentifiziert.' }
+
+  const typed = confirmEmail.trim().toLowerCase()
+  if (!typed || typed !== user.email.toLowerCase()) {
+    return { success: false, error: 'E-Mail stimmt nicht überein.' }
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id, system_role, function_role, capabilities')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  const organizationId = profile?.organization_id ?? null
+  if (organizationId) {
+    const roles = parseProfileRoles(profile ?? {})
+    const { data: members } = await supabase
+      .from('profiles')
+      .select('id, system_role')
+      .eq('organization_id', organizationId)
+
+    const otherMembers = (members ?? []).filter((m) => m.id !== user.id)
+    if (otherMembers.length > 0 && isSystemAdmin(roles.systemRole)) {
+      const otherAdmins = otherMembers.filter((m) =>
+        isSystemAdmin(parseProfileRoles({ system_role: m.system_role }).systemRole)
+      )
+      if (otherAdmins.length === 0) {
+        return {
+          success: false,
+          error:
+            'Du bist der letzte Admin dieses Workspace. Bitte ernenne zuerst einen anderen Admin oder lösche den Workspace.',
+        }
+      }
+    }
+  }
+
+  // Service-Role weil Auth-User-Löschung Admin-API braucht / Grenze: nur eigener User nach Confirm.
+  const admin = createServiceRoleSupabaseClient()
+  if (!admin) {
+    return { success: false, error: 'Kontolöschung ist serverseitig nicht konfiguriert.' }
+  }
+
+  if (organizationId) {
+    const { count } = await admin
+      .from('profiles')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', organizationId)
+    if ((count ?? 0) <= 1) {
+      const { error: orgDeleteError } = await admin.from('organizations').delete().eq('id', organizationId)
+      if (orgDeleteError) {
+        return { success: false, error: orgDeleteError.message }
+      }
+    }
+  }
+
+  const { error: deleteError } = await admin.auth.admin.deleteUser(user.id)
+  if (deleteError) return { success: false, error: deleteError.message }
+
+  await supabase.auth.signOut({ scope: 'global' })
   return { success: true }
 }

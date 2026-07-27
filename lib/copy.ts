@@ -67,9 +67,9 @@ export const COPY = {
   },
   settings: {
     accountDeletionNotAvailableHint:
-      'Kontolöschung ist aktuell nicht als Self-Service verfügbar.',
+      'Kontolöschung entfernt deinen Login. Workspace-Daten bleiben für andere Mitglieder erhalten.',
     accountDeletionDisabledToast:
-      'Kontolöschung ist derzeit nicht aktiviert. Bitte wende dich an den Support, wenn du den Workspace schließen möchtest.',
+      'Kontolöschung ist fehlgeschlagen. Bitte versuche es erneut oder wende dich an den Support.',
     teamInviteEmailSent: 'Einladung wurde per E-Mail versendet.',
     teamInviteSavedEmailMissingKey:
       'Einladung ist gespeichert, aber E-Mail-Versand ist nicht konfiguriert (RESEND_API_KEY in der Server-Umgebung).',

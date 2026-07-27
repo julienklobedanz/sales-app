@@ -80,11 +80,13 @@ export function MarketSignalsPushCard() {
   }
 
   return (
-    <div className="rounded-lg border border-slate-200 p-3">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="rounded-lg border border-slate-200 px-3 py-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-medium">Browser registrieren (Web Push)</p>
-          <p className="text-xs text-slate-500">Status: {status === 'connected' ? 'Verbunden' : 'Nicht verbunden'}</p>
+          <p className="text-xs text-slate-500">
+            Status: {status === 'connected' ? 'Verbunden' : 'Nicht verbunden'}
+          </p>
         </div>
         <Button type="button" size="sm" variant="secondary" onClick={() => void enablePush()} disabled={pending}>
           <AppIcon icon={Notification01Icon} size={16} className="mr-2" />

@@ -88,6 +88,12 @@ export function SettingsTabs({
     }
     dateDisplayFormat: string
     uiLocale: string
+    billingSettings: {
+      companyAddress: string
+      vatId: string
+      defaultTimezone: string
+      inviteAllowedEmailDomains: string
+    }
   }
   teamMembers: Parameters<typeof SettingsTeamCard>[0]['initialMembers']
   auditLogs: Array<{

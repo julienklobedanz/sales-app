@@ -8,8 +8,9 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { PasswordInput } from '@/components/ui/password-input'
 import { Cancel01Icon, Loader, Save, Upload, User } from '@hugeicons/core-free-icons'
-import { updateProfile } from './actions'
+import { requestEmailChange, updateProfile } from './actions'
 import { AppIcon } from '@/lib/icons'
 
 export function SettingsProfileCard({
@@ -45,6 +46,11 @@ export function SettingsProfileCard({
   const [phoneValue, setPhoneValue] = useState(phone ?? '')
   const [bookingUrlValue, setBookingUrlValue] = useState(bookingUrl ?? '')
   const [lastHandledSaveSignal, setLastHandledSaveSignal] = useState(0)
+  const [emailEditing, setEmailEditing] = useState(false)
+  const [newEmail, setNewEmail] = useState('')
+  const [emailPassword, setEmailPassword] = useState('')
+  const [emailPending, setEmailPending] = useState(false)
+  const [pendingEmailNotice, setPendingEmailNotice] = useState<string | null>(null)
 
   const isDirty =
     firstNameValue !== firstName ||
@@ -117,16 +123,15 @@ export function SettingsProfileCard({
 
   function handleAvatarDelete() {
     setAvatarPreview(null)
-    // Hier könnte optional ein Server-Call zum Löschen des Avatars erfolgen.
   }
 
   return (
-    <form id="settings-profile-form" onSubmit={handleSubmit} className="space-y-6">
-      <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
-        <div className="flex flex-col items-center gap-2">
+    <form id="settings-profile-form" onSubmit={handleSubmit} className="space-y-3">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+        <div className="flex shrink-0 flex-col items-center gap-1.5">
           <button
             type="button"
-            className="group relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-muted-foreground/25 bg-muted/30"
+            className="group relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-muted-foreground/25 bg-muted/30"
             onDrop={handleAvatarDrop}
             onDragOver={handleAvatarDragOver}
             onClick={() => {
@@ -135,7 +140,7 @@ export function SettingsProfileCard({
             }}
           >
             {avatarLoading ? (
-              <AppIcon icon={Loader} size={24} className="animate-spin text-muted-foreground" />
+              <AppIcon icon={Loader} size={20} className="animate-spin text-muted-foreground" />
             ) : avatarPreview ? (
               <>
                 <img
@@ -145,7 +150,10 @@ export function SettingsProfileCard({
                 />
                 <button
                   type="button"
-                  onClick={handleAvatarDelete}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleAvatarDelete()
+                  }}
                   className="absolute -right-1 -top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-destructive/10 text-destructive opacity-0 shadow-sm ring-1 ring-destructive/20 transition-opacity duration-150 group-hover:opacity-100"
                   aria-label="Avatar entfernen"
                 >
@@ -153,18 +161,18 @@ export function SettingsProfileCard({
                 </button>
               </>
             ) : (
-              <AppIcon icon={User} size={40} className="text-muted-foreground/50" />
+              <AppIcon icon={User} size={28} className="text-muted-foreground/50" />
             )}
           </button>
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent"
+            className="inline-flex items-center gap-1 rounded-md border border-input bg-background px-2 py-1 text-[11px] font-medium hover:bg-accent"
             onClick={() => {
               const input = document.getElementById('profile-avatar-input') as HTMLInputElement | null
               input?.click()
             }}
           >
-            <AppIcon icon={Upload} size={14} />
+            <AppIcon icon={Upload} size={12} />
             Avatar hochladen
           </button>
           <input
@@ -181,83 +189,162 @@ export function SettingsProfileCard({
             }}
           />
         </div>
-        <div className="min-w-0 flex-1 space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="firstName">Vorname</Label>
+        <div className="min-w-0 flex-1 space-y-2.5">
+          <div className="grid gap-2.5 sm:grid-cols-2">
+            <div className="space-y-1">
+              <Label htmlFor="firstName" className="text-xs">
+                Vorname
+              </Label>
               <Input
                 id="firstName"
                 name="firstName"
                 value={firstNameValue}
                 onChange={(e) => setFirstNameValue(e.target.value)}
                 placeholder="Max"
-                className="bg-background"
+                className="h-9 bg-background"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="lastName">Nachname</Label>
+            <div className="space-y-1">
+              <Label htmlFor="lastName" className="text-xs">
+                Nachname
+              </Label>
               <Input
                 id="lastName"
                 name="lastName"
                 value={lastNameValue}
                 onChange={(e) => setLastNameValue(e.target.value)}
                 placeholder="Mustermann"
-                className="bg-background"
+                className="h-9 bg-background"
+              />
+            </div>
+            <div className="space-y-1 sm:col-span-2">
+              <Label htmlFor="email" className="text-xs">
+                E-Mail
+                {salesRequired ? <span className="text-destructive"> *</span> : null}
+              </Label>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <Input
+                  id="email"
+                  type="email"
+                  value={userEmail}
+                  readOnly
+                  className="h-9 cursor-not-allowed bg-muted/50"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-9 shrink-0"
+                  onClick={() => {
+                    setEmailEditing((v) => !v)
+                    setNewEmail('')
+                    setEmailPassword('')
+                  }}
+                >
+                  {emailEditing ? 'Abbrechen' : 'E-Mail ändern'}
+                </Button>
+              </div>
+              {pendingEmailNotice ? (
+                <p className="text-[11px] text-amber-700">
+                  Bestätigung ausstehend für {pendingEmailNotice}. Bitte Posteingang prüfen
+                  (neue und ggf. alte Adresse).
+                </p>
+              ) : null}
+              {emailEditing ? (
+                <div className="grid gap-2 rounded-md border border-border/70 bg-muted/20 p-2.5 sm:grid-cols-[1fr_1fr_auto]">
+                  <div className="space-y-1">
+                    <Label htmlFor="newEmail" className="text-xs">
+                      Neue E-Mail
+                    </Label>
+                    <Input
+                      id="newEmail"
+                      type="email"
+                      value={newEmail}
+                      onChange={(e) => setNewEmail(e.target.value)}
+                      className="h-9 bg-background"
+                      autoComplete="email"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="emailCurrentPassword" className="text-xs">
+                      Aktuelles Passwort
+                    </Label>
+                    <PasswordInput
+                      id="emailCurrentPassword"
+                      value={emailPassword}
+                      onChange={(e) => setEmailPassword(e.target.value)}
+                      className="h-9"
+                      autoComplete="current-password"
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="h-9 w-full sm:w-auto"
+                      disabled={emailPending}
+                      onClick={async () => {
+                        setEmailPending(true)
+                        const result = await requestEmailChange({
+                          newEmail,
+                          currentPassword: emailPassword,
+                        })
+                        setEmailPending(false)
+                        if (!result.success) {
+                          toast.error(result.error)
+                          return
+                        }
+                        setPendingEmailNotice(result.pendingEmail)
+                        setEmailEditing(false)
+                        setNewEmail('')
+                        setEmailPassword('')
+                        toast.success('Bestätigungslink wurde gesendet.')
+                      }}
+                    >
+                      {emailPending ? 'Senden …' : 'Link senden'}
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="phone" className="text-xs">
+                Telefon
+                {salesRequired ? <span className="text-destructive"> *</span> : null}
+              </Label>
+              <Input
+                id="phone"
+                name="phone"
+                type="tel"
+                inputMode="tel"
+                value={phoneValue}
+                onChange={(e) => setPhoneValue(e.target.value)}
+                placeholder="+49 …"
+                className="h-9 bg-background"
+                autoComplete="tel"
+                required={salesRequired}
+              />
+            </div>
+            <div className="space-y-1 sm:col-span-2">
+              <Label htmlFor="bookingUrl" className="text-xs">
+                Terminbuchung (öffentliche Kundenansicht)
+              </Label>
+              <Input
+                id="bookingUrl"
+                name="bookingUrl"
+                type="url"
+                inputMode="url"
+                placeholder="https://calendly.com/…"
+                value={bookingUrlValue}
+                onChange={(e) => setBookingUrlValue(e.target.value)}
+                className="h-9 bg-background"
+                autoComplete="off"
               />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">
-              E-Mail
-              {salesRequired ? <span className="text-destructive"> *</span> : null}
-            </Label>
-            <Input
-              id="email"
-              type="email"
-              value={userEmail}
-              readOnly
-              className="bg-muted/50 cursor-not-allowed"
-            />
-          </div>
-          <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="phone">
-              Telefon
-              {salesRequired ? <span className="text-destructive"> *</span> : null}
-            </Label>
-            <Input
-              id="phone"
-              name="phone"
-              type="tel"
-              inputMode="tel"
-              value={phoneValue}
-              onChange={(e) => setPhoneValue(e.target.value)}
-              placeholder="+49 …"
-              className="bg-background"
-              autoComplete="tel"
-              required={salesRequired}
-            />
-          </div>
-          <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="bookingUrl">Terminbuchung (öffentliche Kundenansicht)</Label>
-            <Input
-              id="bookingUrl"
-              name="bookingUrl"
-              type="url"
-              inputMode="url"
-              placeholder="https://calendly.com/…"
-              value={bookingUrlValue}
-              onChange={(e) => setBookingUrlValue(e.target.value)}
-              className="bg-background"
-              autoComplete="off"
-            />
-          </div>
         </div>
       </div>
-      <input
-        type="hidden"
-        name="avatarDataUrl"
-        value={avatarPreview ?? ''}
-      />
+      <input type="hidden" name="avatarDataUrl" value={avatarPreview ?? ''} />
       {!hideSubmitButton ? (
         <div className="flex justify-end">
           <Button type="submit" size="sm" disabled={pending}>

@@ -95,18 +95,12 @@ export async function updateProfileNotificationSettings(input: {
 }
 
 export async function updateWorkspaceAdminSettings(input: {
-  subdomain: string
   apiKeyMask: string
   useWorkspaceBranding: boolean
 }): Promise<ActionResult> {
   const { supabase, organizationId } = await getContext()
   if (!organizationId) {
     return { success: false, error: 'Keine Organisation zugeordnet.' }
-  }
-
-  const normalizedSubdomain = input.subdomain.trim().toLowerCase()
-  if (normalizedSubdomain && !/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(normalizedSubdomain)) {
-    return { success: false, error: 'Subdomain-Format ungültig.' }
   }
 
   const { data: orgRow, error: readErr } = await supabase
@@ -122,7 +116,6 @@ export async function updateWorkspaceAdminSettings(input: {
       : {}
 
   const updates = {
-    subdomain: normalizedSubdomain || null,
     api_settings: {
       ...prevApi,
       workspace_key_mask: input.apiKeyMask.trim() || null,

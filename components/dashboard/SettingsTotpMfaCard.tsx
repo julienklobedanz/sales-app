@@ -38,7 +38,7 @@ function extractTotpFactors(data: unknown): MfaFactor[] {
   return []
 }
 
-export function SettingsTotpMfaCard() {
+export function SettingsTotpMfaCard({ compact = false }: { compact?: boolean }) {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [factors, setFactors] = useState<MfaFactor[]>([])
@@ -188,11 +188,17 @@ export function SettingsTotpMfaCard() {
 
   return (
     <>
-      <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div
+        className={
+          compact
+            ? 'flex flex-col gap-2 rounded-lg border border-slate-200 bg-slate-50/70 p-3 sm:flex-row sm:items-center sm:justify-between'
+            : 'flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50/70 p-4 sm:flex-row sm:items-center sm:justify-between'
+        }
+      >
         <div>
           <p className="text-sm font-medium text-slate-900">Zwei-Faktor-Authentifizierung (TOTP)</p>
           {loading || verifiedFactor ? (
-            <p className="mt-1 text-xs text-slate-600">
+            <p className={compact ? 'mt-0.5 text-xs text-slate-600' : 'mt-1 text-xs text-slate-600'}>
               {loading
                 ? 'Status wird geladen …'
                 : 'Authenticator ist eingerichtet. Bei der Anmeldung wird ein Code abgefragt.'}

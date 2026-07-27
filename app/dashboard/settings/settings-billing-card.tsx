@@ -49,12 +49,10 @@ export function SettingsBillingCard({ subscriptionStatus, subscriptionId }: Prop
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3 text-muted-foreground">
-        <AppIcon icon={CreditCard} size={20} />
-        <span className="text-sm font-medium uppercase tracking-wider">
-          Abonnement
-        </span>
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 text-muted-foreground">
+        <AppIcon icon={CreditCard} size={16} />
+        <span className="text-sm font-semibold tracking-tight text-foreground">Abonnement</span>
       </div>
 
       {!stripeConfigured ? (
@@ -64,17 +62,9 @@ export function SettingsBillingCard({ subscriptionStatus, subscriptionId }: Prop
       ) : hasActiveSub ? (
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground">
-            Status:{' '}
-            <span className="font-medium text-foreground">
-              Aktiv
-            </span>
+            Status: <span className="font-medium text-foreground">Aktiv</span>
           </p>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handlePortal}
-            disabled={pendingPortal}
-          >
+          <Button size="sm" variant="outline" onClick={handlePortal} disabled={pendingPortal}>
             {pendingPortal && (
               <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />
             )}
@@ -84,14 +74,10 @@ export function SettingsBillingCard({ subscriptionStatus, subscriptionId }: Prop
       ) : (
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground">
-            Du nutzt aktuell die Basis-Version. Upgrade auf <span className="font-medium">Pro</span>, um alle Funktionen freizuschalten.
+            Du nutzt aktuell die Basis-Version. Upgrade auf{' '}
+            <span className="font-medium">Pro</span>, um alle Funktionen freizuschalten.
           </p>
-          <Button
-            size="sm"
-            className="gap-2"
-            onClick={handleCheckout}
-            disabled={pendingCheckout}
-          >
+          <Button size="sm" className="gap-2" onClick={handleCheckout} disabled={pendingCheckout}>
             {pendingCheckout && (
               <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />
             )}

@@ -100,7 +100,6 @@ export function AdminTab({
   function saveWorkspaceAdmin() {
     startWorkspaceTransition(async () => {
       const result = await updateWorkspaceAdminSettings({
-        subdomain: org.subdomain,
         apiKeyMask,
         useWorkspaceBranding,
       })

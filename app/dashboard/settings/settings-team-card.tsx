@@ -243,12 +243,12 @@ export function SettingsTeamCard({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <div>
-        <h2 className="text-lg font-semibold tracking-tight">Team</h2>
+        <h2 className="text-sm font-semibold tracking-tight">Team</h2>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
         <form
           onSubmit={handleInvite}
           className="flex flex-1 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center"
@@ -259,7 +259,7 @@ export function SettingsTeamCard({
               placeholder="E-Mail-Adresse eingeben"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="bg-background"
+              className="h-9 bg-background"
               autoComplete="email"
             />
           </div>
@@ -268,11 +268,7 @@ export function SettingsTeamCard({
             functionRole={inviteRoles.functionRole}
             onChange={setInviteRoles}
           />
-          <Button
-            type="submit"
-            className="gap-2"
-            disabled={invitePending}
-          >
+          <Button type="submit" size="sm" className="gap-2" disabled={invitePending}>
             <AppIcon icon={UserPlus} size={16} />
             Einladen
           </Button>
@@ -281,7 +277,7 @@ export function SettingsTeamCard({
 
       <div>
         {members.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 py-6 text-center text-sm text-muted-foreground">
+          <p className="rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 py-5 text-center text-sm text-muted-foreground">
             Noch keine Mitglieder. Lade jemanden per E-Mail ein.
           </p>
         ) : (
@@ -289,32 +285,32 @@ export function SettingsTeamCard({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>E-Mail</TableHead>
-                  <TableHead>Rolle</TableHead>
-                  <TableHead className="text-right">Aktionen</TableHead>
+                  <TableHead className="w-[32%] min-w-[180px]">Name</TableHead>
+                  <TableHead className="w-[24%]">E-Mail</TableHead>
+                  <TableHead className="w-[28%]">Rolle</TableHead>
+                  <TableHead className="w-[16%] text-right">Aktionen</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {members.map((m) => (
                   <TableRow key={m.id}>
-                    <TableCell className="font-medium">
-                      {m.status === 'active'
-                        ? m.name || 'Unbekannt'
-                        : deriveDisplayNameFromEmail(m.email)}
-                      <span className="ml-2">
+                    <TableCell className="max-w-0 font-medium">
+                      <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                        <span className="min-w-0 truncate">
+                          {m.status === 'active'
+                            ? m.name || 'Unbekannt'
+                            : deriveDisplayNameFromEmail(m.email)}
+                        </span>
                         {m.status === 'active' ? (
-                          <Badge className="bg-accent text-accent-foreground">
-                            Aktiv
-                          </Badge>
+                          <Badge className="shrink-0 bg-accent text-accent-foreground">Aktiv</Badge>
                         ) : (
-                          <Badge className="bg-muted text-foreground border-border">
+                          <Badge className="shrink-0 border-border bg-muted text-foreground">
                             Ausstehend
                           </Badge>
                         )}
-                      </span>
+                      </div>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell className="max-w-0 truncate text-muted-foreground">
                       {m.email || '—'}
                     </TableCell>
                     <TableCell>
