@@ -174,9 +174,13 @@ export default async function PublicPortfolioPage({
 
   if (result.references.length === 1 && branding.found) {
     const singleRef = result.references[0]!
+    const approvalTokenFromPortfolio =
+      typeof singleRef.approval_token === 'string' ? singleRef.approval_token.trim() : ''
     const approvalEditUrl =
       revokeMode && result.canDeactivate && manageToken
-        ? await resolveApprovalEditUrlForManageView(slug, manageToken, singleRef.id)
+        ? approvalTokenFromPortfolio
+          ? `/approval/${approvalTokenFromPortfolio}`
+          : await resolveApprovalEditUrlForManageView(slug, manageToken, singleRef.id)
         : null
 
     let manageInsights: { viewCount: number; lastViewLabel: string | null } | null = null

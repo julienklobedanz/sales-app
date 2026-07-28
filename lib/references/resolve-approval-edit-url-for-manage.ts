@@ -1,9 +1,9 @@
 import { createHash, randomUUID } from 'crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
 import {
   effectiveCustomerApprovalStatus,
-  hasActiveCustomerApprovalWorkflow,
 } from '@/lib/references/effective-customer-approval'
 
 function hashManageToken(plain: string): string {
@@ -33,6 +33,24 @@ async function verifyManageTokenForReference(
   return storedHash === hashManageToken(manageToken.trim())
 }
 
+async function resolveViaManageRpc(
+  slug: string,
+  manageToken: string,
+  referenceId: string
+): Promise<string | null> {
+  const supabase = await createServerSupabaseClient()
+  const { data, error } = await supabase.rpc('resolve_manage_approval_edit', {
+    p_slug: slug,
+    p_manage_token: manageToken,
+    p_reference_id: referenceId,
+  })
+  if (error) return null
+  const payload = data as { found?: boolean; approval_token?: string } | null
+  const token = typeof payload?.approval_token === 'string' ? payload.approval_token.trim() : ''
+  if (!payload?.found || !token) return null
+  return `/approval/${token}`
+}
+
 /**
  * Sperr-Link-Ansicht: Freigabe-URL für Kunden-Bearbeitung.
  * Stellt fehlenden approval_token bei gültigem manage-Token automatisch wieder her.
@@ -47,7 +65,11 @@ export async function resolveApprovalEditUrlForManageView(
   const slugTrim = slug.trim()
   if (!tokenTrim || !refId || !slugTrim) return null
 
-  // Service-Role weil: Manage-Token-View ohne Login; RLS blockiert Token-Wiederherstellung.
+  // Prefer SECURITY DEFINER RPC (works without service-role; manage-hash gated).
+  const viaRpc = await resolveViaManageRpc(slugTrim, tokenTrim, refId)
+  if (viaRpc) return viaRpc
+
+  // Fallback: Service-Role (ältere DBs ohne resolve_manage_approval_edit).
   // Grenze: verifyManageTokenForReference (Hash + reference_ids) vor jedem Read/Write.
   const admin = createServiceRoleSupabaseClient()
   if (!admin) return null
@@ -72,10 +94,7 @@ export async function resolveApprovalEditUrlForManageView(
   const existing = typeof ref.approval_token === 'string' ? ref.approval_token.trim() : ''
   if (existing) return `/approval/${existing}`
 
-  if (!hasActiveCustomerApprovalWorkflow(ref.customer_approval_status, ref.status)) {
-    return null
-  }
-
+  // Gültiger Manage-Token + Referenz im Portfolio → Token wiederherstellen
   const effective = effectiveCustomerApprovalStatus(ref.customer_approval_status, ref.status)
   const newToken = randomUUID()
   const patch: {

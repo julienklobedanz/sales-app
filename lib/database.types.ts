@@ -2793,6 +2793,10 @@ export type Database = {
         }
         Returns: Json
       }
+      resolve_manage_approval_edit: {
+        Args: { p_manage_token: string; p_reference_id: string; p_slug: string }
+        Returns: Json
+      }
       resolve_shared_portfolio_recipient: {
         Args: { p_slug: string; p_token: string }
         Returns: Json

@@ -118,25 +118,27 @@ export function ApprovalCaseDataBar({
       {revokeMode ? (
         <div
           className={cn(
-            'flex w-full flex-col items-center justify-center gap-1 border-b border-amber-500/20 bg-amber-500/10 px-4 py-2 text-center',
+            'flex w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 border-b border-amber-500/20 bg-amber-500/10 px-4 py-2 text-center text-xs font-medium text-amber-600 dark:text-amber-400',
             isGlass && 'bg-amber-500/20 supports-[backdrop-filter]:bg-amber-500/25'
           )}
         >
-          <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
-            🔒 Sie sehen die Verwaltungs-Ansicht Ihrer Referenz. Sie können den Zugriff jederzeit über
-            den roten Button widerrufen.
-          </p>
+          <span>
+            🔒 Verwaltungs-Ansicht — Zugriff jederzeit über den roten Button widerrufbar.
+          </span>
           {prospectPreviewHref ? (
-            <p className="text-xs text-amber-700/90 dark:text-amber-300/90">
+            <>
+              <span className="text-amber-500/50" aria-hidden>
+                ·
+              </span>
               <Link
                 href={prospectPreviewHref}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-medium underline underline-offset-2 hover:text-amber-800 dark:hover:text-amber-200"
+                className="underline underline-offset-2 hover:text-amber-800 dark:hover:text-amber-200"
               >
                 So sehen Empfänger Ihre Referenz
               </Link>
-            </p>
+            </>
           ) : null}
         </div>
       ) : null}
