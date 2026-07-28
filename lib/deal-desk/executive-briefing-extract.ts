@@ -55,6 +55,7 @@ Antworte NUR mit JSON (kein Markdown):
   "bidderRequirements": ["<Zertifizierungen, Haftpflicht, Referenzen an den Bieter>"],
   "roleQualifications": ["<Sprachkenntnisse, Rollen, KRITIS-Erfahrung der Projektteilnehmer>"],
   "specialConditions": ["<Datenhaltung EU/EWR, Mindestlohn, Laufzeit, Bietergemeinschaft etc.>"],
+  "requiredSubmissionDocuments": ["<einzureichende Unterlagen mit dem Angebot, z.B. Angebotsformular, Preisblatt, Referenznachweise, ISO-Zertifikat, Handelsregisterauszug>"],
   "projectOverviewPlain": "<2-4 Sätze neutrale Projektübersicht für eine Notice-Seite, ohne Go/No-Bid>",
   "tenderLots": [
     {
@@ -74,7 +75,8 @@ Regeln:
 - keyTakeaways: prägnant, für Vorstand/E-Mail.
 - domainTags: thematische Klassifizierung (keine Duplikate).
 - projectLocation: Stadt + Land-Kürzel wenn erkennbar, sonst null.
-- bidderRequirements / roleQualifications / specialConditions: je 0-8 kurze Bullet-Strings aus dem Text.`
+- bidderRequirements / roleQualifications / specialConditions: je 0-8 kurze Bullet-Strings aus dem Text.
+- requiredSubmissionDocuments: nur Unterlagen, die Bieter mit dem Angebot einreichen müssen (0-12 kurze Namen/Titel). Keine Dateinamen der vorliegenden RFP-PDFs.`
 
   try {
     const res = await fetch('https://api.openai.com/v1/chat/completions', {

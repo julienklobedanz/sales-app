@@ -22,7 +22,27 @@ const SHORT_KIND_LABELS: Partial<Record<DealDeadlineKind, string>> = {
   presentation: 'Präsentation',
   award_expected: 'Vergabe',
   internal_review: 'Intern',
-  custom: 'Termin',
+}
+
+function chipShortLabel(kind: DealDeadlineKind, rowLabel: string): string {
+  const fixed = SHORT_KIND_LABELS[kind]
+  if (kind !== 'custom' && fixed) return fixed
+
+  const label = rowLabel.trim()
+  if (!label) return fixed ?? 'Termin'
+
+  const words = label.split(/\s+/).filter(Boolean)
+  // For custom timelines, 2 words are often too generic (e.g. "Öffnung der").
+  // Prefer up to 3 words if the label is still reasonably short.
+  if (words.length <= 3 && label.length <= 28) return label
+
+  const threeWords = words.slice(0, 3).join(' ')
+  if (threeWords.length <= 26) return threeWords
+
+  const twoWords = words.slice(0, 2).join(' ')
+  if (twoWords.length <= 22) return twoWords
+
+  return `${twoWords.slice(0, 20).trim()}…`
 }
 
 export type DeadlineMilestoneChip = {
@@ -96,7 +116,7 @@ export function buildDeadlineMilestoneChips(
     chips.push({
       id: row.id,
       kind,
-      shortLabel: SHORT_KIND_LABELS[kind] ?? kindLabel,
+      shortLabel: chipShortLabel(kind, row.label || kindLabel),
       fullLabel: row.label || kindLabel,
       dueAtIso: dueIso,
       daysUntil: days,

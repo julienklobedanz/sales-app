@@ -177,7 +177,7 @@ export const COPY = {
       stammdatenEmpty: 'Noch keine Stammdaten — nach der Analyse erscheinen Auftraggeber, Fristen und Eckdaten hier.',
       stammdatenFields: {
         customer: 'Auftraggeber',
-        documents: 'Dokument(e)',
+        documents: 'Einzureichende Unterlagen',
         location: 'Standort',
         volume: 'Budget / Volumen',
         submissionDeadline: 'Einreichungsfrist',
@@ -209,6 +209,7 @@ export const COPY = {
       findReferenceDescription:
         'Smart Search und RFP-Coverage mit vorausgefülltem Deal-Kontext. Treffer können direkt verknüpft werden.',
       nextDeadlineLabel: 'Nächste Frist',
+      deadlinesAllTitle: 'Alle Fristen',
       deadlinesEmpty: 'Keine Termine',
       ausschreibungNavDokumente: 'Dokumente',
       ausschreibungNavUrteil: 'Urteil',
@@ -290,6 +291,8 @@ export const COPY = {
       draftsSaveFailed: 'Antwort konnte nicht gespeichert werden.',
       draftsCoveredCount: '{covered}/{total} belegt',
       draftsGapsCount: '{count} Lücken',
+      draftsShowAll: 'Alle {count} Entwürfe anzeigen',
+      draftsShowFewer: 'Weniger anzeigen',
       briefingDialogTitle: 'Executive Briefing',
       briefingDialogDescription:
         'Kompakte Bid-Zusammenfassung für interne Freigabe (Management, ohne Qualification Call).',

@@ -29,13 +29,12 @@ export function buildRfpStammdatenRows(
     rows.push({ key, label, value: v })
   }
 
-  const docs =
-    Array.isArray(snap.documentNames) && snap.documentNames.length > 0
-      ? snap.documentNames.filter(Boolean).join(', ')
-      : snap.documentName
-
   push('customer', labels.customer, snap.customerName)
-  push('documents', labels.documents, docs)
+  push(
+    'documents',
+    labels.documents,
+    joinList(briefing.requiredSubmissionDocuments, 6)
+  )
   push('location', labels.location, briefing.projectLocation)
   push('volume', labels.volume, briefing.expectedDealVolume)
   push('submissionDeadline', labels.submissionDeadline, briefing.submissionDeadline)

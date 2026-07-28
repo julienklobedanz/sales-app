@@ -27,6 +27,11 @@ export type DealDeskExecutiveBriefingFields = {
   bidderRequirements: string[]
   roleQualifications: string[]
   specialConditions: string[]
+  /**
+   * Unterlagen, die mit dem Angebot einzureichen sind
+   * (Angebotsformular, Referenzen, Zertifikate, Preisblatt …) — nicht die hochgeladenen RFP-PDFs.
+   */
+  requiredSubmissionDocuments: string[]
   /** Notice-artige Kurz-Projektübersicht (2–4 Sätze, neutral). */
   projectOverviewPlain: string | null
 }
@@ -50,6 +55,7 @@ export const EMPTY_EXECUTIVE_BRIEFING: DealDeskExecutiveBriefingFields = {
   bidderRequirements: [],
   roleQualifications: [],
   specialConditions: [],
+  requiredSubmissionDocuments: [],
   projectOverviewPlain: null,
 }
 
@@ -114,6 +120,7 @@ export function normalizeExecutiveBriefingFields(
     bidderRequirements: stringList('bidderRequirements'),
     roleQualifications: stringList('roleQualifications'),
     specialConditions: stringList('specialConditions'),
+    requiredSubmissionDocuments: stringList('requiredSubmissionDocuments'),
     projectOverviewPlain: str(o.projectOverviewPlain),
   }
 }
@@ -144,5 +151,9 @@ export function mergeExecutiveBriefingFields(
       normalized.specialConditions.length > 0
         ? normalized.specialConditions
         : fallback.specialConditions,
+    requiredSubmissionDocuments:
+      normalized.requiredSubmissionDocuments.length > 0
+        ? normalized.requiredSubmissionDocuments
+        : fallback.requiredSubmissionDocuments,
   }
 }

@@ -81,10 +81,7 @@ export function DealRfpRisksSection({ data }: { data: DealRfpCockpitData }) {
                   )}
                 />
                 <CardTitle className="text-base">
-                  {COPY.deals.cockpit.risksTitle}
-                  <span className="ml-2 text-sm font-normal text-muted-foreground">
-                    · {totalCount}
-                  </span>
+                  {`${COPY.deals.cockpit.risksTitle} · ${totalCount}`}
                 </CardTitle>
               </button>
             </CollapsibleTrigger>
@@ -94,9 +91,7 @@ export function DealRfpRisksSection({ data }: { data: DealRfpCockpitData }) {
               <div className="rounded-lg border border-border/60 p-3">
                 <p className="mb-2 text-sm font-medium">
                   {COPY.deals.cockpit.risksGeneralTitle}
-                  <span className="ml-2 text-sm font-normal text-muted-foreground">
-                    · {redFlags.length}
-                  </span>
+                  {redFlags.length > 0 ? ` · ${redFlags.length}` : ''}
                 </p>
                 {redFlags.length === 0 ? (
                   <p className="text-sm text-muted-foreground">{COPY.deals.cockpit.risksGeneralEmpty}</p>

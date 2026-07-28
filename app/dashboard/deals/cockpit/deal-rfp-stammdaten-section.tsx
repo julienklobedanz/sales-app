@@ -31,12 +31,9 @@ export function DealRfpStammdatenSection({ data }: { data: DealRfpCockpitData })
               />
               <div className="min-w-0">
                 <CardTitle className="text-base">
-                  {COPY.deals.cockpit.stammdatenTitle}
-                  {rows.length > 0 ? (
-                    <span className="ml-2 text-sm font-normal text-muted-foreground">
-                      · {rows.length}
-                    </span>
-                  ) : null}
+                  {rows.length > 0
+                    ? `${COPY.deals.cockpit.stammdatenTitle} · ${rows.length}`
+                    : COPY.deals.cockpit.stammdatenTitle}
                 </CardTitle>
               </div>
             </button>

@@ -20,14 +20,16 @@ function MilestoneChip({ chip }: { chip: DeadlineMilestoneChip }) {
       <TooltipTrigger asChild>
         <div
           className={cn(
-            'flex min-w-[5.5rem] shrink-0 flex-col rounded-lg border px-3 py-2 text-left',
+            'flex min-w-[6.5rem] max-w-[11rem] shrink-0 flex-col rounded-lg border px-3 py-2 text-left',
             chip.isNextFuture && 'ring-2 ring-primary/40',
             chip.isOverdue && 'border-destructive/40 bg-destructive/5',
             chip.isToday && !chip.isOverdue && 'border-amber-300/60 bg-amber-50/80 dark:bg-amber-950/30',
             !chip.isOverdue && !chip.isToday && 'border-border bg-card'
           )}
         >
-          <span className="text-[11px] font-medium text-muted-foreground">{chip.shortLabel}</span>
+          <span className="text-[11px] font-medium text-muted-foreground line-clamp-3 leading-tight">
+            {chip.shortLabel}
+          </span>
           <span
             className={cn(
               'text-sm font-semibold tabular-nums tracking-tight',

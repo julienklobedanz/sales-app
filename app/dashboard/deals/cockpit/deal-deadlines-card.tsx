@@ -6,7 +6,7 @@ import { ArrowRight01Icon, CirclePlus, FileDownloadIcon, PencilEdit01Icon, Trash
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardTitle } from '@/components/ui/card'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import {
   Dialog,
@@ -30,6 +30,7 @@ import { COPY } from '@/lib/copy'
 import {
   formatDeadlineRowParts,
   formatNextDeadlineHeadline,
+  deadlineDaysUntil,
   pickNextDeadline,
   type DealDeadlineRow,
 } from '@/lib/deals/deadline-display'
@@ -39,6 +40,7 @@ import {
   downloadDealDeadlinesIcs,
 } from '@/lib/deals/deal-deadline-ics'
 import { DEAL_DEADLINE_KIND_LABELS, type DealDeadlineKind } from '@/lib/deals/deadline-types'
+import { cn } from '@/lib/utils'
 
 import {
   createDealDeadlineManual,
@@ -47,6 +49,39 @@ import {
 } from '../deadline-actions'
 
 const KIND_OPTIONS = Object.entries(DEAL_DEADLINE_KIND_LABELS) as [DealDeadlineKind, string][]
+
+function DeadlineTimelineMarker({
+  isFirst,
+  isLast,
+  tone,
+}: {
+  isFirst: boolean
+  isLast: boolean
+  tone: 'past' | 'today' | 'future'
+}) {
+  return (
+    <div className="flex w-4 shrink-0 flex-col items-center self-stretch" aria-hidden>
+      <div className={cn('w-px flex-1 bg-border', isFirst && 'opacity-0')} />
+      <div
+        className={cn(
+          'z-[1] size-2.5 shrink-0 rounded-full border-2 bg-background ring-2 ring-card',
+          tone === 'past' && 'border-destructive/70 bg-destructive/15',
+          tone === 'today' && 'border-amber-500 bg-amber-400/30',
+          tone === 'future' && 'border-primary/60 bg-primary/10'
+        )}
+      />
+      <div className={cn('w-px flex-1 bg-border', isLast && 'opacity-0')} />
+    </div>
+  )
+}
+
+function deadlineMarkerTone(d: DealDeadlineRow): 'past' | 'today' | 'future' {
+  const days = d.due_at ? deadlineDaysUntil(d) : null
+  if (days === null) return 'future'
+  if (days < 0) return 'past'
+  if (days === 0) return 'today'
+  return 'future'
+}
 
 export function DealDeadlinesCard({
   dealId,
@@ -81,6 +116,10 @@ export function DealDeadlinesCard({
     : null
   const activeCount = sorted.filter((d) => !d.suppressed_at).length
   const exportableForIcs = useMemo(() => dealDeadlinesExportableForIcs(sorted), [sorted])
+  const collapsedAllTitle =
+    activeCount > 0
+      ? `${COPY.deals.cockpit.deadlinesAllTitle} · ${activeCount}`
+      : COPY.deals.cockpit.deadlinesEmpty
 
   function handleDownloadIcs() {
     if (exportableForIcs.length === 0) {
@@ -108,11 +147,14 @@ export function DealDeadlinesCard({
                 />
                 <div className="min-w-0">
                   {showMilestoneChipsAbove ? (
-                    <div className="text-sm font-medium text-foreground">
-                      {activeCount > 0
-                        ? `Alle Fristen (${activeCount})`
-                        : COPY.deals.cockpit.deadlinesEmpty}
-                    </div>
+                    <CardTitle
+                      className={cn(
+                        'text-base',
+                        activeCount === 0 && 'font-normal text-muted-foreground'
+                      )}
+                    >
+                      {collapsedAllTitle}
+                    </CardTitle>
                   ) : headline ? (
                     <>
                       <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -175,60 +217,66 @@ export function DealDeadlinesCard({
             {sorted.length === 0 ? (
               <p className="text-sm text-muted-foreground">{COPY.deals.cockpit.deadlinesEmptyHint}</p>
             ) : (
-              <ul className="space-y-0 pl-7">
-                {sorted.map((d) => {
+              <ul className="space-y-0">
+                {sorted.map((d, index) => {
                   const rowParts = formatDeadlineRowParts(d, {
                     dateDisplayFormat: orgDateDisplayFormat,
                   })
+                  const isFirst = index === 0
+                  const isLast = index === sorted.length - 1
                   return (
-                  <li
-                    key={d.id}
-                    className="flex flex-wrap items-start gap-2 border-t border-dashed py-2.5 first:border-t-0"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium">{rowParts.labelDate}</div>
-                      {rowParts.countdown ? (
-                        <div className="text-sm tabular-nums text-muted-foreground">
-                          {rowParts.countdown}
+                    <li key={d.id} className="flex gap-3">
+                      <DeadlineTimelineMarker
+                        isFirst={isFirst}
+                        isLast={isLast}
+                        tone={deadlineMarkerTone(d)}
+                      />
+                      <div className="flex min-w-0 flex-1 flex-wrap items-start gap-2 border-b border-dashed border-border/80 py-3 last:border-b-0">
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-medium">{rowParts.labelDate}</div>
+                          {rowParts.countdown ? (
+                            <div className="text-xs tabular-nums text-muted-foreground">
+                              {rowParts.countdown}
+                            </div>
+                          ) : null}
                         </div>
-                      ) : null}
-                    </div>
-                    <Badge variant="outline" className="text-[10px]">
-                      {d.source === 'manual' ? 'Manuell' : 'RFP'}
-                    </Badge>
-                    {d.pinned ? (
-                      <Badge variant="secondary" className="text-[10px]">
-                        Angepasst
-                      </Badge>
-                    ) : null}
-                    <div className="ml-auto flex items-center gap-1">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 px-2"
-                        onClick={() => setEditTarget(d)}
-                      >
-                        <AppIcon icon={PencilEdit01Icon} size={14} />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 px-2"
-                        onClick={async () => {
-                          const res = await suppressDealDeadlineAction({
-                            dealId,
-                            deadlineId: d.id,
-                          })
-                          if (!res.success) toast.error(res.error ?? 'Löschen fehlgeschlagen.')
-                          else toast.success('Termin entfernt.')
-                        }}
-                      >
-                        <AppIcon icon={Trash2} size={14} />
-                      </Button>
-                    </div>
-                  </li>
+                        <Badge variant="outline" className="text-[10px]">
+                          {d.source === 'manual' ? 'Manuell' : 'RFP'}
+                        </Badge>
+                        {d.pinned ? (
+                          <Badge variant="secondary" className="text-[10px]">
+                            Angepasst
+                          </Badge>
+                        ) : null}
+                        <div className="ml-auto flex items-center gap-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2"
+                            onClick={() => setEditTarget(d)}
+                          >
+                            <AppIcon icon={PencilEdit01Icon} size={14} />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2"
+                            onClick={async () => {
+                              const res = await suppressDealDeadlineAction({
+                                dealId,
+                                deadlineId: d.id,
+                              })
+                              if (!res.success) toast.error(res.error ?? 'Löschen fehlgeschlagen.')
+                              else toast.success('Termin entfernt.')
+                            }}
+                          >
+                            <AppIcon icon={Trash2} size={14} />
+                          </Button>
+                        </div>
+                      </div>
+                    </li>
                   )
                 })}
               </ul>

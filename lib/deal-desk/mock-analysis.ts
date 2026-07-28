@@ -152,6 +152,13 @@ export const DEMO_EXECUTIVE_BRIEFING: DealDeskExecutiveBriefingFields = {
     'Rahmenvertrag 36 Monate, Option Verlängerung +12 Monate',
     'Bietergemeinschaften zulässig mit gemeinsamer Haftung',
   ],
+  requiredSubmissionDocuments: [
+    'Ausgefülltes Angebotsformular',
+    'Preisblatt (Anlage Preis)',
+    'Referenznachweise (mind. 2)',
+    'ISO 27001-Zertifikat',
+    'Handelsregisterauszug',
+  ],
 }
 
 export const BID_TEAM_ROLE_DEFS: { key: BidTeamRoleKey; label: string; description: string }[] = [

@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ArrowRight01Icon, PencilEdit01Icon } from '@hugeicons/core-free-icons'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Textarea } from '@/components/ui/textarea'
 import { KiEntwurfSheet } from '@/app/dashboard/deals/components/ki-entwurf-sheet'
 import type { DealWithReferences } from '@/app/dashboard/deals/types'
@@ -14,15 +15,17 @@ import { COPY } from '@/lib/copy'
 import type { DealRfpCockpitData } from '@/lib/deals/load-deal-rfp-cockpit-data'
 import type { DealDeskDraftRow } from '@/lib/deal-desk/mock-analysis'
 import { buildDealContextForKiEntwurf } from '@/lib/deals/build-deal-context-for-ki-entwurf'
+import {
+  draftRowStatus,
+  sortDraftRowsByCriticality,
+} from '@/lib/deals/sort-draft-rows-by-criticality'
 import { cn } from '@/lib/utils'
 
 import { updateDealRfpDraftAnswer } from './deal-rfp-draft-actions'
 
-export function draftRowStatus(row: DealDeskDraftRow): 'ready' | 'draft' | 'gap' {
-  if (!row.reference) return 'gap'
-  if (row.answer?.trim()) return 'ready'
-  return 'draft'
-}
+export { draftRowStatus } from '@/lib/deals/sort-draft-rows-by-criticality'
+
+const VISIBLE_DRAFTS_DEFAULT = 5
 
 export function draftStatusLabel(status: 'ready' | 'draft' | 'gap'): string {
   if (status === 'ready') return COPY.deals.cockpit.draftsStatusReady
@@ -58,6 +61,8 @@ export function DealRfpDraftsSection({
 }) {
   const showSection = data.hasAnalysis && !data.isStale
   const [rows, setRows] = useState(data.draftRows)
+  const [sectionExpanded, setSectionExpanded] = useState(false)
+  const [showAllDrafts, setShowAllDrafts] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draftText, setDraftText] = useState('')
@@ -68,6 +73,12 @@ export function DealRfpDraftsSection({
   useEffect(() => {
     setRows(data.draftRows)
   }, [data.draftRows])
+
+  const sortedRows = useMemo(() => sortDraftRowsByCriticality(rows), [rows])
+  const visibleRows = useMemo(
+    () => (showAllDrafts ? sortedRows : sortedRows.slice(0, VISIBLE_DRAFTS_DEFAULT)),
+    [showAllDrafts, sortedRows]
+  )
 
   if (!showSection) return null
 
@@ -132,175 +143,231 @@ export function DealRfpDraftsSection({
     setKiOpen(true)
   }
 
+  const coveredLabel = COPY.deals.cockpit.draftsCoveredCount
+    .replace('{covered}', String(covered))
+    .replace('{total}', String(rows.length))
+  const gapsLabel =
+    gaps > 0 ? COPY.deals.cockpit.draftsGapsCount.replace('{count}', String(gaps)) : null
+  const sectionTitle =
+    rows.length > 0
+      ? `${COPY.deals.cockpit.draftsTitle} · ${rows.length}`
+      : COPY.deals.cockpit.draftsTitle
+
   if (rows.length === 0) {
     return (
       <Card id="drafts" className="scroll-mt-24 shadow-sm">
         <CardHeader>
-          <CardTitle className="text-base">{COPY.deals.cockpit.draftsTitle}</CardTitle>
+          <CardTitle className="text-base">{sectionTitle}</CardTitle>
           <CardDescription>{COPY.deals.cockpit.draftsEmpty}</CardDescription>
         </CardHeader>
       </Card>
     )
   }
 
-  const coveredLabel = COPY.deals.cockpit.draftsCoveredCount
-    .replace('{covered}', String(covered))
-    .replace('{total}', String(rows.length))
-  const gapsLabel =
-    gaps > 0 ? COPY.deals.cockpit.draftsGapsCount.replace('{count}', String(gaps)) : null
-
   return (
     <>
       <Card id="drafts" className="scroll-mt-24 shadow-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">{COPY.deals.cockpit.draftsTitle}</CardTitle>
-          <CardDescription>
-            {coveredLabel}
-            {gapsLabel ? ` · ${gapsLabel}` : ''}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          <ul className="divide-y divide-border/60">
-            {rows.map((row) => {
-              const status = draftRowStatus(row)
-              const expanded = expandedId === row.id
-              const editing = editingId === row.id
-              const dotTitle = statusDotTitle(row, status)
-              const refLabel = referenceHoverLabel(row)
+        <Collapsible
+          open={sectionExpanded}
+          onOpenChange={(open) => {
+            setSectionExpanded(open)
+            if (!open) {
+              setShowAllDrafts(false)
+              setExpandedId(null)
+              setEditingId(null)
+            }
+          }}
+        >
+          <CardHeader className="pb-3">
+            <CollapsibleTrigger asChild>
+              <button type="button" className="flex w-full items-start gap-2 text-left">
+                <AppIcon
+                  icon={ArrowRight01Icon}
+                  size={16}
+                  className={cn(
+                    'mt-0.5 shrink-0 text-muted-foreground transition-transform',
+                    sectionExpanded && 'rotate-90'
+                  )}
+                />
+                <div className="min-w-0">
+                  <CardTitle className="text-base">{sectionTitle}</CardTitle>
+                  {sectionExpanded ? (
+                    <CardDescription className="mt-1">
+                      {coveredLabel}
+                      {gapsLabel ? ` · ${gapsLabel}` : ''}
+                    </CardDescription>
+                  ) : null}
+                </div>
+              </button>
+            </CollapsibleTrigger>
+          </CardHeader>
+          <CollapsibleContent>
+            <CardContent className="relative p-0">
+              <div
+                className="pointer-events-none absolute inset-0 bg-gradient-to-b from-red-500/[0.06] via-amber-500/[0.04] to-emerald-500/[0.06]"
+                aria-hidden
+              />
+              <ul className="relative divide-y divide-border/60">
+                {visibleRows.map((row) => {
+                  const status = draftRowStatus(row)
+                  const expanded = expandedId === row.id
+                  const editing = editingId === row.id
+                  const dotTitle = statusDotTitle(row, status)
+                  const refLabel = referenceHoverLabel(row)
 
-              return (
-                <li key={row.id} className={cn(expanded && 'bg-muted/20')}>
-                  <button
-                    type="button"
-                    onClick={() => toggleExpand(row.id)}
-                    aria-expanded={expanded}
-                    aria-label={COPY.deals.cockpit.draftsOpenDetail}
-                    className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40"
-                  >
-                    <span
-                      className={cn(
-                        'size-2.5 shrink-0 rounded-full',
-                        status === 'ready' && 'bg-emerald-500',
-                        status === 'draft' && 'bg-amber-500',
-                        status === 'gap' && 'bg-red-500'
-                      )}
-                      title={dotTitle}
-                      aria-label={dotTitle}
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="min-w-0 flex-1 truncate text-sm font-medium">
-                          {row.requirement}
-                        </p>
-                        {status === 'ready' || status === 'gap' ? (
-                          <span className="shrink-0 rounded-full border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                            {draftStatusLabel(status)}
-                          </span>
-                        ) : (
-                          <span className="shrink-0 text-[11px] font-medium text-muted-foreground">
-                            {draftStatusLabel(status)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <AppIcon
-                      icon={ArrowRight01Icon}
-                      size={16}
-                      className={cn(
-                        'shrink-0 text-muted-foreground transition-transform',
-                        expanded && 'rotate-90'
-                      )}
-                    />
-                  </button>
-
-                  {expanded ? (
-                    <div className="space-y-3 border-t border-border/50 px-4 pb-4 pt-3 pl-9">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                          {COPY.deals.cockpit.draftsAnswerLabel}
-                        </p>
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          {!editing ? (
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="ghost"
-                              className="h-8 px-2"
-                              onClick={() => startEdit(row)}
-                              aria-label={COPY.deals.cockpit.draftsEditAria}
-                            >
-                              <AppIcon icon={PencilEdit01Icon} size={14} />
-                            </Button>
-                          ) : null}
-                          {row.reference?.id ? (
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              className="h-8"
-                              onClick={() => openKiEntwurf(row)}
-                            >
-                              {COPY.deals.cockpit.draftsGenerateCta}
-                            </Button>
-                          ) : null}
-                        </div>
-                      </div>
-
-                      {editing ? (
-                        <div className="space-y-2">
-                          <Textarea
-                            value={draftText}
-                            onChange={(e) => setDraftText(e.target.value)}
-                            rows={5}
-                            className="min-h-[120px] text-sm"
-                          />
-                          <div className="flex flex-wrap gap-2">
-                            <Button
-                              type="button"
-                              size="sm"
-                              disabled={saving}
-                              onClick={() => void saveEdit(row)}
-                            >
-                              {COPY.deals.cockpit.draftsSave}
-                            </Button>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              disabled={saving}
-                              onClick={cancelEdit}
-                            >
-                              {COPY.deals.cockpit.draftsCancelEdit}
-                            </Button>
+                  return (
+                    <li key={row.id} className={cn(expanded && 'bg-muted/20')}>
+                      <button
+                        type="button"
+                        onClick={() => toggleExpand(row.id)}
+                        aria-expanded={expanded}
+                        aria-label={COPY.deals.cockpit.draftsOpenDetail}
+                        className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40"
+                      >
+                        <span
+                          className={cn(
+                            'size-2.5 shrink-0 rounded-full',
+                            status === 'ready' && 'bg-emerald-500',
+                            status === 'draft' && 'bg-amber-500',
+                            status === 'gap' && 'bg-red-500'
+                          )}
+                          title={dotTitle}
+                          aria-label={dotTitle}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="min-w-0 flex-1 truncate text-sm font-medium">
+                              {row.requirement}
+                            </p>
+                            {status === 'ready' || status === 'gap' ? (
+                              <span className="shrink-0 rounded-full border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                                {draftStatusLabel(status)}
+                              </span>
+                            ) : (
+                              <span className="shrink-0 text-[11px] font-medium text-muted-foreground">
+                                {draftStatusLabel(status)}
+                              </span>
+                            )}
                           </div>
                         </div>
-                      ) : row.answer?.trim() ? (
-                        <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
-                          {row.answer}
-                        </p>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">
-                          {COPY.deals.cockpit.draftsAnswerEmpty}
-                        </p>
-                      )}
+                        <AppIcon
+                          icon={ArrowRight01Icon}
+                          size={16}
+                          className={cn(
+                            'shrink-0 text-muted-foreground transition-transform',
+                            expanded && 'rotate-90'
+                          )}
+                        />
+                      </button>
 
-                      {refLabel ? (
-                        <p className="text-xs text-muted-foreground">
-                          {refLabel}
-                          {row.reference ? ` · ${row.reference.matchPercent}%` : ''}
-                        </p>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">
-                          {COPY.deals.cockpit.draftsNoReference}
-                        </p>
-                      )}
-                    </div>
-                  ) : null}
-                </li>
-              )
-            })}
-          </ul>
-        </CardContent>
+                      {expanded ? (
+                        <div className="space-y-3 border-t border-border/50 px-4 pb-4 pt-3 pl-9">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                              {COPY.deals.cockpit.draftsAnswerLabel}
+                            </p>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              {!editing ? (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-8 px-2"
+                                  onClick={() => startEdit(row)}
+                                  aria-label={COPY.deals.cockpit.draftsEditAria}
+                                >
+                                  <AppIcon icon={PencilEdit01Icon} size={14} />
+                                </Button>
+                              ) : null}
+                              {row.reference?.id ? (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-8"
+                                  onClick={() => openKiEntwurf(row)}
+                                >
+                                  {COPY.deals.cockpit.draftsGenerateCta}
+                                </Button>
+                              ) : null}
+                            </div>
+                          </div>
+
+                          {editing ? (
+                            <div className="space-y-2">
+                              <Textarea
+                                value={draftText}
+                                onChange={(e) => setDraftText(e.target.value)}
+                                rows={5}
+                                className="min-h-[120px] text-sm"
+                              />
+                              <div className="flex flex-wrap gap-2">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  disabled={saving}
+                                  onClick={() => void saveEdit(row)}
+                                >
+                                  {COPY.deals.cockpit.draftsSave}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={saving}
+                                  onClick={cancelEdit}
+                                >
+                                  {COPY.deals.cockpit.draftsCancelEdit}
+                                </Button>
+                              </div>
+                            </div>
+                          ) : row.answer?.trim() ? (
+                            <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+                              {row.answer}
+                            </p>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">
+                              {COPY.deals.cockpit.draftsAnswerEmpty}
+                            </p>
+                          )}
+
+                          {refLabel ? (
+                            <p className="text-xs text-muted-foreground">
+                              {refLabel}
+                              {row.reference ? ` · ${row.reference.matchPercent}%` : ''}
+                            </p>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">
+                              {COPY.deals.cockpit.draftsNoReference}
+                            </p>
+                          )}
+                        </div>
+                      ) : null}
+                    </li>
+                  )
+                })}
+              </ul>
+              {sortedRows.length > VISIBLE_DRAFTS_DEFAULT ? (
+                <div className="relative border-t border-border/60 px-4 py-3">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => setShowAllDrafts((v) => !v)}
+                  >
+                    {showAllDrafts
+                      ? COPY.deals.cockpit.draftsShowFewer
+                      : COPY.deals.cockpit.draftsShowAll.replace(
+                          '{count}',
+                          String(sortedRows.length)
+                        )}
+                  </Button>
+                </div>
+              ) : null}
+            </CardContent>
+          </CollapsibleContent>
+        </Collapsible>
       </Card>
 
       {activeKi ? (
