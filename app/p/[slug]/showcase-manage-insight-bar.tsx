@@ -1,8 +1,68 @@
 import { Eye } from 'lucide-react'
 
+import { formatDateUtcDe } from '@/lib/format'
+
 export type ManageInsightSummary = {
   viewCount: number
   lastViewLabel: string | null
+  linkExpiresLabel: string | null
+}
+
+export type ManageApprovalStatusSummary = {
+  approvedSinceLabel: string | null
+  isAnonymous: boolean | null
+}
+
+/** ISO-3166 alpha-2 → Flaggen-Emoji (sonst Globus). */
+export function countryCodeToFlagEmoji(countryCode: string | null | undefined): string {
+  const cc = countryCode?.trim().toUpperCase() ?? ''
+  if (!/^[A-Z]{2}$/.test(cc)) return '🌐'
+  return String.fromCodePoint(...[...cc].map((c) => 127397 + c.charCodeAt(0)))
+}
+
+export function formatActiveDurationDe(activeSeconds: number): string {
+  const total = Math.max(0, Math.floor(activeSeconds))
+  const mins = Math.floor(total / 60)
+  const secs = total % 60
+  return `${mins} Min. ${secs} Sek.`
+}
+
+export function formatRelativeAgoDe(startedAtIso: string, nowMs: number = Date.now()): string {
+  const started = new Date(startedAtIso)
+  if (Number.isNaN(started.getTime())) return 'vor Kurzem'
+  const agoMin = Math.max(0, Math.round((nowMs - started.getTime()) / 60_000))
+  if (agoMin < 60) return `vor ${agoMin} Min`
+  const agoHours = Math.round(agoMin / 60)
+  if (agoHours < 48) return `vor ${agoHours} Std`
+  const agoDays = Math.round(agoHours / 24)
+  return `vor ${agoDays} ${agoDays === 1 ? 'Tag' : 'Tagen'}`
+}
+
+export function formatManageLastViewLabel(input: {
+  countryCode: string | null
+  activeSeconds: number
+  startedAtIso: string
+}): string {
+  const flag = countryCodeToFlagEmoji(input.countryCode)
+  const duration = formatActiveDurationDe(input.activeSeconds)
+  const ago = formatRelativeAgoDe(input.startedAtIso)
+  return `Letzte Ansicht aus ${flag} (${duration}) · ${ago}`
+}
+
+export function formatManageLinkExpiresLabel(expiresAtIso: string | null | undefined): string | null {
+  if (!expiresAtIso?.trim()) return null
+  const d = new Date(expiresAtIso)
+  if (Number.isNaN(d.getTime())) return null
+  return `Gültig bis ${formatDateUtcDe(d.toISOString())}`
+}
+
+export function formatManageApprovedSinceLabel(
+  respondedAtIso: string | null | undefined
+): string | null {
+  if (!respondedAtIso?.trim()) return null
+  const d = new Date(respondedAtIso)
+  if (Number.isNaN(d.getTime())) return null
+  return `Freigegeben seit ${formatDateUtcDe(d.toISOString())}`
 }
 
 export function ShowcaseManageInsightBar({ insights }: { insights: ManageInsightSummary }) {
@@ -19,28 +79,22 @@ export function ShowcaseManageInsightBar({ insights }: { insights: ManageInsight
           </span>
           <span>{insights.lastViewLabel}</span>
         </>
+      ) : null}
+      {insights.linkExpiresLabel ? (
+        <>
+          <span className="text-border" aria-hidden>
+            ·
+          </span>
+          <span>{insights.linkExpiresLabel}</span>
+        </>
       ) : (
         <>
           <span className="text-border" aria-hidden>
             ·
           </span>
-          <span>Noch keine Empfänger-Ansicht erfasst</span>
+          <span>Ohne Ablaufdatum</span>
         </>
       )}
     </div>
   )
-}
-
-export function formatManageLastViewLabel(input: {
-  countryCode: string | null
-  activeSeconds: number
-  startedAtIso: string
-}): string {
-  const country = input.countryCode?.trim().toUpperCase() || '—'
-  const mins = Math.max(1, Math.round(input.activeSeconds / 60))
-  const started = new Date(input.startedAtIso)
-  const agoMin = Math.max(0, Math.round((Date.now() - started.getTime()) / 60_000))
-  const agoLabel =
-    agoMin < 60 ? `vor ${agoMin} Min` : `vor ${Math.round(agoMin / 60)} Std`
-  return `Letzte Ansicht aus ${country} · ${mins} Min · ${agoLabel}`
 }

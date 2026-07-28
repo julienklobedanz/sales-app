@@ -2695,7 +2695,11 @@ export type Database = {
         Returns: Json
       }
       get_portfolio_manage_insights: {
-        Args: { p_manage_token: string; p_slug: string }
+        Args: {
+          p_manage_token: string
+          p_reference_id?: string
+          p_slug: string
+        }
         Returns: Json
       }
       get_public_portfolio: {

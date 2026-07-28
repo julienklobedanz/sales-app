@@ -1,7 +1,11 @@
 import type { ReactNode } from 'react'
-import { Lock } from 'lucide-react'
 
-export const SHOWCASE_FIELD_LOCKED_LABEL = 'Nicht in Freigabe / keine Angabe'
+import {
+  SHOWCASE_FIELD_LOCKED_LABEL,
+  ShowcaseLockedFieldIcon,
+} from '@/lib/public-portfolio/showcase-locked-field-icon'
+
+export { SHOWCASE_FIELD_LOCKED_LABEL }
 
 export function isShowcaseFieldEmpty(value: string | null | undefined): boolean {
   const s = value != null ? String(value).trim() : ''
@@ -20,15 +24,7 @@ export function showcaseFieldDisplay(
   if (empty) {
     return {
       show: true,
-      value: (
-        <span
-          title={SHOWCASE_FIELD_LOCKED_LABEL}
-          aria-label={SHOWCASE_FIELD_LOCKED_LABEL}
-          className="inline-flex items-center text-muted-foreground"
-        >
-          <Lock className="h-4 w-4" />
-        </span>
-      ),
+      value: <ShowcaseLockedFieldIcon />,
     }
   }
   return { show: true, value: text }

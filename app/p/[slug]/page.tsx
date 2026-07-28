@@ -22,7 +22,13 @@ import { PortfolioEmailUnlockGate } from './portfolio-email-unlock-gate'
 import { PortfolioSessionTracker } from './portfolio-session-tracker'
 import { PublicPortfolioFooter } from './public-portfolio-footer'
 import { ShowcaseSingleReference } from './showcase-single-reference'
-import { formatManageLastViewLabel } from './showcase-manage-insight-bar'
+import {
+  formatManageApprovedSinceLabel,
+  formatManageLastViewLabel,
+  formatManageLinkExpiresLabel,
+  type ManageApprovalStatusSummary,
+  type ManageInsightSummary,
+} from './showcase-manage-insight-bar'
 import { resolveApprovalEditUrlForManageView } from '@/lib/references/resolve-approval-edit-url-for-manage'
 import { Lock } from 'lucide-react'
 
@@ -183,9 +189,14 @@ export default async function PublicPortfolioPage({
           : await resolveApprovalEditUrlForManageView(slug, manageToken, singleRef.id)
         : null
 
-    let manageInsights: { viewCount: number; lastViewLabel: string | null } | null = null
+    let manageInsights: ManageInsightSummary | null = null
+    let manageApprovalStatus: ManageApprovalStatusSummary | null = null
     if (isManageRevokeView && result.canDeactivate && manageToken) {
-      const insightResult = await getPublicPortfolioManageInsights(slug, manageToken)
+      const insightResult = await getPublicPortfolioManageInsights(
+        slug,
+        manageToken,
+        singleRef.id
+      )
       if (insightResult.found) {
         manageInsights = {
           viewCount: insightResult.viewCount,
@@ -196,6 +207,13 @@ export default async function PublicPortfolioPage({
                 startedAtIso: insightResult.lastView.startedAt,
               })
             : null,
+          linkExpiresLabel: formatManageLinkExpiresLabel(insightResult.linkExpiresAt),
+        }
+        manageApprovalStatus = {
+          approvedSinceLabel: formatManageApprovedSinceLabel(
+            insightResult.approvalRespondedAt
+          ),
+          isAnonymous: insightResult.isAnonymous,
         }
       }
     }
@@ -227,6 +245,7 @@ export default async function PublicPortfolioPage({
         buyerCompanyName={buyerCompanyName}
         recipientToken={recipientToken}
         manageInsights={manageInsights}
+        manageApprovalStatus={manageApprovalStatus}
       />
       </>
     )

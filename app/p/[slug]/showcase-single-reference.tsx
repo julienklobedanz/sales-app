@@ -7,6 +7,7 @@ import { formatDateUtcDe, formatReferenceVolume } from '@/lib/format'
 import { formatProjectEndWithDurationDe } from '@/lib/references/reference-duration-months'
 import { buildPublicProspectPreviewUrl } from '@/lib/public-portfolio/build-prospect-preview-url'
 import { showcaseFieldDisplay } from '@/lib/public-portfolio/showcase-field-display'
+import type { ManageApprovalStatusSummary } from '@/app/p/[slug]/showcase-manage-insight-bar'
 import type { ManageInsightSummary } from '@/app/p/[slug]/showcase-manage-insight-bar'
 import type { PublicReference } from '../actions'
 import { ShowcaseReferenceContent } from './showcase-reference-content'
@@ -52,6 +53,7 @@ export function ShowcaseSingleReference({
   buyerCompanyName,
   recipientToken,
   manageInsights,
+  manageApprovalStatus,
 }: {
   slug: string
   reference: PublicReference
@@ -71,6 +73,7 @@ export function ShowcaseSingleReference({
   buyerCompanyName?: string | null
   recipientToken?: string | null
   manageInsights?: ManageInsightSummary | null
+  manageApprovalStatus?: ManageApprovalStatusSummary | null
 }) {
   const volRaw = formatReferenceVolume(reference.volume_eur)
   const startRaw =
@@ -177,6 +180,7 @@ export function ShowcaseSingleReference({
             approvalEditUrl={approvalEditUrl}
             showApprovalEdit={showApprovalEdit}
             manageMode={revokeMode}
+            manageApprovalStatus={manageApprovalStatus}
           />
         </div>
       </div>

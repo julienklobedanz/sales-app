@@ -371,12 +371,15 @@ export async function unlockPublicPortfolio(
 
 export async function getPublicPortfolioManageInsights(
   slug: string,
-  manageToken: string | null | undefined
+  manageToken: string | null | undefined,
+  referenceId?: string | null
 ): Promise<
   | {
       found: true
       viewCount: number
       linkExpiresAt: string | null
+      approvalRespondedAt: string | null
+      isAnonymous: boolean | null
       lastView: {
         countryCode: string | null
         activeSeconds: number
@@ -390,12 +393,15 @@ export async function getPublicPortfolioManageInsights(
   const { data, error } = await supabase.rpc('get_portfolio_manage_insights', {
     p_slug: slug,
     p_manage_token: manageToken.trim(),
+    p_reference_id: referenceId?.trim() || undefined,
   })
   if (error) return { found: false }
   const payload = data as {
     found?: boolean
     view_count?: number
     link_expires_at?: string | null
+    approval_responded_at?: string | null
+    is_anonymous?: boolean | null
     last_view?: {
       country_code?: string | null
       active_seconds?: number
@@ -408,6 +414,9 @@ export async function getPublicPortfolioManageInsights(
     found: true,
     viewCount: Number(payload.view_count) || 0,
     linkExpiresAt: payload.link_expires_at ?? null,
+    approvalRespondedAt: payload.approval_responded_at ?? null,
+    isAnonymous:
+      typeof payload.is_anonymous === 'boolean' ? payload.is_anonymous : null,
     lastView: lv?.started_at
       ? {
           countryCode: lv.country_code ?? null,

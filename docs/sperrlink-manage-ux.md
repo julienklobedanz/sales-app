@@ -13,7 +13,8 @@ Dokumentation für die **Verwaltungs-Ansicht** des Referenzgebers (Kundenlink mi
 |-------|-----------|
 | Leere Meta-Felder | Prospect: Zeile ausblenden. Manage: Schloss + Hinweis „Nicht in Freigabe / keine Angabe“. |
 | Banner | Verwaltungs-Ansicht + Link „So sehen Empfänger Ihre Referenz“ (neuer Tab, Kundenlink). |
-| Insight-Bar | Views + letzte Ansicht (Land, Dauer, relative Zeit) — nur Manage. |
+| Insight-Bar | Views + letzte Ansicht (Flagge, Dauer Min./Sek., relativ) + Gültig bis / Ohne Ablaufdatum — nur Manage. |
+| Freigabe-Status | Unter „Meine Freigabe bearbeiten“: Freigegeben seit · Anonymisiert ja/nein. |
 | Self-Tracking | Manage-Aufrufe erhöhen `view_count` / Session-Tracker nicht. |
 | CTAs | Frage / Termin / PDF ausgeblendet in Manage; „Meine Freigabe bearbeiten“ prominent. |
 | Sperren | Dialog + Toast mit klarer Folge (Link tot, Workspace informiert). |
@@ -26,8 +27,9 @@ Dokumentation für die **Verwaltungs-Ansicht** des Referenzgebers (Kundenlink mi
 - [x] Hybrid leere Felder (Prospect / Manage)
 - [x] Prospect-CTAs in Manage aus
 - [x] Views / letzte Ansicht (Manage-Bar)
+- [x] Ablaufdatum in Insight-Bar (`expires_at`)
+- [x] Freigabe-Statuszeile unter Bearbeiten (seit / anonym)
 - [x] Kein Tracking-Zähler für Freigeber-Self-Views
-- [ ] Freigabe-Statuszeile (freigegeben seit / gültig bis / anonym) — RPC-Erweiterung optional
 - [x] Paage-light Tracking (Sessions, Land) — Dashboard + API; Manage-Bar nutzt Sessions
 
 ## Paage / Tracking (Referenz)

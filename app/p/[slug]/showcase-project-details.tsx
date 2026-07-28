@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { formatContractTypeDisplay } from '@/lib/references/contract-type'
 import { formatProjectStatusDe } from '@/lib/public-portfolio/kpis-for-reference'
 import { showcaseFieldDisplay } from '@/lib/public-portfolio/showcase-field-display'
+import type { ManageApprovalStatusSummary } from '@/app/p/[slug]/showcase-manage-insight-bar'
 import type { PublicReference } from '../actions'
 import { ShowcaseActionButtons } from './showcase-action-buttons'
 
@@ -55,6 +56,7 @@ export function ShowcaseProjectDetails({
   approvalEditUrl,
   showApprovalEdit,
   manageMode = false,
+  manageApprovalStatus = null,
 }: {
   reference: PublicReference
   slug: string
@@ -63,6 +65,7 @@ export function ShowcaseProjectDetails({
   approvalEditUrl?: string | null
   showApprovalEdit?: boolean
   manageMode?: boolean
+  manageApprovalStatus?: ManageApprovalStatusSummary | null
 }) {
   const contractType = formatContractTypeDisplay(reference.contract_type) || null
   const projectStatus =
@@ -135,6 +138,7 @@ export function ShowcaseProjectDetails({
           approvalEditUrl={approvalEditUrl}
           showApprovalEdit={showApprovalEdit}
           manageMode={manageMode}
+          manageApprovalStatus={manageApprovalStatus}
         />
       </div>
     </aside>
