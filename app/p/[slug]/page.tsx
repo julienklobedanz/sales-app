@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import {
   getPublicPortfolio,
   getPublicPortfolioBranding,
+  getPublicPortfolioManageInsights,
   getPublicPortfolioShareOwner,
   incrementPortfolioViews,
   resolvePublicPortfolioRecipient,
@@ -21,6 +22,7 @@ import { PortfolioEmailUnlockGate } from './portfolio-email-unlock-gate'
 import { PortfolioSessionTracker } from './portfolio-session-tracker'
 import { PublicPortfolioFooter } from './public-portfolio-footer'
 import { ShowcaseSingleReference } from './showcase-single-reference'
+import { formatManageLastViewLabel } from './showcase-manage-insight-bar'
 import { resolveApprovalEditUrlForManageView } from '@/lib/references/resolve-approval-edit-url-for-manage'
 import { Lock } from 'lucide-react'
 
@@ -156,13 +158,17 @@ export default async function PublicPortfolioPage({
     )
   }
 
-  await incrementPortfolioViews(slug)
+  const isManageRevokeView = Boolean(revokeMode && manageToken)
+
+  if (!isManageRevokeView) {
+    await incrementPortfolioViews(slug)
+  }
 
   const buyerLogoUrl =
     recipientInfo.found && recipientInfo.companyLogoUrl ? recipientInfo.companyLogoUrl : null
   const buyerCompanyName =
     recipientInfo.found && recipientInfo.companyName ? recipientInfo.companyName : null
-  const sessionTracker = (
+  const sessionTracker = isManageRevokeView ? null : (
     <PortfolioSessionTracker slug={slug} recipientToken={recipientToken} />
   )
 
@@ -172,6 +178,23 @@ export default async function PublicPortfolioPage({
       revokeMode && result.canDeactivate && manageToken
         ? await resolveApprovalEditUrlForManageView(slug, manageToken, singleRef.id)
         : null
+
+    let manageInsights: { viewCount: number; lastViewLabel: string | null } | null = null
+    if (isManageRevokeView && result.canDeactivate && manageToken) {
+      const insightResult = await getPublicPortfolioManageInsights(slug, manageToken)
+      if (insightResult.found) {
+        manageInsights = {
+          viewCount: insightResult.viewCount,
+          lastViewLabel: insightResult.lastView
+            ? formatManageLastViewLabel({
+                countryCode: insightResult.lastView.countryCode,
+                activeSeconds: insightResult.lastView.activeSeconds,
+                startedAtIso: insightResult.lastView.startedAt,
+              })
+            : null,
+        }
+      }
+    }
 
     return (
       <>
@@ -198,6 +221,8 @@ export default async function PublicPortfolioPage({
         showApprovalEdit={Boolean(approvalEditUrl)}
         buyerLogoUrl={buyerLogoUrl}
         buyerCompanyName={buyerCompanyName}
+        recipientToken={recipientToken}
+        manageInsights={manageInsights}
       />
       </>
     )

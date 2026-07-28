@@ -369,6 +369,55 @@ export async function unlockPublicPortfolio(
   return { success: true }
 }
 
+export async function getPublicPortfolioManageInsights(
+  slug: string,
+  manageToken: string | null | undefined
+): Promise<
+  | {
+      found: true
+      viewCount: number
+      linkExpiresAt: string | null
+      lastView: {
+        countryCode: string | null
+        activeSeconds: number
+        startedAt: string
+      } | null
+    }
+  | { found: false }
+> {
+  if (!manageToken?.trim()) return { found: false }
+  const supabase = await createServerSupabaseClient()
+  const { data, error } = await supabase.rpc('get_portfolio_manage_insights', {
+    p_slug: slug,
+    p_manage_token: manageToken.trim(),
+  })
+  if (error) return { found: false }
+  const payload = data as {
+    found?: boolean
+    view_count?: number
+    link_expires_at?: string | null
+    last_view?: {
+      country_code?: string | null
+      active_seconds?: number
+      started_at?: string
+    } | null
+  } | null
+  if (!payload?.found) return { found: false }
+  const lv = payload.last_view
+  return {
+    found: true,
+    viewCount: Number(payload.view_count) || 0,
+    linkExpiresAt: payload.link_expires_at ?? null,
+    lastView: lv?.started_at
+      ? {
+          countryCode: lv.country_code ?? null,
+          activeSeconds: Number(lv.active_seconds) || 0,
+          startedAt: String(lv.started_at),
+        }
+      : null,
+  }
+}
+
 export async function resolvePublicPortfolioRecipient(
   slug: string,
   token: string | null | undefined

@@ -16,12 +16,14 @@ export function ShowcaseActionButtons({
   bookingUrl,
   approvalEditUrl,
   showApprovalEdit,
+  manageMode = false,
 }: {
   slug: string
   shareOwnerEmail: string | null
   bookingUrl: string | null
   approvalEditUrl?: string | null
   showApprovalEdit?: boolean
+  manageMode?: boolean
 }) {
   const questionSubject = encodeURIComponent('Frage zur Referenz')
   const questionHref =
@@ -41,6 +43,8 @@ export function ShowcaseActionButtons({
           </Link>
         </Button>
       ) : null}
+      {manageMode ? null : (
+        <>
       <Button
         asChild={Boolean(questionHref)}
         className="w-full rounded-lg"
@@ -87,6 +91,8 @@ export function ShowcaseActionButtons({
           PDF
         </a>
       </Button>
+        </>
+      )}
     </div>
   )
 }

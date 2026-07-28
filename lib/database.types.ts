@@ -2694,6 +2694,10 @@ export type Database = {
         Args: { p_invite_id: string }
         Returns: Json
       }
+      get_portfolio_manage_insights: {
+        Args: { p_manage_token: string; p_slug: string }
+        Returns: Json
+      }
       get_public_portfolio: {
         Args: {
           p_manage_token?: string

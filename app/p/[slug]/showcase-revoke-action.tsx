@@ -67,7 +67,9 @@ export function ShowcaseRevokeAction({ slug }: { slug: string }) {
         toast.error('Sperren fehlgeschlagen.')
         return
       }
-      toast.success('Referenz wurde gesperrt. Der Zugriff ist nicht mehr möglich.')
+      toast.success(
+        'Link gesperrt. Empfänger sehen die Referenz nicht mehr — Ihr Workspace wurde informiert.'
+      )
       setOpen(false)
       resetForm()
       router.refresh()
@@ -100,10 +102,11 @@ export function ShowcaseRevokeAction({ slug }: { slug: string }) {
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Zugriff vorübergehend sperren?</DialogTitle>
+            <DialogTitle>Zugriff sperren?</DialogTitle>
             <DialogDescription>
-              Die Referenz ist für Empfänger des Kundenlinks vorübergehend nicht erreichbar. Ihr
-              Ansprechpartner im Workspace wird informiert und kann die Freigabe erneut anstoßen.
+              Der Kundenlink ist danach für Empfänger nicht mehr erreichbar. Ihr Ansprechpartner im
+              Workspace wird über die Sperrung informiert und kann bei Bedarf einen neuen Link
+              anstoßen.
             </DialogDescription>
           </DialogHeader>
 

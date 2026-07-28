@@ -1,12 +1,18 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
+import Link from 'next/link'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { cn } from '@/lib/utils'
+import {
+  ShowcaseManageInsightBar,
+  type ManageInsightSummary,
+} from '@/app/p/[slug]/showcase-manage-insight-bar'
 
 type CaseDataItem = {
   label: string
-  value: string
+  value: ReactNode
   icon?: ReactNode
 }
 
@@ -31,7 +37,6 @@ function CaseDataGrid({ items, compact }: { items: CaseDataItem[]; compact?: boo
           </p>
           <p
             className="flex items-center gap-1.5 text-sm font-semibold text-foreground"
-            title={item.value}
           >
             {item.icon ? (
               <span className="shrink-0 text-muted-foreground/80">{item.icon}</span>
@@ -48,11 +53,15 @@ export function ApprovalCaseDataBar({
   items,
   referenceTitle,
   revokeMode = false,
+  prospectPreviewHref = null,
+  manageInsights = null,
 }: {
   items: CaseDataItem[]
   referenceTitle: string
   /** Sperr-Link-Ansicht: Info-Banner über der Metadaten-Leiste */
   revokeMode?: boolean
+  prospectPreviewHref?: string | null
+  manageInsights?: ManageInsightSummary | null
 }) {
   const sentinelRef = useRef<HTMLDivElement>(null)
   const barRef = useRef<HTMLDivElement>(null)
@@ -109,7 +118,7 @@ export function ApprovalCaseDataBar({
       {revokeMode ? (
         <div
           className={cn(
-            'flex w-full items-center justify-center gap-2 border-b border-amber-500/20 bg-amber-500/10 px-4 py-2 text-center',
+            'flex w-full flex-col items-center justify-center gap-1 border-b border-amber-500/20 bg-amber-500/10 px-4 py-2 text-center',
             isGlass && 'bg-amber-500/20 supports-[backdrop-filter]:bg-amber-500/25'
           )}
         >
@@ -117,7 +126,22 @@ export function ApprovalCaseDataBar({
             🔒 Sie sehen die Verwaltungs-Ansicht Ihrer Referenz. Sie können den Zugriff jederzeit über
             den roten Button widerrufen.
           </p>
+          {prospectPreviewHref ? (
+            <p className="text-xs text-amber-700/90 dark:text-amber-300/90">
+              <Link
+                href={prospectPreviewHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium underline underline-offset-2 hover:text-amber-800 dark:hover:text-amber-200"
+              >
+                So sehen Empfänger Ihre Referenz
+              </Link>
+            </p>
+          ) : null}
         </div>
+      ) : null}
+      {revokeMode && manageInsights ? (
+        <ShowcaseManageInsightBar insights={manageInsights} />
       ) : null}
       <div
         className={cn(

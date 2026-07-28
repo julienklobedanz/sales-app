@@ -5,6 +5,9 @@ import { AppIcon } from '@/lib/icons'
 import { formatIndustryDisplay } from '@/lib/constants/industries'
 import { formatDateUtcDe, formatReferenceVolume } from '@/lib/format'
 import { formatProjectEndWithDurationDe } from '@/lib/references/reference-duration-months'
+import { buildPublicProspectPreviewUrl } from '@/lib/public-portfolio/build-prospect-preview-url'
+import { showcaseFieldDisplay } from '@/lib/public-portfolio/showcase-field-display'
+import type { ManageInsightSummary } from '@/app/p/[slug]/showcase-manage-insight-bar'
 import type { PublicReference } from '../actions'
 import { ShowcaseReferenceContent } from './showcase-reference-content'
 import { ShowcaseProjectDetails } from './showcase-project-details'
@@ -16,6 +19,18 @@ type Branding = {
   logo_url: string | null
   primary_color: string
   secondary_color: string
+}
+
+function pushCaseItem(
+  items: Array<{ label: string; value: React.ReactNode; icon?: React.ReactNode }>,
+  label: string,
+  raw: string | null | undefined,
+  revokeMode: boolean,
+  icon?: React.ReactNode
+) {
+  const { show, value } = showcaseFieldDisplay(raw, revokeMode)
+  if (!show) return
+  items.push({ label, value, icon })
 }
 
 export function ShowcaseSingleReference({
@@ -35,6 +50,8 @@ export function ShowcaseSingleReference({
   showApprovalEdit,
   buyerLogoUrl,
   buyerCompanyName,
+  recipientToken,
+  manageInsights,
 }: {
   slug: string
   reference: PublicReference
@@ -52,13 +69,15 @@ export function ShowcaseSingleReference({
   showApprovalEdit?: boolean
   buyerLogoUrl?: string | null
   buyerCompanyName?: string | null
+  recipientToken?: string | null
+  manageInsights?: ManageInsightSummary | null
 }) {
-  const vol = formatReferenceVolume(reference.volume_eur) || '—'
-  const start =
+  const volRaw = formatReferenceVolume(reference.volume_eur)
+  const startRaw =
     reference.project_start && String(reference.project_start).trim() !== ''
       ? formatDateUtcDe(String(reference.project_start))
-      : '—'
-  const end =
+      : null
+  const endRaw =
     reference.project_end && String(reference.project_end).trim() !== ''
       ? formatProjectEndWithDurationDe({
           project_start: reference.project_start,
@@ -66,23 +85,31 @@ export function ShowcaseSingleReference({
           project_status: reference.project_status,
           formatEndDate: (iso) => formatDateUtcDe(iso),
         })
-      : '—'
+      : null
 
-  const caseDataItems = [
-    {
-      label: 'Branche',
-      value: formatIndustryDisplay(reference.industry) || '—',
-      icon: <AppIcon icon={Building2} size={14} />,
-    },
-    {
-      label: 'Land',
-      value: reference.country ?? '—',
-      icon: <AppIcon icon={Globe} size={14} />,
-    },
-    { label: 'Volumen', value: vol },
-    { label: 'Projektstart', value: start },
-    { label: 'Projektende', value: end },
-  ]
+  const caseDataItems: Array<{ label: string; value: React.ReactNode; icon?: React.ReactNode }> =
+    []
+  pushCaseItem(
+    caseDataItems,
+    'Branche',
+    formatIndustryDisplay(reference.industry) || null,
+    revokeMode,
+    <AppIcon icon={Building2} size={14} />
+  )
+  pushCaseItem(
+    caseDataItems,
+    'Land',
+    reference.country,
+    revokeMode,
+    <AppIcon icon={Globe} size={14} />
+  )
+  pushCaseItem(caseDataItems, 'Volumen', volRaw, revokeMode)
+  pushCaseItem(caseDataItems, 'Projektstart', startRaw, revokeMode)
+  pushCaseItem(caseDataItems, 'Projektende', endRaw, revokeMode)
+
+  const prospectPreviewHref = revokeMode
+    ? buildPublicProspectPreviewUrl(slug, recipientToken)
+    : null
 
   return (
     <div className="min-h-screen bg-muted/20 pb-24">
@@ -125,6 +152,8 @@ export function ShowcaseSingleReference({
           items={caseDataItems}
           referenceTitle={reference.title}
           revokeMode={revokeMode}
+          prospectPreviewHref={prospectPreviewHref}
+          manageInsights={revokeMode && canDeactivate ? manageInsights : null}
         />
 
         <div className="grid grid-cols-1 gap-8 py-8 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
@@ -147,6 +176,7 @@ export function ShowcaseSingleReference({
             bookingUrl={shareOwnerBookingUrl}
             approvalEditUrl={approvalEditUrl}
             showApprovalEdit={showApprovalEdit}
+            manageMode={revokeMode}
           />
         </div>
       </div>

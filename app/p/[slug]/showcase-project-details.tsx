@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 
 import { formatContractTypeDisplay } from '@/lib/references/contract-type'
 import { formatProjectStatusDe } from '@/lib/public-portfolio/kpis-for-reference'
+import { showcaseFieldDisplay } from '@/lib/public-portfolio/showcase-field-display'
 import type { PublicReference } from '../actions'
 import { ShowcaseActionButtons } from './showcase-action-buttons'
 
@@ -14,8 +15,8 @@ function DetailRow({ label, value }: { label: string; value: ReactNode }) {
   )
 }
 
-function formatEmployees(count: number | null): string {
-  if (count == null) return '—'
+function formatEmployees(count: number | null): string | null {
+  if (count == null) return null
   return count.toLocaleString('de-DE')
 }
 
@@ -35,6 +36,17 @@ function websiteLabel(raw: string): string {
   }
 }
 
+function detailValue(
+  raw: string | null | undefined,
+  manageMode: boolean,
+  websiteNode?: ReactNode
+): { show: boolean; value: ReactNode } {
+  if (websiteNode) {
+    return { show: true, value: websiteNode }
+  }
+  return showcaseFieldDisplay(raw, manageMode)
+}
+
 export function ShowcaseProjectDetails({
   reference,
   slug,
@@ -42,6 +54,7 @@ export function ShowcaseProjectDetails({
   bookingUrl,
   approvalEditUrl,
   showApprovalEdit,
+  manageMode = false,
 }: {
   reference: PublicReference
   slug: string
@@ -49,14 +62,58 @@ export function ShowcaseProjectDetails({
   bookingUrl: string | null
   approvalEditUrl?: string | null
   showApprovalEdit?: boolean
+  manageMode?: boolean
 }) {
-  const contractType = formatContractTypeDisplay(reference.contract_type) || '—'
+  const contractType = formatContractTypeDisplay(reference.contract_type) || null
   const projectStatus =
-    formatProjectStatusDe(reference.project_status) || reference.project_status?.trim() || '—'
-  const incumbent = reference.incumbent_provider?.trim() || '—'
-  const competitors = reference.competitors?.trim() || '—'
+    formatProjectStatusDe(reference.project_status) || reference.project_status?.trim() || null
+  const incumbent = reference.incumbent_provider?.trim() || null
+  const competitors = reference.competitors?.trim() || null
   const employees = formatEmployees(reference.employee_count)
   const websiteRaw = reference.website?.trim()
+
+  const rows: Array<{ label: string; show: boolean; value: ReactNode }> = [
+    (() => {
+      const d = detailValue(contractType, manageMode)
+      return { label: 'Vertragsart', ...d }
+    })(),
+    (() => {
+      const d = detailValue(projectStatus, manageMode)
+      return { label: 'Projektstatus', ...d }
+    })(),
+    (() => {
+      const d = detailValue(incumbent, manageMode)
+      return { label: 'Dienstleister', ...d }
+    })(),
+    (() => {
+      const d = detailValue(competitors, manageMode)
+      return { label: 'Wettbewerber', ...d }
+    })(),
+    (() => {
+      const d = detailValue(employees, manageMode)
+      return { label: 'Mitarbeiter', ...d }
+    })(),
+    (() => {
+      if (websiteRaw) {
+        return {
+          label: 'Website',
+          show: true,
+          value: (
+            <a
+              href={websiteHref(websiteRaw)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              {websiteLabel(websiteRaw)}
+            </a>
+          ),
+        }
+      }
+      const d = detailValue(null, manageMode)
+      return { label: 'Website', ...d }
+    })(),
+  ]
 
   return (
     <aside className="min-w-0">
@@ -64,28 +121,11 @@ export function ShowcaseProjectDetails({
         <h3 className="mb-4 font-semibold text-foreground">Projektdetails</h3>
 
         <div>
-          <DetailRow label="Vertragsart" value={contractType} />
-          <DetailRow label="Projektstatus" value={projectStatus} />
-          <DetailRow label="Dienstleister" value={incumbent} />
-          <DetailRow label="Wettbewerber" value={competitors} />
-          <DetailRow label="Mitarbeiter" value={employees} />
-          <DetailRow
-            label="Website"
-            value={
-              websiteRaw ? (
-                <a
-                  href={websiteHref(websiteRaw)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  {websiteLabel(websiteRaw)}
-                </a>
-              ) : (
-                '—'
-              )
-            }
-          />
+          {rows
+            .filter((r) => r.show)
+            .map((r) => (
+              <DetailRow key={r.label} label={r.label} value={r.value} />
+            ))}
         </div>
 
         <ShowcaseActionButtons
@@ -94,6 +134,7 @@ export function ShowcaseProjectDetails({
           bookingUrl={bookingUrl}
           approvalEditUrl={approvalEditUrl}
           showApprovalEdit={showApprovalEdit}
+          manageMode={manageMode}
         />
       </div>
     </aside>
