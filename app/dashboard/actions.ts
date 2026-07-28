@@ -39,6 +39,7 @@ import {
 import {
   createSharedPortfolioImpl,
   getExistingShareForReferenceImpl,
+  getPortfolioViewSessionsForReferenceImpl,
   getReferencesByIdsImpl,
   resetSharedPortfolioManageTokenImpl,
   updateShareLinkSecurityByReferenceImpl,
@@ -192,7 +193,13 @@ export async function updateReferenceDetailFields(
 
 /** Kundenlink erstellen: shared_portfolios Eintrag mit Slug (xxx-xxxx-xxx), gibt URL zurück */
 export async function createSharedPortfolio(
-  referenceIds: string[]
+  referenceIds: string[],
+  recipient?: {
+    label: string
+    visitorEmail?: string | null
+    externalContactId?: string | null
+    companyId?: string | null
+  } | null
 ): Promise<
   | {
       success: true
@@ -203,7 +210,7 @@ export async function createSharedPortfolio(
     }
   | { success: false; error: string }
 > {
-  return createSharedPortfolioImpl(referenceIds)
+  return createSharedPortfolioImpl(referenceIds, recipient)
 }
 
 /** Bestehenden Kundenlink für eine Referenz suchen (für Detail-Modal Popover) */
@@ -213,8 +220,13 @@ export async function getExistingShareForReference(referenceId: string): Promise
   expiresAt: string | null
   hasPassword: boolean
   hasCustomerManageToken: boolean
+  gateMode: 'none' | 'password' | 'email'
 } | null> {
   return getExistingShareForReferenceImpl(referenceId)
+}
+
+export async function getPortfolioViewSessions(referenceId: string) {
+  return getPortfolioViewSessionsForReferenceImpl(referenceId)
 }
 
 /** Neues ?manage=-Geheimnis für bestehenden Kundenlink (macht alten Sperr-Link ungültig). */
@@ -244,6 +256,7 @@ export async function updateShareLinkSecurity(
     removePassword: boolean
     expiresAtIso: string | null
     clearExpires: boolean
+    gateMode?: 'none' | 'password' | 'email' | null
   }
 ): Promise<{ success: true } | { success: false; error: string }> {
   return updateShareLinkSecurityByReferenceImpl(referenceId, input)

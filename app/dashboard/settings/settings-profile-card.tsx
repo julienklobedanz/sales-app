@@ -20,6 +20,7 @@ export function SettingsProfileCard({
   avatarUrl,
   bookingUrl,
   phone,
+  jobTitle,
   profileRole,
   hideSubmitButton = false,
   saveSignal = 0,
@@ -31,6 +32,7 @@ export function SettingsProfileCard({
   avatarUrl?: string | null
   bookingUrl?: string | null
   phone?: string | null
+  jobTitle?: string | null
   profileRole: 'admin' | 'sales' | 'account_manager'
   hideSubmitButton?: boolean
   saveSignal?: number
@@ -44,6 +46,7 @@ export function SettingsProfileCard({
   const [firstNameValue, setFirstNameValue] = useState(firstName)
   const [lastNameValue, setLastNameValue] = useState(lastName)
   const [phoneValue, setPhoneValue] = useState(phone ?? '')
+  const [jobTitleValue, setJobTitleValue] = useState(jobTitle ?? '')
   const [bookingUrlValue, setBookingUrlValue] = useState(bookingUrl ?? '')
   const [lastHandledSaveSignal, setLastHandledSaveSignal] = useState(0)
   const [emailEditing, setEmailEditing] = useState(false)
@@ -56,6 +59,7 @@ export function SettingsProfileCard({
     firstNameValue !== firstName ||
     lastNameValue !== lastName ||
     phoneValue !== (phone ?? '') ||
+    jobTitleValue !== (jobTitle ?? '') ||
     bookingUrlValue !== (bookingUrl ?? '') ||
     (avatarPreview ?? '') !== (avatarUrl ?? '')
 
@@ -324,6 +328,23 @@ export function SettingsProfileCard({
                 autoComplete="tel"
                 required={salesRequired}
               />
+            </div>
+            <div className="space-y-1 sm:col-span-2">
+              <Label htmlFor="jobTitle" className="text-xs">
+                Jobtitel / Signatur
+              </Label>
+              <Input
+                id="jobTitle"
+                name="jobTitle"
+                value={jobTitleValue}
+                onChange={(e) => setJobTitleValue(e.target.value)}
+                placeholder="z. B. Account Executive · Cloud"
+                className="h-9 bg-background"
+                autoComplete="organization-title"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Wird auf Kundenlinks unter deinem Namen angezeigt.
+              </p>
             </div>
             <div className="space-y-1 sm:col-span-2">
               <Label htmlFor="bookingUrl" className="text-xs">

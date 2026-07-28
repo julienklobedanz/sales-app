@@ -99,8 +99,20 @@ async function deactivateActiveSharesForReferences(referenceIds: string[]) {
   }
 }
 
+export type CreateSharedPortfolioRecipient = {
+  label: string
+  visitorEmail?: string | null
+  externalContactId?: string | null
+  companyId?: string | null
+}
+
+function generatePortfolioRecipientToken(): string {
+  return randomBytes(18).toString('base64url').replace(/[^a-zA-Z0-9_-]/g, 'x')
+}
+
 export async function createSharedPortfolioImpl(
-  referenceIds: string[]
+  referenceIds: string[],
+  recipient?: CreateSharedPortfolioRecipient | null
 ): Promise<
   | {
       success: true
@@ -183,9 +195,35 @@ export async function createSharedPortfolioImpl(
           },
         })
       }
+      let publicUrl = url
+      if (recipient?.label?.trim()) {
+        const { data: spRow } = await supabase
+          .from('shared_portfolios')
+          .select('id')
+          .eq('slug', slug)
+          .single()
+        const spId = spRow?.id as string | undefined
+        if (spId) {
+          const token = generatePortfolioRecipientToken()
+          const { error: recErr } = await supabase.from('shared_portfolio_recipients').insert({
+            shared_portfolio_id: spId,
+            token,
+            label: recipient.label.trim(),
+            visitor_email: recipient.visitorEmail?.trim() || null,
+            external_contact_id: recipient.externalContactId ?? null,
+            company_id: recipient.companyId ?? null,
+            created_by: user.id,
+          })
+          if (!recErr) {
+            publicUrl = `${url}?r=${encodeURIComponent(token)}`
+          } else {
+            console.error('[createSharedPortfolio] recipient insert:', recErr)
+          }
+        }
+      }
       return {
         success: true,
-        url,
+        url: publicUrl,
         slug,
         initialPassword: initialPassword ?? undefined,
         manageToken,
@@ -336,11 +374,12 @@ export async function getExistingShareForReferenceImpl(
   expiresAt: string | null
   hasPassword: boolean
   hasCustomerManageToken: boolean
+  gateMode: 'none' | 'password' | 'email'
 } | null> {
   const supabase = await createServerSupabaseClient()
   const { data: rows, error } = await supabase
     .from('shared_portfolios')
-    .select('slug, expires_at, password_hash, customer_manage_token_hash')
+    .select('slug, expires_at, password_hash, customer_manage_token_hash, gate_mode')
     .eq('is_active', true)
     .contains('reference_ids', [referenceId])
     .limit(1)
@@ -363,9 +402,13 @@ export async function getExistingShareForReferenceImpl(
         expires_at?: string | null
         password_hash?: string | null
         customer_manage_token_hash?: string | null
+        gate_mode?: string | null
       }
     | undefined
   if (!row?.slug) return null
+  const gateRaw = String(row.gate_mode ?? 'none')
+  const gateMode =
+    gateRaw === 'email' ? 'email' : row.password_hash ? 'password' : ('none' as const)
   return {
     slug: row.slug,
     url: `/p/${row.slug}`,
@@ -374,6 +417,7 @@ export async function getExistingShareForReferenceImpl(
     hasCustomerManageToken: Boolean(
       row.customer_manage_token_hash && String(row.customer_manage_token_hash).length > 0
     ),
+    gateMode,
   }
 }
 
@@ -418,6 +462,7 @@ export async function updateShareLinkSecurityByReferenceImpl(
     removePassword: boolean
     expiresAtIso: string | null
     clearExpires: boolean
+    gateMode?: 'none' | 'password' | 'email' | null
   }
 ): Promise<{ success: true } | { success: false; error: string }> {
   const supabase = await createServerSupabaseClient()
@@ -467,6 +512,7 @@ export async function updateShareLinkSecurityByReferenceImpl(
     p_password_remove: input.removePassword,
     p_expires_at: input.clearExpires ? undefined : nullToUndefined(expiresAtIso),
     p_clear_expires: input.clearExpires,
+    p_gate_mode: input.gateMode ?? undefined,
   })
   if (rpcErr) return { success: false, error: rpcErr.message }
   const payload = rpcData as { success?: boolean; error?: string } | null
@@ -488,6 +534,53 @@ export async function updateShareLinkSecurityByReferenceImpl(
     },
   })
   return { success: true }
+}
+
+export async function getPortfolioViewSessionsForReferenceImpl(
+  referenceId: string,
+  limit = 8
+): Promise<
+  Array<{
+    id: string
+    startedAt: string
+    countryCode: string | null
+    activeSeconds: number
+    recipientLabel: string | null
+    visitorName: string | null
+  }>
+> {
+  const supabase = await createServerSupabaseClient()
+  const { data: rows, error: findErr } = await supabase
+    .from('shared_portfolios')
+    .select('id, slug')
+    .eq('is_active', true)
+    .contains('reference_ids', [referenceId])
+    .limit(1)
+  if (findErr || !rows?.[0]?.id) return []
+
+  const spId = rows[0].id as string
+  const { data: sessions, error } = await supabase
+    .from('portfolio_view_sessions')
+    .select(
+      'id, started_at, country_code, active_seconds, visitor_name, recipient_id, shared_portfolio_recipients(label)'
+    )
+    .eq('shared_portfolio_id', spId)
+    .order('started_at', { ascending: false })
+    .limit(limit)
+
+  if (error || !sessions?.length) return []
+
+  return sessions.map((s) => {
+    const rec = s.shared_portfolio_recipients as { label?: string } | null
+    return {
+      id: String(s.id),
+      startedAt: String(s.started_at),
+      countryCode: (s.country_code as string | null) ?? null,
+      activeSeconds: Number(s.active_seconds) || 0,
+      recipientLabel: rec?.label?.trim() || null,
+      visitorName: (s.visitor_name as string | null) ?? null,
+    }
+  })
 }
 
 export async function getReferencesByIdsImpl(ids: string[]): Promise<ReferenceRow[]> {

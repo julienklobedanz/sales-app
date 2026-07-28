@@ -27,6 +27,8 @@ export type DealDeskExecutiveBriefingFields = {
   bidderRequirements: string[]
   roleQualifications: string[]
   specialConditions: string[]
+  /** Notice-artige Kurz-Projektübersicht (2–4 Sätze, neutral). */
+  projectOverviewPlain: string | null
 }
 
 export const EMPTY_EXECUTIVE_BRIEFING: DealDeskExecutiveBriefingFields = {
@@ -48,6 +50,7 @@ export const EMPTY_EXECUTIVE_BRIEFING: DealDeskExecutiveBriefingFields = {
   bidderRequirements: [],
   roleQualifications: [],
   specialConditions: [],
+  projectOverviewPlain: null,
 }
 
 export function normalizeExecutiveBriefingFields(
@@ -111,6 +114,7 @@ export function normalizeExecutiveBriefingFields(
     bidderRequirements: stringList('bidderRequirements'),
     roleQualifications: stringList('roleQualifications'),
     specialConditions: stringList('specialConditions'),
+    projectOverviewPlain: str(o.projectOverviewPlain),
   }
 }
 

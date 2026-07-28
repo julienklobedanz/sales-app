@@ -42,6 +42,7 @@ import {
   createSharedPortfolio,
   getCustomerApprovalRecipientEmail,
   getExistingShareForReference,
+  getPortfolioViewSessions,
   resetSharedPortfolioManageToken,
   updateShareLinkSecurity,
 } from '@/app/dashboard/actions'
@@ -116,6 +117,10 @@ export function ShareLinkButton({
   const [secExpires, setSecExpires] = useState('')
   const [secNoExpiry, setSecNoExpiry] = useState(false)
   const [secRemovePw, setSecRemovePw] = useState(false)
+  const [secGateMode, setSecGateMode] = useState<'none' | 'password' | 'email'>('none')
+  const [viewSessions, setViewSessions] = useState<
+    Awaited<ReturnType<typeof getPortfolioViewSessions>>
+  >([])
   const [secSaving, setSecSaving] = useState(false)
 
   /** Vollständige URL inkl. ?manage=… – nur wenn Klartext-Token gerade bekannt (Erstellung / Reset). */
@@ -138,7 +143,15 @@ export function ShareLinkButton({
     setSecExpires(toDateInputValue(metaExpiresAt) || defaultExpiryDateInput())
     setSecNoExpiry(!metaExpiresAt)
     setSecRemovePw(false)
-  }, [securityOpen, metaExpiresAt])
+    void getExistingShareForReference(referenceId).then((ex) => {
+      if (ex) setSecGateMode(ex.gateMode)
+    })
+  }, [securityOpen, metaExpiresAt, referenceId])
+
+  useEffect(() => {
+    if (!open || !url) return
+    void getPortfolioViewSessions(referenceId).then(setViewSessions)
+  }, [open, url, referenceId])
 
   useEffect(() => {
     if (!open) return
@@ -155,6 +168,7 @@ export function ShareLinkButton({
           setMetaExpiresAt(existing.expiresAt)
           setMetaHasPassword(existing.hasPassword)
           setHasCustomerManageToken(existing.hasCustomerManageToken)
+          setSecGateMode(existing.gateMode)
           setManageUrl(null)
           return
         }
@@ -310,6 +324,7 @@ export function ShareLinkButton({
         removePassword: secRemovePw,
         expiresAtIso: expiresIso,
         clearExpires: secNoExpiry,
+        gateMode: secGateMode,
       })
       if (!res.success) {
         toast.error(res.error)
@@ -322,6 +337,7 @@ export function ShareLinkButton({
         setMetaExpiresAt(again.expiresAt)
         setMetaHasPassword(again.hasPassword)
         setHasCustomerManageToken(again.hasCustomerManageToken)
+        setSecGateMode(again.gateMode)
       }
     } finally {
       setSecSaving(false)
@@ -408,6 +424,31 @@ export function ShareLinkButton({
                     : ' Kein Ablaufdatum.'}
                 </p>
               )}
+              {viewSessions.length > 0 ? (
+                <div className="space-y-1 rounded-md border border-border/60 bg-muted/30 px-3 py-2">
+                  <p className="text-xs font-medium text-muted-foreground">Letzte Ansichten</p>
+                  <ul className="space-y-1 text-xs text-foreground/90">
+                    {viewSessions.map((s) => {
+                      const mins = Math.max(1, Math.round(s.activeSeconds / 60))
+                      const who = s.recipientLabel || s.visitorName || 'Anonym'
+                      const when = new Date(s.startedAt)
+                      const agoMin = Math.max(
+                        0,
+                        Math.round((Date.now() - when.getTime()) / 60_000)
+                      )
+                      const agoLabel =
+                        agoMin < 60
+                          ? `vor ${agoMin} Min`
+                          : `vor ${Math.round(agoMin / 60)} Std`
+                      return (
+                        <li key={s.id}>
+                          {who} · {s.countryCode ?? '—'} · {mins} Min · {agoLabel}
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </div>
+              ) : null}
               <div className="grid grid-cols-4 gap-2">
                 <Button
                   type="button"
@@ -612,9 +653,24 @@ export function ShareLinkButton({
           </DialogHeader>
           <div className="space-y-4 pt-1">
             <p className="text-xs text-slate-500">
-              Passwort und Ablaufdatum gelten für diesen Kundenlink. Das Passwort wird verschlüsselt gespeichert und
-              kann später nicht wieder angezeigt werden.
+              Zugang, Passwort und Ablaufdatum gelten für diesen Kundenlink. Besucher-Tracking (Land,
+              Aktivzeit) erfolgt ohne Speicherung der IP.
             </p>
+            <div className="space-y-1.5">
+              <Label htmlFor="sec-gate">Zugang</Label>
+              <select
+                id="sec-gate"
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                value={secGateMode}
+                onChange={(e) =>
+                  setSecGateMode(e.target.value as 'none' | 'password' | 'email')
+                }
+              >
+                <option value="none">Offen</option>
+                <option value="password">Passwort</option>
+                <option value="email">Name + E-Mail</option>
+              </select>
+            </div>
             {metaHasPassword ? (
               <div className="flex items-center gap-2">
                 <Checkbox

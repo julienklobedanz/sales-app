@@ -293,6 +293,7 @@ export default async function SettingsPage() {
           avatarUrl: (profileRow as { avatar_url?: string | null })?.avatar_url ?? null,
           bookingUrl: (profileRow as { booking_url?: string | null })?.booking_url ?? null,
           phone: (profileRow as { phone?: string | null })?.phone ?? null,
+          jobTitle: (profileRow as { job_title?: string | null })?.job_title ?? null,
           profileRole: legacyAppRoleFrom(serverRoles.systemRole, serverRoles.functionRole),
           notificationSettings: parseProfileNotificationSettings(
             (profileRow as { notification_settings?: unknown } | null)?.notification_settings

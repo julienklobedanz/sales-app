@@ -4,19 +4,25 @@ import {
   normalizeExecutiveBriefingFields,
   type DealDeskExecutiveBriefingFields,
 } from '@/lib/deal-desk/executive-briefing-fields'
+import { normalizeTenderLots, type TenderLot } from '@/lib/deals/tender-lots'
 import { formatOpenAiHttpError } from '@/lib/openai-api-errors'
 
 const MODEL = 'gpt-4o-mini'
 const MAX_CHARS = 80_000
 
+export type ExecutiveBriefingExtractSuccess = {
+  briefing: DealDeskExecutiveBriefingFields
+  tenderLots: TenderLot[]
+}
+
 export async function extractExecutiveBriefingFromRfp(
   apiKey: string,
   plainText: string,
   projectName: string
-): Promise<DealDeskExecutiveBriefingFields | { error: string }> {
+): Promise<ExecutiveBriefingExtractSuccess | { error: string }> {
   const body = plainText.trim().slice(0, MAX_CHARS)
   if (body.length < 80) {
-    return { ...normalizeExecutiveBriefingFields(null) }
+    return { briefing: { ...normalizeExecutiveBriefingFields(null) }, tenderLots: [] }
   }
 
   const prompt = `Du extrahierst aus einem RFP/Ausschreibungspaket Felder für ein internes EXECUTIVE BRIEFING (Deutsch).
@@ -48,7 +54,17 @@ Antworte NUR mit JSON (kein Markdown):
   "projectLocation": "<kompakter Standort, z.B. Stuttgart, DE oder Remote / CH oder null>",
   "bidderRequirements": ["<Zertifizierungen, Haftpflicht, Referenzen an den Bieter>"],
   "roleQualifications": ["<Sprachkenntnisse, Rollen, KRITIS-Erfahrung der Projektteilnehmer>"],
-  "specialConditions": ["<Datenhaltung EU/EWR, Mindestlohn, Laufzeit, Bietergemeinschaft etc.>"]
+  "specialConditions": ["<Datenhaltung EU/EWR, Mindestlohn, Laufzeit, Bietergemeinschaft etc.>"],
+  "projectOverviewPlain": "<2-4 Sätze neutrale Projektübersicht für eine Notice-Seite, ohne Go/No-Bid>",
+  "tenderLots": [
+    {
+      "lotId": "<LOT-0001 oder null>",
+      "title": "<Los-Titel>",
+      "description": "<Kurzbeschreibung des Loses>",
+      "estimatedValueEur": <Zahl oder null>,
+      "estimatedValueText": "<geschätzter Wert als Text falls keine Zahl, z.B. 25.000.000 € oder null>"
+    }
+  ]
 }
 
 Regeln:
@@ -89,7 +105,10 @@ Regeln:
     }
     const raw = json?.choices?.[0]?.message?.content?.trim() ?? ''
     const parsed = JSON.parse(raw) as unknown
-    return normalizeExecutiveBriefingFields(parsed)
+    return {
+      briefing: normalizeExecutiveBriefingFields(parsed),
+      tenderLots: normalizeTenderLots(parsed),
+    }
   } catch (e) {
     return { error: e instanceof Error ? e.message : 'Executive-Briefing-Extraktion fehlgeschlagen.' }
   }

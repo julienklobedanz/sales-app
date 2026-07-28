@@ -112,6 +112,10 @@ export async function updateProfile(formData: FormData) {
   if (formData.has('phone')) {
     updates.phone = phoneTrim.length ? phoneTrim : null
   }
+  if (formData.has('jobTitle')) {
+    const jt = formData.get('jobTitle')?.toString()?.trim() ?? ''
+    updates.job_title = jt.length ? jt : null
+  }
   if (avatarDataUrl !== undefined) {
     if (!avatarDataUrl) {
       updates.avatar_url = null

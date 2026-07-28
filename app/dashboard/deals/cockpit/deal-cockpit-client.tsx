@@ -8,6 +8,7 @@ import { DealCockpitPromoteCard } from './deal-cockpit-promote-card'
 import { DealDocumentsSection } from './deal-documents-section'
 import type { DealDocumentRow } from '../document-actions'
 import { DealDeadlinesCard } from './deal-deadlines-card'
+import { DealDeadlineMilestoneChips } from './deal-deadline-milestone-chips'
 import { DealFactsCard } from './deal-facts-card'
 import { DealProofSection } from './deal-proof-section'
 import { DealSmartMatchDrawer } from './deal-smart-match-drawer'
@@ -55,6 +56,14 @@ export function DealCockpitClient({
         briefingButton={showRfpBlock ? briefingButton : undefined}
       />
 
+      {showRfpBlock ? (
+        <DealDeadlineMilestoneChips
+          deadlines={deadlines}
+          orgDateDisplayFormat={orgDateDisplayFormat}
+          className="mb-4"
+        />
+      ) : null}
+
       {/* Deadlines (~60%) | Deal-Fakten (~40%) */}
       <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-5">
         <div className="min-w-0 lg:col-span-3">
@@ -63,6 +72,7 @@ export function DealCockpitClient({
             dealTitle={deal.title}
             deadlines={deadlines}
             orgDateDisplayFormat={orgDateDisplayFormat}
+            showMilestoneChipsAbove={showRfpBlock}
           />
         </div>
         <div className="min-w-0 lg:col-span-2">

@@ -48,6 +48,7 @@ export type AnalyzeRfpResult = {
   coverage: RfpCoverageRow[]
   eligibilityCriteria: EligibilityCriterion[]
   rfpVerdicts: Record<string, RfpVerdict>
+  tenderLots: import('@/lib/deals/tender-lots').TenderLot[]
 }
 
 export type AnalyzeRfpError = { error: string; isQuotaError?: boolean }
@@ -138,7 +139,7 @@ export async function analyzeRfp(
     coverage,
     rfpVerdicts,
     risk: { ...riskResult, redFlags: linkedRedFlags },
-    executiveBriefing: briefingResult,
+    executiveBriefing: briefingResult.briefing,
     benchmarkRisk: benchmarkRiskResult,
     timelineItems,
     organizationId,
@@ -151,5 +152,6 @@ export async function analyzeRfp(
     coverage,
     eligibilityCriteria,
     rfpVerdicts,
+    tenderLots: briefingResult.tenderLots,
   }
 }

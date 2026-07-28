@@ -13,6 +13,7 @@ export function buildAusschreibungNavItems(input: {
   risksCount: number
   draftsCovered: number
   draftsTotal: number
+  lotsCount?: number
   showAnalysisLinks: boolean
 }): AusschreibungNavItem[] {
   const items: AusschreibungNavItem[] = [
@@ -32,6 +33,12 @@ export function buildAusschreibungNavItems(input: {
       href: '#stammdaten',
       label: COPY.deals.cockpit.ausschreibungNavStammdaten,
       count: input.stammdatenCount > 0 ? String(input.stammdatenCount) : null,
+    },
+    {
+      id: 'lose',
+      href: '#lose',
+      label: COPY.deals.cockpit.ausschreibungNavLose,
+      count: (input.lotsCount ?? 0) > 0 ? String(input.lotsCount) : null,
     },
     {
       id: 'eligCard',

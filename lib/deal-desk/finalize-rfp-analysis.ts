@@ -36,6 +36,7 @@ export async function finalizeRfpAnalysis(
     coverage: analyzed.coverage,
     eligibilityCriteria: analyzed.eligibilityCriteria,
     rfpVerdicts: analyzed.rfpVerdicts,
+    tenderLots: analyzed.tenderLots,
     engineVersion: RFP_COCKPIT_ENGINE_VERSION_CURRENT,
   })
 

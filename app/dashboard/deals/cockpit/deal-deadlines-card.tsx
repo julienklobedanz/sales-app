@@ -53,11 +53,14 @@ export function DealDeadlinesCard({
   dealTitle,
   deadlines,
   orgDateDisplayFormat = 'de-DE',
+  showMilestoneChipsAbove = false,
 }: {
   dealId: string
   dealTitle: string
   deadlines: DealDeadlineRow[]
   orgDateDisplayFormat?: OrgDateDisplayFormat
+  /** Wenn Chips unter dem Header stehen, kompakte eingeklappte Card. */
+  showMilestoneChipsAbove?: boolean
 }) {
   const [expanded, setExpanded] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
@@ -76,6 +79,7 @@ export function DealDeadlinesCard({
   const headline = next
     ? formatNextDeadlineHeadline(next, { dateDisplayFormat: orgDateDisplayFormat })
     : null
+  const activeCount = sorted.filter((d) => !d.suppressed_at).length
   const exportableForIcs = useMemo(() => dealDeadlinesExportableForIcs(sorted), [sorted])
 
   function handleDownloadIcs() {
@@ -103,7 +107,13 @@ export function DealDeadlinesCard({
                   className={`shrink-0 text-muted-foreground transition-transform ${expanded ? 'rotate-90' : ''}`}
                 />
                 <div className="min-w-0">
-                  {headline ? (
+                  {showMilestoneChipsAbove ? (
+                    <div className="text-sm font-medium text-foreground">
+                      {activeCount > 0
+                        ? `Alle Fristen (${activeCount})`
+                        : COPY.deals.cockpit.deadlinesEmpty}
+                    </div>
+                  ) : headline ? (
                     <>
                       <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                         {COPY.deals.cockpit.nextDeadlineLabel}

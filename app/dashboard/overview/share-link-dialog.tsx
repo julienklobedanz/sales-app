@@ -35,6 +35,8 @@ export function ShareLinkDialog({
   const [shareLinkUrl, setShareLinkUrl] = useState<string | null>(null)
   const [shareLinkLoading, setShareLinkLoading] = useState(false)
   const [shareLinkGenerateLoading, setShareLinkGenerateLoading] = useState(false)
+  const [recipientName, setRecipientName] = useState('')
+  const [recipientEmail, setRecipientEmail] = useState('')
 
   const refId = reference?.id ?? null
 
@@ -67,6 +69,34 @@ export function ShareLinkDialog({
             <div className="mx-auto w-full max-w-4xl space-y-6">
               <h3 className="text-lg font-semibold">Kundenlink erstellen</h3>
               <div className="space-y-3">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium" htmlFor="share-recipient-name">
+                      Für wen? (Name)
+                    </label>
+                    <Input
+                      id="share-recipient-name"
+                      placeholder="z. B. Max Mustermann"
+                      value={recipientName}
+                      onChange={(e) => setRecipientName(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium" htmlFor="share-recipient-email">
+                      E-Mail (optional)
+                    </label>
+                    <Input
+                      id="share-recipient-email"
+                      type="email"
+                      placeholder="max@firma.de"
+                      value={recipientEmail}
+                      onChange={(e) => setRecipientEmail(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Mit Name wird ein personalisierter Link erzeugt (Tracking pro Empfänger).
+                </p>
                 {shareLinkLoading ? (
                   <p className="text-muted-foreground flex items-center gap-2 text-sm">
                     <AppIcon icon={Loader} size={16} className="animate-spin" /> Wird geladen…
@@ -113,7 +143,15 @@ export function ShareLinkDialog({
                       if (!reference) return
                       setShareLinkGenerateLoading(true)
                       try {
-                        const result = await createSharedPortfolio([reference.id])
+                        const result = await createSharedPortfolio(
+                          [reference.id],
+                          recipientName.trim()
+                            ? {
+                                label: recipientName.trim(),
+                                visitorEmail: recipientEmail.trim() || null,
+                              }
+                            : null
+                        )
                         if (result.success) {
                           const publicUrl = toAbsoluteUrl(result.url)
                           setShareLinkUrl(publicUrl)

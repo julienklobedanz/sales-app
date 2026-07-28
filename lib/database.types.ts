@@ -1909,6 +1909,7 @@ export type Database = {
           full_name: string | null
           function_role: Database["public"]["Enums"]["function_role"]
           id: string
+          job_title: string | null
           notification_settings: Json
           organization_id: string | null
           phone: string | null
@@ -1922,6 +1923,7 @@ export type Database = {
           full_name?: string | null
           function_role?: Database["public"]["Enums"]["function_role"]
           id: string
+          job_title?: string | null
           notification_settings?: Json
           organization_id?: string | null
           phone?: string | null
@@ -1935,6 +1937,7 @@ export type Database = {
           full_name?: string | null
           function_role?: Database["public"]["Enums"]["function_role"]
           id?: string
+          job_title?: string | null
           notification_settings?: Json
           organization_id?: string | null
           phone?: string | null
@@ -2360,6 +2363,7 @@ export type Database = {
           id: string
           is_active: boolean
           password_hash: string | null
+          gate_mode: string
           reference_ids: string[]
           slug: string
           view_count: number
@@ -2368,6 +2372,7 @@ export type Database = {
           created_at?: string
           customer_manage_token_hash?: string | null
           expires_at?: string | null
+          gate_mode?: string
           id?: string
           is_active?: boolean
           password_hash?: string | null
@@ -2379,12 +2384,115 @@ export type Database = {
           created_at?: string
           customer_manage_token_hash?: string | null
           expires_at?: string | null
+          gate_mode?: string
           id?: string
           is_active?: boolean
           password_hash?: string | null
           reference_ids?: string[]
           slug?: string
           view_count?: number
+        }
+        Relationships: []
+      }
+      shared_portfolio_recipients: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          created_by: string | null
+          external_contact_id: string | null
+          id: string
+          label: string
+          shared_portfolio_id: string
+          token: string
+          visitor_email: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          external_contact_id?: string | null
+          id?: string
+          label?: string
+          shared_portfolio_id: string
+          token: string
+          visitor_email?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          external_contact_id?: string | null
+          id?: string
+          label?: string
+          shared_portfolio_id?: string
+          token?: string
+          visitor_email?: string | null
+        }
+        Relationships: []
+      }
+      portfolio_view_sessions: {
+        Row: {
+          active_seconds: number
+          country_code: string | null
+          ended_at: string | null
+          id: string
+          last_heartbeat_at: string
+          recipient_id: string | null
+          shared_portfolio_id: string
+          slug: string
+          started_at: string
+          visitor_email: string | null
+          visitor_name: string | null
+        }
+        Insert: {
+          active_seconds?: number
+          country_code?: string | null
+          ended_at?: string | null
+          id?: string
+          last_heartbeat_at?: string
+          recipient_id?: string | null
+          shared_portfolio_id: string
+          slug: string
+          started_at?: string
+          visitor_email?: string | null
+          visitor_name?: string | null
+        }
+        Update: {
+          active_seconds?: number
+          country_code?: string | null
+          ended_at?: string | null
+          id?: string
+          last_heartbeat_at?: string
+          recipient_id?: string | null
+          shared_portfolio_id?: string
+          slug?: string
+          started_at?: string
+          visitor_email?: string | null
+          visitor_name?: string | null
+        }
+        Relationships: []
+      }
+      portfolio_view_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          payload: Json
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          payload?: Json
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          payload?: Json
+          session_id?: string
         }
         Relationships: []
       }
@@ -2674,10 +2782,19 @@ export type Database = {
         Args: {
           p_clear_expires?: boolean
           p_expires_at?: string
+          p_gate_mode?: string
           p_password_plain: string
           p_password_remove?: boolean
           p_slug: string
         }
+        Returns: Json
+      }
+      resolve_shared_portfolio_recipient: {
+        Args: { p_slug: string; p_token: string }
+        Returns: Json
+      }
+      try_unlock_shared_portfolio_email: {
+        Args: { p_email: string; p_name: string; p_slug: string }
         Returns: Json
       }
       try_unlock_shared_portfolio: {

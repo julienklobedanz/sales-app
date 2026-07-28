@@ -63,6 +63,7 @@ type ProfileTabProps = {
     avatarUrl: string | null
     bookingUrl: string | null
     phone: string | null
+    jobTitle: string | null
     profileRole: 'admin' | 'sales' | 'account_manager'
     notificationSettings: {
       emailOnNewMatch: boolean
@@ -180,6 +181,7 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
             avatarUrl={profile.avatarUrl}
             bookingUrl={profile.bookingUrl}
             phone={profile.phone}
+            jobTitle={profile.jobTitle}
             profileRole={profile.profileRole}
             hideSubmitButton
             saveSignal={profileSaveSignal}

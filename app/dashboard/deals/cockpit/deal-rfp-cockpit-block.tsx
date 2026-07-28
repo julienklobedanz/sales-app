@@ -18,6 +18,8 @@ import { DealRfpStammdatenSection } from './deal-rfp-stammdaten-section'
 import { DealDocumentsSection } from './deal-documents-section'
 import type { DealDocumentRow } from '../document-actions'
 import { DealRfpAnalyzeButton } from './deal-rfp-analyze-button'
+import { DealRfpNoticeHero } from './deal-rfp-notice-hero'
+import { DealRfpLotsSection } from './deal-rfp-lots-section'
 
 /** Full Ausschreibung stack: sticky nav → documents → analysis cards. */
 export async function DealRfpCockpitBlock({
@@ -47,9 +49,12 @@ export async function DealRfpCockpitBlock({
     ? data.risks.redFlags.length + data.risks.smeOpenCount
     : 0
   const eligibilityCount = data?.eligibilityAssessment?.criteria.length ?? 0
+  const lotsCount = data?.tenderLots.length ?? 0
 
   return (
     <div className="space-y-4">
+      {data ? <DealRfpNoticeHero deal={deal} data={data} /> : null}
+
       <DealRfpAusschreibungNav
         items={buildAusschreibungNavItems({
           stammdatenCount: data?.stammdatenRows.length ?? 0,
@@ -57,6 +62,7 @@ export async function DealRfpCockpitBlock({
           risksCount,
           draftsCovered,
           draftsTotal: data?.draftRows.length ?? 0,
+          lotsCount,
           showAnalysisLinks: Boolean(data),
         })}
       />
@@ -99,6 +105,7 @@ export async function DealRfpCockpitBlock({
             canManage={canManageDocuments}
           />
           <DealRfpStammdatenSection data={data} />
+          <DealRfpLotsSection lots={data.tenderLots} />
           <DealRfpEligibilitySection data={data} />
           <DealRfpRisksSection data={data} />
           <DealRfpDraftsSection data={data} deal={deal} />

@@ -213,6 +213,7 @@ export const COPY = {
       ausschreibungNavDokumente: 'Dokumente',
       ausschreibungNavUrteil: 'Urteil',
       ausschreibungNavStammdaten: 'Stammdaten',
+      ausschreibungNavLose: 'Lose',
       ausschreibungNavEignung: 'Eignung',
       ausschreibungNavRisiken: 'Risiken',
       ausschreibungNavDrafts: 'Entwürfe',

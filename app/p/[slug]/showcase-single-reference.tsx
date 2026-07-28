@@ -33,6 +33,8 @@ export function ShowcaseSingleReference({
   revokeMode,
   approvalEditUrl,
   showApprovalEdit,
+  buyerLogoUrl,
+  buyerCompanyName,
 }: {
   slug: string
   reference: PublicReference
@@ -48,6 +50,8 @@ export function ShowcaseSingleReference({
   revokeMode: boolean
   approvalEditUrl?: string | null
   showApprovalEdit?: boolean
+  buyerLogoUrl?: string | null
+  buyerCompanyName?: string | null
 }) {
   const vol = formatReferenceVolume(reference.volume_eur) || '—'
   const start =
@@ -84,6 +88,19 @@ export function ShowcaseSingleReference({
     <div className="min-h-screen bg-muted/20 pb-24">
       <div className="mx-auto max-w-7xl px-4 py-8">
         <header className="mb-10 space-y-4 text-center">
+          {buyerLogoUrl ? (
+            <div className="flex flex-col items-center gap-1">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={buyerLogoUrl}
+                alt={buyerCompanyName ?? 'Kunde'}
+                className="h-10 max-w-[140px] object-contain"
+              />
+              {buyerCompanyName ? (
+                <span className="text-xs text-muted-foreground">für {buyerCompanyName}</span>
+              ) : null}
+            </div>
+          ) : null}
           {branding.logo_url ? (
             // eslint-disable-next-line @next/next/no-img-element -- öffentliche Branding-URL
             <img

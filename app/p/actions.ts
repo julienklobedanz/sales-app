@@ -48,7 +48,23 @@ export type PublicPortfolioResult =
       canDeactivate: boolean
       references: PublicReference[]
     }
-  | { found: false; reason?: 'not_found' | 'expired' | 'locked'; slug?: string }
+  | {
+      found: false
+      reason?: 'not_found' | 'expired' | 'locked'
+      slug?: string
+      gateMode?: 'password' | 'email' | 'none'
+    }
+
+export type ResolvedPortfolioRecipient =
+  | {
+      found: true
+      recipientId: string
+      label: string
+      companyId: string | null
+      companyName: string | null
+      companyLogoUrl: string | null
+    }
+  | { found: false }
 
 export type PublicPortfolioBranding =
   | {
@@ -109,7 +125,10 @@ export async function getPublicPortfolio(
     return { found: false, reason: r }
   }
   if (payload?.access === 'locked') {
-    return { found: false, reason: 'locked', slug: payload.slug }
+    const gm = (payload as { gate_mode?: string }).gate_mode
+    const gateMode =
+      gm === 'email' ? 'email' : gm === 'password' ? 'password' : ('password' as const)
+    return { found: false, reason: 'locked', slug: payload.slug, gateMode }
   }
   if (payload?.access !== 'ok' || !payload.slug) {
     return { found: false, reason: 'not_found' }
@@ -345,6 +364,90 @@ export async function unlockPublicPortfolio(
     action: 'unlock_success',
     entityId: slug,
     actionDetails: { slug, reference_id: unlockCtx.referenceId, ip_hash: ipHash ?? null },
+  })
+
+  return { success: true }
+}
+
+export async function resolvePublicPortfolioRecipient(
+  slug: string,
+  token: string | null | undefined
+): Promise<ResolvedPortfolioRecipient> {
+  if (!token?.trim()) return { found: false }
+  const supabase = await createServerSupabaseClient()
+  const { data, error } = await supabase.rpc('resolve_shared_portfolio_recipient', {
+    p_slug: slug,
+    p_token: token.trim(),
+  })
+  if (error) return { found: false }
+  const payload = data as {
+    found?: boolean
+    recipient_id?: string
+    label?: string
+    company_id?: string | null
+    company_name?: string | null
+    company_logo_url?: string | null
+  } | null
+  if (!payload?.found || !payload.recipient_id) return { found: false }
+  return {
+    found: true,
+    recipientId: payload.recipient_id,
+    label: payload.label ?? '',
+    companyId: payload.company_id ?? null,
+    companyName: payload.company_name ?? null,
+    companyLogoUrl: payload.company_logo_url ?? null,
+  }
+}
+
+/** E-Mail-Gate: Name + E-Mail, Session-Cookie wie Passwort-Unlock. */
+export async function unlockPublicPortfolioEmail(
+  slug: string,
+  name: string,
+  email: string
+): Promise<UnlockPortfolioResult> {
+  const supabase = await createServerSupabaseClient()
+  const { data, error } = await supabase.rpc('try_unlock_shared_portfolio_email', {
+    p_slug: slug,
+    p_name: name,
+    p_email: email,
+  })
+  if (error) return { success: false, error: 'unknown' }
+  const payload = data as {
+    success?: boolean
+    token?: string
+    error?: string
+    max_age_seconds?: number
+    visitor_name?: string
+    visitor_email?: string
+  } | null
+  if (!payload?.success || !payload.token) {
+    const e = payload?.error
+    if (e === 'expired') return { success: false, error: 'expired' }
+    if (e === 'not_found') return { success: false, error: 'not_found' }
+    return { success: false, error: 'unknown' }
+  }
+
+  const maxAgeRaw = payload.max_age_seconds
+  const maxAgeSec =
+    typeof maxAgeRaw === 'number' && Number.isFinite(maxAgeRaw)
+      ? Math.max(60, Math.min(2592000, Math.trunc(maxAgeRaw)))
+      : 604800
+
+  const jar = await cookies()
+  jar.set(publicPortfolioUnlockCookieName(slug), payload.token, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge: maxAgeSec,
+  })
+
+  jar.set(`portfolio_email_gate_${slug}`, JSON.stringify({ name: payload.visitor_name, email: payload.visitor_email }), {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge: maxAgeSec,
   })
 
   return { success: true }

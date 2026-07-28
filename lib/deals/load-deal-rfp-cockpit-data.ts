@@ -27,6 +27,9 @@ import {
   buildRfpStammdatenRows,
   type RfpStammdatenRow,
 } from './build-rfp-stammdaten-rows'
+import { normalizeExecutiveBriefingFields } from '@/lib/deal-desk/executive-briefing-fields'
+import type { DealDeskExecutiveBriefingFields } from '@/lib/deal-desk/executive-briefing-fields'
+import type { TenderLot } from '@/lib/deals/tender-lots'
 
 export type DealRfpCockpitData = {
   projectId: string
@@ -47,6 +50,8 @@ export type DealRfpCockpitData = {
   risks: DealRfpRisksData | null
   draftRows: DealDeskDraftRow[]
   stammdatenRows: RfpStammdatenRow[]
+  executiveBriefing: DealDeskExecutiveBriefingFields
+  tenderLots: TenderLot[]
   recommendation: ReturnType<typeof resolveBidRecommendation>
 }
 
@@ -156,6 +161,8 @@ export async function loadDealRfpCockpitData(
     risks,
     draftRows: Array.isArray(snap.draftRows) ? snap.draftRows : [],
     stammdatenRows: buildRfpStammdatenRows(snap),
+    executiveBriefing: normalizeExecutiveBriefingFields(snap.executiveBriefing),
+    tenderLots: Array.isArray(snap.tenderLots) ? snap.tenderLots : [],
     recommendation: resolveBidRecommendation({
       winProbability,
       hasAnalysis,

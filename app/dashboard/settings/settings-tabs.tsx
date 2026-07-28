@@ -43,6 +43,7 @@ export function SettingsTabs({
     avatarUrl: string | null
     bookingUrl: string | null
     phone: string | null
+    jobTitle: string | null
     profileRole: 'admin' | 'sales' | 'account_manager'
     notificationSettings: {
       emailOnNewMatch: boolean

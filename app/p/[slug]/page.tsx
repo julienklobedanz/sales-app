@@ -5,6 +5,7 @@ import {
   getPublicPortfolioBranding,
   getPublicPortfolioShareOwner,
   incrementPortfolioViews,
+  resolvePublicPortfolioRecipient,
 } from '../actions'
 import { formatIndustryDisplay } from '@/lib/constants/industries'
 import { formatDateUtcDe, formatReferenceVolume } from '@/lib/format'
@@ -16,6 +17,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { ShareOwnerContactCard } from './share-owner-contact-card'
 import { PortfolioUnlockGate } from './portfolio-unlock-gate'
+import { PortfolioEmailUnlockGate } from './portfolio-email-unlock-gate'
+import { PortfolioSessionTracker } from './portfolio-session-tracker'
 import { PublicPortfolioFooter } from './public-portfolio-footer'
 import { ShowcaseSingleReference } from './showcase-single-reference'
 import { resolveApprovalEditUrlForManageView } from '@/lib/references/resolve-approval-edit-url-for-manage'
@@ -105,7 +108,11 @@ export default async function PublicPortfolioPage({
     typeof manageRaw === 'string' && manageRaw.length > 0 ? manageRaw : null
   const modeRaw = sp.mode
   const revokeMode = typeof modeRaw === 'string' && modeRaw === 'revoke'
+  const recipientRaw = sp.r
+  const recipientToken =
+    typeof recipientRaw === 'string' && recipientRaw.length > 0 ? recipientRaw : null
   const result = await getPublicPortfolio(slug, manageToken)
+  const recipientInfo = await resolvePublicPortfolioRecipient(slug, recipientToken)
   const branding = await getPublicPortfolioBranding(slug)
   const shareOwner = await getPublicPortfolioShareOwner(slug)
   const workspaceName = branding.found ? branding.name : 'RefStack Workspace'
@@ -120,6 +127,9 @@ export default async function PublicPortfolioPage({
 
   if (!result.found) {
     if (result.reason === 'locked') {
+      if (result.gateMode === 'email') {
+        return <PortfolioEmailUnlockGate slug={slug} />
+      }
       return <PortfolioUnlockGate slug={slug} />
     }
     if (result.reason === 'expired') {
@@ -148,6 +158,14 @@ export default async function PublicPortfolioPage({
 
   await incrementPortfolioViews(slug)
 
+  const buyerLogoUrl =
+    recipientInfo.found && recipientInfo.companyLogoUrl ? recipientInfo.companyLogoUrl : null
+  const buyerCompanyName =
+    recipientInfo.found && recipientInfo.companyName ? recipientInfo.companyName : null
+  const sessionTracker = (
+    <PortfolioSessionTracker slug={slug} recipientToken={recipientToken} />
+  )
+
   if (result.references.length === 1 && branding.found) {
     const singleRef = result.references[0]!
     const approvalEditUrl =
@@ -156,7 +174,9 @@ export default async function PublicPortfolioPage({
         : null
 
     return (
-      <ShowcaseSingleReference
+      <>
+        {sessionTracker}
+        <ShowcaseSingleReference
         slug={slug}
         reference={singleRef}
         branding={{
@@ -176,7 +196,10 @@ export default async function PublicPortfolioPage({
         revokeMode={revokeMode}
         approvalEditUrl={approvalEditUrl}
         showApprovalEdit={Boolean(approvalEditUrl)}
+        buyerLogoUrl={buyerLogoUrl}
+        buyerCompanyName={buyerCompanyName}
       />
+      </>
     )
   }
 
@@ -189,10 +212,25 @@ export default async function PublicPortfolioPage({
 
   return (
     <div className="min-h-screen bg-muted/20">
+      {sessionTracker}
       {branding.found ? (
         <header className="border-b bg-background/95 px-6 py-5 sm:px-12 lg:px-16">
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
-            <div>
+            <div className="flex min-w-0 flex-1 items-center gap-4">
+              {buyerLogoUrl ? (
+                <div className="flex shrink-0 flex-col items-center gap-1">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={buyerLogoUrl}
+                    alt={buyerCompanyName ?? 'Kunde'}
+                    className="h-10 max-w-[120px] object-contain"
+                  />
+                  {buyerCompanyName ? (
+                    <span className="text-[10px] text-muted-foreground">für {buyerCompanyName}</span>
+                  ) : null}
+                </div>
+              ) : null}
+              <div className="min-w-0">
               <h1
                 className="text-lg font-semibold tracking-tight"
                 style={{ color: branding.primary_color }}
@@ -200,6 +238,7 @@ export default async function PublicPortfolioPage({
                 {`Referenzportfolio - ${workspaceName}`}
               </h1>
               <p className="mt-1 text-sm text-muted-foreground">{headerSubtitle}</p>
+              </div>
             </div>
             <div className="w-[280px] max-w-full">
               <ShareOwnerContactCard

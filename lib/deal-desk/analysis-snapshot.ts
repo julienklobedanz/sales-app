@@ -2,6 +2,7 @@ import type { DealDeskMockAnalysis } from '@/lib/deal-desk/mock-analysis'
 import type { RfpCoverageRow } from '@/lib/rfp-coverage'
 import type { ExtractedRfpRequirement } from '@/lib/rfp-requirements'
 import type { EligibilityCriterion } from '@/lib/deals/eligibility-criteria-schema'
+import type { TenderLot } from '@/lib/deals/tender-lots'
 
 import type { RfpVerdict } from '@/lib/rfp-relevance'
 
@@ -15,6 +16,8 @@ export type PersistedDealDeskAnalysisSnapshot = DealDeskMockAnalysis & {
   eligibilityCriteria?: EligibilityCriterion[]
   /** LLM-Relevanz-Verdikte je Anforderung (Engine v2). */
   rfpVerdicts?: Record<string, RfpVerdict>
+  /** Lose aus RFP-Extraktion. */
+  tenderLots?: TenderLot[]
   /** ISO-Zeitpunkt der Analyse (Cockpit-Staleness). */
   analyzedAt?: string
   /** 2 = judgeRfpRelevance + zentrale Threshold (Phase 6+); 1 = Legacy. */
@@ -33,6 +36,7 @@ export function toPersistedAnalysisSnapshot(input: {
   coverage: RfpCoverageRow[]
   eligibilityCriteria?: EligibilityCriterion[]
   rfpVerdicts?: Record<string, RfpVerdict>
+  tenderLots?: TenderLot[]
   analyzedAt?: string
   engineVersion?: number
 }): PersistedDealDeskAnalysisSnapshot {
@@ -46,6 +50,7 @@ export function toPersistedAnalysisSnapshot(input: {
     ...(input.rfpVerdicts && Object.keys(input.rfpVerdicts).length
       ? { rfpVerdicts: input.rfpVerdicts }
       : {}),
+    ...(input.tenderLots?.length ? { tenderLots: input.tenderLots } : {}),
     analyzedAt: input.analyzedAt ?? new Date().toISOString(),
     engineVersion: input.engineVersion ?? 1,
   }

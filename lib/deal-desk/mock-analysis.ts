@@ -93,6 +93,7 @@ export const DEMO_EXECUTIVE_BRIEFING: DealDeskExecutiveBriefingFields = {
   desiredServiceStart: '01.09.2026',
   expectedDealVolume: 'ca. 1.200.000 € TCV (Laufzeit 36 Monate)',
   bidInvestment: 'Mittel (Benötigt ca. 5 Personentage aus Presales & Cloud-Architecture)',
+  projectOverviewPlain: null,
   strategicAssessment:
     'Die Ausschreibung adressiert Cloud-Migration und SAP-nahe Infrastruktur — exakt euer Kern-ICP (Enterprise IT, DACH, >500 MA). Budgetrahmen und Laufzeit passen zu drei gewonnenen Deals der letzten 18 Monate. Hauptrisiko: aggressive SLA-Pönalen und unbegrenzte Haftungsklausel; ohne Legal-Review kein GO.',
   techFocus: 'Cloud-Migration (AWS/Azure) + SAP S/4HANA Core-Schnittstellen',
