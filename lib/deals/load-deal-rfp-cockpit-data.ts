@@ -27,6 +27,7 @@ import {
   buildRfpStammdatenRows,
   type RfpStammdatenRow,
 } from './build-rfp-stammdaten-rows'
+import { buildRequestedEvidenceGaps, type RequestedEvidenceGapItem } from './build-requested-evidence-gaps'
 import { normalizeExecutiveBriefingFields } from '@/lib/deal-desk/executive-briefing-fields'
 import type { DealDeskExecutiveBriefingFields } from '@/lib/deal-desk/executive-briefing-fields'
 import type { TenderLot } from '@/lib/deals/tender-lots'
@@ -53,6 +54,7 @@ export type DealRfpCockpitData = {
   executiveBriefing: DealDeskExecutiveBriefingFields
   tenderLots: TenderLot[]
   recommendation: ReturnType<typeof resolveBidRecommendation>
+  requestedEvidenceGaps: RequestedEvidenceGapItem[]
 }
 
 export async function loadDealRfpCockpitData(
@@ -137,6 +139,8 @@ export async function loadDealRfpCockpitData(
     !orgSettings.capabilityProfile.regions?.length &&
     !orgSettings.capabilityProfile.certifiedRoles?.length
 
+  const executiveBriefing = normalizeExecutiveBriefingFields(snap.executiveBriefing)
+
   return {
     projectId: String(project.id),
     analyzedAt,
@@ -161,12 +165,17 @@ export async function loadDealRfpCockpitData(
     risks,
     draftRows: Array.isArray(snap.draftRows) ? snap.draftRows : [],
     stammdatenRows: buildRfpStammdatenRows(snap),
-    executiveBriefing: normalizeExecutiveBriefingFields(snap.executiveBriefing),
+    executiveBriefing,
     tenderLots: Array.isArray(snap.tenderLots) ? snap.tenderLots : [],
     recommendation: resolveBidRecommendation({
       winProbability,
       hasAnalysis,
       isStale,
+    }),
+    requestedEvidenceGaps: buildRequestedEvidenceGaps({
+      eligibilityAssessment,
+      executiveBriefing,
+      complianceDocs,
     }),
   }
 }

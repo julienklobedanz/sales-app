@@ -1,6 +1,7 @@
 import type { getPendingClientApprovalsImpl } from '@/lib/references/library/pending-approvals'
 import type { getRequestsImpl } from '@/lib/references/library/approval-requests'
 import type { DealStatus } from '@/app/dashboard/deals/types'
+import type { MeetingPrepSessionListItem } from '@/lib/meeting-prep/meeting-prep-types'
 
 export const ACTIVE_DEAL_STATUSES: DealStatus[] = ['open', 'rfp', 'negotiation']
 
@@ -219,6 +220,30 @@ export type LeaderSignalRiskRow = {
   href: string
 }
 
+export type LeaderCallQueueRow = {
+  id: string
+  signalKey: string
+  companyId: string
+  companyName: string
+  companyLogoUrl: string | null
+  signalLabel: string
+  personName: string | null
+  whyNow: string
+  whyNowBullets: string[]
+  dealId: string
+  dealTitle: string
+  dealHref: string
+  referenceId: string | null
+  referenceTitle: string | null
+  referenceSimilarity: number | null
+  referenceHref: string | null
+  referencePersonMatch: boolean
+  accountHref: string
+  matchHref: string
+  tone: 'gap' | 'warn' | 'ok' | 'intent'
+  perfectReference: boolean
+}
+
 export type AdminDashboardModel = {
   greetingName: string
   kpis: AdminKpiStrip
@@ -230,7 +255,8 @@ export type AdminDashboardModel = {
   }
   topReferences: TopReferenceRow[]
   riskDeals: LeaderRiskDealRow[]
-  coachingSignals: LeaderCoachingRow[]
+  callQueue: LeaderCallQueueRow[]
+  meetingPrepSessions: MeetingPrepSessionListItem[]
   coveragePipeline: LeaderCoveragePipelineRow[]
   signalRisks: LeaderSignalRiskRow[]
   winRateCompare: {

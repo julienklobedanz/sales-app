@@ -28,7 +28,6 @@ function deal(overrides: Partial<DealRow>): DealRow {
     updated_at: null,
     linked_refs: [{ id: 'ref-1', title: 'Ref', company_name: 'Kunde', logo_url: null }],
     best_match_score: 0.9,
-    reference_count: 1,
     ...overrides,
   }
 }

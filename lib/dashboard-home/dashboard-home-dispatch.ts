@@ -43,7 +43,7 @@ async function loadDashboardHomeForFunctionRoleInner(
   if (functionRole === 'sales_leader') {
     return {
       variant: 'sales_leader',
-      data: await loadAdminDashboardData(supabase, fullName, organizationId),
+      data: await loadAdminDashboardData(supabase, fullName, organizationId, userId),
     }
   }
   if (functionRole === 'sales_rep') {

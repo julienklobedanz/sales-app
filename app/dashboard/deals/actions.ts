@@ -22,6 +22,7 @@ import {
   uniqueStoragePaths,
 } from '@/lib/deals/deal-delete-storage'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
+import { suggestDealReferenceMatches } from '@/lib/deals/suggest-deal-reference-matches'
 
 async function getSessionOrgId(
   _supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>
@@ -505,6 +506,10 @@ export async function addReferenceToDealWithScore(args: {
   revalidatePath(ROUTES.deals.detail(args.dealId))
   revalidatePath(ROUTES.match)
   return { success: true }
+}
+
+export async function suggestReferencesForDealAction(dealId: string) {
+  return suggestDealReferenceMatches(dealId)
 }
 
 export async function updateDeal(args: {

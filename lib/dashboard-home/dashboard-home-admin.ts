@@ -17,19 +17,21 @@ import {
   teamActivityLabelForEvent,
 } from '@/lib/dashboard-home/dashboard-home-pure'
 import { normalizeOrgDateDisplayFormat, type OrgDateDisplayFormat } from '@/lib/format'
+import type { MeetingPrepSessionListItem } from '@/lib/meeting-prep/meeting-prep-types'
+import { listMeetingPrepSessionsForDashboard } from '@/app/dashboard/meeting-prep/actions'
 import {
-  aggregateTeamMatches,
-  buildLeaderCoaching,
   buildLeaderCoveragePipeline,
   buildLeaderRiskDeals,
   buildLeaderSignalRisks,
   buildWinRateCompare,
 } from '@/lib/dashboard-home/build-leader-dashboard'
+import { loadLeaderCallQueue } from '@/lib/dashboard-home/load-leader-call-queue'
 
 export async function loadAdminDashboardData(
   supabase: SupabaseClient,
   fullName: string | null,
-  orgId: string | undefined
+  orgId: string | undefined,
+  userId: string | undefined
 ): Promise<AdminDashboardModel> {
   const greetingName = dashboardFirstName(fullName) || 'du'
 
@@ -525,7 +527,12 @@ export async function loadAdminDashboardData(
   )
 
   const riskDeals = buildLeaderRiskDeals(allDealsForSignals, { dateDisplayFormat })
-  let coachingSignals: AdminDashboardModel['coachingSignals'] = []
+  let callQueue: AdminDashboardModel['callQueue'] = []
+  let meetingPrepSessions: MeetingPrepSessionListItem[] = []
+  if (orgId && userId) {
+    callQueue = await loadLeaderCallQueue(supabase, userId, orgId, allDealsForSignals)
+    meetingPrepSessions = await listMeetingPrepSessionsForDashboard(supabase, orgId, userId)
+  }
   const coveragePipeline = buildLeaderCoveragePipeline(
     pipelineSignals,
     contentRoi.gapAlert?.term ?? null
@@ -534,22 +541,6 @@ export async function loadAdminDashboardData(
   const winRateCompare = buildWinRateCompare(closedDeals, minDealsRequired)
 
   if (orgId) {
-    const { data: profileRows } = await supabase
-      .from('profiles')
-      .select('id, full_name, function_role')
-      .eq('organization_id', orgId)
-      .limit(40)
-
-    const matchCounts = aggregateTeamMatches(teamActivity)
-    const pendingByUser = new Map<string, number>()
-    void openRequests
-
-    coachingSignals = buildLeaderCoaching(
-      (profileRows ?? []) as Array<{ id: string; full_name: string | null; function_role: string | null }>,
-      matchCounts,
-      pendingByUser
-    )
-
     const openHighValue = allDealsForSignals.filter(
       (d) =>
         ACTIVE_DEAL_STATUSES.includes(d.status) &&
@@ -588,7 +579,8 @@ export async function loadAdminDashboardData(
       wau7d,
     },
     riskDeals,
-    coachingSignals,
+    callQueue,
+    meetingPrepSessions,
     coveragePipeline,
     signalRisks,
     winRateCompare,

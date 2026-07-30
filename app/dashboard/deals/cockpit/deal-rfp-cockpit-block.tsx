@@ -72,6 +72,8 @@ export async function DealRfpCockpitBlock({
         documents={documents}
         canManage={canManageDocuments}
         isRfpMode
+        rfpHasAnalysis={Boolean(data?.hasAnalysis)}
+        rfpAnalysisStale={Boolean(data?.isStale)}
       />
 
       {!data ? (

@@ -57,13 +57,14 @@ export function DealRfpRisksSection({ data }: { data: DealRfpCockpitData }) {
   if (!showSection || !risks) return null
 
   const { redFlags, smeGroups, smeOpenCount } = risks
+  const evidenceGaps = data.requestedEvidenceGaps ?? []
   const openItems = smeGroups.flatMap((group) =>
     group.items.map((item) => ({
       ...item,
       topic: group.topic,
     }))
   )
-  const totalCount = redFlags.length + smeOpenCount
+  const totalCount = redFlags.length + smeOpenCount + evidenceGaps.length
 
   return (
     <div id="risks" className="scroll-mt-24">
@@ -87,7 +88,7 @@ export function DealRfpRisksSection({ data }: { data: DealRfpCockpitData }) {
             </CollapsibleTrigger>
           </CardHeader>
           <CollapsibleContent>
-            <CardContent className="grid grid-cols-1 gap-4 pt-0 lg:grid-cols-2">
+            <CardContent className="grid grid-cols-1 gap-4 pt-0 xl:grid-cols-3">
               <div className="rounded-lg border border-border/60 p-3">
                 <p className="mb-2 text-sm font-medium">
                   {COPY.deals.cockpit.risksGeneralTitle}
@@ -118,6 +119,47 @@ export function DealRfpRisksSection({ data }: { data: DealRfpCockpitData }) {
                         </li>
                       )
                     })}
+                  </ul>
+                )}
+              </div>
+
+              <div className="rounded-lg border border-border/60 p-3">
+                <p className="mb-2 text-sm font-medium">
+                  {COPY.deals.cockpit.risksRequestedEvidenceTitle}
+                  {evidenceGaps.length > 0 ? ` · ${evidenceGaps.length}` : ''}
+                </p>
+                {evidenceGaps.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    {COPY.deals.cockpit.risksRequestedEvidenceEmpty}
+                  </p>
+                ) : (
+                  <ul className="space-y-0 divide-y divide-border/60">
+                    {evidenceGaps.map((gap) => (
+                      <li key={gap.id} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+                        <span
+                          className={cn(
+                            'mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide',
+                            gap.severity === 'missing'
+                              ? 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200'
+                              : gap.severity === 'partial'
+                                ? 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-100'
+                                : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200'
+                          )}
+                        >
+                          {gap.severity === 'missing'
+                            ? 'Fehlt'
+                            : gap.severity === 'partial'
+                              ? 'Teilweise'
+                              : 'Prüfen'}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium">{gap.label}</p>
+                          {gap.detail ? (
+                            <p className="mt-1 text-xs text-muted-foreground">{gap.detail}</p>
+                          ) : null}
+                        </div>
+                      </li>
+                    ))}
                   </ul>
                 )}
               </div>

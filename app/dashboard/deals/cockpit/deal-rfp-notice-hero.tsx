@@ -3,17 +3,28 @@ import { Card, CardContent } from '@/components/ui/card'
 import type { DealDeskExecutiveBriefingFields } from '@/lib/deal-desk/executive-briefing-fields'
 import type { DealWithReferences } from '../types'
 import type { DealRfpCockpitData } from '@/lib/deals/load-deal-rfp-cockpit-data'
+import { COPY } from '@/lib/copy'
 
-function overviewParagraphs(briefing: DealDeskExecutiveBriefingFields): string[] {
+function executiveBullets(briefing: DealDeskExecutiveBriefingFields): string[] {
+  const fromTakeaways = (briefing.keyTakeaways ?? []).map((t) => t.trim()).filter(Boolean)
+  if (fromTakeaways.length > 0) {
+    return fromTakeaways.slice(0, 7)
+  }
   const raw =
-    briefing.projectOverviewPlain?.trim() ||
     briefing.strategicAssessment?.trim() ||
+    briefing.projectOverviewPlain?.trim() ||
     ''
   if (!raw) return []
-  return raw
-    .split(/\n\s*\n/)
-    .map((p) => p.trim())
+  const lines = raw
+    .split(/\n+/)
+    .map((l) => l.replace(/^[\s•\-–*]+/, '').trim())
     .filter(Boolean)
+  if (lines.length >= 2) return lines.slice(0, 7)
+  const sentences = raw
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 12)
+  return sentences.slice(0, 7)
 }
 
 export function DealRfpNoticeHero({
@@ -24,14 +35,14 @@ export function DealRfpNoticeHero({
   data: DealRfpCockpitData
 }) {
   const briefing = data.executiveBriefing
-  const paragraphs = overviewParagraphs(briefing)
+  const bullets = executiveBullets(briefing)
   const metaParts = [
     deal.company_name,
     briefing.expectedDealVolume,
     briefing.projectLocation,
   ].filter((v): v is string => Boolean(v && String(v).trim()))
 
-  if (paragraphs.length === 0 && metaParts.length === 0 && briefing.domainTags.length === 0) {
+  if (bullets.length === 0 && metaParts.length === 0 && briefing.domainTags.length === 0) {
     return null
   }
 
@@ -53,11 +64,16 @@ export function DealRfpNoticeHero({
             ))}
           </div>
         ) : null}
-        {paragraphs.length > 0 ? (
-          <div className="space-y-2 text-sm leading-relaxed text-foreground/90">
-            {paragraphs.map((p) => (
-              <p key={p.slice(0, 48)}>{p}</p>
-            ))}
+        {bullets.length > 0 ? (
+          <div className="space-y-2">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {COPY.deals.cockpit.noticeExecutiveSummaryTitle}
+            </p>
+            <ul className="list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-foreground/90">
+              {bullets.map((b) => (
+                <li key={b.slice(0, 64)}>{b}</li>
+              ))}
+            </ul>
           </div>
         ) : null}
       </CardContent>

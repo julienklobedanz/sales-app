@@ -70,7 +70,8 @@ import {
   setDealDocumentKind,
   uploadDealDocument,
 } from '../document-actions'
-import { runDealRfpAnalyze } from './deal-rfp-analyze-button'
+import { DealRfpAnalyzeButton, runDealRfpAnalyze } from './deal-rfp-analyze-button'
+import { useDealReferenceSuggestionsRefresh } from './deal-reference-suggestions-refresh'
 
 function formatFileSize(bytes: number | null): string {
   if (bytes == null || bytes <= 0) return '—'
@@ -209,13 +210,18 @@ export function DealDocumentsSection({
   documents: initialDocuments,
   canManage,
   isRfpMode = false,
+  rfpHasAnalysis = false,
+  rfpAnalysisStale = false,
 }: {
   dealId: string
   documents: DealDocumentRow[]
   canManage: boolean
   isRfpMode?: boolean
+  rfpHasAnalysis?: boolean
+  rfpAnalysisStale?: boolean
 }) {
   const router = useRouter()
+  const refreshReferenceSuggestions = useDealReferenceSuggestionsRefresh()
   const [documents, setDocuments] = useState(initialDocuments)
 
   useEffect(() => {
@@ -235,7 +241,9 @@ export function DealDocumentsSection({
   const [deletePending, setDeletePending] = useState(false)
   const [downloadPendingId, setDownloadPendingId] = useState<string | null>(null)
   const [analyzingId, setAnalyzingId] = useState<string | null>(null)
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(
+    () => isRfpMode && initialDocuments.length > 0 && !rfpHasAnalysis
+  )
 
   async function handleUpload() {
     if (!uploadFile) {
@@ -256,6 +264,10 @@ export function DealDocumentsSection({
       setUploadOpen(false)
       setUploadFile(null)
       setUploadKind(isRfpMode ? 'ausschreibung' : 'sonstiges')
+      if (isRfpMode) {
+        toast.message(COPY.deals.cockpit.documentsAnalyzeWhenReady)
+      }
+      void refreshReferenceSuggestions?.()
       router.refresh()
     } finally {
       setUploading(false)
@@ -271,6 +283,7 @@ export function DealDocumentsSection({
         return
       }
       toast.success(COPY.deals.cockpit.documentsAnalyzeSuccess)
+      void refreshReferenceSuggestions?.()
       router.refresh()
     } catch {
       toast.error(COPY.deals.cockpit.documentsAnalyzeFailed)
@@ -397,7 +410,7 @@ export function DealDocumentsSection({
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-1">
-                    {canManage && (isRfpMode || doc.kind === 'ausschreibung') ? (
+                    {canManage && !isRfpMode && doc.kind === 'ausschreibung' ? (
                       <Button
                         type="button"
                         variant="outline"
@@ -410,10 +423,6 @@ export function DealDocumentsSection({
                             <AppIcon icon={Loader} size={14} className="mr-1 animate-spin" />
                             {COPY.deals.cockpit.documentsAnalyzePending}
                           </>
-                        ) : doc.kind !== 'ausschreibung' && isRfpMode ? (
-                          COPY.deals.cockpit.documentsAnalyzeAsRfp
-                        ) : isRfpMode ? (
-                          COPY.deals.cockpit.documentsReanalyze
                         ) : (
                           COPY.deals.cockpit.documentsAnalyze
                         )}
@@ -481,6 +490,23 @@ export function DealDocumentsSection({
                 </li>
               ))}
             </ul>
+            {isRfpMode && canManage ? (
+              <div className="mt-4 flex flex-col gap-2 border-t border-border pt-4 pl-7 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs text-muted-foreground">
+                  {COPY.deals.cockpit.documentsAnalyzeReadyHint}
+                </p>
+                <DealRfpAnalyzeButton
+                  dealId={dealId}
+                  documents={documents}
+                  canManage={canManage}
+                  hasAnalysis={rfpHasAnalysis}
+                  isStale={rfpAnalysisStale}
+                  variant="default"
+                  className="shrink-0"
+                  onAnalyzed={() => void refreshReferenceSuggestions?.()}
+                />
+              </div>
+            ) : null}
             </CardContent>
           </CollapsibleContent>
           )}

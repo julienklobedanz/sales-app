@@ -2355,6 +2355,57 @@ export type Database = {
           },
         ]
       }
+      sales_meeting_prep_sessions: {
+        Row: {
+          id: string
+          organization_id: string
+          created_by: string
+          company_id: string | null
+          company_name_query: string
+          title: string
+          snapshot: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          created_by: string
+          company_id?: string | null
+          company_name_query: string
+          title: string
+          snapshot?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          created_by?: string
+          company_id?: string | null
+          company_name_query?: string
+          title?: string
+          snapshot?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_meeting_prep_sessions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_meeting_prep_sessions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shared_portfolios: {
         Row: {
           created_at: string

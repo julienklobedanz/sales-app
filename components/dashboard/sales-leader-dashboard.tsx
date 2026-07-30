@@ -13,6 +13,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { CompanyLogo } from '@/components/ui/company-logo'
 import type { AdminDashboardModel } from '@/app/dashboard/dashboard-home-data'
+import { LeaderCallQueueSection } from '@/components/dashboard/leader-call-queue-section'
+import { SalesLeaderMeetingPrepSection } from '@/components/dashboard/sales-leader-meeting-prep-section'
 import { COPY } from '@/lib/copy'
 import { formatCopy } from '@/lib/dashboard-home/copy-format'
 import { cn } from '@/lib/utils'
@@ -116,27 +118,10 @@ export function SalesLeaderDashboard({
         )}
       </DashboardSectionCard>
 
+      <LeaderCallQueueSection rows={data.callQueue ?? []} thin={thin} />
+
       <div className="grid gap-4 md:grid-cols-2">
-        <DashboardSectionCard title={c.coachingTitle} description={c.coachingDescription}>
-          {thin || data.coachingSignals.length === 0 ? (
-            <HonestEmpty title={c.coachingEmptyTitle} description={c.coachingEmptyDescription} />
-          ) : (
-            <div className="space-y-0">
-              {data.coachingSignals.map((row, idx) => (
-                <div
-                  key={`${row.who}-${idx}`}
-                  className="flex items-start justify-between gap-2 border-t border-border py-2.5 first:border-t-0 first:pt-0"
-                >
-                  <div className="text-sm">
-                    <span className="font-medium">{row.who}</span>
-                    <p className="text-xs text-muted-foreground">{row.signal}</p>
-                  </div>
-                  <SignalStatusPill tone={row.tone === 'ok' ? 'ok' : row.tone === 'warn' ? 'warn' : 'gap'} />
-                </div>
-              ))}
-            </div>
-          )}
-        </DashboardSectionCard>
+        <SalesLeaderMeetingPrepSection sessions={data.meetingPrepSessions ?? []} thin={thin} />
 
         <DashboardSectionCard title={c.covPipeTitle} description={c.covPipeDescription}>
           {thin || data.coveragePipeline.length === 0 ? (

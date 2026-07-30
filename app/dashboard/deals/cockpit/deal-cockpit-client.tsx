@@ -1,7 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { DealWithReferences } from '../types'
 import { DealCockpitHeader } from './deal-cockpit-header'
 import { DealCockpitPromoteCard } from './deal-cockpit-promote-card'
@@ -16,6 +16,9 @@ import { isRfpDeal } from '@/lib/deals/is-rfp-deal'
 import type { DealDeadlineRow } from '@/lib/deals/deadline-display'
 import type { OrgDateDisplayFormat } from '@/lib/format'
 import { COPY } from '@/lib/copy'
+import type { DealReferenceSuggestion } from '@/lib/deals/suggest-deal-reference-matches'
+import { suggestReferencesForDealAction } from '../actions'
+import { DealReferenceSuggestionsRefreshProvider } from './deal-reference-suggestions-refresh'
 
 type Company = { id: string; name: string }
 type OrgProfile = { id: string; full_name: string | null }
@@ -31,6 +34,7 @@ export function DealCockpitClient({
   briefingButton,
   hubspotPortalId = null,
   orgDateDisplayFormat = 'de-DE',
+  initialReferenceSuggestions = [],
 }: {
   deal: DealWithReferences
   companies: Company[]
@@ -42,11 +46,23 @@ export function DealCockpitClient({
   briefingButton?: ReactNode
   hubspotPortalId?: string | null
   orgDateDisplayFormat?: OrgDateDisplayFormat
+  initialReferenceSuggestions?: DealReferenceSuggestion[]
 }) {
   const showRfpBlock = isRfpDeal(deal)
   const [matchDrawerOpen, setMatchDrawerOpen] = useState(false)
+  const [referenceSuggestions, setReferenceSuggestions] = useState(initialReferenceSuggestions)
+
+  useEffect(() => {
+    setReferenceSuggestions(initialReferenceSuggestions)
+  }, [initialReferenceSuggestions])
+
+  const refreshReferenceSuggestions = useCallback(async () => {
+    const { suggestions } = await suggestReferencesForDealAction(deal.id)
+    setReferenceSuggestions(suggestions)
+  }, [deal.id])
 
   return (
+    <DealReferenceSuggestionsRefreshProvider refresh={refreshReferenceSuggestions}>
     <div>
       <DealCockpitHeader
         deal={deal}
@@ -84,7 +100,12 @@ export function DealCockpitClient({
         </div>
       </div>
 
-      <DealProofSection deal={deal} onFindReference={() => setMatchDrawerOpen(true)} />
+      <DealProofSection
+        deal={deal}
+        onFindReference={() => setMatchDrawerOpen(true)}
+        referenceSuggestions={referenceSuggestions}
+        onReferenceSuggestionsChange={setReferenceSuggestions}
+      />
 
       {showRfpBlock && rfpBlock ? (
         <section id="ausschreibung" className="mb-6 space-y-4 border-t border-border/70 pt-8">
@@ -107,5 +128,6 @@ export function DealCockpitClient({
 
       <DealSmartMatchDrawer deal={deal} open={matchDrawerOpen} onOpenChange={setMatchDrawerOpen} />
     </div>
+    </DealReferenceSuggestionsRefreshProvider>
   )
 }

@@ -17,6 +17,7 @@ import { listDealDeadlines } from '@/lib/deals/deadlines'
 import { canManageDealDocuments } from '@/lib/deals/can-manage-deal-documents'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { normalizeOrgDateDisplayFormat } from '@/lib/format'
+import { suggestDealReferenceMatches } from '@/lib/deals/suggest-deal-reference-matches'
 
 export default function DealDetailPage({
   params,
@@ -80,6 +81,9 @@ async function DealDetailPageContent({
   const documentsResult = await listDealDocuments(id)
   const documents = documentsResult.success ? documentsResult.rows : []
 
+  const { suggestions: initialReferenceSuggestions } =
+    documents.length > 0 ? await suggestDealReferenceMatches(id) : { suggestions: [] }
+
   const { data: companies } = await supabase
     .from('companies')
     .select('id, name')
@@ -127,6 +131,7 @@ async function DealDetailPageContent({
       orgProfiles={(orgProfiles ?? []) as Array<{ id: string; full_name: string | null }>}
       hubspotPortalId={hubspotPortalId}
       orgDateDisplayFormat={orgDateDisplayFormat}
+      initialReferenceSuggestions={initialReferenceSuggestions}
     />
   )
 }

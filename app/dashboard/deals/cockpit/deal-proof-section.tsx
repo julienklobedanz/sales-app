@@ -37,6 +37,8 @@ import { cn } from '@/lib/utils'
 
 import type { DealWithReferences } from '../types'
 import { removeReferenceFromDeal, recordReferenceHelped } from '../actions'
+import type { DealReferenceSuggestion } from '@/lib/deals/suggest-deal-reference-matches'
+import { DealProofSuggestedReferences } from './deal-proof-suggested-references'
 
 function splitTags(tags: string | null | undefined) {
   return (tags ?? '')
@@ -48,9 +50,13 @@ function splitTags(tags: string | null | undefined) {
 export function DealProofSection({
   deal,
   onFindReference,
+  referenceSuggestions = [],
+  onReferenceSuggestionsChange,
 }: {
   deal: DealWithReferences
   onFindReference: () => void
+  referenceSuggestions?: DealReferenceSuggestion[]
+  onReferenceSuggestionsChange?: (next: DealReferenceSuggestion[]) => void
 }) {
   const router = useRouter()
   const [expanded, setExpanded] = useState(deal.references.length > 0)
@@ -95,6 +101,11 @@ export function DealProofSection({
         </CardHeader>
         <CollapsibleContent>
           <CardContent className="space-y-4 pt-0 pl-7">
+            <DealProofSuggestedReferences
+              dealId={deal.id}
+              suggestions={referenceSuggestions}
+              onSuggestionsChange={onReferenceSuggestionsChange}
+            />
             {deal.references.length === 0 ? (
               <div className="rounded-lg border border-dashed bg-muted/20 p-4 text-center">
                 <p className="text-sm text-muted-foreground">{COPY.deals.cockpit.proofEmpty}</p>

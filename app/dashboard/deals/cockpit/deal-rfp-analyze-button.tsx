@@ -54,6 +54,7 @@ export function DealRfpAnalyzeButton({
   variant = 'default',
   className,
   showHintBelow = false,
+  onAnalyzed,
 }: {
   dealId: string
   documents: DealDocumentRow[]
@@ -63,6 +64,7 @@ export function DealRfpAnalyzeButton({
   variant?: 'default' | 'outline'
   className?: string
   showHintBelow?: boolean
+  onAnalyzed?: () => void
 }) {
   const router = useRouter()
   const [pending, setPending] = useState(false)
@@ -82,6 +84,7 @@ export function DealRfpAnalyzeButton({
         return
       }
       toast.success(COPY.deals.cockpit.documentsAnalyzeSuccess)
+      onAnalyzed?.()
       router.refresh()
     } catch {
       toast.error(COPY.deals.cockpit.documentsAnalyzeFailed)
