@@ -8,15 +8,15 @@ BEGIN
     WHERE c.table_schema = 'public' AND c.table_name = 'references' AND c.column_name = 'is_nda_deal'
       AND c.is_nullable = 'YES'
   ) THEN
-    UPDATE references SET is_nda_deal = false WHERE is_nda_deal IS NULL;
-    ALTER TABLE references ALTER COLUMN is_nda_deal SET DEFAULT false;
-    ALTER TABLE references ALTER COLUMN is_nda_deal SET NOT NULL;
+    UPDATE public.references SET is_nda_deal = false WHERE is_nda_deal IS NULL;
+    ALTER TABLE public.references ALTER COLUMN is_nda_deal SET DEFAULT false;
+    ALTER TABLE public.references ALTER COLUMN is_nda_deal SET NOT NULL;
   ELSIF EXISTS (
     SELECT 1 FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = 'references' AND column_name = 'is_nda_deal'
   ) THEN
-    UPDATE references SET is_nda_deal = false WHERE is_nda_deal IS NULL;
-    ALTER TABLE references ALTER COLUMN is_nda_deal SET DEFAULT false;
+    UPDATE public.references SET is_nda_deal = false WHERE is_nda_deal IS NULL;
+    ALTER TABLE public.references ALTER COLUMN is_nda_deal SET DEFAULT false;
   END IF;
 EXCEPTION
   WHEN OTHERS THEN
