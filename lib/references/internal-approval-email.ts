@@ -8,6 +8,7 @@ import {
 } from '@/lib/email/refstack-email-layout'
 import { getAppOrigin } from '@/lib/env/app-origin'
 import { ROUTES } from '@/lib/routes'
+import { log } from '@/lib/observability/logger'
 
 function getResend(): Resend | null {
   const key = process.env.RESEND_API_KEY
@@ -70,7 +71,7 @@ export async function sendInternalApprovalReviewEmail(
     })
     return true
   } catch (e) {
-    console.error('[sendInternalApprovalReviewEmail]', e)
+    log.error('send failed', { action: 'sendInternalApprovalReviewEmail' }, e)
     return false
   }
 }

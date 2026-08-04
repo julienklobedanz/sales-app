@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { buildCrmImportPreview } from '@/lib/crm/import-crm-accounts'
 import { listHubSpotAccountsWithOpenOpportunities } from '@/lib/crm/hubspot/list-accounts-with-opportunities'
 import { requireCrmAdmin } from '@/lib/crm/require-crm-admin'
+import { log } from '@/lib/observability/logger'
 
 export const maxDuration = 60
 
@@ -37,7 +38,7 @@ export async function GET() {
       items: preview,
     })
   } catch (error) {
-    console.error('[hubspot/discover]', error)
+    log.error('discover failed', { action: 'hubspot.discover' }, error)
     return NextResponse.json(
       { error: 'CRM-Accounts konnten nicht geladen werden.' },
       { status: 500 }

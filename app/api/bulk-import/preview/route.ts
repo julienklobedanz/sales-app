@@ -6,6 +6,7 @@ import {
   extractCompanyNameFromFileName,
   extractProjectTitleHintFromFileName,
 } from '@/lib/references/bulk-import-grouping'
+import { log } from '@/lib/observability/logger'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -46,7 +47,7 @@ export async function POST(request: Request) {
       companyName,
     })
   } catch (e) {
-    console.error('[bulk-import/preview]', e)
+    log.error('preview failed', { action: 'bulk-import.preview' }, e)
     return NextResponse.json(
       { success: false, error: 'Vorschau konnte nicht erstellt werden.' },
       { status: 500 }

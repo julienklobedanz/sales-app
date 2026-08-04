@@ -3,6 +3,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { applyBulkImportExtractionFromBuffer } from '@/lib/references/bulk-import-extraction-apply'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
+import { log } from '@/lib/observability/logger'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -55,7 +56,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(result)
   } catch (e) {
-    console.error('[bulk-import/extract]', e)
+    log.error('extract failed', { action: 'bulk-import.extract' }, e)
     return NextResponse.json(
       { success: false, error: 'Extraktion fehlgeschlagen.' },
       { status: 500 }

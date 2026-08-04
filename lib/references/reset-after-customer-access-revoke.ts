@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { randomUUID } from 'crypto'
 
 import { notifyInternalTeamCustomerAccessRevoked } from '@/lib/references/approval-workflow-internal-notifications'
+import { log } from '@/lib/observability/logger'
 
 export type CustomerAccessRevokeParams = {
   slug: string
@@ -59,7 +60,7 @@ export async function resetReferencesAfterCustomerAccessRevoke(
     .in('id', referenceIds)
 
   if (updateError) {
-    console.error('[resetReferencesAfterCustomerAccessRevoke] update failed:', updateError.message)
+    log.error('update failed', { action: 'resetReferencesAfterCustomerAccessRevoke.update', message: updateError.message }, updateError)
     return { referenceIds: [] }
   }
 
@@ -77,7 +78,7 @@ export async function resetReferencesAfterCustomerAccessRevoke(
     }))
     const { error: eventError } = await admin.from('evidence_events').insert(events)
     if (eventError) {
-      console.error('[resetReferencesAfterCustomerAccessRevoke] event log failed:', eventError.message)
+      log.error('event log failed', { action: 'resetReferencesAfterCustomerAccessRevoke.eventLog', message: eventError.message }, eventError)
     }
   }
 

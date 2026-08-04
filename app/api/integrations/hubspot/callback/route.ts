@@ -13,6 +13,7 @@ import {
   HUBSPOT_OAUTH_RETURN_COOKIE,
   parseHubSpotOAuthReturnTo,
 } from '@/lib/crm/hubspot/oauth-return'
+import { log } from '@/lib/observability/logger'
 
 function redirectWithStatus(status: 'success' | 'error', returnTo: ReturnType<typeof parseHubSpotOAuthReturnTo>) {
   return NextResponse.redirect(
@@ -51,7 +52,7 @@ export async function GET(request: Request) {
 
     const tokens = await exchangeHubSpotAuthorizationCode(code)
     if (!tokens.success) {
-      console.error('[hubspot/callback] token exchange failed:', tokens.error)
+      log.error('token exchange failed', { action: 'hubspot.callback.tokenExchange' }, tokens.error)
       return redirectWithStatus('error', returnTo)
     }
 
@@ -66,13 +67,13 @@ export async function GET(request: Request) {
     })
 
     if (!saved.success) {
-      console.error('[hubspot/callback] save failed:', saved.error)
+      log.error('save failed', { action: 'hubspot.callback.save' }, saved.error)
       return redirectWithStatus('error', returnTo)
     }
 
     return redirectWithStatus('success', returnTo)
   } catch (error) {
-    console.error('[hubspot/callback]', error)
+    log.error('callback failed', { action: 'hubspot.callback' }, error)
     return redirectWithStatus('error', returnTo)
   }
 }

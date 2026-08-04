@@ -12,6 +12,7 @@ import {
   resolveCustomerApprovalRecipient,
   type CustomerApprovalRecipientRow,
 } from '@/lib/references/customer-approval-recipient'
+import { log } from '@/lib/observability/logger'
 
 export function buildCustomerControlLoopEmailHtml(args: {
   firstName: string
@@ -79,7 +80,7 @@ export async function sendCustomerSperrlinkEmail(args: {
     })
     return true
   } catch (e) {
-    console.error('[sendCustomerSperrlinkEmail] send failed:', e)
+    log.error('send failed', { action: 'sendCustomerSperrlinkEmail.send' }, e)
     return false
   }
 }

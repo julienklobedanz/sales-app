@@ -9,6 +9,7 @@ import {
   isSupportedReferenceImageMime,
   ocrImageBufferWithOpenAi,
 } from '@/lib/image-ocr-openai'
+import { log } from '@/lib/observability/logger'
 
 const INDUSTRY_IDS_LIST = MASTER_INDUSTRIES.map((item) => item.id).join(', ')
 
@@ -202,7 +203,7 @@ function mapDocumentExtractError(
     return 'Die PDF-Datei ist beschädigt oder kein gültiges PDF. Bitte erneut exportieren oder die Felder manuell ausfüllen.'
   }
   if (process.env.NODE_ENV === 'development' && msg) {
-    console.error(`[document-extraction] ${format} parse failed:`, err)
+    log.error('parse failed', { action: 'document-extraction.parse', format }, err)
   }
   if (format === 'image') {
     return (
@@ -252,7 +253,7 @@ async function extractTextFromDocx(buffer: Buffer): Promise<string> {
     ).extractRawText({ buffer })
     return typeof result?.value === 'string' ? result.value : ''
   } catch (e) {
-    console.error('extractTextFromDocx: error', e)
+    log.error('extractTextFromDocx failed', { action: 'document-extraction.extractTextFromDocx' }, e)
     throw new Error('DOCX_EXTRACT_FAILED')
   }
 }

@@ -5,6 +5,7 @@ import { importCrmAccounts } from '@/lib/crm/import-crm-accounts'
 import type { CrmAccountCandidate } from '@/lib/crm/types'
 import { ROUTES } from '@/lib/routes'
 import { requireCrmAdmin } from '@/lib/crm/require-crm-admin'
+import { log } from '@/lib/observability/logger'
 
 export const maxDuration = 60
 
@@ -38,7 +39,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(result)
   } catch (error) {
-    console.error('[hubspot/import]', error)
+    log.error('import failed', { action: 'hubspot.import' }, error)
     return NextResponse.json({ error: 'Import fehlgeschlagen.' }, { status: 500 })
   }
 }

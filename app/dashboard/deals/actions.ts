@@ -23,6 +23,7 @@ import {
 } from '@/lib/deals/deal-delete-storage'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { suggestDealReferenceMatches } from '@/lib/deals/suggest-deal-reference-matches'
+import { log } from '@/lib/observability/logger'
 
 async function getSessionOrgId(
   _supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>
@@ -811,7 +812,7 @@ export async function importDealsFromXlsx(formData: FormData): Promise<{ success
   try {
     workbook = XLSX.read(buf, { type: 'buffer' })
   } catch (e) {
-    console.error('importDealsFromXlsx parse error:', e)
+    log.error('parse error', { action: 'importDealsFromXlsx.parse' }, e)
     return { success: false, error: 'Ungültige Excel-Datei.' }
   }
   const sheet = workbook.Sheets[workbook.SheetNames[0]]
@@ -857,7 +858,7 @@ export async function importDealsFromXlsx(formData: FormData): Promise<{ success
       expiry_date,
     })
     if (error) {
-      console.error('importDealsFromXlsx insert error:', error)
+      log.error('insert error', { action: 'importDealsFromXlsx.insert' }, error)
       continue
     }
     created++
@@ -923,7 +924,7 @@ export async function submitReferenceRequest(
         html,
       })
     } catch (e) {
-      console.error('Referenzbedarf E-Mail:', e)
+      log.error('reference need email failed', { action: 'submitReferenceRequest.email' }, e)
       return { success: false, error: 'E-Mail konnte nicht gesendet werden.' }
     }
   }

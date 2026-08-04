@@ -7,6 +7,7 @@ import type { ReferenceApprovalRow } from '@/lib/references/library/approvals-ty
 import { getPortfolioManageAndPreviewUrlsForApprovalEmail } from '@/lib/references/library/sharing'
 import { escapeRefstackEmailHtml, getRefstackResendFrom } from '@/lib/email/refstack-email-layout'
 import { markCustomerApprovalEmailSent } from '@/lib/references/customer-approval-reminder'
+import { log } from '@/lib/observability/logger'
 
 export function getApprovalResendClient(): Resend | null {
   const key = process.env.RESEND_API_KEY
@@ -63,7 +64,7 @@ export async function sendClientApprovalEmail(args: {
     try {
       portfolio = await getPortfolioManageAndPreviewUrlsForApprovalEmail(args.supabase, args.referenceId)
     } catch (e) {
-      console.error('[sendClientApprovalEmail] portfolio links:', e)
+      log.error('portfolio links failed', { action: 'sendClientApprovalEmail.portfolioLinks' }, e)
     }
     const approvalUrl = `${getAppOrigin()}/approval/${newToken}`
     try {
@@ -83,7 +84,7 @@ export async function sendClientApprovalEmail(args: {
       emailSent = true
       await markCustomerApprovalEmailSent(args.supabase, args.referenceId)
     } catch (e) {
-      console.error('E-Mail-Versand fehlgeschlagen:', e)
+      log.error('email send failed', { action: 'sendClientApprovalEmail.send' }, e)
     }
   }
   return { success: true, token: newToken, emailSent }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { extractDataFromDocument } from '@/lib/document-extraction'
+import { log } from '@/lib/observability/logger'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -23,7 +24,7 @@ export async function POST(request: Request) {
     }
     return NextResponse.json(result)
   } catch (e) {
-    console.error('[reference-extract]', e)
+    log.error('extract failed', { action: 'reference-extract' }, e)
     return NextResponse.json(
       {
         success: false,

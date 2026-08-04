@@ -35,7 +35,7 @@
 - neue/berührte Dateien sofort auf Logger + `Result` (`success`) umstellen (Boy-Scout),
 - die sicherheits-/fehlerträchtigen Pfade zuerst (Auth, Approval, Import, CRM-Sync, Cron).
 **Akzeptanz:** heiße Pfade migriert; `console.*` in App-Code rückläufig; Konvention greift für Neues.
-**Status:** ⏳ offen.
+**Status:** ✅ heiße Pfade Auth, HubSpot, Approvals, Import, Invite (2026-08-04). Weitere `console.*` Boy-Scout bei Touch.
 
 ---
 

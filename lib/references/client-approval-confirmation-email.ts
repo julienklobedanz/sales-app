@@ -7,6 +7,7 @@ import {
   type CustomerApprovalRecipientRow,
 } from '@/lib/references/customer-approval-recipient'
 import { sendCustomerSperrlinkEmail } from '@/lib/references/customer-sperrlink-email'
+import { log } from '@/lib/observability/logger'
 
 export async function sendClientApprovalConfirmationEmail(args: {
   admin: SupabaseClient
@@ -24,11 +25,11 @@ export async function sendClientApprovalConfirmationEmail(args: {
   try {
     portfolio = await getPortfolioManageAndPreviewUrlsForApprovalEmail(args.admin, args.referenceId)
   } catch (e) {
-    console.error('[sendClientApprovalConfirmationEmail] portfolio links:', e)
+    log.error('portfolio links failed', { action: 'sendClientApprovalConfirmationEmail.portfolioLinks' }, e)
   }
 
   if (!portfolio?.manageUrl) {
-    console.error('[sendClientApprovalConfirmationEmail] no manage URL — skip email')
+    log.error('no manage URL — skip email', { action: 'sendClientApprovalConfirmationEmail.noManageUrl' })
     return false
   }
 

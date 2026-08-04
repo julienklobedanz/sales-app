@@ -14,6 +14,7 @@ import {
   HUBSPOT_OAUTH_RETURN_COOKIE,
   parseHubSpotOAuthReturnTo,
 } from '@/lib/crm/hubspot/oauth-return'
+import { log } from '@/lib/observability/logger'
 
 function redirectWithError(returnTo: ReturnType<typeof parseHubSpotOAuthReturnTo>) {
   return NextResponse.redirect(
@@ -55,7 +56,7 @@ export async function GET(request: Request) {
 
     return NextResponse.redirect(authorizeUrl)
   } catch (error) {
-    console.error('[hubspot/connect]', error)
+    log.error('connect failed', { action: 'hubspot.connect' }, error)
     return redirectWithError(returnTo)
   }
 }

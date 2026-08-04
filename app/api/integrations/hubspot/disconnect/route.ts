@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 
 import { disconnectOrganizationCrm } from '@/lib/crm/connections'
 import { requireCrmAdmin } from '@/lib/crm/require-crm-admin'
+import { log } from '@/lib/observability/logger'
 
 export async function POST() {
   try {
@@ -22,7 +23,7 @@ export async function POST() {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[hubspot/disconnect]', error)
+    log.error('disconnect failed', { action: 'hubspot.disconnect' }, error)
     return NextResponse.json({ error: 'Trennen fehlgeschlagen.' }, { status: 500 })
   }
 }
