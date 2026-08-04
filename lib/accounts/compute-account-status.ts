@@ -33,7 +33,7 @@ const OPEN_PIPELINE_STATUSES = new Set([
   'reference_found',
 ])
 
-function parseClosedOn(iso: string | null | undefined, now: Date): Date | null {
+function parseClosedOn(iso: string | null | undefined): Date | null {
   if (!iso?.trim()) return null
   const d = new Date(iso.includes('T') ? iso : `${iso}T12:00:00`)
   return Number.isNaN(d.getTime()) ? null : d
@@ -57,11 +57,11 @@ function hasExpiringWonContract(deals: DealStatusInput[], now: Date): boolean {
   )
 }
 
-function latestWonDate(deals: DealStatusInput[], now: Date): Date | null {
+function latestWonDate(deals: DealStatusInput[]): Date | null {
   let latest: Date | null = null
   for (const deal of deals) {
     if (deal.status !== 'won') continue
-    const closed = parseClosedOn(deal.closedOn, now)
+    const closed = parseClosedOn(deal.closedOn)
     if (!closed) continue
     if (!latest || closed > latest) latest = closed
   }
@@ -82,13 +82,13 @@ export function computeAccountStatusFromSignals(
 
   if (hasExpiringWonContract(input.deals, now)) return 'at_risk'
 
-  const latestWon = latestWonDate(input.deals, now)
+  const latestWon = latestWonDate(input.deals)
   if (latestWon) {
     const ageMs = now.getTime() - latestWon.getTime()
     if (ageMs <= ACTIVE_CUSTOMER_WON_WINDOW_MS) return 'active_customer'
     const hasNewerWon = input.deals.some((d) => {
       if (d.status !== 'won') return false
-      const closed = parseClosedOn(d.closedOn, now)
+      const closed = parseClosedOn(d.closedOn)
       return closed != null && closed > latestWon
     })
     if (!hasNewerWon) return 'former_customer'

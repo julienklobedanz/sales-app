@@ -6,16 +6,14 @@ import { companyFromJoin } from '@/lib/accounts/company-from-join'
 import type { DealRow, DealWithReferences } from './types'
 import type { MatchSuggestion } from './deal-action-types'
 
-async function getSessionOrgId(
-  _supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>
-): Promise<string | null> {
+async function getSessionOrgId(): Promise<string | null> {
   const profile = await getRequestProfile()
   return profile?.organization_id ?? null
 }
 
 export async function getDealsImpl(): Promise<DealRow[]> {
   const supabase = await createServerSupabaseClient()
-  const orgId = await getSessionOrgId(supabase)
+  const orgId = await getSessionOrgId()
   if (!orgId) return []
 
   const { data: rows, error } = await supabase
@@ -151,7 +149,7 @@ export async function getExpiringDealsImpl(): Promise<DealRow[]> {
 
 export async function getDealWithReferencesImpl(id: string): Promise<DealWithReferences | null> {
   const supabase = await createServerSupabaseClient()
-  const orgId = await getSessionOrgId(supabase)
+  const orgId = await getSessionOrgId()
   if (!orgId) return null
 
   const dealSelect = `
@@ -283,7 +281,7 @@ export async function getMatchingReferencesForDealsImpl(
   if (dealIds.length === 0) return result
 
   const supabase = await createServerSupabaseClient()
-  const orgId = await getSessionOrgId(supabase)
+  const orgId = await getSessionOrgId()
   if (!orgId) return result
 
   const { data: deals } = await supabase
@@ -337,7 +335,7 @@ export async function getMatchingReferencesForDealsImpl(
 /** Referenzen der eigenen Org (id, title, company_name) für Verknüpfung mit Deal */
 export async function getReferencesForOrgImpl(): Promise<{ id: string; title: string; company_name: string }[]> {
   const supabase = await createServerSupabaseClient()
-  const orgId = await getSessionOrgId(supabase)
+  const orgId = await getSessionOrgId()
   if (!orgId) return []
 
   const { data: rows } = await supabase

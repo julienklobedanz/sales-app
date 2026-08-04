@@ -12,9 +12,7 @@ import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { normalizeDealStatus } from '@/lib/deals/normalize-deal-status'
 import type { DealStatus } from './types'
 
-async function getSessionOrgId(
-  _supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>
-): Promise<string | null> {
+async function getSessionOrgId(): Promise<string | null> {
   const profile = await getRequestProfile()
   return profile?.organization_id ?? null
 }
@@ -148,7 +146,7 @@ export async function setDealRfpModeImpl(
   isRfpMode: boolean
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createServerSupabaseClient()
-  const orgId = await getSessionOrgId(supabase)
+  const orgId = await getSessionOrgId()
   if (!orgId) return { success: false, error: 'Keine Organisation zugeordnet.' }
 
   const { error } = await supabase

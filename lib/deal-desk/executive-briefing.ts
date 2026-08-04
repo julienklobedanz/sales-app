@@ -1,7 +1,6 @@
 import type { DealDeskMockAnalysis, DealDeskRedFlag } from '@/lib/deal-desk/mock-analysis'
 import type {
   DealDeskCapabilityRisk,
-  DealDeskExecutiveBriefingFields,
 } from '@/lib/deal-desk/executive-briefing-fields'
 import {
   hasSuitabilityContent,

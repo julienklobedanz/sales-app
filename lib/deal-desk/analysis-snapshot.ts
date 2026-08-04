@@ -6,8 +6,6 @@ import type { TenderLot } from '@/lib/deals/tender-lots'
 
 import type { RfpVerdict } from '@/lib/rfp-relevance'
 
-import { RFP_COCKPIT_ENGINE_VERSION_CURRENT } from '@/lib/deals/rfp-cockpit-metrics'
-
 /** Persistiertes Analyse-JSON in `deal_desk_projects.analysis_snapshot`. */
 export type PersistedDealDeskAnalysisSnapshot = DealDeskMockAnalysis & {
   requirements?: ExtractedRfpRequirement[]

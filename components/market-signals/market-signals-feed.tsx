@@ -53,7 +53,6 @@ export function MarketSignalsFeed({
   activeDeals,
   initialReadKeys,
   senderFullName,
-  referenceSnippetsByCompanyId: _referenceSnippetsByCompanyId,
   sort,
 }: {
   executives: ExecutiveTrackingRow[]

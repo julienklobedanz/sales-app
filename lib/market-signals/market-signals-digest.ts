@@ -2,7 +2,6 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { ROUTES } from '@/lib/routes'
 import {
   buildRefstackEmailHtml,
-  escapeRefstackEmailHtml,
 } from '@/lib/email/refstack-email-layout'
 import { isActiveDealStatus } from '@/lib/market-signals/ingest-company-news'
 import { legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'

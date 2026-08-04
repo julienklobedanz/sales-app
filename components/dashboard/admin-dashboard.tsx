@@ -2,9 +2,8 @@
 
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
-import { AlertTriangle, CheckCircle2, Database, Gauge, RefreshCw, ServerCog, ShieldAlert, Users } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Database, Gauge, ServerCog, ShieldAlert, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ROUTES } from '@/lib/routes'
 import type { AdminDashboardModel } from '@/app/dashboard/dashboard-home-data'

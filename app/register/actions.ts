@@ -9,7 +9,6 @@ import { ROUTES } from '@/lib/routes'
 import { validatePasswordPolicy } from '@/lib/security/password-policy'
 import { getAppOrigin } from '@/lib/env/app-origin'
 import { parseInviteRoleDimensions } from '@/lib/roles/invite-roles'
-import { legacyAppRoleFrom, legacyRoleToDimensions } from '@/lib/roles/legacy-mapping'
 import {
   buildRefstackEmailHtml,
   escapeRefstackEmailHtml,

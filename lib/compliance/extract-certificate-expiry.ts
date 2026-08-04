@@ -176,14 +176,6 @@ function scoreContextWindows(normalized: string): Array<{ start: number; end: nu
   return windows
 }
 
-function contextBoost(index: number, windows: Array<{ start: number; end: number; score: number }>): number {
-  let boost = 0
-  for (const w of windows) {
-    if (index >= w.start && index <= w.end) boost = Math.max(boost, w.score)
-  }
-  return boost
-}
-
 export function extractCertificateExpiryFromText(
   rawText: string,
   refDate: Date = new Date()

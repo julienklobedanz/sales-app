@@ -4,7 +4,6 @@ import { formatProjectStatusDe } from '@/lib/public-portfolio/kpis-for-reference
 
 /** PptxGenJS LAYOUT_16x9 — 10" × 5.625" */
 const SLIDE_W_IN = 10
-const SLIDE_H_IN = 5.625
 
 const COLORS = {
   heading: '1E293B',

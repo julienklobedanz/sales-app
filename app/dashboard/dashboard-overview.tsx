@@ -400,6 +400,7 @@ export function DashboardOverview({
       favoritesOnly,
       sortKey,
       sortDir,
+      companyIndustryById,
     ]
   )
 

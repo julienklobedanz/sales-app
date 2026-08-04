@@ -16,6 +16,9 @@ export function isMissingEnrichmentColumnsError(message: string | undefined): bo
 }
 
 export function stripEnrichmentFields<T extends Record<string, unknown>>(row: T): Omit<T, keyof MarketSignalEnrichmentColumns> {
-  const { signal_category: _a, insight_signal_fact: _b, insight_why_now: _c, ...rest } = row
+  const { signal_category, insight_signal_fact, insight_why_now, ...rest } = row
+  void signal_category
+  void insight_signal_fact
+  void insight_why_now
   return rest as Omit<T, keyof MarketSignalEnrichmentColumns>
 }

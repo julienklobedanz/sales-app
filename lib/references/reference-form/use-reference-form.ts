@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { toast } from 'sonner'
-import { z } from 'zod'
 import { attachOriginalDocumentToReference, createReference, fetchCompanyEnrichment } from '@/app/dashboard/references/new/actions'
 import type { ExtractDataFromDocumentResult } from '@/lib/references/extract-types'
 import { updateReference } from '@/app/dashboard/actions'

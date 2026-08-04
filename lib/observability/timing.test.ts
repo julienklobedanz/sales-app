@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
 import { setLogSink, type LogEntry } from '@/lib/observability/logger'
 import { buildServerTimingHeader, withTiming } from '@/lib/observability/timing'

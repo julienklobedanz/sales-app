@@ -36,9 +36,6 @@ export type ComplianceDocumentAccessUrls = {
   downloadUrl: string
 }
 
-const COMPLIANCE_SELECT =
-  'id,organization_id,document_type,title,valid_until,file_storage_path,file_name,is_current,uploaded_by,created_at,updated_at'
-
 type ComplianceAuth =
   | { error: string }
   | {

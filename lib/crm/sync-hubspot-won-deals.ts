@@ -193,7 +193,8 @@ export async function syncHubSpotWonDealsForOrganization(
         error?.code === 'PGRST204' &&
         error.message?.includes('contract_end_date')
       ) {
-        const { contract_end_date: _c, ...withoutContract } = updateFull
+        const { contract_end_date, ...withoutContract } = updateFull
+        void contract_end_date
         ;({ error } = await supabase.from('deals').update(withoutContract).eq('id', existing.id))
       }
       if (error) skipped += 1
@@ -206,14 +207,17 @@ export async function syncHubSpotWonDealsForOrganization(
       insertError?.code === 'PGRST204' &&
       insertError.message?.includes('contract_end_date')
     ) {
-      const { contract_end_date: _c, ...withoutContract } = payload
+      const { contract_end_date, ...withoutContract } = payload
+      void contract_end_date
       ;({ error: insertError } = await supabase.from('deals').insert(withoutContract))
     }
     if (
       insertError?.code === 'PGRST204' &&
       insertError.message?.includes('crm_stage')
     ) {
-      const { crm_stage: _s, contract_end_date: _c, ...withoutStage } = payload
+      const { crm_stage, contract_end_date, ...withoutStage } = payload
+      void crm_stage
+      void contract_end_date
       ;({ error: insertError } = await supabase.from('deals').insert(withoutStage))
     }
     if (insertError) skipped += 1

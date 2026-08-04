@@ -16,7 +16,7 @@ import {
 import { COPY } from "@/lib/copy"
 import { AppIcon } from "@/lib/icons"
 
-function columnViewLabel<TData>(column: {
+function columnViewLabel(column: {
   id: string
   columnDef: { header?: unknown; meta?: unknown }
 }): string {
