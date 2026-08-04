@@ -1,3 +1,4 @@
+import { statusTone } from '@/lib/ui/status-tone'
 import { effectiveCustomerApprovalStatus } from '@/lib/references/effective-customer-approval'
 
 /** Einheitliche Kapseln für Titel, Freigabestatus-Card und Listen. */
@@ -46,34 +47,34 @@ export function resolvePortfolioTitleBadge(referenceStatus: string | null | unde
   if (status === 'internal_only') {
     return {
       label: 'Intern',
-      className: 'border-slate-200 bg-slate-100/90 text-slate-700',
+      className: statusTone.neutral,
     }
   }
 
   if (status === 'anonymized') {
     return {
       label: 'Anonymisiert',
-      className: 'border-slate-200 bg-slate-50 text-slate-800',
+      className: statusTone.neutral,
     }
   }
 
   if (status === 'approved') {
     return {
       label: 'Extern freigegeben',
-      className: 'border-blue-200 bg-blue-500/10 text-blue-800',
+      className: statusTone.info,
     }
   }
 
   if (status === 'pending') {
     return {
       label: 'Freigabe ausstehend',
-      className: 'border-amber-200 bg-amber-50 text-amber-900',
+      className: statusTone.warning,
     }
   }
 
   return {
     label: 'Entwurf',
-    className: 'border-slate-200 bg-slate-50 text-slate-800',
+    className: statusTone.neutral,
   }
 }
 
@@ -85,13 +86,13 @@ export function resolvePostCustomerApprovalTitleBadge(input: ApprovedScopeInput)
   if (!named && anonymous) {
     return {
       label: 'Anonymisiert',
-      className: 'border-slate-200 bg-slate-50 text-slate-800',
+      className: statusTone.neutral,
     }
   }
 
   return {
     label: 'Extern freigegeben',
-    className: 'border-blue-200 bg-blue-500/10 text-blue-800',
+    className: statusTone.info,
   }
 }
 
@@ -103,14 +104,14 @@ export function approvedScopeBadge(input: ApprovedScopeInput): ApprovalBadge {
   if (input.referenceIsInternalOnly) {
     return {
       label: 'Nur intern nutzbar',
-      className: 'border-emerald-200/80 bg-emerald-50 text-emerald-800',
+      className: statusTone.success,
     }
   }
 
   if (!named && anonymous) {
     return {
       label: 'Anonym freigegeben',
-      className: 'border-amber-200 bg-amber-50 text-amber-900',
+      className: statusTone.warning,
     }
   }
 
@@ -118,7 +119,7 @@ export function approvedScopeBadge(input: ApprovedScopeInput): ApprovalBadge {
     if (refCall) {
       return {
         label: 'Freigabe mit Ref. Calls',
-        className: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+        className: statusTone.success,
       }
     }
     return {
@@ -129,7 +130,7 @@ export function approvedScopeBadge(input: ApprovedScopeInput): ApprovalBadge {
 
   return {
     label: 'Freigegeben',
-    className: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+    className: statusTone.success,
   }
 }
 
@@ -139,17 +140,17 @@ export function resolveInternalWorkflowBadge(internalApprovalStatus: string): Ap
     case 'approved_internal':
       return {
         label: 'Intern freigegeben',
-        className: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+        className: statusTone.success,
       }
     case 'rejected_internal':
       return {
         label: 'Intern abgelehnt',
-        className: 'border-red-200 bg-red-50 text-red-700',
+        className: statusTone.danger,
       }
     case 'withdrawn_internal':
       return {
         label: 'Widerrufen',
-        className: 'border-slate-200 bg-slate-100 text-slate-600',
+        className: statusTone.neutral,
       }
     default:
       return {
@@ -178,7 +179,7 @@ export function resolveCustomerWorkflowBadge(input: {
   if (customer === 'pending') {
     return {
       label: 'Wartet auf Kundenfreigabe',
-      className: 'border-amber-200 bg-amber-50 text-amber-900',
+      className: statusTone.warning,
     }
   }
 
@@ -194,14 +195,14 @@ export function resolveCustomerWorkflowBadge(input: {
   if (customer === 'revoked_by_customer' || customerRaw === 'revoked_by_customer') {
     return {
       label: 'Gesperrt',
-      className: 'border-red-200 bg-red-50 text-red-700',
+      className: statusTone.danger,
     }
   }
 
   if (customer === 'rejected' || customerRaw === 'rejected') {
     return {
       label: 'Vom Kunden abgelehnt',
-      className: 'border-red-200 bg-red-50 text-red-700',
+      className: statusTone.danger,
     }
   }
 
@@ -215,7 +216,7 @@ export function resolveCustomerWorkflowBadge(input: {
   if (internal !== 'withdrawn_internal' && internal !== 'rejected_internal') {
     return {
       label: 'Noch nicht gestartet',
-      className: 'border-slate-200 bg-slate-100 text-slate-600',
+      className: statusTone.neutral,
     }
   }
 
@@ -224,7 +225,7 @@ export function resolveCustomerWorkflowBadge(input: {
 
 const notStartedFreigabeBadge: ApprovalBadge = {
   label: 'Noch nicht gestartet',
-  className: 'border-slate-200 bg-slate-100 text-slate-600',
+  className: statusTone.neutral,
 }
 
 /** Intern + Kunde in der Freigabestatus-Card (nach Workflow-Start). */
@@ -268,20 +269,20 @@ export function resolvePreWorkflowCardBadge(input: PreWorkflowCardInput): Approv
   if (input.canStartApproval && status === 'draft') {
     return {
       label: 'Entwurf',
-      className: 'border-slate-200 bg-slate-100 text-slate-700',
+      className: statusTone.neutral,
     }
   }
 
   if (input.canStartApproval && (status === 'internal_only' || status === 'internal')) {
     return {
       label: 'Nur intern',
-      className: 'border-slate-200 bg-slate-100 text-slate-700',
+      className: statusTone.neutral,
     }
   }
 
   return {
     label: 'Nicht angefragt',
-    className: 'border-slate-200 bg-slate-100 text-slate-600',
+    className: statusTone.neutral,
   }
 }
 
@@ -308,21 +309,21 @@ export function resolveReferenceTitleBadge(input: ReferenceTitleBadgeInput): App
   if (internal === 'withdrawn_internal' && workflowStarted) {
     return {
       label: 'Widerrufen',
-      className: 'border-slate-200 bg-slate-100/90 text-slate-600',
+      className: statusTone.neutral,
     }
   }
 
   if (customerRaw === 'revoked_by_customer') {
     return {
       label: 'Gesperrt',
-      className: 'border-red-200 bg-red-50 text-red-700',
+      className: statusTone.danger,
     }
   }
 
   if (customer === 'rejected' || customerRaw === 'rejected') {
     return {
       label: 'Abgelehnt',
-      className: 'border-red-200 bg-red-50 text-red-700',
+      className: statusTone.danger,
     }
   }
 
@@ -336,7 +337,7 @@ export function resolveReferenceTitleBadge(input: ReferenceTitleBadgeInput): App
   if (internal === 'rejected_internal' && workflowStarted) {
     return {
       label: 'Intern abgelehnt',
-      className: 'border-red-200 bg-red-50 text-red-700',
+      className: statusTone.danger,
     }
   }
 

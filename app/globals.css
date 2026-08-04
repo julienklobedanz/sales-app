@@ -27,6 +27,22 @@
   --color-border: var(--border);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-status-success: var(--status-success);
+  --color-status-success-foreground: var(--status-success-foreground);
+  --color-status-success-muted: var(--status-success-muted);
+  --color-status-success-border: var(--status-success-border);
+  --color-status-warning: var(--status-warning);
+  --color-status-warning-foreground: var(--status-warning-foreground);
+  --color-status-warning-muted: var(--status-warning-muted);
+  --color-status-warning-border: var(--status-warning-border);
+  --color-status-danger: var(--status-danger);
+  --color-status-danger-foreground: var(--status-danger-foreground);
+  --color-status-danger-muted: var(--status-danger-muted);
+  --color-status-danger-border: var(--status-danger-border);
+  --color-status-info: var(--status-info);
+  --color-status-info-foreground: var(--status-info-foreground);
+  --color-status-info-muted: var(--status-info-muted);
+  --color-status-info-border: var(--status-info-border);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -89,6 +105,23 @@
   --sidebar-ring: oklch(0.723 0.014 214.4);
   --background: oklch(0.985 0.002 228.8);
   --foreground: oklch(0.148 0.004 228.8);
+  /* Semantic status tones (badges / account+deal status) */
+  --status-success: oklch(0.55 0.14 155);
+  --status-success-foreground: oklch(0.35 0.1 155);
+  --status-success-muted: oklch(0.96 0.03 155);
+  --status-success-border: oklch(0.88 0.06 155);
+  --status-warning: oklch(0.72 0.15 75);
+  --status-warning-foreground: oklch(0.38 0.1 55);
+  --status-warning-muted: oklch(0.97 0.03 85);
+  --status-warning-border: oklch(0.88 0.08 75);
+  --status-danger: oklch(0.58 0.2 25);
+  --status-danger-foreground: oklch(0.42 0.18 25);
+  --status-danger-muted: oklch(0.96 0.02 25);
+  --status-danger-border: oklch(0.88 0.06 25);
+  --status-info: oklch(0.6 0.12 230);
+  --status-info-foreground: oklch(0.35 0.08 230);
+  --status-info-muted: oklch(0.96 0.02 230);
+  --status-info-border: oklch(0.88 0.05 230);
 }
 
 .dark {
@@ -124,6 +157,22 @@
   --sidebar-accent-foreground: oklch(0.987 0.002 197.1);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.56 0.021 213.5);
+  --status-success: oklch(0.7 0.14 155);
+  --status-success-foreground: oklch(0.88 0.06 155);
+  --status-success-muted: oklch(0.28 0.06 155 / 40%);
+  --status-success-border: oklch(0.45 0.1 155 / 50%);
+  --status-warning: oklch(0.78 0.14 75);
+  --status-warning-foreground: oklch(0.9 0.06 85);
+  --status-warning-muted: oklch(0.32 0.06 75 / 40%);
+  --status-warning-border: oklch(0.5 0.1 75 / 50%);
+  --status-danger: oklch(0.7 0.16 25);
+  --status-danger-foreground: oklch(0.88 0.05 25);
+  --status-danger-muted: oklch(0.3 0.08 25 / 40%);
+  --status-danger-border: oklch(0.48 0.12 25 / 55%);
+  --status-info: oklch(0.72 0.1 230);
+  --status-info-foreground: oklch(0.88 0.04 230);
+  --status-info-muted: oklch(0.3 0.05 230 / 40%);
+  --status-info-border: oklch(0.48 0.08 230 / 50%);
 }
 
 @layer base {
