@@ -39,8 +39,8 @@ function buildXlsxFile(rows: Record<string, unknown>[]): File {
   const wb = XLSX.utils.book_new()
   const ws = XLSX.utils.json_to_sheet(rows)
   XLSX.utils.book_append_sheet(wb, ws, 'Deals')
-  const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer
-  return new File([buf], 'deals.xlsx', {
+  const bytes = new Uint8Array(XLSX.write(wb, { type: 'array', bookType: 'xlsx' }) as ArrayBuffer)
+  return new File([bytes], 'deals.xlsx', {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   })
 }
