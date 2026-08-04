@@ -1,7 +1,7 @@
 import {
   DEFAULT_REFERENCE_COLUMN_WIDTHS,
   type ReferenceColumnKey,
-} from './reference-table-column-renders'
+} from './reference-table-column-types'
 import {
   loadColumnWidthsFromStorage,
 } from '@/lib/table-column-sizing'

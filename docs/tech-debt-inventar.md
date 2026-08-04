@@ -71,7 +71,7 @@ Verweis: [arbeitspaket-logging-error-e6.md](./arbeitspaket-logging-error-e6.md),
 |----|-----|--------|------|---------|-------|
 | P1-1 | Guide + `lib/observability/result.ts` | `{ ok }` vs `{ success }` | Helpers auf `{ success }`; Guide angleichen | S | E6 |
 | P1-2 | ~119 `console.*` / ~64 Dateien; Logger ~11 Importe | E6 T3 kaum gestartet | Heiße Pfade (Auth, Approval, Import, Cron) → `log`; Settings/Actions Boy-Scout | L | E6 — **heiße Pfade ✅ 2026-08-04**; Rest offen |
-| P1-3 | God-Files | `dashboard-overview` 1500, `accounts/actions` 1366, … | Sliceweise splitten; Actions dünn halten | L | E5 / QC — **Accounts ✅; overview ✅ (~933); smart-match-shell ✅ (~258)** |
+| P1-3 | God-Files | große Actions/UI-Dateien | Sliceweise splitten | L | E5 — **Accounts, Overview, Smart-Match, MS-Actions, Column-Renders, Form-Content, Deals-Actions ✅** |
 | P1-4 | `companyFromJoin` 3× + inline in Deals | Duplikat | Eine Shared-Helper-Funktion | S | neu — ✅ `lib/accounts/company-from-join.ts` |
 | P1-5 | `normalizeDealStatus` 3× (actions, request, market-signals) | Drift-Risiko | Eine Funktion in `lib/deals/` | S | neu — ✅ `lib/deals/normalize-deal-status.ts` |
 | P1-6 | Accounts Naming | Route `accounts/`, Code `company*` (~18 Dateien) | Schrittweise Rename (DB `companies` ok) | L | Welle 5 |
@@ -114,15 +114,15 @@ Verweis: [arbeitspaket-logging-error-e6.md](./arbeitspaket-logging-error-e6.md),
 
 | Datei | Zeilen |
 |-------|-------:|
-| `app/dashboard/dashboard-overview.tsx` | ~933 (war 1500) |
-| `app/dashboard/market-signals/actions.ts` | 1299 |
-| `app/dashboard/overview/reference-table-column-renders.tsx` | 1112 |
-| `lib/references/reference-form/reference-form-content.tsx` | 1093 |
-| `app/dashboard/references/new/actions.ts` | 994 |
-| `app/dashboard/deals/actions.ts` | 973 |
+| `app/dashboard/dashboard-overview.tsx` | ~933 |
 | `app/dashboard/accounts/companies-grid.tsx` | 960 |
-| `app/dashboard/accounts/actions.ts` | ~327 (war 1395; + Impl-Module) |
-| `app/dashboard/smart-match/smart-match-shell.tsx` | ~258 (war 962) |
+| `app/dashboard/references/new/actions.ts` | 994 |
+| `lib/references/reference-form/reference-form-content.tsx` | ~126 (war 1093) |
+| `app/dashboard/overview/reference-table-column-renders.tsx` | ~10 barrel (war 1112) |
+| `app/dashboard/market-signals/actions.ts` | ~196 (war 1299) |
+| `app/dashboard/deals/actions.ts` | ~152 (war 945) |
+| `app/dashboard/accounts/actions.ts` | ~327 |
+| `app/dashboard/smart-match/smart-match-shell.tsx` | ~258 |
 
 ---
 
@@ -131,7 +131,7 @@ Verweis: [arbeitspaket-logging-error-e6.md](./arbeitspaket-logging-error-e6.md),
 1. **Quick Wins (diese Session):** P0-1 Auth-Guard ✅, P0-2/P0-3 tote APIs ✅, P2-1 leere Dirs ✅, P2-2 triagierte Orphans ✅, P2-3 Aliase ✅, P1-1 Result-Shape + Guide ✅, Knip-Script ✅.
 2. **E6-Fortsetzung:** Logger auf heiße Pfade ✅ (Auth, HubSpot, Approvals, Import, Invite — 2026-08-04); Rest Boy-Scout.
 3. **Konsolidierung:** `companyFromJoin` ✅, `normalizeDealStatus` ✅, `formatDateUtcDe`→`formatReferenceDate` ✅; Extract-Facades noch offen.
-4. **God-File-Slices:** Accounts-`actions.ts` ✅; `dashboard-overview` ✅ (~1500→933); `smart-match-shell` ✅ (~962→258) — 2026-08-04.
+4. **God-File-Slices:** Accounts ✅; Overview ✅; Smart-Match ✅; Market-Signals-Actions ✅; Column-Renders ✅; Reference-Form-Content ✅; Deals-Actions ✅ (2026-08-04).
 5. **Tooling:** Knip warnend in CI (`npm run knip`); `format:check` erst nach Format-Welle.
 
 ### Erledigt 2026-08-04 (Welle Quick Wins)
@@ -152,6 +152,7 @@ Verweis: [arbeitspaket-logging-error-e6.md](./arbeitspaket-logging-error-e6.md),
 | P1-3 Accounts | `actions.ts` auf Wrapper + Impl-Module (`strategy-roadmap`, `stakeholders`, `contacts`, `account-match`, `account-deals`, `company-crud`, `onepager`, Typen) |
 | P1-3 Overview | Spalten/Filter/Table/Bulk-Helpers nach `overview/*`; `dashboard-overview` ~933 Z. |
 | P1-3 Smart-Match | Filters/Search/Results/Helpers; `smart-match-shell` ~258 Z. |
+| P1-3 MS/Deals/UI | MS-actions ~196; Deals-actions ~152; column-renders barrel; form-content ~126 + Sections |
 
 ---
 

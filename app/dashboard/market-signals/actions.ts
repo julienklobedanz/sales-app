@@ -1,245 +1,57 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
-import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
-import { resolveAuthEmailsByUserIds } from '@/lib/auth/resolve-user-emails'
+import type {
+  BackfillCompanyNewsroomsResult,
+  BackfillMarketSignalEnrichmentResult,
+  DecisionMakerCandidate,
+  SignalReferenceMatchPayload,
+  TriggerMarketSignalsIngestResult,
+  WatchlistCompanyResult,
+} from './market-signal-action-types'
 import {
-  runMarketSignalEnrichmentBackfill,
-  type BackfillSignalEnrichmentResult,
-} from '@/lib/market-signals/backfill-signal-enrichment'
-import { discoverAndSaveCompanyNewsrooms } from '@/lib/market-signals/discover-company-newsroom'
-import { runCompanyNewsIngest } from '@/lib/market-signals/ingest-company-news'
-import { runExecutiveIntelIngest } from '@/lib/market-signals/ingest-executive-intel'
-import { prepareMarketSignalsFeedRefresh } from '@/lib/market-signals/purge-market-signals'
-import { notifyInstantMarketSignalsAfterIngest } from '@/lib/market-signals/market-signals-instant-alerts'
-import { ROUTES } from '@/lib/routes'
-import { writeAuditLog } from '@/lib/audit/log-audit'
-import { Resend } from 'resend'
+  setChampionWatchlistStateImpl,
+  setCompaniesWatchlistStateImpl,
+  setCompanyWatchlistStateImpl,
+  watchCompanyFromSuggestionImpl,
+} from './watchlist-impl'
 import {
-  buildRefstackEmailHtml,
-  buildReferenceMetaRows,
-  getRefstackResendFrom,
-} from '@/lib/email/refstack-email-layout'
-import { getAppOrigin } from '@/lib/env/app-origin'
-import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
-import { parseProfileRoles } from '@/lib/roles/profile-roles'
+  addMarketSignalToDealImpl,
+  logMarketSignalQuickActionImpl,
+  markMarketSignalNotificationsReadImpl,
+  markMarketSignalOutcomeImpl,
+  markMarketSignalsIrrelevantImpl,
+  setMarketSignalPriorityImpl,
+  snoozeMarketSignalImpl,
+  submitMarketSignalDraftFeedbackImpl,
+} from './signal-inbox-impl'
+import {
+  backfillCompanyNewsroomsForMyOrgImpl,
+  backfillMarketSignalEnrichmentForMyOrgImpl,
+  triggerCompanyNewsIngestForMyOrgImpl,
+  triggerMarketSignalsIngestForMyOrgImpl,
+  updateCompanyNewsroomUrlsImpl,
+} from './signal-ingest-impl'
+import {
+  getDecisionMakerCandidatesImpl,
+  matchReferencesForSignalsImpl,
+  requestReferenceApprovalForSignalImpl,
+} from './signal-match-impl'
 
-function normalizeChampionKey(raw: string) {
-  return raw.trim().toLowerCase().replace(/\s+/g, ' ')
-}
-
-export type DecisionMakerCandidate = {
-  id: string
-  fullName: string
-  title: string
-  roleBucket: 'cio' | 'it_lead' | 'infrastructure' | 'security' | 'data' | 'other'
-  confidence: number
-  confidenceReason: string
-  source: 'the_org' | 'cio_de' | 'linkedin'
-  sourceLabel: string
-  profileUrl: string | null
-  lastSeenAt: string | null
-  mutualConnections: number | null
-  /** Lesbare Warm-Intro-Brücken (z. B. Kollege X kennt Stakeholder Y). */
-  mutualConnectionBridges: string[]
-}
-
-type ProviderRawCandidate = {
-  fullName: string
-  title: string
-  profileUrl?: string | null
-  lastSeenAt?: string | null
-  mutualConnections?: number | null
-}
-
-type CandidateProviderAdapter = {
-  key: DecisionMakerCandidate['source']
-  label: string
-  trustScore: number
-  fetchCandidates: (args: {
-    companyName: string
-    signalKind: 'exec' | 'news'
-  }) => Promise<ProviderRawCandidate[]>
-}
-
-function inferRoleBucket(title: string): DecisionMakerCandidate['roleBucket'] {
-  const t = title.toLowerCase()
-  if (/\bcio\b|chief information officer/.test(t)) return 'cio'
-  if (/head of it|it director|leiter it|it-leiter|vp it|director it/.test(t)) return 'it_lead'
-  if (/infrastructure|cloud platform|platform engineering|head of infrastructure/.test(t)) return 'infrastructure'
-  if (/ciso|security|it security|cybersecurity/.test(t)) return 'security'
-  if (/data platform|head of data|data engineering|analytics/.test(t)) return 'data'
-  return 'other'
-}
-
-function roleMatchScore(title: string): number {
-  const bucket = inferRoleBucket(title)
-  if (bucket === 'cio') return 1
-  if (bucket === 'it_lead') return 0.9
-  if (bucket === 'infrastructure' || bucket === 'security' || bucket === 'data') return 0.78
-  return 0.45
-}
-
-function seniorityScore(title: string): number {
-  const t = title.toLowerCase()
-  if (/chief|c-level|vorstand|geschäftsführung/.test(t)) return 1
-  if (/vp|vice president|director|head/.test(t)) return 0.85
-  if (/lead|leiter|principal/.test(t)) return 0.72
-  return 0.55
-}
-
-function freshnessScore(lastSeenAt: string | null | undefined): number {
-  if (!lastSeenAt) return 0.55
-  const ts = new Date(lastSeenAt).getTime()
-  if (!Number.isFinite(ts)) return 0.55
-  const ageDays = (Date.now() - ts) / (24 * 60 * 60 * 1000)
-  if (ageDays <= 30) return 1
-  if (ageDays <= 90) return 0.82
-  if (ageDays <= 180) return 0.68
-  return 0.52
-}
-
-function mockMutualConnectionBridges(
-  targetFullName: string,
-  count: number | null | undefined,
-  seed: number
-): string[] {
-  const n = typeof count === 'number' && count > 0 ? Math.min(count, 4) : 0
-  if (!n) return []
-  const colleagues = ['Markus Weber', 'Anna Schmidt', 'Julia Braun', 'Tom Schneider', 'Lea Hoffmann']
-  return Array.from({ length: n }, (_, i) => {
-    const c = colleagues[(seed + i) % colleagues.length]
-    return `Dein Kollege ${c} kennt ${targetFullName} – starker Einstieg für ein Warm-Intro.`
-  })
-}
-
-function buildConfidenceReason(input: {
-  title: string
-  roleScore: number
-  seniority: number
-  freshness: number
-  sourceLabel: string
-}): string {
-  const roleHint =
-    input.roleScore >= 0.95
-      ? 'starker Rollen-Match'
-      : input.roleScore >= 0.8
-        ? 'guter Rollen-Match'
-        : 'teilweiser Rollen-Match'
-  const seniorityHint =
-    input.seniority >= 0.9 ? 'hohe Seniority' : input.seniority >= 0.75 ? 'mittlere-hohe Seniority' : 'mittlere Seniority'
-  const freshnessHint = input.freshness >= 0.9 ? 'aktuelle Daten' : input.freshness >= 0.7 ? 'relativ aktuelle Daten' : 'ältere Daten'
-  return `${roleHint}, ${seniorityHint}, ${freshnessHint} (${input.sourceLabel})`
-}
-
-const theOrgAdapter: CandidateProviderAdapter = {
-  key: 'the_org',
-  label: 'The Org',
-  trustScore: 0.84,
-  async fetchCandidates({ companyName }) {
-    return [
-      {
-        fullName: 'Lena Hoffmann',
-        title: `Chief Information Officer, ${companyName}`,
-        profileUrl: `https://theorg.com/search?q=${encodeURIComponent(companyName + ' CIO')}`,
-        lastSeenAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-        mutualConnections: 3,
-      },
-      {
-        fullName: 'Tobias Schneider',
-        title: `Head of Infrastructure, ${companyName}`,
-        profileUrl: `https://theorg.com/search?q=${encodeURIComponent(companyName + ' Infrastructure')}`,
-        lastSeenAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
-        mutualConnections: 1,
-      },
-    ]
-  },
-}
-
-const cioDeAdapter: CandidateProviderAdapter = {
-  key: 'cio_de',
-  label: 'CIO.de',
-  trustScore: 0.76,
-  async fetchCandidates({ companyName }) {
-    return [
-      {
-        fullName: 'Markus Weber',
-        title: `IT-Leiter, ${companyName}`,
-        profileUrl: `https://www.cio.de/suche/?query=${encodeURIComponent(companyName + ' IT Leiter')}`,
-        lastSeenAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
-        mutualConnections: null,
-      },
-    ]
-  },
-}
-
-const linkedInAdapter: CandidateProviderAdapter = {
-  key: 'linkedin',
-  label: 'LinkedIn / Sales Navigator',
-  trustScore: 0.8,
-  async fetchCandidates({ companyName, signalKind }) {
-    const role = signalKind === 'exec' ? 'Head of IT' : 'Director IT'
-    return [
-      {
-        fullName: 'Sarah Klein',
-        title: `${role}, ${companyName}`,
-        profileUrl: `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(
-          `${role} ${companyName}`
-        )}`,
-        lastSeenAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
-        mutualConnections: 2,
-      },
-    ]
-  },
-}
-
-const CANDIDATE_ADAPTERS: CandidateProviderAdapter[] = [theOrgAdapter, cioDeAdapter, linkedInAdapter]
-
-async function upsertNotificationKeys(keys: string[]) {
-  const uniqueKeys = Array.from(new Set(keys.filter(Boolean)))
-  if (!uniqueKeys.length) return { success: true as const }
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { success: false as const, error: 'Nicht angemeldet' }
-
-  const { data: existingRows, error: existingError } = await supabase
-    .from('notification_inbox_reads')
-    .select('notification_key')
-    .eq('user_id', user.id)
-    .in('notification_key', uniqueKeys)
-  if (existingError) return { success: false as const, error: existingError.message }
-
-  const existingKeys = new Set(
-    (existingRows ?? []).map((row) => String((row as { notification_key?: string | null }).notification_key ?? ''))
-  )
-  const toInsert = uniqueKeys
-    .filter((key) => !existingKeys.has(key))
-    .map((key) => ({ user_id: user.id, notification_key: key, read_at: new Date().toISOString() }))
-  if (!toInsert.length) return { success: true as const }
-
-  const { error } = await supabase.from('notification_inbox_reads').insert(toInsert)
-  if (error) return { success: false as const, error: error.message }
-  return { success: true as const }
-}
+export type {
+  DecisionMakerCandidate,
+  WatchlistCompanyResult,
+  TriggerMarketSignalsIngestResult,
+  BackfillMarketSignalEnrichmentResult,
+  BackfillCompanyNewsroomsResult,
+  SignalReferenceMatchPayload,
+} from './market-signal-action-types'
 
 export async function markMarketSignalNotificationsRead(keys: string[]) {
-  const result = await upsertNotificationKeys(keys)
-  if (!result.success) return result
-  revalidatePath(ROUTES.marketSignals)
-  return result
+  return markMarketSignalNotificationsReadImpl(keys)
 }
 
 export async function markMarketSignalsIrrelevant(keys: string[]) {
-  const irrelevantKeys = keys
-    .filter(Boolean)
-    .map((key) => `market_irrelevant:${key}`)
-  const result = await upsertNotificationKeys(irrelevantKeys)
-  if (!result.success) return result
-  revalidatePath(ROUTES.marketSignals)
-  return result
+  return markMarketSignalsIrrelevantImpl(keys)
 }
 
 export async function addMarketSignalToDeal(args: {
@@ -248,160 +60,15 @@ export async function addMarketSignalToDeal(args: {
   signalKey: string
   referenceIds?: string[]
 }): Promise<{ success: true; added: number } | { success: false; error: string }> {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { success: false, error: 'Nicht angemeldet' }
-
-  const dealId = String(args.dealId ?? '').trim()
-  const companyId = String(args.companyId ?? '').trim()
-  const signalKey = String(args.signalKey ?? '').trim()
-  if (!dealId || !companyId || !signalKey) {
-    return { success: false, error: 'Ungültige Anfrage.' }
-  }
-
-  // Validate deal belongs to user org (RLS will also enforce, but this gives a clearer error).
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', user.id)
-    .single()
-  const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
-  if (!orgId) return { success: false, error: 'Keine Organisation gefunden' }
-
-  const { count: dealCount, error: dealErr } = await supabase
-    .from('deals')
-    .select('id', { count: 'exact', head: true })
-    .eq('id', dealId)
-    .eq('organization_id', orgId)
-  if (dealErr) return { success: false, error: dealErr.message }
-  if (!dealCount) return { success: false, error: 'Deal nicht gefunden.' }
-
-  const inputRefs = Array.from(new Set((args.referenceIds ?? []).filter(Boolean))).slice(
-    0,
-    2
-  )
-
-  let referenceIds: string[] = inputRefs
-  if (!referenceIds.length) {
-    const { data: refRows, error: refErr } = await supabase
-      .from('references')
-      .select('id')
-      .eq('company_id', companyId)
-      .order('updated_at', { ascending: false })
-      .limit(2)
-    if (refErr) return { success: false, error: refErr.message }
-    referenceIds = (refRows ?? [])
-      .map((r) => String((r as { id?: string | null }).id ?? ''))
-      .filter(Boolean)
-      .slice(0, 2)
-  }
-
-  if (!referenceIds.length) {
-    // still archive, to allow inbox-zero on "no refs"
-    await markMarketSignalsIrrelevant([signalKey])
-    return { success: true, added: 0 }
-  }
-
-  // Validate references belong to company (and are visible under RLS).
-  const { data: validRefs, error: validErr } = await supabase
-    .from('references')
-    .select('id')
-    .in('id', referenceIds)
-    .eq('company_id', companyId)
-  if (validErr) return { success: false, error: validErr.message }
-  const validRefIds = new Set(
-    (validRefs ?? [])
-      .map((r) => String((r as { id?: string | null }).id ?? ''))
-      .filter(Boolean)
-  )
-  const safeRefIds = referenceIds.filter((id) => validRefIds.has(id))
-
-  let added = 0
-  for (const refId of safeRefIds) {
-    const { error } = await supabase
-      .from('deal_references')
-      .insert({ deal_id: dealId, reference_id: refId })
-    if (error) {
-      const msg = String(error.message ?? '').toLowerCase()
-      if (msg.includes('duplicate key') || msg.includes('already exists')) continue
-      return { success: false, error: error.message }
-    }
-    added++
-  }
-
-  await markMarketSignalsIrrelevant([signalKey])
-
-  revalidatePath(ROUTES.marketSignals)
-  revalidatePath(ROUTES.deals.root)
-  revalidatePath(ROUTES.deals.detail(dealId))
-  return { success: true, added }
+  return addMarketSignalToDealImpl(args)
 }
 
 export async function setCompanyWatchlistState(companyId: string, isFollowing: boolean) {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { success: false as const, error: 'Nicht angemeldet' }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', user.id)
-    .maybeSingle()
-  const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
-  if (!orgId) return { success: false as const, error: 'Keine Organisation gefunden' }
-
-  const { error } = await supabase
-    .from('companies')
-    .update({ is_favorite: isFollowing })
-    .eq('id', companyId)
-    .eq('organization_id', orgId)
-  if (error) return { success: false as const, error: error.message }
-
-  revalidatePath(ROUTES.marketSignals)
-  revalidatePath(ROUTES.marketSignalsManage)
-  return { success: true as const }
+  return setCompanyWatchlistStateImpl(companyId, isFollowing)
 }
 
 export async function setCompaniesWatchlistState(companyIds: string[], isFollowing: boolean) {
-  const ids = Array.from(new Set(companyIds.map((id) => id.trim()).filter(Boolean)))
-  if (ids.length === 0) return { success: true as const, updated: 0 }
-
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { success: false as const, error: 'Nicht angemeldet' }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', user.id)
-    .maybeSingle()
-  const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
-  if (!orgId) return { success: false as const, error: 'Keine Organisation gefunden' }
-
-  const { error } = await supabase
-    .from('companies')
-    .update({ is_favorite: isFollowing })
-    .eq('organization_id', orgId)
-    .in('id', ids)
-  if (error) return { success: false as const, error: error.message }
-
-  revalidatePath(ROUTES.marketSignals)
-  revalidatePath(ROUTES.marketSignalsManage)
-  return { success: true as const, updated: ids.length }
-}
-
-export type WatchlistCompanyResult = {
-  id: string
-  name: string
-  logoUrl: string | null
-  isFollowing: boolean
-  accountStatus: string | null
+  return setCompaniesWatchlistStateImpl(companyIds, isFollowing)
 }
 
 /** Bestehenden Account beobachten oder aus Brandfetch als Target anlegen und beobachten. */
@@ -409,106 +76,7 @@ export async function watchCompanyFromSuggestion(input: {
   id: string
   name: string
 }): Promise<{ success: true; company: WatchlistCompanyResult } | { success: false; error: string }> {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { success: false, error: 'Nicht angemeldet' }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', user.id)
-    .maybeSingle()
-  const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
-  if (!orgId) return { success: false, error: 'Keine Organisation gefunden' }
-
-  const suggestionId = input.id.trim()
-  const fallbackName = input.name.trim()
-  if (!suggestionId) return { success: false, error: 'Kein Unternehmen ausgewählt' }
-
-  if (!suggestionId.startsWith('brandfetch:')) {
-    const { data: existing, error: loadError } = await supabase
-      .from('companies')
-      .select('id,name,logo_url,account_status,is_favorite')
-      .eq('id', suggestionId)
-      .eq('organization_id', orgId)
-      .maybeSingle()
-    if (loadError) return { success: false, error: loadError.message }
-    if (!existing?.id) return { success: false, error: 'Account nicht gefunden' }
-
-    const { error } = await supabase
-      .from('companies')
-      .update({ is_favorite: true })
-      .eq('id', existing.id)
-      .eq('organization_id', orgId)
-    if (error) return { success: false, error: error.message }
-
-    revalidatePath(ROUTES.marketSignals)
-    revalidatePath(ROUTES.marketSignalsManage)
-    return {
-      success: true,
-      company: {
-        id: existing.id,
-        name: (existing.name ?? fallbackName) || 'Unbekannt',
-        logoUrl: existing.logo_url ?? null,
-        isFollowing: true,
-        accountStatus: existing.account_status ?? null,
-      },
-    }
-  }
-
-  const domain = suggestionId.slice('brandfetch:'.length).trim()
-  if (!domain) return { success: false, error: 'Ungültiger Markenvorschlag' }
-
-  const { enrichAndSaveCompany } = await import('@/app/dashboard/references/new/actions')
-  const enriched = await enrichAndSaveCompany(domain)
-  if (!enriched.success) return { success: false, error: enriched.error }
-
-  const { data: current, error: loadError } = await supabase
-    .from('companies')
-    .select('id,name,logo_url,account_status')
-    .eq('id', enriched.company_id)
-    .eq('organization_id', orgId)
-    .maybeSingle()
-  if (loadError) return { success: false, error: loadError.message }
-  if (!current?.id) return { success: false, error: 'Account nicht gefunden' }
-
-  const patch: {
-    is_favorite: boolean
-    entity_kind: 'account'
-    account_status?: 'target'
-  } = {
-    is_favorite: true,
-    entity_kind: 'account',
-  }
-  // Neue Prospects ohne Status als Target; bestehende Kundenstatus nicht überschreiben.
-  if (!current.account_status) {
-    patch.account_status = 'target'
-  }
-
-  const { data: updated, error: updateError } = await supabase
-    .from('companies')
-    .update(patch)
-    .eq('id', current.id)
-    .eq('organization_id', orgId)
-    .select('id,name,logo_url,account_status')
-    .single()
-  if (updateError) return { success: false, error: updateError.message }
-
-  revalidatePath(ROUTES.marketSignals)
-  revalidatePath(ROUTES.marketSignalsManage)
-  revalidatePath(ROUTES.accounts)
-  return {
-    success: true,
-    company: {
-      id: updated.id,
-      name: updated.name ?? enriched.company_name,
-      logoUrl: updated.logo_url ?? enriched.logo_url ?? null,
-      isFollowing: true,
-      accountStatus: updated.account_status ?? patch.account_status ?? null,
-    },
-  }
+  return watchCompanyFromSuggestionImpl(input)
 }
 
 export async function setChampionWatchlistState(
@@ -516,177 +84,15 @@ export async function setChampionWatchlistState(
   isFollowing: boolean,
   companyName?: string | null
 ) {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { success: false as const, error: 'Nicht angemeldet' }
-
-  const trimmed = personName.trim()
-  if (!trimmed) return { success: false as const, error: 'Champion-Name fehlt' }
-  const key = normalizeChampionKey(trimmed)
-  if (!key) return { success: false as const, error: 'Champion-Name fehlt' }
-  const company = String(companyName ?? '').trim() || null
-
-  if (isFollowing) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id')
-      .eq('id', user.id)
-      .maybeSingle()
-    const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
-
-    let personTitle: string | null = null
-    if (orgId) {
-      const { resolveChampionPersonTitle } = await import('@/lib/market-signals/champion-display')
-      personTitle = await resolveChampionPersonTitle(supabase, orgId, trimmed, company)
-    }
-
-    const payload: {
-      user_id: string
-      person_key: string
-      person_name: string
-      company_name: string | null
-      is_active: boolean
-      person_title?: string
-    } = {
-      user_id: user.id,
-      person_key: key,
-      person_name: trimmed,
-      company_name: company,
-      is_active: true,
-    }
-    if (personTitle) payload.person_title = personTitle
-
-    const { error } = await supabase
-      .from('market_signal_champion_watchlist')
-      .upsert(payload, { onConflict: 'user_id,person_key' })
-    if (error) {
-      return { success: false as const, error: error.message }
-    }
-  } else {
-    const { error } = await supabase
-      .from('market_signal_champion_watchlist')
-      .update({ is_active: false })
-      .eq('user_id', user.id)
-      .eq('person_key', key)
-    if (error) return { success: false as const, error: error.message }
-  }
-
-  revalidatePath(ROUTES.marketSignals)
-  revalidatePath(ROUTES.marketSignalsManage)
-  return { success: true as const }
+  return setChampionWatchlistStateImpl(personName, isFollowing, companyName)
 }
 
 export async function getDecisionMakerCandidates(args: {
   companyId: string
   signalKind: 'exec' | 'news'
 }): Promise<{ success: true; candidates: DecisionMakerCandidate[] } | { success: false; error: string }> {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { success: false, error: 'Nicht angemeldet' }
-
-  const companyId = String(args.companyId ?? '').trim()
-  if (!companyId) return { success: false, error: 'Ungültige Company-ID' }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', user.id)
-    .single()
-  const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
-  if (!orgId) return { success: false, error: 'Keine Organisation gefunden' }
-
-  const { data: company } = await supabase
-    .from('companies')
-    .select('id,name')
-    .eq('id', companyId)
-    .eq('organization_id', orgId)
-    .maybeSingle()
-  if (!company) return { success: false, error: 'Account nicht gefunden' }
-
-  const companyName = String((company as { name?: string | null }).name ?? '').trim()
-  if (!companyName) return { success: true, candidates: [] }
-
-  const allRaw = await Promise.all(
-    CANDIDATE_ADAPTERS.map(async (adapter) => {
-      const rows = await adapter.fetchCandidates({
-        companyName,
-        signalKind: args.signalKind,
-      })
-      return rows.map((row, idx) => ({ row, adapter, idx }))
-    })
-  )
-
-  const ranked = allRaw
-    .flat()
-    .map(({ row, adapter, idx }) => {
-      const roleScore = roleMatchScore(row.title)
-      const seniority = seniorityScore(row.title)
-      const freshness = freshnessScore(row.lastSeenAt)
-      const confidenceRaw =
-        roleScore * 0.42 + seniority * 0.24 + freshness * 0.18 + adapter.trustScore * 0.16
-      const confidence = Math.max(35, Math.min(99, Math.round(confidenceRaw * 100)))
-      const roleBucket = inferRoleBucket(row.title)
-      return {
-        id: `${adapter.key}-${idx}-${row.fullName.toLowerCase().replace(/\s+/g, '-')}`,
-        fullName: row.fullName,
-        title: row.title,
-        roleBucket,
-        confidence,
-        confidenceReason: buildConfidenceReason({
-          title: row.title,
-          roleScore,
-          seniority,
-          freshness,
-          sourceLabel: adapter.label,
-        }),
-        source: adapter.key,
-        sourceLabel: adapter.label,
-        profileUrl: row.profileUrl ?? null,
-        lastSeenAt: row.lastSeenAt ?? null,
-        mutualConnections: row.mutualConnections ?? null,
-        mutualConnectionBridges: mockMutualConnectionBridges(row.fullName, row.mutualConnections, idx),
-      } satisfies DecisionMakerCandidate
-    })
-    .sort((a, b) => b.confidence - a.confidence)
-
-  const deduped = ranked.filter(
-    (candidate, idx, arr) =>
-      arr.findIndex(
-        (x) =>
-          x.fullName.toLowerCase().trim() === candidate.fullName.toLowerCase().trim() &&
-          x.title.toLowerCase().trim() === candidate.title.toLowerCase().trim()
-      ) === idx
-  )
-
-  return { success: true, candidates: deduped.slice(0, 3) }
+  return getDecisionMakerCandidatesImpl(args)
 }
-
-export type TriggerMarketSignalsIngestResult =
-  | {
-      success: true
-      refreshFeeds: boolean
-      purge?: {
-        accountNewsDeleted: number
-        executiveDeleted: number
-      }
-      news: {
-        companiesScanned: number
-        articlesInserted: number
-        leadershipMovesInserted: number
-        errors: string[]
-      }
-      executives: {
-        peopleScanned: number
-        signalsInserted: number
-        skippedNoCompany: number
-        errors: string[]
-      }
-    }
-  | { success: false; error: string }
 
 /** Company Updates + Exec-Presse-Signale (Google News RSS, kein Scraping). */
 export async function triggerMarketSignalsIngestForMyOrg(args?: {
@@ -694,111 +100,13 @@ export async function triggerMarketSignalsIngestForMyOrg(args?: {
   /** Manueller Refresh: RSS-Zeilen für Favoriten zurücksetzen und neu abrufen. */
   refreshFeeds?: boolean
 }): Promise<TriggerMarketSignalsIngestResult> {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { success: false, error: 'Nicht angemeldet.' }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id, system_role, function_role')
-    .eq('id', user.id)
-    .maybeSingle()
-
-  const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
-  if (!orgId) return { success: false, error: 'Keine Organisation gefunden.' }
-  const ingestMode: 'all_accounts' | 'focus_only' = args?.ingestMode ?? 'focus_only'
-  const refreshFeeds = args?.refreshFeeds === true
-
-  // Service-Role weil: RSS-Ingest/Champion-Watchlist schreibt org-weit ohne User-Session pro Zeile.
-  // Grenze: organizationId aus authentifiziertem Profil; alle Ingest-Aufrufe mit orgId.
-  const admin = createServiceRoleSupabaseClient()
-  if (!admin) {
-    return {
-      success: false,
-      error:
-        'SUPABASE_SERVICE_ROLE_KEY fehlt. Lokal: in .env.local den service_role-Key aus Supabase (Project Settings → API) eintragen und Dev-Server neu starten. Production: gleiche Variable in Vercel setzen. Der Key wird für „Signale abrufen“ und Cron-Ingest benötigt (Org-weiter Zugriff inkl. Champion-Watchlist).',
-    }
-  }
-
-  const ingestSince = new Date().toISOString()
-
-  let purge: { accountNewsDeleted: number; executiveDeleted: number } | undefined
-  if (refreshFeeds) {
-    try {
-      purge = await prepareMarketSignalsFeedRefresh(admin, orgId)
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e)
-      return { success: false, error: `Feed-Refresh konnte nicht vorbereitet werden: ${msg}` }
-    }
-  }
-
-  const news = await runCompanyNewsIngest(admin, {
-    organizationId: orgId,
-    ingestMode,
-    maxCompanies: 40,
-    perCompanyMaxArticles: 5,
-  })
-
-  const executives = await runExecutiveIntelIngest(admin, {
-    organizationId: orgId,
-    maxPeople: 30,
-  })
-
-  if (process.env.MARKET_SIGNALS_INSTANT_ALERTS_DISABLED !== '1') {
-    await notifyInstantMarketSignalsAfterIngest(admin, { sinceIso: ingestSince, organizationId: orgId })
-  }
-
-  void writeAuditLog({
-    orgId,
-    action: 'market_signals_ingest_run',
-    entityId: orgId,
-    actionDetails: {
-      mode: ingestMode,
-      refreshFeeds,
-      purge,
-      newsCompaniesScanned: news.companiesScanned,
-      newsInserted: news.articlesInserted,
-      leadershipMovesInserted: news.leadershipMovesInserted,
-      newsErrors: news.errors.length,
-      execPeopleScanned: executives.peopleScanned,
-      execInserted: executives.signalsInserted,
-      execErrors: executives.errors.length,
-      at: new Date().toISOString(),
-    },
-  })
-
-  revalidatePath(ROUTES.marketSignals)
-  revalidatePath(ROUTES.marketSignalsManage)
-  revalidatePath(ROUTES.home)
-  return {
-    success: true,
-    refreshFeeds,
-    purge,
-    news: {
-      companiesScanned: news.companiesScanned,
-      articlesInserted: news.articlesInserted,
-      leadershipMovesInserted: news.leadershipMovesInserted,
-      errors: news.errors,
-    },
-    executives: {
-      peopleScanned: executives.peopleScanned,
-      signalsInserted: executives.signalsInserted,
-      skippedNoCompany: executives.skippedNoCompany,
-      errors: executives.errors,
-    },
-  }
+  return triggerMarketSignalsIngestForMyOrgImpl(args)
 }
 
 /** @deprecated Alias – nutze triggerMarketSignalsIngestForMyOrg */
 export async function triggerCompanyNewsIngestForMyOrg() {
-  return triggerMarketSignalsIngestForMyOrg()
+  return triggerCompanyNewsIngestForMyOrgImpl()
 }
-
-export type BackfillMarketSignalEnrichmentResult =
-  | ({ success: true } & BackfillSignalEnrichmentResult)
-  | { success: false; error: string }
 
 /** Bestehende RSS-Zeilen ohne insight_* per LLM/heuristisch anreichern (Org-Scope). */
 export async function backfillMarketSignalEnrichmentForMyOrg(args?: {
@@ -806,65 +114,8 @@ export async function backfillMarketSignalEnrichmentForMyOrg(args?: {
   maxExecutives?: number
   removeIrrelevant?: boolean
 }): Promise<BackfillMarketSignalEnrichmentResult> {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { success: false, error: 'Nicht angemeldet.' }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id, system_role, function_role')
-    .eq('id', user.id)
-    .maybeSingle()
-
-  const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
-  if (!orgId) return { success: false, error: 'Keine Organisation gefunden.' }
-
-  // Service-Role weil: LLM-Backfill liest/schreibt Signale org-weit.
-  // Grenze: organizationId aus authentifiziertem Profil.
-  const admin = createServiceRoleSupabaseClient()
-  if (!admin) {
-    return {
-      success: false,
-      error:
-        'SUPABASE_SERVICE_ROLE_KEY fehlt. Lokal in .env.local setzen und Dev-Server neu starten.',
-    }
-  }
-
-  const result = await runMarketSignalEnrichmentBackfill(admin, {
-    organizationId: orgId,
-    maxNews: args?.maxNews ?? 60,
-    maxExecutives: args?.maxExecutives ?? 60,
-    pauseMsBetweenItems: 350,
-    removeIrrelevant: args?.removeIrrelevant ?? true,
-  })
-
-  void writeAuditLog({
-    orgId,
-    action: 'market_signals_enrichment_backfill',
-    entityId: orgId,
-    actionDetails: {
-      ...result,
-      at: new Date().toISOString(),
-    },
-  })
-
-  revalidatePath(ROUTES.marketSignals)
-  revalidatePath(ROUTES.marketSignalsManage)
-
-  return { success: true, ...result }
+  return backfillMarketSignalEnrichmentForMyOrgImpl(args)
 }
-
-export type BackfillCompanyNewsroomsResult =
-  | {
-      success: true
-      scanned: number
-      withUrls: number
-      skipped: number
-      errors: string[]
-    }
-  | { success: false; error: string }
 
 /**
  * Discover press/newsroom paths for all org accounts with website_url.
@@ -874,146 +125,14 @@ export async function backfillCompanyNewsroomsForMyOrg(args?: {
   force?: boolean
   batchSize?: number
 }): Promise<BackfillCompanyNewsroomsResult> {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { success: false, error: 'Nicht angemeldet.' }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', user.id)
-    .maybeSingle()
-
-  const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
-  if (!orgId) return { success: false, error: 'Keine Organisation gefunden.' }
-
-  const force = Boolean(args?.force)
-  const batchSize = Math.min(12, Math.max(2, args?.batchSize ?? 6))
-
-  const { data: rows, error } = await supabase
-    .from('companies')
-    .select('id, website_url, newsroom_discovered_at')
-    .eq('organization_id', orgId)
-    .not('website_url', 'is', null)
-
-  if (error) return { success: false, error: error.message }
-
-  type CoRow = {
-    id: string
-    website_url: string | null
-    newsroom_discovered_at: string | null
-  }
-
-  const candidates = ((rows ?? []) as CoRow[]).filter((row) => {
-    const website = String(row.website_url ?? '').trim()
-    if (!website) return false
-    if (!force && row.newsroom_discovered_at) return false
-    return true
-  })
-
-  const skipped = ((rows ?? []) as CoRow[]).length - candidates.length
-  let scanned = 0
-  let withUrls = 0
-  const errors: string[] = []
-
-  for (let i = 0; i < candidates.length; i += batchSize) {
-    const batch = candidates.slice(i, i + batchSize)
-    const results = await Promise.all(
-      batch.map((row) =>
-        discoverAndSaveCompanyNewsrooms(supabase, row.id, {
-          websiteUrl: row.website_url,
-          force,
-        })
-      )
-    )
-    for (let j = 0; j < results.length; j++) {
-      const result = results[j]
-      const companyId = batch[j]?.id ?? '?'
-      scanned += 1
-      if (result.error) {
-        errors.push(`${companyId}: ${result.error}`)
-        continue
-      }
-      if (result.urls.length > 0) withUrls += 1
-    }
-  }
-
-  void writeAuditLog({
-    orgId,
-    action: 'market_signals_newsroom_backfill',
-    entityId: orgId,
-    actionDetails: {
-      force,
-      scanned,
-      withUrls,
-      skipped,
-      errorCount: errors.length,
-      at: new Date().toISOString(),
-    },
-  })
-
-  revalidatePath(ROUTES.marketSignalsManage)
-
-  return { success: true, scanned, withUrls, skipped, errors: errors.slice(0, 20) }
+  return backfillCompanyNewsroomsForMyOrgImpl(args)
 }
 
 export async function updateCompanyNewsroomUrls(
   companyId: string,
   urls: string[]
 ): Promise<{ success: true; urls: string[] } | { success: false; error: string }> {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { success: false, error: 'Nicht angemeldet.' }
-
-  const id = String(companyId ?? '').trim()
-  if (!id) return { success: false, error: 'Ungültiger Account.' }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', user.id)
-    .maybeSingle()
-  const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
-  if (!orgId) return { success: false, error: 'Keine Organisation gefunden.' }
-
-  const cleaned: string[] = []
-  const seen = new Set<string>()
-  for (const raw of urls) {
-    const s = String(raw ?? '').trim()
-    if (!s) continue
-    let href = s
-    if (!/^https?:\/\//i.test(href)) href = `https://${href}`
-    try {
-      const u = new URL(href)
-      if (!u.hostname.includes('.')) continue
-      const normalized = u.href.replace(/\/$/, '')
-      const key = normalized.toLowerCase()
-      if (seen.has(key)) continue
-      seen.add(key)
-      cleaned.push(normalized)
-    } catch {
-      continue
-    }
-  }
-
-  const { error } = await supabase
-    .from('companies')
-    .update({
-      newsroom_urls: cleaned,
-      newsroom_discovered_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', id)
-    .eq('organization_id', orgId)
-
-  if (error) return { success: false, error: error.message }
-
-  revalidatePath(ROUTES.marketSignalsManage)
-  return { success: true, urls: cleaned }
+  return updateCompanyNewsroomUrlsImpl(companyId, urls)
 }
 
 export async function requestReferenceApprovalForSignal(args: {
@@ -1021,143 +140,21 @@ export async function requestReferenceApprovalForSignal(args: {
   referenceTitle: string
   companyName: string
 }): Promise<{ success: true } | { success: false; error: string }> {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { success: false, error: 'Nicht angemeldet.' }
-
-  const referenceId = String(args.referenceId ?? '').trim()
-  if (!referenceId) return { success: false, error: 'Ungültige Referenz.' }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', user.id)
-    .maybeSingle()
-  const orgId = (profile as { organization_id?: string | null } | null)?.organization_id
-  if (!orgId) return { success: false, error: 'Keine Organisation gefunden.' }
-
-  void writeAuditLog({
-    orgId,
-    action: 'market_signal_reference_approval_requested',
-    entityId: referenceId,
-    actionDetails: {
-      referenceTitle: args.referenceTitle,
-      companyName: args.companyName,
-      requestedBy: user.id,
-    },
-  })
-
-  const resendKey = process.env.RESEND_API_KEY?.trim()
-  if (!resendKey) return { success: true }
-
-  try {
-    const { data: recipients } = await supabase
-      .from('profiles')
-      .select('id, system_role, function_role')
-      .eq('organization_id', orgId)
-
-    const ids = (recipients ?? [])
-      .filter((r) => {
-        const { systemRole, functionRole } = parseProfileRoles(r)
-        return isSystemAdmin(systemRole) || functionRole === 'account_manager'
-      })
-      .map((r) => r.id)
-      .filter(Boolean)
-    if (!ids.length) return { success: true }
-
-    // Grenze: nur User-IDs der eigenen Org; E-Mails per auth.admin.getUserById (kein listUsers).
-    const emailByUserId = await resolveAuthEmailsByUserIds(ids)
-    const emails = ids
-      .map((id) => emailByUserId.get(id) ?? '')
-      .filter(Boolean)
-    if (!emails.length) return { success: true }
-
-    const resend = new Resend(resendKey)
-    const detailUrl = `${getAppOrigin()}${ROUTES.references.detail(referenceId)}`
-    const html = buildRefstackEmailHtml({
-      audience: 'internal',
-      badge: 'Freigabe angefragt',
-      bodyHtml:
-        '<p style="margin:0;">Aus den Market Signals wurde eine Freigabe für diese Referenz angefragt.</p>',
-      meta: { rows: buildReferenceMetaRows(args.referenceTitle, args.companyName) },
-      ctas: [{ label: 'Referenz öffnen', href: detailUrl }],
-    })
-    await resend.emails.send({
-      from: getRefstackResendFrom(),
-      to: emails,
-      subject: `Freigabe angefragt: ${args.referenceTitle}`,
-      html,
-    })
-  } catch (e) {
-    console.error('[requestReferenceApprovalForSignal]', e)
-  }
-
-  return { success: true }
-}
-
-async function getAuthedOrgContext() {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { supabase, user: null, orgId: null as string | null }
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', user.id)
-    .maybeSingle()
-  return {
-    supabase,
-    user,
-    orgId: (profile as { organization_id?: string | null } | null)?.organization_id ?? null,
-  }
+  return requestReferenceApprovalForSignalImpl(args)
 }
 
 export async function setMarketSignalPriority(args: {
   signalKey: string
   priority: 'today' | 'none'
 }): Promise<{ success: true } | { success: false; error: string }> {
-  const { supabase, user } = await getAuthedOrgContext()
-  if (!user) return { success: false, error: 'Nicht angemeldet.' }
-  const signalKey = String(args.signalKey ?? '').trim()
-  if (!signalKey) return { success: false, error: 'Ungültiges Signal.' }
-  const key = `market_priority:today:${signalKey}`
-  if (args.priority === 'none') {
-    const { error } = await supabase
-      .from('notification_inbox_reads')
-      .delete()
-      .eq('user_id', user.id)
-      .eq('notification_key', key)
-    if (error) return { success: false, error: error.message }
-  } else {
-    const result = await upsertNotificationKeys([key])
-    if (!result.success) return { success: false, error: result.error }
-  }
-  revalidatePath(ROUTES.marketSignals)
-  return { success: true }
+  return setMarketSignalPriorityImpl(args)
 }
 
 export async function snoozeMarketSignal(args: {
   signalKey: string
   untilIso: string
 }): Promise<{ success: true } | { success: false; error: string }> {
-  const { supabase, user } = await getAuthedOrgContext()
-  if (!user) return { success: false, error: 'Nicht angemeldet.' }
-  const signalKey = String(args.signalKey ?? '').trim()
-  const untilIso = String(args.untilIso ?? '').trim()
-  if (!signalKey || !untilIso) return { success: false, error: 'Ungültige Anfrage.' }
-  const { error: clearError } = await supabase
-    .from('notification_inbox_reads')
-    .delete()
-    .eq('user_id', user.id)
-    .like('notification_key', `market_snooze_until:%:${signalKey}`)
-  if (clearError) return { success: false, error: clearError.message }
-  const result = await upsertNotificationKeys([`market_snooze_until:${untilIso}:${signalKey}`])
-  if (!result.success) return { success: false, error: result.error }
-  revalidatePath(ROUTES.marketSignals)
-  return { success: true }
+  return snoozeMarketSignalImpl(args)
 }
 
 export async function submitMarketSignalDraftFeedback(args: {
@@ -1165,67 +162,21 @@ export async function submitMarketSignalDraftFeedback(args: {
   helpful: boolean
   reason?: string
 }): Promise<{ success: true } | { success: false; error: string }> {
-  const { user, orgId } = await getAuthedOrgContext()
-  if (!user) return { success: false, error: 'Nicht angemeldet.' }
-  if (!orgId) return { success: false, error: 'Keine Organisation gefunden.' }
-  void writeAuditLog({
-    orgId,
-    action: 'market_signal_intro_feedback',
-    entityId: args.signalKey,
-    actionDetails: {
-      helpful: args.helpful,
-      reason: String(args.reason ?? '').trim() || null,
-      userId: user.id,
-    },
-  })
-  return { success: true }
+  return submitMarketSignalDraftFeedbackImpl(args)
 }
 
 export async function markMarketSignalOutcome(args: {
   signalKey: string
   stage: 'outreach' | 'meeting' | 'opportunity'
 }): Promise<{ success: true } | { success: false; error: string }> {
-  const { supabase, user } = await getAuthedOrgContext()
-  if (!user) return { success: false, error: 'Nicht angemeldet.' }
-  const signalKey = String(args.signalKey ?? '').trim()
-  if (!signalKey) return { success: false, error: 'Ungültiges Signal.' }
-  const { error: clearError } = await supabase
-    .from('notification_inbox_reads')
-    .delete()
-    .eq('user_id', user.id)
-    .like('notification_key', `market_outcome:%:${signalKey}`)
-  if (clearError) return { success: false, error: clearError.message }
-  const result = await upsertNotificationKeys([`market_outcome:${args.stage}:${signalKey}`])
-  if (!result.success) return { success: false, error: result.error }
-  revalidatePath(ROUTES.marketSignals)
-  return { success: true }
+  return markMarketSignalOutcomeImpl(args)
 }
 
 export async function logMarketSignalQuickAction(args: {
   signalKey: string
   channel: 'hubspot_email' | 'salesforce_task' | 'slack_mention'
 }): Promise<{ success: true } | { success: false; error: string }> {
-  const { user, orgId } = await getAuthedOrgContext()
-  if (!user) return { success: false, error: 'Nicht angemeldet.' }
-  if (!orgId) return { success: false, error: 'Keine Organisation gefunden.' }
-  void writeAuditLog({
-    orgId,
-    action: 'market_signal_quick_action',
-    entityId: args.signalKey,
-    actionDetails: {
-      channel: args.channel,
-      userId: user.id,
-      at: new Date().toISOString(),
-    },
-  })
-  return { success: true }
-}
-
-export type SignalReferenceMatchPayload = {
-  key: string
-  query: string
-  /** Account des Signals — gleiche Firma aus Matches ausfiltern (Proof von anderen Cases). */
-  excludeCompanyId?: string | null
+  return logMarketSignalQuickActionImpl(args)
 }
 
 /**
@@ -1241,59 +192,5 @@ export async function matchReferencesForSignals(
     }
   | { success: false; error: string }
 > {
-  const list = signals
-    .map((s) => ({
-      key: String(s.key ?? '').trim(),
-      query: String(s.query ?? '').trim(),
-      excludeCompanyId: s.excludeCompanyId?.trim() || null,
-    }))
-    .filter((s) => s.key && s.query.length >= 8)
-    .slice(0, 20)
-
-  if (!list.length) {
-    return { success: true, byKey: {} }
-  }
-
-  const { matchReferencesImpl } = await import('@/lib/references/library/match')
-  const { toSignalMatchHit } = await import('@/lib/market-signals/signal-reference-match')
-
-  const uniqueQueries = Array.from(new Set(list.map((s) => s.query)))
-  const hitsByQuery = new Map<string, Awaited<ReturnType<typeof matchReferencesImpl>>>()
-
-  const CONCURRENCY = 3
-  for (let i = 0; i < uniqueQueries.length; i += CONCURRENCY) {
-    const chunk = uniqueQueries.slice(i, i + CONCURRENCY)
-    await Promise.all(
-      chunk.map(async (query) => {
-        const result = await matchReferencesImpl(query, undefined, {
-          matchThreshold: 0.35,
-          matchCount: 6,
-          rerank: false,
-        })
-        hitsByQuery.set(query, result)
-      })
-    )
-  }
-
-  const byKey: Record<
-    string,
-    import('@/lib/market-signals/signal-reference-match').SignalMatchHit[]
-  > = {}
-
-  for (const item of list) {
-    const result = hitsByQuery.get(item.query)
-    if (!result || !result.success) {
-      byKey[item.key] = []
-      continue
-    }
-    let hits = result.matches
-      .filter((m) => !item.excludeCompanyId || !m.companyId || m.companyId !== item.excludeCompanyId)
-      .map(toSignalMatchHit)
-    if (hits.length === 0) {
-      hits = result.matches.map(toSignalMatchHit)
-    }
-    byKey[item.key] = hits.slice(0, 3)
-  }
-
-  return { success: true, byKey }
+  return matchReferencesForSignalsImpl(signals)
 }

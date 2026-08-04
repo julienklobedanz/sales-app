@@ -1,464 +1,67 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
-import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { ROUTES } from '@/lib/routes'
-import { getRequestProfile, getRequestUser } from '@/lib/auth/request-user'
-import { Resend } from 'resend'
-import { getAppOrigin } from '@/lib/env/app-origin'
-import { resolveReferenceManagerEmail } from '@/lib/reference-manager-email'
-import * as XLSX from 'xlsx'
-import { formatIndustryDisplay, resolveIndustryId } from '@/lib/constants/industries'
-import {
-  buildRefstackEmailHtml,
-  escapeRefstackEmailHtml,
-  getRefstackResendFrom,
-} from '@/lib/email/refstack-email-layout'
 import type { DealRow, DealStatus, DealWithReferences } from './types'
-import { canManageDealDocuments } from '@/lib/deals/can-manage-deal-documents'
+import type { MatchSuggestion } from './deal-action-types'
 import {
-  DEAL_DOCUMENTS_BUCKET,
-  RFP_DOCUMENTS_BUCKET,
-  uniqueStoragePaths,
-} from '@/lib/deals/deal-delete-storage'
-import { parseProfileRoles } from '@/lib/roles/profile-roles'
-import { suggestDealReferenceMatches } from '@/lib/deals/suggest-deal-reference-matches'
-import { normalizeDealStatus } from '@/lib/deals/normalize-deal-status'
-import { companyFromJoin } from '@/lib/accounts/company-from-join'
-import { log } from '@/lib/observability/logger'
+  getDealsImpl,
+  getExpiringDealsImpl,
+  getDealWithReferencesImpl,
+  getMatchingReferencesForDealsImpl,
+  getReferencesForOrgImpl,
+} from './deal-query-impl'
+import {
+  createDealImpl,
+  updateDealImpl,
+  setDealRfpModeImpl,
+  deleteDealImpl,
+  recordDealOutcomeImpl,
+} from './deal-crud-impl'
+import {
+  addReferenceToDealImpl,
+  addReferenceToDealWithScoreImpl,
+  suggestReferencesForDealActionImpl,
+  removeReferenceFromDealImpl,
+  recordReferenceHelpedImpl,
+} from './deal-references-impl'
+import {
+  importDealsFromXlsxImpl,
+  submitReferenceRequestImpl,
+  createDealReferenceRequestImpl,
+} from './deal-import-request-impl'
 
-async function getSessionOrgId(
-  _supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>
-): Promise<string | null> {
-  const profile = await getRequestProfile()
-  return profile?.organization_id ?? null
-}
-
-function getResend(): Resend | null {
-  const key = process.env.RESEND_API_KEY
-  if (!key) return null
-  return new Resend(key)
-}
+export type { MatchSuggestion } from './deal-action-types'
 
 export async function getDeals(): Promise<DealRow[]> {
-  const supabase = await createServerSupabaseClient()
-  const orgId = await getSessionOrgId(supabase)
-  if (!orgId) return []
-
-  const { data: rows, error } = await supabase
-    .from('deals')
-    .select(`
-      id,
-      title,
-      company_id,
-      industry,
-      volume,
-      requirements_text,
-      incumbent_provider,
-      is_public,
-      account_manager_id,
-      sales_manager_id,
-      status,
-      is_rfp_mode,
-      expiry_date,
-      created_at,
-      updated_at,
-      companies ( name, logo_url )
-    `)
-    .eq('organization_id', orgId)
-    .order('expiry_date', { ascending: true, nullsFirst: false })
-
-  if (error) return []
-
-  const dealIds = (rows ?? []).map((r) => r.id)
-  const linkedRefsMap: Record<string, { id: string; title: string; company_name: string; logo_url?: string | null }[]> = {}
-  dealIds.forEach((id) => {
-    linkedRefsMap[id] = []
-  })
-
-  const bestScoreMap: Record<string, number | null> = {}
-  for (const id of dealIds) bestScoreMap[id] = null
-
-  if (dealIds.length > 0) {
-    const { data: drRows } = await supabase
-      .from('deal_references')
-      .select('deal_id, reference_id, similarity_score')
-      .in('deal_id', dealIds)
-
-    for (const dr of drRows ?? []) {
-      const sc = (dr as { similarity_score?: number | null }).similarity_score
-      if (typeof sc === 'number' && !Number.isNaN(sc)) {
-        const prev = bestScoreMap[dr.deal_id]
-        if (prev == null || sc > prev) bestScoreMap[dr.deal_id] = sc
-      }
-    }
-
-    const refIds = [...new Set((drRows ?? []).map((r) => r.reference_id).filter(Boolean))] as string[]
-    if (refIds.length > 0) {
-      const { data: refs } = await supabase
-        .from('references')
-        .select('id, title, companies(name, logo_url)')
-        .in('id', refIds)
-      const refMap: Record<string, { id: string; title: string; company_name: string; logo_url?: string | null }> = {}
-      for (const r of refs ?? []) {
-        const company = companyFromJoin(r.companies)
-        refMap[r.id] = {
-          id: r.id,
-          title: r.title ?? '',
-          company_name: company?.name ?? '—',
-          logo_url: company?.logoUrl ?? null,
-        }
-      }
-      for (const dr of drRows ?? []) {
-        const ref = refMap[dr.reference_id]
-        if (ref && linkedRefsMap[dr.deal_id]) linkedRefsMap[dr.deal_id].push(ref)
-      }
-    }
-  }
-
-  const accountManagerIds = [
-    ...new Set((rows ?? []).map((r) => r.account_manager_id).filter(Boolean)),
-  ] as string[]
-  const salesManagerIds = [
-    ...new Set((rows ?? []).map((r) => r.sales_manager_id).filter(Boolean)),
-  ] as string[]
-  const allUserIds = [...new Set([...accountManagerIds, ...salesManagerIds])]
-
-  const names: Record<string, string> = {}
-  if (allUserIds.length > 0) {
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id, full_name')
-      .in('id', allUserIds)
-    for (const p of profiles ?? []) {
-      names[p.id] = p.full_name ?? p.id.slice(0, 8)
-    }
-  }
-
-  return (rows ?? []).map((r) => {
-    const company = companyFromJoin(r.companies)
-    return {
-      id: r.id,
-      title: r.title ?? '',
-      company_id: r.company_id ?? null,
-      company_name: company?.name ?? null,
-      company_logo_url: company?.logoUrl ?? null,
-      industry: r.industry ?? null,
-      volume: r.volume ?? null,
-      requirements_text: (r as { requirements_text?: string | null }).requirements_text ?? null,
-      incumbent_provider: (r as { incumbent_provider?: string | null }).incumbent_provider ?? null,
-      is_public: r.is_public ?? true,
-      account_manager_id: r.account_manager_id ?? null,
-      account_manager_name: r.account_manager_id ? names[r.account_manager_id] ?? null : null,
-      sales_manager_id: r.sales_manager_id ?? null,
-      sales_manager_name: r.sales_manager_id ? names[r.sales_manager_id] ?? null : null,
-      status: normalizeDealStatus(r.status),
-      is_rfp_mode: Boolean((r as { is_rfp_mode?: boolean }).is_rfp_mode),
-      expiry_date: r.expiry_date ?? null,
-      created_at: r.created_at ?? '',
-      updated_at: r.updated_at ?? null,
-      linked_refs: linkedRefsMap[r.id] ?? [],
-      best_match_score: bestScoreMap[r.id] ?? null,
-    }
-  })
+  return getDealsImpl()
 }
 
 /** Deals mit Ablaufdatum in den nächsten 180 Tagen (oder bereits abgelaufen), für Progress-Anzeige */
 export async function getExpiringDeals(): Promise<DealRow[]> {
-  const all = await getDeals()
-  const now = new Date()
-  const in180 = new Date(now)
-  in180.setDate(in180.getDate() + 180)
-  return all.filter((d) => {
-    if (!d.expiry_date) return false
-    const exp = new Date(d.expiry_date)
-    return exp <= in180
-  })
+  return getExpiringDealsImpl()
 }
 
 export async function getDealWithReferences(id: string): Promise<DealWithReferences | null> {
-  const supabase = await createServerSupabaseClient()
-  const orgId = await getSessionOrgId(supabase)
-  if (!orgId) return null
-
-  const dealSelect = `
-      id,
-      title,
-      company_id,
-      industry,
-      volume,
-      requirements_text,
-      incumbent_provider,
-      is_public,
-      account_manager_id,
-      sales_manager_id,
-      status,
-      is_rfp_mode,
-      expiry_date,
-      salesforce_opportunity_id,
-      crm_opportunity_id,
-      crm_source,
-      crm_stage,
-      created_at,
-      updated_at,
-      companies ( name )
-    `
-
-  const { data: deal, error } = await supabase
-    .from('deals')
-    .select(dealSelect)
-    .eq('id', id)
-    .eq('organization_id', orgId)
-    .single()
-
-  if (error || !deal) return null
-
-  const { data: drRows } = await supabase
-    .from('deal_references')
-    .select('reference_id, similarity_score')
-    .eq('deal_id', id)
-
-  const refIds = (drRows ?? []).map((r) => r.reference_id).filter(Boolean) as string[]
-  const scoreByRefId: Record<string, number | null> = {}
-  ;(drRows ?? []).forEach((r) => {
-    if (!r.reference_id) return
-    scoreByRefId[r.reference_id] =
-      typeof (r as { similarity_score?: unknown }).similarity_score === 'number'
-        ? ((r as { similarity_score: number }).similarity_score as number)
-        : null
-  })
-
-  const references: DealWithReferences['references'] = []
-  if (refIds.length > 0) {
-    const { data: refs } = await supabase
-      .from('references')
-      .select('id, title, summary, tags, companies(name, logo_url)')
-      .in('id', refIds)
-    for (const r of refs ?? []) {
-      const company = companyFromJoin(r.companies)
-      references.push({
-        id: r.id,
-        title: r.title ?? '',
-        company_name: company?.name ?? '—',
-        logo_url: company?.logoUrl ?? null,
-        summary: (r as { summary?: string | null }).summary ?? null,
-        tags: (r as { tags?: string | null }).tags ?? null,
-        similarity_score: scoreByRefId[r.id] ?? null,
-      })
-    }
-  }
-
-  const accountManagerName = deal.account_manager_id
-    ? (await supabase.from('profiles').select('full_name').eq('id', deal.account_manager_id).single()).data?.full_name ?? null
-    : null
-  const salesManagerName = deal.sales_manager_id
-    ? (await supabase.from('profiles').select('full_name').eq('id', deal.sales_manager_id).single()).data?.full_name ?? null
-    : null
-
-  const company = companyFromJoin(deal.companies)
-
-  const best_match_score = references.reduce<number | null>((max, ref) => {
-    const s = ref.similarity_score
-    if (typeof s !== 'number' || Number.isNaN(s)) return max
-    if (max == null || s > max) return s
-    return max
-  }, null)
-
-  const linked_refs = references.map((r) => ({
-    id: r.id,
-    title: r.title,
-    company_name: r.company_name,
-    logo_url: r.logo_url ?? null,
-  }))
-
-  return {
-    id: deal.id,
-    title: deal.title ?? '',
-    company_id: deal.company_id ?? null,
-    company_name: company?.name ?? null,
-    industry: deal.industry ?? null,
-    volume: deal.volume ?? null,
-    requirements_text: (deal as { requirements_text?: string | null }).requirements_text ?? null,
-    incumbent_provider: (deal as { incumbent_provider?: string | null }).incumbent_provider ?? null,
-    is_public: deal.is_public ?? true,
-    account_manager_id: deal.account_manager_id ?? null,
-    account_manager_name: accountManagerName,
-    sales_manager_id: deal.sales_manager_id ?? null,
-    sales_manager_name: salesManagerName,
-    status: normalizeDealStatus(deal.status),
-    is_rfp_mode: Boolean((deal as { is_rfp_mode?: boolean }).is_rfp_mode),
-    expiry_date: deal.expiry_date ?? null,
-    salesforce_opportunity_id:
-      (deal as { salesforce_opportunity_id?: string | null }).salesforce_opportunity_id ?? null,
-    crm_opportunity_id: (deal as { crm_opportunity_id?: string | null }).crm_opportunity_id ?? null,
-    crm_source: (deal as { crm_source?: string | null }).crm_source ?? null,
-    crm_stage: deal.crm_stage ?? null,
-    created_at: deal.created_at ?? '',
-    updated_at: deal.updated_at ?? null,
-    linked_refs,
-    best_match_score,
-    references,
-  }
+  return getDealWithReferencesImpl(id)
 }
-
-const CREATE_DEAL_ALLOWED_STATUS = new Set<DealStatus>(['negotiation', 'rfp'])
 
 export async function createDeal(formData: FormData): Promise<{ success: boolean; error?: string; id?: string }> {
-  const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { success: false, error: 'Nicht angemeldet.' }
-
-  const { data: profile } = await supabase.from('profiles').select('organization_id').eq('id', user.id).single()
-  const orgId = profile?.organization_id
-  if (!orgId) return { success: false, error: 'Keine Organisation zugeordnet.' }
-
-  const title = formData.get('title')?.toString()?.trim()
-  if (!title) return { success: false, error: 'Titel ist erforderlich.' }
-
-  const companyId = formData.get('company_id')?.toString()?.trim() || null
-  if (!companyId) return { success: false, error: 'Account ist erforderlich.' }
-
-  const { count: companyCount, error: companyCheckErr } = await supabase
-    .from('companies')
-    .select('id', { count: 'exact', head: true })
-    .eq('id', companyId)
-    .eq('organization_id', orgId)
-  if (companyCheckErr || !companyCount) return { success: false, error: 'Ungültiger Account.' }
-
-  const industry = formData.get('industry')?.toString()?.trim() || null
-  const volume = formData.get('volume')?.toString()?.trim() || null
-  if (!volume) return { success: false, error: 'Volumen ist erforderlich.' }
-  const requirements_text = formData.get('requirements_text')?.toString()?.trim() || null
-  const incumbent_provider = formData.get('incumbent_provider')?.toString()?.trim() || null
-  const is_public = formData.get('is_public') !== 'false'
-  const account_manager_id = formData.get('account_manager_id')?.toString() || null
-  const sales_manager_id = formData.get('sales_manager_id')?.toString() || null
-  const status = normalizeDealStatus(formData.get('status')?.toString() || 'negotiation')
-  if (!CREATE_DEAL_ALLOWED_STATUS.has(status)) {
-    return { success: false, error: 'Ungültige Phase für die Neuanlage.' }
-  }
-  const expiry_date = formData.get('expiry_date')?.toString()?.trim() || null
-
-  const { data: deal, error } = await supabase
-    .from('deals')
-    .insert({
-      organization_id: orgId,
-      title,
-      company_id: companyId,
-      industry,
-      volume,
-      requirements_text,
-      incumbent_provider: incumbent_provider || null,
-      is_public,
-      account_manager_id: account_manager_id || null,
-      sales_manager_id: sales_manager_id || null,
-      status,
-      expiry_date: expiry_date || null,
-      is_rfp_mode: status === 'rfp',
-    })
-    .select('id')
-    .single()
-
-  if (error) return { success: false, error: error.message }
-  revalidatePath(ROUTES.deals.root)
-  revalidatePath(ROUTES.deals.detail(deal.id))
-  return { success: true, id: deal.id }
+  return createDealImpl(formData)
 }
-
-export type MatchSuggestion = { id: string; title: string; company_name: string; logo_url?: string | null }
 
 /** Pro Deal: Anzahl passender Referenzen (Branche) + Top-3-Vorschläge für Smart Match. */
 export async function getMatchingReferencesForDeals(
   dealIds: string[]
 ): Promise<Record<string, { count: number; suggestions: MatchSuggestion[] }>> {
-  const result: Record<string, { count: number; suggestions: MatchSuggestion[] }> = {}
-  dealIds.forEach((id) => { result[id] = { count: 0, suggestions: [] } })
-  if (dealIds.length === 0) return result
-
-  const supabase = await createServerSupabaseClient()
-  const orgId = await getSessionOrgId(supabase)
-  if (!orgId) return result
-
-  const { data: deals } = await supabase
-    .from('deals')
-    .select('id, industry')
-    .in('id', dealIds)
-    .eq('organization_id', orgId)
-  const dealIndustries: Record<string, string | null> = {}
-  ;(deals ?? []).forEach((d) => { dealIndustries[d.id] = d.industry ?? null })
-
-  const { data: drRows } = await supabase
-    .from('deal_references')
-    .select('deal_id, reference_id')
-    .in('deal_id', dealIds)
-  const linkedByDeal: Record<string, Set<string>> = {}
-  dealIds.forEach((id) => { linkedByDeal[id] = new Set() })
-  ;(drRows ?? []).forEach((r) => linkedByDeal[r.deal_id]?.add(r.reference_id))
-
-  const { data: refs } = await supabase
-    .from('references')
-    .select('id, title, industry, companies(name, logo_url)')
-    .eq('organization_id', orgId)
-    .order('title')
-  if (!refs?.length) return result
-
-  const refList = refs.map((r) => {
-    const company = companyFromJoin(r.companies)
-    return {
-      id: r.id,
-      title: r.title ?? '',
-      industry: r.industry ?? null,
-      company_name: company?.name ?? '—',
-      logo_url: company?.logoUrl ?? null,
-    }
-  })
-
-  for (const dealId of dealIds) {
-    const industry = dealIndustries[dealId] ?? null
-    const linked = linkedByDeal[dealId] ?? new Set<string>()
-    const dealIndustryId = resolveIndustryId(industry)
-    const matching = dealIndustryId
-      ? refList.filter(
-          (r) => resolveIndustryId(r.industry) === dealIndustryId && !linked.has(r.id)
-        )
-      : []
-    result[dealId] = { count: matching.length, suggestions: matching.slice(0, 3) }
-  }
-  return result
+  return getMatchingReferencesForDealsImpl(dealIds)
 }
 
 /** Referenzen der eigenen Org (id, title, company_name) für Verknüpfung mit Deal */
 export async function getReferencesForOrg(): Promise<{ id: string; title: string; company_name: string }[]> {
-  const supabase = await createServerSupabaseClient()
-  const orgId = await getSessionOrgId(supabase)
-  if (!orgId) return []
-
-  const { data: rows } = await supabase
-    .from('references')
-    .select('id, title, companies(name)')
-    .eq('organization_id', orgId)
-    .order('title')
-  if (!rows) return []
-
-  return rows.map((r) => {
-    const company = companyFromJoin(r.companies)
-    return {
-      id: r.id,
-      title: r.title ?? '',
-      company_name: company?.name ?? '—',
-    }
-  })
+  return getReferencesForOrgImpl()
 }
 
 export async function addReferenceToDeal(dealId: string, referenceId: string): Promise<{ error?: string }> {
-  const supabase = await createServerSupabaseClient()
-  const { error } = await supabase
-    .from('deal_references')
-    .insert({ deal_id: dealId, reference_id: referenceId })
-  if (error) return { error: error.message }
-  revalidatePath(ROUTES.deals.root)
-  revalidatePath(ROUTES.deals.detail(dealId))
-  return {}
+  return addReferenceToDealImpl(dealId, referenceId)
 }
 
 export async function addReferenceToDealWithScore(args: {
@@ -466,22 +69,11 @@ export async function addReferenceToDealWithScore(args: {
   referenceId: string
   similarityScore?: number | null
 }): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createServerSupabaseClient()
-  const { error } = await supabase.from('deal_references').insert({
-    deal_id: args.dealId,
-    reference_id: args.referenceId,
-    similarity_score:
-      typeof args.similarityScore === 'number' ? args.similarityScore : null,
-  })
-  if (error) return { success: false, error: error.message }
-  revalidatePath(ROUTES.deals.root)
-  revalidatePath(ROUTES.deals.detail(args.dealId))
-  revalidatePath(ROUTES.match)
-  return { success: true }
+  return addReferenceToDealWithScoreImpl(args)
 }
 
 export async function suggestReferencesForDealAction(dealId: string) {
-  return suggestDealReferenceMatches(dealId)
+  return suggestReferencesForDealActionImpl(dealId)
 }
 
 export async function updateDeal(args: {
@@ -498,49 +90,7 @@ export async function updateDeal(args: {
   requirements_text: string | null
   incumbent_provider: string | null
 }): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { success: false, error: 'Nicht angemeldet.' }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', user.id)
-    .single()
-  const orgId = profile?.organization_id
-  if (!orgId) return { success: false, error: 'Keine Organisation zugeordnet.' }
-
-  const title = args.title.trim()
-  if (!title) return { success: false, error: 'Titel ist erforderlich.' }
-
-  const normalizedStatus = normalizeDealStatus(args.status)
-
-  const { error } = await supabase
-    .from('deals')
-    .update({
-      title,
-      company_id: args.company_id,
-      industry: args.industry,
-      volume: args.volume,
-      status: normalizedStatus,
-      ...(normalizedStatus === 'rfp' ? { is_rfp_mode: true } : {}),
-      expiry_date: args.expiry_date,
-      is_public: args.is_public,
-      account_manager_id: args.account_manager_id,
-      sales_manager_id: args.sales_manager_id,
-      requirements_text: args.requirements_text,
-      incumbent_provider: args.incumbent_provider,
-    })
-    .eq('id', args.id)
-    .eq('organization_id', orgId)
-
-  if (error) return { success: false, error: error.message }
-
-  revalidatePath(ROUTES.deals.root)
-  revalidatePath(ROUTES.deals.detail(args.id))
-  return { success: true }
+  return updateDealImpl(args)
 }
 
 /** Manuell RFP-Modus setzen (Promote/Demote). Nur explizite Nutzeraktion — nicht für stateless Coverage. */
@@ -548,114 +98,14 @@ export async function setDealRfpMode(
   dealId: string,
   isRfpMode: boolean
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createServerSupabaseClient()
-  const orgId = await getSessionOrgId(supabase)
-  if (!orgId) return { success: false, error: 'Keine Organisation zugeordnet.' }
-
-  const { error } = await supabase
-    .from('deals')
-    .update({ is_rfp_mode: isRfpMode })
-    .eq('id', dealId)
-    .eq('organization_id', orgId)
-
-  if (error) return { success: false, error: error.message }
-
-  revalidatePath(ROUTES.deals.detail(dealId))
-  return { success: true }
+  return setDealRfpModeImpl(dealId, isRfpMode)
 }
 
 /** Deal inkl. Storage (deal-documents + legacy rfp-documents) und Desk-Projekte löschen. */
 export async function deleteDeal(
   dealId: string
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createServerSupabaseClient()
-  const user = await getRequestUser()
-  if (!user) return { success: false, error: 'Nicht angemeldet.' }
-
-  const profile = await getRequestProfile()
-  const orgId = profile?.organization_id
-  if (!orgId) return { success: false, error: 'Keine Organisation zugeordnet.' }
-
-  const { data: deal, error: dealErr } = await supabase
-    .from('deals')
-    .select('id, sales_manager_id, account_manager_id')
-    .eq('id', dealId)
-    .eq('organization_id', orgId)
-    .maybeSingle()
-
-  if (dealErr || !deal) {
-    return { success: false, error: 'Deal nicht gefunden.' }
-  }
-
-  const { systemRole, functionRole } = parseProfileRoles(profile)
-  if (
-    !canManageDealDocuments(
-      {
-        sales_manager_id: deal.sales_manager_id ?? null,
-        account_manager_id: deal.account_manager_id ?? null,
-      },
-      user.id,
-      systemRole,
-      functionRole
-    )
-  ) {
-    return { success: false, error: 'Keine Berechtigung, diesen Deal zu löschen.' }
-  }
-
-  const { data: dealDocs } = await supabase
-    .from('deal_documents')
-    .select('storage_path')
-    .eq('deal_id', dealId)
-    .eq('organization_id', orgId)
-
-  const dealDocPaths = uniqueStoragePaths((dealDocs ?? []).map((d) => d.storage_path))
-
-  const { data: projects } = await supabase
-    .from('deal_desk_projects')
-    .select('id')
-    .eq('deal_id', dealId)
-    .eq('organization_id', orgId)
-
-  const projectIds = (projects ?? []).map((p) => p.id)
-  let rfpPaths: string[] = []
-  if (projectIds.length > 0) {
-    const { data: deskDocs } = await supabase
-      .from('deal_desk_documents')
-      .select('storage_path')
-      .in('project_id', projectIds)
-      .eq('organization_id', orgId)
-    rfpPaths = uniqueStoragePaths((deskDocs ?? []).map((d) => d.storage_path))
-  }
-
-  if (dealDocPaths.length > 0) {
-    const { error } = await supabase.storage.from(DEAL_DOCUMENTS_BUCKET).remove(dealDocPaths)
-    if (error) return { success: false, error: error.message }
-  }
-
-  if (rfpPaths.length > 0) {
-    const { error } = await supabase.storage.from(RFP_DOCUMENTS_BUCKET).remove(rfpPaths)
-    if (error) return { success: false, error: error.message }
-  }
-
-  if (projectIds.length > 0) {
-    const { error } = await supabase
-      .from('deal_desk_projects')
-      .delete()
-      .eq('deal_id', dealId)
-      .eq('organization_id', orgId)
-    if (error) return { success: false, error: error.message }
-  }
-
-  const { error: deleteError } = await supabase
-    .from('deals')
-    .delete()
-    .eq('id', dealId)
-    .eq('organization_id', orgId)
-
-  if (deleteError) return { success: false, error: deleteError.message }
-
-  revalidatePath(ROUTES.deals.root)
-  return { success: true }
+  return deleteDealImpl(dealId)
 }
 
 export async function recordDealOutcome(args: {
@@ -665,70 +115,11 @@ export async function recordDealOutcome(args: {
   /** `true`/`false`/`null` = gesetzt; weglassen = keine Angabe im Payload. */
   referenceHelpful?: boolean | null
 }): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { success: false, error: 'Nicht angemeldet.' }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', user.id)
-    .single()
-  const orgId = profile?.organization_id
-  if (!orgId) return { success: false, error: 'Keine Organisation zugeordnet.' }
-
-  const status = normalizeDealStatus(args.outcome)
-
-  const { error: updErr } = await supabase
-    .from('deals')
-    .update({ status })
-    .eq('id', args.dealId)
-    .eq('organization_id', orgId)
-  if (updErr) return { success: false, error: updErr.message }
-
-  const eventType =
-    args.outcome === 'won'
-      ? 'deal_won'
-      : args.outcome === 'lost'
-        ? 'deal_lost'
-        : 'deal_withdrawn'
-
-  const eventPayload: { comment: string | null; reference_helpful?: boolean | null } = {
-    comment: args.comment?.trim() || null,
-  }
-  if (args.referenceHelpful !== undefined) {
-    eventPayload.reference_helpful = args.referenceHelpful
-  }
-
-  const { error: evErr } = await supabase.from('evidence_events').insert({
-    organization_id: orgId,
-    deal_id: args.dealId,
-    reference_id: null,
-    event_type: eventType,
-    payload: eventPayload,
-    created_by: user.id,
-  })
-  if (evErr) return { success: false, error: evErr.message }
-
-  revalidatePath(ROUTES.deals.root)
-  revalidatePath(ROUTES.deals.detail(args.dealId))
-  return { success: true }
+  return recordDealOutcomeImpl(args)
 }
 
 export async function removeReferenceFromDeal(dealId: string, referenceId: string): Promise<{ error?: string }> {
-  const supabase = await createServerSupabaseClient()
-  const { error } = await supabase
-    .from('deal_references')
-    .delete()
-    .eq('deal_id', dealId)
-    .eq('reference_id', referenceId)
-  if (error) return { error: error.message }
-  revalidatePath(ROUTES.deals.root)
-  revalidatePath(ROUTES.deals.detail(dealId))
-  revalidatePath(ROUTES.match)
-  return {}
+  return removeReferenceFromDealImpl(dealId, referenceId)
 }
 
 export async function recordReferenceHelped(args: {
@@ -737,105 +128,12 @@ export async function recordReferenceHelped(args: {
   helped: boolean
   comment?: string
 }): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { success: false, error: 'Nicht angemeldet.' }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', user.id)
-    .single()
-  const orgId = profile?.organization_id
-  if (!orgId) return { success: false, error: 'Keine Organisation zugeordnet.' }
-
-  const { error } = await supabase.from('evidence_events').insert({
-    organization_id: orgId,
-    deal_id: args.dealId,
-    reference_id: args.referenceId,
-    event_type: 'reference_helped',
-    payload: { helped: args.helped, comment: args.comment ?? null },
-    created_by: user.id,
-  })
-  if (error) return { success: false, error: error.message }
-
-  revalidatePath(ROUTES.deals.root)
-  revalidatePath(ROUTES.deals.detail(args.dealId))
-  return { success: true }
+  return recordReferenceHelpedImpl(args)
 }
 
 /** Marktlisten (xlsx) importieren: Zeilen als Expiring Deals anlegen. */
 export async function importDealsFromXlsx(formData: FormData): Promise<{ success: boolean; created?: number; error?: string }> {
-  const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { success: false, error: 'Nicht angemeldet.' }
-
-  const { data: profile } = await supabase.from('profiles').select('organization_id').eq('id', user.id).single()
-  const orgId = profile?.organization_id
-  if (!orgId) return { success: false, error: 'Keine Organisation zugeordnet.' }
-
-  const file = formData.get('file') as File | null
-  if (!file || !(file instanceof File)) return { success: false, error: 'Keine Datei übergeben.' }
-  const buf = Buffer.from(await file.arrayBuffer())
-  let workbook: XLSX.WorkBook
-  try {
-    workbook = XLSX.read(buf, { type: 'buffer' })
-  } catch (e) {
-    log.error('parse error', { action: 'importDealsFromXlsx.parse' }, e)
-    return { success: false, error: 'Ungültige Excel-Datei.' }
-  }
-  const sheet = workbook.Sheets[workbook.SheetNames[0]]
-  if (!sheet) return { success: false, error: 'Kein Arbeitsblatt in der Datei.' }
-  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' })
-  if (!rows.length) return { success: false, error: 'Keine Datenzeilen in der Datei.' }
-
-  const col = (obj: Record<string, unknown>, ...names: string[]) => {
-    const objKeys = Object.keys(obj)
-    for (const n of names) {
-      const lower = n.trim().toLowerCase()
-      const k = objKeys.find((key) => key.trim().toLowerCase().includes(lower) || lower.includes(key.trim().toLowerCase()))
-      if (k) {
-        const v = obj[k]
-        return typeof v === 'string' ? v.trim() : v != null ? String(v).trim() : ''
-      }
-    }
-    return ''
-  }
-
-  let created = 0
-  for (const row of rows) {
-    const title = col(row, 'titel', 'title', 'name') || col(row, 'deal', 'bezeichnung')
-    if (!title) continue
-    const industry = col(row, 'branche', 'industry', 'sector')
-    const volume = col(row, 'volumen', 'volume', 'value', 'wert')
-    const incumbent_provider = col(row, 'anbieter', 'incumbent', 'provider', 'aktueller anbieter', 'current provider')
-    let expiry_date: string | null = null
-    const dateVal = col(row, 'ablauf', 'expiry', 'expiry date', 'datum', 'date', 'end')
-    if (dateVal) {
-      const d = new Date(dateVal)
-      if (!Number.isNaN(d.getTime())) expiry_date = d.toISOString().slice(0, 10)
-    }
-    const { error } = await supabase.from('deals').insert({
-      organization_id: orgId,
-      title,
-      company_id: null,
-      industry: industry || null,
-      volume: volume || null,
-      incumbent_provider: incumbent_provider || null,
-      is_public: true,
-      status: 'open',
-      expiry_date,
-    })
-    if (error) {
-      log.error('insert error', { action: 'importDealsFromXlsx.insert' }, error)
-      continue
-    }
-    created++
-  }
-  revalidatePath(ROUTES.deals.root)
-  return { success: true, created }
+  return importDealsFromXlsxImpl(formData)
 }
 
 /** Referenzbedarf melden: E-Mail an Reference Manager (Admins der Org). Verwendet REFERENCE_MANAGER_EMAIL oder erste Admin-E-Mail. */
@@ -843,103 +141,12 @@ export async function submitReferenceRequest(
   dealId: string,
   message: string
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { success: false, error: 'Nicht angemeldet.' }
-
-  const deal = await getDealWithReferences(dealId)
-  if (!deal) return { success: false, error: 'Deal nicht gefunden.' }
-
-  const { data: profile } = await supabase.from('profiles').select('organization_id, full_name').eq('id', user.id).single()
-  const orgId = profile?.organization_id
-  if (!orgId) return { success: false, error: 'Keine Organisation.' }
-
-  const toEmail = await resolveReferenceManagerEmail(supabase, orgId)
-  if (!toEmail) {
-    return {
-      success: false,
-      error:
-        'Kein Reference Manager erreichbar. REFERENCE_MANAGER_EMAIL setzen oder mindestens einen Admin in der Organisation hinterlegen.',
-    }
-  }
-
-  const resend = getResend()
-  if (resend) {
-    try {
-      const requesterName = profile?.full_name ?? user.email ?? 'Ein Nutzer'
-      const dealUrl = `${getAppOrigin()}${ROUTES.deals.detail(dealId)}`
-      const metaRows = [
-        { label: 'Von', value: `${requesterName} (${user.email ?? '—'})` },
-        { label: 'Deal', value: deal.title },
-      ]
-      if (deal.company_name) metaRows.push({ label: 'Unternehmen', value: deal.company_name })
-      if (deal.industry) {
-        metaRows.push({ label: 'Branche', value: formatIndustryDisplay(deal.industry) })
-      }
-      if (deal.volume) metaRows.push({ label: 'Volumen', value: deal.volume })
-
-      const html = buildRefstackEmailHtml({
-        audience: 'internal',
-        badge: 'Referenzbedarf',
-        bodyHtml: `<p style="margin:0 0 16px;">Es wurde ein Referenzbedarf für einen Deal gemeldet.</p>
-          <p style="margin:0 0 8px;font-weight:600;">Nachricht:</p>
-          <p style="margin:0;padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;white-space:pre-wrap;">${escapeRefstackEmailHtml(message || '—')}</p>`,
-        meta: { rows: metaRows },
-        ctas: [{ label: 'Deal in Refstack öffnen', href: dealUrl }],
-      })
-
-      await resend.emails.send({
-        from: getRefstackResendFrom(),
-        to: toEmail,
-        subject: `Referenzbedarf: ${deal.title}`,
-        html,
-      })
-    } catch (e) {
-      log.error('reference need email failed', { action: 'submitReferenceRequest.email' }, e)
-      return { success: false, error: 'E-Mail konnte nicht gesendet werden.' }
-    }
-  }
-
-  revalidatePath(ROUTES.deals.detail(dealId))
-  return { success: true }
+  return submitReferenceRequestImpl(dealId, message)
 }
 
 export async function createDealReferenceRequest(args: {
   dealId: string
   message: string
 }): Promise<{ success: boolean; error?: string; id?: string }> {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { success: false, error: 'Nicht angemeldet.' }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', user.id)
-    .single()
-  const orgId = profile?.organization_id
-  if (!orgId) return { success: false, error: 'Keine Organisation zugeordnet.' }
-
-  const message = args.message.trim()
-  if (!message) return { success: false, error: 'Beschreibung ist erforderlich.' }
-
-  const { data, error } = await supabase
-    .from('deal_reference_requests')
-    .insert({
-      organization_id: orgId,
-      deal_id: args.dealId,
-      message,
-      status: 'open',
-      created_by: user.id,
-    })
-    .select('id')
-    .single()
-
-  if (error) return { success: false, error: error.message }
-
-  revalidatePath(ROUTES.deals.root)
-  revalidatePath(ROUTES.deals.detail(args.dealId))
-  return { success: true, id: data?.id as string }
+  return createDealReferenceRequestImpl(args)
 }
