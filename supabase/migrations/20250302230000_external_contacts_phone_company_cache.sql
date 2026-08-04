@@ -1,8 +1,17 @@
 -- Phone für externe Kontakte (Kundenansprechpartner)
-ALTER TABLE public.external_contacts
-  ADD COLUMN IF NOT EXISTS phone text;
-
-COMMENT ON COLUMN public.external_contacts.phone IS 'Telefonnummer des Kundenansprechpartners.';
+-- Tabelle external_contacts kommt erst mit 20250307140000; auf frischen DBs hier überspringen.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'external_contacts'
+  ) THEN
+    ALTER TABLE public.external_contacts
+      ADD COLUMN IF NOT EXISTS phone text;
+    COMMENT ON COLUMN public.external_contacts.phone IS 'Telefonnummer des Kundenansprechpartners.';
+  END IF;
+END $$;
 
 -- Optionale Cache-Tabelle für Firmensuche (blitzschnelle Vorschläge)
 CREATE TABLE IF NOT EXISTS public.company_cache (

@@ -64,8 +64,8 @@ BEGIN
       'duration_months', NULL
     )
   ) INTO v_refs
-  FROM references r
-  LEFT JOIN companies c ON c.id = r.company_id
+  FROM public.references r
+  LEFT JOIN public.companies c ON c.id = r.company_id
   WHERE r.id = ANY(v_row.reference_ids) AND r.deleted_at IS NULL;
 
   RETURN json_build_object(

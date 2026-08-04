@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS public.external_contacts (
   last_name text NOT NULL,
   email text NOT NULL,
   role text,
+  phone text,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
   CONSTRAINT external_contacts_pkey PRIMARY KEY (id)
