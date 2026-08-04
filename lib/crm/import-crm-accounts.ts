@@ -203,7 +203,8 @@ export async function importCrmAccounts(
         dealError?.code === 'PGRST204' &&
         dealError.message?.includes('crm_stage')
       ) {
-        const { crm_stage: _crmStage, ...dealPayloadWithoutStage } = dealPayload
+        const { crm_stage, ...dealPayloadWithoutStage } = dealPayload
+        void crm_stage
         ;({ error: dealError } = await supabase.from('deals').insert(dealPayloadWithoutStage))
       }
 

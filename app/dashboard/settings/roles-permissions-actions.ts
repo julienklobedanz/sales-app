@@ -4,13 +4,12 @@ import { revalidatePath } from 'next/cache'
 
 import { writeAuditLog } from '@/lib/audit/log-audit'
 import { ROUTES } from '@/lib/routes'
-import { CAPABILITIES, FUNCTION_ROLE_CAPS, type Capability, type FunctionRole } from '@/lib/roles/capabilities'
+import { FUNCTION_ROLE_CAPS, type Capability, type FunctionRole } from '@/lib/roles/capabilities'
 import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import {
   defaultRolesPermissionsSettings,
   parseRolesPermissionsSettings,
-  ROLES_PERMISSIONS_VISIBILITY_CAPABILITIES,
   serializeRolesPermissionsSettings,
   type ApprovalRoutingMode,
   type RolesPermissionsSettings,

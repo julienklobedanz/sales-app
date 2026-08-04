@@ -35,7 +35,6 @@ export function ComplianceDocumentTypeIcon({
       )}
     >
       {showIso ? (
-        // eslint-disable-next-line @next/next/no-img-element -- lokales Asset, scharf in Tabellengröße
         <img
           src={ISO_BADGE_SRC}
           alt="ISO"

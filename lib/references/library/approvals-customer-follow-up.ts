@@ -16,7 +16,6 @@ import { getRefstackResendFrom } from '@/lib/email/refstack-email-layout'
 import { log } from '@/lib/observability/logger'
 import { buildFollowUpApprovalAfterChangesEmailHtml } from '@/lib/references/library/approvals-email-templates'
 import { getApprovalResendClient } from '@/lib/references/library/approvals-client-email'
-import { companyNameFromReferenceRow } from '@/lib/references/library/approvals-helpers'
 import { resolveContactForApproval } from '@/lib/references/library/approvals-recipient'
 import type { ReferenceApprovalRow, RequestCustomerApprovalAgainResult } from '@/lib/references/library/approvals-types'
 

@@ -98,6 +98,8 @@ export async function loadAccountManagerDashboardData(
         .eq('status', 'pending'),
     ])
 
+    void dealReqRes
+
     usageTotals = {
       views: viewsRes.count ?? 0,
       shares: (shareARes.count ?? 0) + (shareBRes.count ?? 0),
@@ -205,7 +207,7 @@ export async function loadAccountManagerDashboardData(
       })
     }
 
-    freshnessRows.sort((a, b) => (a.tone === 'gap' ? -1 : a.tone === 'warn' ? 0 : 1))
+    freshnessRows.sort((a) => (a.tone === 'gap' ? -1 : a.tone === 'warn' ? 0 : 1))
     if (freshnessRows.length > 4) {
       freshnessMoreCount = freshnessRows.length - 3
     }

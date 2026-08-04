@@ -14,7 +14,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'

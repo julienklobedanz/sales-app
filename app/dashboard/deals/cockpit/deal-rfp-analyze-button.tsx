@@ -50,7 +50,6 @@ export function DealRfpAnalyzeButton({
   documents,
   canManage,
   hasAnalysis,
-  isStale: _isStale,
   variant = 'default',
   className,
   showHintBelow = false,

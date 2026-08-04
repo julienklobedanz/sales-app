@@ -74,7 +74,7 @@ export async function listComplianceDocumentTypeOptions(): Promise<
   try {
     const custom = await fetchCustomTypeRows(auth.supabase, auth.orgId)
     return { success: true, types: mergeComplianceDocumentTypeOptions(custom) }
-  } catch (e) {
+  } catch {
     return {
       success: true,
       types: getSystemComplianceDocumentTypes(),

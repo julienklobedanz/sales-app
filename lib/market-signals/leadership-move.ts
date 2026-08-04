@@ -35,8 +35,9 @@ export function isLeadershipMoveTitle(title: string): boolean {
  */
 export function parseLeadershipMoveFromTitle(
   title: string,
-  _companyName?: string | null
+  companyName?: string | null
 ): LeadershipMoveParse {
+  void companyName
   const raw = String(title ?? '')
     .replace(/\s+/g, ' ')
     .trim()

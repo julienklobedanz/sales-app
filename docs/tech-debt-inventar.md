@@ -12,9 +12,9 @@ Dieses Dokument ist die **priorisierte Quelle** für Abbau. Bestehende Arbeitspa
 
 | Gate | Ergebnis |
 |------|----------|
-| `npm run lint` | **13 errors**, 61 warnings (u. a. `prefer-const` in bulk-import, unused vars) |
-| `npm run typecheck` | **Fehler** in `load-leader-call-queue.ts`, Deal-/Bulk-Import-Tests |
-| `npm test` | **1 fail** / 520 pass — `smart-match-multi-filters.test.ts` (Recency-OR) |
+| `npm run lint` | **0 errors**, **0 warnings** (52 Warnings bereinigt 2026-08-04) |
+| `npm run typecheck` | **grün** |
+| `npm test` | siehe CI / lokal |
 | `npm run format:check` | **805 Dateien** außerhalb Prettier |
 
 CI prüft lint/test/typecheck/build; **nicht** `format:check`, Coverage oder Dead-Code.
@@ -60,7 +60,7 @@ Verweis: [arbeitspaket-logging-error-e6.md](./arbeitspaket-logging-error-e6.md),
 | P0-1 | `app/dashboard/accounts/actions.ts` → `deleteCompanyWithData` | Kein Auth-/Org-Check; löscht References/Deals/Strategy/… per `companyId` | Session + Org-Guard (+ Sales-Restricted) wie bei anderen Account-Actions; Test | S | neu |
 | P0-2 | `app/api/deal-desk/analyze/route.ts` (~488 Z.) | `@deprecated`, **kein UI-Caller**; kanonisch `/api/rfp/analyze` | Route entfernen (oder 410); Docs anpassen | S | 4c / neu |
 | P0-3 | `app/api/rfp-match/route.ts` | Name suggeriert Match; macht nur Document-Extract; **keine Caller** | Löschen oder mit `reference-extract` mergen | S | neu |
-| P0-4 | Baseline typecheck/lint/test | CI-lokal rot (siehe Phase 0) | Fehler beheben bevor große Refactors | M | neu — **✅ typecheck/tests/lint-errors 2026-08-04** (52 warnings offen; format weiter offen) |
+| P0-4 | Baseline typecheck/lint/test | CI-lokal rot (siehe Phase 0) | Fehler beheben bevor große Refactors | M | neu — **✅ typecheck/tests/lint 0/0 2026-08-04** (format weiter offen) |
 | P0-5 | Accounts/Deals destruktive Actions | `bulkCreateCompaniesFromSheet`, `importDealsFromXlsx`, `deleteDeal` — unzureichende Tests | Mind. Happy-Path + Auth-Negativtests | M | E3 — ✅ 2026-08-04 Impl-Unit-Tests |
 
 ---
@@ -101,8 +101,8 @@ Teilweise Call-Sites auf die Facade umgestellt (`reference-extract`, `rfp/analyz
 | P2-2 | Knip unused files (triagiert, App-Code) | u. a. `company-detail-links-tab`, `deal-activity-card`, `references/columns`+`data-table`, Settings-Orphans (`invite-card`, `settings-form`, `settings-danger-zone`, tabs), `lib/auth/get-user-role`, `lib/dashboard/can-view-insights`, DealDesk-Orphans (`bid-team`, `demo-seed`, …), `ticket-status-badge`, … | Nach Import-Check löschen | M | neu |
 | P2-3 | Alias-Exports | `NewsroomsCard`, `ISO_27001_BADGE_SRC`, `isIso27001ComplianceDocument`, ungenutzte `DESK_COVER_THRESHOLD`-Reexports, `upgradeReferencedCompanyLogosForLightUi` | Entfernen | S | neu |
 | P2-4 | `formatDateUtcDe` | @deprecated, **20 Calls / 12 Dateien** | Auf `formatReferenceDate` migrieren | S | neu — ✅ Call-Sites migriert; Wrapper bleibt |
-| P2-5 | `parseExportSettings` 2× | settings page + onepager API | Zentralisieren | S | neu |
-| P2-6 | Knip unused deps | `react-hook-form`, `@hookform/resolvers`, `date-fns` — **0 Code-Imports** (nur Docs) | Entfernen oder Forms wieder anbinden; Entscheidung Produkt | S | neu |
+| P2-5 | `parseExportSettings` 2× | settings page + onepager API | Zentralisieren | S | neu — ✅ beide → `parsePdfExportSettings` |
+| P2-6 | Knip unused deps | `react-hook-form`, `@hookform/resolvers`, `date-fns` — **0 Code-Imports** (nur Docs) | Entfernen oder Forms wieder anbinden; Entscheidung Produkt | S | neu — ✅ entfernt 2026-08-04 |
 | P2-7 | Scripts/Edge/sw.js | Knip meldet „unused“ — oft **False Positives** (CLI/Cron/Service Worker) | Nicht blind löschen; Knip-Ignore | — | — |
 
 **Knip-Hinweis:** Viele ungenutzte **Typen/Exports** in Actions sind oft öffentliche API oder Re-Exports — nicht massenhaft entfernen. `server-only` als unlisted Dependency in Knip konfigurieren.

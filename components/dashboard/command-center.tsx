@@ -58,7 +58,7 @@ export function CommandCenter({ greetingName }: Props) {
   const [submittedQuery, setSubmittedQuery] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [searchState, setSearchState] = useState<SearchState>(null)
-  const [recents, setRecents] = useState<CommandRecentItem[]>(() => loadCommandRecents())
+  const [recents] = useState<CommandRecentItem[]>(() => loadCommandRecents())
   const [nowMs] = useState(() => Date.now())
 
   const firstName = firstNameFromFullName(greetingName)

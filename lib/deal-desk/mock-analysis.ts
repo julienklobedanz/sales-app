@@ -402,14 +402,6 @@ export function buildMockDealDeskAnalysis(fileNames: string[]): DealDeskMockAnal
     executiveBriefing: { ...DEMO_EXECUTIVE_BRIEFING },
     redFlags,
     timelineItems: (() => {
-      const now = new Date()
-      now.setHours(0, 0, 0, 0)
-      const iso = (d: Date) => d.toISOString().slice(0, 10)
-      const addDays = (n: number) => {
-        const t = new Date(now)
-        t.setDate(t.getDate() + n)
-        return t
-      }
       return [
         {
           id: 'tl-vergabe',

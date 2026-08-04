@@ -15,7 +15,7 @@
 | UI | **Shadcn/Radix** unter `components/ui/*` |
 | Daten | **Supabase** (Client/Server nach bestehenden Patterns) |
 | Icons | **Hugeicons** über zentralen Adapter `lib/icons.tsx` (`AppIcon`) – keine verstreuten Raw-Icon-Libraries in neuen Features |
-| Validierung | **Zod**, Formulare oft **react-hook-form** |
+| Validierung | **Zod** (kein react-hook-form im Repo) |
 
 ---
 

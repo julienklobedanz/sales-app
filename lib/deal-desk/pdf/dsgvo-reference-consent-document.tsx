@@ -75,7 +75,11 @@ export function DsgvoReferenceConsentDocument({
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
           <Text style={styles.headerBrand}>{provider}</Text>
-          {providerLogoUrl ? <Image src={providerLogoUrl} style={styles.logo} /> : null}
+          {providerLogoUrl ? (
+            // @react-pdf/renderer Image has no alt prop (PDF, not DOM).
+            // eslint-disable-next-line jsx-a11y/alt-text -- decorative PDF logo
+            <Image src={providerLogoUrl} style={styles.logo} />
+          ) : null}
         </View>
 
         <Text style={styles.title}>DSGVO-Einwilligungserklärung für Referenzpersonen</Text>

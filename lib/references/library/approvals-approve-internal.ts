@@ -10,7 +10,7 @@ import { logEventForCurrentOrg } from '@/lib/events/log-event'
 import { profileCanManageOrgData } from '@/lib/roles/profile-guards'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { sendClientApprovalEmail } from '@/lib/references/library/approvals-client-email'
-import { companyNameFromReferenceRow, referenceGiverNameFromRecipientEmail } from '@/lib/references/library/approvals-helpers'
+import { referenceGiverNameFromRecipientEmail } from '@/lib/references/library/approvals-helpers'
 import { resolveContactForApproval } from '@/lib/references/library/approvals-recipient'
 import type { ApproveInternalAndSendResult, ApproveInternalRecipientOptions, ReferenceApprovalRow } from '@/lib/references/library/approvals-types'
 

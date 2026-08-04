@@ -12,7 +12,7 @@ import { isApprovalRecipientEmail } from '@/lib/references/approval-recipient-in
 import { canEditInternalApprovalCoordinator, canEditPreCustomerApprovalRecipient } from '@/lib/references/pre-customer-approval-edit'
 import { sendInternalApprovalReviewEmail } from '@/lib/references/internal-approval-email'
 import { sendClientApprovalEmail } from '@/lib/references/library/approvals-client-email'
-import { companyNameFromReferenceRow, referenceGiverNameFromRecipientEmail } from '@/lib/references/library/approvals-helpers'
+import { referenceGiverNameFromRecipientEmail } from '@/lib/references/library/approvals-helpers'
 import { resolveContactForApproval } from '@/lib/references/library/approvals-recipient'
 import type { ApproveInternalRecipientOptions, ReferenceApprovalRow, ResolvedApprovalRecipient } from '@/lib/references/library/approvals-types'
 import { log } from '@/lib/observability/logger'

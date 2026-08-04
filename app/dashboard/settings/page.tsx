@@ -7,7 +7,6 @@ import { DEV_ROLE_COOKIE, canUseDevRolePreview, parseDevRolePreviewCookie } from
 import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
-import { isSalesAppView } from '@/lib/roles/reference-access'
 import { parseRolesPermissionsSettings } from '@/lib/roles/roles-permissions-settings'
 import { DEFAULT_DIGEST_LOCAL_TIME, DEFAULT_DIGEST_TIMEZONE } from '@/lib/market-signals/digest-schedule'
 import { getTeamMembers } from './invite-actions'
@@ -17,6 +16,7 @@ import { isHubSpotConfigured } from '@/lib/crm/hubspot/config'
 import { parseOrgCapabilitySettings } from '@/lib/organizations/capability-profile-types'
 import { uiLocaleFromApiSettings } from '@/lib/i18n/ui-locale'
 import { parseOrganizationBillingSettings } from '@/lib/organizations/billing-settings'
+import { parsePdfExportSettings } from '@/lib/references/pdf-export-settings'
 
 type AuditLogRow = {
   id: string
@@ -25,20 +25,6 @@ type AuditLogRow = {
   action_details: Record<string, unknown> | null
   timestamp: string
   user_id: string | null
-}
-
-function parseExportSettings(raw: unknown): { pdf_layout?: 'one_pager' | 'detail' | 'anonymized'; pdf_logo_enabled?: boolean } {
-  if (!raw || typeof raw !== 'object') return {}
-  const obj = raw as Record<string, unknown>
-  const layout = obj.pdf_layout
-  const logo = obj.pdf_logo_enabled
-  return {
-    pdf_layout:
-      layout === 'detail' || layout === 'anonymized' || layout === 'one_pager'
-        ? layout
-        : undefined,
-    pdf_logo_enabled: typeof logo === 'boolean' ? logo : undefined,
-  }
 }
 
 function parseProfileNotificationSettings(raw: unknown): {
@@ -315,7 +301,7 @@ export default async function SettingsPage() {
           uiLocale: uiLocaleFromApiSettings(
             (orgRow as { api_settings?: unknown } | null)?.api_settings
           ),
-          exportSettings: parseExportSettings(
+          exportSettings: parsePdfExportSettings(
             (orgRow as { export_settings?: unknown } | null)?.export_settings
           ),
           subscriptionStatus: orgRow?.subscription_status ?? null,

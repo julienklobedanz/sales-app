@@ -92,7 +92,6 @@ export function buildLeaderCoaching(
   matchCounts: Map<string, number>,
   pendingByUser: Map<string, number>
 ): LeaderCoachingRow[] {
-  const copy = COPY.dashboard.home.salesLeader
   const rows: LeaderCoachingRow[] = []
   for (const p of profiles) {
     const name = p.full_name?.trim() || 'User'

@@ -7,7 +7,6 @@ import type {
   SalesRepDashboardModel,
 } from '@/app/dashboard/dashboard-home-data'
 import { AccountManagerDashboard } from '@/components/dashboard/account-manager-dashboard'
-import { AdminDashboard } from '@/components/dashboard/admin-dashboard'
 import { CommandCenter } from '@/components/dashboard/command-center'
 import { GeneralistDashboard } from '@/components/dashboard/generalist-dashboard'
 import { RoleDashboardShell } from '@/components/dashboard/role-dashboard-shell'

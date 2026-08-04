@@ -1,4 +1,4 @@
-/* global self, clients */
+/* global self */
 self.addEventListener('push', (event) => {
   let payload = { title: 'RefStack', body: '', url: '/dashboard/market-signals' }
   try {

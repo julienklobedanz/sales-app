@@ -8,6 +8,7 @@ import { formatContractTypeDisplay } from '@/lib/references/contract-type'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { profileIsSalesRestricted } from '@/lib/roles/profile-guards'
 import { buildServerTimingHeader, withTiming } from '@/lib/observability/timing'
+import { parsePdfExportSettings } from '@/lib/references/pdf-export-settings'
 
 export const runtime = 'nodejs'
 
@@ -17,12 +18,6 @@ function sanitizeFileName(text: string): string {
     .replace(/[^\w.-]/g, '_')
     .replace(/_+/g, '_')
     .slice(0, 80)
-}
-
-function parseExportSettings(raw: unknown): { pdf_logo_enabled?: boolean } {
-  if (!raw || typeof raw !== 'object') return {}
-  const logo = (raw as Record<string, unknown>).pdf_logo_enabled
-  return { pdf_logo_enabled: typeof logo === 'boolean' ? logo : undefined }
 }
 
 export async function GET(req: NextRequest) {
@@ -97,7 +92,7 @@ export async function GET(req: NextRequest) {
   const companyName = String((company as { name?: string } | null)?.name ?? '—')
   const companyLogo = (company as { logo_url?: string | null } | null)?.logo_url ?? null
 
-  const exportSettings = parseExportSettings(org?.export_settings)
+  const exportSettings = parsePdfExportSettings(org?.export_settings)
   const logoEnabled = exportSettings.pdf_logo_enabled !== false
   const logoUrl = logoEnabled ? org?.logo_url ?? companyLogo : null
 
