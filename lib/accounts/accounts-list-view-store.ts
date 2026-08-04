@@ -31,5 +31,9 @@ export function syncAccountsListViewFromUrl(view: AccountsListView) {
 }
 
 export function useAccountsListView(): AccountsListView {
-  return useSyncExternalStore(subscribe, () => current, () => current)
+  return useSyncExternalStore(
+    subscribe,
+    () => current,
+    () => current,
+  )
 }

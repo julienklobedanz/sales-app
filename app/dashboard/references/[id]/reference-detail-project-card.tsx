@@ -38,7 +38,9 @@ export function ReferenceDetailProjectCard({
       <CardContent className="space-y-2 text-sm">
         <div className="flex justify-between gap-2">
           <span className="text-muted-foreground">Volumen</span>
-          <span className="font-medium tabular-nums">{formatReferenceVolume(volumeEur)}</span>
+          <span className="font-medium tabular-nums">
+            {formatReferenceVolume(volumeEur)}
+          </span>
         </div>
         <div className="flex justify-between gap-2">
           <span className="text-muted-foreground">Vertragsart</span>

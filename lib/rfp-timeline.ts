@@ -18,7 +18,7 @@ function isIsoDate(s: unknown): s is string {
  */
 export async function extractTimelineFromRfpText(
   apiKey: string,
-  plainText: string
+  plainText: string,
 ): Promise<{ timelineItems: DealDeskTimelineItem[] } | { error: string }> {
   const body = plainText.trim().slice(0, MAX_RFP_CHARS)
   if (body.length < 80) {
@@ -106,4 +106,3 @@ Wenn keine konkreten Daten erkennbar sind: timelineItems = []`
     return { error: 'Timeline konnte nicht ausgelesen werden.' }
   }
 }
-

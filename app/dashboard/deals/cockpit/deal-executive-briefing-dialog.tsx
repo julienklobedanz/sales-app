@@ -55,10 +55,13 @@ export function DealExecutiveBriefingDialog({
   async function downloadPdf() {
     setPdfPending(true)
     try {
-      const res = await fetch(`/api/deals/${encodeURIComponent(dealId)}/executive-briefing/pdf`, {
-        method: 'GET',
-        credentials: 'same-origin',
-      })
+      const res = await fetch(
+        `/api/deals/${encodeURIComponent(dealId)}/executive-briefing/pdf`,
+        {
+          method: 'GET',
+          credentials: 'same-origin',
+        },
+      )
       if (!res.ok) {
         let msg: string = COPY.deals.cockpit.briefingPdfFailed
         try {
@@ -72,8 +75,12 @@ export function DealExecutiveBriefingDialog({
       }
       const blob = await res.blob()
       const fallback = 'Executive_Briefing.pdf'
-      const fromHeader = parseFilenameFromContentDisposition(res.headers.get('Content-Disposition'))
-      const fileName = fromHeader ? decodeURIComponent(fromHeader.replace(/^"|"$/g, '')) : fallback
+      const fromHeader = parseFilenameFromContentDisposition(
+        res.headers.get('Content-Disposition'),
+      )
+      const fileName = fromHeader
+        ? decodeURIComponent(fromHeader.replace(/^"|"$/g, ''))
+        : fallback
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -102,7 +109,9 @@ export function DealExecutiveBriefingDialog({
       <DialogContent className="max-h-[min(85vh,640px)] sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{COPY.deals.cockpit.briefingDialogTitle}</DialogTitle>
-          <DialogDescription>{COPY.deals.cockpit.briefingDialogDescription}</DialogDescription>
+          <DialogDescription>
+            {COPY.deals.cockpit.briefingDialogDescription}
+          </DialogDescription>
         </DialogHeader>
         <pre className="max-h-[min(50vh,400px)] overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs leading-relaxed whitespace-pre-wrap text-slate-700">
           {briefing}
@@ -118,7 +127,9 @@ export function DealExecutiveBriefingDialog({
             onClick={() => void downloadPdf()}
             className="gap-2"
           >
-            {pdfPending ? COPY.deals.cockpit.briefingPdfPending : COPY.deals.cockpit.briefingPdfCta}
+            {pdfPending
+              ? COPY.deals.cockpit.briefingPdfPending
+              : COPY.deals.cockpit.briefingPdfCta}
             <Download className="size-3.5 opacity-70" aria-hidden />
           </Button>
           <Button type="button" className="gap-2" onClick={() => void copyBriefing()}>

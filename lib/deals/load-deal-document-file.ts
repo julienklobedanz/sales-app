@@ -17,7 +17,7 @@ export type DealDocumentStorageRow = {
 
 export async function loadDealDocumentAsFile(
   supabase: SupabaseClient,
-  doc: Pick<DealDocumentStorageRow, 'storage_path' | 'file_name' | 'mime_type'>
+  doc: Pick<DealDocumentStorageRow, 'storage_path' | 'file_name' | 'mime_type'>,
 ): Promise<{ ok: true; file: File } | { ok: false; error: string }> {
   const { data, error } = await supabase.storage
     .from(DEAL_DOCUMENTS_BUCKET)

@@ -23,9 +23,13 @@ function getResend(): Resend | null {
 }
 
 /** Marktlisten (xlsx) importieren: Zeilen als Expiring Deals anlegen. */
-export async function importDealsFromXlsxImpl(formData: FormData): Promise<{ success: boolean; created?: number; error?: string }> {
+export async function importDealsFromXlsxImpl(
+  formData: FormData,
+): Promise<{ success: boolean; created?: number; error?: string }> {
   const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Nicht angemeldet.' }
 
   const { data: profile } = await supabase
@@ -42,7 +46,8 @@ export async function importDealsFromXlsxImpl(formData: FormData): Promise<{ suc
   }
 
   const file = formData.get('file') as File | null
-  if (!file || !(file instanceof File)) return { success: false, error: 'Keine Datei übergeben.' }
+  if (!file || !(file instanceof File))
+    return { success: false, error: 'Keine Datei übergeben.' }
   const buf = Buffer.from(await file.arrayBuffer())
   let workbook: XLSX.WorkBook
   try {
@@ -60,7 +65,11 @@ export async function importDealsFromXlsxImpl(formData: FormData): Promise<{ suc
     const objKeys = Object.keys(obj)
     for (const n of names) {
       const lower = n.trim().toLowerCase()
-      const k = objKeys.find((key) => key.trim().toLowerCase().includes(lower) || lower.includes(key.trim().toLowerCase()))
+      const k = objKeys.find(
+        (key) =>
+          key.trim().toLowerCase().includes(lower) ||
+          lower.includes(key.trim().toLowerCase()),
+      )
       if (k) {
         const v = obj[k]
         return typeof v === 'string' ? v.trim() : v != null ? String(v).trim() : ''
@@ -75,7 +84,14 @@ export async function importDealsFromXlsxImpl(formData: FormData): Promise<{ suc
     if (!title) continue
     const industry = col(row, 'branche', 'industry', 'sector')
     const volume = col(row, 'volumen', 'volume', 'value', 'wert')
-    const incumbent_provider = col(row, 'anbieter', 'incumbent', 'provider', 'aktueller anbieter', 'current provider')
+    const incumbent_provider = col(
+      row,
+      'anbieter',
+      'incumbent',
+      'provider',
+      'aktueller anbieter',
+      'current provider',
+    )
     let expiry_date: string | null = null
     const dateVal = col(row, 'ablauf', 'expiry', 'expiry date', 'datum', 'date', 'end')
     if (dateVal) {
@@ -106,16 +122,22 @@ export async function importDealsFromXlsxImpl(formData: FormData): Promise<{ suc
 /** Referenzbedarf melden: E-Mail an Reference Manager (Admins der Org). Verwendet REFERENCE_MANAGER_EMAIL oder erste Admin-E-Mail. */
 export async function submitReferenceRequestImpl(
   dealId: string,
-  message: string
+  message: string,
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Nicht angemeldet.' }
 
   const deal = await getDealWithReferencesImpl(dealId)
   if (!deal) return { success: false, error: 'Deal nicht gefunden.' }
 
-  const { data: profile } = await supabase.from('profiles').select('organization_id, full_name').eq('id', user.id).single()
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id, full_name')
+    .eq('id', user.id)
+    .single()
   const orgId = profile?.organization_id
   if (!orgId) return { success: false, error: 'Keine Organisation.' }
 
@@ -137,7 +159,8 @@ export async function submitReferenceRequestImpl(
         { label: 'Von', value: `${requesterName} (${user.email ?? '—'})` },
         { label: 'Deal', value: deal.title },
       ]
-      if (deal.company_name) metaRows.push({ label: 'Unternehmen', value: deal.company_name })
+      if (deal.company_name)
+        metaRows.push({ label: 'Unternehmen', value: deal.company_name })
       if (deal.industry) {
         metaRows.push({ label: 'Branche', value: formatIndustryDisplay(deal.industry) })
       }
@@ -160,7 +183,11 @@ export async function submitReferenceRequestImpl(
         html,
       })
     } catch (e) {
-      log.error('reference need email failed', { action: 'submitReferenceRequest.email' }, e)
+      log.error(
+        'reference need email failed',
+        { action: 'submitReferenceRequest.email' },
+        e,
+      )
       return { success: false, error: 'E-Mail konnte nicht gesendet werden.' }
     }
   }

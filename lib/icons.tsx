@@ -16,7 +16,13 @@ export type AppIconProps = Omit<
 /**
  * Zentrale Icon-Komponente, damit wir Icon-Library/Defaults an einem Ort steuern können.
  */
-export function AppIcon({ icon, size = 20, strokeWidth = 1.5, color = 'currentColor', ...props }: AppIconProps) {
+export function AppIcon({
+  icon,
+  size = 20,
+  strokeWidth = 1.5,
+  color = 'currentColor',
+  ...props
+}: AppIconProps) {
   return (
     <HugeiconsIcon
       icon={icon}
@@ -27,4 +33,3 @@ export function AppIcon({ icon, size = 20, strokeWidth = 1.5, color = 'currentCo
     />
   )
 }
-

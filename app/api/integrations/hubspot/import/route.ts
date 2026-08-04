@@ -27,11 +27,14 @@ export async function POST(request: Request) {
       guard.ctx.supabase,
       guard.ctx.organizationId,
       'hubspot',
-      accounts
+      accounts,
     )
 
     if (!result.success) {
-      return NextResponse.json({ error: result.error ?? 'Import fehlgeschlagen.' }, { status: 400 })
+      return NextResponse.json(
+        { error: result.error ?? 'Import fehlgeschlagen.' },
+        { status: 400 },
+      )
     }
 
     revalidatePath(ROUTES.accounts)

@@ -31,7 +31,7 @@ Antworte NUR mit JSON exakt in dieser Form (kein Markdown):
  */
 export async function extractEligibilityCriteriaFromRfpText(
   apiKey: string,
-  plainText: string
+  plainText: string,
 ): Promise<{ criteria: EligibilityCriterion[] } | { error: string }> {
   const body = plainText.trim().slice(0, MAX_RFP_CHARS)
   if (body.length < 80) {

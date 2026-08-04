@@ -61,7 +61,10 @@ function titleCaseWord(word: string) {
 }
 
 function deriveDisplayNameFromEmail(email: string) {
-  const local = String(email ?? '').trim().split('@')[0] ?? ''
+  const local =
+    String(email ?? '')
+      .trim()
+      .split('@')[0] ?? ''
   const cleaned = local.replace(/[^a-zA-Z0-9._-]+/g, ' ')
   const parts = cleaned
     .split(/[._\-\s]+/g)
@@ -134,7 +137,8 @@ export function SettingsTeamCard({
     return copy
   })
   const [email, setEmail] = useState('')
-  const [inviteRoles, setInviteRoles] = useState<InviteRoleDimensions>(DEFAULT_INVITE_ROLES)
+  const [inviteRoles, setInviteRoles] =
+    useState<InviteRoleDimensions>(DEFAULT_INVITE_ROLES)
   const [invitePending, setInvitePending] = useState(false)
   const [removingId, setRemovingId] = useState<string | null>(null)
   const [rolePendingId, setRolePendingId] = useState<string | null>(null)
@@ -179,7 +183,7 @@ export function SettingsTeamCard({
     if (removingId || m.isSelf) return
     setRemovingId(m.id)
     const result = await removeMember(
-      m.status === 'pending' ? { inviteId: m.id } : { profileId: m.id }
+      m.status === 'pending' ? { inviteId: m.id } : { profileId: m.id },
     )
     setRemovingId(null)
     if (result.success) {
@@ -302,7 +306,9 @@ export function SettingsTeamCard({
                             : deriveDisplayNameFromEmail(m.email)}
                         </span>
                         {m.status === 'active' ? (
-                          <Badge className="shrink-0 bg-accent text-accent-foreground">Aktiv</Badge>
+                          <Badge className="shrink-0 bg-accent text-accent-foreground">
+                            Aktiv
+                          </Badge>
                         ) : (
                           <Badge className="shrink-0 border-border bg-muted text-foreground">
                             Ausstehend
@@ -317,7 +323,9 @@ export function SettingsTeamCard({
                       <RoleSelects
                         systemRole={m.systemRole}
                         functionRole={m.functionRole}
-                        disabled={rolePendingId === m.id || (m.status === 'active' && m.isSelf)}
+                        disabled={
+                          rolePendingId === m.id || (m.status === 'active' && m.isSelf)
+                        }
                         onChange={(nextRoles) => void handleRoleChange(m, nextRoles)}
                       />
                       <p className="mt-1 text-xs text-muted-foreground">

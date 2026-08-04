@@ -14,7 +14,12 @@ type Props = {
 }
 
 /** Einheitliches Hover-Label (schwarz, Pfeil, Fade/Zoom) für die Account-Übersicht */
-export function AccountsToolbarTooltip({ label, children, side = 'bottom', className }: Props) {
+export function AccountsToolbarTooltip({
+  label,
+  children,
+  side = 'bottom',
+  className,
+}: Props) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>{children}</TooltipTrigger>

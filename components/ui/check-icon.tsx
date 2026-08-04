@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils"
+import { cn } from '@/lib/utils'
 
 export function CheckIcon({ className }: { className?: string }) {
   return (
@@ -7,7 +7,7 @@ export function CheckIcon({ className }: { className?: string }) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden
-      className={cn("size-4 shrink-0 text-current", className)}
+      className={cn('size-4 shrink-0 text-current', className)}
     >
       <path
         d="M3.5 8.25 6.75 11.5 12.5 4.5"

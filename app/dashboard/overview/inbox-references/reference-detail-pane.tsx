@@ -1,22 +1,22 @@
-"use client"
+'use client'
 
-import * as React from "react"
+import * as React from 'react'
 
-import { ReferenceStatusBadge } from "@/components/reference-status-badge"
-import { Badge } from "@/components/ui/badge"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { formatReferenceDate, formatReferenceVolume } from "@/lib/format"
-import { formatContractTypeDisplay } from "@/lib/references/contract-type"
-import { formatProjectEndWithDurationDe } from "@/lib/references/reference-duration-months"
+import { ReferenceStatusBadge } from '@/components/reference-status-badge'
+import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Separator } from '@/components/ui/separator'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { formatReferenceDate, formatReferenceVolume } from '@/lib/format'
+import { formatContractTypeDisplay } from '@/lib/references/contract-type'
+import { formatProjectEndWithDurationDe } from '@/lib/references/reference-duration-months'
 
-import type { ReferenceAssetRow } from "@/app/dashboard/actions"
-import type { Profile } from "@/app/dashboard/dashboard-shell"
+import type { ReferenceAssetRow } from '@/app/dashboard/actions'
+import type { Profile } from '@/app/dashboard/dashboard-shell'
 
-import type { ConceptReferenceRow } from "./types"
-import { splitTags } from "./types"
+import type { ConceptReferenceRow } from './types'
+import { splitTags } from './types'
 
 export function ReferenceDetailPane({
   selectedRef,
@@ -27,7 +27,7 @@ export function ReferenceDetailPane({
   detailLoading,
 }: {
   selectedRef: ConceptReferenceRow | null
-  profileRole: Profile["role"]
+  profileRole: Profile['role']
   externalContacts: {
     id: string
     company_id: string
@@ -46,7 +46,8 @@ export function ReferenceDetailPane({
       <div className="flex h-full flex-col items-center justify-center gap-2 p-8 text-center">
         <div className="text-sm font-medium">Keine Auswahl</div>
         <div className="text-sm text-muted-foreground max-w-md">
-          Wähle links eine Referenz aus. Rechts zeigen wir die Detail-Abschnitte im Split-Layout.
+          Wähle links eine Referenz aus. Rechts zeigen wir die Detail-Abschnitte im
+          Split-Layout.
         </div>
       </div>
     )
@@ -112,8 +113,8 @@ export function ReferenceDetailPane({
     : undefined
   const customerDisplay =
     selectedRef.customer_contact ||
-    (ext ? [ext.first_name, ext.last_name].filter(Boolean).join(" ") : null) ||
-    "—"
+    (ext ? [ext.first_name, ext.last_name].filter(Boolean).join(' ') : null) ||
+    '—'
 
   return (
     <div className="flex h-full flex-col">
@@ -139,9 +140,9 @@ export function ReferenceDetailPane({
                 </div>
               </div>
               <div className="mt-1 text-sm text-muted-foreground">
-                {selectedRef.status === "anonymized"
-                  ? "Anonymisierter Kunde"
-                  : selectedRef.company_name}{" "}
+                {selectedRef.status === 'anonymized'
+                  ? 'Anonymisierter Kunde'
+                  : selectedRef.company_name}{' '}
               </div>
             </div>
           </div>
@@ -174,21 +175,23 @@ export function ReferenceDetailPane({
               <div className="rounded-lg border bg-background p-3">
                 <div className="text-xs text-muted-foreground">Volumen</div>
                 <div className="mt-1 font-medium tabular-nums">
-                  {selectedRef.volume_eur != null && selectedRef.volume_eur !== ""
+                  {selectedRef.volume_eur != null && selectedRef.volume_eur !== ''
                     ? formatReferenceVolume(selectedRef.volume_eur)
-                    : "—"}
+                    : '—'}
                 </div>
               </div>
               <div className="rounded-lg border bg-background p-3">
                 <div className="text-xs text-muted-foreground">Vertragsart</div>
                 <div className="mt-1 font-medium">
-                  {formatContractTypeDisplay(selectedRef.contract_type) || "—"}
+                  {formatContractTypeDisplay(selectedRef.contract_type) || '—'}
                 </div>
               </div>
               <div className="rounded-lg border bg-background p-3">
                 <div className="text-xs text-muted-foreground">Projektstart</div>
                 <div className="mt-1 font-medium">
-                  {selectedRef.project_start ? formatReferenceDate(selectedRef.project_start, 'de-DE') : "—"}
+                  {selectedRef.project_start
+                    ? formatReferenceDate(selectedRef.project_start, 'de-DE')
+                    : '—'}
                 </div>
               </div>
               <div className="rounded-lg border bg-background p-3">
@@ -201,16 +204,18 @@ export function ReferenceDetailPane({
                         project_status: selectedRef.project_status,
                         formatEndDate: (iso) => formatReferenceDate(iso, 'de-DE'),
                       })
-                    : "—"}
+                    : '—'}
                 </div>
               </div>
               <div className="rounded-lg border bg-background p-3">
                 <div className="text-xs text-muted-foreground">Akt. Dienstleister</div>
-                <div className="mt-1 font-medium">{selectedRef.incumbent_provider ?? "—"}</div>
+                <div className="mt-1 font-medium">
+                  {selectedRef.incumbent_provider ?? '—'}
+                </div>
               </div>
               <div className="rounded-lg border bg-background p-3">
                 <div className="text-xs text-muted-foreground">Wettbewerber</div>
-                <div className="mt-1 font-medium">{selectedRef.competitors ?? "—"}</div>
+                <div className="mt-1 font-medium">{selectedRef.competitors ?? '—'}</div>
               </div>
             </div>
           </section>
@@ -221,13 +226,13 @@ export function ReferenceDetailPane({
             <div className="space-y-3">
               <div className="text-sm font-semibold">Herausforderung</div>
               <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                {selectedRef.customer_challenge ?? "—"}
+                {selectedRef.customer_challenge ?? '—'}
               </p>
             </div>
             <div className="space-y-3">
               <div className="text-sm font-semibold">Unsere Lösung</div>
               <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                {selectedRef.our_solution ?? "—"}
+                {selectedRef.our_solution ?? '—'}
               </p>
             </div>
           </section>
@@ -238,16 +243,24 @@ export function ReferenceDetailPane({
             <div className="text-sm font-semibold">Kontakte</div>
             <div className="grid grid-cols-1 gap-3 text-sm">
               <div>
-                <div className="text-xs text-muted-foreground">Interner Ansprechpartner</div>
+                <div className="text-xs text-muted-foreground">
+                  Interner Ansprechpartner
+                </div>
                 <div className="font-medium">
-                  {selectedRef.contact_display || selectedRef.contact_email || "Nicht zugewiesen"}
+                  {selectedRef.contact_display ||
+                    selectedRef.contact_email ||
+                    'Nicht zugewiesen'}
                 </div>
               </div>
               <div>
                 <div className="text-xs text-muted-foreground">Kundenansprechpartner</div>
                 <div className="font-medium">{customerDisplay}</div>
-                {ext?.email ? <div className="text-xs text-muted-foreground">{ext.email}</div> : null}
-                {ext?.role ? <div className="text-xs text-muted-foreground">{ext.role}</div> : null}
+                {ext?.email ? (
+                  <div className="text-xs text-muted-foreground">{ext.email}</div>
+                ) : null}
+                {ext?.role ? (
+                  <div className="text-xs text-muted-foreground">{ext.role}</div>
+                ) : null}
               </div>
             </div>
           </section>
@@ -290,12 +303,12 @@ export function ReferenceDetailPane({
                   <TabsTrigger value="contract">Verträge</TabsTrigger>
                   <TabsTrigger value="other">Sonstiges</TabsTrigger>
                 </TabsList>
-                {(["sales", "contract", "other"] as const).map((cat) => {
+                {(['sales', 'contract', 'other'] as const).map((cat) => {
                   const legacyFile =
-                    cat === "other" && assets.length === 0 && selectedRef.file_path
+                    cat === 'other' && assets.length === 0 && selectedRef.file_path
                       ? {
                           path: selectedRef.file_path,
-                          name: selectedRef.file_path.split("/").pop() ?? "Dokument",
+                          name: selectedRef.file_path.split('/').pop() ?? 'Dokument',
                           isLegacy: true as const,
                         }
                       : null
@@ -314,7 +327,9 @@ export function ReferenceDetailPane({
                             <li className="flex items-center justify-between gap-2 rounded-lg border p-3">
                               <div className="min-w-0">
                                 <div className="truncate text-sm">{legacyFile.name}</div>
-                                <div className="text-[10px] text-muted-foreground">Legacy Datei</div>
+                                <div className="text-[10px] text-muted-foreground">
+                                  Legacy Datei
+                                </div>
                               </div>
                             </li>
                           ) : null}
@@ -325,7 +340,9 @@ export function ReferenceDetailPane({
                             >
                               <div className="min-w-0">
                                 <div className="truncate text-sm">
-                                  {asset.file_name || asset.file_path.split("/").pop() || "Dokument"}
+                                  {asset.file_name ||
+                                    asset.file_path.split('/').pop() ||
+                                    'Dokument'}
                                 </div>
                                 <div className="text-[10px] text-muted-foreground">
                                   {formatReferenceDate(asset.created_at, 'de-DE')}
@@ -349,15 +366,19 @@ export function ReferenceDetailPane({
             <div className="grid grid-cols-1 gap-2 text-sm">
               <div className="flex justify-between gap-2">
                 <span className="text-muted-foreground">Erstellt</span>
-                <span className="font-medium">{formatReferenceDate(selectedRef.created_at, 'de-DE')}</span>
+                <span className="font-medium">
+                  {formatReferenceDate(selectedRef.created_at, 'de-DE')}
+                </span>
               </div>
               <div className="flex justify-between gap-2">
                 <span className="text-muted-foreground">Letzte Änderung</span>
                 <span className="font-medium">
-                  {selectedRef.updated_at ? formatReferenceDate(selectedRef.updated_at, 'de-DE') : "—"}
+                  {selectedRef.updated_at
+                    ? formatReferenceDate(selectedRef.updated_at, 'de-DE')
+                    : '—'}
                 </span>
               </div>
-              {profileRole === "admin" ? (
+              {profileRole === 'admin' ? (
                 <p className="text-xs text-muted-foreground">
                   (Admin-Ansicht: Aktionen sind oben in der Leiste minimal gehalten.)
                 </p>
@@ -369,4 +390,3 @@ export function ReferenceDetailPane({
     </div>
   )
 }
-

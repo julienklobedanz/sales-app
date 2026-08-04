@@ -37,7 +37,10 @@ type DealContext = {
   volume: string | null
 }
 
-function buildQueryText(deal: DealContext | null, requirement: ExtractedRfpRequirement): string {
+function buildQueryText(
+  deal: DealContext | null,
+  requirement: ExtractedRfpRequirement,
+): string {
   const parts = [
     deal?.title ? `Deal: ${deal.title}` : null,
     deal?.industry ? `Branche: ${formatIndustryDisplay(deal.industry)}` : null,
@@ -51,7 +54,7 @@ function buildQueryText(deal: DealContext | null, requirement: ExtractedRfpRequi
 async function mapPool<T, R>(
   items: T[],
   concurrency: number,
-  worker: (item: T, index: number) => Promise<R>
+  worker: (item: T, index: number) => Promise<R>,
 ): Promise<R[]> {
   const results: R[] = new Array(items.length)
   let next = 0
@@ -80,7 +83,7 @@ export async function buildRfpCoverageReport(
     salesVisibleOnly: boolean
     deal: DealContext | null
     requirements: ExtractedRfpRequirement[]
-  }
+  },
 ): Promise<RfpCoverageRow[]> {
   const { apiKey, organizationId, salesVisibleOnly, deal, requirements } = params
 

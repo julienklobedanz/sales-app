@@ -2,7 +2,11 @@
 export const TABLE_COLUMN_MIN_WIDTH = 72
 export const TABLE_COLUMN_MAX_WIDTH = 640
 
-export function clampColumnWidth(width: number, min = TABLE_COLUMN_MIN_WIDTH, max = TABLE_COLUMN_MAX_WIDTH) {
+export function clampColumnWidth(
+  width: number,
+  min = TABLE_COLUMN_MIN_WIDTH,
+  max = TABLE_COLUMN_MAX_WIDTH,
+) {
   return Math.min(max, Math.max(min, Math.round(width)))
 }
 
@@ -29,7 +33,10 @@ export function loadColumnWidthsFromStorage(
   }
 }
 
-export function saveColumnWidthsToStorage(storageKey: string, widths: Record<string, number>) {
+export function saveColumnWidthsToStorage(
+  storageKey: string,
+  widths: Record<string, number>,
+) {
   if (typeof window === 'undefined') return
   try {
     localStorage.setItem(storageKey, JSON.stringify(widths))

@@ -4,7 +4,11 @@ import { useState } from 'react'
 import { ArrowRight01Icon } from '@hugeicons/core-free-icons'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
 import type { DealRfpCockpitData } from '@/lib/deals/load-deal-rfp-cockpit-data'
@@ -26,7 +30,7 @@ export function DealRfpStammdatenSection({ data }: { data: DealRfpCockpitData })
                 size={16}
                 className={cn(
                   'mt-0.5 shrink-0 text-muted-foreground transition-transform',
-                  expanded && 'rotate-90'
+                  expanded && 'rotate-90',
                 )}
               />
               <div className="min-w-0">
@@ -42,7 +46,9 @@ export function DealRfpStammdatenSection({ data }: { data: DealRfpCockpitData })
         <CollapsibleContent>
           <CardContent className="pt-0">
             {rows.length === 0 ? (
-              <p className="pl-6 text-sm text-muted-foreground">{COPY.deals.cockpit.stammdatenEmpty}</p>
+              <p className="pl-6 text-sm text-muted-foreground">
+                {COPY.deals.cockpit.stammdatenEmpty}
+              </p>
             ) : (
               <dl className="grid grid-cols-1 gap-x-8 gap-y-4 pl-6 sm:grid-cols-2 lg:grid-cols-3">
                 {rows.map((row) => (

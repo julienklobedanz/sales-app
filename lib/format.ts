@@ -1,16 +1,25 @@
 /** Workspace-Einstellung: Anzeige von Referenz-/Projektdaten. */
 export type OrgDateDisplayFormat = 'de-DE' | 'en-US' | 'en-GB' | 'iso'
 
-const ORG_DATE_FORMATS: readonly OrgDateDisplayFormat[] = ['de-DE', 'en-US', 'en-GB', 'iso']
+const ORG_DATE_FORMATS: readonly OrgDateDisplayFormat[] = [
+  'de-DE',
+  'en-US',
+  'en-GB',
+  'iso',
+]
 
 export function normalizeOrgDateDisplayFormat(
-  raw: string | null | undefined
+  raw: string | null | undefined,
 ): OrgDateDisplayFormat {
   const s = String(raw ?? '').trim()
-  return ORG_DATE_FORMATS.includes(s as OrgDateDisplayFormat) ? (s as OrgDateDisplayFormat) : 'de-DE'
+  return ORG_DATE_FORMATS.includes(s as OrgDateDisplayFormat)
+    ? (s as OrgDateDisplayFormat)
+    : 'de-DE'
 }
 
-function calendarPartsFromValue(value: string): { y: number; m: number; d: number } | null {
+function calendarPartsFromValue(
+  value: string,
+): { y: number; m: number; d: number } | null {
   const raw = value.trim()
   const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw)
   if (dateOnly) {
@@ -30,7 +39,7 @@ function calendarPartsFromValue(value: string): { y: number; m: number; d: numbe
  */
 export function formatReferenceDate(
   value: string | null | undefined,
-  preset: OrgDateDisplayFormat | null | undefined = 'de-DE'
+  preset: OrgDateDisplayFormat | null | undefined = 'de-DE',
 ): string {
   if (value == null || String(value).trim() === '') return ''
   const parts = calendarPartsFromValue(String(value))
@@ -61,7 +70,8 @@ export function formatDateUtcDe(iso: string) {
 /** Tausender-Trennzeichen (de-DE: 5.000.000) */
 export function formatNumberDe(value: number | string | null | undefined): string {
   if (value == null || value === '') return '—'
-  const n = typeof value === 'string' ? parseInt(value.replace(/\D/g, ''), 10) : Number(value)
+  const n =
+    typeof value === 'string' ? parseInt(value.replace(/\D/g, ''), 10) : Number(value)
   if (Number.isNaN(n)) return String(value)
   return n.toLocaleString('de-DE')
 }
@@ -84,7 +94,9 @@ export function formatEmployeeCountDeDisplay(value: number | null | undefined): 
 }
 
 /** Formular: „10.001+“ → gespeichert als 10.001 (Brandfetch-Obergrenze). */
-export function parseGermanEmployeeCountInput(raw: string | null | undefined): number | null {
+export function parseGermanEmployeeCountInput(
+  raw: string | null | undefined,
+): number | null {
   const t = String(raw ?? '').trim()
   if (!t) return null
   if (/\+/.test(t)) return BRANDFETCH_EMPLOYEE_CAP
@@ -125,12 +137,12 @@ const VOLUME_CODE_BY_TOKEN: Record<string, string> = {
   JPY: 'JPY',
   SGD: 'SGD',
   USD: 'USD',
-  'A$': 'AUD',
-  'C$': 'CAD',
-  'HK$': 'HKD',
-  'S$': 'SGD',
+  A$: 'AUD',
+  C$: 'CAD',
+  HK$: 'HKD',
+  S$: 'SGD',
   '€': 'EUR',
-  '$': 'USD',
+  $: 'USD',
   '£': 'GBP',
   '¥': 'JPY',
 }
@@ -143,7 +155,7 @@ export function parseReferenceVolume(value: string | null | undefined): {
   if (!raw) return null
 
   const tokenMatch = raw.match(
-    /^(AED|AUD|CAD|CHF|CNY|EUR|GBP|HKD|JPY|SGD|USD|A\$|C\$|HK\$|S\$|€|\$|£|¥)(?:\s|$)/i
+    /^(AED|AUD|CAD|CHF|CNY|EUR|GBP|HKD|JPY|SGD|USD|A\$|C\$|HK\$|S\$|€|\$|£|¥)(?:\s|$)/i,
   )
   const token = tokenMatch?.[1]?.toUpperCase() ?? ''
   const currencyCode = VOLUME_CODE_BY_TOKEN[token] ?? 'EUR'
@@ -222,8 +234,6 @@ export function diffMonthsUtc(startIso: string, endIso: string) {
   if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime())) return null
   return Math.max(
     0,
-    (e.getUTCFullYear() - s.getUTCFullYear()) * 12 +
-      (e.getUTCMonth() - s.getUTCMonth())
+    (e.getUTCFullYear() - s.getUTCFullYear()) * 12 + (e.getUTCMonth() - s.getUTCMonth()),
   )
 }
-

@@ -7,7 +7,7 @@ const META_TIMEOUT_MS = 2_500
 function extractMetaContent(html: string, propertyOrName: string): string | null {
   const re = new RegExp(
     `<meta[^>]+(?:property|name)=["']${propertyOrName}["'][^>]+content=["']([^"']+)["'][^>]*>|<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']${propertyOrName}["'][^>]*>`,
-    'i'
+    'i',
   )
   const m = html.match(re)
   const value = (m?.[1] || m?.[2] || '').replace(/\s+/g, ' ').trim()
@@ -24,7 +24,7 @@ export function parseMetaDescriptionFromHtml(html: string): string | null {
 
 export async function fetchUrlMetaSnippet(
   url: string,
-  opts?: { signal?: AbortSignal }
+  opts?: { signal?: AbortSignal },
 ): Promise<string | null> {
   const href = String(url ?? '').trim()
   if (!/^https?:\/\//i.test(href)) return null

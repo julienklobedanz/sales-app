@@ -67,8 +67,10 @@ export async function GET(request: Request) {
     }
   } else if (!isDev) {
     return NextResponse.json(
-      { error: 'CRON_SECRET ist nicht gesetzt (erforderlich außerhalb der Entwicklung).' },
-      { status: 503 }
+      {
+        error: 'CRON_SECRET ist nicht gesetzt (erforderlich außerhalb der Entwicklung).',
+      },
+      { status: 503 },
     )
   }
 
@@ -76,7 +78,7 @@ export async function GET(request: Request) {
   if (!resend) {
     return NextResponse.json(
       { ok: false, error: 'RESEND_API_KEY fehlt – Digest nicht versendet.' },
-      { status: 503 }
+      { status: 503 },
     )
   }
 
@@ -84,7 +86,7 @@ export async function GET(request: Request) {
   if (!admin) {
     return NextResponse.json(
       { error: 'SUPABASE_SERVICE_ROLE_KEY fehlt – Digest nicht möglich.' },
-      { status: 503 }
+      { status: 503 },
     )
   }
 
@@ -99,14 +101,18 @@ export async function GET(request: Request) {
 
   const { data: profileRows, error: profErr } = await admin
     .from('profiles')
-    .select('id, organization_id, system_role, function_role, notification_settings, full_name')
+    .select(
+      'id, organization_id, system_role, function_role, notification_settings, full_name',
+    )
     .not('organization_id', 'is', null)
 
   if (profErr) {
     return NextResponse.json({ ok: false, error: profErr.message }, { status: 500 })
   }
 
-  const subscribers = (profileRows ?? []).filter((p) => wantsDailyDigest(p.notification_settings))
+  const subscribers = (profileRows ?? []).filter((p) =>
+    wantsDailyDigest(p.notification_settings),
+  )
 
   /** Vercel Hobby: Cron nur 1×/Tag – kein 10-Min-Fenster; Idempotenz über UTC-Tag (YYYY-MM-DD). */
   const skipDigestTimeWindow = process.env.MARKET_SIGNALS_DIGEST_SKIP_TIME_WINDOW === '1'
@@ -119,17 +125,23 @@ export async function GET(request: Request) {
 
   for (const row of subscribers) {
     const userId = String((row as { id?: string }).id ?? '')
-    const orgId = String((row as { organization_id?: string | null }).organization_id ?? '')
+    const orgId = String(
+      (row as { organization_id?: string | null }).organization_id ?? '',
+    )
     if (!userId || !orgId) continue
 
     const nsRaw = (row as { notification_settings?: unknown }).notification_settings
 
     if (!skipDigestTimeWindow) {
       const tz = parseDigestTimezone(
-        nsRaw && typeof nsRaw === 'object' ? (nsRaw as Record<string, unknown>).digest_timezone : undefined
+        nsRaw && typeof nsRaw === 'object'
+          ? (nsRaw as Record<string, unknown>).digest_timezone
+          : undefined,
       )
       const { hours: dh, minutes: dm } = parseDigestLocalTime(
-        nsRaw && typeof nsRaw === 'object' ? (nsRaw as Record<string, unknown>).digest_local_time : undefined
+        nsRaw && typeof nsRaw === 'object'
+          ? (nsRaw as Record<string, unknown>).digest_local_time
+          : undefined,
       )
       if (!isDigestSendWindow(now, tz, dh, dm, DIGEST_SEND_WINDOW_MINUTES)) {
         skippedWindow += 1
@@ -142,8 +154,10 @@ export async function GET(request: Request) {
       : getLocalYmdAndMinutesFromMidnight(
           now,
           parseDigestTimezone(
-            nsRaw && typeof nsRaw === 'object' ? (nsRaw as Record<string, unknown>).digest_timezone : undefined
-          )
+            nsRaw && typeof nsRaw === 'object'
+              ? (nsRaw as Record<string, unknown>).digest_timezone
+              : undefined,
+          ),
         ).ymd
 
     if (lastDigestSentLocalDate(nsRaw) === idempotencyYmd) {
@@ -173,7 +187,9 @@ export async function GET(request: Request) {
       continue
     }
 
-    const recipientName = String((row as { full_name?: string | null }).full_name ?? '').trim()
+    const recipientName = String(
+      (row as { full_name?: string | null }).full_name ?? '',
+    ).trim()
     const hasContent = news.length > 0 || executives.length > 0
 
     const html = hasContent
@@ -215,7 +231,10 @@ export async function GET(request: Request) {
       ...prevNs,
       market_signals_digest_last_sent_local_date: idempotencyYmd,
     }
-    const { error: upErr } = await admin.from('profiles').update({ notification_settings: nextNs }).eq('id', userId)
+    const { error: upErr } = await admin
+      .from('profiles')
+      .update({ notification_settings: nextNs })
+      .eq('id', userId)
     if (upErr) errors.push(`${userId}: Marker nicht gespeichert: ${upErr.message}`)
   }
 

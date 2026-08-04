@@ -11,21 +11,23 @@ vi.mock('@/lib/market-signals/discover-company-newsroom', () => ({
 }))
 
 vi.mock('@/lib/accounts/resolve-company-for-import', () => ({
-  enrichBulkImportRowFromBrandfetch: vi.fn(async (row: {
-    name: string
-    website: string
-    industry: string
-    headquarters: string
-    employeeCount: number | null
-  }) => ({
-    name: row.name,
-    website: row.website ?? '',
-    industry: row.industry ?? '',
-    headquarters: row.headquarters ?? '',
-    employeeCount: row.employeeCount ?? null,
-    logo_url: null,
-    description: null,
-  })),
+  enrichBulkImportRowFromBrandfetch: vi.fn(
+    async (row: {
+      name: string
+      website: string
+      industry: string
+      headquarters: string
+      employeeCount: number | null
+    }) => ({
+      name: row.name,
+      website: row.website ?? '',
+      industry: row.industry ?? '',
+      headquarters: row.headquarters ?? '',
+      employeeCount: row.employeeCount ?? null,
+      logo_url: null,
+      description: null,
+    }),
+  ),
 }))
 
 const createServerSupabaseClient = vi.fn()
@@ -93,7 +95,9 @@ function sheetBuffer(rows: Record<string, unknown>[]): Uint8Array {
   const wb = XLSX.utils.book_new()
   const ws = XLSX.utils.json_to_sheet(rows)
   XLSX.utils.book_append_sheet(wb, ws, 'Accounts')
-  return new Uint8Array(XLSX.write(wb, { type: 'array', bookType: 'xlsx' }) as ArrayBuffer)
+  return new Uint8Array(
+    XLSX.write(wb, { type: 'array', bookType: 'xlsx' }) as ArrayBuffer,
+  )
 }
 
 describe('bulkCreateCompaniesFromSheetImpl', () => {
@@ -103,18 +107,18 @@ describe('bulkCreateCompaniesFromSheetImpl', () => {
 
   it('rejects unauthenticated callers', async () => {
     createServerSupabaseClient.mockResolvedValue(
-      authClient({ userId: null, profile: null })
+      authClient({ userId: null, profile: null }),
     )
 
-    await expect(bulkCreateCompaniesFromSheetImpl(sheetBuffer([{ Name: 'Acme' }]))).resolves.toEqual(
-      {
-        success: false,
-        createdCount: 0,
-        skippedCount: 0,
-        failedCount: 0,
-        error: 'Nicht eingeloggt.',
-      }
-    )
+    await expect(
+      bulkCreateCompaniesFromSheetImpl(sheetBuffer([{ Name: 'Acme' }])),
+    ).resolves.toEqual({
+      success: false,
+      createdCount: 0,
+      skippedCount: 0,
+      failedCount: 0,
+      error: 'Nicht eingeloggt.',
+    })
   })
 
   it('rejects sales_rep (sales-restricted)', async () => {
@@ -126,18 +130,18 @@ describe('bulkCreateCompaniesFromSheetImpl', () => {
           system_role: 'member',
           function_role: 'sales_rep',
         },
-      })
+      }),
     )
 
-    await expect(bulkCreateCompaniesFromSheetImpl(sheetBuffer([{ Name: 'Acme' }]))).resolves.toEqual(
-      {
-        success: false,
-        createdCount: 0,
-        skippedCount: 0,
-        failedCount: 0,
-        error: 'Keine Berechtigung.',
-      }
-    )
+    await expect(
+      bulkCreateCompaniesFromSheetImpl(sheetBuffer([{ Name: 'Acme' }])),
+    ).resolves.toEqual({
+      success: false,
+      createdCount: 0,
+      skippedCount: 0,
+      failedCount: 0,
+      error: 'Keine Berechtigung.',
+    })
   })
 
   it('creates new accounts from sheet for admin', async () => {
@@ -158,8 +162,8 @@ describe('bulkCreateCompaniesFromSheetImpl', () => {
           { Name: 'Acme Corp', Branche: 'IT' },
           { Name: 'Existing GmbH' },
           { Website: 'https://no-name.example' },
-        ])
-      )
+        ]),
+      ),
     ).resolves.toEqual({
       success: true,
       createdCount: 1,
@@ -173,7 +177,7 @@ describe('bulkCreateCompaniesFromSheetImpl', () => {
         entity_kind: 'account',
         name: 'Acme Corp',
         industry: 'IT',
-      })
+      }),
     )
   })
 })

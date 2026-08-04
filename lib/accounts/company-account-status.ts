@@ -9,7 +9,7 @@ export const COMPANY_ACCOUNT_STATUS_VALUES = [
 export type CompanyAccountStatusValue = (typeof COMPANY_ACCOUNT_STATUS_VALUES)[number]
 
 export function normalizeCompanyAccountStatus(
-  raw: string | null | undefined
+  raw: string | null | undefined,
 ): CompanyAccountStatusValue | null {
   const s = raw?.trim() ?? ''
   if (!s) return null

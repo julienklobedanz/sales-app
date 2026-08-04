@@ -64,12 +64,23 @@ export async function GET(req: NextRequest) {
 
   const analysis = parseAnalysisSnapshot(project.analysis_snapshot)
   if (!analysis) {
-    return NextResponse.json({ error: 'Keine Analyse-Daten für dieses Projekt.' }, { status: 422 })
+    return NextResponse.json(
+      { error: 'Keine Analyse-Daten für dieses Projekt.' },
+      { status: 422 },
+    )
   }
 
-  const overlay = await loadNormalizedWorkspaceOverlay(supabase, projectId, profile.organization_id)
+  const overlay = await loadNormalizedWorkspaceOverlay(
+    supabase,
+    projectId,
+    profile.organization_id,
+  )
   const baseWorkspace = defaultWorkspaceState(analysis.redFlags ?? [])
-  const workspace = mergeWorkspaceWithNormalizedOverlay(baseWorkspace, overlay, baseWorkspace.smeCustomExperts)
+  const workspace = mergeWorkspaceWithNormalizedOverlay(
+    baseWorkspace,
+    overlay,
+    baseWorkspace.smeCustomExperts,
+  )
   const redFlags: DealDeskRedFlag[] =
     workspace.redFlags.length > 0 ? workspace.redFlags : (analysis.redFlags ?? [])
 
@@ -82,7 +93,7 @@ export async function GET(req: NextRequest) {
   const buffer = await buildExecutiveBriefingPptxBuffer(pptxData)
 
   const customerName = sanitizeFileName(
-    pptxData.customerName || String(project.customer_name ?? 'Kunde')
+    pptxData.customerName || String(project.customer_name ?? 'Kunde'),
   )
   const fileName = `${customerName}_Executive_Briefing_RefStack.pptx`
 

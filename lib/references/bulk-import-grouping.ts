@@ -25,7 +25,10 @@ export function splitFileStem(stem: string): string[] {
     .filter((part) => part.length > 0)
 }
 
-function extractCompanyParts(parts: string[]): { companyParts: string[]; restIndex: number } {
+function extractCompanyParts(parts: string[]): {
+  companyParts: string[]
+  restIndex: number
+} {
   const companyParts: string[] = []
   let i = 1
 
@@ -87,7 +90,9 @@ function formatCompanyPart(part: string): string {
 }
 
 /** Kundenname aus Dateinamen wie Referenz_SAP_SE_…. */
-export function extractCompanyNameFromFileName(fileName: string | undefined): string | null {
+export function extractCompanyNameFromFileName(
+  fileName: string | undefined,
+): string | null {
   if (!fileName?.trim()) return null
 
   const stem = fileName.replace(/\.[^.]+$/, '').trim()
@@ -104,7 +109,9 @@ export function extractCompanyNameFromFileName(fileName: string | undefined): st
 }
 
 /** Projekttitel-Hinweis aus dem Rest des Dateinamens nach dem Kundenteil. */
-export function extractProjectTitleHintFromFileName(fileName: string | undefined): string | null {
+export function extractProjectTitleHintFromFileName(
+  fileName: string | undefined,
+): string | null {
   if (!fileName?.trim()) return null
 
   const stem = fileName.replace(/\.[^.]+$/, '').trim()
@@ -131,7 +138,9 @@ export type BulkImportGroupLike = {
 }
 
 /** Gruppiert Dateien mit gleichem Kundenschlüssel (nicht nur „Referenz“). */
-export function autoGroupBulkImportByFileName<T extends BulkImportGroupLike>(groups: T[]): T[] {
+export function autoGroupBulkImportByFileName<T extends BulkImportGroupLike>(
+  groups: T[],
+): T[] {
   const metaByFile = new Map<File, { projectName: string; companyName?: string }>()
   for (const group of groups) {
     for (const file of group.files) {

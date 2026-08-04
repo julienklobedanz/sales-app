@@ -22,21 +22,21 @@ describe('formatMatchReferenceMetaLine', () => {
         industry: 'fin',
         volumeEur: '4500000',
         createdAt: '2025-03-01',
-      })
+      }),
     ).toMatch(/^Finanzdienstleistungen/)
     expect(
       formatMatchReferenceMetaLine({
         industry: 'fin',
         volumeEur: '4500000',
         createdAt: '2025-03-01',
-      })
+      }),
     ).toContain(' · ')
     expect(
       formatMatchReferenceMetaLine({
         industry: 'fin',
         volumeEur: '4500000',
         createdAt: '2025-03-01',
-      })
+      }),
     ).toContain('03/2025')
   })
 
@@ -46,7 +46,7 @@ describe('formatMatchReferenceMetaLine', () => {
         industry: 'fin',
         volumeEur: null,
         createdAt: null,
-      })
+      }),
     ).toBe('Finanzdienstleistungen & Versicherung')
   })
 })

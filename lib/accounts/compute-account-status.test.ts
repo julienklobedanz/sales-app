@@ -12,7 +12,7 @@ describe('computeAccountStatusFromSignals', () => {
         deals: [],
         references: [],
         now,
-      })
+      }),
     ).toBe('target')
   })
 
@@ -23,7 +23,7 @@ describe('computeAccountStatusFromSignals', () => {
         deals: [{ status: 'won', closedOn: '2025-06-01' }],
         references: [],
         now,
-      })
+      }),
     ).toBe('active_customer')
   })
 
@@ -34,7 +34,7 @@ describe('computeAccountStatusFromSignals', () => {
         deals: [{ status: 'won', closedOn: '2022-01-15' }],
         references: [],
         now,
-      })
+      }),
     ).toBe('former_customer')
   })
 
@@ -43,9 +43,11 @@ describe('computeAccountStatusFromSignals', () => {
       computeAccountStatusFromSignals({
         crmAccountId: 'hs-1',
         deals: [{ status: 'won', closedOn: '2025-06-01' }],
-        references: [{ approval_expires_at: '2026-07-20T00:00:00Z', approval_grace_until: null }],
+        references: [
+          { approval_expires_at: '2026-07-20T00:00:00Z', approval_grace_until: null },
+        ],
         now,
-      })
+      }),
     ).toBe('at_risk')
   })
 
@@ -62,7 +64,7 @@ describe('computeAccountStatusFromSignals', () => {
         ],
         references: [],
         now,
-      })
+      }),
     ).toBe('at_risk')
   })
 
@@ -79,7 +81,7 @@ describe('computeAccountStatusFromSignals', () => {
         ],
         references: [],
         now,
-      })
+      }),
     ).toBe('active_customer')
   })
 })

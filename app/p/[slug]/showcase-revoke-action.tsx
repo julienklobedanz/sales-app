@@ -27,7 +27,10 @@ import { revokePortfolioAccess } from '../actions'
 
 const REVOKE_REASONS = [
   { id: 'outdated_content', label: 'Projektinhalte sind nicht mehr aktuell' },
-  { id: 'compliance_change', label: 'Interne Compliance-Richtlinien haben sich geändert' },
+  {
+    id: 'compliance_change',
+    label: 'Interne Compliance-Richtlinien haben sich geändert',
+  },
   { id: 'contact_left', label: 'Ansprechpartner hat das Unternehmen verlassen' },
   { id: 'other', label: 'Sonstiges (Bitte angeben)' },
 ] as const
@@ -68,7 +71,7 @@ export function ShowcaseRevokeAction({ slug }: { slug: string }) {
         return
       }
       toast.success(
-        'Link gesperrt. Empfänger sehen die Referenz nicht mehr — Ihr Workspace wurde informiert.'
+        'Link gesperrt. Empfänger sehen die Referenz nicht mehr — Ihr Workspace wurde informiert.',
       )
       setOpen(false)
       resetForm()
@@ -104,9 +107,9 @@ export function ShowcaseRevokeAction({ slug }: { slug: string }) {
           <DialogHeader>
             <DialogTitle>Zugriff sperren?</DialogTitle>
             <DialogDescription>
-              Der Kundenlink ist danach für Empfänger nicht mehr erreichbar. Ihr Ansprechpartner im
-              Workspace wird über die Sperrung informiert und kann bei Bedarf einen neuen Link
-              anstoßen.
+              Der Kundenlink ist danach für Empfänger nicht mehr erreichbar. Ihr
+              Ansprechpartner im Workspace wird über die Sperrung informiert und kann bei
+              Bedarf einen neuen Link anstoßen.
             </DialogDescription>
           </DialogHeader>
 
@@ -132,7 +135,9 @@ export function ShowcaseRevokeAction({ slug }: { slug: string }) {
             <div className="space-y-2">
               <Label htmlFor="revoke-notes" className="text-sm font-medium">
                 Zusätzliche Anmerkungen für den Admin{' '}
-                <span className="text-xs font-normal italic text-muted-foreground">(optional)</span>
+                <span className="text-xs font-normal italic text-muted-foreground">
+                  (optional)
+                </span>
               </Label>
               <Textarea
                 id="revoke-notes"
@@ -146,7 +151,12 @@ export function ShowcaseRevokeAction({ slug }: { slug: string }) {
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+              disabled={loading}
+            >
               Abbrechen
             </Button>
             <Button

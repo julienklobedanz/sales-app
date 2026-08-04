@@ -38,7 +38,10 @@ export function parseDigestTimezone(raw: unknown): string {
   return s
 }
 
-export function getLocalYmdAndMinutesFromMidnight(utcDate: Date, timeZone: string): { ymd: string; minutes: number } {
+export function getLocalYmdAndMinutesFromMidnight(
+  utcDate: Date,
+  timeZone: string,
+): { ymd: string; minutes: number } {
   const dtf = new Intl.DateTimeFormat('en-CA', {
     timeZone,
     year: 'numeric',
@@ -49,7 +52,8 @@ export function getLocalYmdAndMinutesFromMidnight(utcDate: Date, timeZone: strin
     hour12: false,
   })
   const parts = dtf.formatToParts(utcDate)
-  const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)?.value ?? '0'
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value ?? '0'
   const y = get('year')
   const mo = get('month')
   const da = get('day')
@@ -65,7 +69,7 @@ export function isDigestSendWindow(
   timeZone: string,
   digestHours: number,
   digestMinutes: number,
-  windowMinutes: number
+  windowMinutes: number,
 ): boolean {
   const { minutes: nowMin } = getLocalYmdAndMinutesFromMidnight(utcNow, timeZone)
   const target = digestHours * 60 + digestMinutes

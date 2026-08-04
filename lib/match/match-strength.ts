@@ -12,7 +12,12 @@ const BANDS: Array<{
   labelShort: string
   ariaLabel: string
 }> = [
-  { min: 0.65, tier: 'excellent', labelShort: 'Sehr hoch', ariaLabel: 'Sehr hohe Relevanz' },
+  {
+    min: 0.65,
+    tier: 'excellent',
+    labelShort: 'Sehr hoch',
+    ariaLabel: 'Sehr hohe Relevanz',
+  },
   { min: 0.55, tier: 'good', labelShort: 'Hoch', ariaLabel: 'Hohe Relevanz' },
   { min: 0.42, tier: 'moderate', labelShort: 'Gut', ariaLabel: 'Gute Relevanz' },
 ]
@@ -59,7 +64,7 @@ function bumpTier(strength: MatchStrengthDisplay): MatchStrengthDisplay {
  */
 export function getMatchStrength(
   similarity01: number,
-  options?: { rank?: number; gapToNext?: number | null }
+  options?: { rank?: number; gapToNext?: number | null },
 ): MatchStrengthDisplay {
   if (!Number.isFinite(similarity01) || similarity01 < 0) {
     return {

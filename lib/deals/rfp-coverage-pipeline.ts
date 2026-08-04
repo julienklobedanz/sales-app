@@ -28,7 +28,7 @@ export async function buildRfpCoverageWithRelevance(
     salesVisibleOnly: boolean
     deal: DealContext | null
     requirements: ExtractedRfpRequirement[]
-  }
+  },
 ): Promise<RfpCoveragePipelineResult> {
   const coverage = await buildRfpCoverageReport(supabase, params)
 
@@ -42,7 +42,7 @@ export async function buildRfpCoverageWithRelevance(
         title: m.title,
         summary: m.summary,
       })),
-    }))
+    })),
   )
 
   return { coverage, verdicts }

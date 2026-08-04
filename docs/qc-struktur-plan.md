@@ -65,4 +65,3 @@ Ziel: **Struktur, UX-Konsistenz und Wartbarkeit** verbessern, ohne die Themen Op
   - `npm run lint`
   - `npm run build`
   - Smoke: Deals öffnen → Sidebar Aktionen öffnen → Dialog Submit/Cancel, DataTable pagination.
-

@@ -4,7 +4,11 @@ import { useState, type ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 import { cn } from '@/lib/utils'
 
 const COLLAPSE_CONTENT_CLASS =
@@ -45,7 +49,7 @@ export function BidOverviewCollapsibleCard({
           <div
             className={cn(
               'flex w-full items-center gap-3 rounded-t-xl px-6 py-4 transition-colors hover:bg-muted/30',
-              !open && !pinnedBelowHeader && 'rounded-b-xl'
+              !open && !pinnedBelowHeader && 'rounded-b-xl',
             )}
           >
             {headerPrefix ? <div className="shrink-0">{headerPrefix}</div> : null}
@@ -58,7 +62,9 @@ export function BidOverviewCollapsibleCard({
                 <div className="min-w-0 flex-1 space-y-1">
                   {title}
                   {description ? (
-                    <div className="text-sm font-normal text-muted-foreground">{description}</div>
+                    <div className="text-sm font-normal text-muted-foreground">
+                      {description}
+                    </div>
                   ) : null}
                 </div>
                 <span
@@ -68,7 +74,7 @@ export function BidOverviewCollapsibleCard({
                   <ChevronDown
                     className={cn(
                       'size-4 transition-transform duration-200',
-                      open && 'rotate-180'
+                      open && 'rotate-180',
                     )}
                   />
                 </span>
@@ -80,16 +86,14 @@ export function BidOverviewCollapsibleCard({
           </div>
         </CardHeader>
 
-        {pinnedBelowHeader ? (
-          <div className="px-6 pb-2">{pinnedBelowHeader}</div>
-        ) : null}
+        {pinnedBelowHeader ? <div className="px-6 pb-2">{pinnedBelowHeader}</div> : null}
 
         <CollapsibleContent className={COLLAPSE_CONTENT_CLASS}>
           <div className="min-h-0 overflow-hidden">
             <CardContent
               className={cn(
                 open ? 'border-t border-border pt-3' : 'border-t-0 p-0',
-                contentClassName
+                contentClassName,
               )}
             >
               {children}

@@ -1,7 +1,20 @@
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { AppIcon } from '@/lib/icons'
 import { DatabaseSyncIcon, Wifi01Icon } from '@hugeicons/core-free-icons'
 import type { AccountDealRow } from './actions'
@@ -18,7 +31,8 @@ export function CompanyDetailPipelineTab({
 }) {
   const hasCrm = activeDeals.some((d) => dealHasCrmSync(d))
   const hasLocal = activeDeals.some((d) => !dealHasCrmSync(d))
-  const pipelineSource: 'live' | 'local' | 'mixed' = hasCrm && hasLocal ? 'mixed' : hasCrm ? 'live' : 'local'
+  const pipelineSource: 'live' | 'local' | 'mixed' =
+    hasCrm && hasLocal ? 'mixed' : hasCrm ? 'live' : 'local'
 
   return (
     <div className="space-y-6">
@@ -29,8 +43,16 @@ export function CompanyDetailPipelineTab({
             <CardDescription>
               {activeDeals.length} Deals · Quelle:{' '}
               <span className="inline-flex items-center gap-1">
-                <AppIcon icon={pipelineSource === 'live' ? Wifi01Icon : DatabaseSyncIcon} size={14} className="text-muted-foreground" />
-                {pipelineSource === 'live' ? 'CRM (Live)' : pipelineSource === 'mixed' ? 'CRM + Lokal' : 'RefStack (Lokal)'}
+                <AppIcon
+                  icon={pipelineSource === 'live' ? Wifi01Icon : DatabaseSyncIcon}
+                  size={14}
+                  className="text-muted-foreground"
+                />
+                {pipelineSource === 'live'
+                  ? 'CRM (Live)'
+                  : pipelineSource === 'mixed'
+                    ? 'CRM + Lokal'
+                    : 'RefStack (Lokal)'}
               </span>
             </CardDescription>
           </div>
@@ -63,7 +85,9 @@ export function CompanyDetailPipelineTab({
                     <TableCell>
                       <Badge variant="outline">{d.status}</Badge>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{d.expiry_date ?? '—'}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {d.expiry_date ?? '—'}
+                    </TableCell>
                     <TableCell className="text-muted-foreground">
                       {(() => {
                         const crmLink = buildCrmDealUrl(d, { hubspotPortalId })

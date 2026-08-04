@@ -10,7 +10,7 @@ const RERANK_FETCH_MS = 8000
 export async function rerankMatchHitsWithGpt(
   apiKey: string,
   queryText: string,
-  hits: MatchReferenceHit[]
+  hits: MatchReferenceHit[],
 ): Promise<MatchReferenceHit[]> {
   const byId = new Map(hits.map((h) => [h.id, h]))
   const candidates = hits.map((h) => ({

@@ -29,7 +29,7 @@ export type InternalApprovalReviewEmailParams = {
 
 /** E-Mail an den intern Verantwortlichen mit Link zur internen Freigabe (inkl. Delegation). */
 export async function sendInternalApprovalReviewEmail(
-  params: InternalApprovalReviewEmailParams
+  params: InternalApprovalReviewEmailParams,
 ): Promise<boolean> {
   const resend = getResend()
   const to = params.to.trim()

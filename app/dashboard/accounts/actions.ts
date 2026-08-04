@@ -70,7 +70,7 @@ export type {
 } from './account-action-types'
 
 export async function getCompanyStrategy(
-  companyId: string
+  companyId: string,
 ): Promise<CompanyStrategyRow | null> {
   return getCompanyStrategyImpl(companyId)
 }
@@ -85,12 +85,14 @@ export async function upsertCompanyStrategy(
     value_proposition?: string | null
     metrics_pain?: string | null
     mh_assessment?: Record<string, unknown> | null
-  }
+  },
 ): Promise<{ success: boolean; error?: string }> {
   return upsertCompanyStrategyImpl(companyId, payload)
 }
 
-export async function getRoadmapProjects(companyId: string): Promise<RoadmapProjectRow[]> {
+export async function getRoadmapProjects(
+  companyId: string,
+): Promise<RoadmapProjectRow[]> {
   return getRoadmapProjectsImpl(companyId)
 }
 
@@ -103,17 +105,19 @@ export async function upsertRoadmapProject(
     status?: string | null
     target_date?: string | null
     tags?: string | null
-  }
+  },
 ): Promise<{ success: boolean; error?: string }> {
   return upsertRoadmapProjectImpl(companyId, payload)
 }
 
-export async function deleteRoadmapProject(id: string): Promise<{ success: boolean; error?: string }> {
+export async function deleteRoadmapProject(
+  id: string,
+): Promise<{ success: boolean; error?: string }> {
   return deleteRoadmapProjectImpl(id)
 }
 
 export async function getRecommendedReferences(
-  projectId: string
+  projectId: string,
 ): Promise<RecommendedReference[]> {
   return getRecommendedReferencesImpl(projectId)
 }
@@ -140,7 +144,7 @@ export async function createStakeholder(
     last_contact_at?: string | null
     last_interaction_at?: string | null
     sentiment?: string | null
-  }
+  },
 ): Promise<{ success: boolean; stakeholder?: StakeholderRow; error?: string }> {
   return createStakeholderImpl(companyId, payload)
 }
@@ -159,35 +163,39 @@ export async function updateStakeholder(
     last_contact_at?: string | null
     last_interaction_at?: string | null
     sentiment?: string | null
-  }
+  },
 ): Promise<{ success: boolean; error?: string }> {
   return updateStakeholderImpl(id, payload)
 }
 
-export async function deleteStakeholder(id: string): Promise<{ success: boolean; error?: string }> {
+export async function deleteStakeholder(
+  id: string,
+): Promise<{ success: boolean; error?: string }> {
   return deleteStakeholderImpl(id)
 }
 
 export async function getReferencesByCompanyId(
-  companyId: string
+  companyId: string,
 ): Promise<CompanyRefRow[]> {
   return getReferencesByCompanyIdImpl(companyId)
 }
 
 export async function updateExternalContactBuyingCenterRole(
   id: string,
-  role: StakeholderRole
+  role: StakeholderRole,
 ): Promise<{ success: boolean; error?: string }> {
   return updateExternalContactBuyingCenterRoleImpl(id, role)
 }
 
-export async function getContactsByCompanyId(companyId: string): Promise<ContactPersonRow[]> {
+export async function getContactsByCompanyId(
+  companyId: string,
+): Promise<ContactPersonRow[]> {
   return getContactsByCompanyIdImpl(companyId)
 }
 
 export async function setCompanyInternalReferenceApprovalContact(
   companyId: string,
-  contactPersonId: string | null
+  contactPersonId: string | null,
 ): Promise<{ success: boolean; error?: string }> {
   return setCompanyInternalReferenceApprovalContactImpl(companyId, contactPersonId)
 }
@@ -203,7 +211,7 @@ export async function createContactPerson(
     role?: string | null
     position?: string | null
     last_interaction_at?: string | null
-  }
+  },
 ): Promise<{ success: boolean; contact?: ContactPersonRow; error?: string }> {
   return createContactPersonImpl(companyId, payload)
 }
@@ -220,35 +228,39 @@ export async function updateContactPerson(
     position?: string | null
     company_id?: string | null
     last_interaction_at?: string | null
-  }
+  },
 ): Promise<{ success: boolean; error?: string }> {
   return updateContactPersonImpl(id, payload)
 }
 
-export async function deleteContactPerson(id: string): Promise<{ success: boolean; error?: string }> {
+export async function deleteContactPerson(
+  id: string,
+): Promise<{ success: boolean; error?: string }> {
   return deleteContactPersonImpl(id)
 }
 
-export async function getActiveDealsByCompanyId(companyId: string): Promise<AccountDealRow[]> {
+export async function getActiveDealsByCompanyId(
+  companyId: string,
+): Promise<AccountDealRow[]> {
   return getActiveDealsByCompanyIdImpl(companyId)
 }
 
 export async function getExpiringDealsByCompanyId(
-  companyId: string
+  companyId: string,
 ): Promise<DealSignalRow[]> {
   return getExpiringDealsByCompanyIdImpl(companyId)
 }
 
 export async function updateCompanyAccountStatus(
   companyId: string,
-  account_status: CompanyAccountStatusValue | null
+  account_status: CompanyAccountStatusValue | null,
 ): Promise<{ success: boolean; error?: string }> {
   return updateCompanyAccountStatusImpl(companyId, account_status)
 }
 
 export async function toggleCompanyFavorite(
   companyId: string,
-  isFavorite: boolean
+  isFavorite: boolean,
 ): Promise<{ success: boolean; error?: string }> {
   return toggleCompanyFavoriteImpl(companyId, isFavorite)
 }
@@ -283,7 +295,7 @@ export async function createPartner(payload: {
 
 export async function bulkCreateCompaniesFromSheet(
   fileBuffer: Uint8Array,
-  options: { entityKind?: 'account' | 'partner' } = {}
+  options: { entityKind?: 'account' | 'partner' } = {},
 ): Promise<{
   success: boolean
   createdCount: number
@@ -309,19 +321,19 @@ export async function updateCompany(payload: {
 }
 
 export async function deleteCompanyWithData(
-  companyId: string
+  companyId: string,
 ): Promise<{ success: boolean; error?: string }> {
   return deleteCompanyWithDataImpl(companyId)
 }
 
 export async function getRecommendedReferencesForAccount(
-  companyId: string
+  companyId: string,
 ): Promise<RecommendedReference[]> {
   return getRecommendedReferencesForAccountImpl(companyId)
 }
 
 export async function generateOnePagerHtml(
-  companyId: string
+  companyId: string,
 ): Promise<{ success: boolean; html?: string; error?: string }> {
   return generateOnePagerHtmlImpl(companyId)
 }

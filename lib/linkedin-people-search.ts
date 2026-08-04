@@ -4,11 +4,14 @@
  */
 
 export function employerHintFromEmail(email: string | null | undefined): string | null {
-  const e = String(email ?? '').trim().toLowerCase()
+  const e = String(email ?? '')
+    .trim()
+    .toLowerCase()
   const at = e.indexOf('@')
   if (at < 0) return null
   const domain = e.slice(at + 1).replace(/^www\./, '')
-  if (!domain || domain.endsWith('gmail.com') || domain.endsWith('googlemail.com')) return null
+  if (!domain || domain.endsWith('gmail.com') || domain.endsWith('googlemail.com'))
+    return null
   const main = domain.split('.')[0] ?? ''
   if (!main || main.length < 2) return null
   return main.replace(/-/g, ' ')

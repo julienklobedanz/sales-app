@@ -22,7 +22,11 @@ export function MarketSignalsPushCard() {
   const [status, setStatus] = useState<'connected' | 'disconnected'>('disconnected')
 
   async function enablePush() {
-    if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+    if (
+      typeof window === 'undefined' ||
+      !('serviceWorker' in navigator) ||
+      !('PushManager' in window)
+    ) {
       toast.error('Push wird von diesem Browser nicht unterstützt.')
       return
     }
@@ -71,7 +75,9 @@ export function MarketSignalsPushCard() {
       }
 
       setStatus('connected')
-      toast.success('Browser-Benachrichtigungen sind eingerichtet. Aktiviere dazu die Option „Web Push“ und speichere die Benachrichtigungen.')
+      toast.success(
+        'Browser-Benachrichtigungen sind eingerichtet. Aktiviere dazu die Option „Web Push“ und speichere die Benachrichtigungen.',
+      )
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Push-Registrierung fehlgeschlagen.')
     } finally {
@@ -88,7 +94,13 @@ export function MarketSignalsPushCard() {
             Status: {status === 'connected' ? 'Verbunden' : 'Nicht verbunden'}
           </p>
         </div>
-        <Button type="button" size="sm" variant="secondary" onClick={() => void enablePush()} disabled={pending}>
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          onClick={() => void enablePush()}
+          disabled={pending}
+        >
           <AppIcon icon={Notification01Icon} size={16} className="mr-2" />
           {pending ? 'Wird eingerichtet …' : 'Push erlauben & registrieren'}
         </Button>

@@ -46,7 +46,7 @@ describe('buildDealFactRows', () => {
         crm_opportunity_id: '12345',
         crm_stage: 'qualifiedtobuy',
       },
-      { hubspotPortalId: '999' }
+      { hubspotPortalId: '999' },
     )
     const stage = rows.find((r) => r.kind === 'text' && r.label === 'CRM-Stage')
     expect(stage?.kind === 'text' ? stage.value : undefined).toBe('Qualifiziert')

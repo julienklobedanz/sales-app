@@ -8,7 +8,7 @@ import { validatePasswordPolicy } from '@/lib/security/password-policy'
 export type UpdatePasswordResult = { error?: string }
 
 export async function updatePasswordAfterReset(
-  formData: FormData
+  formData: FormData,
 ): Promise<UpdatePasswordResult> {
   const password = formData.get('password')?.toString()
   const confirm = formData.get('confirm')?.toString()

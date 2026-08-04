@@ -1,6 +1,9 @@
 import { COPY } from '@/lib/copy'
 import { formatCopy } from '@/lib/dashboard-home/copy-format'
-import type { DashboardQueueTone, SalesRepDashboardModel } from '@/lib/dashboard-home/dashboard-home-types'
+import type {
+  DashboardQueueTone,
+  SalesRepDashboardModel,
+} from '@/lib/dashboard-home/dashboard-home-types'
 import { ROUTES } from '@/lib/routes'
 
 export type QueueTone = DashboardQueueTone
@@ -70,7 +73,9 @@ export function buildSalesRepQueue(data: SalesRepDashboardModel): SalesRepQueueI
   const warnDeals = data.activeDeals.filter(
     (d) =>
       d.linkedCount > 0 &&
-      (d.bestMatchScore == null || d.bestMatchScore < PARTIAL_MATCH_CUTOFF || d.linkedCount === 1)
+      (d.bestMatchScore == null ||
+        d.bestMatchScore < PARTIAL_MATCH_CUTOFF ||
+        d.linkedCount === 1),
   )
   for (const deal of warnDeals) {
     if (items.some((i) => i.href === ROUTES.matchWithDeal(deal.id))) continue

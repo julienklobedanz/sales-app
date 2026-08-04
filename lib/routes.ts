@@ -70,16 +70,44 @@ export const REVALIDATE = {
 /** Permanente Weiterleitungen (alte URLs → aktuelle Struktur), siehe `next.config`. */
 export const LEGACY_REDIRECTS = [
   { source: '/dashboard/match', destination: '/dashboard/smart-match', permanent: false },
-  { source: '/dashboard/match/:path*', destination: '/dashboard/smart-match/:path*', permanent: false },
-  { source: '/dashboard/evidence', destination: '/dashboard/references', permanent: false },
-  { source: '/dashboard/evidence/:path*', destination: '/dashboard/references/:path*', permanent: false },
+  {
+    source: '/dashboard/match/:path*',
+    destination: '/dashboard/smart-match/:path*',
+    permanent: false,
+  },
+  {
+    source: '/dashboard/evidence',
+    destination: '/dashboard/references',
+    permanent: false,
+  },
+  {
+    source: '/dashboard/evidence/:path*',
+    destination: '/dashboard/references/:path*',
+    permanent: false,
+  },
   { source: '/dashboard/companies', destination: ROUTES.accounts, permanent: true },
-  { source: '/dashboard/companies/:path*', destination: '/dashboard/accounts/:path*', permanent: true },
+  {
+    source: '/dashboard/companies/:path*',
+    destination: '/dashboard/accounts/:path*',
+    permanent: true,
+  },
   { source: '/dashboard/new', destination: ROUTES.references.new, permanent: true },
-  { source: '/dashboard/edit/:id', destination: '/dashboard/references/:id/edit', permanent: true },
+  {
+    source: '/dashboard/edit/:id',
+    destination: '/dashboard/references/:id/edit',
+    permanent: true,
+  },
   // Alte Concept-URL (W3); Lesezeichen weiter auf Evidence leiten
-  { source: '/dashboard/concepts/inbox-references', destination: ROUTES.references.root, permanent: true },
+  {
+    source: '/dashboard/concepts/inbox-references',
+    destination: ROUTES.references.root,
+    permanent: true,
+  },
   { source: '/dashboard/request', destination: ROUTES.request, permanent: true },
   // Ehemalige Marktsignale-manage-URL (W4c) → Settings
-  { source: '/dashboard/market-signals/manage', destination: ROUTES.marketSignalsManage, permanent: true },
+  {
+    source: '/dashboard/market-signals/manage',
+    destination: ROUTES.marketSignalsManage,
+    permanent: true,
+  },
 ] as const

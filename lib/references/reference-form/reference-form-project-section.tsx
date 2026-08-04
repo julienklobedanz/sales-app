@@ -20,7 +20,10 @@ import {
   PROJECT_STATUS_OPTIONS,
   VOLUME_CURRENCY_OPTIONS,
 } from '@/lib/references/reference-form/reference-form-constants'
-import { RequiredLabel, OptionalLabel } from '@/lib/references/reference-form/reference-form-labels'
+import {
+  RequiredLabel,
+  OptionalLabel,
+} from '@/lib/references/reference-form/reference-form-labels'
 import type { ReferenceFormViewModel } from '@/lib/references/reference-form/use-reference-form'
 
 export type ReferenceFormProjectSectionProps = Pick<
@@ -78,7 +81,11 @@ export function ReferenceFormProjectSection({
             setVolumeEur(withSeparators)
           }}
         />
-        <Select value={volumeCurrency} onValueChange={setVolumeCurrency} disabled={submitting}>
+        <Select
+          value={volumeCurrency}
+          onValueChange={setVolumeCurrency}
+          disabled={submitting}
+        >
           <SelectTrigger
             className="h-10 w-[104px] shrink-0 rounded-lg border border-input bg-background px-2.5 text-xs font-medium"
             aria-label="Währung wählen"
@@ -101,7 +108,11 @@ export function ReferenceFormProjectSection({
     <div className="space-y-2">
       <OptionalLabel htmlFor="contract_type">Vertragsart</OptionalLabel>
       <input type="hidden" name="contract_type" value={contractType} />
-      <Select value={contractType || undefined} onValueChange={setContractType} disabled={submitting}>
+      <Select
+        value={contractType || undefined}
+        onValueChange={setContractType}
+        disabled={submitting}
+      >
         <SelectTrigger id="contract_type" className="w-full">
           <SelectValue placeholder="Auswählen …" />
         </SelectTrigger>

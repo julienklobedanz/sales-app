@@ -44,7 +44,9 @@ export async function DealRfpCockpitBlock({
   const supabase = await createServerSupabaseClient()
   const data = await loadDealRfpCockpitData(supabase, orgId, dealId, dealContext)
 
-  const draftsCovered = data ? data.draftRows.filter((r) => Boolean(r.reference)).length : 0
+  const draftsCovered = data
+    ? data.draftRows.filter((r) => Boolean(r.reference)).length
+    : 0
   const risksCount = data?.risks
     ? data.risks.redFlags.length + data.risks.smeOpenCount
     : 0

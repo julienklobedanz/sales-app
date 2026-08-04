@@ -37,7 +37,9 @@ describe('parseGoogleNewsRssXml', () => {
 
 describe('buildCompanyNewsRssQuery', () => {
   it('includes site: when host present', () => {
-    expect(buildCompanyNewsRssQuery('Siemens AG', 'siemens.com')).toContain('site:siemens.com')
+    expect(buildCompanyNewsRssQuery('Siemens AG', 'siemens.com')).toContain(
+      'site:siemens.com',
+    )
   })
   it('falls back to quoted name only', () => {
     expect(buildCompanyNewsRssQuery('Local Shop', null)).toBe('"Local Shop"')

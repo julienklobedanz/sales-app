@@ -15,14 +15,16 @@ export type ConfirmInternalApprovalResult =
 
 export async function confirmInternalApprovalFromToken(
   admin: SupabaseClient,
-  token: string
+  token: string,
 ): Promise<ConfirmInternalApprovalResult> {
   const trimmed = token.trim()
   if (!trimmed) return { ok: false, reason: 'invalid' }
 
   const { data: row, error } = await admin
     .from('references')
-    .select('id, title, organization_id, approval_internal_status, approval_internal_review_token')
+    .select(
+      'id, title, organization_id, approval_internal_status, approval_internal_review_token',
+    )
     .eq('approval_internal_review_token', trimmed)
     .maybeSingle()
 

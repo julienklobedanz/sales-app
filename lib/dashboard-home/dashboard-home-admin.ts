@@ -31,11 +31,13 @@ export async function loadAdminDashboardData(
   supabase: SupabaseClient,
   fullName: string | null,
   orgId: string | undefined,
-  userId: string | undefined
+  userId: string | undefined,
 ): Promise<AdminDashboardModel> {
   const greetingName = dashboardFirstName(fullName) || 'du'
 
-  const kpisBase = orgId ? await loadReferenceKpis(supabase, orgId) : { total: 0, approved: 0, internal: 0, draft: 0 }
+  const kpisBase = orgId
+    ? await loadReferenceKpis(supabase, orgId)
+    : { total: 0, approved: 0, internal: 0, draft: 0 }
   const referencesTotal = kpisBase.total
 
   const since7 = new Date()
@@ -124,16 +126,23 @@ export async function loadAdminDashboardData(
         .from('audit_logs')
         .select('action_details')
         .eq('org_id', orgId)
-        .in('action', ['reference_search_no_results', 'search_no_results', 'rfp_match_no_result'])
+        .in('action', [
+          'reference_search_no_results',
+          'search_no_results',
+          'rfp_match_no_result',
+        ])
         .order('timestamp', { ascending: false })
         .limit(200),
     ])
 
     dateDisplayFormat = normalizeOrgDateDisplayFormat(
-      (orgRow.data as { date_display_format?: string | null } | null)?.date_display_format
+      (orgRow.data as { date_display_format?: string | null } | null)
+        ?.date_display_format,
     )
 
-    const pendingOver12h = openRequests.filter((r) => Date.now() - new Date(r.created_at).getTime() > 12 * 60 * 60 * 1000).length
+    const pendingOver12h = openRequests.filter(
+      (r) => Date.now() - new Date(r.created_at).getTime() > 12 * 60 * 60 * 1000,
+    ).length
     if (pendingOver12h > 0) {
       blockers.push({
         id: 'pending-content-requests',
@@ -152,7 +161,9 @@ export async function loadAdminDashboardData(
       user_id: string | null
       action_details: Record<string, unknown> | null
     }>
-    const latestIngest = auditRows.find((row) => row.action === 'market_signals_ingest_run')
+    const latestIngest = auditRows.find(
+      (row) => row.action === 'market_signals_ingest_run',
+    )
     if (latestIngest) {
       const details = latestIngest.action_details ?? {}
       const modeRaw = String(details.mode ?? 'unknown')
@@ -169,7 +180,9 @@ export async function loadAdminDashboardData(
         errors: Number.isFinite(errorsRaw) ? Math.max(0, Math.trunc(errorsRaw)) : 0,
       }
     }
-    const syncErrors = auditRows.filter((row) => /sync|integration|ingest_error/i.test(String(row.action))).length
+    const syncErrors = auditRows.filter((row) =>
+      /sync|integration|ingest_error/i.test(String(row.action)),
+    ).length
     if (syncErrors > 0) {
       blockers.push({
         id: 'sync-errors',
@@ -187,7 +200,8 @@ export async function loadAdminDashboardData(
         : {}
     const apiCreditUsedPercentRaw = workflowSettings.api_credit_used_percent
     const apiCreditUsedPercent =
-      typeof apiCreditUsedPercentRaw === 'number' && Number.isFinite(apiCreditUsedPercentRaw)
+      typeof apiCreditUsedPercentRaw === 'number' &&
+      Number.isFinite(apiCreditUsedPercentRaw)
         ? Math.max(0, Math.min(100, Math.round(apiCreditUsedPercentRaw)))
         : null
     if (apiCreditUsedPercent != null && apiCreditUsedPercent >= 85) {
@@ -211,12 +225,16 @@ export async function loadAdminDashboardData(
         : null,
       gapAlert: null,
     }
-    const zeroRows = (zeroResultRowsRes.data ?? []) as Array<{ action_details?: Record<string, unknown> | null }>
+    const zeroRows = (zeroResultRowsRes.data ?? []) as Array<{
+      action_details?: Record<string, unknown> | null
+    }>
     if (zeroRows.length) {
       const termCounts = new Map<string, number>()
       for (const row of zeroRows) {
         const details = row.action_details ?? {}
-        const term = String(details.query ?? details.search ?? details.term ?? '').trim().toLowerCase()
+        const term = String(details.query ?? details.search ?? details.term ?? '')
+          .trim()
+          .toLowerCase()
         if (!term) continue
         termCounts.set(term, (termCounts.get(term) ?? 0) + 1)
       }
@@ -228,26 +246,37 @@ export async function loadAdminDashboardData(
 
     const activeSeats = activeProfilesRes.count ?? 0
     const pendingInvites = pendingInvitesRes.count ?? 0
-    const latestExec = (latestExecRes.data?.[0] as { detected_at?: string } | undefined)?.detected_at ?? null
-    const latestNews = (latestNewsRes.data?.[0] as { published_on?: string } | undefined)?.published_on ?? null
+    const latestExec =
+      (latestExecRes.data?.[0] as { detected_at?: string } | undefined)?.detected_at ??
+      null
+    const latestNews =
+      (latestNewsRes.data?.[0] as { published_on?: string } | undefined)?.published_on ??
+      null
     const latestTs = Math.max(
       latestExec ? new Date(latestExec).getTime() : 0,
-      latestNews ? new Date(latestNews).getTime() : 0
+      latestNews ? new Date(latestNews).getTime() : 0,
     )
-    const dataFreshnessMinutes = latestTs > 0 ? Math.max(0, Math.round((Date.now() - latestTs) / 60000)) : null
+    const dataFreshnessMinutes =
+      latestTs > 0 ? Math.max(0, Math.round((Date.now() - latestTs) / 60000)) : null
 
     const integrationSettings =
-      workflowSettings.integration_settings && typeof workflowSettings.integration_settings === 'object'
+      workflowSettings.integration_settings &&
+      typeof workflowSettings.integration_settings === 'object'
         ? (workflowSettings.integration_settings as Record<string, unknown>)
         : {}
-    const integrationStatus = (key: string) => integrationConnectionStatus(integrationSettings[key])
+    const integrationStatus = (key: string) =>
+      integrationConnectionStatus(integrationSettings[key])
     const integrations: AdminDashboardModel['systemUsage']['integrations'] = [
       { name: 'HubSpot', status: integrationStatus('hubspot') },
       { name: 'Salesforce', status: integrationStatus('salesforce') },
     ]
     const hasDown = integrations.some((i) => i.status === 'down')
     const hasWarn = integrations.some((i) => i.status === 'warning')
-    const apiHealth: 'stable' | 'warning' | 'critical' = hasDown ? 'critical' : hasWarn ? 'warning' : 'stable'
+    const apiHealth: 'stable' | 'warning' | 'critical' = hasDown
+      ? 'critical'
+      : hasWarn
+        ? 'warning'
+        : 'stable'
     systemUsage = {
       activeUsers: wau7d,
       activeSeats: activeSeats + pendingInvites,
@@ -257,21 +286,23 @@ export async function loadAdminDashboardData(
       integrations,
     }
 
-    const userIdsForAudit = Array.from(new Set(auditRows.map((r) => r.user_id).filter(Boolean) as string[]))
+    const userIdsForAudit = Array.from(
+      new Set(auditRows.map((r) => r.user_id).filter(Boolean) as string[]),
+    )
     const { data: auditUsers } = userIdsForAudit.length
       ? await supabase.from('profiles').select('id,full_name').in('id', userIdsForAudit)
       : { data: [] as Array<{ id: string; full_name: string | null }> }
     const nameById = new Map((auditUsers ?? []).map((u) => [u.id, u.full_name ?? 'User']))
     auditFeed.push(
       ...auditRows.slice(0, 12).map((row) => {
-        const actor = row.user_id ? nameById.get(row.user_id) ?? 'User' : 'System'
+        const actor = row.user_id ? (nameById.get(row.user_id) ?? 'User') : 'System'
         const action = String(row.action ?? '').replace(/_/g, ' ')
         return {
           id: row.id,
           text: `${actor}: ${action}`,
           timestamp: row.timestamp,
         }
-      })
+      }),
     )
 
     const [
@@ -360,7 +391,9 @@ export async function loadAdminDashboardData(
     shares7d = (s1Res.count ?? 0) + (s2Res.count ?? 0)
     prevShares7d = (ps1Res.count ?? 0) + (ps2Res.count ?? 0)
     wau7d = new Set((distinctUsersRes.data ?? []).map((r) => r.created_by as string)).size
-    prevWau7d = new Set((prevDistinctUsersRes.data ?? []).map((r) => r.created_by as string)).size
+    prevWau7d = new Set(
+      (prevDistinctUsersRes.data ?? []).map((r) => r.created_by as string),
+    ).size
 
     const { data: evRows } = await supabase
       .from('evidence_events')
@@ -396,7 +429,7 @@ export async function loadAdminDashboardData(
               companyLogoUrl: company?.logo_url ?? null,
             },
           ]
-        })
+        }),
       )
       for (const [id, n] of sorted) {
         const ref = refById.get(id)
@@ -420,7 +453,9 @@ export async function loadAdminDashboardData(
       .order('created_at', { ascending: false })
       .limit(80)
 
-    const refIdsForTeam = [...new Set((teamRows ?? []).map((r) => r.reference_id).filter(Boolean) as string[])]
+    const refIdsForTeam = [
+      ...new Set((teamRows ?? []).map((r) => r.reference_id).filter(Boolean) as string[]),
+    ]
     const { data: teamRefs } = refIdsForTeam.length
       ? await supabase
           .from('references')
@@ -439,13 +474,23 @@ export async function loadAdminDashboardData(
             logo: company?.logo_url ?? null,
           },
         ]
-      })
+      }),
     )
 
-    const userIds = [...new Set((teamRows ?? []).map((r) => r.created_by as string).filter(Boolean))]
+    const userIds = [
+      ...new Set((teamRows ?? []).map((r) => r.created_by as string).filter(Boolean)),
+    ]
     if (userIds.length > 0) {
-      const { data: names } = await supabase.from('profiles').select('id, full_name').in('id', userIds)
-      const nameById = new Map((names ?? []).map((p) => [p.id as string, (p.full_name as string) ?? p.id.slice(0, 8)]))
+      const { data: names } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', userIds)
+      const nameById = new Map(
+        (names ?? []).map((p) => [
+          p.id as string,
+          (p.full_name as string) ?? p.id.slice(0, 8),
+        ]),
+      )
       for (const row of (teamRows ?? []) as Array<Record<string, unknown>>) {
         const userId = row.created_by as string
         const eventType = String(row.event_type ?? '')
@@ -487,17 +532,22 @@ export async function loadAdminDashboardData(
       .select('company_id, change_summary, companies(name)')
       .order('detected_at', { ascending: false })
       .limit(80)
-    const signalCounts = new Map<string, { count: number; summary: string; name: string }>()
+    const signalCounts = new Map<
+      string,
+      { count: number; summary: string; name: string }
+    >()
     for (const row of execForLeader ?? []) {
       const cid = String((row as { company_id?: string }).company_id ?? '')
       if (!cid || !openDealsByCompany.has(cid)) continue
       const company = Array.isArray((row as { companies?: unknown }).companies)
-        ? ((row as { companies: { name?: string }[] }).companies[0])
-        : ((row as { companies?: { name?: string } | null }).companies)
+        ? (row as { companies: { name?: string }[] }).companies[0]
+        : (row as { companies?: { name?: string } | null }).companies
       const cur = signalCounts.get(cid) ?? {
         count: 0,
         summary: String((row as { change_summary?: string }).change_summary ?? 'Signal'),
-        name: String(company?.name ?? openDealsByCompany.get(cid)?.companyName ?? 'Account'),
+        name: String(
+          company?.name ?? openDealsByCompany.get(cid)?.companyName ?? 'Account',
+        ),
       }
       cur.count += 1
       signalCounts.set(cid, cur)
@@ -517,25 +567,31 @@ export async function loadAdminDashboardData(
       .slice(0, 8)
   }
 
-  const closedDeals = allDealsForSignals.filter((d) => d.status === 'won' || d.status === 'lost')
+  const closedDeals = allDealsForSignals.filter(
+    (d) => d.status === 'won' || d.status === 'lost',
+  )
   const minDealsRequired = 5
   const wonCount = closedDeals.filter((d) => d.status === 'won').length
-  const { available: winRateAvailable, percent: winRatePercent, closedDealsCount: closedDealsCountAdmin } = computeWinRateMetrics(
-    closedDeals.length,
-    wonCount,
-    minDealsRequired
-  )
+  const {
+    available: winRateAvailable,
+    percent: winRatePercent,
+    closedDealsCount: closedDealsCountAdmin,
+  } = computeWinRateMetrics(closedDeals.length, wonCount, minDealsRequired)
 
   const riskDeals = buildLeaderRiskDeals(allDealsForSignals, { dateDisplayFormat })
   let callQueue: AdminDashboardModel['callQueue'] = []
   let meetingPrepSessions: MeetingPrepSessionListItem[] = []
   if (orgId && userId) {
     callQueue = await loadLeaderCallQueue(supabase, userId, orgId, allDealsForSignals)
-    meetingPrepSessions = await listMeetingPrepSessionsForDashboard(supabase, orgId, userId)
+    meetingPrepSessions = await listMeetingPrepSessionsForDashboard(
+      supabase,
+      orgId,
+      userId,
+    )
   }
   const coveragePipeline = buildLeaderCoveragePipeline(
     pipelineSignals,
-    contentRoi.gapAlert?.term ?? null
+    contentRoi.gapAlert?.term ?? null,
   )
   let signalRisks: AdminDashboardModel['signalRisks'] = []
   const winRateCompare = buildWinRateCompare(closedDeals, minDealsRequired)
@@ -544,9 +600,11 @@ export async function loadAdminDashboardData(
     const openHighValue = allDealsForSignals.filter(
       (d) =>
         ACTIVE_DEAL_STATUSES.includes(d.status) &&
-        (d.volume?.includes('Mio') || d.volume?.includes('Mio'))
+        (d.volume?.includes('Mio') || d.volume?.includes('Mio')),
     )
-    const companyIds = [...new Set(openHighValue.map((d) => d.company_id).filter(Boolean) as string[])]
+    const companyIds = [
+      ...new Set(openHighValue.map((d) => d.company_id).filter(Boolean) as string[]),
+    ]
     let championLossCount = 0
     if (companyIds.length) {
       const { data: execLoss } = await supabase
@@ -556,7 +614,9 @@ export async function loadAdminDashboardData(
         .order('detected_at', { ascending: false })
         .limit(40)
       championLossCount = (execLoss ?? []).filter((row) =>
-        /verlass|wechsel|ausgeschieden|left/i.test(String((row as { change_summary?: string }).change_summary ?? ''))
+        /verlass|wechsel|ausgeschieden|left/i.test(
+          String((row as { change_summary?: string }).change_summary ?? ''),
+        ),
       ).length
     }
 

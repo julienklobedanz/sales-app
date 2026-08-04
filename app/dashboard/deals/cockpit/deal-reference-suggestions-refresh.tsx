@@ -3,7 +3,7 @@
 import { createContext, useContext, type ReactNode } from 'react'
 
 const DealReferenceSuggestionsRefreshContext = createContext<(() => void) | undefined>(
-  undefined
+  undefined,
 )
 
 export function DealReferenceSuggestionsRefreshProvider({

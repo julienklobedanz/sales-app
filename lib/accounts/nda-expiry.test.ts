@@ -20,9 +20,15 @@ describe('nda-expiry', () => {
   })
 
   it('skips unlimited and expired status', () => {
-    expect(shouldNotifyNdaExpiry({ status: 'active', validUntil: null, refDate: ref })).toBeNull()
     expect(
-      shouldNotifyNdaExpiry({ status: 'expired', validUntil: '2026-06-01', refDate: ref })
+      shouldNotifyNdaExpiry({ status: 'active', validUntil: null, refDate: ref }),
+    ).toBeNull()
+    expect(
+      shouldNotifyNdaExpiry({
+        status: 'expired',
+        validUntil: '2026-06-01',
+        refDate: ref,
+      }),
     ).toBeNull()
   })
 
@@ -38,7 +44,9 @@ describe('nda-expiry', () => {
 
   it('builds German copy', () => {
     expect(buildNdaExpiryNotificationText('Apple', '2026-05-28', 1)).toContain('morgen')
-    expect(buildNdaExpiryNotificationText('Apple', '2026-05-20', -7)).toContain('abgelaufen')
+    expect(buildNdaExpiryNotificationText('Apple', '2026-05-20', -7)).toContain(
+      'abgelaufen',
+    )
   })
 
   it('computes day difference in local calendar days', () => {

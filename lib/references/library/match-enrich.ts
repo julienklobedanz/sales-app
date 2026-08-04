@@ -6,12 +6,12 @@ type Supabase = Awaited<ReturnType<typeof createServerSupabaseClient>>
 
 export async function attachCompanyFields(
   supabase: Supabase,
-  matches: MatchReferenceHit[]
+  matches: MatchReferenceHit[],
 ): Promise<MatchReferenceHit[]> {
   if (matches.length === 0) return matches
   const companyByRef = await fetchCompanyFieldsForReferenceIds(
     supabase,
-    matches.map((m) => m.id)
+    matches.map((m) => m.id),
   )
   return matches.map((m) => {
     const co = companyByRef.get(m.id)
@@ -27,7 +27,7 @@ export async function attachCompanyFields(
 
 export async function attachProjectDates(
   supabase: Supabase,
-  matches: MatchReferenceHit[]
+  matches: MatchReferenceHit[],
 ): Promise<MatchReferenceHit[]> {
   if (matches.length === 0) return matches
   const missing = matches.filter((m) => m.projectStart == null && m.projectEnd == null)
@@ -37,7 +37,7 @@ export async function attachProjectDates(
     .select('id, project_start, project_end')
     .in(
       'id',
-      missing.map((m) => m.id)
+      missing.map((m) => m.id),
     )
   const byId = new Map(
     (data ?? []).map((r) => [
@@ -46,7 +46,7 @@ export async function attachProjectDates(
         projectStart: (r.project_start as string | null) ?? null,
         projectEnd: (r.project_end as string | null) ?? null,
       },
-    ])
+    ]),
   )
   return matches.map((m) => {
     const row = byId.get(m.id)

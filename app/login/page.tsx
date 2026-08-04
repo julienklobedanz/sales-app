@@ -34,7 +34,9 @@ export default async function LoginPage({ searchParams }: Props) {
     <AuthShell brandContent={AUTH_BRAND_CONTENT.login}>
       <div className="w-full space-y-6">
         <div className="space-y-1.5">
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Willkommen zurück.</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+            Willkommen zurück.
+          </h1>
           {inviteToken ? (
             <p className="text-sm text-gray-500">
               Melde dich an, um der Einladung beizutreten.

@@ -26,8 +26,7 @@ function normalizeDomain(raw: string) {
 /** z. B. „Aurubis“ → aurubis.com, wenn Search-API keinen Treffer liefert. */
 async function guessDomainFromCompanyName(name: string): Promise<string | null> {
   const token =
-    companyNameSearchToken(name) ??
-    normalizeCompanyNameForMatch(name).replace(/\s+/g, '')
+    companyNameSearchToken(name) ?? normalizeCompanyNameForMatch(name).replace(/\s+/g, '')
   if (!token || token.length < 3) return null
 
   for (const tld of ['com', 'de', 'eu', 'net'] as const) {
@@ -59,10 +58,13 @@ export async function resolveDomainForCompanyName(name: string): Promise<string 
     try {
       const res = await fetch(
         `https://api.brandfetch.io/v2/search/${encodeURIComponent(trimmed)}?c=${encodeURIComponent(clientId)}`,
-        { next: { revalidate: 0 } }
+        { next: { revalidate: 0 } },
       )
       if (res.ok) {
-        const arr = (await res.json()) as Array<{ domain?: string | null; name?: string | null }>
+        const arr = (await res.json()) as Array<{
+          domain?: string | null
+          name?: string | null
+        }>
         if (Array.isArray(arr) && arr.length > 0) {
           const ranked = arr
             .map((item) => ({
@@ -140,7 +142,7 @@ export type BulkImportRowEnriched = BulkImportRowInput & {
 
 /** Excel-Import: leere Spalten per Brandfetch (Name → Domain-Suche) auffüllen. */
 export async function enrichBulkImportRowFromBrandfetch(
-  row: BulkImportRowInput
+  row: BulkImportRowInput,
 ): Promise<BulkImportRowEnriched> {
   const lookup = await lookupBrandfetchForCompany(row.name, row.website || null)
   const data = lookup.data
@@ -167,7 +169,7 @@ export async function enrichBulkImportRowFromBrandfetch(
 /** Website-Domain zuerst, sonst Namenssuche (+ TLD-Raten). */
 async function lookupBrandfetchForCompany(
   rawName: string,
-  websiteUrl?: string | null
+  websiteUrl?: string | null,
 ): Promise<BrandfetchLookup> {
   const websiteDomain = websiteUrl ? inputToDomain(websiteUrl) : null
   if (websiteDomain?.includes('.')) {
@@ -189,12 +191,15 @@ function payloadFromBrandfetch(
     industry?: string | null
     headquarters?: string | null
     employee_count?: number | null
-  }
+  },
 ) {
   return {
     name: displayName,
-    website_url: data?.websiteUrl ?? existing?.website_url ?? (domain ? `https://${domain}` : null),
-    logo_url: rewriteBrandfetchLogoUrlForLightBackground(data?.logoUrl ?? existing?.logo_url ?? null),
+    website_url:
+      data?.websiteUrl ?? existing?.website_url ?? (domain ? `https://${domain}` : null),
+    logo_url: rewriteBrandfetchLogoUrlForLightBackground(
+      data?.logoUrl ?? existing?.logo_url ?? null,
+    ),
     industry: data?.industry ?? existing?.industry ?? null,
     headquarters: data?.headquarters ?? existing?.headquarters ?? null,
     employee_count: data?.employeeCount ?? existing?.employee_count ?? null,
@@ -212,7 +217,7 @@ function toResolved(
     industry: string | null
     headquarters: string | null
     employee_count: number | null
-  }
+  },
 ): ResolvedCompanyForImport {
   return {
     companyId,
@@ -228,7 +233,7 @@ function toResolved(
 async function findExistingCompany(
   supabase: SupabaseClient,
   organizationId: string,
-  hints: { rawName: string; displayName: string; domain: string | null }
+  hints: { rawName: string; displayName: string; domain: string | null },
 ): Promise<{ id: string; name: string } | null> {
   const namesToTry = [...new Set([hints.displayName, hints.rawName].filter(Boolean))]
 
@@ -289,7 +294,7 @@ async function syncCompanyWithBrandfetch(
   supabase: SupabaseClient,
   companyId: string,
   rawName: string,
-  brandfetch: BrandfetchLookup
+  brandfetch: BrandfetchLookup,
 ): Promise<ResolvedCompanyForImport> {
   const { data: row } = await supabase
     .from('companies')
@@ -310,7 +315,12 @@ async function syncCompanyWithBrandfetch(
   }
 
   const displayName = displayCompanyNameForImport(rawName, brandfetch.data?.companyName)
-  const payload = payloadFromBrandfetch(displayName, brandfetch.domain, brandfetch.data, row)
+  const payload = payloadFromBrandfetch(
+    displayName,
+    brandfetch.domain,
+    brandfetch.data,
+    row,
+  )
 
   const { data: updated, error } = await supabase
     .from('companies')
@@ -341,7 +351,7 @@ async function syncCompanyWithBrandfetch(
 export async function resolveOrCreateCompanyForImport(
   supabase: SupabaseClient,
   organizationId: string,
-  rawName: string
+  rawName: string,
 ): Promise<ResolveCompanyForImportResult> {
   const parsedName = String(rawName ?? '').trim()
   if (!parsedName) {
@@ -349,7 +359,10 @@ export async function resolveOrCreateCompanyForImport(
   }
 
   const brandfetch = await lookupBrandfetch(parsedName)
-  const displayName = displayCompanyNameForImport(parsedName, brandfetch.data?.companyName)
+  const displayName = displayCompanyNameForImport(
+    parsedName,
+    brandfetch.data?.companyName,
+  )
 
   const existing = await findExistingCompany(supabase, organizationId, {
     rawName: parsedName,
@@ -363,18 +376,23 @@ export async function resolveOrCreateCompanyForImport(
         supabase,
         existing.id,
         parsedName,
-        brandfetch
+        brandfetch,
       )
       return { success: true, company }
     } catch (e) {
       return {
         success: false,
-        error: e instanceof Error ? e.message : 'Account konnte nicht angereichert werden.',
+        error:
+          e instanceof Error ? e.message : 'Account konnte nicht angereichert werden.',
       }
     }
   }
 
-  const insertPayload = payloadFromBrandfetch(displayName, brandfetch.domain, brandfetch.data)
+  const insertPayload = payloadFromBrandfetch(
+    displayName,
+    brandfetch.domain,
+    brandfetch.data,
+  )
 
   const { data: inserted, error } = await supabase
     .from('companies')
@@ -386,13 +404,18 @@ export async function resolveOrCreateCompanyForImport(
     .single()
 
   if (error || !inserted?.id) {
-    return { success: false, error: error?.message ?? 'Unternehmen konnte nicht angelegt werden.' }
+    return {
+      success: false,
+      error: error?.message ?? 'Unternehmen konnte nicht angelegt werden.',
+    }
   }
 
   scheduleCompanyNewsroomDiscovery(
     supabase,
     inserted.id,
-    (inserted as { website_url?: string | null }).website_url ?? insertPayload.website_url ?? null
+    (inserted as { website_url?: string | null }).website_url ??
+      insertPayload.website_url ??
+      null,
   )
 
   return {
@@ -406,7 +429,7 @@ export async function syncExistingCompanyBrandfetch(
   supabase: SupabaseClient,
   organizationId: string,
   companyId: string,
-  options?: { excludeLogoUrl?: string | null; upgradeLogoForLightUi?: boolean }
+  options?: { excludeLogoUrl?: string | null; upgradeLogoForLightUi?: boolean },
 ): Promise<ResolveCompanyForImportResult> {
   const { data: row } = await supabase
     .from('companies')
@@ -421,7 +444,7 @@ export async function syncExistingCompanyBrandfetch(
 
   let brandfetch = await lookupBrandfetchForCompany(
     String(row.name ?? ''),
-    row.website_url
+    row.website_url,
   )
   const failedLogo = String(options?.excludeLogoUrl ?? '').trim()
 
@@ -436,6 +459,11 @@ export async function syncExistingCompanyBrandfetch(
     }
   }
 
-  const company = await syncCompanyWithBrandfetch(supabase, row.id, String(row.name ?? ''), brandfetch)
+  const company = await syncCompanyWithBrandfetch(
+    supabase,
+    row.id,
+    String(row.name ?? ''),
+    brandfetch,
+  )
   return { success: true, company }
 }

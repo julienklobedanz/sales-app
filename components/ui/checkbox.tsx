@@ -1,10 +1,10 @@
-"use client"
+'use client'
 
-import * as React from "react"
-import { Checkbox as CheckboxPrimitive } from "radix-ui"
+import * as React from 'react'
+import { Checkbox as CheckboxPrimitive } from 'radix-ui'
 
-import { CheckIcon } from "@/components/ui/check-icon"
-import { cn } from "@/lib/utils"
+import { CheckIcon } from '@/components/ui/check-icon'
+import { cn } from '@/lib/utils'
 
 function Checkbox({
   className,
@@ -14,8 +14,8 @@ function Checkbox({
     <CheckboxPrimitive.Root
       data-slot="checkbox"
       className={cn(
-        "peer border-input data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[state=checked]:border-primary focus-visible:ring-ring/50 size-4 shrink-0 rounded-sm border shadow-xs transition-shadow outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50",
-        className
+        'peer border-input data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[state=checked]:border-primary focus-visible:ring-ring/50 size-4 shrink-0 rounded-sm border shadow-xs transition-shadow outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50',
+        className,
       )}
       {...props}
     >
@@ -30,4 +30,3 @@ function Checkbox({
 }
 
 export { Checkbox }
-

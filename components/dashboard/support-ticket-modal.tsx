@@ -89,7 +89,9 @@ export function SupportTicketModal({
       const resolvedSubject = `[${feedbackKindLabel(feedbackKind)}] ${deriveSubject(message)}`
       const fullMessage = `E-Mail: ${safeEmail}\n\nArt: ${feedbackKindLabel(feedbackKind)}\nSeite: ${page}\n\n${message.trim()}`
 
-      const result = await submitTicket('feedback', resolvedSubject, fullMessage, { replyToEmail: safeEmail })
+      const result = await submitTicket('feedback', resolvedSubject, fullMessage, {
+        replyToEmail: safeEmail,
+      })
       if (result.success) {
         setSent(true)
         toast.success('Nachricht gesendet! Wir melden uns.')
@@ -140,7 +142,11 @@ export function SupportTicketModal({
             </DialogHeader>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="flex flex-wrap gap-2" role="group" aria-label="Feedback-Art">
+              <div
+                className="flex flex-wrap gap-2"
+                role="group"
+                aria-label="Feedback-Art"
+              >
                 {FEEDBACK_KINDS.map((kind) => {
                   const active = feedbackKind === kind.value
                   return (
@@ -153,7 +159,7 @@ export function SupportTicketModal({
                         'rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors',
                         active
                           ? BRAND_PRIMARY_PILL_ACTIVE_CLASS
-                          : 'border-border bg-background text-foreground hover:bg-muted/60'
+                          : 'border-border bg-background text-foreground hover:bg-muted/60',
                       )}
                     >
                       {kind.label}
@@ -242,7 +248,11 @@ export function SupportTicketModal({
                 >
                   Abbrechen
                 </Button>
-                <Button type="submit" variant="default" disabled={submitting || !message.trim()}>
+                <Button
+                  type="submit"
+                  variant="default"
+                  disabled={submitting || !message.trim()}
+                >
                   {submitting ? (
                     <>
                       <AppIcon icon={Loader} size={16} className="animate-spin" />

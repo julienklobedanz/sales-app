@@ -14,7 +14,7 @@ describe('resolveExecSignalBadge', () => {
         personTitleAfter: 'CTO',
         personName: 'Ada',
         eventKind: 'role_change',
-      })
+      }),
     ).toBe('Move')
   })
 
@@ -25,25 +25,29 @@ describe('resolveExecSignalBadge', () => {
         signalCategory: 'people',
         personName: 'Ada',
         changeSummary: 'Ada spricht auf einer Konferenz',
-      })
+      }),
     ).toBe('Executive')
   })
 })
 
 describe('resolveNewsSignalBadge', () => {
   it('marks leadership titles as Move', () => {
-    expect(resolveNewsSignalBadge('Maria Schulz wird CIO bei Siemens', 'Siemens')).toBe('Move')
+    expect(resolveNewsSignalBadge('Maria Schulz wird CIO bei Siemens', 'Siemens')).toBe(
+      'Move',
+    )
   })
 
   it('marks other news as Company', () => {
-    expect(resolveNewsSignalBadge('Aurubis eröffnet neues Werk in Bayern', 'Aurubis')).toBe(
-      'Company'
-    )
+    expect(
+      resolveNewsSignalBadge('Aurubis eröffnet neues Werk in Bayern', 'Aurubis'),
+    ).toBe('Company')
   })
 })
 
 describe('newsPersonNameFromBody', () => {
   it('extracts person when leadership move parses', () => {
-    expect(newsPersonNameFromBody('Maria Schulz wird CIO bei Siemens', 'Siemens')).toMatch(/Maria/)
+    expect(
+      newsPersonNameFromBody('Maria Schulz wird CIO bei Siemens', 'Siemens'),
+    ).toMatch(/Maria/)
   })
 })

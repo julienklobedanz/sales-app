@@ -37,7 +37,9 @@ export function normalizeWebsiteOrigin(raw: string | null | undefined): string |
   }
 }
 
-export function buildNewsroomCandidateUrls(websiteUrl: string | null | undefined): string[] {
+export function buildNewsroomCandidateUrls(
+  websiteUrl: string | null | undefined,
+): string[] {
   const origin = normalizeWebsiteOrigin(websiteUrl)
   if (!origin) return []
   const seen = new Set<string>()
@@ -88,9 +90,12 @@ async function probeUrlExists(url: string, signal?: AbortSignal): Promise<string
  */
 export async function discoverCompanyNewsroomUrls(
   websiteUrl: string | null | undefined,
-  opts?: { signal?: AbortSignal; maxUrls?: number }
+  opts?: { signal?: AbortSignal; maxUrls?: number },
 ): Promise<string[]> {
-  const maxUrls = Math.min(MAX_NEWSROOM_URLS, Math.max(1, opts?.maxUrls ?? MAX_NEWSROOM_URLS))
+  const maxUrls = Math.min(
+    MAX_NEWSROOM_URLS,
+    Math.max(1, opts?.maxUrls ?? MAX_NEWSROOM_URLS),
+  )
   const candidates = buildNewsroomCandidateUrls(websiteUrl)
   if (!candidates.length) return []
 
@@ -101,7 +106,9 @@ export async function discoverCompanyNewsroomUrls(
   const batchSize = 4
   for (let i = 0; i < candidates.length && found.length < maxUrls; i += batchSize) {
     const batch = candidates.slice(i, i + batchSize)
-    const results = await Promise.all(batch.map((href) => probeUrlExists(href, opts?.signal)))
+    const results = await Promise.all(
+      batch.map((href) => probeUrlExists(href, opts?.signal)),
+    )
     for (const hit of results) {
       if (!hit || found.length >= maxUrls) continue
       const key = hit.replace(/\/$/, '').toLowerCase()
@@ -117,7 +124,7 @@ export async function discoverCompanyNewsroomUrls(
 export async function discoverAndSaveCompanyNewsrooms(
   supabase: SupabaseClient,
   companyId: string,
-  opts?: { websiteUrl?: string | null; force?: boolean }
+  opts?: { websiteUrl?: string | null; force?: boolean },
 ): Promise<{ urls: string[]; error?: string }> {
   const id = String(companyId ?? '').trim()
   if (!id) return { urls: [], error: 'companyId fehlt' }
@@ -130,15 +137,16 @@ export async function discoverAndSaveCompanyNewsrooms(
       .eq('id', id)
       .maybeSingle()
     if (error) return { urls: [], error: error.message }
-    websiteUrl = websiteUrl ?? ((data as { website_url?: string | null } | null)?.website_url ?? null)
+    websiteUrl =
+      websiteUrl ?? (data as { website_url?: string | null } | null)?.website_url ?? null
     if (
       !opts?.force &&
       data &&
       (data as { newsroom_discovered_at?: string | null }).newsroom_discovered_at
     ) {
-      const existing = ((data as { newsroom_urls?: string[] | null }).newsroom_urls ?? []).filter(
-        Boolean
-      )
+      const existing = (
+        (data as { newsroom_urls?: string[] | null }).newsroom_urls ?? []
+      ).filter(Boolean)
       return { urls: existing }
     }
   }
@@ -160,7 +168,7 @@ export async function discoverAndSaveCompanyNewsrooms(
 /** Google-News site:-Queries aus gespeicherten Newsroom-URLs. */
 export function buildStoredNewsroomRssQueries(
   companyName: string,
-  newsroomUrls: string[] | null | undefined
+  newsroomUrls: string[] | null | undefined,
 ): string[] {
   const name = companyName.trim()
   const urls = (newsroomUrls ?? []).map((u) => String(u ?? '').trim()).filter(Boolean)
@@ -203,7 +211,7 @@ export function buildStoredNewsroomRssQueries(
 
 export function isStoredNewsroomHost(
   urlOrHost: string | null | undefined,
-  newsroomUrls: string[] | null | undefined
+  newsroomUrls: string[] | null | undefined,
 ): boolean {
   const host = String(urlOrHost ?? '')
     .trim()
@@ -228,10 +236,11 @@ export function isStoredNewsroomHost(
 export function scheduleCompanyNewsroomDiscovery(
   supabase: SupabaseClient,
   companyId: string,
-  websiteUrl?: string | null
+  websiteUrl?: string | null,
 ): void {
-  void discoverAndSaveCompanyNewsrooms(supabase, companyId, { websiteUrl }).catch((err) => {
-    log.error('newsroomDiscover.scheduledFailed', { companyId }, err)
-  })
+  void discoverAndSaveCompanyNewsrooms(supabase, companyId, { websiteUrl }).catch(
+    (err) => {
+      log.error('newsroomDiscover.scheduledFailed', { companyId }, err)
+    },
+  )
 }
-

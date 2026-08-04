@@ -20,11 +20,17 @@ async function upsertNotificationKeys(keys: string[]) {
   if (existingError) return { success: false as const, error: existingError.message }
 
   const existingKeys = new Set(
-    (existingRows ?? []).map((row) => String((row as { notification_key?: string | null }).notification_key ?? ''))
+    (existingRows ?? []).map((row) =>
+      String((row as { notification_key?: string | null }).notification_key ?? ''),
+    ),
   )
   const toInsert = uniqueKeys
     .filter((key) => !existingKeys.has(key))
-    .map((key) => ({ user_id: user.id, notification_key: key, read_at: new Date().toISOString() }))
+    .map((key) => ({
+      user_id: user.id,
+      notification_key: key,
+      read_at: new Date().toISOString(),
+    }))
   if (!toInsert.length) return { success: true as const }
 
   const { error } = await supabase.from('notification_inbox_reads').insert(toInsert)
@@ -46,7 +52,8 @@ async function getAuthedOrgContext() {
   return {
     supabase,
     user,
-    orgId: (profile as { organization_id?: string | null } | null)?.organization_id ?? null,
+    orgId:
+      (profile as { organization_id?: string | null } | null)?.organization_id ?? null,
   }
 }
 
@@ -58,9 +65,7 @@ export async function markMarketSignalNotificationsReadImpl(keys: string[]) {
 }
 
 export async function markMarketSignalsIrrelevantImpl(keys: string[]) {
-  const irrelevantKeys = keys
-    .filter(Boolean)
-    .map((key) => `market_irrelevant:${key}`)
+  const irrelevantKeys = keys.filter(Boolean).map((key) => `market_irrelevant:${key}`)
   const result = await upsertNotificationKeys(irrelevantKeys)
   if (!result.success) return result
   revalidatePath(ROUTES.marketSignals)
@@ -105,7 +110,7 @@ export async function addMarketSignalToDealImpl(args: {
 
   const inputRefs = Array.from(new Set((args.referenceIds ?? []).filter(Boolean))).slice(
     0,
-    2
+    2,
   )
 
   let referenceIds: string[] = inputRefs
@@ -139,7 +144,7 @@ export async function addMarketSignalToDealImpl(args: {
   const validRefIds = new Set(
     (validRefs ?? [])
       .map((r) => String((r as { id?: string | null }).id ?? ''))
-      .filter(Boolean)
+      .filter(Boolean),
   )
   const safeRefIds = referenceIds.filter((id) => validRefIds.has(id))
 
@@ -203,7 +208,9 @@ export async function snoozeMarketSignalImpl(args: {
     .eq('user_id', user.id)
     .like('notification_key', `market_snooze_until:%:${signalKey}`)
   if (clearError) return { success: false, error: clearError.message }
-  const result = await upsertNotificationKeys([`market_snooze_until:${untilIso}:${signalKey}`])
+  const result = await upsertNotificationKeys([
+    `market_snooze_until:${untilIso}:${signalKey}`,
+  ])
   if (!result.success) return { success: false, error: result.error }
   revalidatePath(ROUTES.marketSignals)
   return { success: true }
@@ -244,7 +251,9 @@ export async function markMarketSignalOutcomeImpl(args: {
     .eq('user_id', user.id)
     .like('notification_key', `market_outcome:%:${signalKey}`)
   if (clearError) return { success: false, error: clearError.message }
-  const result = await upsertNotificationKeys([`market_outcome:${args.stage}:${signalKey}`])
+  const result = await upsertNotificationKeys([
+    `market_outcome:${args.stage}:${signalKey}`,
+  ])
   if (!result.success) return { success: false, error: result.error }
   revalidatePath(ROUTES.marketSignals)
   return { success: true }

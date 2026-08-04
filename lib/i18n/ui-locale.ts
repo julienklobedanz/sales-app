@@ -5,7 +5,9 @@ export type UiLocale = (typeof UI_LOCALES)[number]
 export const UI_LOCALE_COOKIE = 'refstack_ui_locale'
 
 export function normalizeUiLocale(raw: string | null | undefined): UiLocale {
-  const s = String(raw ?? '').trim().toLowerCase()
+  const s = String(raw ?? '')
+    .trim()
+    .toLowerCase()
   if (s === 'en' || s === 'en-us' || s === 'en-gb' || s === 'english') return 'en'
   return 'de'
 }

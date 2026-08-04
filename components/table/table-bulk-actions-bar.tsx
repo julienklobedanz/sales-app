@@ -42,13 +42,15 @@ export function TableBulkActionsBar({
     <div
       className={cn(
         'fixed bottom-6 left-1/2 z-50 w-[min(720px,calc(100vw-24px))] -translate-x-1/2',
-        className
+        className,
       )}
       role="region"
       aria-label="Bulk-Aktionen"
     >
       <div className="flex min-w-[min(450px,100%)] items-center justify-between rounded-2xl border border-gray-100 bg-white p-3 shadow-lg">
-        <p className="px-2 text-sm font-medium text-gray-600">{selectedCount} ausgewählt</p>
+        <p className="px-2 text-sm font-medium text-gray-600">
+          {selectedCount} ausgewählt
+        </p>
 
         <div className="flex flex-wrap items-center justify-end gap-2">
           {visibleActions.map((action) => {

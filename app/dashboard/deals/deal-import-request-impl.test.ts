@@ -24,7 +24,7 @@ function profileChain(
     organization_id: string | null
     system_role?: string
     function_role?: string
-  } | null
+  } | null,
 ) {
   return {
     select: () => ({
@@ -39,7 +39,9 @@ function buildXlsxFile(rows: Record<string, unknown>[]): File {
   const wb = XLSX.utils.book_new()
   const ws = XLSX.utils.json_to_sheet(rows)
   XLSX.utils.book_append_sheet(wb, ws, 'Deals')
-  const bytes = new Uint8Array(XLSX.write(wb, { type: 'array', bookType: 'xlsx' }) as ArrayBuffer)
+  const bytes = new Uint8Array(
+    XLSX.write(wb, { type: 'array', bookType: 'xlsx' }) as ArrayBuffer,
+  )
   return new File([bytes], 'deals.xlsx', {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   })
@@ -148,7 +150,7 @@ describe('importDealsFromXlsxImpl', () => {
       buildXlsxFile([
         { Titel: 'Deal Alpha', Branche: 'IT', Volumen: '100000' },
         { Titel: '', Branche: 'skip-me' },
-      ])
+      ]),
     )
 
     await expect(importDealsFromXlsxImpl(fd)).resolves.toEqual({
@@ -164,7 +166,7 @@ describe('importDealsFromXlsxImpl', () => {
         volume: '100000',
         status: 'open',
         is_public: true,
-      })
+      }),
     )
   })
 })

@@ -4,8 +4,18 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { ArrowRight01Icon } from '@hugeicons/core-free-icons'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 import { Button } from '@/components/ui/button'
 import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
@@ -55,7 +65,9 @@ export function DealRfpEligibilitySection({ data }: { data: DealRfpCockpitData }
     return (
       <Card id="eligCard" className="scroll-mt-24 shadow-sm">
         <CardHeader>
-          <CardTitle className="text-base">{COPY.deals.cockpit.eligibilityTitle}</CardTitle>
+          <CardTitle className="text-base">
+            {COPY.deals.cockpit.eligibilityTitle}
+          </CardTitle>
           <CardDescription>{COPY.deals.cockpit.eligibilityEmpty}</CardDescription>
         </CardHeader>
       </Card>
@@ -77,7 +89,7 @@ export function DealRfpEligibilitySection({ data }: { data: DealRfpCockpitData }
                 size={16}
                 className={cn(
                   'mt-0.5 shrink-0 text-muted-foreground transition-transform',
-                  expanded && 'rotate-90'
+                  expanded && 'rotate-90',
                 )}
               />
               <CardTitle className="text-base">{title}</CardTitle>
@@ -96,7 +108,9 @@ export function DealRfpEligibilitySection({ data }: { data: DealRfpCockpitData }
                     <th className="pb-2 pr-4 font-semibold">
                       {COPY.deals.cockpit.eligibilityColRequirement}
                     </th>
-                    <th className="pb-2 font-semibold">{COPY.deals.cockpit.eligibilityColStatus}</th>
+                    <th className="pb-2 font-semibold">
+                      {COPY.deals.cockpit.eligibilityColStatus}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -112,7 +126,10 @@ export function DealRfpEligibilitySection({ data }: { data: DealRfpCockpitData }
                         ) : null}
                       </td>
                       <td
-                        className={cn('py-3 whitespace-nowrap font-semibold', statusClass(row.status))}
+                        className={cn(
+                          'py-3 whitespace-nowrap font-semibold',
+                          statusClass(row.status),
+                        )}
                       >
                         {formatCriterionStatusLabel(row.status)}
                       </td>
@@ -125,7 +142,7 @@ export function DealRfpEligibilitySection({ data }: { data: DealRfpCockpitData }
             <div
               className={cn(
                 'ml-6 flex flex-col gap-3 rounded-lg border px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between',
-                verdictBannerClass(tone)
+                verdictBannerClass(tone),
               )}
             >
               <div>

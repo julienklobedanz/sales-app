@@ -59,4 +59,3 @@ Damit Status‑Chips überall gleich “wirken”, nutzen wir `Badge`‑Variants
 - **`components/` (App‑Ebene, nicht `ui/`):** Eigenes Markup nutzt durchgängig semantische Klassen (`auth-shell`, Status‑Badges, `SupportTicketModal`, …). Generierte **Shadcn‑Primitives** unter `components/ui/*` dürfen `dark:`‑Varianten und z. B. **Overlay‑Scrims** (`bg-black/50` / `bg-black/80`) sowie `text-white` auf **destructive**‑Buttons enthalten – das sind etablierte Muster; nur bei gezieltem Theme‑Tuning anfassen (visuell testen).
 - **Copy:** wiederkehrende Labels weiter über `lib/copy.ts` (`COPY`) führen; Rollen/Nav sind dort bereits vorhanden.
 - **Badges:** Status über die zentralen `*StatusBadge`‑Komponenten; Variant‑Semantik siehe Abschnitt 5.
-

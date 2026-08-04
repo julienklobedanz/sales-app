@@ -1,10 +1,10 @@
-"use client"
+'use client'
 
-import { type Table } from "@tanstack/react-table"
-import { Filter } from "@hugeicons/core-free-icons"
+import { type Table } from '@tanstack/react-table'
+import { Filter } from '@hugeicons/core-free-icons'
 
-import { AccountsToolbarTooltip } from "@/app/dashboard/accounts/components/accounts-toolbar-tooltip"
-import { Button } from "@/components/ui/button"
+import { AccountsToolbarTooltip } from '@/app/dashboard/accounts/components/accounts-toolbar-tooltip'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -12,9 +12,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { COPY } from "@/lib/copy"
-import { AppIcon } from "@/lib/icons"
+} from '@/components/ui/dropdown-menu'
+import { COPY } from '@/lib/copy'
+import { AppIcon } from '@/lib/icons'
 
 function columnViewLabel(column: {
   id: string
@@ -22,8 +22,8 @@ function columnViewLabel(column: {
 }): string {
   const meta = column.columnDef.meta as { viewLabel?: string } | undefined
   if (meta?.viewLabel) return meta.viewLabel
-  if (typeof column.columnDef.header === "string") return column.columnDef.header
-  return column.id.replace(/_/g, " ")
+  if (typeof column.columnDef.header === 'string') return column.columnDef.header
+  return column.id.replace(/_/g, ' ')
 }
 
 export function DataTableViewOptions<TData>({ table }: { table: Table<TData> }) {
@@ -47,7 +47,9 @@ export function DataTableViewOptions<TData>({ table }: { table: Table<TData> }) 
         <DropdownMenuSeparator />
         {table
           .getAllColumns()
-          .filter((column) => typeof column.accessorFn !== "undefined" && column.getCanHide())
+          .filter(
+            (column) => typeof column.accessorFn !== 'undefined' && column.getCanHide(),
+          )
           .map((column) => (
             <DropdownMenuCheckboxItem
               key={column.id}

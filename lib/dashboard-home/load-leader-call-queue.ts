@@ -3,7 +3,10 @@ import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import type { DealRow } from '@/app/dashboard/deals/types'
-import { ACTIVE_DEAL_STATUSES, type LeaderCallQueueRow } from '@/lib/dashboard-home/dashboard-home-types'
+import {
+  ACTIVE_DEAL_STATUSES,
+  type LeaderCallQueueRow,
+} from '@/lib/dashboard-home/dashboard-home-types'
 import {
   buildLeaderCallQueueRow,
   formatExecSignalFact,
@@ -22,14 +25,20 @@ import { isMissingEnrichmentColumnsError } from '@/lib/market-signals/enrichment
 import { matchReferencesImpl } from '@/lib/references/library/match'
 
 function parseCategory(raw: unknown): LeaderCallSignalCandidate['signalCategory'] {
-  const v = String(raw ?? '').trim().toLowerCase()
+  const v = String(raw ?? '')
+    .trim()
+    .toLowerCase()
   if (v === 'people' || v === 'finance' || v === 'strategy') return v
   return null
 }
 
 function personTokenInText(personName: string | null, haystack: string): boolean {
   if (!personName?.trim()) return false
-  const parts = personName.trim().toLowerCase().split(/\s+/).filter((p) => p.length >= 3)
+  const parts = personName
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((p) => p.length >= 3)
   const blob = haystack.toLowerCase()
   return parts.some((p) => blob.includes(p))
 }
@@ -40,11 +49,9 @@ async function resolveTopReferenceMatch(args: {
   signalText: string
   personName: string | null
 }): Promise<LeaderCallMatchResult | null> {
-  const queryParts = [
-    args.companyName,
-    args.signalText,
-    args.personName?.trim(),
-  ].filter(Boolean)
+  const queryParts = [args.companyName, args.signalText, args.personName?.trim()].filter(
+    Boolean,
+  )
   const query = queryParts.join(' · ')
   if (!query) return null
 
@@ -65,11 +72,11 @@ export async function loadLeaderCallQueue(
   supabase: SupabaseClient,
   userId: string,
   orgId: string,
-  deals: DealRow[]
+  deals: DealRow[],
 ): Promise<LeaderCallQueueRow[]> {
   const activeDeals = deals.filter((d) => ACTIVE_DEAL_STATUSES.includes(d.status))
   const companyIdsWithDeals = new Set(
-    activeDeals.map((d) => d.company_id).filter((id): id is string => Boolean(id))
+    activeDeals.map((d) => d.company_id).filter((id): id is string => Boolean(id)),
   )
   if (companyIdsWithDeals.size === 0) return []
 
@@ -99,7 +106,7 @@ export async function loadLeaderCallQueue(
       .select('notification_key')
       .eq('user_id', userId)
       .or(
-        'notification_key.like.market_snooze_until:%,notification_key.like.market_irrelevant:%,notification_key.like.market_outcome:%'
+        'notification_key.like.market_snooze_until:%,notification_key.like.market_irrelevant:%,notification_key.like.market_outcome:%',
       )
       .limit(800),
     supabase
@@ -117,7 +124,7 @@ export async function loadLeaderCallQueue(
         insight_signal_fact,
         insight_why_now,
         companies ( name, logo_url, organization_id )
-      `
+      `,
       )
       .order('detected_at', { ascending: false })
       .limit(120),
@@ -133,18 +140,21 @@ export async function loadLeaderCallQueue(
         insight_signal_fact,
         insight_why_now,
         companies ( name, logo_url, organization_id )
-      `
+      `,
       )
       .order('published_on', { ascending: false })
       .limit(120),
   ])
 
   let execRows = execWithEnrichment.data
-  if (execWithEnrichment.error && isMissingEnrichmentColumnsError(execWithEnrichment.error.message)) {
+  if (
+    execWithEnrichment.error &&
+    isMissingEnrichmentColumnsError(execWithEnrichment.error.message)
+  ) {
     const fallback = await supabase
       .from('market_signal_executive_events')
       .select(
-        `id, person_name, person_title_before, person_title_after, change_summary, detected_at, company_id, companies ( name, logo_url, organization_id )`
+        `id, person_name, person_title_before, person_title_after, change_summary, detected_at, company_id, companies ( name, logo_url, organization_id )`,
       )
       .order('detected_at', { ascending: false })
       .limit(120)
@@ -152,22 +162,29 @@ export async function loadLeaderCallQueue(
   }
 
   let newsRows = newsWithEnrichment.data
-  if (newsWithEnrichment.error && isMissingEnrichmentColumnsError(newsWithEnrichment.error.message)) {
+  if (
+    newsWithEnrichment.error &&
+    isMissingEnrichmentColumnsError(newsWithEnrichment.error.message)
+  ) {
     const fallback = await supabase
       .from('market_signal_account_news')
-      .select(`id, body, published_on, company_id, companies ( name, logo_url, organization_id )`)
+      .select(
+        `id, body, published_on, company_id, companies ( name, logo_url, organization_id )`,
+      )
       .order('published_on', { ascending: false })
       .limit(120)
     newsRows = fallback.data as typeof newsRows
   }
 
   const followingCompanyIds = new Set(
-    (favoriteRows ?? []).map((r) => String((r as { id?: string }).id ?? '')).filter(Boolean)
+    (favoriteRows ?? [])
+      .map((r) => String((r as { id?: string }).id ?? ''))
+      .filter(Boolean),
   )
   const championKeys = new Set(
     (championRows ?? [])
       .map((r) => normalizeChampionPersonKey((r as { person_key?: string }).person_key))
-      .filter(Boolean)
+      .filter(Boolean),
   )
   const inboxKeys = (inboxRows ?? [])
     .map((r) => String((r as { notification_key?: string }).notification_key ?? ''))
@@ -181,8 +198,16 @@ export async function loadLeaderCallQueue(
     if (!companyIdsWithDeals.has(companyId)) continue
 
     const co = Array.isArray(row.companies)
-      ? (row.companies[0] as { name?: string; logo_url?: string | null; organization_id?: string })
-      : (row.companies as { name?: string; logo_url?: string | null; organization_id?: string } | null)
+      ? (row.companies[0] as {
+          name?: string
+          logo_url?: string | null
+          organization_id?: string
+        })
+      : (row.companies as {
+          name?: string
+          logo_url?: string | null
+          organization_id?: string
+        } | null)
     if (co?.organization_id && String(co.organization_id) !== orgId) continue
 
     const personName = String(row.person_name ?? '').trim()
@@ -234,8 +259,16 @@ export async function loadLeaderCallQueue(
     if (!followingCompanyIds.has(companyId)) continue
 
     const co = Array.isArray(row.companies)
-      ? (row.companies[0] as { name?: string; logo_url?: string | null; organization_id?: string })
-      : (row.companies as { name?: string; logo_url?: string | null; organization_id?: string } | null)
+      ? (row.companies[0] as {
+          name?: string
+          logo_url?: string | null
+          organization_id?: string
+        })
+      : (row.companies as {
+          name?: string
+          logo_url?: string | null
+          organization_id?: string
+        } | null)
     if (co?.organization_id && String(co.organization_id) !== orgId) continue
 
     const signalKey = `market_news:${String(row.id)}`
@@ -305,7 +338,7 @@ export async function loadLeaderCallQueue(
         candidate: entry.candidate,
         deal: entry.deal,
         match,
-      })
+      }),
     )
   }
 

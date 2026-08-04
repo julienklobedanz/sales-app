@@ -29,7 +29,7 @@ export function emptyHomepageSearchGroups(): HomepageSearchGroups {
 
 export function hasAnyHomepageSearchHit(
   referenceHits: HomepageSemanticReferenceHit[],
-  groups: HomepageSearchGroups
+  groups: HomepageSearchGroups,
 ): boolean {
   return (
     referenceHits.length > 0 ||
@@ -41,7 +41,7 @@ export function hasAnyHomepageSearchHit(
 
 export function countHomepageSearchHits(
   referenceHits: HomepageSemanticReferenceHit[],
-  groups: HomepageSearchGroups
+  groups: HomepageSearchGroups,
 ): number {
   return (
     referenceHits.length +

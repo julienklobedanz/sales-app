@@ -46,7 +46,11 @@ function FilterMenu({
           }
         >
           <span>{label}</span>
-          <ChevronDown className="size-3.5 shrink-0 opacity-70" strokeWidth={2} aria-hidden />
+          <ChevronDown
+            className="size-3.5 shrink-0 opacity-70"
+            strokeWidth={2}
+            aria-hidden
+          />
         </button>
       </PopoverTrigger>
       <PopoverContent
@@ -89,9 +93,7 @@ function MultiSelect<T extends string | number>({
             }
           >
             <span className={cn('pr-2', truncateLabels && 'truncate')}>{o.label}</span>
-            {selected ? (
-              <CheckIcon className="size-3.5 shrink-0 text-primary" />
-            ) : null}
+            {selected ? <CheckIcon className="size-3.5 shrink-0 text-primary" /> : null}
           </button>
         )
       })}

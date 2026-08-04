@@ -5,17 +5,16 @@
 export const TABLE_TOOLBAR = {
   /** Referenzen/Evidence, Deals (`AppDataTable`) */
   list: {
-    searchWrap: "relative w-full min-w-0 overflow-visible",
-    searchInput: "h-10 w-full rounded-lg border bg-white pl-10 pr-4 shadow-sm",
+    searchWrap: 'relative w-full min-w-0 overflow-visible',
+    searchInput: 'h-10 w-full rounded-lg border bg-white pl-10 pr-4 shadow-sm',
   },
   /** Dashboard-Übersicht, Accounts: Suche + Buttons in einer Zeile (h-10) */
   dashboard: {
-    searchWrap: "relative w-full min-w-0 overflow-visible",
-    searchInput:
-      "h-10 w-full min-w-0 rounded-lg border bg-white pl-10 pr-4 shadow-sm",
+    searchWrap: 'relative w-full min-w-0 overflow-visible',
+    searchInput: 'h-10 w-full min-w-0 rounded-lg border bg-white pl-10 pr-4 shadow-sm',
     /** Ohne min-w-0 (z. B. schmale Spalten) */
-    searchInputSimple: "h-10 w-full rounded-lg border bg-white pl-10 pr-4 shadow-sm",
-    toolbarButton: "h-10 shrink-0 rounded-lg transition-all duration-300",
-    toolbarButtonGap: "h-10 shrink-0 rounded-lg gap-1.5 transition-all duration-300",
+    searchInputSimple: 'h-10 w-full rounded-lg border bg-white pl-10 pr-4 shadow-sm',
+    toolbarButton: 'h-10 shrink-0 rounded-lg transition-all duration-300',
+    toolbarButtonGap: 'h-10 shrink-0 rounded-lg gap-1.5 transition-all duration-300',
   },
 } as const

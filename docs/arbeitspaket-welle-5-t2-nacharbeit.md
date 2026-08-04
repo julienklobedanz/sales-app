@@ -6,15 +6,15 @@
 
 ## Zu fixende Stellen (verifiziert)
 
-| Datei:Zeile | Ist | Soll |
-|---|---|---|
-| `app/dashboard/settings/actions.ts:103` | `updates.role = role` | Zeile entfernen — `system_role`/`function_role` werden bereits gesetzt |
+| Datei:Zeile                                    | Ist                                                                 | Soll                                                                                                                                               |
+| ---------------------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/dashboard/settings/actions.ts:103`        | `updates.role = role`                                               | Zeile entfernen — `system_role`/`function_role` werden bereits gesetzt                                                                             |
 | `app/dashboard/settings/invite-actions.ts:330` | `.select('id, full_name, email, role, system_role, function_role')` | `role` aus Select streichen; wo ein Legacy-Label gebraucht wird, aus `system_role`/`function_role` ableiten (`legacyAppRoleFrom`/`legacy-mapping`) |
-| `app/dashboard/settings/invite-actions.ts:403` | `.select('organization_id, role, system_role, function_role')` | `role` streichen |
-| `app/dashboard/settings/invite-actions.ts:457` | `.select('organization_id, role, system_role, function_role')` | `role` streichen |
-| `lib/command-center/global-search.ts:285` | `.from('profiles').select('id,full_name,role')` | `role` streichen (nur Anzeige) |
-| `app/dashboard/market-signals/actions.ts:537` | `.select('organization_id, role')` + Gate `role !== 'admin'…` | `system_role`/`function_role` selektieren; Gate auf Capability/Funktions-Rolle umstellen (oder `legacyAppRoleFrom`) |
-| `app/dashboard/market-signals/actions.ts:649` | dito | dito |
+| `app/dashboard/settings/invite-actions.ts:403` | `.select('organization_id, role, system_role, function_role')`      | `role` streichen                                                                                                                                   |
+| `app/dashboard/settings/invite-actions.ts:457` | `.select('organization_id, role, system_role, function_role')`      | `role` streichen                                                                                                                                   |
+| `lib/command-center/global-search.ts:285`      | `.from('profiles').select('id,full_name,role')`                     | `role` streichen (nur Anzeige)                                                                                                                     |
+| `app/dashboard/market-signals/actions.ts:537`  | `.select('organization_id, role')` + Gate `role !== 'admin'…`       | `system_role`/`function_role` selektieren; Gate auf Capability/Funktions-Rolle umstellen (oder `legacyAppRoleFrom`)                                |
+| `app/dashboard/market-signals/actions.ts:649`  | dito                                                                | dito                                                                                                                                               |
 
 > Außerdem prüfen (gleiche Klasse, vom Nutzer gelistet): `app/api/cron/market-signals-digest/route.ts`, `lib/market-signals/market-signals-instant-alerts.ts`, `app/dashboard/page.tsx`, `app/dashboard/evidence/page.tsx` — auf `profiles`-Selects/Casts mit `role` durchsehen.
 
@@ -33,6 +33,7 @@
 npm run build   # sollte verbliebene role-Referenzen aufdecken
 npm run test
 ```
+
 - `grep -rnE "\.select\([^)]*\brole\b" app lib` → keine profiles/invites-Selects mit `role` mehr.
 - Manuell: Settings-Profil speichern, Team-Liste, Personensuche, Market-Signals-Abruf, Invite-Flow.
 

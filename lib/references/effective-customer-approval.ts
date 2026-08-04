@@ -10,7 +10,7 @@ export type EffectiveCustomerApproval =
 
 export function effectiveCustomerApprovalStatus(
   customerApprovalStatus: string | null | undefined,
-  referenceStatus: string | null | undefined
+  referenceStatus: string | null | undefined,
 ): EffectiveCustomerApproval {
   const customer = String(customerApprovalStatus ?? '').toLowerCase()
   if (
@@ -31,8 +31,11 @@ export function effectiveCustomerApprovalStatus(
 
 export function hasActiveCustomerApprovalWorkflow(
   customerApprovalStatus: string | null | undefined,
-  referenceStatus: string | null | undefined
+  referenceStatus: string | null | undefined,
 ): boolean {
-  const effective = effectiveCustomerApprovalStatus(customerApprovalStatus, referenceStatus)
+  const effective = effectiveCustomerApprovalStatus(
+    customerApprovalStatus,
+    referenceStatus,
+  )
   return effective === 'pending' || effective === 'approved'
 }

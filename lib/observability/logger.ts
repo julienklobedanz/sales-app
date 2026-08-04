@@ -63,7 +63,12 @@ function toErrorFields(error: unknown): LogEntry['error'] | undefined {
   return { name: 'Error', message: String(error) }
 }
 
-function write(level: LogLevel, message: string, context?: LogContext, error?: unknown): void {
+function write(
+  level: LogLevel,
+  message: string,
+  context?: LogContext,
+  error?: unknown,
+): void {
   sink({
     level,
     message,

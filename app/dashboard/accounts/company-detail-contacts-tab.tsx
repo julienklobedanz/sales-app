@@ -1,7 +1,20 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { Plus } from '@hugeicons/core-free-icons'
 import type { ContactPersonRow } from './actions'
 import { ContactActionButtons, contactRoleLabel } from './company-contact-action-buttons'
@@ -80,7 +93,9 @@ export function CompanyDetailContactsTab({
                       </span>
                     </TableCell>
                     <TableCell className="min-w-0 text-muted-foreground">
-                      <span className="line-clamp-2 break-words">{contactRoleLabel(c)}</span>
+                      <span className="line-clamp-2 break-words">
+                        {contactRoleLabel(c)}
+                      </span>
                     </TableCell>
                     <TableCell className="text-right">
                       <ContactActionButtons

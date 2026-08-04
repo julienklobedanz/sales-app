@@ -23,13 +23,22 @@ export async function sendClientApprovalConfirmationEmail(args: {
 
   let portfolio: { manageUrl: string; publicPreviewUrl: string } | null = null
   try {
-    portfolio = await getPortfolioManageAndPreviewUrlsForApprovalEmail(args.admin, args.referenceId)
+    portfolio = await getPortfolioManageAndPreviewUrlsForApprovalEmail(
+      args.admin,
+      args.referenceId,
+    )
   } catch (e) {
-    log.error('portfolio links failed', { action: 'sendClientApprovalConfirmationEmail.portfolioLinks' }, e)
+    log.error(
+      'portfolio links failed',
+      { action: 'sendClientApprovalConfirmationEmail.portfolioLinks' },
+      e,
+    )
   }
 
   if (!portfolio?.manageUrl) {
-    log.error('no manage URL — skip email', { action: 'sendClientApprovalConfirmationEmail.noManageUrl' })
+    log.error('no manage URL — skip email', {
+      action: 'sendClientApprovalConfirmationEmail.noManageUrl',
+    })
     return false
   }
 
@@ -45,7 +54,7 @@ export async function sendClientApprovalConfirmationEmail(args: {
 }
 
 export async function getCustomerApprovalRecipientEmailImpl(
-  referenceId: string
+  referenceId: string,
 ): Promise<string | null> {
   const { createServerSupabaseClient } = await import('@/lib/supabase/server')
   const supabase = await createServerSupabaseClient()
@@ -53,13 +62,16 @@ export async function getCustomerApprovalRecipientEmailImpl(
   const { data } = await supabase
     .from('references')
     .select(
-      'approval_contact_id, approval_external_contact_id, approval_delegated_to_email, approval_delegated_to_name'
+      'approval_contact_id, approval_external_contact_id, approval_delegated_to_email, approval_delegated_to_name',
     )
     .eq('id', referenceId)
     .maybeSingle()
 
   if (!data) return null
-  const resolved = await resolveCustomerApprovalRecipient(supabase, data as CustomerApprovalRecipientRow)
+  const resolved = await resolveCustomerApprovalRecipient(
+    supabase,
+    data as CustomerApprovalRecipientRow,
+  )
   return resolved?.email ?? null
 }
 

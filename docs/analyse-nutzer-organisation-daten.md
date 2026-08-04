@@ -7,17 +7,20 @@
 ## 1. Nutzerverwaltung
 
 ### 1.1 Registrierung
+
 - **Pfad:** `/register` (optional `?invite=TOKEN`)
 - **Daten:** E-Mail, Passwort (min. 6 Zeichen), ggf. Einladungstoken (versteckt)
 - **Ablauf:** `signUp()` → bei Session sofort Redirect zu Onboarding oder Dashboard; bei E-Mail-Bestätigung Erfolgsmeldung, `emailRedirectTo` zeigt auf `/auth/callback`
 - **Profil/Organisation:** Noch keine – wird erst im Onboarding angelegt
 
 ### 1.2 Login
+
 - **Pfad:** `/login` (optional `?invite=TOKEN`)
 - **Daten:** E-Mail, Passwort; bei Einladung wird Token durchgereicht
 - **Nach Login:** Redirect zu `/dashboard` oder bei Einladung zu `/onboarding?invite=TOKEN`
 
 ### 1.3 Onboarding (Profil + Organisation)
+
 - **Pfad:** `/onboarding` (optional `?invite=TOKEN` oder Cookie `invite_token`)
 - **Daten:** Vollständiger Name, Rolle (sales/admin), ggf. Firmenname (nur ohne Einladung)
 - **Logik:**
@@ -27,6 +30,7 @@
 - **Profil:** `profiles`: id (auth.uid), organization_id, role, full_name
 
 ### 1.4 Einstellungen (Profil bearbeiten)
+
 - **Pfad:** `/dashboard/settings`
 - **Änderbar:** nur `full_name` und `role` – **nicht** `organization_id`
 - Nutzer können ihre Organisation nicht selbst wechseln oder entfernen (kein versehentliches Verlassen der Org).
@@ -36,11 +40,13 @@
 ## 2. Organisationsverwaltung
 
 ### 2.1 Modell
+
 - **Tabelle:** `organizations` (id, name, created_at, updated_at)
 - **Zuordnung Nutzer → Org:** `profiles.organization_id` (FK, ON DELETE SET NULL)
 - **Neue Organisation:** nur über Onboarding (neuer Nutzer ohne Einladung) per RPC `create_organization` (umgeht RLS beim ersten Anlegen)
 
 ### 2.2 Einladungen (Teammitglieder)
+
 - **Tabelle:** `organization_invites` (organization_id, token, invited_by, expires_at, optional email)
 - **Erstellen:** Einstellungen → „Einladungslink erstellen“ → Link (7 Tage gültig)
 - **Einlösen:** Registrierung oder Login mit `?invite=TOKEN` → Onboarding mit Token → Zuordnung zur eingeladenen Organisation
@@ -48,6 +54,7 @@
 - **Cookie:** Bei Besuch von `/register?invite=` oder `/login?invite=` wird Token 24 h im Cookie gespeichert (für E-Mail-Bestätigungs-Flow)
 
 ### 2.3 Was es (bewusst) nicht gibt
+
 - Kein Wechsel der Organisation durch den Nutzer in den Einstellungen
 - Kein Entfernen von Nutzern aus einer Organisation (kein „Team verwalten“)
 - Keine Anzeige/Verwaltung offener Einladungen (kein „Einladungen widerrufen“ / Liste)
@@ -59,16 +66,16 @@
 
 ### 3.1 Tabellen und organization_id
 
-| Tabelle                 | organization_id      | Bedeutung                                      |
-|-------------------------|----------------------|------------------------------------------------|
-| organizations           | –                    | Mandant (Firma)                                |
-| profiles                | FK → organizations   | Nutzer gehört genau einer Organisation         |
-| companies               | FK → organizations   | Referenz-Firma gehört einer Organisation       |
-| references              | über company_id      | Referenz gehört zur Org der Company            |
-| contact_persons         | FK → organizations   | Kontakt gehört einer Organisation              |
-| organization_invites    | FK → organizations   | Einladung gilt für eine Organisation           |
-| approvals               | über reference → company | Freigabe zu Referenz (indirekt org-gebunden) |
-| favorites               | user_id + reference_id | User-spezifisch; Referenzzugriff über RLS  |
+| Tabelle              | organization_id          | Bedeutung                                    |
+| -------------------- | ------------------------ | -------------------------------------------- |
+| organizations        | –                        | Mandant (Firma)                              |
+| profiles             | FK → organizations       | Nutzer gehört genau einer Organisation       |
+| companies            | FK → organizations       | Referenz-Firma gehört einer Organisation     |
+| references           | über company_id          | Referenz gehört zur Org der Company          |
+| contact_persons      | FK → organizations       | Kontakt gehört einer Organisation            |
+| organization_invites | FK → organizations       | Einladung gilt für eine Organisation         |
+| approvals            | über reference → company | Freigabe zu Referenz (indirekt org-gebunden) |
+| favorites            | user_id + reference_id   | User-spezifisch; Referenzzugriff über RLS    |
 
 ### 3.2 Row Level Security (RLS)
 
@@ -111,13 +118,13 @@ Du kannst dich damit **erstmal anderen Themen der App** widmen, ohne dass die Nu
 
 ### 5.2 Optionaler / späterer Handlungsbedarf
 
-| Thema | Priorität | Kurzbeschreibung |
-|-------|-----------|------------------|
-| **Storage (Referenz-PDFs)** | Niedrig | Bucket `references`: Prüfen, ob RLS/Policies so gesetzt sind, dass nur Nutzer der richtigen Organisation Dateien lesen/schreiben können. Aktuell wird nur hochgeladen; Leserechte und Listen-Zugriff sollten mandantenfähig sein. |
-| **Einladungen verwalten** | Niedrig | Offene Einladungen anzeigen, Einladung widerrufen (Token ungültig machen), ggf. Ablaufdatum anzeigen. |
-| **Organisationsname ändern** | Niedrig | In Einstellungen „Firmenname“ bearbeitbar machen (nur für eigene Org, RLS/Policy prüfen). |
-| **Nutzer aus Organisation entfernen** | Optional | Nur sinnvoll, wenn es mehrere Admins pro Org gibt; würde Änderung an `profiles.organization_id` oder „deaktiviert“-Status erfordern. |
-| **Rolle „Admin“ pro Organisation** | Optional | Heute: Rolle im Profil (sales/admin). Wenn „Admin“ nur innerhalb der Org gelten soll (z. B. Einladungen nur für Admins), ist das bereits über Profil-Rolle abbildbar; feinere Rechte (nur eigene Referenzen löschen etc.) wären zusätzliche Logik. |
+| Thema                                 | Priorität | Kurzbeschreibung                                                                                                                                                                                                                                   |
+| ------------------------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Storage (Referenz-PDFs)**           | Niedrig   | Bucket `references`: Prüfen, ob RLS/Policies so gesetzt sind, dass nur Nutzer der richtigen Organisation Dateien lesen/schreiben können. Aktuell wird nur hochgeladen; Leserechte und Listen-Zugriff sollten mandantenfähig sein.                  |
+| **Einladungen verwalten**             | Niedrig   | Offene Einladungen anzeigen, Einladung widerrufen (Token ungültig machen), ggf. Ablaufdatum anzeigen.                                                                                                                                              |
+| **Organisationsname ändern**          | Niedrig   | In Einstellungen „Firmenname“ bearbeitbar machen (nur für eigene Org, RLS/Policy prüfen).                                                                                                                                                          |
+| **Nutzer aus Organisation entfernen** | Optional  | Nur sinnvoll, wenn es mehrere Admins pro Org gibt; würde Änderung an `profiles.organization_id` oder „deaktiviert“-Status erfordern.                                                                                                               |
+| **Rolle „Admin“ pro Organisation**    | Optional  | Heute: Rolle im Profil (sales/admin). Wenn „Admin“ nur innerhalb der Org gelten soll (z. B. Einladungen nur für Admins), ist das bereits über Profil-Rolle abbildbar; feinere Rechte (nur eigene Referenzen löschen etc.) wären zusätzliche Logik. |
 
 ### 5.3 Kein akuter Handlungsbedarf
 

@@ -34,7 +34,7 @@ function capabilityLabel(cap: RolesPermissionsVisibilityCapability): string {
 }
 
 function mergeCapabilityMatrix(
-  settings: RolesPermissionsSettings
+  settings: RolesPermissionsSettings,
 ): Record<FunctionRole, Capability[]> {
   const defaults = defaultVisibilityCapabilityMatrix()
   const out = { ...defaults }
@@ -55,11 +55,11 @@ export function SettingsRolesPermissionsCard({
   const router = useRouter()
   const [pending, start] = useTransition()
   const [salesSeesDrafts, setSalesSeesDrafts] = useState(
-    () => initialSettings.sales_sees_drafts === true
+    () => initialSettings.sales_sees_drafts === true,
   )
   const [capMatrix, setCapMatrix] = useState(() => mergeCapabilityMatrix(initialSettings))
   const [approvalMode, setApprovalMode] = useState<ApprovalRoutingMode>(
-    () => initialSettings.approval_routing?.mode ?? 'am_direct'
+    () => initialSettings.approval_routing?.mode ?? 'am_direct',
   )
   const [labels, setLabels] = useState({
     draft: initialSettings.sensitivity_labels?.draft ?? '',
@@ -80,7 +80,8 @@ export function SettingsRolesPermissionsCard({
       approvalMode !== (initialSettings.approval_routing?.mode ?? 'am_direct') ||
       labels.draft !== (initialSettings.sensitivity_labels?.draft ?? '') ||
       labels.nda !== (initialSettings.sensitivity_labels?.nda ?? '') ||
-      labels.confidentialSales !== (initialSettings.sensitivity_labels?.confidential_sales ?? '')
+      labels.confidentialSales !==
+        (initialSettings.sensitivity_labels?.confidential_sales ?? '')
     )
   }, [capMatrix, initialSettings, salesSeesDrafts, approvalMode, labels])
 
@@ -121,17 +122,25 @@ export function SettingsRolesPermissionsCard({
       <div className="rounded-lg border bg-muted/20 p-4">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-sm font-medium">{COPY.settings.rolesPermissions.salesSeesDraftsLabel}</p>
+            <p className="text-sm font-medium">
+              {COPY.settings.rolesPermissions.salesSeesDraftsLabel}
+            </p>
             <p className="text-xs text-muted-foreground">
               {COPY.settings.rolesPermissions.salesSeesDraftsHint}
             </p>
           </div>
-          <Switch checked={salesSeesDrafts} onCheckedChange={setSalesSeesDrafts} disabled={pending} />
+          <Switch
+            checked={salesSeesDrafts}
+            onCheckedChange={setSalesSeesDrafts}
+            disabled={pending}
+          />
         </div>
       </div>
 
       <div className="space-y-4">
-        <h3 className="text-sm font-medium">{COPY.settings.rolesPermissions.visibilityMatrixTitle}</h3>
+        <h3 className="text-sm font-medium">
+          {COPY.settings.rolesPermissions.visibilityMatrixTitle}
+        </h3>
         {FUNCTION_ROLES.map((role) => (
           <div key={role} className="rounded-lg border p-4">
             <p className="mb-3 text-sm font-medium">
@@ -188,7 +197,9 @@ export function SettingsRolesPermissionsCard({
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="space-y-2">
-          <Label htmlFor="label-draft">{COPY.settings.rolesPermissions.sensitivityDraft}</Label>
+          <Label htmlFor="label-draft">
+            {COPY.settings.rolesPermissions.sensitivityDraft}
+          </Label>
           <Input
             id="label-draft"
             value={labels.draft}
@@ -198,7 +209,9 @@ export function SettingsRolesPermissionsCard({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="label-nda">{COPY.settings.rolesPermissions.sensitivityNda}</Label>
+          <Label htmlFor="label-nda">
+            {COPY.settings.rolesPermissions.sensitivityNda}
+          </Label>
           <Input
             id="label-nda"
             value={labels.nda}
@@ -208,11 +221,15 @@ export function SettingsRolesPermissionsCard({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="label-conf">{COPY.settings.rolesPermissions.sensitivityConfidential}</Label>
+          <Label htmlFor="label-conf">
+            {COPY.settings.rolesPermissions.sensitivityConfidential}
+          </Label>
           <Input
             id="label-conf"
             value={labels.confidentialSales}
-            onChange={(e) => setLabels((p) => ({ ...p, confidentialSales: e.target.value }))}
+            onChange={(e) =>
+              setLabels((p) => ({ ...p, confidentialSales: e.target.value }))
+            }
             disabled={pending}
             className="bg-background"
           />

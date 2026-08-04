@@ -24,8 +24,9 @@ export async function notifyInternalReferenceCoordinatorAboutPendingReview(args:
       .eq('id', args.accountCompanyId)
       .maybeSingle()
 
-    const contactId = (companyRow as { internal_reference_approval_contact_id?: string | null } | null)
-      ?.internal_reference_approval_contact_id
+    const contactId = (
+      companyRow as { internal_reference_approval_contact_id?: string | null } | null
+    )?.internal_reference_approval_contact_id
     if (!contactId) return
 
     const { data: person } = await args.supabase

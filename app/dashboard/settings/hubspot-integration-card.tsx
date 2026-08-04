@@ -76,7 +76,9 @@ export function HubSpotIntegrationCard({
                 className="object-contain p-1"
               />
             </div>
-            <CardTitle className={compact ? 'truncate text-sm font-semibold' : 'text-base'}>
+            <CardTitle
+              className={compact ? 'truncate text-sm font-semibold' : 'text-base'}
+            >
               HubSpot
             </CardTitle>
           </div>
@@ -91,7 +93,9 @@ export function HubSpotIntegrationCard({
           Verbinde CRM-Kontakte und Deal-Daten mit RefStack.
         </CardDescription>
       </CardHeader>
-      <CardContent className={compact ? 'space-y-2.5 px-0 pb-0 pt-3' : 'space-y-5 px-0 pb-0 pt-5'}>
+      <CardContent
+        className={compact ? 'space-y-2.5 px-0 pb-0 pt-3' : 'space-y-5 px-0 pb-0 pt-5'}
+      >
         <div
           className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] ${
             connected ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'
@@ -103,7 +107,8 @@ export function HubSpotIntegrationCard({
 
         {!configured ? (
           <p className="text-xs text-slate-500">
-            HubSpot OAuth ist noch nicht konfiguriert (HUBSPOT_CLIENT_ID / HUBSPOT_CLIENT_SECRET).
+            HubSpot OAuth ist noch nicht konfiguriert (HUBSPOT_CLIENT_ID /
+            HUBSPOT_CLIENT_SECRET).
           </p>
         ) : null}
 

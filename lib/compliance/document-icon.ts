@@ -4,7 +4,7 @@ import { COMPLIANCE_DOCUMENT_TYPES } from '@/lib/compliance/document-types'
 export const ISO_BADGE_SRC = '/compliance/iso-badge.png'
 
 const ISO_SYSTEM_SLUGS = new Set(
-  COMPLIANCE_DOCUMENT_TYPES.filter((slug) => slug.startsWith('iso_'))
+  COMPLIANCE_DOCUMENT_TYPES.filter((slug) => slug.startsWith('iso_')),
 )
 
 const ISO_SLUG_PATTERN = /^iso_\d{4,5}$/

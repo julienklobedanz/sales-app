@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { renderToBuffer } from '@react-pdf/renderer'
-import {
-  getPublicPortfolio,
-  getPublicPortfolioBranding,
-} from '@/app/p/actions'
+import { getPublicPortfolio, getPublicPortfolioBranding } from '@/app/p/actions'
 import {
   ReferencePdfBundleDocument,
   ReferencePdfDocument,
@@ -38,10 +35,13 @@ export async function GET(req: NextRequest) {
   const { branding: pdfBranding, exportSettings } = await resolvePublicPdfExportContext(
     branding,
     firstReferenceId,
-    result.references.map((r) => r.id)
+    result.references.map((r) => r.id),
   )
 
-  const template = resolvePdfTemplate(req.nextUrl.searchParams.get('template'), exportSettings)
+  const template = resolvePdfTemplate(
+    req.nextUrl.searchParams.get('template'),
+    exportSettings,
+  )
   const references = result.references.map(mapPublicReferenceToPdfReference)
   const exportedAtLabel = new Date().toLocaleDateString('de-DE', { dateStyle: 'long' })
 
@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
             org: pdfBranding,
             template,
             exportedAtLabel,
-          })
+          }),
         )
       : await renderToBuffer(
           ReferencePdfBundleDocument({
@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
             org: pdfBranding,
             template,
             exportedAtLabel,
-          })
+          }),
         )
 
   const fileName =

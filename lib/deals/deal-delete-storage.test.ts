@@ -13,7 +13,7 @@ describe('deal-delete-storage', () => {
         undefined,
         '  ',
         'org/deals/d1/b/other.pdf',
-      ])
+      ]),
     ).toEqual(['org/deals/d1/a/file.pdf', 'org/deals/d1/b/other.pdf'])
   })
 

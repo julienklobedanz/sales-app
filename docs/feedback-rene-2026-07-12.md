@@ -8,11 +8,11 @@
 
 ## Ops / Sales (kein Code, aber priorisieren)
 
-| Punkt | Status | Nächster Schritt |
-|-------|--------|------------------|
-| Rene Account / Zugang auf aktuelles Deployment | offen | Zugang auf `sales-app-fawn.vercel.app` geben, kurz Walkthrough |
-| Pitchen bei Kunden des Vertrauens | offen | Feedback-Schleife; ggf. kostenloser Prototyp bei **OEDIV** |
-| Warum SaaS statt Download-App? | Strategie | Pitch-Antwort vorbereiten: SaaS jetzt, optional VPC / containerisiert on-prem später (Daten in DE) |
+| Punkt                                          | Status    | Nächster Schritt                                                                                   |
+| ---------------------------------------------- | --------- | -------------------------------------------------------------------------------------------------- |
+| Rene Account / Zugang auf aktuelles Deployment | offen     | Zugang auf `sales-app-fawn.vercel.app` geben, kurz Walkthrough                                     |
+| Pitchen bei Kunden des Vertrauens              | offen     | Feedback-Schleife; ggf. kostenloser Prototyp bei **OEDIV**                                         |
+| Warum SaaS statt Download-App?                 | Strategie | Pitch-Antwort vorbereiten: SaaS jetzt, optional VPC / containerisiert on-prem später (Daten in DE) |
 
 ---
 
@@ -23,6 +23,7 @@
 **Warum:** Einziges Feedback-Item, das explizit „damit das richtig funktioniert“ adressiert. Ohne Gold-Set bleibt Match-Qualität subjektiv.
 
 **Zielbild (v0):**
+
 - 20–50 reale Queries (DE) mit erwarteten Top-Referenzen / Hard-Negatives
 - Automatisierbarer Check (Score/Recall@k) gegen `matchReferences`
 - Regression bei Parser-/Embedding-/Filter-Änderungen
@@ -72,11 +73,11 @@
 
 ## Bewusst nicht als Blocker für aktuelle Pushes
 
-- SharePoint-Integration  
-- Frontier-Bulk-Umschaltung  
-- Eval-Set-Infrastruktur (kann parallel geplant werden)  
-- Passwort-Opps  
-- Container-Distribution  
+- SharePoint-Integration
+- Frontier-Bulk-Umschaltung
+- Eval-Set-Infrastruktur (kann parallel geplant werden)
+- Passwort-Opps
+- Container-Distribution
 
 Demo-/Bugfixes (Smart Match Filter, Deal-Toggle, Share-Toast, Notification Moves) sind davon unabhängig.
 
@@ -84,17 +85,17 @@ Demo-/Bugfixes (Smart Match Filter, Deal-Toggle, Share-Toast, Notification Moves
 
 ## Vorgeschlagene Reihenfolge nach nächstem Push
 
-1. Rene Zugang + Walkthrough (Feedback > Features)  
-2. Eval-Set v0 für Smart Match  
-3. Indexing-Status / Latenz-Feedback in der UI  
-4. NDA + Passwort nur wenn Visibility explizit bemängelt wird  
-5. SharePoint / Frontier-Bulk erst mit konkretem OEDIV-/Pilot-Dokumentenfluss  
+1. Rene Zugang + Walkthrough (Feedback > Features)
+2. Eval-Set v0 für Smart Match
+3. Indexing-Status / Latenz-Feedback in der UI
+4. NDA + Passwort nur wenn Visibility explizit bemängelt wird
+5. SharePoint / Frontier-Bulk erst mit konkretem OEDIV-/Pilot-Dokumentenfluss
 
 ---
 
 ## Verwandte Docs
 
-- `docs/pilot-checklist.md`  
-- `docs/arbeitspaket-rechte-sichtbarkeit-welle-2.md`  
-- `docs/arbeitspaket-perf-4-match.md`  
-- `docs/arbeitspaket-deal-dokumente.md`  
+- `docs/pilot-checklist.md`
+- `docs/arbeitspaket-rechte-sichtbarkeit-welle-2.md`
+- `docs/arbeitspaket-perf-4-match.md`
+- `docs/arbeitspaket-deal-dokumente.md`

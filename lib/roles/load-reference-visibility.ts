@@ -12,7 +12,7 @@ import { parseRolesPermissionsSettings } from '@/lib/roles/roles-permissions-set
 
 export async function loadReferenceVisibilityForUser(
   supabase: SupabaseClient,
-  userId: string
+  userId: string,
 ): Promise<{
   organizationId: string
   salesVisibleOnly: boolean

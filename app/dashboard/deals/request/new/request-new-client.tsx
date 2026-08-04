@@ -1,13 +1,25 @@
-"use client"
+'use client'
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { toast } from 'sonner'
 import { createDealReferenceRequest } from '../../actions'
 import { DEAL_STATUS_LABELS, type DealStatus } from '../../types'
@@ -80,20 +92,28 @@ export function RequestNewClient({
     <Card>
       <CardHeader>
         <CardTitle>Neue Referenzanfrage</CardTitle>
-        <CardDescription>Wird im System gespeichert (und kann später ausgewertet werden).</CardDescription>
+        <CardDescription>
+          Wird im System gespeichert (und kann später ausgewertet werden).
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form className="space-y-4" onSubmit={onSubmit}>
           <div className="space-y-2">
             <Label>Deal *</Label>
-            <Select value={dealId || '__none__'} onValueChange={(v) => setDealId(v === '__none__' ? '' : v)} disabled={saving}>
+            <Select
+              value={dealId || '__none__'}
+              onValueChange={(v) => setDealId(v === '__none__' ? '' : v)}
+              disabled={saving}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Deal auswählen …" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none__">— Auswählen —</SelectItem>
                 {deals.map((d) => (
-                  <SelectItem key={d.id} value={d.id}>{d.title}</SelectItem>
+                  <SelectItem key={d.id} value={d.id}>
+                    {d.title}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -113,10 +133,17 @@ export function RequestNewClient({
 
           <div className="flex gap-2 pt-2">
             <Button type="submit" disabled={saving}>
-              {saving && <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />}
+              {saving && (
+                <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />
+              )}
               Anfrage speichern
             </Button>
-            <Button type="button" variant="outline" disabled={saving} onClick={() => router.push(ROUTES.deals.root)}>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={saving}
+              onClick={() => router.push(ROUTES.deals.root)}
+            >
               Abbrechen
             </Button>
           </div>

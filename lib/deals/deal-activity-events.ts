@@ -9,7 +9,8 @@ export const DEAL_ACTIVITY_VISIBLE_EVENT_TYPES = [
   'reference_helped',
 ] as const
 
-export type DealActivityVisibleEventType = (typeof DEAL_ACTIVITY_VISIBLE_EVENT_TYPES)[number]
+export type DealActivityVisibleEventType =
+  (typeof DEAL_ACTIVITY_VISIBLE_EVENT_TYPES)[number]
 
 export type DealActivityEvidenceRow = {
   id: string
@@ -26,14 +27,14 @@ export type DealActivityMappedItem = {
 }
 
 export function isDealActivityVisibleEventType(
-  eventType: string
+  eventType: string,
 ): eventType is DealActivityVisibleEventType {
   return (DEAL_ACTIVITY_VISIBLE_EVENT_TYPES as readonly string[]).includes(eventType)
 }
 
 export function dealActivityTitleForEvent(
   eventType: string,
-  payload: DealActivityEvidenceRow['payload']
+  payload: DealActivityEvidenceRow['payload'],
 ): string {
   if (eventType === 'reference_helped') {
     return payload?.helped ? 'Referenz hat geholfen' : 'Referenz hat nicht geholfen'
@@ -45,7 +46,7 @@ export function dealActivityTitleForEvent(
 }
 
 export function mapEvidenceEventsToDealActivities(
-  events: DealActivityEvidenceRow[]
+  events: DealActivityEvidenceRow[],
 ): DealActivityMappedItem[] {
   return events
     .filter((e) => isDealActivityVisibleEventType(e.event_type))
@@ -59,7 +60,7 @@ export function mapEvidenceEventsToDealActivities(
 
 /** Timeline: neueste Einträge oben, älteste unten. */
 export function sortDealActivitiesNewestFirst(
-  items: DealActivityMappedItem[]
+  items: DealActivityMappedItem[],
 ): DealActivityMappedItem[] {
   return [...items].sort((a, b) => b.at.getTime() - a.at.getTime())
 }

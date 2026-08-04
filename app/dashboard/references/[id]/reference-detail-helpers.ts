@@ -7,7 +7,10 @@ export function splitTags(tags: string | null) {
     .filter(Boolean)
 }
 
-export function anonymizeText(value: string | null | undefined, companyName: string | null | undefined) {
+export function anonymizeText(
+  value: string | null | undefined,
+  companyName: string | null | undefined,
+) {
   const text = String(value ?? '')
   const normalizedCompany = String(companyName ?? '').trim()
   if (!text) return text
@@ -94,7 +97,7 @@ export function toReferencesPublicUrl(publicBase: string, path: string) {
 export function buildDetailFileRows(
   assetRows: ReferenceAssetRow[],
   legacyFilePath: string | null | undefined,
-  publicBase: string
+  publicBase: string,
 ): DetailFileRow[] {
   const detailFileRows: DetailFileRow[] = assetRows.map((a) => ({
     key: a.id,

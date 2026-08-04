@@ -31,4 +31,3 @@ export async function toggleFavoriteImpl(referenceId: string) {
   revalidatePath(ROUTES.home)
   revalidatePath(ROUTES.references.root)
 }
-

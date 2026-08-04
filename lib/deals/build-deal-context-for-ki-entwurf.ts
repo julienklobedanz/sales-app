@@ -8,7 +8,9 @@ export function buildDealContextForKiEntwurf(deal: DealWithReferences): string {
     deal.company_name ? `Account: ${deal.company_name}` : null,
     deal.industry ? `Branche: ${formatIndustryDisplay(deal.industry)}` : null,
     deal.volume ? `Volumen: ${deal.volume}` : null,
-    deal.requirements_text?.trim() ? `Anforderungen:\n${deal.requirements_text.trim()}` : null,
+    deal.requirements_text?.trim()
+      ? `Anforderungen:\n${deal.requirements_text.trim()}`
+      : null,
   ].filter(Boolean)
   return parts.join('\n\n')
 }

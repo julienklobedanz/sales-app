@@ -5,7 +5,12 @@ import {
   REFERENCE_PROOF_SEGMENT_LABELS,
   type ReferenceLibraryMode,
 } from '@/lib/references/library/reference-library-mode'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 const SEGMENTS: ReferenceLibraryMode[] = ['references', 'certificates']
@@ -26,7 +31,7 @@ export function ReferenceProofSegmentSwitch({
         aria-label="Nachweis-Art"
         className={cn(
           'inline-flex h-10 w-auto shrink-0 items-center gap-0.5 rounded-lg border border-border/80 bg-muted/40 p-1',
-          className
+          className,
         )}
       >
         {SEGMENTS.map((segment) => {
@@ -45,7 +50,7 @@ export function ReferenceProofSegmentSwitch({
                     'flex h-8 shrink-0 items-center rounded-md px-2.5 text-xs font-medium transition-colors',
                     selected
                       ? 'bg-background text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'
+                      : 'text-muted-foreground hover:bg-background/60 hover:text-foreground',
                   )}
                 >
                   {REFERENCE_PROOF_SEGMENT_LABELS[segment]}

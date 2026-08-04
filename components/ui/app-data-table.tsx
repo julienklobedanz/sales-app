@@ -1,9 +1,9 @@
-"use client"
+'use client'
 
 /* eslint-disable react-hooks/incompatible-library */
 
-import * as React from "react"
-import { useRouter } from "next/navigation"
+import * as React from 'react'
+import { useRouter } from 'next/navigation'
 import {
   type ColumnOrderState,
   type ColumnSizingState,
@@ -20,19 +20,16 @@ import {
   type VisibilityState,
   type RowSelectionState,
   useReactTable,
-} from "@tanstack/react-table"
+} from '@tanstack/react-table'
 
-import { ColumnHeaderDragHandle } from "@/components/table/column-header-drag-handle"
-import { ColumnResizeHandle } from "@/components/table/column-resize-handle"
+import { ColumnHeaderDragHandle } from '@/components/table/column-header-drag-handle'
+import { ColumnResizeHandle } from '@/components/table/column-resize-handle'
 import {
   TABLE_COLUMN_HEAD_CLASS,
   TABLE_COLUMN_HEAD_SELECT_CLASS,
   TABLE_SELECT_COLUMN_CELL_CLASS,
-} from "@/components/table/table-column-head-styles"
-import {
-  TABLE_COLUMN_MAX_WIDTH,
-  TABLE_COLUMN_MIN_WIDTH,
-} from "@/lib/table-column-sizing"
+} from '@/components/table/table-column-head-styles'
+import { TABLE_COLUMN_MAX_WIDTH, TABLE_COLUMN_MIN_WIDTH } from '@/lib/table-column-sizing'
 import {
   Table,
   TableBody,
@@ -40,21 +37,21 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { cn } from "@/lib/utils"
-import { DataTablePagination } from "@/components/ui/data-table-pagination"
-import { DataTableViewOptions } from "@/components/ui/data-table-view-options"
-import { COPY } from "@/lib/copy"
-import { ROUTES } from "@/lib/routes"
+} from '@/components/ui/table'
+import { cn } from '@/lib/utils'
+import { DataTablePagination } from '@/components/ui/data-table-pagination'
+import { DataTableViewOptions } from '@/components/ui/data-table-view-options'
+import { COPY } from '@/lib/copy'
+import { ROUTES } from '@/lib/routes'
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
   ContextMenuTrigger,
-} from "@/components/ui/context-menu"
+} from '@/components/ui/context-menu'
 
-export type AppDataTableVariant = "default" | "references" | "deals"
+export type AppDataTableVariant = 'default' | 'references' | 'deals'
 
 /** Klick auf interaktive Controls — keine Zeilen-Navigation (Checkbox, Links, Buttons, …). */
 function isRowNavSuppressedTarget(target: EventTarget | null): boolean {
@@ -101,7 +98,7 @@ export type AppDataTableProps<TData, TValue> = {
 export function AppDataTable<TData, TValue>({
   columns,
   data,
-  tableVariant = "default",
+  tableVariant = 'default',
   toolbar,
   toolbarRight,
   showViewOptions = true,
@@ -129,9 +126,8 @@ export function AppDataTable<TData, TValue>({
   const [internalColumnOrder, setInternalColumnOrder] = React.useState<ColumnOrderState>(
     () => initialColumnOrder ?? [],
   )
-  const [internalColumnSizing, setInternalColumnSizing] = React.useState<ColumnSizingState>(
-    () => columnSizing ?? {},
-  )
+  const [internalColumnSizing, setInternalColumnSizing] =
+    React.useState<ColumnSizingState>(() => columnSizing ?? {})
   const [dragOverColumnId, setDragOverColumnId] = React.useState<string | null>(null)
 
   const resolvedColumnOrder = columnOrder ?? internalColumnOrder
@@ -143,7 +139,7 @@ export function AppDataTable<TData, TValue>({
     getRowId,
     enableRowSelection: true,
     enableColumnResizing: enableColumnResize,
-    columnResizeMode: "onChange",
+    columnResizeMode: 'onChange',
     defaultColumn: {
       minSize: TABLE_COLUMN_MIN_WIDTH,
       maxSize: TABLE_COLUMN_MAX_WIDTH,
@@ -155,17 +151,13 @@ export function AppDataTable<TData, TValue>({
     onRowSelectionChange: setRowSelection,
     onColumnOrderChange: (updater) => {
       const next =
-        typeof updater === "function"
-          ? updater([...resolvedColumnOrder])
-          : updater
+        typeof updater === 'function' ? updater([...resolvedColumnOrder]) : updater
       setInternalColumnOrder(next)
       onColumnOrderChange?.(next)
     },
     onColumnSizingChange: (updater) => {
       const next =
-        typeof updater === "function"
-          ? updater({ ...resolvedColumnSizing })
-          : updater
+        typeof updater === 'function' ? updater({ ...resolvedColumnSizing }) : updater
       setInternalColumnSizing(next)
       onColumnSizingChange?.(next)
     },
@@ -189,23 +181,26 @@ export function AppDataTable<TData, TValue>({
     },
   })
 
-  const moveColumnOrder = React.useCallback((sourceId: string, targetId: string) => {
-    if (!sourceId || !targetId || sourceId === targetId) return
-    if (sourceId === "select" || targetId === "select") return
-    table.setColumnOrder((prev) => {
-      const base =
-        prev.length > 0
-          ? [...prev]
-          : table.getAllLeafColumns().map((column) => column.id)
-      const sourceIndex = base.indexOf(sourceId)
-      const targetIndex = base.indexOf(targetId)
-      if (sourceIndex === -1 || targetIndex === -1) return prev
-      const next = [...base]
-      const [moved] = next.splice(sourceIndex, 1)
-      next.splice(targetIndex, 0, moved)
-      return next
-    })
-  }, [table])
+  const moveColumnOrder = React.useCallback(
+    (sourceId: string, targetId: string) => {
+      if (!sourceId || !targetId || sourceId === targetId) return
+      if (sourceId === 'select' || targetId === 'select') return
+      table.setColumnOrder((prev) => {
+        const base =
+          prev.length > 0
+            ? [...prev]
+            : table.getAllLeafColumns().map((column) => column.id)
+        const sourceIndex = base.indexOf(sourceId)
+        const targetIndex = base.indexOf(targetId)
+        if (sourceIndex === -1 || targetIndex === -1) return prev
+        const next = [...base]
+        const [moved] = next.splice(sourceIndex, 1)
+        next.splice(targetIndex, 0, moved)
+        return next
+      })
+    },
+    [table],
+  )
 
   React.useEffect(() => {
     if (!onSelectedRowIdsChange) return
@@ -217,7 +212,9 @@ export function AppDataTable<TData, TValue>({
     const cells = row.getVisibleCells().map((cell) => (
       <TableCell
         key={cell.id}
-        className={cell.column.id === "select" ? TABLE_SELECT_COLUMN_CELL_CLASS : undefined}
+        className={
+          cell.column.id === 'select' ? TABLE_SELECT_COLUMN_CELL_CLASS : undefined
+        }
         style={
           enableColumnResize
             ? { width: cell.column.getSize(), minWidth: cell.column.getSize() }
@@ -228,8 +225,8 @@ export function AppDataTable<TData, TValue>({
       </TableCell>
     ))
 
-    const isNavVariant = tableVariant === "references" || tableVariant === "deals"
-    const rowNavClass = isNavVariant ? "cursor-pointer hover:bg-accent/35" : undefined
+    const isNavVariant = tableVariant === 'references' || tableVariant === 'deals'
+    const rowNavClass = isNavVariant ? 'cursor-pointer hover:bg-accent/35' : undefined
 
     const handleRowClick = (e: React.MouseEvent<HTMLTableRowElement>) => {
       if (!isNavVariant) return
@@ -237,23 +234,23 @@ export function AppDataTable<TData, TValue>({
       const rawId = (row.original as { id?: string }).id
       if (!rawId) return
       const href =
-        tableVariant === "references"
+        tableVariant === 'references'
           ? ROUTES.references.detail(rawId)
           : ROUTES.deals.detail(rawId)
       if (e.metaKey || e.ctrlKey) {
-        window.open(href, "_blank", "noopener,noreferrer")
+        window.open(href, '_blank', 'noopener,noreferrer')
         return
       }
       if (e.button !== 0) return
       router.push(href)
     }
 
-    if (tableVariant === "references") {
+    if (tableVariant === 'references') {
       return (
         <ContextMenu key={row.id}>
           <ContextMenuTrigger asChild>
             <TableRow
-              data-state={row.getIsSelected() ? "selected" : undefined}
+              data-state={row.getIsSelected() ? 'selected' : undefined}
               className={rowNavClass}
               onClick={handleRowClick}
             >
@@ -290,12 +287,12 @@ export function AppDataTable<TData, TValue>({
       )
     }
 
-    if (tableVariant === "deals") {
+    if (tableVariant === 'deals') {
       return (
         <ContextMenu key={row.id}>
           <ContextMenuTrigger asChild>
             <TableRow
-              data-state={row.getIsSelected() ? "selected" : undefined}
+              data-state={row.getIsSelected() ? 'selected' : undefined}
               className={rowNavClass}
               onClick={handleRowClick}
             >
@@ -321,7 +318,11 @@ export function AppDataTable<TData, TValue>({
               onSelect={() => {
                 const anyRow = row.original as unknown as { id?: string }
                 if (anyRow?.id) {
-                  window.open(ROUTES.deals.detail(anyRow.id), "_blank", "noopener,noreferrer")
+                  window.open(
+                    ROUTES.deals.detail(anyRow.id),
+                    '_blank',
+                    'noopener,noreferrer',
+                  )
                 }
               }}
             >
@@ -333,7 +334,7 @@ export function AppDataTable<TData, TValue>({
     }
 
     return (
-      <TableRow key={row.id} data-state={row.getIsSelected() ? "selected" : undefined}>
+      <TableRow key={row.id} data-state={row.getIsSelected() ? 'selected' : undefined}>
         {cells}
       </TableRow>
     )
@@ -353,9 +354,11 @@ export function AppDataTable<TData, TValue>({
 
       <div className="overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm shadow-slate-900/5">
         <Table
-          className={enableColumnResize ? "w-full table-fixed" : undefined}
+          className={enableColumnResize ? 'w-full table-fixed' : undefined}
           style={
-            enableColumnResize ? { minWidth: Math.max(table.getTotalSize(), 640) } : undefined
+            enableColumnResize
+              ? { minWidth: Math.max(table.getTotalSize(), 640) }
+              : undefined
           }
         >
           <TableHeader>
@@ -363,15 +366,19 @@ export function AppDataTable<TData, TValue>({
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   const columnId = header.column.id
-                  const canDragColumn = enableColumnDrag && columnId !== "select"
+                  const canDragColumn = enableColumnDrag && columnId !== 'select'
                   const canResizeColumn =
-                    enableColumnResize && header.column.getCanResize() && columnId !== "select"
+                    enableColumnResize &&
+                    header.column.getCanResize() &&
+                    columnId !== 'select'
                   const headerAlign = (
-                    header.column.columnDef.meta as { headerAlign?: "center" | "end" } | undefined
+                    header.column.columnDef.meta as
+                      | { headerAlign?: 'center' | 'end' }
+                      | undefined
                   )?.headerAlign
                   const isDropTarget = dragOverColumnId === columnId
 
-                  const isSelectColumn = columnId === "select"
+                  const isSelectColumn = columnId === 'select'
 
                   return (
                     <TableHead
@@ -381,17 +388,19 @@ export function AppDataTable<TData, TValue>({
                         minWidth: header.getSize(),
                       }}
                       className={cn(
-                        isSelectColumn ? TABLE_COLUMN_HEAD_SELECT_CLASS : TABLE_COLUMN_HEAD_CLASS,
-                        headerAlign === "end" && "text-right",
+                        isSelectColumn
+                          ? TABLE_COLUMN_HEAD_SELECT_CLASS
+                          : TABLE_COLUMN_HEAD_CLASS,
+                        headerAlign === 'end' && 'text-right',
                         isDropTarget &&
                           canDragColumn &&
-                          "bg-primary/10 ring-1 ring-inset ring-primary/40",
+                          'bg-primary/10 ring-1 ring-inset ring-primary/40',
                       )}
                       onDragOver={(event) => {
                         if (!canDragColumn) return
                         event.preventDefault()
                         event.stopPropagation()
-                        event.dataTransfer.dropEffect = "move"
+                        event.dataTransfer.dropEffect = 'move'
                         setDragOverColumnId(columnId)
                       }}
                       onDragLeave={(event) => {
@@ -404,16 +413,16 @@ export function AppDataTable<TData, TValue>({
                         if (!canDragColumn) return
                         event.preventDefault()
                         event.stopPropagation()
-                        const sourceId = event.dataTransfer.getData("text/plain")
+                        const sourceId = event.dataTransfer.getData('text/plain')
                         moveColumnOrder(sourceId, columnId)
                         setDragOverColumnId(null)
                       }}
                     >
                       <div
                         className={cn(
-                          "flex min-w-0 items-center gap-1",
-                          headerAlign === "center" && "w-full justify-center",
-                          headerAlign === "end" && "w-full justify-end",
+                          'flex min-w-0 items-center gap-1',
+                          headerAlign === 'center' && 'w-full justify-center',
+                          headerAlign === 'end' && 'w-full justify-end',
                         )}
                       >
                         {canDragColumn ? (
@@ -424,7 +433,10 @@ export function AppDataTable<TData, TValue>({
                         ) : null}
                         {header.isPlaceholder
                           ? null
-                          : flexRender(header.column.columnDef.header, header.getContext())}
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
                       </div>
                       {canResizeColumn ? (
                         <ColumnResizeHandle
@@ -444,7 +456,10 @@ export function AppDataTable<TData, TValue>({
               table.getRowModel().rows.map((row) => renderBodyRow(row))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center text-muted-foreground"
+                >
                   {emptyText}
                 </TableCell>
               </TableRow>

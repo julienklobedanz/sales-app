@@ -39,7 +39,7 @@ export async function syncComputedAccountStatuses(
   supabase: SupabaseClient,
   companies: CompanyStatusSyncRow[],
   deals: DealRow[],
-  references: ReferenceRow[]
+  references: ReferenceRow[],
 ): Promise<Record<string, CompanyAccountStatusValue | null>> {
   const dealsByCompany = new Map<string, DealRow[]>()
   for (const deal of deals) {
@@ -88,7 +88,8 @@ export async function syncComputedAccountStatuses(
             .eq('id', company.id)
         }
       } else {
-        effectiveStatus[company.id] = company.account_status as CompanyAccountStatusValue | null
+        effectiveStatus[company.id] =
+          company.account_status as CompanyAccountStatusValue | null
       }
       continue
     }

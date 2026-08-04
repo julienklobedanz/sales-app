@@ -2,7 +2,10 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { getAppOrigin } from '@/lib/env/app-origin'
 
-export function buildCustomerManageUrl(publicPreviewUrl: string, manageToken: string): string {
+export function buildCustomerManageUrl(
+  publicPreviewUrl: string,
+  manageToken: string,
+): string {
   const u = new URL(publicPreviewUrl)
   u.searchParams.set('manage', manageToken)
   u.searchParams.set('mode', 'revoke')
@@ -11,7 +14,7 @@ export function buildCustomerManageUrl(publicPreviewUrl: string, manageToken: st
 
 export async function getPublicPreviewUrlForReference(
   supabase: SupabaseClient,
-  referenceId: string
+  referenceId: string,
 ): Promise<string | null> {
   const id = String(referenceId ?? '').trim()
   if (!id) return null

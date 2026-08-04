@@ -23,6 +23,7 @@
 ## T1 — Typen generieren + Workflow einrichten
 
 **Soll:**
+
 1. `database.types.ts` generieren (Supabase CLI):
    ```bash
    npx supabase gen types typescript --project-id <PROJECT_ID> --schema public > lib/database.types.ts
@@ -34,13 +35,14 @@
    "typecheck": "tsc --noEmit"
    ```
 3. `lib/database.types.ts` committen (generierte Datei; bei Schema-Änderung neu erzeugen — Konvention in `docs/ai-coding-agent-guide.md` ergänzen).
-**Akzeptanz:** `lib/database.types.ts` existiert; `npm run db:types` reproduziert sie; `npm run typecheck` läuft.
+   **Akzeptanz:** `lib/database.types.ts` existiert; `npm run db:types` reproduziert sie; `npm run typecheck` läuft.
 
 ---
 
 ## T2 — Clients typisieren
 
 **Soll:** Den `Database`-Generic in alle drei Clients einziehen:
+
 ```ts
 import type { Database } from '@/lib/database.types'
 // client.ts
@@ -50,6 +52,7 @@ createServerClient<Database>(url, anon, { cookies… })
 // service-role.ts
 createClient<Database>(url, serviceKey, { … })
 ```
+
 **Akzeptanz:** Alle Clients sind generisch typisiert; `npm run typecheck` zeigt jetzt die echten Typfehler an den Aufrufstellen (erwartet — Grundlage für T3).
 
 ---
@@ -57,11 +60,12 @@ createClient<Database>(url, serviceKey, { … })
 ## T3 — Typfehler abarbeiten + Casts entfernen (schrittweise)
 
 **Soll:** Die durch T2 aufgedeckten Fehler clusterweise beheben:
+
 - `.select('…')`-Strings korrigieren (keine nicht-existenten Spalten),
 - `as { … }`-Casts durch die generierten Row-Typen ersetzen (`Tables<'references'>` etc.),
 - pro Domäne ein PR (references/evidence, deals, accounts, market-signals, settings/roles, deal-desk, api-routes).
-**Strangler:** T3 muss nicht in einem PR fertig sein. Solange `typecheck` noch nicht 0 ist, **nicht** in CI als Blocker schalten (siehe T4) — erst clusterweise grün machen.
-**Akzeptanz:** Sukzessive 0 `typecheck`-Fehler; Anzahl `as { … }`-Casts deutlich reduziert (Ziel: nur noch dort, wo wirklich nötig).
+  **Strangler:** T3 muss nicht in einem PR fertig sein. Solange `typecheck` noch nicht 0 ist, **nicht** in CI als Blocker schalten (siehe T4) — erst clusterweise grün machen.
+  **Akzeptanz:** Sukzessive 0 `typecheck`-Fehler; Anzahl `as { … }`-Casts deutlich reduziert (Ziel: nur noch dort, wo wirklich nötig).
 
 ---
 
@@ -86,6 +90,7 @@ npm run typecheck    # Zielzustand: 0 Fehler
 npm run test         # grün
 npm run build        # grün
 ```
+
 - Stichprobe: ein bewusst falscher Spaltenname in einem `.select(...)` muss `typecheck` **rot** machen (Beweis, dass das Gate greift).
 
 ---

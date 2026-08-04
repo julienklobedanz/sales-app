@@ -5,7 +5,7 @@ import type { ParsedSmartMatchConstraints } from '@/lib/match/parse-smart-match-
 
 /** Server-seitige Query→Filter-Auflösung (Heuristik + optional LLM). */
 export async function parseSmartMatchFiltersAction(
-  query: string
+  query: string,
 ): Promise<ParsedSmartMatchConstraints> {
   return resolveSmartMatchConstraints(query)
 }

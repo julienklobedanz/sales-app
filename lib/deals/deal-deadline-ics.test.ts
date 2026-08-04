@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildDealDeadlinesIcsContent, dealDeadlinesExportableForIcs } from './deal-deadline-ics'
+import {
+  buildDealDeadlinesIcsContent,
+  dealDeadlinesExportableForIcs,
+} from './deal-deadline-ics'
 import type { DealDeadlineRow } from './deadline-display'
 
 function row(overrides: Partial<DealDeadlineRow>): DealDeadlineRow {

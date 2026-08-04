@@ -19,12 +19,12 @@ USING (
 
 ### App-Gates (nur Defense-in-Depth, umgehbar per direktem SELECT)
 
-| Datei | Muster |
-|-------|--------|
+| Datei                                     | Muster                                  |
+| ----------------------------------------- | --------------------------------------- |
 | `app/dashboard/command-center/actions.ts` | `role === 'sales'` → `salesVisibleOnly` |
-| `app/dashboard/references/match.ts` | idem |
-| `app/api/deal-desk/analyze/route.ts` | idem |
-| `app/api/rfp/analyze/route.ts` | idem |
+| `app/dashboard/references/match.ts`       | idem                                    |
+| `app/api/deal-desk/analyze/route.ts`      | idem                                    |
+| `app/api/rfp/analyze/route.ts`            | idem                                    |
 
 `match_references(p_sales_visible_only)` filtert bei `true` auf `approved`, `internal_only`, `anonymized`, `external` — nur wenn der Parameter gesetzt wird.
 
@@ -76,13 +76,13 @@ Typische Prüfpunkte:
 
 ### JWT-Rollen-Matrix (Checkliste)
 
-| User | Erwartung |
-|------|-----------|
-| `sales_rep` | keine fremden `draft`/NDA/confidential; eigene Drafts mit `created_by` |
-| `sales_rep` + B4 (`sales_sees_drafts`) | Entwürfe sichtbar (RLS + App-Gate) |
-| `account_manager` | alle Org-Referenzen lesbar |
-| `owner` / `admin` | alle Org-Referenzen lesbar |
-| Anon + Token | unverändert über Approval-Flow |
+| User                                   | Erwartung                                                              |
+| -------------------------------------- | ---------------------------------------------------------------------- |
+| `sales_rep`                            | keine fremden `draft`/NDA/confidential; eigene Drafts mit `created_by` |
+| `sales_rep` + B4 (`sales_sees_drafts`) | Entwürfe sichtbar (RLS + App-Gate)                                     |
+| `account_manager`                      | alle Org-Referenzen lesbar                                             |
+| `owner` / `admin`                      | alle Org-Referenzen lesbar                                             |
+| Anon + Token                           | unverändert über Approval-Flow                                         |
 
 ### Umgesetzte App-Gates (Welle 2)
 

@@ -1,6 +1,10 @@
 import { logEvent } from '@/lib/events/log-event'
 
-export type ReferenceMatchedSource = 'homepage' | 'command' | 'match_page' | 'deal_context'
+export type ReferenceMatchedSource =
+  | 'homepage'
+  | 'command'
+  | 'match_page'
+  | 'deal_context'
 
 export type LogReferenceMatchedParams = {
   organizationId: string
@@ -15,7 +19,9 @@ export type LogReferenceMatchedParams = {
 /**
  * Zentrales Tracking für semantische Referenz-Matches (`reference_matched`).
  */
-export async function logReferenceMatched(params: LogReferenceMatchedParams): Promise<void> {
+export async function logReferenceMatched(
+  params: LogReferenceMatchedParams,
+): Promise<void> {
   if (params.matchedReferenceIds.length === 0) return
 
   void logEvent({

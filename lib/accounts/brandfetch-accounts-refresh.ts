@@ -67,7 +67,9 @@ const TLD_COUNTRY_FALLBACK: Record<string, string> = {
 }
 
 function countryFromCode(raw: string | null | undefined): string | null {
-  const code = String(raw ?? '').trim().toUpperCase()
+  const code = String(raw ?? '')
+    .trim()
+    .toUpperCase()
   if (!code) return null
   try {
     const names = new Intl.DisplayNames(['de'], { type: 'region' })
@@ -88,7 +90,10 @@ function countryFromDomainTld(domain: string): string | null {
   return TLD_COUNTRY_FALLBACK[compound] ?? TLD_COUNTRY_FALLBACK[last] ?? null
 }
 
-function readStringField(obj: Record<string, unknown> | null | undefined, keys: string[]): string | null {
+function readStringField(
+  obj: Record<string, unknown> | null | undefined,
+  keys: string[],
+): string | null {
   if (!obj) return null
   for (const key of keys) {
     const value = obj[key]
@@ -117,20 +122,41 @@ function parseHeadquartersFromUnknown(input: unknown): string | null {
   const city = readStringField(obj, ['city', 'town', 'locality'])
   const region = readStringField(obj, ['region', 'state', 'province'])
   const countryName = readStringField(obj, ['country', 'country_name'])
-  const countryCode = readStringField(obj, ['countryCode', 'country_code', 'countryISO', 'country_iso'])
+  const countryCode = readStringField(obj, [
+    'countryCode',
+    'country_code',
+    'countryISO',
+    'country_iso',
+  ])
   const country = countryName || countryFromCode(countryCode)
-  return [city || region, country].filter(Boolean).join(', ') || country || city || region || null
+  return (
+    [city || region, country].filter(Boolean).join(', ') ||
+    country ||
+    city ||
+    region ||
+    null
+  )
 }
 
 function locationEntryHeadquartersPriority(loc: unknown): number {
   if (!loc || typeof loc !== 'object') return 0
-  const t = String((loc as Record<string, unknown>).type ?? (loc as Record<string, unknown>).kind ?? '').toLowerCase()
-  if (t.includes('head') || t.includes('hq') || t.includes('primary') || t.includes('main')) return 3
+  const t = String(
+    (loc as Record<string, unknown>).type ?? (loc as Record<string, unknown>).kind ?? '',
+  ).toLowerCase()
+  if (
+    t.includes('head') ||
+    t.includes('hq') ||
+    t.includes('primary') ||
+    t.includes('main')
+  )
+    return 3
   if (t.includes('office')) return 1
   return 2
 }
 
-function pickHeadquartersFromLocationsArray(locations: unknown[] | undefined): string | null {
+function pickHeadquartersFromLocationsArray(
+  locations: unknown[] | undefined,
+): string | null {
   if (!Array.isArray(locations) || locations.length === 0) return null
   const parsed = locations.map((loc) => ({
     text: parseHeadquartersFromUnknown(loc),
@@ -155,7 +181,7 @@ function pickHeadquartersFromBrandfetchJson(
     location?: unknown
     locations?: unknown
   },
-  domain: string
+  domain: string,
 ): string | null {
   const candidates: Array<string | null> = []
   candidates.push(parseHeadquartersFromUnknown(json.company?.location))
@@ -163,7 +189,9 @@ function pickHeadquartersFromBrandfetchJson(
   candidates.push(parseHeadquartersFromUnknown(json.headquarters))
   candidates.push(parseHeadquartersFromUnknown(json.location))
 
-  const companyLocations = Array.isArray(json.company?.locations) ? json.company?.locations : []
+  const companyLocations = Array.isArray(json.company?.locations)
+    ? json.company?.locations
+    : []
   candidates.push(pickHeadquartersFromLocationsArray(companyLocations))
   const rootLocations = Array.isArray(json.locations) ? json.locations : []
   candidates.push(pickHeadquartersFromLocationsArray(rootLocations))
@@ -175,7 +203,10 @@ function pickHeadquartersFromBrandfetchJson(
   return countryFromDomainTld(domain)
 }
 
-async function fetchHeadquartersFallbackByName(companyName: string, domain: string): Promise<string | null> {
+async function fetchHeadquartersFallbackByName(
+  companyName: string,
+  domain: string,
+): Promise<string | null> {
   const cleanedName = String(companyName ?? '').trim()
   if (!cleanedName) return null
   const country = countryFromDomainTld(domain)
@@ -189,7 +220,7 @@ async function fetchHeadquartersFallbackByName(companyName: string, domain: stri
           Accept: 'application/json',
         },
         next: { revalidate: 0 },
-      }
+      },
     )
     if (!res.ok) return null
     const json = (await res.json()) as Array<{ address?: Record<string, unknown> }>
@@ -197,7 +228,8 @@ async function fetchHeadquartersFallbackByName(companyName: string, domain: stri
     const address = first?.address ?? null
     const city = readStringField(address, ['city', 'town', 'village', 'municipality'])
     const countryName = readStringField(address, ['country'])
-    const out = [city, countryName].filter(Boolean).join(', ') || countryName || city || null
+    const out =
+      [city, countryName].filter(Boolean).join(', ') || countryName || city || null
     return out ? String(out).trim() : null
   } catch {
     return null
@@ -230,10 +262,18 @@ export function scoreBrandfetchLogoCandidate(opts: {
   format?: string | null
   background?: string | null
 }): number {
-  const theme = String(opts.theme ?? '').trim().toLowerCase()
-  const type = String(opts.type ?? '').trim().toLowerCase()
-  const format = String(opts.format ?? '').trim().toLowerCase()
-  const background = String(opts.background ?? '').trim().toLowerCase()
+  const theme = String(opts.theme ?? '')
+    .trim()
+    .toLowerCase()
+  const type = String(opts.type ?? '')
+    .trim()
+    .toLowerCase()
+  const format = String(opts.format ?? '')
+    .trim()
+    .toLowerCase()
+  const background = String(opts.background ?? '')
+    .trim()
+    .toLowerCase()
 
   let score = 0
   if (theme === 'dark') score += 300
@@ -261,11 +301,13 @@ export function listLogoUrlsFromBrandfetchJson(
   json: {
     logos?: BrandfetchLogoJson[] | null
   },
-  options?: { forLightBackground?: boolean }
+  options?: { forLightBackground?: boolean },
 ): string[] {
   const ranked: RankedLogoCandidate[] = []
   for (const logo of json.logos ?? []) {
-    const theme = String(logo.theme ?? '').trim().toLowerCase()
+    const theme = String(logo.theme ?? '')
+      .trim()
+      .toLowerCase()
     // Helle UI (weiße Logo-Zellen): light-Theme nur als letzter Fallback, wenn kein dark existiert.
     if (options?.forLightBackground !== false && theme === 'light') {
       // vorerst mit niedrigem Score aufnehmen; ggf. unten entfernen
@@ -308,7 +350,7 @@ export function listLogoUrlsFromBrandfetchJson(
 /** Bestes Logo für helle UI; optional defekte/helle URL überspringen. Immer theme/dark. */
 export function pickBestLogoUrlFromBrandfetchJson(
   json: { logos?: BrandfetchLogoJson[] | null },
-  excludeUrl?: string | null
+  excludeUrl?: string | null,
 ): string | null {
   const candidates = listLogoUrlsFromBrandfetchJson(json)
   const exclude = String(excludeUrl ?? '').trim()
@@ -321,12 +363,17 @@ export function pickBestLogoUrlFromBrandfetchJson(
 /** True, wenn die URL in Brandfetch als theme=light geführt wird (helles Logo für dunkle Hintergründe). */
 export function logoUrlIsBrandfetchLightTheme(
   json: { logos?: BrandfetchLogoJson[] | null },
-  logoUrl: string | null | undefined
+  logoUrl: string | null | undefined,
 ): boolean {
   const target = String(logoUrl ?? '').trim()
   if (!target) return false
   for (const logo of json.logos ?? []) {
-    if (String(logo.theme ?? '').trim().toLowerCase() !== 'light') continue
+    if (
+      String(logo.theme ?? '')
+        .trim()
+        .toLowerCase() !== 'light'
+    )
+      continue
     for (const fmt of logo.formats ?? []) {
       if (String(fmt?.src ?? '').trim() === target) return true
     }
@@ -337,20 +384,22 @@ export function logoUrlIsBrandfetchLightTheme(
 /** Brandfetch-Domain-Lookup (z. B. Bulk-Import, Cron). */
 export async function fetchBrandfetchCompany(
   domain: string,
-  options?: { excludeLogoUrl?: string | null }
+  options?: { excludeLogoUrl?: string | null },
 ): Promise<
-  | { success: true; data: BrandfetchCompanyPayload }
-  | { success: false; status?: number }
+  { success: true; data: BrandfetchCompanyPayload } | { success: false; status?: number }
 > {
   const apiKey = process.env.BRANDFETCH_API_KEY
   if (!apiKey) return { success: false, status: 0 }
 
   let res: Response
   try {
-    res = await fetch(`https://api.brandfetch.io/v2/brands/domain/${encodeURIComponent(domain)}`, {
-      headers: { Authorization: `Bearer ${apiKey}` },
-      next: { revalidate: 0 },
-    })
+    res = await fetch(
+      `https://api.brandfetch.io/v2/brands/domain/${encodeURIComponent(domain)}`,
+      {
+        headers: { Authorization: `Bearer ${apiKey}` },
+        next: { revalidate: 0 },
+      },
+    )
   } catch {
     return { success: false }
   }
@@ -384,15 +433,19 @@ export async function fetchBrandfetchCompany(
   const headquarters = pickHeadquartersFromBrandfetchJson(json, domain)
   const logoUrl = pickBestLogoUrlFromBrandfetchJson(json, options?.excludeLogoUrl)
   const websiteDomain = String(json.domain ?? domain).trim()
-  const industries =
-    json.company?.industries?.length ? json.company.industries : json.industries
+  const industries = json.company?.industries?.length
+    ? json.company.industries
+    : json.industries
   const data: BrandfetchCompanyPayload = {
     companyName: rawName || null,
-    websiteUrl: websiteDomain ? `https://${normalizeDomain(websiteDomain)}` : `https://${domain}`,
+    websiteUrl: websiteDomain
+      ? `https://${normalizeDomain(websiteDomain)}`
+      : `https://${domain}`,
     logoUrl: logoUrl || null,
     industry: mapBrandfetchIndustriesArrayToGermanCategory(industries),
     headquarters,
-    employeeCount: typeof json.company?.employees === 'number' ? json.company.employees : null,
+    employeeCount:
+      typeof json.company?.employees === 'number' ? json.company.employees : null,
     description: String(json.description ?? '').trim() || null,
   }
   return { success: true, data }
@@ -427,7 +480,7 @@ export type BrandfetchStaleRefreshResult = {
 export async function refreshCompanyRowFromBrandfetch(
   supabase: SupabaseClient,
   company: StaleCompanyBrandfetchRow,
-  options: { scheduledStaleRefresh: boolean }
+  options: { scheduledStaleRefresh: boolean },
 ): Promise<'updated' | 'synced_only' | 'skipped' | 'failed'> {
   const scheduled = options.scheduledStaleRefresh
   const website = String(company.website_url ?? '').trim()
@@ -451,16 +504,17 @@ export async function refreshCompanyRowFromBrandfetch(
   const currentHeadquarters = normalizeTextValue(company.headquarters)
   let fetchedHeadquarters = String(fetched.data.headquarters ?? '').trim()
   if (!fetchedHeadquarters && !currentHeadquarters) {
-    const fallbackHq = await fetchHeadquartersFallbackByName(String(company.name ?? ''), domain)
+    const fallbackHq = await fetchHeadquartersFallbackByName(
+      String(company.name ?? ''),
+      domain,
+    )
     if (fallbackHq) fetchedHeadquarters = fallbackHq
   }
   const fetchedHeadquartersNorm = normalizeTextValue(fetchedHeadquarters)
 
-  const headquartersNeedsUpdate = Boolean(fetchedHeadquartersNorm) && (
-    scheduled ||
-    !currentHeadquarters ||
-    fetchedHeadquartersNorm !== currentHeadquarters
-  )
+  const headquartersNeedsUpdate =
+    Boolean(fetchedHeadquartersNorm) &&
+    (scheduled || !currentHeadquarters || fetchedHeadquartersNorm !== currentHeadquarters)
 
   const currentLogo = String(company.logo_url ?? '').trim()
   const fetchedLogo = String(fetched.data.logoUrl ?? '').trim()
@@ -471,16 +525,21 @@ export async function refreshCompanyRowFromBrandfetch(
     (Boolean(fetchedLogo) && (scheduled || fetchedLogo !== currentLogo))
 
   const employeeFromApi =
-    typeof fetched.data.employeeCount === 'number' && Number.isFinite(fetched.data.employeeCount)
+    typeof fetched.data.employeeCount === 'number' &&
+    Number.isFinite(fetched.data.employeeCount)
       ? fetched.data.employeeCount
       : null
   const employeeNeedsUpdate =
     employeeFromApi != null &&
-    (scheduled || company.employee_count == null || company.employee_count !== employeeFromApi)
+    (scheduled ||
+      company.employee_count == null ||
+      company.employee_count !== employeeFromApi)
 
   // Beim Cron keine Überschreibung bestehender Beschreibung — nur auffüllen wie beim manuellen Refresh.
   const fillDescription = !company.description && Boolean(fetched.data.description)
-  const descriptionForPayload = fillDescription ? fetched.data.description : company.description
+  const descriptionForPayload = fillDescription
+    ? fetched.data.description
+    : company.description
 
   const websiteNeedsUpdate = !website && Boolean(fetched.data.websiteUrl)
 
@@ -508,12 +567,18 @@ export async function refreshCompanyRowFromBrandfetch(
 
   const payload = {
     logo_url: rewriteBrandfetchLogoUrlForLightBackground(
-      logoNeedsUpdate ? fetched.data.logoUrl || rewrittenCurrent || company.logo_url : company.logo_url
+      logoNeedsUpdate
+        ? fetched.data.logoUrl || rewrittenCurrent || company.logo_url
+        : company.logo_url,
     ),
     industry: industryNeedsUpdate ? fetched.data.industry : company.industry,
-    headquarters: headquartersNeedsUpdate ? fetchedHeadquarters.trim() || company.headquarters : company.headquarters,
+    headquarters: headquartersNeedsUpdate
+      ? fetchedHeadquarters.trim() || company.headquarters
+      : company.headquarters,
     employee_count:
-      employeeNeedsUpdate && employeeFromApi != null ? employeeFromApi : company.employee_count,
+      employeeNeedsUpdate && employeeFromApi != null
+        ? employeeFromApi
+        : company.employee_count,
     description: descriptionForPayload,
     website_url: website || fetched.data.websiteUrl,
     name: String(company.name ?? '').trim() || fetched.data.companyName || 'Unbekannt',
@@ -521,7 +586,10 @@ export async function refreshCompanyRowFromBrandfetch(
     updated_at: iso,
   }
 
-  const { error: updateError } = await supabase.from('companies').update(payload).eq('id', company.id)
+  const { error: updateError } = await supabase
+    .from('companies')
+    .update(payload)
+    .eq('id', company.id)
   return updateError ? 'failed' : 'updated'
 }
 
@@ -531,7 +599,7 @@ export async function refreshCompanyRowFromBrandfetch(
  */
 export async function runBrandfetchStaleAccountsRefresh(
   supabase: SupabaseClient,
-  opts: { maxCompanies: number; staleAfterDays: number }
+  opts: { maxCompanies: number; staleAfterDays: number },
 ): Promise<BrandfetchStaleRefreshResult> {
   const thresholdMs = Date.now() - opts.staleAfterDays * 86400000
   const thresholdIso = new Date(thresholdMs).toISOString()
@@ -539,7 +607,9 @@ export async function runBrandfetchStaleAccountsRefresh(
   const safeIso = thresholdIso.replace(/"/g, '')
   const { data: rows, error } = await supabase
     .from('companies')
-    .select('id,name,website_url,logo_url,industry,headquarters,employee_count,description,brandfetch_synced_at')
+    .select(
+      'id,name,website_url,logo_url,industry,headquarters,employee_count,description,brandfetch_synced_at',
+    )
     .or(`brandfetch_synced_at.is.null,brandfetch_synced_at.lt."${safeIso}"`)
     .order('brandfetch_synced_at', { ascending: true, nullsFirst: true })
     .limit(opts.maxCompanies)
@@ -562,7 +632,9 @@ export async function runBrandfetchStaleAccountsRefresh(
 
   for (const row of rows ?? []) {
     const company = row as StaleCompanyBrandfetchRow
-    const outcome = await refreshCompanyRowFromBrandfetch(supabase, company, { scheduledStaleRefresh: true })
+    const outcome = await refreshCompanyRowFromBrandfetch(supabase, company, {
+      scheduledStaleRefresh: true,
+    })
     if (outcome === 'updated') updatedCount += 1
     else if (outcome === 'synced_only') syncedOnlyCount += 1
     else if (outcome === 'skipped') skippedCount += 1

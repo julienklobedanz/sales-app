@@ -12,15 +12,15 @@ export function buildHeroKeyTakeaways(
   analysis: Pick<
     DealDeskMockAnalysis,
     'winProbability' | 'icpFitLabel' | 'draftRows' | 'redFlags'
-  >
+  >,
 ): HeroKeyTakeaway[] {
   const matched = (analysis.draftRows ?? []).filter((r) => r.reference).length
   const flags = analysis.redFlags ?? []
   const criticalHigh = flags.filter(
-    (f) => f.severity === 'critical' || f.severity === 'high'
+    (f) => f.severity === 'critical' || f.severity === 'high',
   )
   const slaOrContractRisk = criticalHigh.find((f) =>
-    /sla|pönale|haftung|vertrag|festpreis/i.test(`${f.title} ${f.excerpt}`)
+    /sla|pönale|haftung|vertrag|festpreis/i.test(`${f.title} ${f.excerpt}`),
   )
 
   const tone = winProbabilityTone(analysis.winProbability ?? 0)
@@ -75,7 +75,9 @@ export function buildHeroKeyTakeaways(
   return takeaways
 }
 
-export function recommendationBadgeClass(tone: ReturnType<typeof winProbabilityTone>): string {
+export function recommendationBadgeClass(
+  tone: ReturnType<typeof winProbabilityTone>,
+): string {
   if (tone === 'go') return 'bg-emerald-600 text-white'
   if (tone === 'caution') return 'bg-amber-500 text-white'
   return 'bg-red-600 text-white'

@@ -7,7 +7,7 @@ export function referenceGiverNameFromRecipientEmail(email: string): string | nu
 
 export function companyNameFromReferenceRow(
   companies: ReferenceApprovalRow['companies'],
-  fallback = 'Referenz'
+  fallback = 'Referenz',
 ): string {
   const company =
     Array.isArray(companies) && companies.length > 0
@@ -16,7 +16,9 @@ export function companyNameFromReferenceRow(
   return company?.name ?? fallback
 }
 
-export function withdrawRestoredReferenceStatus(snapshot: string | null | undefined): string {
+export function withdrawRestoredReferenceStatus(
+  snapshot: string | null | undefined,
+): string {
   const trimmed = typeof snapshot === 'string' ? snapshot.trim() : ''
   return trimmed || 'draft'
 }

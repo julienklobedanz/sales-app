@@ -40,7 +40,7 @@ export async function GET() {
     <DsgvoReferenceConsentDocument
       providerName={providerName}
       providerLogoUrl={org?.logo_url ?? null}
-    />
+    />,
   )
 
   const bytes = new Uint8Array(pdf)

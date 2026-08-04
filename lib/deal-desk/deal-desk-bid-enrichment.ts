@@ -8,20 +8,20 @@ export type DealDeskSuitabilityCriteria = {
 }
 
 export function resolveDomainTags(
-  briefing: DealDeskExecutiveBriefingFields | null | undefined
+  briefing: DealDeskExecutiveBriefingFields | null | undefined,
 ): string[] {
   return briefing?.domainTags?.length ? [...briefing.domainTags] : []
 }
 
 export function resolveProjectLocation(
-  briefing: DealDeskExecutiveBriefingFields | null | undefined
+  briefing: DealDeskExecutiveBriefingFields | null | undefined,
 ): string {
   const loc = briefing?.projectLocation?.trim()
   return loc || '—'
 }
 
 export function resolveSuitabilityCriteria(
-  briefing: DealDeskExecutiveBriefingFields | null | undefined
+  briefing: DealDeskExecutiveBriefingFields | null | undefined,
 ): DealDeskSuitabilityCriteria {
   return {
     bidderRequirements: briefing?.bidderRequirements ?? [],
@@ -38,7 +38,9 @@ export function hasSuitabilityContent(criteria: DealDeskSuitabilityCriteria): bo
   )
 }
 
-export function resolveBidEnrichment(analysis: Pick<DealDeskMockAnalysis, 'executiveBriefing'>) {
+export function resolveBidEnrichment(
+  analysis: Pick<DealDeskMockAnalysis, 'executiveBriefing'>,
+) {
   const briefing = analysis.executiveBriefing
   return {
     domainTags: resolveDomainTags(briefing),

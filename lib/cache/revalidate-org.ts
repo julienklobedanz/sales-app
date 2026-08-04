@@ -23,7 +23,9 @@ export function revalidateOrgCompliance(orgId: string): void {
 }
 
 /** Nach Referenz-Mutation ohne orgId im Scope. */
-export async function revalidateOrgCachesForReference(referenceId: string): Promise<void> {
+export async function revalidateOrgCachesForReference(
+  referenceId: string,
+): Promise<void> {
   const supabase = await createServerSupabaseClient()
   const { data } = await supabase
     .from('references')

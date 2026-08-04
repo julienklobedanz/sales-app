@@ -26,7 +26,7 @@ async function loadDashboardHomeForFunctionRoleInner(
   supabase: SupabaseClient,
   userId: string,
   fullName: string | null,
-  organizationId: string | undefined
+  organizationId: string | undefined,
 ): Promise<DashboardHomePayload> {
   if (systemRole === 'viewer') {
     return {
@@ -37,7 +37,12 @@ async function loadDashboardHomeForFunctionRoleInner(
   if (functionRole === 'account_manager') {
     return {
       variant: 'account_manager',
-      data: await loadAccountManagerDashboardData(supabase, userId, fullName, organizationId),
+      data: await loadAccountManagerDashboardData(
+        supabase,
+        userId,
+        fullName,
+        organizationId,
+      ),
     }
   }
   if (functionRole === 'sales_leader') {
@@ -65,7 +70,7 @@ export async function loadDashboardHomeForRole(
   supabase: SupabaseClient,
   userId: string,
   fullName: string | null,
-  organizationId?: string
+  organizationId?: string,
 ): Promise<DashboardHomePayload> {
   return loadDashboardHomeForFunctionRole(
     functionRole,
@@ -73,7 +78,7 @@ export async function loadDashboardHomeForRole(
     supabase,
     userId,
     fullName,
-    organizationId
+    organizationId,
   )
 }
 
@@ -83,7 +88,7 @@ export async function loadDashboardHomeForFunctionRole(
   supabase: SupabaseClient,
   userId: string,
   fullName: string | null,
-  organizationId?: string
+  organizationId?: string,
 ): Promise<DashboardHomePayload> {
   const timingLabel =
     systemRole === 'viewer'
@@ -106,14 +111,17 @@ export async function loadDashboardHomeForFunctionRole(
           supabase,
           userId,
           fullName,
-          organizationId
+          organizationId,
         ),
-      { organizationId, userId, functionRole, systemRole }
+      { organizationId, userId, functionRole, systemRole },
     )
     return result
   } catch (error) {
-    log.error('dashboard home load failed', { action: 'loadDashboardHomeForFunctionRole', userId, functionRole, systemRole }, error)
+    log.error(
+      'dashboard home load failed',
+      { action: 'loadDashboardHomeForFunctionRole', userId, functionRole, systemRole },
+      error,
+    )
     throw error
   }
 }
-

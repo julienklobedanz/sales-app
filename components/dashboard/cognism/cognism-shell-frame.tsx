@@ -23,7 +23,8 @@ export function CognismShellFrame({
   className?: string
 }) {
   const { state } = useSidebar()
-  const sidebarWidth = state === 'collapsed' ? COGNISM_SIDEBAR_COLLAPSED : COGNISM_SIDEBAR_EXPANDED
+  const sidebarWidth =
+    state === 'collapsed' ? COGNISM_SIDEBAR_COLLAPSED : COGNISM_SIDEBAR_EXPANDED
 
   return (
     <div className={cn('theme-cognism', cognismShellOuterClass, className)}>

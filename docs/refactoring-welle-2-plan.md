@@ -48,7 +48,8 @@ Ziel dieser zweiten Refaktorisierungswelle ist **Perfektion im Sinne von Wartbar
 8. **COPY-Rollout 2:** verbleibende wiederkehrende Strings zentralisieren (`lib/copy.ts`).
 9. **DataTable-Konsolidierung:** Evidence-Table weiter an `components/ui/data-table.tsx` angleichen oder die Doppelstruktur reduzieren.
 10. **Danger Zone TODO** (ohne Security-Work):
-   - Mindestens: klare UX (disabled + Hinweis + Tracking-Link/Issue-Text), damit kein „toter“ Button bleibt.
+
+- Mindestens: klare UX (disabled + Hinweis + Tracking-Link/Issue-Text), damit kein „toter“ Button bleibt.
 
 ---
 
@@ -66,4 +67,3 @@ Ziel dieser zweiten Refaktorisierungswelle ist **Perfektion im Sinne von Wartbar
 - CI/Tooling: Workflow läuft, Status wird angezeigt, lokale Scripts funktionieren.
 - Refactor-Slices: Keine UI-/Behavior-Regression (Smoke), keine neuen Lints, Build grün.
 - Konsistenz: Tokens statt Hardcodes, zentrale Badges/Copy statt Duplikate.
-

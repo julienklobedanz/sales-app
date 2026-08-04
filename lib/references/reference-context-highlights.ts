@@ -47,7 +47,7 @@ const PHRASE_BLOCKLIST = new Set(
     'divers',
     'n/a',
     'tbd',
-  ].map((s) => s.toLowerCase())
+  ].map((s) => s.toLowerCase()),
 )
 
 /** Zweizeichen-Tags nur wenn sinnvoll (z. B. KI, AI); nicht „IT“ */
@@ -66,7 +66,9 @@ export function extractWorkflowHighlightGlossary(workflowSettings: unknown): str
   const obj = workflowSettings as Record<string, unknown>
   const raw = obj.reference_highlight_glossary
   if (Array.isArray(raw)) {
-    return raw.filter((x): x is string => typeof x === 'string').map((s) => normalizePhrase(s))
+    return raw
+      .filter((x): x is string => typeof x === 'string')
+      .map((s) => normalizePhrase(s))
   }
   if (typeof raw === 'string') {
     return raw
@@ -115,7 +117,9 @@ export type BuildReferenceHighlightPhrasesInput = {
 /**
  * Eindeutige Phrasen (längere zuerst), für Wortgrenzen-Highlighting.
  */
-export function buildReferenceHighlightPhrases(input: BuildReferenceHighlightPhrasesInput): string[] {
+export function buildReferenceHighlightPhrases(
+  input: BuildReferenceHighlightPhrasesInput,
+): string[] {
   const raw: string[] = []
 
   for (const t of input.tags ?? []) {
@@ -182,7 +186,7 @@ function buildPhrasePattern(phrases: string[]): RegExp | null {
 export function splitTextWithContextHighlights(
   text: string,
   phrases: string[],
-  options?: { includeNumeric?: boolean }
+  options?: { includeNumeric?: boolean },
 ): HighlightSegment[] {
   const includeNumeric = options?.includeNumeric !== false
   const phrasePattern = buildPhrasePattern(phrases)

@@ -34,10 +34,14 @@ type Props = {
   onTypesChange?: (types: ComplianceDocumentTypeOption[]) => void
 }
 
-export function ComplianceDocumentTypesDialog({ open, onOpenChange, onTypesChange }: Props) {
+export function ComplianceDocumentTypesDialog({
+  open,
+  onOpenChange,
+  onTypesChange,
+}: Props) {
   const [loading, setLoading] = useState(false)
   const [types, setTypes] = useState<ComplianceDocumentTypeOption[]>(() =>
-    getSystemComplianceDocumentTypes()
+    getSystemComplianceDocumentTypes(),
   )
   const [newLabel, setNewLabel] = useState('')
   const [creating, setCreating] = useState(false)
@@ -118,8 +122,8 @@ export function ComplianceDocumentTypesDialog({ open, onOpenChange, onTypesChang
         <DialogHeader className="space-y-2 pb-2">
           <DialogTitle>Dokumenttypen verwalten</DialogTitle>
           <DialogDescription>
-            Standardtypen sind fest hinterlegt. Eigene Typen kannst du hinzufügen, umbenennen und
-            löschen (sofern nicht in Verwendung).
+            Standardtypen sind fest hinterlegt. Eigene Typen kannst du hinzufügen,
+            umbenennen und löschen (sofern nicht in Verwendung).
           </DialogDescription>
         </DialogHeader>
 
@@ -169,11 +173,17 @@ export function ComplianceDocumentTypesDialog({ open, onOpenChange, onTypesChang
                         {t.label}
                       </span>
                       {t.isSystem ? (
-                        <Badge variant="outline" className="shrink-0 text-[10px] font-medium">
+                        <Badge
+                          variant="outline"
+                          className="shrink-0 text-[10px] font-medium"
+                        >
                           Standard
                         </Badge>
                       ) : (
-                        <Badge variant="secondary" className="shrink-0 text-[10px] font-medium">
+                        <Badge
+                          variant="secondary"
+                          className="shrink-0 text-[10px] font-medium"
+                        >
                           Eigener Typ
                         </Badge>
                       )}
@@ -216,7 +226,10 @@ export function ComplianceDocumentTypesDialog({ open, onOpenChange, onTypesChang
             </ul>
           )}
 
-          <form onSubmit={handleCreate} className="space-y-2 border-t border-border/70 pt-4">
+          <form
+            onSubmit={handleCreate}
+            className="space-y-2 border-t border-border/70 pt-4"
+          >
             <Label htmlFor="new-compliance-type">Neuer Dokumenttyp</Label>
             <div className="flex gap-2">
               <Input
@@ -227,7 +240,12 @@ export function ComplianceDocumentTypesDialog({ open, onOpenChange, onTypesChang
                 disabled={creating}
                 className="flex-1"
               />
-              <Button type="submit" size="sm" className="h-10 shrink-0 gap-1" disabled={creating}>
+              <Button
+                type="submit"
+                size="sm"
+                className="h-10 shrink-0 gap-1"
+                disabled={creating}
+              >
                 {creating ? (
                   <Loader2 className="size-4 animate-spin" aria-hidden />
                 ) : (

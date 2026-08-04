@@ -43,7 +43,7 @@ export function ComplianceUploadDialog({ open, onOpenChange }: Props) {
   const router = useRouter()
   const [documentType, setDocumentType] = useState('iso_27001')
   const [typeOptions, setTypeOptions] = useState<ComplianceDocumentTypeOption[]>(() =>
-    getSystemComplianceDocumentTypes()
+    getSystemComplianceDocumentTypes(),
   )
   const [typesLoading, setTypesLoading] = useState(false)
   const [typesDialogOpen, setTypesDialogOpen] = useState(false)
@@ -64,7 +64,7 @@ export function ComplianceUploadDialog({ open, onOpenChange }: Props) {
         setTitle(buildDefaultComplianceTitle(slug, options))
       }
     },
-    [titleManuallyEdited]
+    [titleManuallyEdited],
   )
 
   const loadTypes = useCallback(async () => {
@@ -77,10 +77,9 @@ export function ComplianceUploadDialog({ open, onOpenChange }: Props) {
     }
     setTypeOptions(result.types)
     setDocumentType((current) => {
-      const next =
-        result.types.some((t) => t.slug === current)
-          ? current
-          : (result.types[0]?.slug ?? 'iso_27001')
+      const next = result.types.some((t) => t.slug === current)
+        ? current
+        : (result.types[0]?.slug ?? 'iso_27001')
       applyDefaultTitle(next, result.types)
       return next
     })
@@ -113,7 +112,7 @@ export function ComplianceUploadDialog({ open, onOpenChange }: Props) {
       titleManuallyEdited: boolean
       typeManuallyEdited: boolean
       validUntilManuallyEdited: boolean
-    }
+    },
   ) {
     setExpiryExtracting(true)
     setExpiryAutoFilled(false)

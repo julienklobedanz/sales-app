@@ -17,11 +17,17 @@ export function normalizeTenderLots(raw: unknown): TenderLot[] {
     const row = item as Record<string, unknown>
     const title = typeof row.title === 'string' ? row.title.trim() : ''
     if (!title) continue
-    const lotId = typeof row.lotId === 'string' && row.lotId.trim() ? row.lotId.trim() : null
+    const lotId =
+      typeof row.lotId === 'string' && row.lotId.trim() ? row.lotId.trim() : null
     const description =
-      typeof row.description === 'string' && row.description.trim() ? row.description.trim() : null
+      typeof row.description === 'string' && row.description.trim()
+        ? row.description.trim()
+        : null
     let estimatedValueEur: number | null = null
-    if (typeof row.estimatedValueEur === 'number' && Number.isFinite(row.estimatedValueEur)) {
+    if (
+      typeof row.estimatedValueEur === 'number' &&
+      Number.isFinite(row.estimatedValueEur)
+    ) {
       estimatedValueEur = row.estimatedValueEur
     }
     const estimatedValueText =

@@ -19,18 +19,25 @@ function addDaysIso(isoDate: string, days: number): string {
 }
 
 function formatIcsStamp(date: Date): string {
-  return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z')
+  return date
+    .toISOString()
+    .replace(/[-:]/g, '')
+    .replace(/\.\d{3}Z$/, 'Z')
 }
 
 function sanitizeFileName(value: string): string {
-  return value
-    .trim()
-    .replace(/[^\wäöüÄÖÜß.-]+/gi, '-')
-    .replace(/-+/g, '-')
-    .slice(0, 80) || 'deal-termine'
+  return (
+    value
+      .trim()
+      .replace(/[^\wäöüÄÖÜß.-]+/gi, '-')
+      .replace(/-+/g, '-')
+      .slice(0, 80) || 'deal-termine'
+  )
 }
 
-export function dealDeadlinesExportableForIcs(deadlines: DealDeadlineRow[]): DealDeadlineRow[] {
+export function dealDeadlinesExportableForIcs(
+  deadlines: DealDeadlineRow[],
+): DealDeadlineRow[] {
   return deadlines
     .filter((d) => !d.suppressed_at && d.due_at && d.due_at.length >= 10)
     .sort((a, b) => a.due_at!.localeCompare(b.due_at!))

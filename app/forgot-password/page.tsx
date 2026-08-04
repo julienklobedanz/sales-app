@@ -15,10 +15,15 @@ export default async function ForgotPasswordPage() {
   if (user) redirect(ROUTES.home)
 
   return (
-    <AuthShell brandContent={AUTH_BRAND_CONTENT.forgotPassword} topRightLink={{ href: ROUTES.login, label: 'Anmelden' }}>
+    <AuthShell
+      brandContent={AUTH_BRAND_CONTENT.forgotPassword}
+      topRightLink={{ href: ROUTES.login, label: 'Anmelden' }}
+    >
       <div className="space-y-6">
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Passwort zurücksetzen</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+            Passwort zurücksetzen
+          </h1>
           <p className="text-sm text-gray-500">
             Wir senden dir einen Link zum Festlegen eines neuen Passworts.
           </p>

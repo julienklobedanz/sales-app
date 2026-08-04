@@ -7,7 +7,10 @@ function normalizeChampionKey(raw: string) {
   return raw.trim().toLowerCase().replace(/\s+/g, ' ')
 }
 
-export async function setCompanyWatchlistStateImpl(companyId: string, isFollowing: boolean) {
+export async function setCompanyWatchlistStateImpl(
+  companyId: string,
+  isFollowing: boolean,
+) {
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
@@ -34,7 +37,10 @@ export async function setCompanyWatchlistStateImpl(companyId: string, isFollowin
   return { success: true as const }
 }
 
-export async function setCompaniesWatchlistStateImpl(companyIds: string[], isFollowing: boolean) {
+export async function setCompaniesWatchlistStateImpl(
+  companyIds: string[],
+  isFollowing: boolean,
+) {
   const ids = Array.from(new Set(companyIds.map((id) => id.trim()).filter(Boolean)))
   if (ids.length === 0) return { success: true as const, updated: 0 }
 
@@ -68,7 +74,9 @@ export async function setCompaniesWatchlistStateImpl(companyIds: string[], isFol
 export async function watchCompanyFromSuggestionImpl(input: {
   id: string
   name: string
-}): Promise<{ success: true; company: WatchlistCompanyResult } | { success: false; error: string }> {
+}): Promise<
+  { success: true; company: WatchlistCompanyResult } | { success: false; error: string }
+> {
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
@@ -174,7 +182,7 @@ export async function watchCompanyFromSuggestionImpl(input: {
 export async function setChampionWatchlistStateImpl(
   personName: string,
   isFollowing: boolean,
-  companyName?: string | null
+  companyName?: string | null,
 ) {
   const supabase = await createServerSupabaseClient()
   const {
@@ -198,7 +206,8 @@ export async function setChampionWatchlistStateImpl(
 
     let personTitle: string | null = null
     if (orgId) {
-      const { resolveChampionPersonTitle } = await import('@/lib/market-signals/champion-display')
+      const { resolveChampionPersonTitle } =
+        await import('@/lib/market-signals/champion-display')
       personTitle = await resolveChampionPersonTitle(supabase, orgId, trimmed, company)
     }
 

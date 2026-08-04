@@ -31,9 +31,15 @@ function externalSelectValue(id: string): string {
   return `external:${id}`
 }
 
-function parseSelectValue(value: string): { kind: 'none' } | { kind: 'stakeholder'; id: string } | { kind: 'external'; id: string } {
+function parseSelectValue(
+  value: string,
+):
+  | { kind: 'none' }
+  | { kind: 'stakeholder'; id: string }
+  | { kind: 'external'; id: string } {
   if (value === '__none__') return { kind: 'none' }
-  if (value.startsWith('external:')) return { kind: 'external', id: value.slice('external:'.length) }
+  if (value.startsWith('external:'))
+    return { kind: 'external', id: value.slice('external:'.length) }
   return { kind: 'stakeholder', id: value }
 }
 
@@ -67,7 +73,8 @@ export function CompanyDetailStrategyTab({
   onSetStakeholderRole,
   onSetExternalBuyingCenterRole,
 }: Props) {
-  const stakeholderByRole = (role: StakeholderRole) => stakeholders.filter((s) => s.role === role)
+  const stakeholderByRole = (role: StakeholderRole) =>
+    stakeholders.filter((s) => s.role === role)
   const externalByRole = (role: StakeholderRole) =>
     externalContacts.filter((c) => (c.buying_center_role ?? 'unknown') === role)
 
@@ -78,7 +85,9 @@ export function CompanyDetailStrategyTab({
     return st?.id ?? '__none__'
   }
 
-  function pickedLabelForRole(role: StakeholderRole): { name: string; title?: string | null; tag?: string } | null {
+  function pickedLabelForRole(
+    role: StakeholderRole,
+  ): { name: string; title?: string | null; tag?: string } | null {
     const ext = externalByRole(role)[0]
     if (ext) {
       return {
@@ -139,7 +148,10 @@ export function CompanyDetailStrategyTab({
             <div className="space-y-2">
               {marketSignals.accountNews.slice(0, 3).map((n) => {
                 const label = `${n.sourceLabel ?? 'News'} · ${formatReferenceDate(`${n.publishedOn}T00:00:00.000Z`, 'de-DE')}`
-                const href = signalHref(n.sourceUrl, `${n.sourceLabel ?? ''} ${n.body}`.trim())
+                const href = signalHref(
+                  n.sourceUrl,
+                  `${n.sourceLabel ?? ''} ${n.body}`.trim(),
+                )
                 return (
                   <div key={n.id} className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -147,7 +159,12 @@ export function CompanyDetailStrategyTab({
                       <div className="text-sm text-foreground line-clamp-2">{n.body}</div>
                     </div>
                     <Button asChild variant="ghost" size="icon" className="shrink-0">
-                      <Link href={href} target="_blank" rel="noreferrer" aria-label="Quelle öffnen">
+                      <Link
+                        href={href}
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label="Quelle öffnen"
+                      >
                         <AppIcon icon={LinkIcon} size={16} />
                       </Link>
                     </Button>
@@ -155,7 +172,9 @@ export function CompanyDetailStrategyTab({
                 )
               })}
               {marketSignals.accountNews.length === 0 ? (
-                <div className="text-sm text-muted-foreground">Keine aktuellen Signale.</div>
+                <div className="text-sm text-muted-foreground">
+                  Keine aktuellen Signale.
+                </div>
               ) : null}
             </div>
           </CardContent>
@@ -204,17 +223,21 @@ export function CompanyDetailStrategyTab({
             <CardTitle className="text-base">{COPY.accounts.buyingCenterTitle}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-5 pt-4">
-            {([
-              { role: 'champion', label: 'Champion' },
-              { role: 'economic_buyer', label: 'Economic Buyer' },
-              { role: 'technical_buyer', label: 'Technical Buyer' },
-              { role: 'user_buyer', label: 'User Buyer' },
-              { role: 'blocker', label: 'Blocker' },
-            ] as { role: StakeholderRole; label: string }[]).map((row) => {
+            {(
+              [
+                { role: 'champion', label: 'Champion' },
+                { role: 'economic_buyer', label: 'Economic Buyer' },
+                { role: 'technical_buyer', label: 'Technical Buyer' },
+                { role: 'user_buyer', label: 'User Buyer' },
+                { role: 'blocker', label: 'Blocker' },
+              ] as { role: StakeholderRole; label: string }[]
+            ).map((row) => {
               const picked = pickedLabelForRole(row.role)
               return (
                 <div key={row.role} className="space-y-2">
-                  <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{row.label}</div>
+                  <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    {row.label}
+                  </div>
                   {canEdit ? (
                     <Select
                       value={selectedValueForRole(row.role)}
@@ -223,7 +246,9 @@ export function CompanyDetailStrategyTab({
                       }}
                     >
                       <SelectTrigger className="h-11 w-full min-w-0 border-input bg-background px-3 text-left shadow-sm">
-                        <SelectValue placeholder={`Stakeholder für „${row.label}“ wählen …`} />
+                        <SelectValue
+                          placeholder={`Stakeholder für „${row.label}“ wählen …`}
+                        />
                       </SelectTrigger>
                       <SelectContent className="max-h-[min(280px,50vh)]">
                         <SelectItem value="__none__">Keine Zuordnung</SelectItem>
@@ -239,7 +264,10 @@ export function CompanyDetailStrategyTab({
                           const name = externalContactDisplayName(c)
                           const title = externalContactJobTitle(c)
                           return (
-                            <SelectItem key={externalSelectValue(c.id)} value={externalSelectValue(c.id)}>
+                            <SelectItem
+                              key={externalSelectValue(c.id)}
+                              value={externalSelectValue(c.id)}
+                            >
                               <span className="font-medium">{name}</span>
                               {title !== '—' ? (
                                 <span className="text-muted-foreground"> · {title}</span>
@@ -254,9 +282,14 @@ export function CompanyDetailStrategyTab({
                     <div className="min-h-11 rounded-lg border border-input bg-background px-3 py-2.5 text-sm">
                       {picked ? (
                         <>
-                          <span className="font-medium text-foreground">{picked.name}</span>
+                          <span className="font-medium text-foreground">
+                            {picked.name}
+                          </span>
                           {picked.title && picked.title !== '—' ? (
-                            <span className="text-muted-foreground"> · {picked.title}</span>
+                            <span className="text-muted-foreground">
+                              {' '}
+                              · {picked.title}
+                            </span>
                           ) : null}
                           {picked.tag ? (
                             <span className="text-muted-foreground"> · {picked.tag}</span>

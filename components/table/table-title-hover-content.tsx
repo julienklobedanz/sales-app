@@ -1,8 +1,4 @@
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from '@/components/ui/hover-card'
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
 import Link from 'next/link'
 
 type Props = {
@@ -54,7 +50,9 @@ export function TableTitleHoverContent({
             {trimmedPreview}
           </p>
         ) : (
-          <p className="text-sm leading-relaxed text-muted-foreground">{emptyPreviewText}</p>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            {emptyPreviewText}
+          </p>
         )}
       </HoverCardContent>
     </HoverCard>

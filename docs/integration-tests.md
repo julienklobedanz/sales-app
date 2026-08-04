@@ -2,9 +2,9 @@
 
 ## Strategie
 
-| Ebene | Ort | Lauf |
-|--------|-----|------|
-| **Unit** | `lib/**/*.test.ts` | jeder PR (`npm test`) |
+| Ebene           | Ort                                          | Lauf                                                              |
+| --------------- | -------------------------------------------- | ----------------------------------------------------------------- |
+| **Unit**        | `lib/**/*.test.ts`                           | jeder PR (`npm test`)                                             |
 | **Integration** | `tests/integration/**/*.integration.test.ts` | jeder PR (`npm run test:integration`, CI-Job `integration-tests`) |
 
 Integrationstests brauchen einen lokalen Supabase-Stack mit Auth + RLS (nicht nur Postgres wie `db-migrations`).

@@ -32,7 +32,9 @@ describe('getSalesforceInstanceUrl', () => {
 describe('buildSalesforceTaskUrl', () => {
   it('opens task list without draft fields', () => {
     delete process.env.NEXT_PUBLIC_SALESFORCE_INSTANCE_URL
-    expect(buildSalesforceTaskUrl()).toBe('https://login.salesforce.com/lightning/o/Task/list')
+    expect(buildSalesforceTaskUrl()).toBe(
+      'https://login.salesforce.com/lightning/o/Task/list',
+    )
   })
 })
 
@@ -44,7 +46,7 @@ describe('buildSalesforceOpportunityUrl', () => {
   it('builds lightning view url with instance', () => {
     process.env.NEXT_PUBLIC_SALESFORCE_INSTANCE_URL = 'https://acme.my.salesforce.com'
     expect(buildSalesforceOpportunityUrl({ opportunityId: '006ABC' })).toBe(
-      'https://acme.my.salesforce.com/lightning/r/Opportunity/006ABC/view'
+      'https://acme.my.salesforce.com/lightning/r/Opportunity/006ABC/view',
     )
   })
 })

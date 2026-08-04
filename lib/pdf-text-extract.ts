@@ -12,7 +12,7 @@ function ensurePdfWorker(PDFParse: { setWorker: (src?: string) => string }) {
   try {
     const workerPath = join(
       process.cwd(),
-      'node_modules/pdf-parse/dist/pdf-parse/esm/pdf.worker.mjs'
+      'node_modules/pdf-parse/dist/pdf-parse/esm/pdf.worker.mjs',
     )
     PDFParse.setWorker(pathToFileURL(workerPath).href)
     workerConfigured = true
@@ -67,7 +67,7 @@ const MIN_NATIVE_TEXT_CHARS = 40
  */
 export async function extractPdfPlainTextWithOcrFallback(
   buffer: Buffer,
-  options?: { maxOcrPages?: number; minNativeChars?: number }
+  options?: { maxOcrPages?: number; minNativeChars?: number },
 ): Promise<PdfPlainTextExtraction> {
   const maxOcrPages = options?.maxOcrPages ?? 40
   const minNativeChars = options?.minNativeChars ?? MIN_NATIVE_TEXT_CHARS

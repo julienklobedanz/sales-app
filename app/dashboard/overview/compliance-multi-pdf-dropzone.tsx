@@ -50,7 +50,7 @@ export function ComplianceMultiPdfDropzone({
         disabled ? 'pointer-events-none cursor-not-allowed opacity-60' : '',
         compact
           ? 'h-10 gap-2 px-3 text-left text-xs sm:text-sm'
-          : 'min-h-[160px] flex-col gap-2 p-6 text-center'
+          : 'min-h-[160px] flex-col gap-2 p-6 text-center',
       )}
       onClick={() => !disabled && inputRef.current?.click()}
       onKeyDown={(e) => {

@@ -36,7 +36,9 @@ export function isOpenAiQuotaErrorMessage(message: string): boolean {
     lower.includes('insufficient_quota') ||
     lower.includes('exceeded your current quota') ||
     lower.includes('billing_hard_limit') ||
-    (lower.includes('billing') && lower.includes('limit') && lower.includes('erreicht')) ||
+    (lower.includes('billing') &&
+      lower.includes('limit') &&
+      lower.includes('erreicht')) ||
     (lower.includes('429') && lower.includes('quota')) ||
     (lower.includes('kontingent') && lower.includes('openai'))
   )
@@ -48,7 +50,7 @@ export function isOpenAiQuotaErrorMessage(message: string): boolean {
 export function formatOpenAiHttpError(
   status: number,
   rawBody: string,
-  label = 'OpenAI'
+  label = 'OpenAI',
 ): string {
   const body = rawBody.trim()
   const parsed = parseOpenAiErrorJson(body)

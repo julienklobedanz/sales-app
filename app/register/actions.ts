@@ -51,7 +51,11 @@ async function sendSignupConfirmationViaResend(params: {
 
   const actionLink = data?.properties?.action_link
   if (error || !actionLink) {
-    log.error('generateLink for confirmation email failed', { action: 'signUp.generateLink' }, error)
+    log.error(
+      'generateLink for confirmation email failed',
+      { action: 'signUp.generateLink' },
+      error,
+    )
     return false
   }
 
@@ -77,7 +81,11 @@ async function sendSignupConfirmationViaResend(params: {
     })
     return true
   } catch (e) {
-    log.error('Resend confirmation email failed', { action: 'signUp.resendConfirmation' }, e)
+    log.error(
+      'Resend confirmation email failed',
+      { action: 'signUp.resendConfirmation' },
+      e,
+    )
     return false
   }
 }
@@ -121,9 +129,12 @@ export async function signUp(formData: FormData): Promise<SignUpResult> {
     const inviteToken = formData.get('invite_token')?.toString()?.trim()
     if (inviteToken) {
       // Invite-Flow: Workspace direkt zuordnen, dann ins Dashboard.
-      const { data: inviteData, error: inviteError } = await supabase.rpc('get_invite_by_token', {
-        invite_token: inviteToken,
-      })
+      const { data: inviteData, error: inviteError } = await supabase.rpc(
+        'get_invite_by_token',
+        {
+          invite_token: inviteToken,
+        },
+      )
 
       const parsed = inviteData as {
         organization_id?: string
@@ -142,7 +153,7 @@ export async function signUp(formData: FormData): Promise<SignUpResult> {
             system_role: inviteRoles.systemRole,
             function_role: inviteRoles.functionRole,
             full_name: fullName,
-          })
+          }),
         )
         redirect(ROUTES.home)
       }

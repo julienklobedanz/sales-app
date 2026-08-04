@@ -6,10 +6,12 @@
 ---
 
 ## Vorab lesen
+
 - `docs/ai-coding-agent-guide.md`
 - `lib/copy.ts` (zentrale UI-Labels), `lib/routes.ts` (zentrale Routen), `middleware.ts`
 
 ## Ist-Stand (verifiziert)
+
 - **Display-Labels** liegen zentral in `lib/copy.ts`:
   - `nav.match = 'Finden'`, `pages.match = 'Finden'` → Ziel **„Smart Match"**.
   - `nav.evidence = 'Referenzen'`, `pages.evidence = 'Referenzen'` → **bereits korrekt** (kein Display-Change nötig).
@@ -49,26 +51,31 @@
 6. **Restweite Display-Strings** prüfen: `rg -n "Finden"` (außer `docs/`) — z. B. das `Match`-Inline-Link-Label im Proof-Points-Tab (`app/dashboard/.../company-detail-proof-points-tab.tsx`, „für semantische Treffer die Suche unter **Match**") auf „Smart Match" ziehen.
 
 ## T2 — Interne Identifier (mechanische Nacharbeit, optional aber „global")
+
 Nur Code-Hygiene, **keine** Verhaltensänderung — separater Commit:
+
 - ROUTES-Key `evidence` → `references` (dann alle `ROUTES.evidence.*`-Aufrufe nachziehen; `rg -n "ROUTES.evidence"`).
 - Modul-/Dateinamen: `lib/evidence/*`, `app/dashboard/references/evidence-client.tsx`, `evidence-onboarding-empty-state.tsx`, `columns.tsx`/`data-table.tsx`-interne Bezeichner → `reference(s)-*`.
 - Komponenten-/Variablennamen `Evidence*`/`evidence*` → `Reference*`/`reference*`.
 - `COPY.nav.evidence`-Key → `references` (Aufrufer nachziehen).
-> T2 ist rein optisch im Code. Wenn Zeit knapp ist, reicht T1 für den Nutzer vollständig.
+  > T2 ist rein optisch im Code. Wenn Zeit knapp ist, reicht T1 für den Nutzer vollständig.
 
 ---
 
 ## Out of Scope (bewusst)
+
 - **DB-Tabelle `evidence_events` NICHT umbenennen.** Internes Event-Log, in RPCs/Triggern/Policies verdrahtet; ein Rename ist eine risikoreiche Daten-Migration ohne Nutzerwert. Name bleibt, ein Kommentar dokumentiert das.
 - **Öffentliche Share-Route `/p/[slug]`** ist nicht betroffen (separater, öffentlicher Pfad) — externe Links bleiben gültig.
 - Keine inhaltlichen Änderungen an Match- oder Referenz-Seiten (separate Pakete).
 
 ## Risiken
+
 - **Deep-Links/Tab-Query** (`?tab=`, `?deal=`) müssen über die Redirects erhalten bleiben → in Verifikation testen.
 - **Doppelte Quelle der Wahrheit:** Wenn irgendwo Pfade hart kodiert sind statt `ROUTES.*`, brechen sie still. Daher Schritt T1.4 (rg) zwingend.
 - `revalidatePath`/`revalidateTag` mit altem Pfad → Cache-Invalidierung läuft ins Leere. Alle Vorkommen prüfen.
 
 ## Verifikation
+
 - `npm run typecheck` und `npm test` grün.
 - `rg -n "Finden"` und `rg -n "/dashboard/(match|evidence)\b" --glob '!docs/**' --glob '!next.config.*'` liefern **keine** Treffer mehr (außer den Redirect-Quellen).
 - Klick-Test: Sidebar „Smart Match" + „Referenzen", Referenz-Detail, `…/new`, Deal-Kontext-Match (`?deal=`), alte URL `/dashboard/evidence/<id>` leitet auf `/dashboard/references/<id>`.
@@ -76,4 +83,5 @@ Nur Code-Hygiene, **keine** Verhaltensänderung — separater Commit:
 ---
 
 ## Cursor-Prompt
+
 > Setze das Arbeitspaket `docs/arbeitspaket-rename-smart-match-references.md` um. Beginne mit **T1** (Display + Routen + Ordner + Redirects), in **einem** Commit, verhaltenserhaltend. Nutze `git mv` für Ordner, stelle alle harten Pfad-Literale auf `ROUTES.*` um und ergänze die Redirects in `next.config.ts`. Benenne die DB-Tabelle `evidence_events` **nicht** um. Danach `npm run typecheck` + `npm test`, und führe die rg-Checks aus der Verifikation aus; liste verbliebene Treffer auf. **T2** (interne Identifier) erst nach grünem T1 als separaten Commit — frag vorher kurz nach, ob ich T2 jetzt will.

@@ -26,7 +26,7 @@ const TIMELINE_EVENT_TYPES = [
 
 function formatChangesNeededDetail(
   comment: string | null,
-  giverName: string | null
+  giverName: string | null,
 ): string {
   if (!comment) return 'Anpassungen vor Freigabe angefragt.'
   if (giverName) return `(${giverName}): ${comment}`
@@ -40,7 +40,7 @@ function mapRowToActivity(
     event_type: string
     payload: unknown
   },
-  context?: { fallbackGiverName?: string | null }
+  context?: { fallbackGiverName?: string | null },
 ): ReferenceActivityItem {
   const payload =
     row.payload && typeof row.payload === 'object' && !Array.isArray(row.payload)
@@ -89,7 +89,8 @@ function mapRowToActivity(
             ? payload.comment.trim()
             : null
         const giverName =
-          (typeof payload.reference_giver_name === 'string' && payload.reference_giver_name.trim()) ||
+          (typeof payload.reference_giver_name === 'string' &&
+            payload.reference_giver_name.trim()) ||
           context?.fallbackGiverName?.trim() ||
           null
         return {
@@ -130,16 +131,20 @@ function mapRowToActivity(
     }
     case 'customer_access_revoked': {
       const reason =
-        typeof payload.reason === 'string' && payload.reason.trim() ? payload.reason.trim() : null
+        typeof payload.reason === 'string' && payload.reason.trim()
+          ? payload.reason.trim()
+          : null
       const details =
-        typeof payload.details === 'string' && payload.details.trim() ? payload.details.trim() : null
+        typeof payload.details === 'string' && payload.details.trim()
+          ? payload.details.trim()
+          : null
       return {
         id: row.id,
         at: row.created_at,
         title: 'Zugriff vom Kunden gesperrt',
         detail: details
           ? `${reason ?? 'Sperrung'} — ${details}`
-          : reason ?? 'Kunde hat den öffentlichen Zugriff vorübergehend gesperrt.',
+          : (reason ?? 'Kunde hat den öffentlichen Zugriff vorübergehend gesperrt.'),
       }
     }
     case 'approval_delegated': {
@@ -214,7 +219,9 @@ function mapRowToActivity(
  * Kompakte Historie aus evidence_events (max. 5): Freigaben, Teilen, Exporte, Deal‑Outcomes.
  * Keine Detailaufrufe, Match‑Treffer, Link‑Klicks oder KI‑Entwürfe.
  */
-export async function getReferenceDetailActivities(referenceId: string): Promise<ReferenceActivityItem[]> {
+export async function getReferenceDetailActivities(
+  referenceId: string,
+): Promise<ReferenceActivityItem[]> {
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
@@ -248,7 +255,7 @@ export async function getReferenceDetailActivities(referenceId: string): Promise
   return (data ?? []).map((row) =>
     mapRowToActivity(
       row as { id: string; created_at: string; event_type: string; payload: unknown },
-      { fallbackGiverName }
-    )
+      { fallbackGiverName },
+    ),
   )
 }

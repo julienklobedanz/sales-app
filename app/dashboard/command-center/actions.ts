@@ -28,7 +28,7 @@ async function loadSearchAuth() {
  * Homepage: semantische Referenz-Suche (nur nach Absenden im UI).
  */
 export async function searchHomepageSemanticAction(
-  rawQuery: string
+  rawQuery: string,
 ): Promise<HomepageSemanticSearchResult> {
   const q = rawQuery.trim()
   if (!q) {
@@ -37,7 +37,11 @@ export async function searchHomepageSemanticAction(
 
   const auth = await loadSearchAuth()
   if (!auth) {
-    return { success: false, query: q, error: 'Nicht angemeldet oder keine Organisation.' }
+    return {
+      success: false,
+      query: q,
+      error: 'Nicht angemeldet oder keine Organisation.',
+    }
   }
 
   const apiKey = process.env.OPENAI_API_KEY
@@ -68,7 +72,7 @@ export async function searchHomepageSemanticAction(
  * Homepage: Universal-Suche (semantische Referenzen + Keyword-Buckets).
  */
 export async function searchHomepageUniversalAction(
-  rawQuery: string
+  rawQuery: string,
 ): Promise<HomepageUniversalSearchResult> {
   const q = rawQuery.trim()
   if (!q) {
@@ -77,7 +81,11 @@ export async function searchHomepageUniversalAction(
 
   const auth = await loadSearchAuth()
   if (!auth) {
-    return { success: false, query: q, error: 'Nicht angemeldet oder keine Organisation.' }
+    return {
+      success: false,
+      query: q,
+      error: 'Nicht angemeldet oder keine Organisation.',
+    }
   }
 
   const apiKey = process.env.OPENAI_API_KEY
@@ -96,12 +104,11 @@ export async function searchHomepageUniversalAction(
   ])
 
   const referenceHits = semanticResult.ok ? semanticResult.hits : []
-  const semanticWarning =
-    !apiKey
-      ? 'Semantische Referenzsuche ist deaktiviert (OPENAI_API_KEY fehlt).'
-      : !semanticResult.ok
-        ? semanticResult.error
-        : undefined
+  const semanticWarning = !apiKey
+    ? 'Semantische Referenzsuche ist deaktiviert (OPENAI_API_KEY fehlt).'
+    : !semanticResult.ok
+      ? semanticResult.error
+      : undefined
 
   return { success: true, query: q, referenceHits, groups, semanticWarning }
 }

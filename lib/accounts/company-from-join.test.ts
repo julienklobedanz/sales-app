@@ -5,7 +5,12 @@ import { companyFromJoin } from './company-from-join'
 describe('companyFromJoin', () => {
   it('unwraps object and array joins', () => {
     expect(
-      companyFromJoin({ id: 'c1', name: 'Acme', logo_url: 'https://x/logo.png', is_favorite: true })
+      companyFromJoin({
+        id: 'c1',
+        name: 'Acme',
+        logo_url: 'https://x/logo.png',
+        is_favorite: true,
+      }),
     ).toEqual({
       id: 'c1',
       name: 'Acme',

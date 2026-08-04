@@ -1,4 +1,7 @@
-import { isLeadershipMoveTitle, parseLeadershipMoveFromTitle } from '@/lib/market-signals/leadership-move'
+import {
+  isLeadershipMoveTitle,
+  parseLeadershipMoveFromTitle,
+} from '@/lib/market-signals/leadership-move'
 
 export type MarketSignalBadge = 'Move' | 'Executive' | 'Company'
 
@@ -32,12 +35,15 @@ export function resolveExecSignalBadge(row: {
 /** Badge für Company-News — gleiche Logik wie Feed-Cards. */
 export function resolveNewsSignalBadge(
   body: string,
-  companyName?: string | null
+  companyName?: string | null,
 ): MarketSignalBadge {
   const moveParse = parseLeadershipMoveFromTitle(body, companyName ?? undefined)
   return moveParse.isLeadershipMove ? 'Move' : 'Company'
 }
 
-export function newsPersonNameFromBody(body: string, companyName?: string | null): string | null {
+export function newsPersonNameFromBody(
+  body: string,
+  companyName?: string | null,
+): string | null {
   return parseLeadershipMoveFromTitle(body, companyName ?? undefined).personName
 }

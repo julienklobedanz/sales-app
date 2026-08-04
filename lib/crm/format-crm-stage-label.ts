@@ -22,9 +22,7 @@ export function formatCrmStageLabel(raw: string | null | undefined): string | nu
   }
 
   if (value.includes('_') || value.includes('-')) {
-    return value
-      .replace(/[_-]+/g, ' ')
-      .replace(/\b\w/g, (c) => c.toUpperCase())
+    return value.replace(/[_-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
   }
 
   return value

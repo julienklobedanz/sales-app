@@ -16,7 +16,7 @@ export type ExtractedRfpRequirement = {
  */
 export async function extractRequirementsFromRfpText(
   apiKey: string,
-  plainText: string
+  plainText: string,
 ): Promise<{ requirements: ExtractedRfpRequirement[] } | { error: string }> {
   const body = plainText.trim().slice(0, MAX_RFP_CHARS)
   if (body.length < 80) {

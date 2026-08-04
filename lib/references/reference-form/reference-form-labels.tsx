@@ -10,8 +10,7 @@ export function RequiredLabel({
   children,
   ...props
 }: BaseLabelProps & { children?: ReactNode }) {
-  const base =
-    'text-xs font-medium uppercase tracking-wider text-muted-foreground'
+  const base = 'text-xs font-medium uppercase tracking-wider text-muted-foreground'
   return (
     <Label className={className ? `${base} ${className}` : base} {...props}>
       {children}
@@ -25,15 +24,10 @@ export function OptionalLabel({
   children,
   ...props
 }: BaseLabelProps & { children?: ReactNode }) {
-  const base =
-    'text-xs font-medium uppercase tracking-wider text-muted-foreground'
+  const base = 'text-xs font-medium uppercase tracking-wider text-muted-foreground'
   return (
-    <Label
-      className={className ? `${base} ${className}` : base}
-      {...props}
-    >
+    <Label className={className ? `${base} ${className}` : base} {...props}>
       {children}
     </Label>
   )
 }
-

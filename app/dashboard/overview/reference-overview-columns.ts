@@ -2,9 +2,7 @@ import {
   DEFAULT_REFERENCE_COLUMN_WIDTHS,
   type ReferenceColumnKey,
 } from './reference-table-column-types'
-import {
-  loadColumnWidthsFromStorage,
-} from '@/lib/table-column-sizing'
+import { loadColumnWidthsFromStorage } from '@/lib/table-column-sizing'
 import type { ReferenceRow } from '../actions'
 
 export type { ReferenceColumnKey }
@@ -91,7 +89,10 @@ export const COLUMN_VISIBLE_STORAGE_KEY = 'dashboard-overview-column-visible-v1'
 export const COLUMN_SIZING_STORAGE_KEY = 'dashboard-overview-column-sizing-v1'
 export const REFERENCE_SHOW_EXPIRED_CERTS_KEY = 'evidence-compliance-show-expired-v1'
 
-export function loadVisibleColumnsFromStorage(): Record<(typeof COLUMN_KEYS)[number], boolean> {
+export function loadVisibleColumnsFromStorage(): Record<
+  (typeof COLUMN_KEYS)[number],
+  boolean
+> {
   if (typeof window === 'undefined') return { ...DEFAULT_VISIBLE }
   try {
     const raw = localStorage.getItem(COLUMN_VISIBLE_STORAGE_KEY)
@@ -136,7 +137,10 @@ export function loadColumnOrderFromStorage(): ReferenceColumnKey[] {
   }
 }
 
-export function loadReferenceColumnWidthsFromStorage(): Record<ReferenceColumnKey, number> {
+export function loadReferenceColumnWidthsFromStorage(): Record<
+  ReferenceColumnKey,
+  number
+> {
   const stored = loadColumnWidthsFromStorage(COLUMN_SIZING_STORAGE_KEY, COLUMN_KEYS)
   return { ...DEFAULT_REFERENCE_COLUMN_WIDTHS, ...stored }
 }

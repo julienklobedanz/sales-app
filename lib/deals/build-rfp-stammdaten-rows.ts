@@ -17,7 +17,7 @@ function joinList(items: string[], max = 4): string | null {
 
 /** Stammdaten aus RFP-Snapshot — getrennt von Deal-Fakten (CRM/manuell). */
 export function buildRfpStammdatenRows(
-  snap: PersistedDealDeskAnalysisSnapshot
+  snap: PersistedDealDeskAnalysisSnapshot,
 ): RfpStammdatenRow[] {
   const briefing = normalizeExecutiveBriefingFields(snap.executiveBriefing)
   const labels = COPY.deals.cockpit.stammdatenFields
@@ -30,11 +30,7 @@ export function buildRfpStammdatenRows(
   }
 
   push('customer', labels.customer, snap.customerName)
-  push(
-    'documents',
-    labels.documents,
-    joinList(briefing.requiredSubmissionDocuments, 6)
-  )
+  push('documents', labels.documents, joinList(briefing.requiredSubmissionDocuments, 6))
   push('location', labels.location, briefing.projectLocation)
   push('volume', labels.volume, briefing.expectedDealVolume)
   push('submissionDeadline', labels.submissionDeadline, briefing.submissionDeadline)
@@ -46,7 +42,11 @@ export function buildRfpStammdatenRows(
   push('qualifications', labels.qualifications, joinList(briefing.bidderRequirements))
   push('roles', labels.roles, joinList(briefing.roleQualifications))
   push('domains', labels.domains, joinList(briefing.domainTags))
-  push('specialConditions', labels.specialConditions, joinList(briefing.specialConditions, 3))
+  push(
+    'specialConditions',
+    labels.specialConditions,
+    joinList(briefing.specialConditions, 3),
+  )
 
   return rows
 }

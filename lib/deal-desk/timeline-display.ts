@@ -5,7 +5,10 @@ const MS_DAY = 24 * 60 * 60 * 1000
 /** Normalisiert Uhrzeiten aus KI/JSON auf HH:mm (24h) oder null. */
 export function normalizeDueTime(value: unknown): string | null {
   if (typeof value !== 'string') return null
-  const trimmed = value.trim().replace(/\s*uhr\s*$/i, '').replace('.', ':')
+  const trimmed = value
+    .trim()
+    .replace(/\s*uhr\s*$/i, '')
+    .replace('.', ':')
   const match = trimmed.match(/^(\d{1,2}):(\d{2})$/)
   if (!match) return null
   const hours = Number.parseInt(match[1], 10)
@@ -42,7 +45,7 @@ export function formatCountdown(days: number): string {
  */
 export function formatDealDeadlineLabel(
   item: Pick<DealDeskTimelineItem, 'dueDate' | 'dueTime' | 'title'>,
-  now: Date = new Date()
+  now: Date = new Date(),
 ): string {
   const nowNorm = new Date(now)
   nowNorm.setHours(0, 0, 0, 0)

@@ -54,7 +54,9 @@ export const SUCCESS_STORY_KIT: SuccessStoryKitItem[] = [
   },
 ]
 
-export function buildReferenceIncubatorHarvest(customerName: string): ReferenceIncubatorHarvest {
+export function buildReferenceIncubatorHarvest(
+  customerName: string,
+): ReferenceIncubatorHarvest {
   return {
     companyName: customerName,
     logoUrl: null,

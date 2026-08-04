@@ -53,8 +53,8 @@ export default async function InternalApprovalPage({
           <CardHeader className="space-y-4">
             <CardTitle className="text-xl">Bereits intern freigegeben</CardTitle>
             <CardDescription className="text-sm leading-relaxed text-muted-foreground">
-              Die Referenz „{context.referenceTitle}“ war bereits intern freigegeben. Sie können nun
-              die Kundenfreigabe in RefStack vorbereiten.
+              Die Referenz „{context.referenceTitle}“ war bereits intern freigegeben. Sie
+              können nun die Kundenfreigabe in RefStack vorbereiten.
             </CardDescription>
             <Button asChild className="w-full">
               <Link href={detailHref}>Zur Referenz in RefStack</Link>
@@ -72,7 +72,8 @@ export default async function InternalApprovalPage({
           <div className="space-y-1 text-center">
             <CardTitle className="text-xl">Interne Freigabe</CardTitle>
             <CardDescription className="text-sm leading-relaxed">
-              Bitte bestätigen Sie die interne Freigabe oder delegieren Sie sie an eine andere Person.
+              Bitte bestätigen Sie die interne Freigabe oder delegieren Sie sie an eine
+              andere Person.
             </CardDescription>
           </div>
           <InternalApprovalForm

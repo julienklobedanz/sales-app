@@ -69,7 +69,9 @@ export function SettingsProfileCard({
 
   useEffect(() => {
     if (saveSignal <= 0 || saveSignal === lastHandledSaveSignal || !isDirty) return
-    const form = document.getElementById('settings-profile-form') as HTMLFormElement | null
+    const form = document.getElementById(
+      'settings-profile-form',
+    ) as HTMLFormElement | null
     if (form) {
       form.requestSubmit()
       setLastHandledSaveSignal(saveSignal)
@@ -139,12 +141,18 @@ export function SettingsProfileCard({
             onDrop={handleAvatarDrop}
             onDragOver={handleAvatarDragOver}
             onClick={() => {
-              const input = document.getElementById('profile-avatar-input') as HTMLInputElement | null
+              const input = document.getElementById(
+                'profile-avatar-input',
+              ) as HTMLInputElement | null
               input?.click()
             }}
           >
             {avatarLoading ? (
-              <AppIcon icon={Loader} size={20} className="animate-spin text-muted-foreground" />
+              <AppIcon
+                icon={Loader}
+                size={20}
+                className="animate-spin text-muted-foreground"
+              />
             ) : avatarPreview ? (
               <>
                 <img
@@ -172,7 +180,9 @@ export function SettingsProfileCard({
             type="button"
             className="inline-flex items-center gap-1 rounded-md border border-input bg-background px-2 py-1 text-[11px] font-medium hover:bg-accent"
             onClick={() => {
-              const input = document.getElementById('profile-avatar-input') as HTMLInputElement | null
+              const input = document.getElementById(
+                'profile-avatar-input',
+              ) as HTMLInputElement | null
               input?.click()
             }}
           >
@@ -250,8 +260,8 @@ export function SettingsProfileCard({
               </div>
               {pendingEmailNotice ? (
                 <p className="text-[11px] text-amber-700">
-                  Bestätigung ausstehend für {pendingEmailNotice}. Bitte Posteingang prüfen
-                  (neue und ggf. alte Adresse).
+                  Bestätigung ausstehend für {pendingEmailNotice}. Bitte Posteingang
+                  prüfen (neue und ggf. alte Adresse).
                 </p>
               ) : null}
               {emailEditing ? (

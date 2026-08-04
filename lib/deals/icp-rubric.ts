@@ -43,7 +43,10 @@ function normalize(s: string): string {
     .trim()
 }
 
-function fuzzyMatch(definition: string, dealValue: string | null | undefined): boolean | null {
+function fuzzyMatch(
+  definition: string,
+  dealValue: string | null | undefined,
+): boolean | null {
   const def = definition.trim()
   if (!def) return null
   const deal = (dealValue ?? '').trim()
@@ -57,7 +60,9 @@ function fuzzyMatch(definition: string, dealValue: string | null | undefined): b
 
   const defTokens = d.split(' ').filter((t) => t.length >= 3)
   const dealTokens = v.split(' ').filter((t) => t.length >= 3)
-  const overlap = defTokens.filter((t) => dealTokens.some((dt) => dt.includes(t) || t.includes(dt)))
+  const overlap = defTokens.filter((t) =>
+    dealTokens.some((dt) => dt.includes(t) || t.includes(dt)),
+  )
   if (overlap.length >= Math.min(2, defTokens.length)) return true
 
   return false
@@ -91,7 +96,7 @@ export type IcpDealContext = {
 
 export function scoreIcpRubrik(
   definition: IcpDefinition,
-  deal: IcpDealContext
+  deal: IcpDealContext,
 ): IcpRubrikScore {
   const items: IcpRubrikItem[] = RUBRIK_FIELDS.map(({ field, label }) => {
     const definitionValue = definition[field]?.trim() ?? ''
@@ -117,12 +122,11 @@ export function scoreIcpRubrik(
   const score = scored.filter((i) => i.met === true).length
   const max = RUBRIK_FIELDS.length
 
-  const summary =
-    isIcpDefinitionEmpty(definition)
-      ? 'ICP-Rubrik in Settings noch nicht definiert.'
-      : scored.length === 0
-        ? 'Zu wenig Deal-Daten für Rubrik-Abgleich.'
-        : `${score} von ${max} Rubrik-Kriterien erfüllt`
+  const summary = isIcpDefinitionEmpty(definition)
+    ? 'ICP-Rubrik in Settings noch nicht definiert.'
+    : scored.length === 0
+      ? 'Zu wenig Deal-Daten für Rubrik-Abgleich.'
+      : `${score} von ${max} Rubrik-Kriterien erfüllt`
 
   return { score, max, items, summary }
 }

@@ -7,7 +7,9 @@ import { legacyRoleToDimensions } from '@/lib/roles/legacy-mapping'
 import type { AppRole } from '@/lib/roles/types'
 
 /** Profil-Rolle: nur noch system_role + function_role (UI nutzt weiter Legacy-Labels admin/sales). */
-export async function updateUserRoleImpl(legacyRole: Extract<AppRole, 'admin' | 'sales'>) {
+export async function updateUserRoleImpl(
+  legacyRole: Extract<AppRole, 'admin' | 'sales'>,
+) {
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },

@@ -44,7 +44,7 @@ export const QUICK_APPROVAL_CARDS: {
 
 export function scopeToQuickChoice(
   scope: CustomerApprovalScopeSelection,
-  options?: { hasChangeRequest?: boolean }
+  options?: { hasChangeRequest?: boolean },
 ): QuickApprovalChoice {
   if (options?.hasChangeRequest) return 'changes_needed'
   if (scope.approvalType === 'anonymous') return 'anonymous'
@@ -57,7 +57,7 @@ export function quickChoiceGrantsApproval(choice: QuickApprovalChoiceValue): boo
 
 export function quickChoiceToScope(
   choice: QuickApprovalChoiceValue,
-  referenceCallsEnabled: boolean
+  referenceCallsEnabled: boolean,
 ): CustomerApprovalScopeSelection | null {
   if (!choice || choice === 'none' || choice === 'changes_needed') return null
   if (choice === 'anonymous') {

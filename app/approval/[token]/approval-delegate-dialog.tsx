@@ -40,7 +40,9 @@ export function ApprovalDelegateDialog({ token }: { token: string }) {
         toast.error('Delegation fehlgeschlagen.')
         return
       }
-      toast.success('Delegation gespeichert. Der Kollege erhält den Freigabe-Link per E-Mail.')
+      toast.success(
+        'Delegation gespeichert. Der Kollege erhält den Freigabe-Link per E-Mail.',
+      )
       setOpen(false)
       setDelegateName('')
       setDelegateEmail('')
@@ -66,12 +68,15 @@ export function ApprovalDelegateDialog({ token }: { token: string }) {
         <DialogHeader>
           <DialogTitle>Freigabe delegieren</DialogTitle>
           <DialogDescription>
-            Leiten Sie diese Anfrage an eine zuständige Kollegin oder einen Kollegen weiter.
+            Leiten Sie diese Anfrage an eine zuständige Kollegin oder einen Kollegen
+            weiter.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-2">
-            <ApprovalOptionalLabel htmlFor="delegate-name">Name des Kollegen</ApprovalOptionalLabel>
+            <ApprovalOptionalLabel htmlFor="delegate-name">
+              Name des Kollegen
+            </ApprovalOptionalLabel>
             <Input
               id="delegate-name"
               value={delegateName}
@@ -93,7 +98,12 @@ export function ApprovalDelegateDialog({ token }: { token: string }) {
           </div>
         </div>
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setOpen(false)}
+            disabled={loading}
+          >
             Abbrechen
           </Button>
           <Button type="button" onClick={() => void onDelegate()} disabled={loading}>

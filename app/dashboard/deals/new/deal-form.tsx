@@ -72,7 +72,7 @@ export function DealForm({
 
   const comboboxCompanies = useMemo<ReferenceFormCompany[]>(
     () => companyOptions.map((c) => ({ id: c.id, name: c.name, logo_url: null })),
-    [companyOptions]
+    [companyOptions],
   )
 
   const [status, setStatus] = useState<DealStatus>('negotiation')
@@ -132,7 +132,8 @@ export function DealForm({
       <CardHeader>
         <CardTitle>Neuer Deal</CardTitle>
         <CardDescription>
-          Titel, Account (Suche), Volumen und Phase sind Pflicht. Optional: Beschreibung und Closing-Datum.
+          Titel, Account (Suche), Volumen und Phase sind Pflicht. Optional: Beschreibung
+          und Closing-Datum.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -145,9 +146,13 @@ export function DealForm({
               placeholder="z. B. Cloud-Migration BMW"
               disabled={pending}
               aria-invalid={Boolean(fieldErrors.title)}
-              onChange={() => fieldErrors.title && setFieldErrors((e) => ({ ...e, title: undefined }))}
+              onChange={() =>
+                fieldErrors.title && setFieldErrors((e) => ({ ...e, title: undefined }))
+              }
             />
-            {fieldErrors.title ? <p className="text-sm text-destructive">{fieldErrors.title}</p> : null}
+            {fieldErrors.title ? (
+              <p className="text-sm text-destructive">{fieldErrors.title}</p>
+            ) : null}
           </div>
           <div className="space-y-2">
             <div className="flex flex-wrap items-end justify-between gap-2">
@@ -170,19 +175,23 @@ export function DealForm({
               onValueChange={(v) => {
                 setAccountInput(v)
                 setCompanyId('')
-                if (fieldErrors.account) setFieldErrors((e) => ({ ...e, account: undefined }))
+                if (fieldErrors.account)
+                  setFieldErrors((e) => ({ ...e, account: undefined }))
               }}
               onSelectCompany={(c) => {
                 setCompanyId(c.id)
                 setAccountInput(c.name)
-                if (fieldErrors.account) setFieldErrors((e) => ({ ...e, account: undefined }))
+                if (fieldErrors.account)
+                  setFieldErrors((e) => ({ ...e, account: undefined }))
               }}
               loading={false}
               disabled={pending}
               searchCompanies={searchCompanySuggestions}
             />
             <input type="hidden" name="company_id" value={companyId} />
-            {fieldErrors.account ? <p className="text-sm text-destructive">{fieldErrors.account}</p> : null}
+            {fieldErrors.account ? (
+              <p className="text-sm text-destructive">{fieldErrors.account}</p>
+            ) : null}
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -202,14 +211,23 @@ export function DealForm({
                 placeholder="z. B. €5 Mio"
                 disabled={pending}
                 aria-invalid={Boolean(fieldErrors.volume)}
-                onChange={() => fieldErrors.volume && setFieldErrors((e) => ({ ...e, volume: undefined }))}
+                onChange={() =>
+                  fieldErrors.volume &&
+                  setFieldErrors((e) => ({ ...e, volume: undefined }))
+                }
               />
-              {fieldErrors.volume ? <p className="text-sm text-destructive">{fieldErrors.volume}</p> : null}
+              {fieldErrors.volume ? (
+                <p className="text-sm text-destructive">{fieldErrors.volume}</p>
+              ) : null}
             </div>
           </div>
           <div className="space-y-2">
             <Label>Phase *</Label>
-            <Select value={status} onValueChange={(v) => setStatus(v as DealStatus)} disabled={pending}>
+            <Select
+              value={status}
+              onValueChange={(v) => setStatus(v as DealStatus)}
+              disabled={pending}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -238,7 +256,11 @@ export function DealForm({
           </div>
           <div className="space-y-2">
             <Label>Sichtbarkeit</Label>
-            <Select value={isPublic ? 'public' : 'private'} onValueChange={(v) => setIsPublic(v === 'public')} disabled={pending}>
+            <Select
+              value={isPublic ? 'public' : 'private'}
+              onValueChange={(v) => setIsPublic(v === 'public')}
+              disabled={pending}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -251,28 +273,40 @@ export function DealForm({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>{COPY.roles.accountManager}</Label>
-              <Select value={accountManagerId || '__none__'} onValueChange={(v) => setAccountManagerId(v === '__none__' ? '' : v)} disabled={pending}>
+              <Select
+                value={accountManagerId || '__none__'}
+                onValueChange={(v) => setAccountManagerId(v === '__none__' ? '' : v)}
+                disabled={pending}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Optional …" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">— Keiner —</SelectItem>
                   {orgProfiles.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.full_name ?? p.id.slice(0, 8)}</SelectItem>
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.full_name ?? p.id.slice(0, 8)}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
               <Label>{COPY.roles.salesManager}</Label>
-              <Select value={salesManagerId || '__none__'} onValueChange={(v) => setSalesManagerId(v === '__none__' ? '' : v)} disabled={pending}>
+              <Select
+                value={salesManagerId || '__none__'}
+                onValueChange={(v) => setSalesManagerId(v === '__none__' ? '' : v)}
+                disabled={pending}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Optional …" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">— Keiner —</SelectItem>
                   {orgProfiles.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.full_name ?? p.id.slice(0, 8)}</SelectItem>
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.full_name ?? p.id.slice(0, 8)}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -280,10 +314,17 @@ export function DealForm({
           </div>
           <div className="flex gap-2 pt-4">
             <Button type="submit" disabled={pending}>
-              {pending && <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />}
+              {pending && (
+                <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />
+              )}
               Deal anlegen
             </Button>
-            <Button type="button" variant="outline" disabled={pending} onClick={() => router.push(ROUTES.deals.root)}>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={pending}
+              onClick={() => router.push(ROUTES.deals.root)}
+            >
               Abbrechen
             </Button>
           </div>

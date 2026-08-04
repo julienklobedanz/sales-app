@@ -26,10 +26,10 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   console.error(
-    'Fehlende Umgebungsvariablen: SUPABASE_URL/NEXT_PUBLIC_SUPABASE_URL und SUPABASE_SERVICE_ROLE_KEY werden benötigt.'
+    'Fehlende Umgebungsvariablen: SUPABASE_URL/NEXT_PUBLIC_SUPABASE_URL und SUPABASE_SERVICE_ROLE_KEY werden benötigt.',
   )
   console.error(
-    'Ausführung: npx tsx --env-file=.env.local scripts/backfill-market-signal-enrichment.ts'
+    'Ausführung: npx tsx --env-file=.env.local scripts/backfill-market-signal-enrichment.ts',
   )
   process.exit(1)
 }
@@ -47,7 +47,9 @@ async function main() {
   if (organizationId) console.log(`  Organisation: ${organizationId}`)
   console.log(`  Limits: news=${maxNews}, exec=${maxExecutives}, pause=${pauseMs}ms`)
   if (!process.env.OPENAI_API_KEY?.trim()) {
-    console.warn('  OPENAI_API_KEY fehlt — es wird nur der heuristische Fallback verwendet.')
+    console.warn(
+      '  OPENAI_API_KEY fehlt — es wird nur der heuristische Fallback verwendet.',
+    )
   }
 
   const result = await runMarketSignalEnrichmentBackfill(supabase, {
@@ -60,15 +62,16 @@ async function main() {
 
   console.log('\nErgebnis:')
   console.log(
-    `  Account-News: ${result.newsProcessed} verarbeitet, ${result.newsUpdated} aktualisiert, ${result.newsDeleted} entfernt (irrelevant)`
+    `  Account-News: ${result.newsProcessed} verarbeitet, ${result.newsUpdated} aktualisiert, ${result.newsDeleted} entfernt (irrelevant)`,
   )
   console.log(
-    `  Executive-Events: ${result.executivesProcessed} verarbeitet, ${result.executivesUpdated} aktualisiert, ${result.executivesDeleted} entfernt (irrelevant)`
+    `  Executive-Events: ${result.executivesProcessed} verarbeitet, ${result.executivesUpdated} aktualisiert, ${result.executivesDeleted} entfernt (irrelevant)`,
   )
   if (result.errors.length) {
     console.warn(`\nFehler (${result.errors.length}):`)
     for (const err of result.errors.slice(0, 15)) console.warn(`  - ${err}`)
-    if (result.errors.length > 15) console.warn(`  … und ${result.errors.length - 15} weitere`)
+    if (result.errors.length > 15)
+      console.warn(`  … und ${result.errors.length - 15} weitere`)
   }
   console.log('\nFertig.')
 }

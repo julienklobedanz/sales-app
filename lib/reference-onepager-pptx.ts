@@ -115,12 +115,15 @@ export function clipPptxBullet(text: string, maxChars: number): string {
 
 function extractStoryBulletsForPptx(
   value: string | null | undefined,
-  options?: { splitOnPeriod?: boolean }
+  options?: { splitOnPeriod?: boolean },
 ): string[] {
   const normalized = normalizePptxFlowText(value)
   if (!normalized) return ['—']
 
-  const lines = normalized.split('\n').map((l) => l.trim()).filter(Boolean)
+  const lines = normalized
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean)
   const bulletLines = lines.filter((l) => BULLET_LINE_RE.test(l))
 
   if (bulletLines.length > 0) {
@@ -132,9 +135,16 @@ function extractStoryBulletsForPptx(
   }
 
   const prose = normalized.replace(/\n+/g, ' ').trim()
-  const sentences = (options?.splitOnPeriod
-    ? prose.split('.').map((s) => s.trim()).filter((s) => s.length > 8)
-    : prose.split(/(?<=[.!?])\s+/).map((s) => s.trim()).filter((s) => s.length > 8)
+  const sentences = (
+    options?.splitOnPeriod
+      ? prose
+          .split('.')
+          .map((s) => s.trim())
+          .filter((s) => s.length > 8)
+      : prose
+          .split(/(?<=[.!?])\s+/)
+          .map((s) => s.trim())
+          .filter((s) => s.length > 8)
   )
     .slice(0, PPTX_MAX_BULLETS)
     .map((s) => {
@@ -146,19 +156,23 @@ function extractStoryBulletsForPptx(
 }
 
 /** Herausforderung: max. 5 einzeilige Bullets. */
-export function extractChallengeBulletsForPptx(value: string | null | undefined): string[] {
+export function extractChallengeBulletsForPptx(
+  value: string | null | undefined,
+): string[] {
   return extractStoryBulletsForPptx(value)
 }
 
 /** Lösung: max. 5 Sätze (Punkt-Split), je ein Bullet. */
-export function extractSolutionBulletsForPptx(value: string | null | undefined): string[] {
+export function extractSolutionBulletsForPptx(
+  value: string | null | undefined,
+): string[] {
   return extractStoryBulletsForPptx(value, { splitOnPeriod: true })
 }
 
 /** @deprecated Nur noch für Tests — Layout nutzt feste Koordinaten */
 export function extractBulletPoints(
   value: string | null | undefined,
-  options?: { max?: number }
+  options?: { max?: number },
 ): string[] {
   const max = options?.max ?? 5
   return extractChallengeBulletsForPptx(value).slice(0, max)
@@ -173,7 +187,7 @@ function charsPerLine(boxWidthIn: number, fontSizePt: number): number {
 export function estimateBulletBlockHeight(
   bullets: string[],
   boxWidthIn: number,
-  fontSizePt = BULLET_FONT_PT
+  fontSizePt = BULLET_FONT_PT,
 ): number {
   const labelH = 0.22
   const lineH = fontSizePt * 0.016 * 1.35
@@ -200,7 +214,7 @@ function mimeToPptxImagePrefix(contentType: string): string | null {
  * PptxGenJS erwartet `image/png;base64,...` (ohne `data:`-Prefix) oder eine gültige http(s)-URL.
  */
 export async function resolvePptxLogoSource(
-  url: string | null | undefined
+  url: string | null | undefined,
 ): Promise<{ kind: 'data'; value: string } | { kind: 'path'; value: string } | null> {
   const trimmed = String(url ?? '').trim()
   if (!trimmed) return null
@@ -230,7 +244,10 @@ export async function resolvePptxLogoSource(
   return null
 }
 
-export function clipExecutiveSummary(value: string | null | undefined, maxChars = 165): string {
+export function clipExecutiveSummary(
+  value: string | null | undefined,
+  maxChars = 165,
+): string {
   const t = normalizePptxFlowText(value).replace(/\n+/g, ' ').trim()
   if (!t) return ''
   if (t.length <= maxChars) return t
@@ -258,7 +275,7 @@ export type StatusPillStyle = {
 
 export function resolveStatusPill(
   referenceStatus: string,
-  projectStatus: string | null | undefined
+  projectStatus: string | null | undefined,
 ): StatusPillStyle {
   const projectLabel = formatProjectStatusDe(projectStatus)
   const label = projectLabel || referenceStatusLabelDe(referenceStatus)
@@ -304,7 +321,7 @@ function addSectionLabel(
   label: string,
   x: number,
   y: number,
-  w: number
+  w: number,
 ) {
   slide.addText(label.toUpperCase(), {
     x,
@@ -326,7 +343,7 @@ function addFixedBullets(
   x: number,
   y: number,
   w: number,
-  h: number
+  h: number,
 ) {
   if (bullets.length === 0) {
     slide.addText('—', {
@@ -371,7 +388,7 @@ function addStatusPill(
   pptx: PptxGenJS,
   pill: StatusPillStyle,
   x: number,
-  y: number
+  y: number,
 ) {
   const pillW = Math.min(1.55, 0.11 * pill.label.length + 0.55)
   const pillH = 0.22
@@ -407,7 +424,7 @@ function addPremiumHeaderBand(
     summary: string | null
     titleW: number
     contentW: number
-  }
+  },
 ) {
   slide.addShape(pptx.ShapeType.rect, {
     x: 0,
@@ -465,7 +482,7 @@ function addFactSheet(
   slide: PptxGenJS.Slide,
   pptx: PptxGenJS,
   input: ReferenceOnepagerPptxInput,
-  box: { x: number; y: number; w: number; h: number }
+  box: { x: number; y: number; w: number; h: number },
 ) {
   slide.addShape(pptx.ShapeType.roundRect, {
     x: box.x,
@@ -548,11 +565,13 @@ function addLogoContained(
   slide: PptxGenJS.Slide,
   logoSource: { kind: 'data'; value: string } | { kind: 'path'; value: string },
   x: number,
-  y: number
+  y: number,
 ) {
   const box = LAYOUT.LOGO_BOX
   slide.addImage({
-    ...(logoSource.kind === 'data' ? { data: logoSource.value } : { path: logoSource.value }),
+    ...(logoSource.kind === 'data'
+      ? { data: logoSource.value }
+      : { path: logoSource.value }),
     x,
     y,
     w: box,
@@ -561,7 +580,9 @@ function addLogoContained(
   })
 }
 
-export async function buildReferenceOnepagerPptxBuffer(input: ReferenceOnepagerPptxInput): Promise<Buffer> {
+export async function buildReferenceOnepagerPptxBuffer(
+  input: ReferenceOnepagerPptxInput,
+): Promise<Buffer> {
   const pptx = new PptxGenJS()
   pptx.layout = 'LAYOUT_16x9'
   pptx.author = input.orgName
@@ -596,7 +617,7 @@ export async function buildReferenceOnepagerPptxBuffer(input: ReferenceOnepagerP
     'Herausforderung',
     LAYOUT.LEFT_X,
     LAYOUT.CHALLENGE_LABEL_Y,
-    LAYOUT.LEFT_STORY_W
+    LAYOUT.LEFT_STORY_W,
   )
   addFixedBullets(
     slide,
@@ -604,7 +625,7 @@ export async function buildReferenceOnepagerPptxBuffer(input: ReferenceOnepagerP
     LAYOUT.LEFT_X,
     LAYOUT.CHALLENGE_BULLETS_Y,
     LAYOUT.LEFT_STORY_W,
-    LAYOUT.CHALLENGE_BULLETS_H
+    LAYOUT.CHALLENGE_BULLETS_H,
   )
 
   addSectionLabel(
@@ -612,7 +633,7 @@ export async function buildReferenceOnepagerPptxBuffer(input: ReferenceOnepagerP
     'Unsere Lösung',
     LAYOUT.LEFT_X,
     LAYOUT.SOLUTION_LABEL_Y,
-    LAYOUT.LEFT_STORY_W
+    LAYOUT.LEFT_STORY_W,
   )
   addFixedBullets(
     slide,
@@ -620,7 +641,7 @@ export async function buildReferenceOnepagerPptxBuffer(input: ReferenceOnepagerP
     LAYOUT.LEFT_X,
     LAYOUT.SOLUTION_BULLETS_Y,
     LAYOUT.LEFT_STORY_W,
-    LAYOUT.SOLUTION_BULLETS_H
+    LAYOUT.SOLUTION_BULLETS_H,
   )
 
   addFactSheet(slide, pptx, input, {

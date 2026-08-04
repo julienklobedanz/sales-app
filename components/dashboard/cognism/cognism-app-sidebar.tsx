@@ -19,7 +19,12 @@ import { ChevronsLeft, ChevronsRight } from 'lucide-react'
 import { DashboardUserMenu } from '@/components/dashboard/dashboard-user-menu'
 import { SidebarNotificationsSection } from '@/components/dashboard/sidebar-notifications-button'
 import { Button } from '@/components/ui/button'
-import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from '@/components/ui/sidebar'
+import {
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
+} from '@/components/ui/sidebar'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useCommandPalette } from '@/hooks/useCommandPalette'
 import type { DashboardNotificationItem } from '@/app/dashboard/actions'
@@ -50,7 +55,10 @@ function CognismSidebarIconButton({
   href?: string
   active?: boolean
 }) {
-  const className = cn('cognism-sidebar-icon-btn', active && 'border-primary/30 bg-muted text-foreground')
+  const className = cn(
+    'cognism-sidebar-icon-btn',
+    active && 'border-primary/30 bg-muted text-foreground',
+  )
 
   const content = href ? (
     <Link href={href} className={className} aria-label={label} data-active={active}>
@@ -90,7 +98,7 @@ function CognismCommandSearch({ collapsed }: { collapsed: boolean }) {
           onClick={() => setOpen(true)}
           className={cn(
             'h-9 w-full rounded-lg border border-border/40 bg-muted/45 text-muted-foreground shadow-none',
-            'hover:bg-muted/75 hover:text-foreground'
+            'hover:bg-muted/75 hover:text-foreground',
           )}
           aria-label="Globale Suche öffnen"
         >
@@ -136,37 +144,71 @@ export function CognismAppSidebar({
       href: ROUTES.home,
       label: COPY.pages.dashboard,
       isActive: (p) => p === ROUTES.home,
-      icon: <AppIcon icon={GalleryHorizontalEndIcon} size={16} strokeWidth={pathname === ROUTES.home ? 2.5 : 2} />,
+      icon: (
+        <AppIcon
+          icon={GalleryHorizontalEndIcon}
+          size={16}
+          strokeWidth={pathname === ROUTES.home ? 2.5 : 2}
+        />
+      ),
     },
     {
       href: ROUTES.match,
       label: COPY.nav.match,
       isActive: (p) => Boolean(p?.startsWith(ROUTES.match)),
-      icon: <AppIcon icon={Sparkles} size={16} strokeWidth={pathname?.startsWith(ROUTES.match) ? 2.5 : 2} />,
+      icon: (
+        <AppIcon
+          icon={Sparkles}
+          size={16}
+          strokeWidth={pathname?.startsWith(ROUTES.match) ? 2.5 : 2}
+        />
+      ),
     },
     {
       href: ROUTES.marketSignals,
       label: COPY.nav.marketSignals,
       isActive: (p) => Boolean(p?.startsWith(ROUTES.marketSignals)),
-      icon: <Radar className="size-4 shrink-0" strokeWidth={pathname?.startsWith(ROUTES.marketSignals) ? 2.5 : 2} />,
+      icon: (
+        <Radar
+          className="size-4 shrink-0"
+          strokeWidth={pathname?.startsWith(ROUTES.marketSignals) ? 2.5 : 2}
+        />
+      ),
     },
     {
       href: ROUTES.references.root,
       label: COPY.nav.references,
       isActive: (p) => Boolean(p?.startsWith(ROUTES.references.root)),
-      icon: <AppIcon icon={FileText} size={16} strokeWidth={pathname?.startsWith(ROUTES.references.root) ? 2.5 : 2} />,
+      icon: (
+        <AppIcon
+          icon={FileText}
+          size={16}
+          strokeWidth={pathname?.startsWith(ROUTES.references.root) ? 2.5 : 2}
+        />
+      ),
     },
     {
       href: ROUTES.deals.root,
       label: COPY.nav.deals,
       isActive: (p) => Boolean(p?.startsWith(ROUTES.deals.root)),
-      icon: <Handshake className="size-4 shrink-0" strokeWidth={pathname?.startsWith(ROUTES.deals.root) ? 2.5 : 2} />,
+      icon: (
+        <Handshake
+          className="size-4 shrink-0"
+          strokeWidth={pathname?.startsWith(ROUTES.deals.root) ? 2.5 : 2}
+        />
+      ),
     },
     {
       href: ROUTES.accounts,
       label: COPY.nav.accounts,
       isActive: (p) => Boolean(p?.startsWith(ROUTES.accounts)),
-      icon: <AppIcon icon={Building2} size={16} strokeWidth={pathname?.startsWith(ROUTES.accounts) ? 2.5 : 2} />,
+      icon: (
+        <AppIcon
+          icon={Building2}
+          size={16}
+          strokeWidth={pathname?.startsWith(ROUTES.accounts) ? 2.5 : 2}
+        />
+      ),
     },
   ]
 
@@ -180,7 +222,7 @@ export function CognismAppSidebar({
       <div
         className={cn(
           'flex h-14 shrink-0 items-center border-b border-border/60',
-          collapsed ? 'justify-center px-1' : 'justify-between gap-2 px-3'
+          collapsed ? 'justify-center px-1' : 'justify-between gap-2 px-3',
         )}
       >
         {!collapsed ? (
@@ -188,7 +230,9 @@ export function CognismAppSidebar({
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[color:var(--cognism-nav-active-border)] text-white">
               <AppIcon icon={GalleryHorizontalEndIcon} size={16} strokeWidth={2.5} />
             </div>
-            <span className="truncate text-sm font-semibold tracking-tight text-[#2D1B4E]">RefStack</span>
+            <span className="truncate text-sm font-semibold tracking-tight text-[#2D1B4E]">
+              RefStack
+            </span>
           </Link>
         ) : null}
         {!forceExpanded ? (
@@ -200,7 +244,11 @@ export function CognismAppSidebar({
             onClick={() => (isMobile ? setOpenMobile(true) : toggleSidebar())}
             aria-label={collapsed ? 'Sidebar ausklappen' : 'Sidebar einklappen'}
           >
-            {collapsed ? <ChevronsRight className="size-4" /> : <ChevronsLeft className="size-4" />}
+            {collapsed ? (
+              <ChevronsRight className="size-4" />
+            ) : (
+              <ChevronsLeft className="size-4" />
+            )}
           </Button>
         ) : null}
       </div>
@@ -239,10 +287,7 @@ export function CognismAppSidebar({
                 href={item.href}
                 data-active={active}
                 title={collapsed ? item.label : undefined}
-                className={cn(
-                  'cognism-nav-item',
-                  collapsed && 'justify-center px-0'
-                )}
+                className={cn('cognism-nav-item', collapsed && 'justify-center px-0')}
               >
                 {item.icon}
                 {!collapsed ? <span className="truncate">{item.label}</span> : null}
@@ -313,7 +358,8 @@ export function CognismAppSidebar({
                     href={ROUTES.settings}
                     className={cn(
                       'flex h-9 min-w-0 flex-1 items-center justify-center rounded-lg border border-border/50 bg-muted/20 transition-colors hover:bg-muted/60',
-                      pathname?.startsWith(ROUTES.settings) && 'border-primary/30 bg-muted text-foreground'
+                      pathname?.startsWith(ROUTES.settings) &&
+                        'border-primary/30 bg-muted text-foreground',
                     )}
                     aria-label="Einstellungen"
                   >

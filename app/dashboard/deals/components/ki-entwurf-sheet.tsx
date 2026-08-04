@@ -13,7 +13,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import {
+  Sheet,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { Textarea } from '@/components/ui/textarea'
 import { AppIcon } from '@/lib/icons'
 import type { KiEntwurfOutputFormat, KiEntwurfTone } from '@/lib/ki-entwurf-prompt'
@@ -153,11 +159,14 @@ export function KiEntwurfSheet({
           <SheetTitle>KI-Entwurf generieren</SheetTitle>
           <div className="text-muted-foreground space-y-1 text-sm">
             <div>
-              Basierend auf: <span className="text-foreground font-medium">{referenceTitle}</span>
+              Basierend auf:{' '}
+              <span className="text-foreground font-medium">{referenceTitle}</span>
             </div>
             <div>
               Match-Score:{' '}
-              <span className="text-foreground font-medium font-mono tabular-nums">{scorePct} %</span>
+              <span className="text-foreground font-medium font-mono tabular-nums">
+                {scorePct} %
+              </span>
             </div>
           </div>
         </SheetHeader>
@@ -208,12 +217,17 @@ export function KiEntwurfSheet({
               value={additionalContext}
               onChange={(e) => setAdditionalContext(e.target.value)}
               rows={3}
-              placeholder='z. B. „Prospect ist CIO bei einem Pharmaunternehmen“'
+              placeholder="z. B. „Prospect ist CIO bei einem Pharmaunternehmen“"
               className="resize-y text-sm"
             />
           </div>
 
-          <Button type="button" disabled={streaming} onClick={() => void runStream()} className="w-full sm:w-auto">
+          <Button
+            type="button"
+            disabled={streaming}
+            onClick={() => void runStream()}
+            className="w-full sm:w-auto"
+          >
             {streaming ? (
               <>
                 <AppIcon icon={Loader} size={16} className="mr-2 animate-spin" />
@@ -235,7 +249,11 @@ export function KiEntwurfSheet({
                 value={output}
                 onChange={(e) => setOutput(e.target.value)}
                 readOnly={streaming}
-                placeholder={streaming ? '…' : 'Nach „Entwurf generieren“ erscheint der Text hier und kann bearbeitet werden.'}
+                placeholder={
+                  streaming
+                    ? '…'
+                    : 'Nach „Entwurf generieren“ erscheint der Text hier und kann bearbeitet werden.'
+                }
                 className="min-h-[200px] max-h-[40vh] resize-y border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
               />
             </div>
@@ -248,7 +266,9 @@ export function KiEntwurfSheet({
             variant="outline"
             disabled={!output.trim() || streaming}
             onClick={() => {
-              void navigator.clipboard.writeText(output).then(() => toast.success('Kopiert!'))
+              void navigator.clipboard
+                .writeText(output)
+                .then(() => toast.success('Kopiert!'))
             }}
           >
             <AppIcon icon={CopyIcon} size={16} className="mr-2" />

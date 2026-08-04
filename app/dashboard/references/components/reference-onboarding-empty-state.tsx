@@ -59,7 +59,7 @@ export function ReferenceOnboardingEmptyState({
       }
       toast.info('Bitte lade dein Dokument auf der Referenz-Seite hoch.')
     },
-    [onUploadFiles]
+    [onUploadFiles],
   )
 
   const openFilePicker = () => {
@@ -77,9 +77,9 @@ export function ReferenceOnboardingEmptyState({
         Importiere deine Referenzen auf Autopilot
       </h2>
       <p className="mx-auto mb-8 max-w-lg text-center text-sm text-gray-500">
-        Lade eine oder mehrere bestehende Case Studies oder Projekt-Folien (PDF, PPTX) hoch.
-        RefStack extrahiert die Daten, strukturiert sie und erstellt daraus sofort nutzbare
-        Referenzen für euren Vertrieb — alles an einem Ort.
+        Lade eine oder mehrere bestehende Case Studies oder Projekt-Folien (PDF, PPTX)
+        hoch. RefStack extrahiert die Daten, strukturiert sie und erstellt daraus sofort
+        nutzbare Referenzen für euren Vertrieb — alles an einem Ort.
       </p>
 
       {canCreate ? (
@@ -126,7 +126,7 @@ export function ReferenceOnboardingEmptyState({
             }}
             className={cn(
               'group mb-6 flex w-full max-w-xl cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-blue-200 bg-blue-50/50 p-10 transition-colors hover:bg-blue-50',
-              dragOver && 'border-blue-400 bg-blue-50'
+              dragOver && 'border-blue-400 bg-blue-50',
             )}
           >
             <UploadCloud
@@ -161,8 +161,8 @@ export function ReferenceOnboardingEmptyState({
         </>
       ) : (
         <p className="max-w-md text-center text-sm text-gray-500">
-          Noch keine freigegebenen Referenzen in deinem Workspace. Bitte dein Team, eine Referenz
-          anzulegen oder freizugeben.
+          Noch keine freigegebenen Referenzen in deinem Workspace. Bitte dein Team, eine
+          Referenz anzulegen oder freizugeben.
         </p>
       )}
     </div>

@@ -1,6 +1,13 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { ArrowLeftIcon, Building2, Globe, MapPinIcon, Pencil, Users } from '@hugeicons/core-free-icons'
+import {
+  ArrowLeftIcon,
+  Building2,
+  Globe,
+  MapPinIcon,
+  Pencil,
+  Users,
+} from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import type { CompanyDetailCompany } from './company-detail-types'
 import { formatIndustryDisplay } from '@/lib/constants/industries'
@@ -114,7 +121,9 @@ export function CompanyDetailHeader({
         ) : null}
         <Button asChild variant="outline" size="icon" className="size-9 shrink-0">
           <Link
-            href={accountsListHref(company.entity_kind === 'partner' ? 'partner' : 'account')}
+            href={accountsListHref(
+              company.entity_kind === 'partner' ? 'partner' : 'account',
+            )}
             aria-label="Zurück zur Übersicht"
             title="Zurück"
           >

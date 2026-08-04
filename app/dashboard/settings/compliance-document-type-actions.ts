@@ -47,7 +47,7 @@ async function getComplianceTypeAuth(): Promise<ComplianceTypeAuth> {
 
 async function fetchCustomTypeRows(
   supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
-  orgId: string
+  orgId: string,
 ) {
   const { data, error } = await supabase
     .from('organization_compliance_document_types')
@@ -66,7 +66,8 @@ async function fetchCustomTypeRows(
 }
 
 export async function listComplianceDocumentTypeOptions(): Promise<
-  { success: true; types: ComplianceDocumentTypeOption[] } | { success: false; error: string }
+  | { success: true; types: ComplianceDocumentTypeOption[] }
+  | { success: false; error: string }
 > {
   const auth = await getComplianceTypeAuth()
   if ('error' in auth) return { success: false, error: auth.error }
@@ -83,9 +84,10 @@ export async function listComplianceDocumentTypeOptions(): Promise<
 }
 
 export async function createComplianceDocumentType(
-  label: string
+  label: string,
 ): Promise<
-  { success: true; type: ComplianceDocumentTypeOption } | { success: false; error: string }
+  | { success: true; type: ComplianceDocumentTypeOption }
+  | { success: false; error: string }
 > {
   const auth = await getComplianceTypeAuth()
   if ('error' in auth) return { success: false, error: auth.error }
@@ -119,7 +121,10 @@ export async function createComplianceDocumentType(
     .single()
 
   if (error || !data) {
-    return { success: false, error: error?.message ?? 'Typ konnte nicht angelegt werden.' }
+    return {
+      success: false,
+      error: error?.message ?? 'Typ konnte nicht angelegt werden.',
+    }
   }
 
   revalidatePath(ROUTES.references.root)
@@ -131,7 +136,7 @@ export async function createComplianceDocumentType(
 
 export async function updateComplianceDocumentType(
   id: string,
-  label: string
+  label: string,
 ): Promise<{ success: true } | { success: false; error: string }> {
   const auth = await getComplianceTypeAuth()
   if ('error' in auth) return { success: false, error: auth.error }
@@ -155,7 +160,7 @@ export async function updateComplianceDocumentType(
 }
 
 export async function deleteComplianceDocumentType(
-  id: string
+  id: string,
 ): Promise<{ success: true } | { success: false; error: string }> {
   const auth = await getComplianceTypeAuth()
   if ('error' in auth) return { success: false, error: auth.error }

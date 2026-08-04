@@ -1,7 +1,10 @@
 /** Anzeige der Website im Formular (ohne Schema-Präfix). */
 export function displayHostFromUrl(url: string | null | undefined): string {
   if (!url) return ''
-  const u = url.trim().replace(/^https?:\/\//i, '').replace(/^www\./i, '')
+  const u = url
+    .trim()
+    .replace(/^https?:\/\//i, '')
+    .replace(/^www\./i, '')
   return u.split('/')[0] ?? u
 }
 

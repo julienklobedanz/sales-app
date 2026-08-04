@@ -1,7 +1,10 @@
 import { revalidatePath } from 'next/cache'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
-import { revalidateOrgCachesForReference, revalidateOrgReferences } from '@/lib/cache/revalidate-org'
+import {
+  revalidateOrgCachesForReference,
+  revalidateOrgReferences,
+} from '@/lib/cache/revalidate-org'
 import { narrativeFieldLengthError } from '@/lib/references/reference-narrative-limits'
 import { ensureBrandfetchDarkLogoUrl } from '@/lib/brandfetch/logo-theme-url'
 import { normalizeNarrativeText } from '@/lib/references/narrative-normalize'
@@ -16,22 +19,17 @@ import {
   normalizeDomain,
 } from './company-search-enrich-impl'
 
-const REFERENCE_STATUSES = [
-  'draft',
-  'internal_only',
-  'approved',
-  'anonymized',
-] as const
+const REFERENCE_STATUSES = ['draft', 'internal_only', 'approved', 'anonymized'] as const
 
 /** Server Action: KI-Import aus PDF/DOCX/PPTX (für das Referenz-Formular im Client). */
 export async function extractReferenceDocumentFromUploadImpl(
-  formData: FormData
+  formData: FormData,
 ): Promise<ExtractDataFromDocumentResult> {
   return extractDataFromDocument(formData)
 }
 
 export async function createReferenceImpl(
-  formData: FormData
+  formData: FormData,
 ): Promise<CreateReferenceResult> {
   const companyId = formData.get('companyId')?.toString()
   const newCompanyName = formData.get('newCompanyName')?.toString()?.trim()
@@ -40,28 +38,34 @@ export async function createReferenceImpl(
   const industry = formData.get('industry')?.toString()?.trim() || null
   const country = formData.get('country')?.toString()?.trim() || null
   const contactIdRaw = formData.get('contactId')?.toString()?.trim() || null
-  const contactId =
-    contactIdRaw && contactIdRaw !== '__none__' ? contactIdRaw : null
+  const contactId = contactIdRaw && contactIdRaw !== '__none__' ? contactIdRaw : null
   const statusRaw = formData.get('status')?.toString()
   const tags = formData.get('tags')?.toString()?.trim() || null
   const website = formData.get('website')?.toString()?.trim() || null
   const employeeCountRaw = formData.get('employee_count')?.toString()?.trim() || null
   const employee_count = parseGermanEmployeeCountInput(employeeCountRaw)
-  const companyHeadquarters = formData.get('company_headquarters')?.toString()?.trim() || null
+  const companyHeadquarters =
+    formData.get('company_headquarters')?.toString()?.trim() || null
   const companyLogoUrlRaw = formData.get('company_logo_url')?.toString()?.trim() || null
   const company_logo_url = companyLogoUrlRaw
-    ? ensureBrandfetchDarkLogoUrl(companyLogoUrlRaw) ?? companyLogoUrlRaw
+    ? (ensureBrandfetchDarkLogoUrl(companyLogoUrlRaw) ?? companyLogoUrlRaw)
     : null
   const volume_eur = formData.get('volume_eur')?.toString()?.trim() || null
   const contract_type = normalizeContractType(formData.get('contract_type')?.toString())
-  const incumbent_provider = formData.get('incumbent_provider')?.toString()?.trim() || null
+  const incumbent_provider =
+    formData.get('incumbent_provider')?.toString()?.trim() || null
   const competitors = formData.get('competitors')?.toString()?.trim() || null
-  const customer_challenge = normalizeNarrativeText(formData.get('customer_challenge')?.toString())
+  const customer_challenge = normalizeNarrativeText(
+    formData.get('customer_challenge')?.toString(),
+  )
   const our_solution = normalizeNarrativeText(formData.get('our_solution')?.toString())
   const customer_contact = formData.get('customer_contact')?.toString()?.trim() || null
-  const customer_contact_id_raw = formData.get('customer_contact_id')?.toString()?.trim() || null
+  const customer_contact_id_raw =
+    formData.get('customer_contact_id')?.toString()?.trim() || null
   const customer_contact_id =
-    customer_contact_id_raw && customer_contact_id_raw !== '__none__' ? customer_contact_id_raw : null
+    customer_contact_id_raw && customer_contact_id_raw !== '__none__'
+      ? customer_contact_id_raw
+      : null
   const projectStatusRaw = formData.get('project_status')?.toString()
   const project_status: 'active' | 'completed' | null =
     projectStatusRaw === 'active' || projectStatusRaw === 'completed'
@@ -76,32 +80,38 @@ export async function createReferenceImpl(
     return { success: false, error: 'Titel ist erforderlich.' }
   }
 
-  const summaryLenErr = narrativeFieldLengthError(formData.get('summary')?.toString(), 'Zusammenfassung')
+  const summaryLenErr = narrativeFieldLengthError(
+    formData.get('summary')?.toString(),
+    'Zusammenfassung',
+  )
   if (summaryLenErr) return { success: false, error: summaryLenErr }
   const challengeLenErr = narrativeFieldLengthError(
     formData.get('customer_challenge')?.toString(),
-    'Herausforderung'
+    'Herausforderung',
   )
   if (challengeLenErr) return { success: false, error: challengeLenErr }
-  const solutionLenErr = narrativeFieldLengthError(formData.get('our_solution')?.toString(), 'Lösung')
+  const solutionLenErr = narrativeFieldLengthError(
+    formData.get('our_solution')?.toString(),
+    'Lösung',
+  )
   if (solutionLenErr) return { success: false, error: solutionLenErr }
 
   // NOTE: Diese Felder sind in der DB optional. UI kann sie später nachpflegen,
   // daher blockieren wir das Speichern hier nicht.
   if (project_status === 'completed' && !project_end) {
-    return { success: false, error: 'Bei abgeschlossenem Projekt ist das Projektende erforderlich.' }
+    return {
+      success: false,
+      error: 'Bei abgeschlossenem Projekt ist das Projektende erforderlich.',
+    }
   }
 
   const submitMode = formData.get('submitMode')?.toString()
   const rawStatus = REFERENCE_STATUSES.includes(
-    statusRaw as (typeof REFERENCE_STATUSES)[number]
+    statusRaw as (typeof REFERENCE_STATUSES)[number],
   )
     ? (statusRaw as (typeof REFERENCE_STATUSES)[number])
     : 'draft'
-  const status =
-    submitMode === 'draft'
-      ? 'draft'
-      : rawStatus
+  const status = submitMode === 'draft' ? 'draft' : rawStatus
 
   const supabase = await createServerSupabaseClient()
 
@@ -118,7 +128,11 @@ export async function createReferenceImpl(
 
   const organizationId = profile?.organization_id ?? null
   if (!organizationId) {
-    return { success: false, error: 'Dein Profil ist keiner Organisation zugeordnet. Bitte Einstellungen prüfen.' }
+    return {
+      success: false,
+      error:
+        'Dein Profil ist keiner Organisation zugeordnet. Bitte Einstellungen prüfen.',
+    }
   }
 
   let resolvedCompanyId: string
@@ -138,10 +152,15 @@ export async function createReferenceImpl(
   } else {
     const nameToUse = newCompanyName?.trim()
     if (!nameToUse) {
-      return { success: false, error: 'Bitte Firmennamen eingeben oder ein Unternehmen wählen.' }
+      return {
+        success: false,
+        error: 'Bitte Firmennamen eingeben oder ein Unternehmen wählen.',
+      }
     }
     const normalizedDomainForMatch = normalizeDomain(nameToUse)
-    const displayName = looksLikeDomain(nameToUse) ? domainToDisplayName(nameToUse) : nameToUse
+    const displayName = looksLikeDomain(nameToUse)
+      ? domainToDisplayName(nameToUse)
+      : nameToUse
 
     // 1) Prüfen, ob die Firma bereits existiert: nach Name (case-insensitive) ODER Domain (website_url)
     const { data: existingByName, error: existingError } = await supabase
@@ -187,8 +206,22 @@ export async function createReferenceImpl(
 
       if (insertError) {
         if ((insertError as { code?: string }).code === '23505') {
-          const { data: c1 } = await supabase.from('companies').select('id').eq('organization_id', organizationId).ilike('name', displayName).maybeSingle()
-          const conflictCompany = c1 ?? (await supabase.from('companies').select('id').eq('organization_id', organizationId).ilike('name', nameToUse).maybeSingle()).data
+          const { data: c1 } = await supabase
+            .from('companies')
+            .select('id')
+            .eq('organization_id', organizationId)
+            .ilike('name', displayName)
+            .maybeSingle()
+          const conflictCompany =
+            c1 ??
+            (
+              await supabase
+                .from('companies')
+                .select('id')
+                .eq('organization_id', organizationId)
+                .ilike('name', nameToUse)
+                .maybeSingle()
+            ).data
           if (conflictCompany?.id) {
             resolvedCompanyId = conflictCompany.id
           } else {

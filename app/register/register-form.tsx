@@ -16,7 +16,9 @@ export function RegisterForm({ inviteToken = null }: { inviteToken?: string | nu
 
   return (
     <form action={formActionWithState} className="space-y-4">
-      {inviteToken ? <input type="hidden" name="invite_token" value={inviteToken} /> : null}
+      {inviteToken ? (
+        <input type="hidden" name="invite_token" value={inviteToken} />
+      ) : null}
       <div className="space-y-2">
         <Label htmlFor="full_name">Name</Label>
         <Input

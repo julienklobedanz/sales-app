@@ -20,7 +20,7 @@ export async function createServerSupabaseClient() {
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
+              cookieStore.set(name, value, options),
             )
           } catch {
             // Wird in Server Components aufgerufen – kann ignoriert werden,
@@ -28,6 +28,6 @@ export async function createServerSupabaseClient() {
           }
         },
       },
-    }
+    },
   )
 }

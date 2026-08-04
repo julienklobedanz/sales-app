@@ -68,7 +68,7 @@ function fallbackLabel(input: ResolveAccountCardPrimaryActionInput): string {
 }
 
 export function resolveAccountCardPrimaryAction(
-  input: ResolveAccountCardPrimaryActionInput
+  input: ResolveAccountCardPrimaryActionInput,
 ): AccountCardPrimaryAction {
   const now = input.now ?? new Date()
 
@@ -87,7 +87,10 @@ export function resolveAccountCardPrimaryAction(
     isContractEndWithinWarningWindow(input.nextContract.contractEndDate, now)
   ) {
     const title = input.nextContract.title.trim() || 'Vertrag'
-    const relative = formatContractEndRelativeLabel(input.nextContract.contractEndDate, now)
+    const relative = formatContractEndRelativeLabel(
+      input.nextContract.contractEndDate,
+      now,
+    )
     return {
       kind: 'contract',
       label: `„${title}“ ${relative}`,
@@ -157,7 +160,7 @@ export function buildAccountCardSecondaryMeta(input: {
   if (ndaPart) parts.push(ndaPart)
   parts.push(
     `${input.openDealsCount} Deal${input.openDealsCount === 1 ? '' : 's'}`,
-    `${input.referenceCount} Referenz${input.referenceCount === 1 ? '' : 'en'}`
+    `${input.referenceCount} Referenz${input.referenceCount === 1 ? '' : 'en'}`,
   )
   return parts.join(' · ')
 }

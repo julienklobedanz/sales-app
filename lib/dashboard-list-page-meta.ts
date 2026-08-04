@@ -54,7 +54,7 @@ export function getDashboardListPageMeta(
   context: {
     accountsListView: AccountsListView
     referenceLibraryMode: ReferenceLibraryMode
-  }
+  },
 ): DashboardListPageMeta | null {
   if (!pathname || !shouldShowDashboardListPageHeader(pathname)) return null
 

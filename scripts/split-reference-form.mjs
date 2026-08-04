@@ -78,7 +78,7 @@ export type ReferenceFormInitialData = {
 }
 
 export type ReferenceFormCompanyOption = ReferenceFormCompany
-`
+`,
 )
 
 write(
@@ -147,7 +147,7 @@ export function dedupeCustomerContacts<T extends { id: string }>(contacts: T[]):
     return true
   })
 }
-`
+`,
 )
 
 write(
@@ -155,7 +155,7 @@ write(
   `import type { ReferenceFormStatus } from '@/lib/references/reference-form/reference-form-types'
 
 ${slice(124, 169).replace('ReferenceFormInitialData', 'ReferenceFormStatus')}
-`
+`,
 )
 
 write(
@@ -168,7 +168,7 @@ import { Label } from '@/components/ui/label'
 type BaseLabelProps = ComponentProps<typeof Label>
 
 ${slice(228, 258)}
-`
+`,
 )
 
 write(
@@ -230,7 +230,7 @@ export const editRequiredSchema = z.object({
     .min(1, 'Lösung ist ein Pflichtfeld.')
     .max(REFERENCE_NARRATIVE_MAX_CHARS, narrativeMaxMsg('Lösung')),
 })
-`
+`,
 )
 
 write(
@@ -317,7 +317,7 @@ export function buildFormDataEdit(shared: ReferenceFormSharedFieldState, editCom
   fd.set('company_name', editCompanyName.trim())
   return fd
 }
-`
+`,
 )
 
 // Extract renderFormContent body (lines 818-1765) -> component
@@ -475,35 +475,26 @@ import { generateSummaryFromStory, getCompetitorSuggestions, getIncumbentSuggest
 export function ReferenceFormContent(props: ReferenceFormViewModel) {
 ${contentVars}${contentBody}
 }
-`
+`,
 )
 
 // Hook: state + handlers without form-data/schema blocks
 const hookPart1 = slice(281, 346)
 const hookPart2 = slice(356, 508)
 const hookPart3 = slice(617, 808)
-  .replace(
-    /  function buildFormDataCreate\(\): FormData \{[\s\S]*?  \}\n\n/,
-    ''
-  )
-  .replace(
-    /  const narrativeMaxMsg[\s\S]*?  \}\)\n\n/,
-    ''
-  )
+  .replace(/  function buildFormDataCreate\(\): FormData \{[\s\S]*?  \}\n\n/, '')
+  .replace(/  const narrativeMaxMsg[\s\S]*?  \}\)\n\n/, '')
 const hookBody = [hookPart1, hookPart2, hookPart3]
   .join('\n')
   .replace(/^  const router = useRouter\(\)\n/, '')
   .replace(
     /  const \[tags, setTags\] = useState<string\[\]>\(\(\) => \{[\s\S]*?  \}\)/,
-    '  const [tags, setTags] = useState<string[]>(() => parseInitialTags(initialData?.tags))'
+    '  const [tags, setTags] = useState<string[]>(() => parseInitialTags(initialData?.tags))',
   )
-  .replace(
-    /  const normalizeTag = \(raw: string\): string => \{[\s\S]*?  \}\n/,
-    ''
-  )
+  .replace(/  const normalizeTag = \(raw: string\): string => \{[\s\S]*?  \}\n/, '')
   .replace(
     /  const contactsRaw = \[\.\.\.contacts, \.\.\.additionalContacts\]\n  const seenContactIds[\s\S]*?  \}\)\n/,
-    '  const contactsRaw = [...contacts, ...additionalContacts]\n  const displayContacts = dedupeContacts(contactsRaw)\n'
+    '  const contactsRaw = [...contacts, ...additionalContacts]\n  const displayContacts = dedupeContacts(contactsRaw)\n',
   )
   .replace(
     /  const customerContactsRaw[\s\S]*?  \}\)\n\n/,
@@ -513,15 +504,15 @@ const hookBody = [hookPart1, hookPart2, hookPart3]
   ]
   const displayCustomerContacts = dedupeCustomerContacts(customerContactsRaw)
 
-`
+`,
   )
   .replace(
     /      const result = await createReference\(buildFormDataCreate\(\)\)/,
-    '      const result = await createReference(buildFormDataCreate(getSharedFieldState(), companyId, newCompanyName))'
+    '      const result = await createReference(buildFormDataCreate(getSharedFieldState(), companyId, newCompanyName))',
   )
   .replace(
     /      await updateReference\(initialData\.id, buildFormDataEdit\(\)\)/,
-    '      await updateReference(initialData.id, buildFormDataEdit(getSharedFieldState(), editCompanyName))'
+    '      await updateReference(initialData.id, buildFormDataEdit(getSharedFieldState(), editCompanyName))',
   )
   .replace(
     /  async function handleCreateSubmit/,
@@ -554,21 +545,21 @@ const hookBody = [hookPart1, hookPart2, hookPart3]
     }
   }
 
-  async function handleCreateSubmit`
+  async function handleCreateSubmit`,
   )
   .replace(
     /    } catch \(err\) \{\n      toast\.error\(err instanceof Error \? err\.message : 'Fehler beim Anlegen'\)\n    \}/,
     `    } catch (err) {
       log.error('reference create failed', { action: 'createReference' }, err)
       toast.error(err instanceof Error ? err.message : 'Fehler beim Anlegen')
-    }`
+    }`,
   )
   .replace(
     /    } catch \(err\) \{\n      toast\.error\(err instanceof Error \? err\.message : 'Fehler beim Speichern'\)\n    \}/,
     `    } catch (err) {
       log.error('reference update failed', { action: 'updateReference', referenceId: initialData.id }, err)
       toast.error(err instanceof Error ? err.message : 'Fehler beim Speichern')
-    }`
+    }`,
   )
 
 write(
@@ -734,7 +725,7 @@ ${hookBody}
     setAdditionalCustomerContacts,
   }
 }
-`
+`,
 )
 
 write(
@@ -860,7 +851,7 @@ export function ReferenceForm({
     </div>
   )
 }
-`
+`,
 )
 
 write(
@@ -874,7 +865,7 @@ export type {
 } from '@/lib/references/reference-form/reference-form-types'
 
 export { ReferenceForm } from '@/lib/references/reference-form/reference-form'
-`
+`,
 )
 
 console.log('done')

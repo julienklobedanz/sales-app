@@ -53,7 +53,7 @@ export function SmartMatchShell({
   const initialDeal = deals.find((d) => d.id === initialDealId) ?? null
 
   const [query, setQuery] = useState(
-    initialDeal ? initialDeal.requirements_text?.trim() || initialDeal.title : ''
+    initialDeal ? initialDeal.requirements_text?.trim() || initialDeal.title : '',
   )
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState<MatchReferenceHit[] | null>(null)
@@ -81,7 +81,7 @@ export function SmartMatchShell({
       filters: FiltersState
       selectedDealId: string | null
       results: MatchReferenceHit[] | null
-    }>
+    }>,
   ) {
     if (embedded) return
     const nextResults = next.results !== undefined ? next.results : results
@@ -112,7 +112,11 @@ export function SmartMatchShell({
     return true
   })
 
-  async function runSearch(opts?: { text?: string; filters?: FiltersState; dealId?: string | null }) {
+  async function runSearch(opts?: {
+    text?: string
+    filters?: FiltersState
+    dealId?: string | null
+  }) {
     const q = (opts?.text ?? query).trim()
     const dealId = opts?.dealId !== undefined ? opts.dealId : selectedDealId
     const dealForPrefill =
@@ -174,7 +178,8 @@ export function SmartMatchShell({
     const deal = deals.find((d) => d.id === id) ?? null
     const nextFilters = mergeDealPrefills(filters, deal)
     setFilters(nextFilters)
-    if (results !== null || query.trim()) void runSearch({ dealId: id, filters: nextFilters })
+    if (results !== null || query.trim())
+      void runSearch({ dealId: id, filters: nextFilters })
   }
   function clearDeal() {
     if (embedded) return
@@ -194,21 +199,23 @@ export function SmartMatchShell({
       className={cn(
         embedded
           ? 'flex min-h-0 flex-1 flex-col gap-3'
-          : 'flex h-full min-h-0 w-full flex-1 flex-col px-5 pt-14 pb-3 md:px-8 md:pt-7'
+          : 'flex h-full min-h-0 w-full flex-1 flex-col px-5 pt-14 pb-3 md:px-8 md:pt-7',
       )}
     >
       <div
         className={cn(
-          embedded ? 'flex min-h-0 flex-1 flex-col' : 'mx-auto flex h-full min-h-0 w-full max-w-[1000px] flex-1 flex-col'
+          embedded
+            ? 'flex min-h-0 flex-1 flex-col'
+            : 'mx-auto flex h-full min-h-0 w-full max-w-[1000px] flex-1 flex-col',
         )}
       >
-      {!embedded ? (
-        <h1 className={cn(DASHBOARD_PAGE_TITLE_CLASS, 'shrink-0')}>{COPY.nav.match}</h1>
-      ) : null}
+        {!embedded ? (
+          <h1 className={cn(DASHBOARD_PAGE_TITLE_CLASS, 'shrink-0')}>{COPY.nav.match}</h1>
+        ) : null}
 
-      <div className="flex min-h-0 flex-1 flex-col">
-        {showResultsPanel ? (
-          <div className="mt-3 min-h-0 flex-1 space-y-3 overflow-y-auto pb-4 md:mt-4">
+        <div className="flex min-h-0 flex-1 flex-col">
+          {showResultsPanel ? (
+            <div className="mt-3 min-h-0 flex-1 space-y-3 overflow-y-auto pb-4 md:mt-4">
               <SmartMatchFiltersPanel
                 filters={filters}
                 activeChips={activeChips}
@@ -225,31 +232,31 @@ export function SmartMatchShell({
                 linkedIds={linkedIds}
                 onLinked={() => router.refresh()}
               />
-          </div>
-        ) : (
-          <div className="min-h-0 flex-1" aria-hidden />
-        )}
+            </div>
+          ) : (
+            <div className="min-h-0 flex-1" aria-hidden />
+          )}
 
-        <SmartMatchSearchBar
-          embedded={embedded}
-          query={query}
-          onQueryChange={setQuery}
-          loading={loading}
-          onSearch={(opts) => void runSearch(opts)}
-          dealPickerOpen={dealPickerOpen}
-          onDealPickerOpenChange={setDealPickerOpen}
-          dealQuery={dealQuery}
-          onDealQueryChange={setDealQuery}
-          filteredDeals={filteredDeals}
-          deals={deals}
-          selectedDeal={selectedDeal}
-          onSelectDeal={selectDeal}
-          onClearDeal={clearDeal}
-          initialDeal={initialDeal}
-          showMetaRow={showMetaRow}
-          showSuggestions={showSuggestions}
-        />
-      </div>
+          <SmartMatchSearchBar
+            embedded={embedded}
+            query={query}
+            onQueryChange={setQuery}
+            loading={loading}
+            onSearch={(opts) => void runSearch(opts)}
+            dealPickerOpen={dealPickerOpen}
+            onDealPickerOpenChange={setDealPickerOpen}
+            dealQuery={dealQuery}
+            onDealQueryChange={setDealQuery}
+            filteredDeals={filteredDeals}
+            deals={deals}
+            selectedDeal={selectedDeal}
+            onSelectDeal={selectDeal}
+            onClearDeal={clearDeal}
+            initialDeal={initialDeal}
+            showMetaRow={showMetaRow}
+            showSuggestions={showSuggestions}
+          />
+        </div>
       </div>
     </div>
   )

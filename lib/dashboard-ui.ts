@@ -8,16 +8,14 @@ export const DASHBOARD_SCROLL_AREA_CLASS =
   'flex min-h-0 min-w-0 w-full flex-1 flex-col gap-6 px-6 pt-14 pb-8 md:px-10 md:pt-10 lg:px-16'
 
 /** Minimaler Flex-Container ohne Shell-Padding (Wizard-Seiten, Firmen-Detail). */
-export const DASHBOARD_SCROLL_AREA_BLEED_CLASS =
-  'flex min-h-0 w-full flex-1 flex-col'
+export const DASHBOARD_SCROLL_AREA_BLEED_CLASS = 'flex min-h-0 w-full flex-1 flex-col'
 
 /** Einheitliche Seitentitel im Dashboard (Listen + Home: text-2xl wie Marktsignale). */
 export const DASHBOARD_PAGE_TITLE_CLASS =
   'text-2xl font-semibold tracking-tight text-foreground'
 
 /** Einheitlicher Untertitel / Secondary Copy direkt unter Seitentiteln. */
-export const DASHBOARD_PAGE_SUBTITLE_CLASS =
-  'mt-1 text-sm text-muted-foreground'
+export const DASHBOARD_PAGE_SUBTITLE_CLASS = 'mt-1 text-sm text-muted-foreground'
 
 /**
  * Routen mit eigenem Außenlayout (z. B. `min-h-screen p-4` oder Firmen-Detail-Padding).

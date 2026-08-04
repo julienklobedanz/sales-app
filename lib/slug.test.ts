@@ -12,4 +12,3 @@ describe('generatePortfolioSlug', () => {
     expect(slug).not.toMatch(/[ilo]/)
   })
 })
-

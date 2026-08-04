@@ -41,15 +41,24 @@ export function CrmConnectStep({ hubspotConfigured, onSkip }: CrmConnectStepProp
           className={`${CRM_BUTTON_CLASS} bg-[#FE4802] text-white hover:brightness-105`}
         >
           <CrmLogo src="/brands/hubspot.png" />
-          <span className="min-w-0 flex-1 text-center leading-tight">Verbinde HubSpot CRM</span>
+          <span className="min-w-0 flex-1 text-center leading-tight">
+            Verbinde HubSpot CRM
+          </span>
           <span className="shrink-0 rounded-md bg-white/20 px-2 py-0.5 text-xs font-medium text-white">
             Verbinden
           </span>
         </a>
       ) : (
-        <button type="button" disabled className={DISABLED_BUTTON_CLASS} style={{ backgroundColor: '#FE4802' }}>
+        <button
+          type="button"
+          disabled
+          className={DISABLED_BUTTON_CLASS}
+          style={{ backgroundColor: '#FE4802' }}
+        >
           <CrmLogo src="/brands/hubspot.png" />
-          <span className="min-w-0 flex-1 text-center text-white">Verbinde HubSpot CRM</span>
+          <span className="min-w-0 flex-1 text-center text-white">
+            Verbinde HubSpot CRM
+          </span>
           <SoonBadge />
         </button>
       )}
@@ -61,7 +70,9 @@ export function CrmConnectStep({ hubspotConfigured, onSkip }: CrmConnectStepProp
         style={{ backgroundColor: '#00A1E0' }}
       >
         <CrmLogo src="/brands/salesforce.png" />
-        <span className="min-w-0 flex-1 text-center text-white">Verbinde Salesforce CRM</span>
+        <span className="min-w-0 flex-1 text-center text-white">
+          Verbinde Salesforce CRM
+        </span>
         <SoonBadge />
       </button>
 
@@ -72,7 +83,9 @@ export function CrmConnectStep({ hubspotConfigured, onSkip }: CrmConnectStepProp
         style={{ backgroundColor: '#017737' }}
       >
         <CrmLogo src="/brands/pipedrive.png" />
-        <span className="min-w-0 flex-1 text-center text-white">Verbinde Pipedrive CRM</span>
+        <span className="min-w-0 flex-1 text-center text-white">
+          Verbinde Pipedrive CRM
+        </span>
         <SoonBadge />
       </button>
 

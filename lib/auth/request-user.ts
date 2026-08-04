@@ -26,7 +26,11 @@ export type RequestProfile = Pick<
 export const getRequestUser = cache(async () => {
   const supabase = await createServerSupabaseClient()
   const user = await safeAuthGetUser(supabase)
-  log.info('auth.getUser', { action: 'getRequestUser', source: 'fetch', hasUser: Boolean(user) })
+  log.info('auth.getUser', {
+    action: 'getRequestUser',
+    source: 'fetch',
+    hasUser: Boolean(user),
+  })
   return user
 })
 
@@ -42,7 +46,11 @@ export const getRequestProfile = cache(async (): Promise<RequestProfile | null> 
     .eq('id', user.id)
     .single()
 
-  log.info('auth.profile', { action: 'getRequestProfile', source: 'fetch', userId: user.id })
+  log.info('auth.profile', {
+    action: 'getRequestProfile',
+    source: 'fetch',
+    userId: user.id,
+  })
   return data
 })
 
@@ -55,24 +63,26 @@ export type RequestEffectiveRoles = {
 }
 
 /** Profil + effektive Rollen (inkl. Dev-Role-Preview) pro Request. */
-export const getRequestEffectiveRoles = cache(async (): Promise<RequestEffectiveRoles | null> => {
-  const profile = await getRequestProfile()
-  if (!profile) return null
+export const getRequestEffectiveRoles = cache(
+  async (): Promise<RequestEffectiveRoles | null> => {
+    const profile = await getRequestProfile()
+    if (!profile) return null
 
-  const serverRoles = parseProfileRoles(profile)
-  const cookieStore = await cookies()
-  const previewRoles = canUseDevRolePreview(serverRoles.systemRole)
-    ? parseDevRolePreviewCookie(cookieStore.get(DEV_ROLE_COOKIE)?.value)
-    : null
+    const serverRoles = parseProfileRoles(profile)
+    const cookieStore = await cookies()
+    const previewRoles = canUseDevRolePreview(serverRoles.systemRole)
+      ? parseDevRolePreviewCookie(cookieStore.get(DEV_ROLE_COOKIE)?.value)
+      : null
 
-  const systemRole = previewRoles?.systemRole ?? serverRoles.systemRole
-  const functionRole = previewRoles?.functionRole ?? serverRoles.functionRole
+    const systemRole = previewRoles?.systemRole ?? serverRoles.systemRole
+    const functionRole = previewRoles?.functionRole ?? serverRoles.functionRole
 
-  return {
-    profile,
-    systemRole,
-    functionRole,
-    capabilities: serverRoles.capabilities,
-    effectiveRole: legacyAppRoleFrom(systemRole, functionRole),
-  }
-})
+    return {
+      profile,
+      systemRole,
+      functionRole,
+      capabilities: serverRoles.capabilities,
+      effectiveRole: legacyAppRoleFrom(systemRole, functionRole),
+    }
+  },
+)

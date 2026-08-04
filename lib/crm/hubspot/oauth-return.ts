@@ -5,13 +5,15 @@ export type HubSpotOAuthReturnTo = 'accounts' | 'deals' | 'settings' | 'onboardi
 export const HUBSPOT_OAUTH_RETURN_COOKIE = 'hubspot_oauth_return_to'
 
 export function parseHubSpotOAuthReturnTo(
-  value: string | null | undefined
+  value: string | null | undefined,
 ): HubSpotOAuthReturnTo {
   if (value === 'deals' || value === 'settings' || value === 'onboarding') return value
   return 'accounts'
 }
 
-export function getHubSpotConnectHref(returnTo: HubSpotOAuthReturnTo = 'accounts'): string {
+export function getHubSpotConnectHref(
+  returnTo: HubSpotOAuthReturnTo = 'accounts',
+): string {
   return `/api/integrations/hubspot/connect?returnTo=${returnTo}`
 }
 
@@ -19,7 +21,7 @@ export function getHubSpotConnectHref(returnTo: HubSpotOAuthReturnTo = 'accounts
 export function buildHubSpotOAuthCallbackPath(
   returnTo: HubSpotOAuthReturnTo,
   status: 'success' | 'error',
-  options?: { openImport?: boolean }
+  options?: { openImport?: boolean },
 ): string {
   const params = new URLSearchParams()
   params.set('crm_connected', status)

@@ -3,7 +3,10 @@
 import type { Dispatch, RefObject, SetStateAction } from 'react'
 import type { DeletedReferenceRow, ReferenceRow } from '@/app/dashboard/actions'
 import type { Profile } from '@/app/dashboard/dashboard-types'
-import { BulkImportDialog, type BulkImportGroupItem } from '@/app/dashboard/overview/bulk-import-dialog'
+import {
+  BulkImportDialog,
+  type BulkImportGroupItem,
+} from '@/app/dashboard/overview/bulk-import-dialog'
 import { BulkDeleteReferencesDialog } from '@/app/dashboard/overview/bulk-delete-references-dialog'
 import { ComplianceBulkUploadDialog } from '@/app/dashboard/overview/compliance-bulk-upload-dialog'
 import { ComplianceUploadDialog } from '@/app/dashboard/overview/compliance-upload-dialog'

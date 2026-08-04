@@ -29,10 +29,13 @@ export type BrandfetchLogoRetryResult = {
 export function requestCompanyBrandfetchRetry(
   companyId: string,
   failedLogoUrl: string | null | undefined,
-  fetcher: (companyId: string, failedLogoUrl: string | null) => Promise<{
+  fetcher: (
+    companyId: string,
+    failedLogoUrl: string | null,
+  ) => Promise<{
     success: boolean
     company?: ResolvedCompanyForImport
-  }>
+  }>,
 ): Promise<BrandfetchLogoRetryResult | null> {
   const id = companyId.trim()
   if (!id) return Promise.resolve(null)

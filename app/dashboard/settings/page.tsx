@@ -3,12 +3,19 @@ import { Suspense } from 'react'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { ROUTES } from '@/lib/routes'
 import { redirect } from 'next/navigation'
-import { DEV_ROLE_COOKIE, canUseDevRolePreview, parseDevRolePreviewCookie } from '@/lib/dev-role-preview'
+import {
+  DEV_ROLE_COOKIE,
+  canUseDevRolePreview,
+  parseDevRolePreviewCookie,
+} from '@/lib/dev-role-preview'
 import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
 import { parseRolesPermissionsSettings } from '@/lib/roles/roles-permissions-settings'
-import { DEFAULT_DIGEST_LOCAL_TIME, DEFAULT_DIGEST_TIMEZONE } from '@/lib/market-signals/digest-schedule'
+import {
+  DEFAULT_DIGEST_LOCAL_TIME,
+  DEFAULT_DIGEST_TIMEZONE,
+} from '@/lib/market-signals/digest-schedule'
 import { getTeamMembers } from './invite-actions'
 import { SettingsTabs } from './settings-tabs'
 import { getOrganizationCrmConnectionPublicStatus } from '@/lib/crm/connections'
@@ -51,7 +58,8 @@ function parseProfileNotificationSettings(raw: unknown): {
   }
   const obj = raw as Record<string, unknown>
   const tzRaw = typeof obj.digest_timezone === 'string' ? obj.digest_timezone.trim() : ''
-  const timeRaw = typeof obj.digest_local_time === 'string' ? obj.digest_local_time.trim() : ''
+  const timeRaw =
+    typeof obj.digest_local_time === 'string' ? obj.digest_local_time.trim() : ''
   return {
     emailOnNewMatch:
       typeof obj.email_on_new_match === 'boolean' ? obj.email_on_new_match : true,
@@ -64,13 +72,19 @@ function parseProfileNotificationSettings(raw: unknown): {
         ? obj.email_daily_market_signals_digest
         : false,
     emailDigestEmptyDay:
-      typeof obj.email_digest_empty_day === 'boolean' ? obj.email_digest_empty_day : false,
+      typeof obj.email_digest_empty_day === 'boolean'
+        ? obj.email_digest_empty_day
+        : false,
     digestTimezone: tzRaw || DEFAULT_DIGEST_TIMEZONE,
     digestLocalTime: timeRaw || DEFAULT_DIGEST_LOCAL_TIME,
     emailInstantMarketSignals:
-      typeof obj.email_instant_market_signals === 'boolean' ? obj.email_instant_market_signals : false,
+      typeof obj.email_instant_market_signals === 'boolean'
+        ? obj.email_instant_market_signals
+        : false,
     browserPushMarketSignals:
-      typeof obj.browser_push_market_signals === 'boolean' ? obj.browser_push_market_signals : false,
+      typeof obj.browser_push_market_signals === 'boolean'
+        ? obj.browser_push_market_signals
+        : false,
   }
 }
 
@@ -131,7 +145,8 @@ function parseOrganizationWorkflowSettings(raw: unknown): {
       typeof escalationRaw === 'number' && Number.isFinite(escalationRaw)
         ? Math.max(1, Math.min(60, Math.trunc(escalationRaw)))
         : 10,
-    autoNotifyRequesterOnEscalation: obj.approval_notify_requester_on_escalation !== false,
+    autoNotifyRequesterOnEscalation:
+      obj.approval_notify_requester_on_escalation !== false,
     autoAllowDelegation: obj.approval_allow_delegation !== false,
     publicLinkMaxTtlDays:
       typeof maxTtlRaw === 'number' && Number.isFinite(maxTtlRaw)
@@ -142,8 +157,7 @@ function parseOrganizationWorkflowSettings(raw: unknown): {
       typeof retentionRaw === 'number' && Number.isFinite(retentionRaw)
         ? Math.max(30, Math.min(3650, Math.trunc(retentionRaw)))
         : 365,
-    referenceHighlightGlossary:
-      typeof glossaryRaw === 'string' ? glossaryRaw : '',
+    referenceHighlightGlossary: typeof glossaryRaw === 'string' ? glossaryRaw : '',
   }
 }
 
@@ -165,7 +179,10 @@ function parseOrganizationApiSettings(raw: unknown): {
       typeof obj.workspace_key_mask === 'string' && obj.workspace_key_mask.trim()
         ? obj.workspace_key_mask.trim()
         : 'sk_live_************************',
-    useWorkspaceBranding: typeof obj.use_workspace_branding === 'boolean' ? obj.use_workspace_branding : false,
+    useWorkspaceBranding:
+      typeof obj.use_workspace_branding === 'boolean'
+        ? obj.use_workspace_branding
+        : false,
     rolesPermissions: parseRolesPermissionsSettings(obj.roles_permissions),
   }
 }
@@ -203,7 +220,7 @@ export default async function SettingsPage() {
     const { data } = await supabase
       .from('organizations')
       .select(
-        'id, name, logo_url, primary_color, secondary_color, date_display_format, export_settings, stripe_subscription_id, subscription_status, subdomain, api_settings, workflow_settings'
+        'id, name, logo_url, primary_color, secondary_color, date_display_format, export_settings, stripe_subscription_id, subscription_status, subdomain, api_settings, workflow_settings',
       )
       .eq('id', organizationId)
       .single()
@@ -222,17 +239,23 @@ export default async function SettingsPage() {
   const hubspotConfigured = isHubSpotConfigured()
   const hubspotStatus =
     isAdmin && organizationId
-      ? await getOrganizationCrmConnectionPublicStatus(supabase, organizationId, 'hubspot')
+      ? await getOrganizationCrmConnectionPublicStatus(
+          supabase,
+          organizationId,
+          'hubspot',
+        )
       : { connected: false, externalAccountId: null, lastSyncAt: null }
   const auditLogs: AuditLogRow[] =
     isAdmin && organizationId
       ? (
-          (await supabase
-            .from('audit_logs')
-            .select('id, action, entity_id, action_details, timestamp, user_id')
-            .eq('org_id', organizationId)
-            .order('timestamp', { ascending: false })
-            .limit(200)).data ?? []
+          (
+            await supabase
+              .from('audit_logs')
+              .select('id, action, entity_id, action_details, timestamp, user_id')
+              .eq('org_id', organizationId)
+              .order('timestamp', { ascending: false })
+              .limit(200)
+          ).data ?? []
         ).map((row) => ({
           id: row.id,
           action: row.action,
@@ -253,83 +276,87 @@ export default async function SettingsPage() {
   const lastName = rest.join(' ') ?? ''
 
   const apiSettingsParsed = parseOrganizationApiSettings(
-    (orgRow as { api_settings?: unknown } | null)?.api_settings
+    (orgRow as { api_settings?: unknown } | null)?.api_settings,
   )
   const capabilitySettings = parseOrgCapabilitySettings(
-    (orgRow as { workflow_settings?: unknown } | null)?.workflow_settings
+    (orgRow as { workflow_settings?: unknown } | null)?.workflow_settings,
   )
 
   return (
     <div className="flex flex-col space-y-6">
       <Suspense fallback={<div className="h-96 animate-pulse rounded-xl bg-muted/40" />}>
         <SettingsTabs
-        devRolePreviewEnabled={devRolePreviewEnabled}
-        roleSwitcher={{
-          serverRoles: {
-            systemRole: serverRoles.systemRole,
-            functionRole: serverRoles.functionRole,
-          },
-          previewRoles,
-          isServerAdmin: isAdmin,
-        }}
-        profile={{
-          userEmail: user.email ?? '',
-          firstName,
-          lastName,
-          avatarUrl: (profileRow as { avatar_url?: string | null })?.avatar_url ?? null,
-          bookingUrl: (profileRow as { booking_url?: string | null })?.booking_url ?? null,
-          phone: (profileRow as { phone?: string | null })?.phone ?? null,
-          jobTitle: (profileRow as { job_title?: string | null })?.job_title ?? null,
-          profileRole: legacyAppRoleFrom(serverRoles.systemRole, serverRoles.functionRole),
-          notificationSettings: parseProfileNotificationSettings(
-            (profileRow as { notification_settings?: unknown } | null)?.notification_settings
-          ),
-        }}
-        org={{
-          id: orgRow?.id ?? null,
-          name: orgRow?.name ?? '',
-          logoUrl: orgRow?.logo_url ?? null,
-          primaryColor:
-            (orgRow as { primary_color?: string | null } | null)?.primary_color ??
-            '#2563EB',
-          secondaryColor:
-            (orgRow as { secondary_color?: string | null } | null)
-              ?.secondary_color ?? '#1D4ED8',
-          dateDisplayFormat:
-            (orgRow as { date_display_format?: string | null } | null)?.date_display_format ??
-            'de-DE',
-          uiLocale: uiLocaleFromApiSettings(
-            (orgRow as { api_settings?: unknown } | null)?.api_settings
-          ),
-          exportSettings: parsePdfExportSettings(
-            (orgRow as { export_settings?: unknown } | null)?.export_settings
-          ),
-          subscriptionStatus: orgRow?.subscription_status ?? null,
-          subscriptionId: orgRow?.stripe_subscription_id ?? null,
-          subdomain:
-            (orgRow as { subdomain?: string | null } | null)?.subdomain ?? '',
-          billingSettings: parseOrganizationBillingSettings(
-            (orgRow as { api_settings?: unknown } | null)?.api_settings
-          ),
-          apiSettings: {
-            apiKeyMask: apiSettingsParsed.apiKeyMask,
-            useWorkspaceBranding: apiSettingsParsed.useWorkspaceBranding,
-          },
-          workflowSettings: parseOrganizationWorkflowSettings(
-            (orgRow as { workflow_settings?: unknown } | null)?.workflow_settings
-          ),
-          capabilitySettings,
-        }}
-        teamMembers={teamMembers}
-        auditLogs={auditLogs}
-        hubspotIntegration={{
-          configured: hubspotConfigured,
-          connected: hubspotStatus.connected,
-          canManage: isAdmin,
-          externalAccountId: hubspotStatus.externalAccountId,
-          lastSyncAt: hubspotStatus.lastSyncAt,
-        }}
-        rolesPermissions={apiSettingsParsed.rolesPermissions}
+          devRolePreviewEnabled={devRolePreviewEnabled}
+          roleSwitcher={{
+            serverRoles: {
+              systemRole: serverRoles.systemRole,
+              functionRole: serverRoles.functionRole,
+            },
+            previewRoles,
+            isServerAdmin: isAdmin,
+          }}
+          profile={{
+            userEmail: user.email ?? '',
+            firstName,
+            lastName,
+            avatarUrl: (profileRow as { avatar_url?: string | null })?.avatar_url ?? null,
+            bookingUrl:
+              (profileRow as { booking_url?: string | null })?.booking_url ?? null,
+            phone: (profileRow as { phone?: string | null })?.phone ?? null,
+            jobTitle: (profileRow as { job_title?: string | null })?.job_title ?? null,
+            profileRole: legacyAppRoleFrom(
+              serverRoles.systemRole,
+              serverRoles.functionRole,
+            ),
+            notificationSettings: parseProfileNotificationSettings(
+              (profileRow as { notification_settings?: unknown } | null)
+                ?.notification_settings,
+            ),
+          }}
+          org={{
+            id: orgRow?.id ?? null,
+            name: orgRow?.name ?? '',
+            logoUrl: orgRow?.logo_url ?? null,
+            primaryColor:
+              (orgRow as { primary_color?: string | null } | null)?.primary_color ??
+              '#2563EB',
+            secondaryColor:
+              (orgRow as { secondary_color?: string | null } | null)?.secondary_color ??
+              '#1D4ED8',
+            dateDisplayFormat:
+              (orgRow as { date_display_format?: string | null } | null)
+                ?.date_display_format ?? 'de-DE',
+            uiLocale: uiLocaleFromApiSettings(
+              (orgRow as { api_settings?: unknown } | null)?.api_settings,
+            ),
+            exportSettings: parsePdfExportSettings(
+              (orgRow as { export_settings?: unknown } | null)?.export_settings,
+            ),
+            subscriptionStatus: orgRow?.subscription_status ?? null,
+            subscriptionId: orgRow?.stripe_subscription_id ?? null,
+            subdomain: (orgRow as { subdomain?: string | null } | null)?.subdomain ?? '',
+            billingSettings: parseOrganizationBillingSettings(
+              (orgRow as { api_settings?: unknown } | null)?.api_settings,
+            ),
+            apiSettings: {
+              apiKeyMask: apiSettingsParsed.apiKeyMask,
+              useWorkspaceBranding: apiSettingsParsed.useWorkspaceBranding,
+            },
+            workflowSettings: parseOrganizationWorkflowSettings(
+              (orgRow as { workflow_settings?: unknown } | null)?.workflow_settings,
+            ),
+            capabilitySettings,
+          }}
+          teamMembers={teamMembers}
+          auditLogs={auditLogs}
+          hubspotIntegration={{
+            configured: hubspotConfigured,
+            connected: hubspotStatus.connected,
+            canManage: isAdmin,
+            externalAccountId: hubspotStatus.externalAccountId,
+            lastSyncAt: hubspotStatus.lastSyncAt,
+          }}
+          rolesPermissions={apiSettingsParsed.rolesPermissions}
         />
       </Suspense>
     </div>

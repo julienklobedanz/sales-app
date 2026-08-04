@@ -37,7 +37,7 @@ export function MatchScoreCircle({
       className={cn(
         'flex shrink-0 items-center justify-center rounded-full border-2 bg-muted/40 text-center font-semibold leading-tight',
         SIZE_CLASS[size],
-        TIER_COLOR[strength.tier]
+        TIER_COLOR[strength.tier],
       )}
       aria-label={strength.ariaLabel}
     >

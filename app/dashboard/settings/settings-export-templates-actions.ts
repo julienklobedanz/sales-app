@@ -17,7 +17,7 @@ export type UpdateExportSettingsResult =
 
 export async function updateExportSettings(
   organizationId: string,
-  next: ExportSettings
+  next: ExportSettings,
 ): Promise<UpdateExportSettingsResult> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -55,4 +55,3 @@ export async function updateExportSettings(
   revalidatePath(ROUTES.settings)
   return { success: true }
 }
-

@@ -56,7 +56,7 @@ function companyNameFromRow(row: ReferenceApprovalRow): string {
 
 export async function completeClientApprovalWithAdmin(
   admin: SupabaseClient,
-  params: CompleteClientApprovalParams
+  params: CompleteClientApprovalParams,
 ): Promise<CompleteClientApprovalResult> {
   const token = params.token.trim()
   if (!token) {
@@ -82,7 +82,7 @@ export async function completeClientApprovalWithAdmin(
       approval_delegated_to_name,
       approval_reference_giver_name,
       companies ( name )
-    `
+    `,
     )
     .eq('approval_token', token)
     .maybeSingle()
@@ -99,7 +99,7 @@ export async function completeClientApprovalWithAdmin(
   const statusText = String(ref.status ?? '')
   const effectiveCustomer = effectiveCustomerApprovalStatus(
     ref.customer_approval_status,
-    ref.status
+    ref.status,
   )
   const isPending =
     effectiveCustomer === 'pending' ||
@@ -124,7 +124,8 @@ export async function completeClientApprovalWithAdmin(
       .select('organization_id')
       .eq('id', ref.company_id)
       .maybeSingle()
-    orgId = (company as { organization_id?: string | null } | null)?.organization_id ?? null
+    orgId =
+      (company as { organization_id?: string | null } | null)?.organization_id ?? null
   }
   if (!orgId) {
     return { success: false, error: 'org_missing' }
@@ -138,7 +139,8 @@ export async function completeClientApprovalWithAdmin(
   if (rejected && !params.comment?.trim()) {
     return { success: false, error: 'comment_required' }
   }
-  const scopePatch = approved && params.scope ? customerApprovalScopeToDbPatch(params.scope) : {}
+  const scopePatch =
+    approved && params.scope ? customerApprovalScopeToDbPatch(params.scope) : {}
 
   if (changesNeeded) {
     if (!isPending) {
@@ -215,7 +217,10 @@ export async function completeClientApprovalWithAdmin(
     updatePatch.status = snapshot || 'draft'
   }
 
-  const { error: updateError } = await admin.from('references').update(asTableUpdate<'references'>(updatePatch)).eq('id', ref.id)
+  const { error: updateError } = await admin
+    .from('references')
+    .update(asTableUpdate<'references'>(updatePatch))
+    .eq('id', ref.id)
 
   if (updateError) {
     return { success: false, error: updateError.message }

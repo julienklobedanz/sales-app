@@ -28,7 +28,7 @@ export async function createStakeholderImpl(
     last_contact_at?: string | null
     last_interaction_at?: string | null
     sentiment?: string | null
-  }
+  },
 ): Promise<{ success: boolean; stakeholder?: StakeholderRow; error?: string }> {
   const supabase = await createServerSupabaseClient()
   const { data, error } = await supabase
@@ -68,7 +68,7 @@ export async function updateStakeholderImpl(
     last_contact_at?: string | null
     last_interaction_at?: string | null
     sentiment?: string | null
-  }
+  },
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createServerSupabaseClient()
   const { data: row } = await supabase
@@ -80,21 +80,32 @@ export async function updateStakeholderImpl(
   if (payload.name !== undefined) update.name = payload.name.trim()
   if (payload.title !== undefined) update.title = payload.title?.trim() || null
   if (payload.role !== undefined) update.role = payload.role
-  if (payload.influence_level !== undefined) update.influence_level = payload.influence_level?.trim() || null
+  if (payload.influence_level !== undefined)
+    update.influence_level = payload.influence_level?.trim() || null
   if (payload.attitude !== undefined) update.attitude = payload.attitude?.trim() || null
   if (payload.notes !== undefined) update.notes = payload.notes?.trim() || null
-  if (payload.linkedin_url !== undefined) update.linkedin_url = payload.linkedin_url?.trim() || null
-  if (payload.priorities_topics !== undefined) update.priorities_topics = payload.priorities_topics?.trim() || null
-  if (payload.last_contact_at !== undefined) update.last_contact_at = payload.last_contact_at || null
-  if (payload.last_interaction_at !== undefined) update.last_interaction_at = payload.last_interaction_at || null
-  if (payload.sentiment !== undefined) update.sentiment = payload.sentiment?.trim() || null
-  const { error } = await supabase.from('stakeholders').update(asTableUpdate<'stakeholders'>(update)).eq('id', id)
+  if (payload.linkedin_url !== undefined)
+    update.linkedin_url = payload.linkedin_url?.trim() || null
+  if (payload.priorities_topics !== undefined)
+    update.priorities_topics = payload.priorities_topics?.trim() || null
+  if (payload.last_contact_at !== undefined)
+    update.last_contact_at = payload.last_contact_at || null
+  if (payload.last_interaction_at !== undefined)
+    update.last_interaction_at = payload.last_interaction_at || null
+  if (payload.sentiment !== undefined)
+    update.sentiment = payload.sentiment?.trim() || null
+  const { error } = await supabase
+    .from('stakeholders')
+    .update(asTableUpdate<'stakeholders'>(update))
+    .eq('id', id)
   if (error) return { success: false, error: error.message }
   if (row?.company_id) revalidatePath(ROUTES.accountsDetail(row.company_id))
   return { success: true }
 }
 
-export async function deleteStakeholderImpl(id: string): Promise<{ success: boolean; error?: string }> {
+export async function deleteStakeholderImpl(
+  id: string,
+): Promise<{ success: boolean; error?: string }> {
   const supabase = await createServerSupabaseClient()
   const { data: row } = await supabase
     .from('stakeholders')

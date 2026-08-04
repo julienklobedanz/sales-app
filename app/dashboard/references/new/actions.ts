@@ -35,13 +35,15 @@ export type {
 } from './reference-new-action-types'
 
 /** Sucht Unternehmensvorschläge für die Combobox (lokal in der Organisation + Brandfetch). */
-export async function searchCompanySuggestions(input: string): Promise<CompanySearchResult> {
+export async function searchCompanySuggestions(
+  input: string,
+): Promise<CompanySearchResult> {
   return searchCompanySuggestionsImpl(input)
 }
 
 /** Server Action: KI-Import aus PDF/DOCX/PPTX (für das Referenz-Formular im Client). */
 export async function extractReferenceDocumentFromUpload(
-  formData: FormData
+  formData: FormData,
 ): Promise<ExtractDataFromDocumentResult> {
   return extractReferenceDocumentFromUploadImpl(formData)
 }
@@ -51,12 +53,14 @@ export async function enrichAndSaveCompany(domain: string): Promise<EnrichCompan
 }
 
 /** Nur Brandfetch-Daten abrufen (kein Speichern in DB). Für Referenz bearbeiten. */
-export async function fetchCompanyEnrichment(input: string): Promise<FetchEnrichmentResult> {
+export async function fetchCompanyEnrichment(
+  input: string,
+): Promise<FetchEnrichmentResult> {
   return fetchCompanyEnrichmentImpl(input)
 }
 
 export async function createReference(
-  formData: FormData
+  formData: FormData,
 ): Promise<CreateReferenceResult> {
   return createReferenceImpl(formData)
 }
@@ -76,21 +80,23 @@ export async function createContact(formData: FormData) {
 }
 
 export async function createExternalContact(
-  formData: FormData
-): Promise<{ success: false; error: string } | { success: true; contact: ExternalContact }> {
+  formData: FormData,
+): Promise<
+  { success: false; error: string } | { success: true; contact: ExternalContact }
+> {
   return createExternalContactImpl(formData)
 }
 
 export async function updateContact(
   id: string,
-  formData: FormData
+  formData: FormData,
 ): Promise<{ success: boolean; error?: string }> {
   return updateContactImpl(id, formData)
 }
 
 export async function updateExternalContact(
   id: string,
-  formData: FormData
+  formData: FormData,
 ): Promise<{ success: boolean; error?: string }> {
   return updateExternalContactImpl(id, formData)
 }

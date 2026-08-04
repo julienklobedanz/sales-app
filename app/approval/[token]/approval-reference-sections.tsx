@@ -6,7 +6,8 @@ import {
   parseShowcaseBulletItems,
 } from '@/lib/references/narrative-normalize'
 
-const NARRATIVE_BODY_CLASS = 'w-full max-w-none text-sm leading-relaxed text-muted-foreground'
+const NARRATIVE_BODY_CLASS =
+  'w-full max-w-none text-sm leading-relaxed text-muted-foreground'
 
 function SectionBody({ text }: { text: string }) {
   const formatted = formatShowcaseNarrativeForDisplay(text)
@@ -44,7 +45,11 @@ export function ApprovalReferenceSections({
         <BidOverviewCollapsibleCard
           defaultOpen
           contentClassName="px-6 pb-4"
-          title={<span className="text-base font-semibold text-foreground">Kurzbeschreibung</span>}
+          title={
+            <span className="text-base font-semibold text-foreground">
+              Kurzbeschreibung
+            </span>
+          }
         >
           <SectionBody text={summaryText} />
         </BidOverviewCollapsibleCard>
@@ -54,7 +59,11 @@ export function ApprovalReferenceSections({
         <BidOverviewCollapsibleCard
           defaultOpen
           contentClassName="px-6 pb-4"
-          title={<span className="text-base font-semibold text-foreground">Herausforderung</span>}
+          title={
+            <span className="text-base font-semibold text-foreground">
+              Herausforderung
+            </span>
+          }
         >
           <SectionBody text={challengeText} />
         </BidOverviewCollapsibleCard>
@@ -64,7 +73,9 @@ export function ApprovalReferenceSections({
         <BidOverviewCollapsibleCard
           defaultOpen={false}
           contentClassName="px-6 pb-4"
-          title={<span className="text-base font-semibold text-foreground">Unsere Lösung</span>}
+          title={
+            <span className="text-base font-semibold text-foreground">Unsere Lösung</span>
+          }
         >
           <SectionBody text={solutionText} />
         </BidOverviewCollapsibleCard>

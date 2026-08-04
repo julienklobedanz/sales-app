@@ -29,11 +29,12 @@
 ## T1 (H6) — RFP-Analysepfade vereinen
 
 **Soll:** **Eine** Analyse-Engine als Quelle der Wahrheit; die Deal-Detail-RFP-Sektion liest denselben Snapshot wie Deal Desk.
+
 1. Gemeinsame Funktion `analyzeRfp(input)` in `lib/deal-desk/` extrahieren, die den **vollen** Snapshot erzeugt (Coverage + Requirements + Win-Score + Red Flags + Draft-Zeilen + SME-Tasks), aufbauend auf `buildRfpCoverageReport` + `map-rfp-to-desk`.
 2. `/api/deal-desk/analyze` nutzt `analyzeRfp` (wie bisher, Snapshot in `deal_desk_projects`).
 3. Deal-Detail-RFP-Sektion: statt eigenem `/api/rfp/analyze` den **Snapshot des verknüpften Deal-Desk-Projekts** lesen (`deal_id`-Verknüpfung existiert). Wo eine Ad-hoc-Analyse ohne Projekt nötig ist, `analyzeRfp` aufrufen und Ergebnis persistieren statt flüchtig.
 4. `/api/rfp/analyze` als **dünnen Wrapper** auf `analyzeRfp` zurückführen oder per Redirect/Deprecation auflösen — **kein** zweiter, abweichender Output mehr.
-**Akzeptanz:** Beide Einstiege liefern konsistente Coverage/Requirements aus **einer** Engine; kein divergierender Zweit-Output; bestehende UI (DealRfpSection, Deal-Desk-Client) funktioniert unverändert; Tests grün.
+   **Akzeptanz:** Beide Einstiege liefern konsistente Coverage/Requirements aus **einer** Engine; kein divergierender Zweit-Output; bestehende UI (DealRfpSection, Deal-Desk-Client) funktioniert unverändert; Tests grün.
 
 ---
 
@@ -42,6 +43,7 @@
 **Soll:** Die Mehrzeilen-Daten aus `workspace_state` in **normalisierte, org-gescopte Tabellen** überführen, damit Reporting/Insights möglich werden (z. B. Red-Flags-an-Legal, SME-Antwortzeiten, Go/No-Bid-Quote).
 
 **Migration (Skelett):**
+
 ```sql
 -- SME-Routings (Anforderung → Zuständige:r)
 CREATE TABLE public.deal_desk_sme_routes (
@@ -82,6 +84,7 @@ CREATE TABLE public.deal_desk_red_flags (
 ALTER TABLE public.deal_desk_projects
   ADD COLUMN IF NOT EXISTS bid_decision text;  -- 'go' | 'no_bid' | null
 ```
+
 - **RLS** auf alle neuen Tabellen: org-gescoped (Muster wie `deal_desk_projects`).
 - **Backfill:** bestehende `workspace_state`-Inhalte in die Tabellen migrieren (SME-Routes, Bid-Team, Red-Flags, Decision).
 - **Lese-/Schreibpfade** in `app/dashboard/deal-desk/actions.ts` + `lib/deal-desk/project-mapper.ts` auf die Tabellen umstellen.
@@ -95,9 +98,10 @@ ALTER TABLE public.deal_desk_projects
 ## T3 (F2) — Schlankes Deal-Schema als Guardrail festschreiben
 
 **Soll:** Den schlanken Match-Kontext-Charakter der `deals`-Tabelle **bewusst sichern** — kein Nachrüsten von CRM-Funktionsumfang (Forecast, Aktivitäten-Log, Kontakt-CRM).
+
 - Kurzer Guardrail-Vermerk im Code (z. B. Kommentar an der `deals`-Typ-/Schema-Definition + Verweis hierher) und in `docs/` (dieses Paket).
 - Optional: einfacher Test/Lint, der vor neuen CRM-typischen Spalten warnt (z. B. Assertion auf erlaubtes Spalten-Set), falls mit vertretbarem Aufwand machbar.
-**Akzeptanz:** Guardrail dokumentiert/sichtbar an der Schema-Definition; keine neuen CRM-Felder eingeführt.
+  **Akzeptanz:** Guardrail dokumentiert/sichtbar an der Schema-Definition; keine neuen CRM-Felder eingeführt.
 
 ---
 
@@ -123,6 +127,7 @@ npm run test
 npm run build
 # Migration lokal/Branch anwenden, Supabase-Typen regenerieren
 ```
+
 - Manuell: ein Deal-Desk-Projekt anlegen/analysieren → SME-Route + Bid-Team + Red-Flag in den neuen Tabellen; Backfill eines bestehenden Projekts verlustfrei.
 - H6: DealRfpSection (Deal-Detail) und Deal-Desk zeigen konsistente Coverage aus einer Engine.
 

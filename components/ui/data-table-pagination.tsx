@@ -1,7 +1,12 @@
 'use client'
 
 import { type Table } from '@tanstack/react-table'
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from '@hugeicons/core-free-icons'
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+} from '@hugeicons/core-free-icons'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -31,12 +36,17 @@ export function DataTablePagination<TData>({
       </div>
       <div className="flex items-center gap-3 sm:gap-5">
         <div className="flex items-center gap-2">
-          <p className="text-sm font-medium text-muted-foreground">{COPY.table.rowsPerPage}</p>
+          <p className="text-sm font-medium text-muted-foreground">
+            {COPY.table.rowsPerPage}
+          </p>
           <Select
             value={`${table.getState().pagination.pageSize}`}
             onValueChange={(value) => table.setPageSize(Number(value))}
           >
-            <SelectTrigger size="sm" className="h-8 w-[84px] rounded-lg border-border/70 bg-background">
+            <SelectTrigger
+              size="sm"
+              className="h-8 w-[84px] rounded-lg border-border/70 bg-background"
+            >
               <SelectValue placeholder={table.getState().pagination.pageSize} />
             </SelectTrigger>
             <SelectContent side="top">

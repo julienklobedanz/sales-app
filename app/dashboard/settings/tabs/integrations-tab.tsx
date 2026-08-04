@@ -59,7 +59,11 @@ const PLACEHOLDER_INTEGRATIONS: PlaceholderIntegration[] = [
   },
 ]
 
-function PlaceholderIntegrationCard({ integration }: { integration: PlaceholderIntegration }) {
+function PlaceholderIntegrationCard({
+  integration,
+}: {
+  integration: PlaceholderIntegration
+}) {
   return (
     <div className={SETTINGS_CARD_CLASS_COMPACT}>
       <CardHeader className="space-y-1.5 px-0 pt-0 pb-0">
@@ -75,13 +79,18 @@ function PlaceholderIntegrationCard({ integration }: { integration: PlaceholderI
                 unoptimized
               />
             </div>
-            <CardTitle className="truncate text-sm font-semibold">{integration.key}</CardTitle>
+            <CardTitle className="truncate text-sm font-semibold">
+              {integration.key}
+            </CardTitle>
           </div>
           <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-800">
             Bald
           </span>
         </div>
-        <CardDescription className="line-clamp-1 text-xs text-slate-500" title={integration.desc}>
+        <CardDescription
+          className="line-clamp-1 text-xs text-slate-500"
+          title={integration.desc}
+        >
           {integration.desc}
         </CardDescription>
       </CardHeader>
@@ -90,7 +99,13 @@ function PlaceholderIntegrationCard({ integration }: { integration: PlaceholderI
           <AppIcon icon={PlugSocketIcon} size={12} />
           Nicht verbunden
         </div>
-        <Button type="button" variant="outline" size="sm" className="h-8 w-full justify-center" asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-8 w-full justify-center"
+          asChild
+        >
           <a href={integration.href} target="_blank" rel="noreferrer">
             Verbindung einrichten
           </a>
@@ -122,7 +137,10 @@ export function IntegrationsTab({ hubspotIntegration }: IntegrationsTabProps) {
               compact
             />
             {crmPlaceholders.map((integration) => (
-              <PlaceholderIntegrationCard key={integration.key} integration={integration} />
+              <PlaceholderIntegrationCard
+                key={integration.key}
+                integration={integration}
+              />
             ))}
           </div>
         </section>
@@ -133,7 +151,10 @@ export function IntegrationsTab({ hubspotIntegration }: IntegrationsTabProps) {
           </h3>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {signalPlaceholders.map((integration) => (
-              <PlaceholderIntegrationCard key={integration.key} integration={integration} />
+              <PlaceholderIntegrationCard
+                key={integration.key}
+                integration={integration}
+              />
             ))}
           </div>
         </section>

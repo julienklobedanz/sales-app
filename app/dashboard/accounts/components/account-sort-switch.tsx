@@ -30,7 +30,7 @@ export function AccountSortSwitch({ value, onChange }: Props) {
         <span
           className={cn(
             'flex size-7 items-center justify-center rounded-full bg-background shadow-sm transition-transform duration-200 ease-out',
-            isActivity ? 'translate-x-[1.125rem]' : 'translate-x-0'
+            isActivity ? 'translate-x-[1.125rem]' : 'translate-x-0',
           )}
         >
           {isActivity ? (

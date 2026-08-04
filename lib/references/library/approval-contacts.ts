@@ -14,7 +14,7 @@ export type ApprovalContactOption = {
 }
 
 export async function getContactOptionsForReferenceImpl(
-  referenceId: string
+  referenceId: string,
 ): Promise<{ contacts: ApprovalContactOption[]; error?: string }> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -84,19 +84,21 @@ export async function getContactOptionsForReferenceImpl(
 export async function ensureApprovalRecipientFromInputImpl(
   supabase: SupabaseClient,
   referenceId: string,
-  rawInput: string
+  rawInput: string,
 ): Promise<
-  | { contactId: string | null; externalContactId: string | null }
-  | { error: string }
+  { contactId: string | null; externalContactId: string | null } | { error: string }
 > {
   const input = rawInput.trim()
   if (!input) {
-    return { error: 'Bitte E-Mail-Adresse eingeben oder einen Kontakt aus der Liste wählen.' }
+    return {
+      error: 'Bitte E-Mail-Adresse eingeben oder einen Kontakt aus der Liste wählen.',
+    }
   }
 
   if (!isApprovalRecipientEmail(input)) {
     return {
-      error: 'Bitte eine gültige E-Mail-Adresse eingeben oder einen Vorschlag mit E-Mail auswählen.',
+      error:
+        'Bitte eine gültige E-Mail-Adresse eingeben oder einen Vorschlag mit E-Mail auswählen.',
     }
   }
 
@@ -120,7 +122,8 @@ export async function ensureApprovalRecipientFromInputImpl(
     .eq('id', companyId)
     .maybeSingle()
 
-  const organizationId = (company as { organization_id?: string | null } | null)?.organization_id
+  const organizationId = (company as { organization_id?: string | null } | null)
+    ?.organization_id
   if (!organizationId) {
     return { error: 'Unternehmen nicht gefunden.' }
   }

@@ -30,7 +30,7 @@ export function volumeMatchesBand(amountEur: number, band: VolumeBandId): boolea
 /** True wenn keine Bänder gesetzt ODER Volumen in mindestens einem Band liegt. */
 export function volumeMatchesAnyBand(
   volumeEur: string | null | undefined,
-  bands: VolumeBandId[] | null | undefined
+  bands: VolumeBandId[] | null | undefined,
 ): boolean {
   if (!bands?.length) return true
   const n = parseStoredVolumeEur(volumeEur)
@@ -47,9 +47,10 @@ export function volumeBandFromMinVolume(minVolume: number): VolumeBandId | null 
 }
 
 /** Einzelnes Band → optionale RPC-Vorfilter (min/max). Mehrere Bänder → null (nur Client-OR). */
-export function rpcVolumeBoundsFromBands(
-  bands: VolumeBandId[]
-): { minVolume: number | null; maxVolume: number | null } {
+export function rpcVolumeBoundsFromBands(bands: VolumeBandId[]): {
+  minVolume: number | null
+  maxVolume: number | null
+} {
   if (bands.length !== 1) return { minVolume: null, maxVolume: null }
   switch (bands[0]) {
     case 'lt1':
@@ -67,7 +68,10 @@ export function rpcVolumeBoundsFromBands(
 
 export type RecencyWindow = { after: string | null; before: string | null }
 
-export function recencyWindowFromMonthsBack(monthsBack: number, now = new Date()): RecencyWindow {
+export function recencyWindowFromMonthsBack(
+  monthsBack: number,
+  now = new Date(),
+): RecencyWindow {
   if (monthsBack > 0) {
     const d = new Date(now)
     d.setMonth(d.getMonth() - monthsBack)
@@ -81,7 +85,7 @@ export function recencyWindowFromMonthsBack(monthsBack: number, now = new Date()
 export function createdAtMatchesAnyRecency(
   createdAt: string | null | undefined,
   monthsBackList: number[] | null | undefined,
-  now = new Date()
+  now = new Date(),
 ): boolean {
   if (!monthsBackList?.length) return true
   if (!createdAt) return false
@@ -95,9 +99,10 @@ export function createdAtMatchesAnyRecency(
 }
 
 /** Einzelnes Fenster → RPC-Vorfilter; mehrere → null (Client-AND). */
-export function rpcRecencyBoundsFromMonthsBackList(
-  monthsBackList: number[]
-): { createdAfter: string | null; createdBefore: string | null } {
+export function rpcRecencyBoundsFromMonthsBackList(monthsBackList: number[]): {
+  createdAfter: string | null
+  createdBefore: string | null
+} {
   if (monthsBackList.length !== 1) {
     return { createdAfter: null, createdBefore: null }
   }
@@ -108,7 +113,7 @@ export function rpcRecencyBoundsFromMonthsBackList(
 /** True wenn Ankerdatum in keinem der ausgeschlossenen Kalenderjahre liegt. */
 export function createdAtMatchesExcludeYears(
   createdAt: string | null | undefined,
-  excludeYears: number[] | null | undefined
+  excludeYears: number[] | null | undefined,
 ): boolean {
   if (!excludeYears?.length) return true
   if (!createdAt) return false
@@ -119,7 +124,7 @@ export function createdAtMatchesExcludeYears(
 
 export function industryMatchesExcludeList(
   industry: string | null | undefined,
-  excludeIndustries: string[] | null | undefined
+  excludeIndustries: string[] | null | undefined,
 ): boolean {
   if (!excludeIndustries?.length) return true
   const raw = String(industry ?? '').trim()
@@ -133,7 +138,7 @@ export function industryMatchesExcludeList(
 
 export function textMatchesExcludeTerms(
   haystack: string,
-  excludeTerms: string[] | null | undefined
+  excludeTerms: string[] | null | undefined,
 ): boolean {
   if (!excludeTerms?.length) return true
   const h = haystack.toLowerCase()

@@ -8,7 +8,10 @@ export async function previewBulkImportFile(file: File) {
   const formData = new FormData()
   formData.append('file', file)
   try {
-    const res = await fetch('/api/bulk-import/preview', { method: 'POST', body: formData })
+    const res = await fetch('/api/bulk-import/preview', {
+      method: 'POST',
+      body: formData,
+    })
     const json = (await res.json()) as {
       success?: boolean
       projectName?: string
@@ -32,7 +35,7 @@ export async function previewBulkImportFile(file: File) {
 export function addBulkImportFiles(
   newFiles: File[],
   setBulkImportGroups: Dispatch<SetStateAction<BulkImportGroupItem[]>>,
-  setBulkImportPreviewPendingFiles: Dispatch<SetStateAction<Set<File>>>
+  setBulkImportPreviewPendingFiles: Dispatch<SetStateAction<Set<File>>>,
 ) {
   setBulkImportGroups((prev) => {
     const currentTotal = prev.reduce((s, g) => s + g.files.length, 0)
@@ -49,7 +52,7 @@ export function addBulkImportFiles(
       .reduce((s, g) => s + g.files.length, 0)
     if (autoGroupedCount > 0) {
       toast.info(
-        `${autoGroupedCount} Dateien wurden automatisch gruppiert, da sie zum gleichen Kunden gehören.`
+        `${autoGroupedCount} Dateien wurden automatisch gruppiert, da sie zum gleichen Kunden gehören.`,
       )
     }
 
@@ -69,7 +72,7 @@ export function addBulkImportFiles(
               projectName: meta.projectName || g.projectName,
               companyName: meta.companyName ?? g.companyName,
             }
-          })
+          }),
         )
       })
     }
@@ -81,14 +84,14 @@ export function addBulkImportFiles(
 export function removeBulkImportFile(
   groupId: string,
   fileIndex: number,
-  setBulkImportGroups: Dispatch<SetStateAction<BulkImportGroupItem[]>>
+  setBulkImportGroups: Dispatch<SetStateAction<BulkImportGroupItem[]>>,
 ) {
   setBulkImportGroups((prev) =>
     prev
       .map((g) =>
-        g.id === groupId ? { ...g, files: g.files.filter((_, i) => i !== fileIndex) } : g
+        g.id === groupId ? { ...g, files: g.files.filter((_, i) => i !== fileIndex) } : g,
       )
-      .filter((g) => g.files.length > 0)
+      .filter((g) => g.files.length > 0),
   )
 }
 
@@ -96,7 +99,7 @@ export function moveBulkImportFile(
   fromGroupId: string,
   fileIndex: number,
   toGroupId: string,
-  setBulkImportGroups: Dispatch<SetStateAction<BulkImportGroupItem[]>>
+  setBulkImportGroups: Dispatch<SetStateAction<BulkImportGroupItem[]>>,
 ) {
   if (fromGroupId === toGroupId) return
   setBulkImportGroups((prev) => {
@@ -122,28 +125,28 @@ export function moveBulkImportFile(
 export function setBulkImportGroupName(
   groupId: string,
   projectName: string,
-  setBulkImportGroups: Dispatch<SetStateAction<BulkImportGroupItem[]>>
+  setBulkImportGroups: Dispatch<SetStateAction<BulkImportGroupItem[]>>,
 ) {
   setBulkImportGroups((prev) =>
-    prev.map((g) => (g.id === groupId ? { ...g, projectName } : g))
+    prev.map((g) => (g.id === groupId ? { ...g, projectName } : g)),
   )
 }
 
 export function setBulkImportCompanyName(
   groupId: string,
   companyName: string,
-  setBulkImportGroups: Dispatch<SetStateAction<BulkImportGroupItem[]>>
+  setBulkImportGroups: Dispatch<SetStateAction<BulkImportGroupItem[]>>,
 ) {
   setBulkImportGroups((prev) =>
     prev.map((g) =>
-      g.id === groupId ? { ...g, companyName: companyName.trim() || undefined } : g
-    )
+      g.id === groupId ? { ...g, companyName: companyName.trim() || undefined } : g,
+    ),
   )
 }
 
 export function mergeBulkImportGroups(
   selectedIds: string[],
-  setBulkImportGroups: Dispatch<SetStateAction<BulkImportGroupItem[]>>
+  setBulkImportGroups: Dispatch<SetStateAction<BulkImportGroupItem[]>>,
 ) {
   if (selectedIds.length < 2) return
   setBulkImportGroups((prev) => {

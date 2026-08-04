@@ -14,10 +14,7 @@ import {
 } from '@/components/ui/select'
 import { ExternalLink, LayoutGrid, Save } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
-import type {
-  ExportSettings,
-  PdfLayoutKey,
-} from './settings-export-templates-actions'
+import type { ExportSettings, PdfLayoutKey } from './settings-export-templates-actions'
 import { updateExportSettings } from './settings-export-templates-actions'
 
 const LAYOUT_OPTIONS: Array<{ key: PdfLayoutKey; label: string }> = [
@@ -33,17 +30,15 @@ export function SettingsExportTemplatesCard({
   organizationId: string | null
   initial: ExportSettings
 }) {
-  const [layout, setLayout] = useState<PdfLayoutKey>(
-    initial.pdf_layout ?? 'one_pager'
-  )
+  const [layout, setLayout] = useState<PdfLayoutKey>(initial.pdf_layout ?? 'one_pager')
   const [logoEnabled, setLogoEnabled] = useState<boolean>(
-    initial.pdf_logo_enabled ?? true
+    initial.pdf_logo_enabled ?? true,
   )
   const [pending, setPending] = useState(false)
 
   const layoutLabel = useMemo(
     () => LAYOUT_OPTIONS.find((x) => x.key === layout)?.label ?? 'One-Pager',
-    [layout]
+    [layout],
   )
 
   async function handleSave() {
@@ -105,9 +100,7 @@ export function SettingsExportTemplatesCard({
         <div className="space-y-2 sm:col-span-1">
           <Label>Logo</Label>
           <div className="flex h-10 items-center justify-between rounded-md border bg-background px-3">
-            <span className="text-sm text-foreground">
-              {logoEnabled ? 'An' : 'Aus'}
-            </span>
+            <span className="text-sm text-foreground">{logoEnabled ? 'An' : 'Aus'}</span>
             <Switch
               checked={logoEnabled}
               onCheckedChange={setLogoEnabled}
@@ -148,4 +141,3 @@ export function SettingsExportTemplatesCard({
     </div>
   )
 }
-

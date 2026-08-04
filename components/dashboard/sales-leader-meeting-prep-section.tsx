@@ -25,7 +25,11 @@ import {
 function formatSessionDate(iso: string) {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return ''
-  return d.toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' })
+  return d.toLocaleDateString('de-DE', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
 }
 
 export function SalesLeaderMeetingPrepSection({
@@ -34,7 +38,7 @@ export function SalesLeaderMeetingPrepSection({
 }: {
   sessions: MeetingPrepSessionListItem[]
   thin?: boolean
-  }) {
+}) {
   const c = COPY.dashboard.home.salesLeader.meetingPrep
   const [query, setQuery] = useState('')
   const [pending, setPending] = useState(false)
@@ -121,7 +125,9 @@ export function SalesLeaderMeetingPrepSection({
                         <p className="truncate text-sm font-medium">{s.title}</p>
                         <p className="text-xs text-muted-foreground">
                           {formatSessionDate(s.createdAt)}
-                          {s.companyNameQuery !== s.title ? ` · „${s.companyNameQuery}"` : ''}
+                          {s.companyNameQuery !== s.title
+                            ? ` · „${s.companyNameQuery}"`
+                            : ''}
                         </p>
                       </div>
                     </button>

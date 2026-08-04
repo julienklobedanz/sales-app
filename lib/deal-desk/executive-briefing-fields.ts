@@ -60,7 +60,7 @@ export const EMPTY_EXECUTIVE_BRIEFING: DealDeskExecutiveBriefingFields = {
 }
 
 export function normalizeExecutiveBriefingFields(
-  raw: unknown
+  raw: unknown,
 ): DealDeskExecutiveBriefingFields {
   if (!raw || typeof raw !== 'object') return { ...EMPTY_EXECUTIVE_BRIEFING }
 
@@ -129,7 +129,7 @@ export function normalizeExecutiveBriefingFields(
 export function mergeExecutiveBriefingFields(
   partial: unknown,
   fallback: DealDeskExecutiveBriefingFields | undefined,
-  fillEnrichmentFromFallback = false
+  fillEnrichmentFromFallback = false,
 ): DealDeskExecutiveBriefingFields | undefined {
   const normalized = partial ? normalizeExecutiveBriefingFields(partial) : undefined
   if (!normalized) return fallback

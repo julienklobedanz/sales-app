@@ -20,15 +20,20 @@ function addDaysIso(isoDate: string, days: number): string {
 }
 
 function formatIcsStamp(date: Date): string {
-  return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z')
+  return date
+    .toISOString()
+    .replace(/[-:]/g, '')
+    .replace(/\.\d{3}Z$/, 'Z')
 }
 
 function sanitizeFileName(value: string): string {
-  return value
-    .trim()
-    .replace(/[^\wäöüÄÖÜß.-]+/gi, '-')
-    .replace(/-+/g, '-')
-    .slice(0, 80) || 'bid-fristen'
+  return (
+    value
+      .trim()
+      .replace(/[^\wäöüÄÖÜß.-]+/gi, '-')
+      .replace(/-+/g, '-')
+      .slice(0, 80) || 'bid-fristen'
+  )
 }
 
 export function buildBidTimelineIcsContent(params: {
@@ -55,9 +60,7 @@ export function buildBidTimelineIcsContent(params: {
         : ''
       const description = it.evidence
         ? escapeIcsText(`${timeNote}Beleg: ${it.evidence}`)
-        : escapeIcsText(
-            `${timeNote}RFP-Frist aus Deal Desk — ${it.title}`.trim()
-          )
+        : escapeIcsText(`${timeNote}RFP-Frist aus Deal Desk — ${it.title}`.trim())
 
       return [
         'BEGIN:VEVENT',

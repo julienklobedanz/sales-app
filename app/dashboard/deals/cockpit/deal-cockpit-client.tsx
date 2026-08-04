@@ -50,7 +50,9 @@ export function DealCockpitClient({
 }) {
   const showRfpBlock = isRfpDeal(deal)
   const [matchDrawerOpen, setMatchDrawerOpen] = useState(false)
-  const [referenceSuggestions, setReferenceSuggestions] = useState(initialReferenceSuggestions)
+  const [referenceSuggestions, setReferenceSuggestions] = useState(
+    initialReferenceSuggestions,
+  )
 
   useEffect(() => {
     setReferenceSuggestions(initialReferenceSuggestions)
@@ -63,71 +65,80 @@ export function DealCockpitClient({
 
   return (
     <DealReferenceSuggestionsRefreshProvider refresh={refreshReferenceSuggestions}>
-    <div>
-      <DealCockpitHeader
-        deal={deal}
-        companies={companies}
-        orgProfiles={orgProfiles}
-        canManageDocuments={canManageDocuments}
-        briefingButton={showRfpBlock ? briefingButton : undefined}
-      />
-
-      {showRfpBlock ? (
-        <DealDeadlineMilestoneChips
-          deadlines={deadlines}
-          orgDateDisplayFormat={orgDateDisplayFormat}
-          className="mb-4"
+      <div>
+        <DealCockpitHeader
+          deal={deal}
+          companies={companies}
+          orgProfiles={orgProfiles}
+          canManageDocuments={canManageDocuments}
+          briefingButton={showRfpBlock ? briefingButton : undefined}
         />
-      ) : null}
 
-      {/* Deadlines (~60%) | Deal-Fakten (~40%) */}
-      <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-5">
-        <div className="min-w-0 lg:col-span-3">
-          <DealDeadlinesCard
-            dealId={deal.id}
-            dealTitle={deal.title}
+        {showRfpBlock ? (
+          <DealDeadlineMilestoneChips
             deadlines={deadlines}
             orgDateDisplayFormat={orgDateDisplayFormat}
-            showMilestoneChipsAbove={showRfpBlock}
+            className="mb-4"
           />
-        </div>
-        <div className="min-w-0 lg:col-span-2">
-          <DealFactsCard
-            deal={deal}
-            hubspotPortalId={hubspotPortalId}
-            orgDateDisplayFormat={orgDateDisplayFormat}
-          />
-        </div>
-      </div>
+        ) : null}
 
-      <DealProofSection
-        deal={deal}
-        onFindReference={() => setMatchDrawerOpen(true)}
-        referenceSuggestions={referenceSuggestions}
-        onReferenceSuggestionsChange={setReferenceSuggestions}
-      />
-
-      {showRfpBlock && rfpBlock ? (
-        <section id="ausschreibung" className="mb-6 space-y-4 border-t border-border/70 pt-8">
-          <h2 className="text-base font-semibold">{COPY.deals.cockpit.rfpBlockTitle}</h2>
-          {rfpBlock}
-        </section>
-      ) : (
-        <>
-          <DealDocumentsSection
-            dealId={deal.id}
-            documents={documents}
-            canManage={canManageDocuments}
-            isRfpMode={false}
-          />
-          <div className="mb-6 border-t border-border/70 pt-8">
-            <DealCockpitPromoteCard dealId={deal.id} />
+        {/* Deadlines (~60%) | Deal-Fakten (~40%) */}
+        <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-5">
+          <div className="min-w-0 lg:col-span-3">
+            <DealDeadlinesCard
+              dealId={deal.id}
+              dealTitle={deal.title}
+              deadlines={deadlines}
+              orgDateDisplayFormat={orgDateDisplayFormat}
+              showMilestoneChipsAbove={showRfpBlock}
+            />
           </div>
-        </>
-      )}
+          <div className="min-w-0 lg:col-span-2">
+            <DealFactsCard
+              deal={deal}
+              hubspotPortalId={hubspotPortalId}
+              orgDateDisplayFormat={orgDateDisplayFormat}
+            />
+          </div>
+        </div>
 
-      <DealSmartMatchDrawer deal={deal} open={matchDrawerOpen} onOpenChange={setMatchDrawerOpen} />
-    </div>
+        <DealProofSection
+          deal={deal}
+          onFindReference={() => setMatchDrawerOpen(true)}
+          referenceSuggestions={referenceSuggestions}
+          onReferenceSuggestionsChange={setReferenceSuggestions}
+        />
+
+        {showRfpBlock && rfpBlock ? (
+          <section
+            id="ausschreibung"
+            className="mb-6 space-y-4 border-t border-border/70 pt-8"
+          >
+            <h2 className="text-base font-semibold">
+              {COPY.deals.cockpit.rfpBlockTitle}
+            </h2>
+            {rfpBlock}
+          </section>
+        ) : (
+          <>
+            <DealDocumentsSection
+              dealId={deal.id}
+              documents={documents}
+              canManage={canManageDocuments}
+              isRfpMode={false}
+            />
+            <div className="mb-6 border-t border-border/70 pt-8">
+              <DealCockpitPromoteCard dealId={deal.id} />
+            </div>
+          </>
+        )}
+
+        <DealSmartMatchDrawer
+          deal={deal}
+          open={matchDrawerOpen}
+          onOpenChange={setMatchDrawerOpen}
+        />
+      </div>
     </DealReferenceSuggestionsRefreshProvider>
   )
 }

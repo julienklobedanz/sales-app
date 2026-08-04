@@ -3,7 +3,11 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { logEvent } from '@/lib/events/log-event'
 import { writeAuditLog } from '@/lib/audit/log-audit'
 import { buildReferenceOnepagerPptxBuffer } from '@/lib/reference-onepager-pptx'
-import { formatReferenceDate, formatReferenceVolume, normalizeOrgDateDisplayFormat } from '@/lib/format'
+import {
+  formatReferenceDate,
+  formatReferenceVolume,
+  normalizeOrgDateDisplayFormat,
+} from '@/lib/format'
 import { formatContractTypeDisplay } from '@/lib/references/contract-type'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { profileIsSalesRestricted } from '@/lib/roles/profile-guards'
@@ -64,7 +68,7 @@ export async function GET(req: NextRequest) {
       customer_challenge,
       our_solution,
       companies ( name, logo_url )
-    `
+    `,
     )
     .eq('id', id)
     .single()
@@ -74,12 +78,21 @@ export async function GET(req: NextRequest) {
   }
 
   const normalizedStatus = String(row.status ?? '').toLowerCase()
-  const salesExportStatuses = ['approved', 'internal_only', 'anonymized', 'external', 'internal']
+  const salesExportStatuses = [
+    'approved',
+    'internal_only',
+    'anonymized',
+    'external',
+    'internal',
+  ]
   if (
     profileIsSalesRestricted(systemRole, functionRole) &&
     !salesExportStatuses.includes(normalizedStatus)
   ) {
-    return NextResponse.json({ error: 'Keine Berechtigung für diese Referenz.' }, { status: 403 })
+    return NextResponse.json(
+      { error: 'Keine Berechtigung für diese Referenz.' },
+      { status: 403 },
+    )
   }
 
   const { data: org } = await supabase
@@ -94,7 +107,7 @@ export async function GET(req: NextRequest) {
 
   const exportSettings = parsePdfExportSettings(org?.export_settings)
   const logoEnabled = exportSettings.pdf_logo_enabled !== false
-  const logoUrl = logoEnabled ? org?.logo_url ?? companyLogo : null
+  const logoUrl = logoEnabled ? (org?.logo_url ?? companyLogo) : null
 
   const dateFmt = normalizeOrgDateDisplayFormat(org?.date_display_format)
   const exportedAtLabel = new Date().toLocaleDateString('de-DE', { dateStyle: 'long' })
@@ -114,13 +127,17 @@ export async function GET(req: NextRequest) {
         ourSolution: row.our_solution ?? null,
         volumeEur: formatReferenceVolume(row.volume_eur) || null,
         contractType: formatContractTypeDisplay(row.contract_type) || null,
-        projectStart: row.project_start ? formatReferenceDate(row.project_start, dateFmt) : null,
-        projectEnd: row.project_end ? formatReferenceDate(row.project_end, dateFmt) : null,
+        projectStart: row.project_start
+          ? formatReferenceDate(row.project_start, dateFmt)
+          : null,
+        projectEnd: row.project_end
+          ? formatReferenceDate(row.project_end, dateFmt)
+          : null,
         logoUrl,
         orgName: String(org?.name ?? 'RefStack'),
         exportedAtLabel,
       }),
-    { organizationId: profile.organization_id as string, referenceId: id }
+    { organizationId: profile.organization_id as string, referenceId: id },
   )
 
   const customerName = sanitizeFileName(companyName || 'Account')
@@ -144,10 +161,13 @@ export async function GET(req: NextRequest) {
 
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
-      'Content-Type': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'Content-Type':
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
       'Content-Disposition': `attachment; filename="${fileName}"`,
       'Cache-Control': 'no-store',
-      'Server-Timing': buildServerTimingHeader([{ name: 'export.pptx_onepager', ms: generateMs }]),
+      'Server-Timing': buildServerTimingHeader([
+        { name: 'export.pptx_onepager', ms: generateMs },
+      ]),
     },
   })
 }

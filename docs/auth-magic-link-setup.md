@@ -6,21 +6,21 @@ Magic Links nutzen `signInWithOtp` (Invite) bzw. **Resend + `generateLink`** (be
 
 ### Authentication → Providers → **Email**
 
-| Einstellung | Empfehlung |
-|-------------|------------|
-| **Enable Email provider** | ✅ An |
-| **Confirm email** | Nach Bedarf (bei Passwort-Registrierung oft an; Magic Link funktioniert in beiden Fällen) |
-| **Secure email change** | Optional |
+| Einstellung               | Empfehlung                                                                                |
+| ------------------------- | ----------------------------------------------------------------------------------------- |
+| **Enable Email provider** | ✅ An                                                                                     |
+| **Confirm email**         | Nach Bedarf (bei Passwort-Registrierung oft an; Magic Link funktioniert in beiden Fällen) |
+| **Secure email change**   | Optional                                                                                  |
 
 Es gibt **keinen separaten Menüpunkt „Magic Link“** – der Flow läuft über den E-Mail-Provider.
 
 ### Authentication → **URL Configuration**
 
-| Feld | Wert (Staging) |
-|------|----------------|
-| **Site URL** | `https://sales-app-fawn.vercel.app` |
+| Feld              | Wert (Staging)                                    |
+| ----------------- | ------------------------------------------------- |
+| **Site URL**      | `https://sales-app-fawn.vercel.app`               |
 | **Redirect URLs** | `https://sales-app-fawn.vercel.app/auth/callback` |
-| | `http://localhost:3000/auth/callback` (lokal) |
+|                   | `http://localhost:3000/auth/callback` (lokal)     |
 
 Ohne diese URLs lehnt Supabase den Redirect nach Klick auf den Link ab.
 
@@ -84,13 +84,13 @@ Klick auf den Link → `/auth/callback?code=…` → Session → Dashboard (oder
 
 ### Typische Fehler
 
-| Symptom | Ursache |
-|---------|---------|
-| Keine E-Mail | `RESEND_API_KEY` oder `SUPABASE_SERVICE_ROLE_KEY` fehlt |
-| Resend „only testing emails…“ | Nur verifizierte Empfänger – `RESEND_DEV_OVERRIDE_TO` oder Domain verifizieren |
-| „Für diese E-Mail gibt es noch kein Konto“ | Nutzer muss sich registrieren (ohne Invite) |
-| Link öffnet, aber kein Login | Redirect URL fehlt in Supabase |
-| Falscher Host nach Klick | `NEXT_PUBLIC_APP_URL` stimmt nicht mit Deployment überein |
+| Symptom                                    | Ursache                                                                        |
+| ------------------------------------------ | ------------------------------------------------------------------------------ |
+| Keine E-Mail                               | `RESEND_API_KEY` oder `SUPABASE_SERVICE_ROLE_KEY` fehlt                        |
+| Resend „only testing emails…“              | Nur verifizierte Empfänger – `RESEND_DEV_OVERRIDE_TO` oder Domain verifizieren |
+| „Für diese E-Mail gibt es noch kein Konto“ | Nutzer muss sich registrieren (ohne Invite)                                    |
+| Link öffnet, aber kein Login               | Redirect URL fehlt in Supabase                                                 |
+| Falscher Host nach Klick                   | `NEXT_PUBLIC_APP_URL` stimmt nicht mit Deployment überein                      |
 
 ---
 

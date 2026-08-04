@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest'
 import { buildSalesRepQueue } from '@/lib/dashboard-home/build-sales-rep-queue'
 import type { SalesRepDashboardModel } from '@/lib/dashboard-home/dashboard-home-types'
 
-function baseModel(overrides: Partial<SalesRepDashboardModel> = {}): SalesRepDashboardModel {
+function baseModel(
+  overrides: Partial<SalesRepDashboardModel> = {},
+): SalesRepDashboardModel {
   return {
     greetingName: 'Lisa',
     activeDeals: [],
@@ -44,7 +46,7 @@ describe('buildSalesRepQueue', () => {
             href: '/dashboard/accounts/c2',
           },
         ],
-      })
+      }),
     )
 
     expect(queue[0]?.tone).toBe('gap')
@@ -74,7 +76,7 @@ describe('buildSalesRepQueue', () => {
             href: '/dashboard/accounts/c1',
           },
         ],
-      })
+      }),
     )
 
     expect(queue.filter((q) => q.tone === 'intent')).toHaveLength(1)

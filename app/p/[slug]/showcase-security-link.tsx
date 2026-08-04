@@ -24,11 +24,13 @@ export function ShowcaseSecurityLink({ workspaceName }: { workspaceName: string 
         <PopoverHeader>
           <PopoverTitle>Sicherheit & Datenschutz</PopoverTitle>
           <PopoverDescription className="text-xs leading-relaxed">
-            Diese Seite zeigt ausschließlich für die Freigabe bestimmte Informationen. Es werden keine
-            Tracking-Cookies für Werbezwecke gesetzt. Ansprechpartner und Inhalte stammen von{' '}
-            <span className="font-medium text-foreground">{workspaceName}</span>. Für vertragliche oder
-            datenschutzrechtliche Informationen wenden Sie sich bitte direkt an den genannten Anbieter oder
-            nutzen Sie dessen Website bzw. Impressum.
+            Diese Seite zeigt ausschließlich für die Freigabe bestimmte Informationen. Es
+            werden keine Tracking-Cookies für Werbezwecke gesetzt. Ansprechpartner und
+            Inhalte stammen von{' '}
+            <span className="font-medium text-foreground">{workspaceName}</span>. Für
+            vertragliche oder datenschutzrechtliche Informationen wenden Sie sich bitte
+            direkt an den genannten Anbieter oder nutzen Sie dessen Website bzw.
+            Impressum.
           </PopoverDescription>
         </PopoverHeader>
       </PopoverContent>

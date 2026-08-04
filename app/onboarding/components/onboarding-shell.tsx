@@ -44,7 +44,7 @@ export function OnboardingShell({
           transition === 'exit-left' && '-translate-x-full opacity-0',
           transition === 'exit-up' && '-translate-y-full opacity-0',
           transition === 'enter-right' && 'translate-x-full opacity-0',
-          transition === 'idle' && 'translate-x-0 translate-y-0 opacity-100'
+          transition === 'idle' && 'translate-x-0 translate-y-0 opacity-100',
         )}
       >
         <div className="flex flex-col items-center justify-center bg-white/75 px-8 py-10 backdrop-blur-xl lg:px-16">

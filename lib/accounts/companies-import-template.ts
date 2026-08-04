@@ -30,7 +30,7 @@ function buildImportTemplateWorkbook(entityKind: CompanyEntityKind): XLSX.WorkBo
   XLSX.utils.book_append_sheet(
     workbook,
     sheet,
-    entityKind === 'partner' ? 'Partner' : 'Accounts'
+    entityKind === 'partner' ? 'Partner' : 'Accounts',
   )
   return workbook
 }

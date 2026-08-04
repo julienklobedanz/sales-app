@@ -21,7 +21,7 @@ export type TimingPhase = {
 export async function withTiming<T>(
   label: string,
   fn: () => Promise<T>,
-  context?: TimingContext
+  context?: TimingContext,
 ): Promise<TimingResult<T>> {
   const start = performance.now()
   const result = await fn()

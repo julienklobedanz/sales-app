@@ -3,7 +3,11 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { toast } from 'sonner'
-import { attachOriginalDocumentToReference, createReference, fetchCompanyEnrichment } from '@/app/dashboard/references/new/actions'
+import {
+  attachOriginalDocumentToReference,
+  createReference,
+  fetchCompanyEnrichment,
+} from '@/app/dashboard/references/new/actions'
 import type { ExtractDataFromDocumentResult } from '@/lib/references/extract-types'
 import { updateReference } from '@/app/dashboard/actions'
 import { resolveIndustryId } from '@/lib/constants/industries'
@@ -11,10 +15,7 @@ import { syncCompanyBrandfetchForEdit } from '@/lib/references/library/sync-comp
 import { log } from '@/lib/observability/logger'
 import { ROUTES } from '@/lib/routes'
 import { createClient } from '@/lib/supabase/client'
-import {
-  formatEmployeeCountDeDisplay,
-  parseReferenceVolume,
-} from '@/lib/format'
+import { formatEmployeeCountDeDisplay, parseReferenceVolume } from '@/lib/format'
 import {
   buildFormDataCreate,
   buildFormDataEdit,
@@ -29,7 +30,11 @@ import {
   parseInitialTags,
   normalizeTag,
 } from '@/lib/references/reference-form/reference-form-pure'
-import { editRequiredSchema, formatZodError, requiredSchema } from '@/lib/references/reference-form/reference-form-schema'
+import {
+  editRequiredSchema,
+  formatZodError,
+  requiredSchema,
+} from '@/lib/references/reference-form/reference-form-schema'
 import type {
   ContactPerson,
   CreatedContact,
@@ -66,7 +71,9 @@ export function useReferenceForm({
   const [companyId, setCompanyId] = useState(initialData?.company_id ?? '')
   const [title, setTitle] = useState(initialData?.title ?? '')
   const [summary, setSummary] = useState(initialData?.summary ?? '')
-  const [industry, setIndustry] = useState(() => resolveIndustryId(initialData?.industry ?? ''))
+  const [industry, setIndustry] = useState(() =>
+    resolveIndustryId(initialData?.industry ?? ''),
+  )
   const [country, setCountry] = useState(initialData?.country ?? '')
   const [headquarters, setHeadquarters] = useState('')
   const [brandfetchLogoUrl, setBrandfetchLogoUrl] = useState('')
@@ -74,47 +81,51 @@ export function useReferenceForm({
   const [employeeCount, setEmployeeCount] = useState(
     initialData?.employee_count != null
       ? formatEmployeeCountDeDisplay(initialData.employee_count)
-      : ''
+      : '',
   )
   const initialVolumeParsed = parseReferenceVolume(initialData?.volume_eur ?? null)
-  const [volumeEur, setVolumeEur] = useState(() => formatThousandsDots(initialVolumeParsed?.amountDigits ?? ''))
-  const [volumeCurrency, setVolumeCurrency] = useState(initialVolumeParsed?.currencyCode ?? 'EUR')
+  const [volumeEur, setVolumeEur] = useState(() =>
+    formatThousandsDots(initialVolumeParsed?.amountDigits ?? ''),
+  )
+  const [volumeCurrency, setVolumeCurrency] = useState(
+    initialVolumeParsed?.currencyCode ?? 'EUR',
+  )
   const [contractType, setContractType] = useState(
-    () => formatContractTypeDisplay(initialData?.contract_type) || ''
+    () => formatContractTypeDisplay(initialData?.contract_type) || '',
   )
   const [incumbentProvider, setIncumbentProvider] = useState(
-    initialData?.incumbent_provider ?? ''
+    initialData?.incumbent_provider ?? '',
   )
-  const [competitors, setCompetitors] = useState(
-    initialData?.competitors ?? ''
-  )
+  const [competitors, setCompetitors] = useState(initialData?.competitors ?? '')
   const [customerChallenge, setCustomerChallenge] = useState(
-    initialData?.customer_challenge ?? ''
+    initialData?.customer_challenge ?? '',
   )
-  const [ourSolution, setOurSolution] = useState(
-    initialData?.our_solution ?? ''
-  )
+  const [ourSolution, setOurSolution] = useState(initialData?.our_solution ?? '')
   const [status, setStatus] = useState<ReferenceFormInitialData['status']>(
-    initialData?.status ?? 'draft'
+    initialData?.status ?? 'draft',
   )
   const [ndaDeal, setNdaDeal] = useState(initialData?.is_nda_deal ?? false)
   const statusBeforeNdaRef = useRef<ReferenceFormInitialData['status']>(
-    initialData?.status ?? 'draft'
+    initialData?.status ?? 'draft',
   )
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const _statusBeforeAnonymizedRef = useRef<ReferenceFormInitialData['status']>(
-    initialData?.status ?? 'draft'
+    initialData?.status ?? 'draft',
   )
   const [contactId, setContactId] = useState(
-    initialData?.contact_id ? initialData.contact_id : '__none__'
+    initialData?.contact_id ? initialData.contact_id : '__none__',
   )
   const [additionalContacts, setAdditionalContacts] = useState<ContactPerson[]>([])
   const [customer_contact_id, setCustomerContactId] = useState(
-    initialData?.customer_contact_id ? initialData.customer_contact_id : '__none__'
+    initialData?.customer_contact_id ? initialData.customer_contact_id : '__none__',
   )
-  const [additionalCustomerContacts, setAdditionalCustomerContacts] = useState<ExternalContactDisplay[]>([])
-  const [editingInternalContact, setEditingInternalContact] = useState<ContactPerson | null>(null)
-  const [editingCustomerContact, setEditingCustomerContact] = useState<ExternalContactDisplay | null>(null)
+  const [additionalCustomerContacts, setAdditionalCustomerContacts] = useState<
+    ExternalContactDisplay[]
+  >([])
+  const [editingInternalContact, setEditingInternalContact] =
+    useState<ContactPerson | null>(null)
+  const [editingCustomerContact, setEditingCustomerContact] =
+    useState<ExternalContactDisplay | null>(null)
 
   // Auto-formatting only when editing an existing reference (one-time on mount).
   useEffect(() => {
@@ -132,11 +143,9 @@ export function useReferenceForm({
   const [incumbentSuggestions, setIncumbentSuggestions] = useState<string[]>([])
   const [competitorSuggestions, setCompetitorSuggestions] = useState<string[]>([])
   const [projectStatus, setProjectStatus] = useState(
-    initialData?.project_status ?? '__none__'
+    initialData?.project_status ?? '__none__',
   )
-  const [projectStart, setProjectStart] = useState(
-    initialData?.project_start ?? ''
-  )
+  const [projectStart, setProjectStart] = useState(initialData?.project_start ?? '')
   const [projectEnd, setProjectEnd] = useState(initialData?.project_end ?? '')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -178,9 +187,10 @@ export function useReferenceForm({
     })
   }, [isEditMode, initialData])
 
-  const displayCompanies = enrichedCompany && !companies.some((c) => c.id === enrichedCompany.id)
-    ? [...companies, enrichedCompany]
-    : companies
+  const displayCompanies =
+    enrichedCompany && !companies.some((c) => c.id === enrichedCompany.id)
+      ? [...companies, enrichedCompany]
+      : companies
 
   const submitting = isEditMode ? editSubmitting : createSubmitting
   const contactsRaw = [...contacts, ...additionalContacts]
@@ -193,37 +203,40 @@ export function useReferenceForm({
   ]
   const displayCustomerContacts = dedupeCustomerContacts(customerContactsRaw)
 
-  const applyBrandfetchPreview = useCallback((query: string, opts?: { silent?: boolean }) => {
-    const q = query.trim()
-    if (q.length < 2) return
-    setEnrichLoading(true)
-    fetchCompanyEnrichment(q)
-      .then((result) => {
-        if (!result.success) {
-          if (!opts?.silent) {
-            toast.error(result.error)
+  const applyBrandfetchPreview = useCallback(
+    (query: string, opts?: { silent?: boolean }) => {
+      const q = query.trim()
+      if (q.length < 2) return
+      setEnrichLoading(true)
+      fetchCompanyEnrichment(q)
+        .then((result) => {
+          if (!result.success) {
+            if (!opts?.silent) {
+              toast.error(result.error)
+            }
+            return
           }
-          return
-        }
-        setCompanyId('')
-        setEnrichedCompany(null)
-        setNewCompanyName(result.company_name)
-        setWebsite(result.website_url ?? '')
-        setIndustry(resolveIndustryId(result.industry ?? ''))
-        setCountry(result.country ?? '')
-        setHeadquarters(result.headquarters ?? '')
-        setEmployeeCount(
-          result.employee_count != null
-            ? formatEmployeeCountDeDisplay(result.employee_count)
-            : ''
-        )
-        setBrandfetchLogoUrl(result.logo_url ?? '')
-        if (!opts?.silent) {
-          toast.success('Markendaten geladen — bitte prüfen und Referenz speichern.')
-        }
-      })
-      .finally(() => setEnrichLoading(false))
-  }, [])
+          setCompanyId('')
+          setEnrichedCompany(null)
+          setNewCompanyName(result.company_name)
+          setWebsite(result.website_url ?? '')
+          setIndustry(resolveIndustryId(result.industry ?? ''))
+          setCountry(result.country ?? '')
+          setHeadquarters(result.headquarters ?? '')
+          setEmployeeCount(
+            result.employee_count != null
+              ? formatEmployeeCountDeDisplay(result.employee_count)
+              : '',
+          )
+          setBrandfetchLogoUrl(result.logo_url ?? '')
+          if (!opts?.silent) {
+            toast.success('Markendaten geladen — bitte prüfen und Referenz speichern.')
+          }
+        })
+        .finally(() => setEnrichLoading(false))
+    },
+    [],
+  )
 
   const handleContactCreated = (contact: CreatedContact) => {
     const person: ContactPerson = {
@@ -236,14 +249,16 @@ export function useReferenceForm({
     setContactId(contact.id)
   }
 
-  const handleCustomerContactCreated = (contact: ExternalContactDisplay | CreatedContact) => {
+  const handleCustomerContactCreated = (
+    contact: ExternalContactDisplay | CreatedContact,
+  ) => {
     const display: ExternalContactDisplay = {
       id: contact.id,
       first_name: contact.first_name,
       last_name: contact.last_name,
       email: contact.email,
       role: 'role' in contact && contact.role != null ? contact.role : undefined,
-      phone: 'phone' in contact ? contact.phone ?? undefined : undefined,
+      phone: 'phone' in contact ? (contact.phone ?? undefined) : undefined,
     }
     setAdditionalCustomerContacts((prev) => [...prev, display])
     setCustomerContactId(contact.id)
@@ -298,7 +313,9 @@ export function useReferenceForm({
     }
     setCreateSubmitting(true)
     try {
-      const result = await createReference(buildFormDataCreate(getSharedFieldState(), companyId, newCompanyName))
+      const result = await createReference(
+        buildFormDataCreate(getSharedFieldState(), companyId, newCompanyName),
+      )
       if (result.success) {
         toast.success('Referenz wurde angelegt.')
         const refId =
@@ -314,7 +331,9 @@ export function useReferenceForm({
               .select('organization_id')
               .eq('id', me.user.id)
               .single()
-            const orgId = (profile as { organization_id?: string | null } | null)?.organization_id ?? null
+            const orgId =
+              (profile as { organization_id?: string | null } | null)?.organization_id ??
+              null
             if (!orgId) return
             const safeName = selectedFile.name.replace(/[^a-zA-Z0-9.\\-_]/g, '_')
             const storagePath = `${orgId}/${refId}/${Date.now()}-${safeName}`
@@ -373,7 +392,10 @@ export function useReferenceForm({
     }
     setEditSubmitting(true)
     try {
-      await updateReference(initialData.id, buildFormDataEdit(getSharedFieldState(), editCompanyName))
+      await updateReference(
+        initialData.id,
+        buildFormDataEdit(getSharedFieldState(), editCompanyName),
+      )
       toast.success('Referenz erfolgreich aktualisiert')
       if (onSuccess) {
         onSuccess()
@@ -383,7 +405,11 @@ export function useReferenceForm({
         router.refresh()
       }
     } catch (err) {
-      log.error('reference update failed', { action: 'updateReference', referenceId: initialData.id }, err)
+      log.error(
+        'reference update failed',
+        { action: 'updateReference', referenceId: initialData.id },
+        err,
+      )
       toast.error(err instanceof Error ? err.message : 'Fehler beim Speichern')
     } finally {
       setEditSubmitting(false)
@@ -402,7 +428,7 @@ export function useReferenceForm({
     try {
       const timeoutMs = 120_000
       const timeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('EXTRACT_TIMEOUT')), timeoutMs)
+        setTimeout(() => reject(new Error('EXTRACT_TIMEOUT')), timeoutMs),
       )
       const extractPromise = fetch('/api/reference-extract', {
         method: 'POST',
@@ -437,7 +463,8 @@ export function useReferenceForm({
             setVolumeEur(formatThousandsDots(d.volume_eur))
           }
         }
-        if (d.employee_count != null) setEmployeeCount(formatEmployeeCountDeDisplay(d.employee_count))
+        if (d.employee_count != null)
+          setEmployeeCount(formatEmployeeCountDeDisplay(d.employee_count))
         if (Array.isArray(d.tags) && d.tags.length > 0) {
           setTags(d.tags)
           setTagInputValue('')
@@ -445,10 +472,12 @@ export function useReferenceForm({
         if (d.company_name != null) setNewCompanyName(d.company_name)
         if (d.customer_challenge != null) setCustomerChallenge(d.customer_challenge)
         if (d.our_solution != null) setOurSolution(d.our_solution)
-        if (d.incumbent_provider?.trim()) setIncumbentProvider(d.incumbent_provider.trim())
+        if (d.incumbent_provider?.trim())
+          setIncumbentProvider(d.incumbent_provider.trim())
         if (d.competitors?.trim()) setCompetitors(d.competitors.trim())
         if (d.contract_type?.trim()) {
-          const display = formatContractTypeDisplay(d.contract_type) || d.contract_type.trim()
+          const display =
+            formatContractTypeDisplay(d.contract_type) || d.contract_type.trim()
           setContractType(display)
         }
 
@@ -471,27 +500,31 @@ export function useReferenceForm({
           setProjectStatus('completed')
         }
 
-        toast.success('Daten aus dem Dokument übernommen. Bitte prüfen und ggf. anpassen.')
+        toast.success(
+          'Daten aus dem Dokument übernommen. Bitte prüfen und ggf. anpassen.',
+        )
       } else {
         toast.error(
           result.error ||
-            'Automatisches Ausfüllen fehlgeschlagen. Du kannst die Daten aber manuell eingeben.'
+            'Automatisches Ausfüllen fehlgeschlagen. Du kannst die Daten aber manuell eingeben.',
         )
       }
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Extraktion fehlgeschlagen.'
       if (message === 'EXTRACT_TIMEOUT') {
-        toast.error('KI-Extraktion dauert länger als 2 Minuten. Bitte erneut versuchen oder Datei verkleinern.')
+        toast.error(
+          'KI-Extraktion dauert länger als 2 Minuten. Bitte erneut versuchen oder Datei verkleinern.',
+        )
         return
       }
       if (typeof message === 'string' && looksLikeProxyOrNetworkFailure(message)) {
         toast.error(
-          'Die Datei konnte nicht verarbeitet werden (Proxy/Timeout). Bitte kleinere Datei verwenden (max. 4,5 MB) oder später erneut versuchen.'
+          'Die Datei konnte nicht verarbeitet werden (Proxy/Timeout). Bitte kleinere Datei verwenden (max. 4,5 MB) oder später erneut versuchen.',
         )
       } else {
         toast.error(
           message ||
-            'Automatisches Ausfüllen fehlgeschlagen. Du kannst die Daten aber manuell eingeben.'
+            'Automatisches Ausfüllen fehlgeschlagen. Du kannst die Daten aber manuell eingeben.',
         )
       }
     } finally {
@@ -503,9 +536,8 @@ export function useReferenceForm({
 
   const currentCompanyNameForAvatar = isEditMode
     ? editCompanyName
-    : ((companyId &&
-        displayCompanies.find((c) => c.id === companyId)?.name) ||
-      newCompanyName)
+    : (companyId && displayCompanies.find((c) => c.id === companyId)?.name) ||
+      newCompanyName
 
   return {
     isEditMode,
@@ -602,4 +634,3 @@ export function useReferenceForm({
     setAdditionalCustomerContacts,
   }
 }
-

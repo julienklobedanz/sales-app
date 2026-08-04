@@ -10,15 +10,15 @@
 
 ## 0. Verifizierte Ist-Fakten (Code + DB)
 
-| Annahme | Status |
-|---------|--------|
-| `deals.status` CHECK: `open`, `rfp`, `negotiation`, `won`, `lost`, `withdrawn`, `archived` | Verifiziert (`20260331172000_epic7_deals_status_events_and_requests.sql`; Legacy `rfp_phase` → `rfp`) |
-| `organizations.workflow_settings` (jsonb) | Existiert → `capabilityProfile` + `icpDefinition` dort, **keine neue Org-Spalte** |
-| `deal_desk_red_flags`, `deal_desk_sme_routes`, `organization_compliance_documents` | Existieren inkl. RLS (`20260630120000_deal_desk_normalized_workspace.sql`) |
-| `resolveSuitabilityCriteria`, `buildExecutiveBriefingText`, `winProbabilityTone`, `nextDeadlineDate`/`daysUntil`, Risk/Red-Flag-Module | Existieren — Wiederverwendungs-Basis für Metriken, Briefing, Deadlines, Red Flags |
-| `persistNormalizedWorkspace` schreibt SME + Red Flags | Implementiert in `workspace-persistence.ts` — **aber nur** von `/api/rfp/analyze`, `/api/deal-desk/analyze`, Desk-Actions aufgerufen, **nicht** direkt aus `analyze-rfp.ts` Kern. Bei Engine-Vereinheitlichung explizit sicherstellen. |
-| `DESK_COVER_THRESHOLD = 0.55` vs. `MATCH_THRESHOLD = 0.35` | **Noch divergent** (`map-rfp-to-desk.ts`, `compute-delivery-win-probability.ts`) — zentralisieren (s. §8.5) |
-| `deals.requirements_text` | Spalte aktiv; speist `matchReferences`, Ki-Entwurf-Kontext, Sales-Rep-Home — **Spalte bleibt**, nur UI-Card entfällt |
+| Annahme                                                                                                                                | Status                                                                                                                                                                                                                                 |
+| -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `deals.status` CHECK: `open`, `rfp`, `negotiation`, `won`, `lost`, `withdrawn`, `archived`                                             | Verifiziert (`20260331172000_epic7_deals_status_events_and_requests.sql`; Legacy `rfp_phase` → `rfp`)                                                                                                                                  |
+| `organizations.workflow_settings` (jsonb)                                                                                              | Existiert → `capabilityProfile` + `icpDefinition` dort, **keine neue Org-Spalte**                                                                                                                                                      |
+| `deal_desk_red_flags`, `deal_desk_sme_routes`, `organization_compliance_documents`                                                     | Existieren inkl. RLS (`20260630120000_deal_desk_normalized_workspace.sql`)                                                                                                                                                             |
+| `resolveSuitabilityCriteria`, `buildExecutiveBriefingText`, `winProbabilityTone`, `nextDeadlineDate`/`daysUntil`, Risk/Red-Flag-Module | Existieren — Wiederverwendungs-Basis für Metriken, Briefing, Deadlines, Red Flags                                                                                                                                                      |
+| `persistNormalizedWorkspace` schreibt SME + Red Flags                                                                                  | Implementiert in `workspace-persistence.ts` — **aber nur** von `/api/rfp/analyze`, `/api/deal-desk/analyze`, Desk-Actions aufgerufen, **nicht** direkt aus `analyze-rfp.ts` Kern. Bei Engine-Vereinheitlichung explizit sicherstellen. |
+| `DESK_COVER_THRESHOLD = 0.55` vs. `MATCH_THRESHOLD = 0.35`                                                                             | **Noch divergent** (`map-rfp-to-desk.ts`, `compute-delivery-win-probability.ts`) — zentralisieren (s. §8.5)                                                                                                                            |
+| `deals.requirements_text`                                                                                                              | Spalte aktiv; speist `matchReferences`, Ki-Entwurf-Kontext, Sales-Rep-Home — **Spalte bleibt**, nur UI-Card entfällt                                                                                                                   |
 
 ---
 
@@ -46,37 +46,37 @@ flowchart TB
   DeskPanel --> DeskClient[deal-desk-client.tsx 1135Z]
 ```
 
-| Pfad | Rolle heute | Cockpit-Schicksal |
-|------|-------------|-------------------|
-| [app/dashboard/deals/[id]/page.tsx](app/dashboard/deals/[id]/page.tsx) | `force-dynamic`, Upfront-Load alles | **Ändern** — nur Deal + Refs + Events + `is_rfp_mode` + Deadlines |
-| [app/dashboard/deals/deal-detail-tabs.tsx](app/dashboard/deals/deal-detail-tabs.tsx) | 2 Haupttabs | **Löschen** |
-| [app/dashboard/deals/deal-desk-tab-panel.tsx](app/dashboard/deals/deal-desk-tab-panel.tsx) | Wrapper Deal Desk | **Löschen** |
-| [app/dashboard/deals/deal-detail-content.tsx](app/dashboard/deals/deal-detail-content.tsx) | Anforderungen-Card, Referenzen, Aktivität | **Zerlegen** — Fakten/Aktivität/Proof; **Anforderungen-Card weg, `requirements_text` bleibt** |
-| [app/dashboard/deals/rfp-sidebar-panel.tsx](app/dashboard/deals/rfp-sidebar-panel.tsx) | Sidebar + OutcomeDialog | **Löschen** → Header `⋯` |
-| [app/dashboard/deals/components/deal-match-section.tsx](app/dashboard/deals/components/deal-match-section.tsx) | Duplikat Smart Search | **Löschen** → Drawer |
-| [app/dashboard/deals/components/deal-rfp-section.tsx](app/dashboard/deals/components/deal-rfp-section.tsx) | Duplikat RFP (`/api/rfp/analyze`) | **Löschen** |
-| [app/dashboard/deal-desk/deal-desk-client.tsx](app/dashboard/deal-desk/deal-desk-client.tsx) | Monolith 1135Z | **Splitten + lazy** |
-| [app/dashboard/deal-desk/components/reference-incubator-tab.tsx](app/dashboard/deal-desk/components/reference-incubator-tab.tsx) | Inkubator | **Löschen** |
-| [app/dashboard/deal-desk/components/bid-next-steps-card.tsx](app/dashboard/deal-desk/components/bid-next-steps-card.tsx) | Nächste Schritte | **Löschen** |
-| Smart Match: `smart-match-shell.tsx`, `smart-match-rfp.tsx`, `match-result-card.tsx`, `ki-entwurf-sheet.tsx` | Kanonische Match/RFP-UI | **Wiederverwenden** im Drawer |
-| `/api/rfp/coverage` + `lib/rfp-coverage.ts` + `lib/rfp-relevance.ts` | Entkoppelte Pipeline | **Kanonische Engine** |
-| `lib/deal-desk/compute-delivery-win-probability.ts` | Angebots-Reife (real) | **Behalten**, Label umbenennen |
-| `lib/deal-desk/deal-desk-bid-enrichment.ts` → `resolveSuitabilityCriteria` | Freitext-Bullet-Listen fürs Briefing | **Nicht** als K.O.-Engine — nur Briefing-Kontext |
-| `lib/deal-desk/workspace-persistence.ts` | Normalisierte Tabellen | **Pflicht** nach jeder Analyse |
+| Pfad                                                                                                                             | Rolle heute                               | Cockpit-Schicksal                                                                             |
+| -------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | --------------------------------------------------------------------------------------------- |
+| [app/dashboard/deals/[id]/page.tsx](app/dashboard/deals/[id]/page.tsx)                                                           | `force-dynamic`, Upfront-Load alles       | **Ändern** — nur Deal + Refs + Events + `is_rfp_mode` + Deadlines                             |
+| [app/dashboard/deals/deal-detail-tabs.tsx](app/dashboard/deals/deal-detail-tabs.tsx)                                             | 2 Haupttabs                               | **Löschen**                                                                                   |
+| [app/dashboard/deals/deal-desk-tab-panel.tsx](app/dashboard/deals/deal-desk-tab-panel.tsx)                                       | Wrapper Deal Desk                         | **Löschen**                                                                                   |
+| [app/dashboard/deals/deal-detail-content.tsx](app/dashboard/deals/deal-detail-content.tsx)                                       | Anforderungen-Card, Referenzen, Aktivität | **Zerlegen** — Fakten/Aktivität/Proof; **Anforderungen-Card weg, `requirements_text` bleibt** |
+| [app/dashboard/deals/rfp-sidebar-panel.tsx](app/dashboard/deals/rfp-sidebar-panel.tsx)                                           | Sidebar + OutcomeDialog                   | **Löschen** → Header `⋯`                                                                      |
+| [app/dashboard/deals/components/deal-match-section.tsx](app/dashboard/deals/components/deal-match-section.tsx)                   | Duplikat Smart Search                     | **Löschen** → Drawer                                                                          |
+| [app/dashboard/deals/components/deal-rfp-section.tsx](app/dashboard/deals/components/deal-rfp-section.tsx)                       | Duplikat RFP (`/api/rfp/analyze`)         | **Löschen**                                                                                   |
+| [app/dashboard/deal-desk/deal-desk-client.tsx](app/dashboard/deal-desk/deal-desk-client.tsx)                                     | Monolith 1135Z                            | **Splitten + lazy**                                                                           |
+| [app/dashboard/deal-desk/components/reference-incubator-tab.tsx](app/dashboard/deal-desk/components/reference-incubator-tab.tsx) | Inkubator                                 | **Löschen**                                                                                   |
+| [app/dashboard/deal-desk/components/bid-next-steps-card.tsx](app/dashboard/deal-desk/components/bid-next-steps-card.tsx)         | Nächste Schritte                          | **Löschen**                                                                                   |
+| Smart Match: `smart-match-shell.tsx`, `smart-match-rfp.tsx`, `match-result-card.tsx`, `ki-entwurf-sheet.tsx`                     | Kanonische Match/RFP-UI                   | **Wiederverwenden** im Drawer                                                                 |
+| `/api/rfp/coverage` + `lib/rfp-coverage.ts` + `lib/rfp-relevance.ts`                                                             | Entkoppelte Pipeline                      | **Kanonische Engine**                                                                         |
+| `lib/deal-desk/compute-delivery-win-probability.ts`                                                                              | Angebots-Reife (real)                     | **Behalten**, Label umbenennen                                                                |
+| `lib/deal-desk/deal-desk-bid-enrichment.ts` → `resolveSuitabilityCriteria`                                                       | Freitext-Bullet-Listen fürs Briefing      | **Nicht** als K.O.-Engine — nur Briefing-Kontext                                              |
+| `lib/deal-desk/workspace-persistence.ts`                                                                                         | Normalisierte Tabellen                    | **Pflicht** nach jeder Analyse                                                                |
 
 ### 1.2 De-Duplizierungs-/Ablöse-Karte
 
-| Alt | Neu | Mechanismus |
-|-----|-----|-------------|
-| `DealMatchSection` | Smart-Match-Drawer | `DealSmartMatchDrawer` + `SmartMatchShell` (`embedded`, `dealId`) |
-| `DealRfpSection` | Drawer RFP-Tab + konditionaler Block | `SmartMatchRfp` + lazy Snapshot |
-| 3 Referenz-Flächen | `DealProofSection` | `deal_references` + Score + Feedback + Lücken |
-| Tab „KI-Analyse" | `DealRfpCockpitBlock` | `next/dynamic`, nur wenn `deal.is_rfp_mode` |
-| Freitext-**Card** „Anforderungen" | Entfällt als UI-Block | **`deals.requirements_text` Spalte bleibt** (Match/KI-Entwurf/Edit-Dialog) |
-| `BidNextStepsCard` | — | Deadlines + Risiken |
-| `ReferenceIncubatorTab` | — | Account-Gedächtnis (separat) |
-| PPTX Briefing | PDF only | PPTX aus Deal-UI entfernen |
-| Rechts-Sidebar | Header `⋯` | Bearbeiten, Ausgang, Referenzbedarf, Löschen |
+| Alt                               | Neu                                  | Mechanismus                                                                |
+| --------------------------------- | ------------------------------------ | -------------------------------------------------------------------------- |
+| `DealMatchSection`                | Smart-Match-Drawer                   | `DealSmartMatchDrawer` + `SmartMatchShell` (`embedded`, `dealId`)          |
+| `DealRfpSection`                  | Drawer RFP-Tab + konditionaler Block | `SmartMatchRfp` + lazy Snapshot                                            |
+| 3 Referenz-Flächen                | `DealProofSection`                   | `deal_references` + Score + Feedback + Lücken                              |
+| Tab „KI-Analyse"                  | `DealRfpCockpitBlock`                | `next/dynamic`, nur wenn `deal.is_rfp_mode`                                |
+| Freitext-**Card** „Anforderungen" | Entfällt als UI-Block                | **`deals.requirements_text` Spalte bleibt** (Match/KI-Entwurf/Edit-Dialog) |
+| `BidNextStepsCard`                | —                                    | Deadlines + Risiken                                                        |
+| `ReferenceIncubatorTab`           | —                                    | Account-Gedächtnis (separat)                                               |
+| PPTX Briefing                     | PDF only                             | PPTX aus Deal-UI entfernen                                                 |
+| Rechts-Sidebar                    | Header `⋯`                           | Bearbeiten, Ausgang, Referenzbedarf, Löschen                               |
 
 ---
 
@@ -107,14 +107,14 @@ export function isRfpDeal(deal: { is_rfp_mode: boolean }): boolean {
 
 ### 3.2 Wann wird `is_rfp_mode` gesetzt? (und wann **nicht**)
 
-| Trigger | Setzt `is_rfp_mode = true`? |
-|---------|----------------------------|
-| Nutzer: „Als Ausschreibung bearbeiten" | **Ja** (+ optional Erstanalyse starten) |
-| `status` auf `rfp` (Edit-Dialog) | **Ja** (implizit mitsetzen) |
-| **Persistierende** Deal-Analyse (`analyzeRfp` → Snapshot in `deal_desk_projects`) erfolgreich | **Ja** (Idempotenz) |
-| Stateless Drawer: `POST /api/rfp/coverage` (Neugier-Coverage, kein Persist) | **Nein** — darf Deal nicht promoten |
-| Smart Search im Drawer (`matchReferences`) | **Nein** |
-| **Einmaliger Backfill** (Phase 1, gleiche Migration) | **Ja** für Bestands-Deals mit `deal_desk_projects.analysis_status = 'completed'` |
+| Trigger                                                                                       | Setzt `is_rfp_mode = true`?                                                      |
+| --------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Nutzer: „Als Ausschreibung bearbeiten"                                                        | **Ja** (+ optional Erstanalyse starten)                                          |
+| `status` auf `rfp` (Edit-Dialog)                                                              | **Ja** (implizit mitsetzen)                                                      |
+| **Persistierende** Deal-Analyse (`analyzeRfp` → Snapshot in `deal_desk_projects`) erfolgreich | **Ja** (Idempotenz)                                                              |
+| Stateless Drawer: `POST /api/rfp/coverage` (Neugier-Coverage, kein Persist)                   | **Nein** — darf Deal nicht promoten                                              |
+| Smart Search im Drawer (`matchReferences`)                                                    | **Nein**                                                                         |
+| **Einmaliger Backfill** (Phase 1, gleiche Migration)                                          | **Ja** für Bestands-Deals mit `deal_desk_projects.analysis_status = 'completed'` |
 
 **Explizite Trennung:** Nur Code-Pfade, die `analyzeRfp` + Persistenz ausführen (Upload im RFP-Block, „Neu analysieren", Legacy-API bis Abschaltung), dürfen das Flag setzen. `/api/rfp/coverage` bleibt stateless — reine Vorschau im Drawer.
 
@@ -138,13 +138,13 @@ RFP-Block vorerst für alle Deal-Viewer sichtbar. Capability/Rolle (Bid Manager)
 
 ### 4.1 Migrationen
 
-| Objekt | Details |
-|--------|---------|
-| `deals.is_rfp_mode` | `boolean NOT NULL DEFAULT false` + **Backfill in derselben Migration** |
-| `deal_deadlines` | Siehe §4.2 |
-| `workflow_settings.capabilityProfile` | JSON-Merge in bestehendem `organizations.workflow_settings` (§4.3) |
-| `workflow_settings.icpDefinition` | Neu — 5 Rubrik-Felder; ebenfalls per Merge |
-| `analysis_snapshot.version` / `engineVersion` | Versionsfeld für Mapper + Übergangs-Degradation (§5.8) |
+| Objekt                                        | Details                                                                |
+| --------------------------------------------- | ---------------------------------------------------------------------- |
+| `deals.is_rfp_mode`                           | `boolean NOT NULL DEFAULT false` + **Backfill in derselben Migration** |
+| `deal_deadlines`                              | Siehe §4.2                                                             |
+| `workflow_settings.capabilityProfile`         | JSON-Merge in bestehendem `organizations.workflow_settings` (§4.3)     |
+| `workflow_settings.icpDefinition`             | Neu — 5 Rubrik-Felder; ebenfalls per Merge                             |
+| `analysis_snapshot.version` / `engineVersion` | Versionsfeld für Mapper + Übergangs-Degradation (§5.8)                 |
 
 **Nicht in Phase 1–3:** `outcome_reason`, `decisive_reference_id` — erst mit Wissens-Erhalt-Paket; Cockpit nutzt `evidence_events`.
 
@@ -178,7 +178,11 @@ Timeline-Items werden bei jeder Re-Analyse neu vom LLM erzeugt → ihre interne 
 
 ```ts
 // lib/deals/deadline-source-key.ts
-function buildRfpDeadlineSourceKey(dealId: string, kind: DeadlineKind, label?: string): string {
+function buildRfpDeadlineSourceKey(
+  dealId: string,
+  kind: DeadlineKind,
+  label?: string,
+): string {
   const base = `${dealId}:${kind}`
   // Feste RFP-Kinds (submission, questions, presentation, award_expected): nur deal_id + kind
   if (isCanonicalRfpKind(kind)) return sha256(base).slice(0, 32)
@@ -196,11 +200,11 @@ function buildRfpDeadlineSourceKey(dealId: string, kind: DeadlineKind, label?: s
 
 Ein Edit, der `source = 'manual'` setzt, lässt die Zeile aus dem partiellen Unique-Index fallen → nächste Re-Analyse legt einen **Duplikat**-RFP-Termin an. Ein Delete per `suppressed_at` kann durch ein pauschales Upsert-`UPDATE` wieder **un-suppressed** werden.
 
-| User-Aktion | Regel |
-|-------------|--------|
-| **Edit** (RFP-Termin) | `source = 'rfp'` **beibehalten**, nur `pinned = true` (+ geänderte Felder). **Nicht** auf `manual` flippen — Konfliktziel bleibt im Index. |
-| **Delete** (RFP-Termin) | `suppressed_at = now()` setzen; Zeile bleibt `source = 'rfp'`. |
-| **Neuer manueller Termin** (`＋ Termin`) | `source = 'manual'`, eigener `source_key` (`manual:${uuid}`) — nie vom RFP-Sync berührt. |
+| User-Aktion                              | Regel                                                                                                                                      |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Edit** (RFP-Termin)                    | `source = 'rfp'` **beibehalten**, nur `pinned = true` (+ geänderte Felder). **Nicht** auf `manual` flippen — Konfliktziel bleibt im Index. |
+| **Delete** (RFP-Termin)                  | `suppressed_at = now()` setzen; Zeile bleibt `source = 'rfp'`.                                                                             |
+| **Neuer manueller Termin** (`＋ Termin`) | `source = 'manual'`, eigener `source_key` (`manual:${uuid}`) — nie vom RFP-Sync berührt.                                                   |
 
 **RFP-Sync-Upsert (Pseudocode):**
 
@@ -291,13 +295,13 @@ flowchart LR
   Compare --> Verdict[bietfähig / K.O. / Partner / unbekannt]
 ```
 
-| Modul | Neu | Aufgabe |
-|-------|-----|---------|
-| `lib/deals/eligibility-criteria-schema.ts` | ja | `Dimension · Operator · Wert · Pflicht · Konfidenz` |
-| `lib/deals/extract-eligibility-criteria.ts` | ja | Strukturierte LLM-Extraktion aus RFP |
-| `lib/deals/compare-eligibility-criteria.ts` | ja | Konservativer Abgleich: fuzzy Freitext → Profil; **unbekannt ≠ K.O.** |
-| `lib/organizations/capability-profile.ts` | ja | Lesen/Schreiben `workflow_settings` |
-| `resolveSuitabilityCriteria` | bestehend | **Nur** Executive Briefing / Freitext-Kontext |
+| Modul                                       | Neu       | Aufgabe                                                               |
+| ------------------------------------------- | --------- | --------------------------------------------------------------------- |
+| `lib/deals/eligibility-criteria-schema.ts`  | ja        | `Dimension · Operator · Wert · Pflicht · Konfidenz`                   |
+| `lib/deals/extract-eligibility-criteria.ts` | ja        | Strukturierte LLM-Extraktion aus RFP                                  |
+| `lib/deals/compare-eligibility-criteria.ts` | ja        | Konservativer Abgleich: fuzzy Freitext → Profil; **unbekannt ≠ K.O.** |
+| `lib/organizations/capability-profile.ts`   | ja        | Lesen/Schreiben `workflow_settings`                                   |
+| `resolveSuitabilityCriteria`                | bestehend | **Nur** Executive Briefing / Freitext-Kontext                         |
 
 **Tests:** Fixture-RFPs mit bekannten K.O.-Kriterien; leeres Profil; Grenzfälle Konfidenz.
 
@@ -330,11 +334,11 @@ Ersetzt überall: `MATCH_THRESHOLD` (`rfp-coverage.ts`), `DESK_COVER_THRESHOLD` 
 
 ### 5.5 `requirements_text` — explizit
 
-| Was | Aktion |
-|-----|--------|
-| DB-Spalte `deals.requirements_text` | **Behalten** |
-| UI-Card „Anforderungen" in `deal-detail-content.tsx` | **Entfernen** |
-| Edit-Dialog-Feld | Behalten (optional) |
+| Was                                                       | Aktion                            |
+| --------------------------------------------------------- | --------------------------------- |
+| DB-Spalte `deals.requirements_text`                       | **Behalten**                      |
+| UI-Card „Anforderungen" in `deal-detail-content.tsx`      | **Entfernen**                     |
+| Edit-Dialog-Feld                                          | Behalten (optional)               |
 | `matchReferences` / Ki-Entwurf / Smart-Match Deal-Kontext | Weiter aus Spalte + Titel/Branche |
 
 ### 5.6 Executive Briefing — PDF-Pfad (nicht nur PPTX entfernen)
@@ -345,12 +349,12 @@ Ersetzt überall: `MATCH_THRESHOLD` (`rfp-coverage.ts`), `DESK_COVER_THRESHOLD` 
 
 **Ziel Phase 7:**
 
-| Baustein | Aktion |
-|----------|--------|
-| `lib/deal-desk/executive-briefing-pdf.tsx` | **Neu** — `@react-pdf/renderer` (Pattern wie `lib/references/library/pdf/template.tsx`) |
-| `app/api/deals/[id]/executive-briefing/pdf/route.ts` | **Neu** — GET/POST, liefert `application/pdf` |
-| `ExecutiveBriefingDialog` / Cockpit-Header-Button | PDF-Download + Copy; PPTX-Button **entfernen** |
-| Daten | `buildExecutiveBriefingText` + Snapshot-Metriken als Input |
+| Baustein                                             | Aktion                                                                                  |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `lib/deal-desk/executive-briefing-pdf.tsx`           | **Neu** — `@react-pdf/renderer` (Pattern wie `lib/references/library/pdf/template.tsx`) |
+| `app/api/deals/[id]/executive-briefing/pdf/route.ts` | **Neu** — GET/POST, liefert `application/pdf`                                           |
+| `ExecutiveBriefingDialog` / Cockpit-Header-Button    | PDF-Download + Copy; PPTX-Button **entfernen**                                          |
+| Daten                                                | `buildExecutiveBriefingText` + Snapshot-Metriken als Input                              |
 
 Akzeptanz: „Briefing erzeugen" → Vorschau-Dialog → „Als PDF" liefert downloadbare Datei.
 
@@ -374,13 +378,13 @@ Engine-Vereinheitlichung bleibt in Phase 6 (Scope); Degradation verhindert still
 
 **Deliverable:** Eine Seite ohne Tabs; Header + Fakten + Aktivität; Initial-Load ohne Desk-Daten.
 
-| Aktion | Dateien |
-|--------|---------|
+| Aktion    | Dateien                                                                                                                                                                                            |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Migration | `deals.is_rfp_mode` **+ Backfill in derselben Migration:** `UPDATE deals SET is_rfp_mode = true WHERE id IN (SELECT DISTINCT deal_id FROM deal_desk_projects WHERE analysis_status = 'completed')` |
-| Neu | `cockpit/deal-cockpit-client.tsx`, `deal-cockpit-header.tsx`, `deal-facts-card.tsx`, `deal-activity-card.tsx`, `lib/deals/is-rfp-deal.ts` |
-| Ändern | `[id]/page.tsx` — `getDealWithReferences` + Events; **kein** Desk-Load |
-| Gate | RFP-Block-Slot nur wenn `deal.is_rfp_mode` |
-| Entfernen | `deal-detail-tabs` aus Page; Anforderungen-Card |
+| Neu       | `cockpit/deal-cockpit-client.tsx`, `deal-cockpit-header.tsx`, `deal-facts-card.tsx`, `deal-activity-card.tsx`, `lib/deals/is-rfp-deal.ts`                                                          |
+| Ändern    | `[id]/page.tsx` — `getDealWithReferences` + Events; **kein** Desk-Load                                                                                                                             |
+| Gate      | RFP-Block-Slot nur wenn `deal.is_rfp_mode`                                                                                                                                                         |
+| Entfernen | `deal-detail-tabs` aus Page; Anforderungen-Card                                                                                                                                                    |
 
 **Akzeptanz:** Bestands-RFP-Deals mit abgeschlossener Analyse zeigen ab Phase 4 sofort den Block (Flag bereits true). Keine Regression Phase 4–8.
 
@@ -502,39 +506,39 @@ sequenceDiagram
 
 ## 8. Risiken & Mitigationen
 
-| Risiko | Mitigation |
-|--------|------------|
-| K.O.-Check unterschätzt | Phase 5 als eigener Neubau mit Schema + Tests; nicht an `resolveSuitabilityCriteria` koppeln |
-| Thin-Load durch Desk-Gate untergraben | Nur `is_rfp_mode` auf Page; Snapshot lazy |
-| Edit/Delete vs. RFP-Upsert | `source='rfp'` bei Edit beibehalten (`pinned` only); bedingtes `ON CONFLICT … WHERE pinned=false AND suppressed_at IS NULL` |
-| Deadline-Duplikate (Re-Analyse) | Deterministischer `source_key` (keine LLM-IDs); siehe §4.2 |
-| Backfill zu spät | **Phase 1** — gleiche Migration wie `is_rfp_mode` |
-| Drawer promotet RFP-Modus | Nur `analyzeRfp` persistierend setzt Flag; `/api/rfp/coverage` stateless |
-| jsonb Settings überschrieben | `mergeWorkflowSettings` read-modify-write |
-| Briefing ohne PDF | Neue `@react-pdf`-Route Phase 7; PPTX allein reicht nicht |
-| Alt-Snapshots Phase 4–6 | `engineVersion`-Degradation bis Phase 6 |
-| Veraltete Metriken | `analyzedAt` + Degradation + „Neu analysieren" |
-| Threshold-Divergenz | Eine Konstante `0.35` |
-| SME-Panel leer | `persistNormalizedWorkspace` in vereinheitlichtem Analyze-Pfad + Test |
-| Sensibles Capability-Profil | Admin-only; leer = unbekannt |
-| `?tab=desk` Bookmarks | Redirect + Anker |
-| Outcome-Reporting limitiert | `evidence_events` jetzt; DB-Spalten mit Wissens-Erhalt |
-| RFP-Block Sichtbarkeit | Alle Viewer v1; Rollen-Capability später |
+| Risiko                                | Mitigation                                                                                                                  |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| K.O.-Check unterschätzt               | Phase 5 als eigener Neubau mit Schema + Tests; nicht an `resolveSuitabilityCriteria` koppeln                                |
+| Thin-Load durch Desk-Gate untergraben | Nur `is_rfp_mode` auf Page; Snapshot lazy                                                                                   |
+| Edit/Delete vs. RFP-Upsert            | `source='rfp'` bei Edit beibehalten (`pinned` only); bedingtes `ON CONFLICT … WHERE pinned=false AND suppressed_at IS NULL` |
+| Deadline-Duplikate (Re-Analyse)       | Deterministischer `source_key` (keine LLM-IDs); siehe §4.2                                                                  |
+| Backfill zu spät                      | **Phase 1** — gleiche Migration wie `is_rfp_mode`                                                                           |
+| Drawer promotet RFP-Modus             | Nur `analyzeRfp` persistierend setzt Flag; `/api/rfp/coverage` stateless                                                    |
+| jsonb Settings überschrieben          | `mergeWorkflowSettings` read-modify-write                                                                                   |
+| Briefing ohne PDF                     | Neue `@react-pdf`-Route Phase 7; PPTX allein reicht nicht                                                                   |
+| Alt-Snapshots Phase 4–6               | `engineVersion`-Degradation bis Phase 6                                                                                     |
+| Veraltete Metriken                    | `analyzedAt` + Degradation + „Neu analysieren"                                                                              |
+| Threshold-Divergenz                   | Eine Konstante `0.35`                                                                                                       |
+| SME-Panel leer                        | `persistNormalizedWorkspace` in vereinheitlichtem Analyze-Pfad + Test                                                       |
+| Sensibles Capability-Profil           | Admin-only; leer = unbekannt                                                                                                |
+| `?tab=desk` Bookmarks                 | Redirect + Anker                                                                                                            |
+| Outcome-Reporting limitiert           | `evidence_events` jetzt; DB-Spalten mit Wissens-Erhalt                                                                      |
+| RFP-Block Sichtbarkeit                | Alle Viewer v1; Rollen-Capability später                                                                                    |
 
 ---
 
 ## 9. Getroffene Entscheidungen (ehem. offene Fragen)
 
-| Frage | Entscheidung |
-|-------|--------------|
-| RFP-Gate | **`deals.is_rfp_mode`** kanonisch; `status='rfp'` setzt implizit mit; Snapshot nicht für Gate |
-| Fähigkeitsprofil | Eigenes Settings-Panel, **Admin-only**; in `workflow_settings.capabilityProfile` |
-| ICP | **`workflow_settings.icpDefinition`** neu (5 Rubrik-Felder) |
-| `deal_desk_projects` | **Behalten** + Version-Feld; nicht reduzieren |
-| Outcome | **`evidence_events`** jetzt; `outcome_reason`/`decisive_reference_id` erst Wissens-Erhalt |
-| Rollen | RFP-Block vorerst alle Viewer; Capability-Gate später |
-| Alt-Deals | **Backfill in Phase 1** (Migration mit `is_rfp_mode`) |
-| `is_rfp_mode` demote | Manuell „Kein Ausschreibungs-Deal" im ⋯-Menü (§3.3) |
+| Frage                | Entscheidung                                                                                  |
+| -------------------- | --------------------------------------------------------------------------------------------- |
+| RFP-Gate             | **`deals.is_rfp_mode`** kanonisch; `status='rfp'` setzt implizit mit; Snapshot nicht für Gate |
+| Fähigkeitsprofil     | Eigenes Settings-Panel, **Admin-only**; in `workflow_settings.capabilityProfile`              |
+| ICP                  | **`workflow_settings.icpDefinition`** neu (5 Rubrik-Felder)                                   |
+| `deal_desk_projects` | **Behalten** + Version-Feld; nicht reduzieren                                                 |
+| Outcome              | **`evidence_events`** jetzt; `outcome_reason`/`decisive_reference_id` erst Wissens-Erhalt     |
+| Rollen               | RFP-Block vorerst alle Viewer; Capability-Gate später                                         |
+| Alt-Deals            | **Backfill in Phase 1** (Migration mit `is_rfp_mode`)                                         |
+| `is_rfp_mode` demote | Manuell „Kein Ausschreibungs-Deal" im ⋯-Menü (§3.3)                                           |
 
 ---
 

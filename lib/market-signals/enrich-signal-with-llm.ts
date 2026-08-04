@@ -46,7 +46,7 @@ function inferNewsCategory(raw: string): 'finance' | 'strategy' {
   const t = String(raw ?? '').toLowerCase()
   if (
     /(budget|umsatz|revenue|quartal|q1|q2|q3|q4|profit|finanz|ebit|cost|invest|capex|opex|übernahme|acquisition|funding|finanzierung)/.test(
-      t
+      t,
     )
   ) {
     return 'finance'
@@ -55,13 +55,17 @@ function inferNewsCategory(raw: string): 'finance' | 'strategy' {
 }
 
 function normalizeCategory(raw: unknown, fallback: SignalCategory): SignalCategory {
-  const v = String(raw ?? '').trim().toLowerCase()
+  const v = String(raw ?? '')
+    .trim()
+    .toLowerCase()
   if (v === 'people' || v === 'finance' || v === 'strategy') return v
   return fallback
 }
 
 function clampText(raw: unknown, maxLen: number): string {
-  const s = String(raw ?? '').replace(/\s+/g, ' ').trim()
+  const s = String(raw ?? '')
+    .replace(/\s+/g, ' ')
+    .trim()
   if (!s) return ''
   return s.length <= maxLen ? s : `${s.slice(0, maxLen - 1).trim()}…`
 }
@@ -97,7 +101,7 @@ function pickFactField(row: Record<string, unknown>): string {
 /** Export für Tests. */
 export function parseLlmEnrichmentJson(
   raw: string,
-  fallbackCategory: SignalCategory
+  fallbackCategory: SignalCategory,
 ): Omit<SignalEnrichment, 'enrichment_source'> | null {
   let parsed: unknown
   try {
@@ -127,13 +131,16 @@ export function parseLlmEnrichmentJson(
  * Heuristischer Fallback: faktische Headline, kein Product-Pitch-Boilerplate.
  * Lieber knapper Why-now als Einheits-„Cloud-Infrastruktur“-Text.
  */
-export function buildHeuristicSignalEnrichment(input: EnrichSignalInput): SignalEnrichment {
+export function buildHeuristicSignalEnrichment(
+  input: EnrichSignalInput,
+): SignalEnrichment {
   const title = String(input.title ?? '').trim()
   const companyName = String(input.companyName ?? '').trim() || 'dem Account'
   const personName = String(input.personName ?? '').trim()
   const snippet = String(input.snippet ?? '').trim()
   const signalKind = personName ? 'exec' : 'news'
-  const bodyForWhy = snippet && snippet.length > title.length ? `${title}. ${snippet}` : title
+  const bodyForWhy =
+    snippet && snippet.length > title.length ? `${title}. ${snippet}` : title
 
   const hook =
     extractEmbeddedSignalHook({
@@ -165,7 +172,7 @@ export function buildHeuristicSignalEnrichment(input: EnrichSignalInput): Signal
         changeSummary: title,
         newsBody: bodyForWhy.slice(0, 200),
       }),
-      180
+      180,
     ) ??
     truncateToCompleteSentences(title, 180) ??
     ''
@@ -184,12 +191,14 @@ export function buildHeuristicSignalEnrichment(input: EnrichSignalInput): Signal
 async function callOpenAiEnrichment(
   apiKey: string,
   input: EnrichSignalInput,
-  fallbackCategory: SignalCategory
+  fallbackCategory: SignalCategory,
 ): Promise<Omit<SignalEnrichment, 'enrichment_source'> | null> {
   const title = String(input.title ?? '').trim()
   const companyName = String(input.companyName ?? '').trim()
   const personName = String(input.personName ?? '').trim()
-  const snippet = String(input.snippet ?? '').trim().slice(0, 400)
+  const snippet = String(input.snippet ?? '')
+    .trim()
+    .slice(0, 400)
 
   const userPrompt = `Analysiere diese RSS-Schlagzeile für B2B-Vertrieb (IT/SaaS, DACH).
 
@@ -236,7 +245,7 @@ Antworte NUR mit JSON (kein Markdown, keine Code-Fences) im flachen Schema:
       const body = await res.text()
       const snippetBody = body.trim().slice(0, 240)
       throw new Error(
-        `Marktsignal-Enrichment: HTTP ${res.status}${snippetBody ? ` — ${snippetBody}` : ''}`
+        `Marktsignal-Enrichment: HTTP ${res.status}${snippetBody ? ` — ${snippetBody}` : ''}`,
       )
     }
 
@@ -255,7 +264,7 @@ Antworte NUR mit JSON (kein Markdown, keine Code-Fences) im flachen Schema:
 function logEnrichResult(
   input: EnrichSignalInput,
   result: SignalEnrichment,
-  extra?: Record<string, unknown>
+  extra?: Record<string, unknown>,
 ) {
   log.info('market_signal.enrich', {
     label: 'market_signal.enrich',
@@ -277,7 +286,9 @@ export async function enrichSignal(input: EnrichSignalInput): Promise<SignalEnri
   const title = String(input.title ?? '').trim()
   const personName = String(input.personName ?? '').trim()
   let snippet = String(input.snippet ?? '').trim() || null
-  const fallbackCategory: SignalCategory = personName ? 'people' : inferNewsCategory(title)
+  const fallbackCategory: SignalCategory = personName
+    ? 'people'
+    : inferNewsCategory(title)
 
   if (
     !snippet &&
@@ -291,7 +302,10 @@ export async function enrichSignal(input: EnrichSignalInput): Promise<SignalEnri
   const enrichedInput: EnrichSignalInput = { ...input, snippet }
 
   if (title.length < 8) {
-    const result = { ...buildHeuristicSignalEnrichment(enrichedInput), is_relevant: false }
+    const result = {
+      ...buildHeuristicSignalEnrichment(enrichedInput),
+      is_relevant: false,
+    }
     logEnrichResult(enrichedInput, result, { reason: 'title_too_short' })
     return result
   }

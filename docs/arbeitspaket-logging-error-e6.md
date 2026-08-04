@@ -32,10 +32,11 @@
 ## T3 — Migration der heißen Pfade (schrittweise)
 
 **Soll:** Die ~119 `console.*` **nicht** in einem Rutsch, sondern:
+
 - neue/berührte Dateien sofort auf Logger + `Result` (`success`) umstellen (Boy-Scout),
 - die sicherheits-/fehlerträchtigen Pfade zuerst (Auth, Approval, Import, CRM-Sync, Cron).
-**Akzeptanz:** heiße Pfade migriert; `console.*` in App-Code rückläufig; Konvention greift für Neues.
-**Status:** ✅ heiße Pfade Auth, HubSpot, Approvals, Import, Invite (2026-08-04). Weitere `console.*` Boy-Scout bei Touch.
+  **Akzeptanz:** heiße Pfade migriert; `console.*` in App-Code rückläufig; Konvention greift für Neues.
+  **Status:** ✅ heiße Pfade Auth, HubSpot, Approvals, Import, Invite (2026-08-04). Weitere `console.*` Boy-Scout bei Touch.
 
 ---
 
@@ -44,9 +45,11 @@
 T1 (Util) → T2 (Result-Konvention) → T3 (schrittweise Migration, heiße Pfade zuerst). Verhaltenserhaltend; Tests grün.
 
 ## Verifikation
+
 ```bash
 npm run typecheck && npm test && npm run build
 ```
+
 - Stichprobe: ein provozierter Fehler in einem migrierten Pfad erzeugt **einen** strukturierten Log-Eintrag (nicht mehrere verstreute) + ein `Result`-Fehlerobjekt.
 
 ---

@@ -9,7 +9,7 @@ import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
  */
 export async function resolveReferenceManagerEmail(
   _supabase: SupabaseClient,
-  organizationId: string
+  organizationId: string,
 ): Promise<string | null> {
   const fromEnv = process.env.REFERENCE_MANAGER_EMAIL?.trim()
   if (fromEnv) return fromEnv

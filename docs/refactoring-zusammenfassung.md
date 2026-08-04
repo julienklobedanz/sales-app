@@ -6,13 +6,13 @@ Dieses Dokument fasst die **wesentlichen Refactoring- und Qualitätsarbeiten** z
 
 ## 1. Überblick: Ziele
 
-| Ziel | Kurzbeschreibung |
-|------|------------------|
-| **Domänen- & API-Struktur** | RFP-Analyse, Deals, Referenzen klar von UI getrennt; wieder verwendbare Bibliotheken |
-| **QC & Modularisierung** | „God-Files“ entlasten, Server Actions als Wrapper, Logik in Modulen |
-| **Design System** | Tokens statt Hardcodes, einheitliche Icons, zentrale Status-Badges und Copy |
-| **Robustheit** | Konsistente Fehlerbehandlung, Typisierung, Lint/Build als Gate |
-| **UX** | Einheitliche Patterns (Loading, Tabellen, Formulare), deutschsprachige UI wo sinnvoll |
+| Ziel                        | Kurzbeschreibung                                                                      |
+| --------------------------- | ------------------------------------------------------------------------------------- |
+| **Domänen- & API-Struktur** | RFP-Analyse, Deals, Referenzen klar von UI getrennt; wieder verwendbare Bibliotheken  |
+| **QC & Modularisierung**    | „God-Files“ entlasten, Server Actions als Wrapper, Logik in Modulen                   |
+| **Design System**           | Tokens statt Hardcodes, einheitliche Icons, zentrale Status-Badges und Copy           |
+| **Robustheit**              | Konsistente Fehlerbehandlung, Typisierung, Lint/Build als Gate                        |
+| **UX**                      | Einheitliche Patterns (Loading, Tabellen, Formulare), deutschsprachige UI wo sinnvoll |
 
 ---
 
@@ -27,12 +27,12 @@ Dieses Dokument fasst die **wesentlichen Refactoring- und Qualitätsarbeiten** z
 
 ### Benefits
 
-| Benefit | Erklärung |
-|---------|-----------|
+| Benefit                     | Erklärung                                                                                      |
+| --------------------------- | ---------------------------------------------------------------------------------------------- |
 | **Test- & Erweiterbarkeit** | Pipeline-Schritte sind klar getrennt; neue Schritte (z. B. anderes Modell) sind lokalisierbar. |
-| **Wiederverwendung** | Gleiche Matching-Logik für Dashboard und API reduziert Duplikat-Fehler. |
-| **Betreibbarkeit** | Ein klarer HTTP-Einstieg (`/api/rfp/analyze`) statt nur verteilter Client-Calls. |
-| **Skalierung** | Embeddings und RPC bleiben hinter stabilen Schnittstellen; UI muss nicht „alles wissen“. |
+| **Wiederverwendung**        | Gleiche Matching-Logik für Dashboard und API reduziert Duplikat-Fehler.                        |
+| **Betreibbarkeit**          | Ein klarer HTTP-Einstieg (`/api/rfp/analyze`) statt nur verteilter Client-Calls.               |
+| **Skalierung**              | Embeddings und RPC bleiben hinter stabilen Schnittstellen; UI muss nicht „alles wissen“.       |
 
 ---
 
@@ -47,11 +47,11 @@ Dieses Dokument fasst die **wesentlichen Refactoring- und Qualitätsarbeiten** z
 
 ### Benefits
 
-| Benefit | Erklärung |
-|---------|-----------|
-| **Nutzerführung** | Ein klarer Ort pro Aufgabe (Liste vs. Detail vs. Anfrage) statt überladener Sheets. |
-| **Datenkonsistenz** | Reference Requests sind nicht nur E-Mail, sondern nachvollziehbare Entitäten. |
-| **Wiederverwendung** | Gleiche UI-Patterns wie Evidence (Layout, Sidebar) senken kognitive Last. |
+| Benefit              | Erklärung                                                                           |
+| -------------------- | ----------------------------------------------------------------------------------- |
+| **Nutzerführung**    | Ein klarer Ort pro Aufgabe (Liste vs. Detail vs. Anfrage) statt überladener Sheets. |
+| **Datenkonsistenz**  | Reference Requests sind nicht nur E-Mail, sondern nachvollziehbare Entitäten.       |
+| **Wiederverwendung** | Gleiche UI-Patterns wie Evidence (Layout, Sidebar) senken kognitive Last.           |
 
 ---
 
@@ -66,12 +66,12 @@ Dieses Dokument fasst die **wesentlichen Refactoring- und Qualitätsarbeiten** z
 
 ### Benefits
 
-| Benefit | Erklärung |
-|---------|-----------|
-| **Wartbarkeit** | Änderungen an Domänenlogik treffen nicht mehr „alles auf einmal“. |
-| **Onboarding** | Neue Entwickler finden Logik über Module statt einer Megadatei. |
-| **Risiko** | Kleinere PRs, klarere Reviews, weniger Merge-Konflikte. |
-| **Vorhersagbarkeit** | Einheitliche API für Server Actions erleichtert UI-Code. |
+| Benefit              | Erklärung                                                         |
+| -------------------- | ----------------------------------------------------------------- |
+| **Wartbarkeit**      | Änderungen an Domänenlogik treffen nicht mehr „alles auf einmal“. |
+| **Onboarding**       | Neue Entwickler finden Logik über Module statt einer Megadatei.   |
+| **Risiko**           | Kleinere PRs, klarere Reviews, weniger Merge-Konflikte.           |
+| **Vorhersagbarkeit** | Einheitliche API für Server Actions erleichtert UI-Code.          |
 
 ---
 
@@ -107,11 +107,11 @@ Dieses Dokument fasst die **wesentlichen Refactoring- und Qualitätsarbeiten** z
 
 Zentrale Komponenten:
 
-| Komponente | Zweck |
-|------------|--------|
+| Komponente                              | Zweck                                    |
+| --------------------------------------- | ---------------------------------------- |
 | `components/reference-status-badge.tsx` | Referenz-Status (Freigegeben, Intern, …) |
-| `components/deal-status-badge.tsx` | Deal-Status |
-| `components/ticket-status-badge.tsx` | Ticket-Status (Offen/Geschlossen) |
+| `components/deal-status-badge.tsx`      | Deal-Status                              |
+| `components/ticket-status-badge.tsx`    | Ticket-Status (Offen/Geschlossen)        |
 
 **Benefits:** Gleiche Bedeutung = gleiche Darstellung; Änderungen an Farben/Copy **einmal** statt in jedem Screen.
 
@@ -160,12 +160,12 @@ Siehe **`docs/refactoring-welle-2-plan.md`**. Kurz umgesetzt:
 
 ## 7. Dokumentation im Repo
 
-| Datei | Inhalt |
-|-------|--------|
-| `docs/design-system.md` | Tokens, UI-Primitives, Icons, Copy, Badge-Semantik, Regeln |
-| `docs/qc-struktur-plan.md` | QC-Phasen, Slices, Status (historisch) |
-| `docs/refactoring-welle-2-plan.md` | Welle 2: P0–P2, Stand, DoD |
-| **`docs/refactoring-zusammenfassung.md`** (dieses Dokument) | Gesamtüberblick Refactoring + Benefits |
+| Datei                                                       | Inhalt                                                     |
+| ----------------------------------------------------------- | ---------------------------------------------------------- |
+| `docs/design-system.md`                                     | Tokens, UI-Primitives, Icons, Copy, Badge-Semantik, Regeln |
+| `docs/qc-struktur-plan.md`                                  | QC-Phasen, Slices, Status (historisch)                     |
+| `docs/refactoring-welle-2-plan.md`                          | Welle 2: P0–P2, Stand, DoD                                 |
+| **`docs/refactoring-zusammenfassung.md`** (dieses Dokument) | Gesamtüberblick Refactoring + Benefits                     |
 
 ---
 
@@ -180,4 +180,4 @@ Das Refactoring hat Refstack von einer **funktional wachsenden Codebasis** zu ei
 
 ---
 
-*Stand: zusammenfassend aus den im Projekt umgesetzten Epics, QC-Maßnahmen und Design-Alignment-Arbeiten. Bei Bedarf kann dieses Dokument um Release-Notizen oder Metriken (Bundle-Größe, Lighthouse) ergänzt werden.*
+_Stand: zusammenfassend aus den im Projekt umgesetzten Epics, QC-Maßnahmen und Design-Alignment-Arbeiten. Bei Bedarf kann dieses Dokument um Release-Notizen oder Metriken (Bundle-Größe, Lighthouse) ergänzt werden._

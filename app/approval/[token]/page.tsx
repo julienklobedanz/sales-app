@@ -1,10 +1,5 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Building2, Globe } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { formatIndustryDisplay } from '@/lib/constants/industries'
@@ -27,8 +22,8 @@ function InvalidLink() {
         <CardHeader>
           <CardTitle>Link ungültig</CardTitle>
           <CardDescription>
-            Dieser Link ist nicht mehr gültig oder wurde bereits verwendet. Bitte wenden Sie sich bei
-            Rückfragen an Ihren Ansprechpartner.
+            Dieser Link ist nicht mehr gültig oder wurde bereits verwendet. Bitte wenden
+            Sie sich bei Rückfragen an Ihren Ansprechpartner.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -86,7 +81,7 @@ export default async function ApprovalPage({
         name,
         organization_id
       )
-    `
+    `,
     )
     .eq('approval_token', token)
     .maybeSingle()
@@ -123,7 +118,7 @@ export default async function ApprovalPage({
 
   const effectiveCustomer = effectiveCustomerApprovalStatus(
     row.customer_approval_status,
-    row.status
+    row.status,
   )
   const pending =
     effectiveCustomer === 'pending' ||
@@ -131,9 +126,11 @@ export default async function ApprovalPage({
   const approved = effectiveCustomer === 'approved'
   const nowTs = new Date().getTime()
   const isExpired =
-    !!row.approval_expires_at && new Date(String(row.approval_expires_at)).getTime() < nowTs
+    !!row.approval_expires_at &&
+    new Date(String(row.approval_expires_at)).getTime() < nowTs
   const inGrace =
-    !!row.approval_grace_until && new Date(String(row.approval_grace_until)).getTime() >= nowTs
+    !!row.approval_grace_until &&
+    new Date(String(row.approval_grace_until)).getTime() >= nowTs
 
   if (!pending && !approved) {
     return <InvalidLink />
@@ -148,7 +145,9 @@ export default async function ApprovalPage({
         ? row.approval_customer_facing_name
         : null,
     coordinatorName:
-      typeof row.approval_coordinator_name === 'string' ? row.approval_coordinator_name : null,
+      typeof row.approval_coordinator_name === 'string'
+        ? row.approval_coordinator_name
+        : null,
     orgName,
   })
   const extraScopeItems = [
@@ -189,9 +188,13 @@ export default async function ApprovalPage({
   ]
 
   const proposedQuote =
-    typeof row.approval_quote_proposed === 'string' ? row.approval_quote_proposed.trim() : ''
+    typeof row.approval_quote_proposed === 'string'
+      ? row.approval_quote_proposed.trim()
+      : ''
   const savedQuote =
-    typeof row.approval_quote_approved === 'string' ? row.approval_quote_approved.trim() : ''
+    typeof row.approval_quote_approved === 'string'
+      ? row.approval_quote_approved.trim()
+      : ''
   const initialApprovedQuote = approved ? savedQuote || proposedQuote : proposedQuote
   const initialComment =
     typeof row.approval_comment === 'string' ? row.approval_comment.trim() : ''
@@ -207,11 +210,15 @@ export default async function ApprovalPage({
       })
     : undefined
   let referenceGiverName =
-    typeof row.approval_reference_giver_name === 'string' ? row.approval_reference_giver_name.trim() : ''
+    typeof row.approval_reference_giver_name === 'string'
+      ? row.approval_reference_giver_name.trim()
+      : ''
   if (!referenceGiverName) {
     let recipientEmail = ''
     const delegatedEmail =
-      typeof row.approval_delegated_to_email === 'string' ? row.approval_delegated_to_email.trim() : ''
+      typeof row.approval_delegated_to_email === 'string'
+        ? row.approval_delegated_to_email.trim()
+        : ''
     if (delegatedEmail.includes('@')) {
       recipientEmail = delegatedEmail
     } else if (typeof row.approval_external_contact_id === 'string') {
@@ -234,7 +241,9 @@ export default async function ApprovalPage({
     }
   }
   const referenceGiverTitle =
-    typeof row.approval_reference_giver_title === 'string' ? row.approval_reference_giver_title.trim() : ''
+    typeof row.approval_reference_giver_title === 'string'
+      ? row.approval_reference_giver_title.trim()
+      : ''
 
   const companyName = company?.name?.trim() ?? ''
   const industryLabel = formatIndustryDisplay(row.industry as string | null)
@@ -265,7 +274,10 @@ export default async function ApprovalPage({
           <p className="text-sm font-medium" style={{ color: secondary }}>
             {orgName}
           </p>
-          <h1 className="text-3xl font-semibold tracking-tight" style={{ color: primary }}>
+          <h1
+            className="text-3xl font-semibold tracking-tight"
+            style={{ color: primary }}
+          >
             {row.title}
           </h1>
           {referenceSubtitle ? (
@@ -273,20 +285,24 @@ export default async function ApprovalPage({
           ) : null}
           {approved ? (
             <p className="text-sm text-muted-foreground">
-              Sie haben diese Referenz bereits freigegeben. Hier können Sie Ihre Anmerkungen und
-              Freigabe-Umfang jederzeit anpassen.
+              Sie haben diese Referenz bereits freigegeben. Hier können Sie Ihre
+              Anmerkungen und Freigabe-Umfang jederzeit anpassen.
             </p>
           ) : (
             <p className="text-sm text-muted-foreground">
               {customerIntro.mode === 'person' ? (
                 <>
-                  <span className="font-medium text-foreground">{customerIntro.personName}</span> von{' '}
-                  {customerIntro.orgName} bittet Sie um Freigabe dieser Referenz.{' '}
+                  <span className="font-medium text-foreground">
+                    {customerIntro.personName}
+                  </span>{' '}
+                  von {customerIntro.orgName} bittet Sie um Freigabe dieser Referenz.{' '}
                 </>
               ) : (
                 <>
-                  <span className="font-medium text-foreground">{customerIntro.orgName}</span> bittet Sie
-                  um Freigabe dieser Referenz.{' '}
+                  <span className="font-medium text-foreground">
+                    {customerIntro.orgName}
+                  </span>{' '}
+                  bittet Sie um Freigabe dieser Referenz.{' '}
                 </>
               )}
               <ApprovalDelegateDialog token={token} />

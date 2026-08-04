@@ -8,44 +8,44 @@
 
 ## Umsetzungsstand (Prüfung Codebase)
 
-*Stand: Prüfung der aktuellen Codebase. ✅ = umgesetzt, 🔶 = teilweise, ❌ = nicht umgesetzt.*
+_Stand: Prüfung der aktuellen Codebase. ✅ = umgesetzt, 🔶 = teilweise, ❌ = nicht umgesetzt._
 
-| Paket | Status | Kurzbeschreibung |
-|-------|--------|-------------------|
-| **A1** | ❌ | Keine KI-Prüfung auf Anonymisierung/Vollständigkeit bei Entwurf. |
-| **A2** | 🔶 | Teilweise: `submitForApproval` + E-Mail an AM (Resend), Token-Link `/approval/[token]`, Status auf internal/external etc. setzbar. Kein expliziter Warnhinweis „Nur für interne Vorbereitung“ im UI. Entwürfe für Sales ausgeblendet (Filter). |
-| **A3** | 🔶 | Token-Seite setzt Referenz-Status (auch external); keine getrennte **Kunden-Ansicht** (saubere Case Study + Kunden-OK/Korrekturen). |
-| **A4** | ❌ | Keine Pipeline-/Kanban-Seite (`/dashboard/pipeline` o. ä.). |
-| **A5** | ❌ | Keine Status-Timeline in der Detailansicht (nur „Historie“ mit „Referenz erstellt“). Kein „Reminder senden“. |
-| **B1** | ❌ | **KPI-Cards werden für Sales nicht ausgeblendet** – alle sehen dieselben Karten. Keine Explorer-Startseite, keine RFP-Dropzone, kein Status-Ticker. |
-| **B2** | ❌ | Kein One-Click-Anonymisierung (KI), kein gebrandeter PDF-Export, keine Teams-Integration. |
-| **B3** | 🔶 | E-Mail bei Freigabeanfrage vorhanden; keine eigene AM-Ansicht („Meine Accounts“). |
-| **B4** | 🔶 | Admin sieht Dashboard mit KPIs, Requests-Seite; keine Pipeline-Übersicht, keine Gap Analysis. |
-| **B5** | ❌ | Kein Bulk-Editing, kein Audit-Log. |
-| **C1** | 🔶 | Profil: Name, E-Mail (read-only), Rolle. Kein Profilbild, kein Passwort ändern, keine 2FA, keine Spracheinstellungen. |
-| **C2** | 🔶 | Einladung (InviteCard/Link), Rollen admin/sales. Kein Editor, keine Gruppen. |
-| **C3** | ❌ | Kein Branding (Logo, Farben, Fonts, Footer). |
-| **C4** | ❌ | Branchen/Länder im Formular fest codiert, keine Einstellungen für Kategorisierung. |
-| **C5** | ❌ | Keine Integrationen (CRM, Slack/Teams, API-Key) in den Einstellungen. |
-| **D1** | ❌ | Keine Notification-Bell in der Navigation. |
-| **D2** | 🔶 | Deals-Seite mit Karte „Aktuelle Deals“, aber nur Platzhalter-Text. |
-| **D3** | 🔶 | Karte „Auslaufende Referenzen“, aber nur Platzhalter. |
-| **D4** | ❌ | Keine Verknüpfung Deal ↔ auslaufende Referenzen. |
-| **E1** | ❌ | Kein Auto-Expiry-Reminder (6 Monate). |
-| **E2** | ❌ | Keine One-Click-Eskalation (48 h). |
-| **E3** | ❌ | Kein Delegations-Modus. |
-| **E4** | ❌ | Anonym ist nur Status-Option, kein Fast-Track (Stufe 3 überspringen). |
-| **F1** | ❌ | Kein Hover-Text zur Freigabe, kein Banner für Freigabestatus. |
-| **F2** | 🔶 | Favoritenstern wird gelb bei aktiv. Titel nicht deutlich präsenter. |
-| **F3** | ❌ | Kein Freigabe-Fortschritt unter dem Titel (ausklappbar). |
-| **F4** | 🔶 | Übersicht mit Summary, Tags, Industrie, Region, Projektstatus, Dauer, Website, Erstellt, Aktualisiert. Keine Mitarbeiteranzahl, Volumen, Vertragsart, >3 Jahre, CRM-ID. |
-| **F5** | ❌ | Keine Sektion Projektinformationen (Problem/Lösung, Gewinngrund), kein PDF-Download, keine Länder mit Flaggen. |
-| **F6** | 🔶 | Interner Kontakt (Account Owner) angezeigt. Kein Tel/Teams, kein Hover, keine Historie, kein „Kontakt Kundenseite“, kein Kunden-Approval-Button. |
-| **F7** | 🔶 | Datei-Anzeige und Link „Öffnen“. Kein D&D im Sheet, kein gebrandetes PDF, kein Download nur bei extern freigegeben. |
-| **F8** | 🔶 | „Historie“ mit nur „Referenz erstellt“. Kein „zuletzt aktualisiert“, keine Freigabenhistorie, nicht als „Infos zur Referenz“ benannt. |
-| **F9** | 🔶 | Button „Einzelfreigabe anfragen“ für Sales (internal/restricted), löst E-Mail aus. Kein Modal (Deal/Kunde, Größe, Frist, Nachricht). |
-| **F10** | ❌ | Keine Referenzcalls (E-Mail/Tel-Einverständnis). |
-| **F11** | ❌ | Kein „Verified by AM“-Badge. |
+| Paket   | Status | Kurzbeschreibung                                                                                                                                                                                                                               |
+| ------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **A1**  | ❌     | Keine KI-Prüfung auf Anonymisierung/Vollständigkeit bei Entwurf.                                                                                                                                                                               |
+| **A2**  | 🔶     | Teilweise: `submitForApproval` + E-Mail an AM (Resend), Token-Link `/approval/[token]`, Status auf internal/external etc. setzbar. Kein expliziter Warnhinweis „Nur für interne Vorbereitung“ im UI. Entwürfe für Sales ausgeblendet (Filter). |
+| **A3**  | 🔶     | Token-Seite setzt Referenz-Status (auch external); keine getrennte **Kunden-Ansicht** (saubere Case Study + Kunden-OK/Korrekturen).                                                                                                            |
+| **A4**  | ❌     | Keine Pipeline-/Kanban-Seite (`/dashboard/pipeline` o. ä.).                                                                                                                                                                                    |
+| **A5**  | ❌     | Keine Status-Timeline in der Detailansicht (nur „Historie“ mit „Referenz erstellt“). Kein „Reminder senden“.                                                                                                                                   |
+| **B1**  | ❌     | **KPI-Cards werden für Sales nicht ausgeblendet** – alle sehen dieselben Karten. Keine Explorer-Startseite, keine RFP-Dropzone, kein Status-Ticker.                                                                                            |
+| **B2**  | ❌     | Kein One-Click-Anonymisierung (KI), kein gebrandeter PDF-Export, keine Teams-Integration.                                                                                                                                                      |
+| **B3**  | 🔶     | E-Mail bei Freigabeanfrage vorhanden; keine eigene AM-Ansicht („Meine Accounts“).                                                                                                                                                              |
+| **B4**  | 🔶     | Admin sieht Dashboard mit KPIs, Requests-Seite; keine Pipeline-Übersicht, keine Gap Analysis.                                                                                                                                                  |
+| **B5**  | ❌     | Kein Bulk-Editing, kein Audit-Log.                                                                                                                                                                                                             |
+| **C1**  | 🔶     | Profil: Name, E-Mail (read-only), Rolle. Kein Profilbild, kein Passwort ändern, keine 2FA, keine Spracheinstellungen.                                                                                                                          |
+| **C2**  | 🔶     | Einladung (InviteCard/Link), Rollen admin/sales. Kein Editor, keine Gruppen.                                                                                                                                                                   |
+| **C3**  | ❌     | Kein Branding (Logo, Farben, Fonts, Footer).                                                                                                                                                                                                   |
+| **C4**  | ❌     | Branchen/Länder im Formular fest codiert, keine Einstellungen für Kategorisierung.                                                                                                                                                             |
+| **C5**  | ❌     | Keine Integrationen (CRM, Slack/Teams, API-Key) in den Einstellungen.                                                                                                                                                                          |
+| **D1**  | ❌     | Keine Notification-Bell in der Navigation.                                                                                                                                                                                                     |
+| **D2**  | 🔶     | Deals-Seite mit Karte „Aktuelle Deals“, aber nur Platzhalter-Text.                                                                                                                                                                             |
+| **D3**  | 🔶     | Karte „Auslaufende Referenzen“, aber nur Platzhalter.                                                                                                                                                                                          |
+| **D4**  | ❌     | Keine Verknüpfung Deal ↔ auslaufende Referenzen.                                                                                                                                                                                               |
+| **E1**  | ❌     | Kein Auto-Expiry-Reminder (6 Monate).                                                                                                                                                                                                          |
+| **E2**  | ❌     | Keine One-Click-Eskalation (48 h).                                                                                                                                                                                                             |
+| **E3**  | ❌     | Kein Delegations-Modus.                                                                                                                                                                                                                        |
+| **E4**  | ❌     | Anonym ist nur Status-Option, kein Fast-Track (Stufe 3 überspringen).                                                                                                                                                                          |
+| **F1**  | ❌     | Kein Hover-Text zur Freigabe, kein Banner für Freigabestatus.                                                                                                                                                                                  |
+| **F2**  | 🔶     | Favoritenstern wird gelb bei aktiv. Titel nicht deutlich präsenter.                                                                                                                                                                            |
+| **F3**  | ❌     | Kein Freigabe-Fortschritt unter dem Titel (ausklappbar).                                                                                                                                                                                       |
+| **F4**  | 🔶     | Übersicht mit Summary, Tags, Industrie, Region, Projektstatus, Dauer, Website, Erstellt, Aktualisiert. Keine Mitarbeiteranzahl, Volumen, Vertragsart, >3 Jahre, CRM-ID.                                                                        |
+| **F5**  | ❌     | Keine Sektion Projektinformationen (Problem/Lösung, Gewinngrund), kein PDF-Download, keine Länder mit Flaggen.                                                                                                                                 |
+| **F6**  | 🔶     | Interner Kontakt (Account Owner) angezeigt. Kein Tel/Teams, kein Hover, keine Historie, kein „Kontakt Kundenseite“, kein Kunden-Approval-Button.                                                                                               |
+| **F7**  | 🔶     | Datei-Anzeige und Link „Öffnen“. Kein D&D im Sheet, kein gebrandetes PDF, kein Download nur bei extern freigegeben.                                                                                                                            |
+| **F8**  | 🔶     | „Historie“ mit nur „Referenz erstellt“. Kein „zuletzt aktualisiert“, keine Freigabenhistorie, nicht als „Infos zur Referenz“ benannt.                                                                                                          |
+| **F9**  | 🔶     | Button „Einzelfreigabe anfragen“ für Sales (internal/restricted), löst E-Mail aus. Kein Modal (Deal/Kunde, Größe, Frist, Nachricht).                                                                                                           |
+| **F10** | ❌     | Keine Referenzcalls (E-Mail/Tel-Einverständnis).                                                                                                                                                                                               |
+| **F11** | ❌     | Kein „Verified by AM“-Badge.                                                                                                                                                                                                                   |
 
 **Zusammenfassung:** Kein Arbeitspaket ist vollständig umgesetzt. Einige sind **teilweise** umgesetzt (A2, A3, B3, B4, C1, C2, D2, D3, F2, F4, F6, F7, F8, F9). Alle übrigen sind **noch offen**. Erster sinnvoller Schritt: **B1 (KPI-Cards für Sales ausblenden)** – geringer Aufwand, sofort sichtbarer Effekt.
 
@@ -53,13 +53,13 @@
 
 ## Übersicht der Themenblöcke
 
-| Block | Kurzbeschreibung |
-|-------|------------------|
-| **A** | Freigabe-Workflow (3 Stufen, Status, Pipeline, Timeline) |
-| **B** | Rollen & Ansichten (Sales, Account Manager, Reference Manager) |
-| **C** | Einstellungen (Profil, Team, Branding, Kategorisierung, Integrationen) |
-| **D** | Deals-Seite & Notifications (aktuelle Deals, auslaufende Referenzen, Nav-Bell) |
-| **E** | Smart Features (Reminder, Eskalation, Delegation, Fast-Track anonym) |
+| Block | Kurzbeschreibung                                                                                           |
+| ----- | ---------------------------------------------------------------------------------------------------------- |
+| **A** | Freigabe-Workflow (3 Stufen, Status, Pipeline, Timeline)                                                   |
+| **B** | Rollen & Ansichten (Sales, Account Manager, Reference Manager)                                             |
+| **C** | Einstellungen (Profil, Team, Branding, Kategorisierung, Integrationen)                                     |
+| **D** | Deals-Seite & Notifications (aktuelle Deals, auslaufende Referenzen, Nav-Bell)                             |
+| **E** | Smart Features (Reminder, Eskalation, Delegation, Fast-Track anonym)                                       |
 | **F** | Referenz-Detailansicht (Detail-Sheet: Freigabe, Übersicht, Ansprechpartner, Dateien, Einzelfreigabe, etc.) |
 
 ---
@@ -71,6 +71,7 @@
 **Ausgangslage:** AM oder Reference Manager legt einen Entwurf an.
 
 **Scope:**
+
 - Referenz wird im Status **Entwurf** gespeichert (wie heute).
 - **KI-Prüfung** (neu): Nach Anlegen/Bearbeiten des Entwurfs prüft eine KI (oder ein definierter Check) auf:
   - Anonymisierung (keine unerlaubten personen-/firmenbezogenen Daten in freigegebenen Texten).
@@ -88,6 +89,7 @@
 **Trigger:** Reference Manager gibt den Entwurf zur Prüfung an den **Account Owner** frei.
 
 **Scope:**
+
 - **Benachrichtigung** an den AM: in RefStack + optional per E-Mail/Teams.
 - AM muss bestätigen:
   - Ist die Story **faktisch korrekt**?
@@ -106,6 +108,7 @@
 **Trigger:** Sales Rep fragt **Einzelfreigabe** für einen Deal an **oder** AM startet den **generellen Freigabeprozess**.
 
 **Scope:**
+
 - RefStack generiert einen **Share-Link** für den Kundenansprechpartner.
 - Kunde sieht eine **saubere Ansicht** der Case Study (ohne interne Infos).
 - Kunde kann per Klick **zustimmen** oder **Korrekturen markieren**.
@@ -122,12 +125,14 @@
 **Ziel:** Reference Manager sieht alle Referenzen im Freigabeprozess in einer **Pipeline-Ansicht** (Kanban).
 
 **Spalten (Vorschlag):**
+
 1. **Neu / Vorschläge** (KI-Entwürfe oder neu angelegt).
 2. **Wartet auf AM** (interne Validierung durch Account Owner).
 3. **Wartet auf Kunde** (externe Verifizierung).
 4. **Live** (vollständig freigegeben).
 
 **Scope:**
+
 - Neue Seite oder Bereich z. B. `/dashboard/pipeline` oder in Dashboard integriert.
 - Karten pro Referenz mit Kerninfos (Unternehmen, Titel, Status, ggf. Fristen).
 - Drag & Drop optional (Verschieben zwischen Spalten = Statusänderung + ggf. Benachrichtigung).
@@ -141,11 +146,13 @@
 **Ziel:** In der **Detailansicht** einer Referenz (Sidebar/Sheet) eine kleine **vertikale Status-Timeline** rechts in der Sidebar.
 
 **Inhalt (Beispiel):**
+
 - **Erstellt** (Datum, User) ✅
 - **AM-Check** (z. B. „Alex Stoepel, vor 2 Tagen“) ✅ – bei >10 Tage exaktes Datum anzeigen.
 - **Kunden-Freigabe** (Ausstehend – Button: „Reminder senden“) ⏳
 
 **Scope:**
+
 - Timeline-Komponente mit Zuständen (erledigt / ausstehend).
 - Buttons wie „Reminder senden“ nur bei Berechtigung und sinnvollem Status.
 
@@ -165,6 +172,7 @@
 **Ziel:** Sales sieht eine **Explorer-Startseite** (Home) mit maximaler Geschwindigkeit „rein und raus“.
 
 **Scope:**
+
 - **KPI-Cards ausblenden:** Die KPI-Karten (Gesamt, Entwürfe, Ausstehend, Freigegeben) werden in der **Sales-Rep-Rolle nicht angezeigt** – nur für Reference Manager / Admin sichtbar.
 - **Zentrale Suchleiste** prominent (wie Suchmaschine) mit Filtern (Branche, Tech-Stack, Region).
 - **RFP-Dropzone** daneben: Ausschreibungsdokument hochladen → KI schlägt passende Referenzen gerankt vor.
@@ -179,6 +187,7 @@
 ### B2 – Sales: Exklusive Features
 
 **Scope:**
+
 - **One-Click-Anonymisierung (KI):** Kundennamen in neutrale Beschreibung umwandeln.
 - **One-Click-Export:** Gebrandetes PDF oder Textbaustein mit Logo (eigen + Kundenlogo wenn freigegeben).
 - **Teams-Integration:** Aus Referenz heraus AM per Teams kontaktieren (One-Click-Call).
@@ -192,6 +201,7 @@
 **Ausgangslage:** Freigaben laufen **E-Mail-first** (RefStack schickt Mails an AM).
 
 **Scope:**
+
 - Bestätigen: E-Mail-Benachrichtigungen für Freigabeanfragen (bereits teilweise vorhanden?).
 - **Optionale eigene Ansicht** für AM: Übersicht „Meine Accounts“ / Referenzen, die ich freigeben muss – sinnvoll, wenn ein AM mehrere Accounts betreut.
 
@@ -204,6 +214,7 @@
 **Ziel:** Ref. Mgr hat Governance, Compliance, Pflege des Datenbestands.
 
 **Scope:**
+
 - **Home (Management-Dashboard):**
   - KPI-Karten: Gesamtanzahl Referenzen, im Entwurf, ausstehende Freigaben, bald ablaufende Cases (Expiry).
   - Approval-Pipeline-Übersicht (Liste der Referenzen, die auf OK warten).
@@ -218,6 +229,7 @@
 ### B5 – Reference Manager: Exklusive Features
 
 **Scope:**
+
 - **Bulk-Editing:** Mehrere Referenzen gleichzeitig (z. B. neuen AM zuweisen, Tags ändern).
 - **Review-Workflow:** Korrigieren und Freigeben von Entwürfen (von Sales/AM).
 - **Audit-Log:** Historie, wer wann welche Referenz geändert oder exportiert hat.
@@ -231,6 +243,7 @@
 ### C1 – Profil & Account (persönlich)
 
 **Scope:**
+
 - **Nutzerprofil:** Name, E-Mail, Profilbild.
 - **Passwort & Sicherheit:** Passwort ändern, 2FA aktivieren.
 - **Spracheinstellungen:** Interface-Sprache (und ggf. Standard-Referenzsprache).
@@ -242,6 +255,7 @@
 ### C2 – Team-Management (Rollen & Rechte)
 
 **Scope:**
+
 - **Mitglieder einladen:** E-Mail-Versand (bereits Einladungslink?).
 - **Rollen-Definition:** Admin (alles), Editor (Referenzen erstellen/bearbeiten), Sales/Viewer (nur suchen, lesen, exportieren).
 - **Gruppen:** Zuweisung zu Abteilungen (z. B. „Vertrieb DACH“, „Marketing USA“).
@@ -253,6 +267,7 @@
 ### C3 – Branding & Design
 
 **Scope:**
+
 - **Logo-Upload** für Export-Kopfzeile.
 - **Primärfarben** (Hex).
 - **Schriftarten** (Auswahl oder Upload).
@@ -265,6 +280,7 @@
 ### C4 – Kategorisierung & Metadaten (global)
 
 **Scope:**
+
 - **Branchen-Liste** (eigene Kategorien, z. B. Pharma, Automotive).
 - **Produkt-Tags** (Produkte/Dienstleistungen verknüpfbar).
 - **Regionen** (DACH, EMEA, Global).
@@ -276,6 +292,7 @@
 ### C5 – Integrationen & API
 
 **Scope:**
+
 - **CRM:** HubSpot, Salesforce, Pipedrive.
 - **Slack/Teams:** Benachrichtigungen in Channel bei neuer Referenz.
 - **API-Key-Management** für Einbettung in eigene Website.
@@ -289,6 +306,7 @@
 ### D1 – Notification-Bell in der Navigation
 
 **Scope:**
+
 - **Notification-Bell** oben in der Navbar.
 - Beim Klick: **Popover** mit z. B. zwei Bereichen/Switchern:
   - „Expiring Deals“ (auslaufende Referenzen/Freigaben).
@@ -301,6 +319,7 @@
 ### D2 – Deals-Seite: Layout & linke Spalte (Aktuelle Deals)
 
 **Scope:**
+
 - **Responsive Grid:** `grid-cols-1 lg:grid-cols-2`.
 - **Linke Spalte – Aktuelle Deals (Sales-Fokus):**
   - Table oder Cards mit: Unternehmen & Titel, Status-Badge (z. B. „In Verhandlung“, „RFP Phase“), **Match-Indikator** (wie viele passende Referenzen), Action: **„Passende Referenzen finden“** → springt in gefilterte Referenz-Suche.
@@ -313,6 +332,7 @@
 ### D3 – Deals-Seite: Rechte Spalte (Auslaufende Referenzen)
 
 **Scope:**
+
 - **Rechte Spalte – Auslaufende Referenzen (Manager-Fokus):**
   - **Progress Bar** (z. B. shadcn Progress): wie viel Zeit bis Ablauf der Freigabe (z. B. 180-Tage-Balken, wird rot bei nahem Ende).
   - **Farbige Datums-Badges:** rot „Läuft in 30 Tagen ab“, gelb „90 Tage“.
@@ -326,6 +346,7 @@
 ### D4 – Verknüpfung Deal ↔ auslaufende Referenzen
 
 **Scope:**
+
 - Wenn in der linken Spalte ein **neuer Deal** erscheint (z. B. „Cloud Projekt bei BMW“), in der rechten Spalte **hervorheben**, wenn dafür relevante Referenzen bald ablaufen.
 - Sales sieht: „BMW-Referenz jetzt verlängern, sonst für diesen Deal nicht nutzbar.“
 
@@ -338,6 +359,7 @@
 ### E1 – Auto-Expiry-Reminder
 
 **Scope:**
+
 - **6 Monate vor Ablauf** einer Freigabe: AM erhält automatisch Aufgabe/Benachrichtigung: „Referenz bei Kunde X noch aktuell? Bitte re-validieren.“
 
 **Abhängigkeiten:** A2/A3; Ablaufdatum pro Freigabe; Cron/Job oder Edge Function für zeitgesteuerte Mails/Tasks.
@@ -347,6 +369,7 @@
 ### E2 – One-Click-Eskalation
 
 **Scope:**
+
 - Wenn AM **48 h nicht reagiert:** Reference Manager kann mit einem Klick:
   - Anfrage an Vorgesetzten/Head of Sales **eskalieren**, oder
   - Referenz temporär auf **„Limited“** setzen.
@@ -358,6 +381,7 @@
 ### E3 – Delegations-Modus (AM abwesend)
 
 **Scope:**
+
 - Wenn AM im Urlaub (z. B. Outlook-Sync oder manuell „Abwesend“):
   - Freigabeanfrage wird automatisch an **hinterlegten Stellvertreter** oder andere hinterlegte AMs geleitet.
 
@@ -368,6 +392,7 @@
 ### E4 – Fast-Track für anonyme Referenzen
 
 **Scope:**
+
 - Wenn Referenz von vornherein als **„Anonymisiert“** markiert wird:
   - **Stufe 3 (Kunden-OK) entfällt** – keine geschützten Markendaten.
   - Referenz wird nach interner Freigabe (Stufe 2) sofort für Sales nutzbar.
@@ -378,15 +403,16 @@
 
 ## F. Referenz-Detailansicht (Detail-Sheet)
 
-*Alle Punkte nochmal hinterfragen – Darstellung und Struktur als Vorschlag.*
+_Alle Punkte nochmal hinterfragen – Darstellung und Struktur als Vorschlag._
 
 ---
 
 ### F1 – Freigabenanzeige & Sichtbarkeit
 
 **Scope:**
+
 - **Oben rechts:** Freigabenanzeige (Freigabestatus).
-- **Hover:** Erklärung anzeigen, z. B. *„Limited external use – the reference needs to be approved by the account first. Click the button at the bottom of this page to start.“*
+- **Hover:** Erklärung anzeigen, z. B. _„Limited external use – the reference needs to be approved by the account first. Click the button at the bottom of this page to start.“_
 - **Option:** Freigabestatus als **Banner oben prominent** machen, damit er nicht übersehen wird (aktuell etwas versteckt).
 
 **Offen:** Texte final formulieren; ob Banner immer oder nur bei eingeschränkten Status.
@@ -396,6 +422,7 @@
 ### F2 – Favoriten & Titel
 
 **Scope:**
+
 - **Favoritenstern:** Gelb darstellen, wenn als Favorit markiert (bereits teilweise vorhanden – einheitlich gelb bei „angeklickt“).
 - **Titel:** Deutlich präsenter machen (z. B. größer/gewichtet, z. B. „Cloud …“ klar hervorgehoben).
 
@@ -404,6 +431,7 @@
 ### F3 – Freigabe-Fortschritt unter dem Titel
 
 **Scope:**
+
 - **Direkt unter dem Titel:** Fortschritt des Freigabeprozesses sichtbar.
 - **Nur der aktuelle Step** wird standardmäßig angezeigt; **Rest ausklappbar** (Darstellung mit Kreisen und Linien, wie im „Kreise und Linien“-Bild rechts in den Notizen).
 
@@ -414,6 +442,7 @@
 ### F4 – Übersicht (Kurzinfos)
 
 **Scope:**
+
 - **Kurzzusammenfassung:** Beibehalten, oder durch **Kurzbeschreibung des Unternehmens** ersetzen (z. B. was für ein Unternehmen, wie viele Mitarbeiter, wo HQ). Noch klären: Zusammenfassung rausnehmen und in „Projektinformationen“ aufgehen lassen?
 - **Bereiche:** Mit Tags der Projektbereiche (Cloud, E-Commerce, etc.) – Tags wie bereits im Formular.
 - **Blöcke nebeneinander mit Icons** (getrennt z. B. durch „///“):
@@ -430,6 +459,7 @@
 ### F5 – Neue Sektion: Projektinformationen
 
 **Scope:**
+
 - **Das Problem unseres Kunden** (max. xxx Zeichen).
 - **Unsere Lösung** (max. xxx Zeichen).
 - Beide evtl. **nebeneinander**.
@@ -444,6 +474,7 @@
 ### F6 – Ansprechpartner (intern & Kunde)
 
 **Scope:**
+
 - **Interner Kontakt** → Bezeichnung evtl. „Interner Ansprechpartner“ / „Interne Verantwortliche“.
   - **Firmen-E-Mail + Tel + Teams-Icon:** Infos beim Hover anzeigen, **klickbar** für direkte Interaktion (E-Mail, Anruf, Teams).
   - **Historie interner Ansprechpartner** hinterlegen, damit Nachfolger beim Kunden direkt Anschluss finden können.
@@ -459,6 +490,7 @@
 ### F7 – Dateien
 
 **Scope:**
+
 - **Drag & Drop Upload** für Dateien (nur von **Reference Managern** verwaltbar bzw. freigebbar?).
 - **Button:** Infos wie im Screenshot als **gebrandetes PDF** (Firmenlogo + Kundenlogo) herunterladen – **Download-Pfeil-Icon**.
 - **Dokumentendownload:** Hinterlegte Case Study (PowerPoint/Word) – **nur wenn extern freigegeben**.
@@ -470,6 +502,7 @@
 ### F8 – Historie → „Infos zur Referenz“
 
 **Scope:**
+
 - **Referenz erstellt** (Datum, ggf. User).
 - **Referenz zuletzt aktualisiert** (Datum).
 - **Freigabenhistorie** (inkl. individuelle Freigaben).
@@ -481,6 +514,7 @@ Bezeichnung der Sektion: **„Infos zur Referenz“** (statt nur „Historie“)
 ### F9 – Einzelfreigabe-Button & Modal
 
 **Scope:**
+
 - **Button „Einzelfreigabe anfragen“** (mit Papierflieger-Icon): **prominenter**, **immer sichtbar** (z. B. fix unter der letzten Sektion oder sticky), nicht versteckt.
 - **Sichtbarkeit:** Nur anzeigen, wenn die Referenz **noch nicht „extern“ freigegeben** ist und/oder eine **Einzelfreigabe benötigt** wird.
 - **Beim Klick:** **Neues Fenster/Modal** mit Abfrage:
@@ -500,7 +534,8 @@ Bezeichnung der Sektion: **„Infos zur Referenz“** (statt nur „Historie“)
 **Hintergrund:** Manche (Neu-)Kunden verlangen in Ausschreibungen **Referenzcalls** – d. h. sie möchten mit dem Referenz-Kunden **persönlich telefonieren** (direkte Durchwahl). **Datenschutz- und Freigabethema.**
 
 **Scope:**
-- **Option:** Kästchen vom Kunden auswählbar: **„Einverstanden mit Kontakt per: ○ E-Mail   ○ Tel“** – um festzuhalten, ob Kontakt per E-Mail und/oder Telefon erlaubt ist.
+
+- **Option:** Kästchen vom Kunden auswählbar: **„Einverstanden mit Kontakt per: ○ E-Mail ○ Tel“** – um festzuhalten, ob Kontakt per E-Mail und/oder Telefon erlaubt ist.
 - Freigabe für Referenzcalls ggf. separat abbilden (analog zu Einzelfreigabe).
 
 **Offen:** Datenschutz; ob als Teil der bestehenden Freigabe oder eigener Freigabe-Typ.
@@ -510,7 +545,8 @@ Bezeichnung der Sektion: **„Infos zur Referenz“** (statt nur „Historie“)
 ### F11 – „Verified by AM“ Badge / Watermark
 
 **Scope:**
-- **Badge oder Watermark** in der Referenz: z. B. *„Daten verifiziert durch [Name AM] am [Datum]“* (z. B. „Daten verifiziert durch Alex Stoepel am 20.02.2026“).
+
+- **Badge oder Watermark** in der Referenz: z. B. _„Daten verifiziert durch [Name AM] am [Datum]“_ (z. B. „Daten verifiziert durch Alex Stoepel am 20.02.2026“).
 - **Zweck:** Gibt dem Sales Rep psychologische Sicherheit; spart unnötigen Check-Anruf oder Teams-Nachricht – Sales kann „mit Vollgas weitermachen“.
 
 **Abhängigkeiten:** A2 (AM-Check); Speicherung Verifizierungsdatum und -person.
@@ -566,4 +602,4 @@ Ohne Anspruch auf finale Priorisierung – als Diskussionsgrundlage:
 
 ---
 
-*Ende des Dokuments. Nächster Schritt: Priorisierung mit dem Team und Auswahl der ersten Arbeitspakete für die Umsetzung.*
+_Ende des Dokuments. Nächster Schritt: Priorisierung mit dem Team und Auswahl der ersten Arbeitspakete für die Umsetzung._

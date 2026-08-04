@@ -92,7 +92,8 @@ export function CommandCenterSearchResults({
 
         {showEmpty ? (
           <CommandEmpty className="px-4 py-10 text-center text-sm text-slate-500">
-            Noch keine Treffer für „{trimmed}“ gefunden. Versuche es mit einem anderen Begriff.
+            Noch keine Treffer für „{trimmed}“ gefunden. Versuche es mit einem anderen
+            Begriff.
           </CommandEmpty>
         ) : null}
 
@@ -169,12 +170,18 @@ export function SearchResultRow({ item }: { item: CommandSearchResult }) {
               {item.accountName ? (
                 <span className="text-slate-500"> — {item.accountName}</span>
               ) : item.industry ? (
-                <span className="text-slate-500"> ({formatIndustryDisplay(item.industry)})</span>
+                <span className="text-slate-500">
+                  {' '}
+                  ({formatIndustryDisplay(item.industry)})
+                </span>
               ) : null}
             </span>
           </span>
           {typeof item.similarity === 'number' && item.similarity > 0 ? (
-            <Badge variant="secondary" className="shrink-0 text-[10px] font-medium tabular-nums">
+            <Badge
+              variant="secondary"
+              className="shrink-0 text-[10px] font-medium tabular-nums"
+            >
               {Math.round(item.similarity * 100)} %
             </Badge>
           ) : null}
@@ -187,7 +194,9 @@ export function SearchResultRow({ item }: { item: CommandSearchResult }) {
             <ResultIconWrap>
               <TrendingUp className="size-4 text-violet-600" aria-hidden />
             </ResultIconWrap>
-            <span className="min-w-0 truncate font-medium text-slate-900">{item.title}</span>
+            <span className="min-w-0 truncate font-medium text-slate-900">
+              {item.title}
+            </span>
           </span>
           <span className="shrink-0 text-xs text-slate-400">{item.companyName}</span>
         </>
@@ -203,7 +212,12 @@ export function SearchResultRow({ item }: { item: CommandSearchResult }) {
               {subtitle ? <span className="text-slate-500"> ({subtitle})</span> : null}
             </span>
           </span>
-          <AppIcon icon={Linkedin01Icon} size={16} className="size-4 shrink-0 text-slate-400" aria-hidden />
+          <AppIcon
+            icon={Linkedin01Icon}
+            size={16}
+            className="size-4 shrink-0 text-slate-400"
+            aria-hidden
+          />
         </>
       )
     }
@@ -234,7 +248,9 @@ export function SearchResultRow({ item }: { item: CommandSearchResult }) {
               title={item.title}
               className="size-8"
             />
-            <span className="min-w-0 truncate font-medium text-slate-900">{item.title}</span>
+            <span className="min-w-0 truncate font-medium text-slate-900">
+              {item.title}
+            </span>
           </span>
           <span className="shrink-0 text-xs text-slate-500">{item.validUntilLine}</span>
         </>

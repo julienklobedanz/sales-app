@@ -14,7 +14,7 @@ export function isShowcaseFieldEmpty(value: string | null | undefined): boolean 
 
 export function showcaseFieldDisplay(
   raw: string | null | undefined,
-  revokeMode: boolean
+  revokeMode: boolean,
 ): { show: boolean; value: ReactNode } {
   const text = raw != null ? String(raw).trim() : ''
   const empty = !text || text === '—'

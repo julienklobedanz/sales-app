@@ -30,7 +30,7 @@ export async function findExistingCompanyForCrmImport(
     externalAccountId: string
     name: string
     website?: string | null
-  }
+  },
 ): Promise<ExistingCompanyMatch | null> {
   const { data: byCrmId } = await supabase
     .from('companies')

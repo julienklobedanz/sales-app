@@ -13,7 +13,7 @@ import {
 
 /** Brandfetch-Abgleich für einen bestehenden Account (Bearbeiten / Nachimport). */
 export async function syncCompanyBrandfetchForEdit(
-  companyId: string
+  companyId: string,
 ): Promise<ResolveCompanyForImportResult> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -39,7 +39,7 @@ export async function syncCompanyBrandfetchForEdit(
  */
 export async function refreshCompanyBrandfetchOnLogoIssue(
   companyId: string,
-  failedLogoUrl?: string | null
+  failedLogoUrl?: string | null,
 ): Promise<ResolveCompanyForImportResult> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -63,7 +63,7 @@ export async function refreshCompanyBrandfetchOnLogoIssue(
 
 /** Referenzierte Accounts ohne Logo/Branche nachziehen (Seitenaufruf / Client-Refresh). */
 export async function enrichReferencedCompaniesMissingBrandfetch(
-  companyIds: string[]
+  companyIds: string[],
 ): Promise<{ synced: number; failed: number }> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -95,7 +95,11 @@ export async function enrichReferencedCompaniesMissingBrandfetch(
     const hasIndustry = Boolean(row?.industry?.trim())
     if (hasLogo && hasIndustry) continue
 
-    const result = await syncExistingCompanyBrandfetch(supabase, organizationId, companyId)
+    const result = await syncExistingCompanyBrandfetch(
+      supabase,
+      organizationId,
+      companyId,
+    )
     if (result.success && result.company) {
       const gotLogo = Boolean(result.company.logo_url?.trim())
       const gotIndustry = Boolean(result.company.industry?.trim())
@@ -159,7 +163,7 @@ export async function upgradeAllOrganizationBrandfetchLogosToDark(): Promise<{
 
 /** Nach Firmennamen (z. B. aus PDF) — findet „Aurubis“ statt neu „Aurubis AG“. */
 export async function syncCompanyBrandfetchByName(
-  companyName: string
+  companyName: string,
 ): Promise<ResolveCompanyForImportResult> {
   const supabase = await createServerSupabaseClient()
   const {

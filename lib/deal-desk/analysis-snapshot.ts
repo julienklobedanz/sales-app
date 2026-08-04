@@ -56,7 +56,7 @@ export function toPersistedAnalysisSnapshot(input: {
 
 export function extractDealRfpSectionData(
   projectId: string,
-  raw: unknown
+  raw: unknown,
 ): DealRfpSectionData | null {
   if (!raw || typeof raw !== 'object') return null
   const snap = raw as PersistedDealDeskAnalysisSnapshot

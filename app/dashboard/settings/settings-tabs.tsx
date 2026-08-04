@@ -118,28 +118,33 @@ export function SettingsTabs({
   const [subdomain, setSubdomain] = useState(org.subdomain)
   const [registryVersion, setRegistryVersion] = useState(0)
   const searchParams = useSearchParams()
-  const handlerPartsRef = useRef<Partial<Record<SettingsTabId, Map<string, SettingsTabHandlers>>>>({})
+  const handlerPartsRef = useRef<
+    Partial<Record<SettingsTabId, Map<string, SettingsTabHandlers>>>
+  >({})
 
   useEffect(() => {
     const resolved = resolveSettingsTabId(searchParams.get('tab'))
     if (resolved) setActiveTab(resolved)
   }, [searchParams])
 
-  const registerTab = useCallback<RegisterSettingsTab>((tabId, handlers, partKey = 'default') => {
-    if (!handlerPartsRef.current[tabId]) {
-      handlerPartsRef.current[tabId] = new Map()
-    }
-    const parts = handlerPartsRef.current[tabId]!
-    if (handlers === null) {
-      parts.delete(partKey)
-      if (parts.size === 0) {
-        delete handlerPartsRef.current[tabId]
+  const registerTab = useCallback<RegisterSettingsTab>(
+    (tabId, handlers, partKey = 'default') => {
+      if (!handlerPartsRef.current[tabId]) {
+        handlerPartsRef.current[tabId] = new Map()
       }
-    } else {
-      parts.set(partKey, handlers)
-    }
-    setRegistryVersion((v) => v + 1)
-  }, [])
+      const parts = handlerPartsRef.current[tabId]!
+      if (handlers === null) {
+        parts.delete(partKey)
+        if (parts.size === 0) {
+          delete handlerPartsRef.current[tabId]
+        }
+      } else {
+        parts.set(partKey, handlers)
+      }
+      setRegistryVersion((v) => v + 1)
+    },
+    [],
+  )
 
   const mergedHandlers = useMemo(() => {
     void registryVersion
@@ -176,7 +181,11 @@ export function SettingsTabs({
   }
 
   return (
-    <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as SettingsTabId)} className="gap-6 pb-20">
+    <Tabs
+      value={activeTab}
+      onValueChange={(v) => setActiveTab(v as SettingsTabId)}
+      className="gap-6 pb-20"
+    >
       <TabsList variant="line" className="w-full justify-start">
         <TabsTrigger value="profile" className="after:hidden">
           Persönlich

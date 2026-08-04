@@ -11,13 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Filter,
-  Loader,
-  Plus,
-  StarIcon,
-  UploadIcon,
-} from '@hugeicons/core-free-icons'
+import { Filter, Loader, Plus, StarIcon, UploadIcon } from '@hugeicons/core-free-icons'
 import { AppIcon } from '@/lib/icons'
 import { MASTER_INDUSTRIES } from '@/lib/constants/industries'
 import { COPY } from '@/lib/copy'
@@ -194,7 +188,10 @@ export function CompaniesGridToolbar({
             </AccountsToolbarTooltip>
             <PopoverContent className="w-[min(100vw-2rem,20rem)] space-y-4" align="end">
               <div className="space-y-1.5">
-                <Label htmlFor="account-filter-industry" className="text-xs font-medium text-muted-foreground">
+                <Label
+                  htmlFor="account-filter-industry"
+                  className="text-xs font-medium text-muted-foreground"
+                >
                   Branche
                 </Label>
                 <Select value={filterIndustry} onValueChange={setFilterIndustry}>
@@ -212,7 +209,10 @@ export function CompaniesGridToolbar({
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="account-filter-employees" className="text-xs font-medium text-muted-foreground">
+                <Label
+                  htmlFor="account-filter-employees"
+                  className="text-xs font-medium text-muted-foreground"
+                >
                   Mitarbeiterzahl
                 </Label>
                 <Select
@@ -233,7 +233,10 @@ export function CompaniesGridToolbar({
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="account-filter-refs" className="text-xs font-medium text-muted-foreground">
+                <Label
+                  htmlFor="account-filter-refs"
+                  className="text-xs font-medium text-muted-foreground"
+                >
                   Referenzen
                 </Label>
                 <Select

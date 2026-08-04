@@ -14,7 +14,10 @@ import {
 import { IndustrySelect } from '@/components/forms/industry-select'
 import { AppIcon } from '@/lib/icons'
 import { COUNTRIES } from '@/lib/references/reference-form/reference-form-constants'
-import { RequiredLabel, OptionalLabel } from '@/lib/references/reference-form/reference-form-labels'
+import {
+  RequiredLabel,
+  OptionalLabel,
+} from '@/lib/references/reference-form/reference-form-labels'
 import { formatThousandsDots } from '@/lib/references/reference-form/reference-form-pure'
 import type { ReferenceFormViewModel } from '@/lib/references/reference-form/use-reference-form'
 import {
@@ -135,7 +138,9 @@ export function ReferenceFormCompanySection({
                       setCompanyId('')
                       applyBrandfetchPreview(val)
                     }}
-                    onAutoRemotePreview={(q) => applyBrandfetchPreview(q, { silent: true })}
+                    onAutoRemotePreview={(q) =>
+                      applyBrandfetchPreview(q, { silent: true })
+                    }
                     previewLoading={enrichLoading}
                     onSelectCompany={(company) => {
                       if (company.id.startsWith('brandfetch:')) {

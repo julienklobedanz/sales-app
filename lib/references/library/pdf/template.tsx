@@ -1,12 +1,5 @@
 import React from 'react'
-import {
-  Document,
-  Image,
-  Page,
-  StyleSheet,
-  Text,
-  View,
-} from '@react-pdf/renderer'
+import { Document, Image, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
 import type { PdfOrgBranding, PdfReference, PdfTemplate } from './types'
 import { anonymizeReferenceForOutput } from './anonymization'
 import { normalizeTextForPdfFlow } from './normalize-for-pdf'
@@ -222,10 +215,7 @@ const styles = StyleSheet.create({
   footerCenter: { textAlign: 'center', flex: 1 },
 })
 
-function factValue(
-  raw: string | null | undefined,
-  fallback = '—'
-): string {
+function factValue(raw: string | null | undefined, fallback = '—'): string {
   const normalized = normalizeTextForPdfFlow(raw)
   if (normalized) return normalized
   const trimmed = raw?.trim()
@@ -234,13 +224,15 @@ function factValue(
 
 function keyFacts(reference: PdfReference): { label: string; value: string }[] {
   const status =
-    formatProjectStatusDe(reference.project_status) ||
-    factValue(reference.project_status)
+    formatProjectStatusDe(reference.project_status) || factValue(reference.project_status)
   return [
     { label: 'Branche', value: factValue(formatIndustryDisplay(reference.industry)) },
     { label: 'Land', value: factValue(reference.country) },
     { label: 'Volumen', value: formatReferenceVolume(reference.volume_eur) || '—' },
-    { label: 'Vertragsart', value: factValue(formatContractTypeDisplay(reference.contract_type)) },
+    {
+      label: 'Vertragsart',
+      value: factValue(formatContractTypeDisplay(reference.contract_type)),
+    },
     { label: 'Status', value: status },
     { label: 'Dienstleister', value: factValue(reference.incumbent_provider) },
     { label: 'Wettbewerber', value: factValue(reference.competitors) },
@@ -254,7 +246,11 @@ function titleTypography(titleText: string): { fontSize: number; lineHeight: num
   return { fontSize: 22, lineHeight: 1.15 }
 }
 
-function resolveHeaderLogo(reference: PdfReference, org: PdfOrgBranding, template: PdfTemplate) {
+function resolveHeaderLogo(
+  reference: PdfReference,
+  org: PdfOrgBranding,
+  template: PdfTemplate,
+) {
   if (template === 'anonymized') return org.logo_url
   return org.logo_url ?? reference.company_logo_url
 }
@@ -312,8 +308,7 @@ function QuoteCard({ reference }: { reference: PdfReference }) {
 
   const name = reference.approval_reference_giver_name?.trim()
   const title = reference.approval_reference_giver_title?.trim()
-  const attribution =
-    name && title ? `— ${name}, ${title}` : name ? `— ${name}` : null
+  const attribution = name && title ? `— ${name}, ${title}` : name ? `— ${name}` : null
 
   return (
     <View style={styles.quoteCard} wrap={false}>
@@ -357,11 +352,15 @@ function PremiumHeader({
           // eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf/renderer Image
           <Image src={logoUrl} style={styles.headerLogo} />
         ) : (
-          <Text style={{ fontSize: 11, fontWeight: 700, color: COLORS.headerText }}>{org.name}</Text>
+          <Text style={{ fontSize: 11, fontWeight: 700, color: COLORS.headerText }}>
+            {org.name}
+          </Text>
         )}
         <Text style={styles.headerEyebrow}>{eyebrow}</Text>
       </View>
-      <Text style={[styles.headerTitle, { fontSize: tt.fontSize, lineHeight: tt.lineHeight }]}>
+      <Text
+        style={[styles.headerTitle, { fontSize: tt.fontSize, lineHeight: tt.lineHeight }]}
+      >
         {titleText}
       </Text>
       <Text style={styles.headerSubtitle}>{buildSubtitle(reference)}</Text>
@@ -507,9 +506,10 @@ function renderReferencePages(
   reference: PdfReference,
   org: PdfOrgBranding,
   template: PdfTemplate,
-  exportedAtLabel: string
+  exportedAtLabel: string,
 ) {
-  const effective = template === 'anonymized' ? anonymizeReferenceForOutput(reference) : reference
+  const effective =
+    template === 'anonymized' ? anonymizeReferenceForOutput(reference) : reference
   return (
     <MagazinePages
       reference={effective}
@@ -533,9 +533,7 @@ export function ReferencePdfDocument({
   exportedAtLabel: string
 }) {
   return (
-    <Document>
-      {renderReferencePages(reference, org, template, exportedAtLabel)}
-    </Document>
+    <Document>{renderReferencePages(reference, org, template, exportedAtLabel)}</Document>
   )
 }
 

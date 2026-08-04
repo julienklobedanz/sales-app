@@ -8,9 +8,15 @@ import { getAppOrigin } from '@/lib/env/app-origin'
 import { asReferenceStatus, asTableUpdate } from '@/lib/supabase/db-types'
 import { profileCanManageOrgData } from '@/lib/roles/profile-guards'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
-import { effectiveCustomerApprovalStatus, hasActiveCustomerApprovalWorkflow } from '@/lib/references/effective-customer-approval'
+import {
+  effectiveCustomerApprovalStatus,
+  hasActiveCustomerApprovalWorkflow,
+} from '@/lib/references/effective-customer-approval'
 import { notifyInternalTeamApprovalWithdrawn } from '@/lib/references/approval-workflow-internal-notifications'
-import { buildRefstackEmailHtml, getRefstackResendFrom } from '@/lib/email/refstack-email-layout'
+import {
+  buildRefstackEmailHtml,
+  getRefstackResendFrom,
+} from '@/lib/email/refstack-email-layout'
 import { getApprovalResendClient } from '@/lib/references/library/approvals-client-email'
 import { withdrawRestoredReferenceStatus } from '@/lib/references/library/approvals-helpers'
 import type { ReferenceApprovalRow } from '@/lib/references/library/approvals-types'
@@ -32,14 +38,16 @@ export async function getApprovalLinkImpl(referenceId: string): Promise<string |
 
   const effective = effectiveCustomerApprovalStatus(
     row?.customer_approval_status,
-    row?.status
+    row?.status,
   )
   if (effective !== 'pending' && effective !== 'approved') return null
 
   return `${getAppOrigin()}/approval/${token}`
 }
 
-export async function withdrawApprovalRequestImpl(referenceId: string): Promise<{ success: true }> {
+export async function withdrawApprovalRequestImpl(
+  referenceId: string,
+): Promise<{ success: true }> {
   const supabase = await createServerSupabaseClient()
   const { data: refRow } = await supabase
     .from('references')
@@ -52,7 +60,7 @@ export async function withdrawApprovalRequestImpl(referenceId: string): Promise<
       approval_requested_by,
       approval_coordinator_email,
       companies ( name )
-    `
+    `,
     )
     .eq('id', referenceId)
     .maybeSingle()
@@ -67,7 +75,9 @@ export async function withdrawApprovalRequestImpl(referenceId: string): Promise<
     companies?: { name?: string } | { name?: string }[] | null
   } | null
 
-  const restoredStatus = withdrawRestoredReferenceStatus(ref?.approval_reference_status_snapshot)
+  const restoredStatus = withdrawRestoredReferenceStatus(
+    ref?.approval_reference_status_snapshot,
+  )
 
   const company =
     Array.isArray(ref?.companies) && ref.companies.length > 0
@@ -143,10 +153,13 @@ export async function delegateClientApprovalImpl(params: {
   const supabase = await createServerSupabaseClient()
   const token = params.token.trim()
   const email = params.delegateEmail.trim().toLowerCase()
-  if (!token || !email.includes('@')) return { success: false, error: 'Ungültige Delegationsdaten.' }
+  if (!token || !email.includes('@'))
+    return { success: false, error: 'Ungültige Delegationsdaten.' }
   const { data: ref } = await supabase
     .from('references')
-    .select('id, title, approval_token, approval_delegated_to_name, approval_delegated_to_email')
+    .select(
+      'id, title, approval_token, approval_delegated_to_name, approval_delegated_to_email',
+    )
     .eq('approval_token', token)
     .maybeSingle()
   if (!ref) return { success: false, error: 'Link ungültig.' }
@@ -164,8 +177,7 @@ export async function delegateClientApprovalImpl(params: {
     const html = buildRefstackEmailHtml({
       audience: 'external',
       badge: 'Delegierte Freigabe',
-      bodyHtml:
-        '<p style="margin:0;">Eine Referenz-Freigabe wurde an Sie delegiert.</p>',
+      bodyHtml: '<p style="margin:0;">Eine Referenz-Freigabe wurde an Sie delegiert.</p>',
       ctas: [{ label: 'Zur Freigabe-Seite', href: approvalUrl }],
       meta: { rows: [{ label: 'Referenz', value: refTitle }] },
     })
@@ -214,7 +226,7 @@ export async function resendClientApprovalEmailImpl(referenceId: string) {
       approval_contact_id,
       approval_external_contact_id,
       companies ( name )
-    `
+    `,
     )
     .eq('id', referenceId)
     .single()

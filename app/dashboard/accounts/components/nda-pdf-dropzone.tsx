@@ -52,8 +52,12 @@ export function NdaPdfDropzone({
         aria-disabled={busy}
         className={cn(
           'w-full rounded-lg border-2 border-dashed px-4 py-6 text-center transition-colors',
-          dragOver && !busy ? 'border-violet-400 bg-violet-50/50' : 'border-slate-200 bg-slate-50/40',
-          busy ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:border-slate-300 hover:bg-slate-50/80'
+          dragOver && !busy
+            ? 'border-violet-400 bg-violet-50/50'
+            : 'border-slate-200 bg-slate-50/40',
+          busy
+            ? 'cursor-not-allowed opacity-60'
+            : 'cursor-pointer hover:border-slate-300 hover:bg-slate-50/80',
         )}
         onClick={() => !busy && inputRef.current?.click()}
         onKeyDown={(e) => {
@@ -112,9 +116,16 @@ export function NdaPdfDropzone({
           </div>
         ) : (
           <div className="flex flex-col items-center gap-2">
-            <AppIcon icon={UploadIcon} size={22} className="text-muted-foreground" aria-hidden />
+            <AppIcon
+              icon={UploadIcon}
+              size={22}
+              className="text-muted-foreground"
+              aria-hidden
+            />
             <p className="text-sm font-medium text-foreground">PDF hierher ziehen</p>
-            <p className="text-xs text-muted-foreground">oder klicken zum Auswählen · max. 20 MB</p>
+            <p className="text-xs text-muted-foreground">
+              oder klicken zum Auswählen · max. 20 MB
+            </p>
           </div>
         )}
       </div>

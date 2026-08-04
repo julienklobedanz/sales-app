@@ -18,10 +18,20 @@ const STATUS_MAP: Record<string, ReferenceStatus> = {
   anonymous: 'anonymized',
   restricted: 'internal_only',
 }
-const VALID_STATUSES: ReferenceStatus[] = ['draft', 'internal_only', 'approved', 'anonymized']
+const VALID_STATUSES: ReferenceStatus[] = [
+  'draft',
+  'internal_only',
+  'approved',
+  'anonymized',
+]
 function normalizeStatus(raw: unknown): ReferenceStatus {
-  const s = String(raw ?? '').toLowerCase().trim()
-  return STATUS_MAP[s] ?? (VALID_STATUSES.includes(s as ReferenceStatus) ? (s as ReferenceStatus) : 'draft')
+  const s = String(raw ?? '')
+    .toLowerCase()
+    .trim()
+  return (
+    STATUS_MAP[s] ??
+    (VALID_STATUSES.includes(s as ReferenceStatus) ? (s as ReferenceStatus) : 'draft')
+  )
 }
 
 const DEAL_REF_IN_CHUNK = 150
@@ -29,12 +39,15 @@ const DEAL_REF_IN_CHUNK = 150
 /** deal_references hat keine organization_id — auf Org-Referenz-IDs scopen (RLS-Session-Client). */
 async function fetchDealReferenceRowsForRefs(
   supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
-  orgRefIds: string[]
+  orgRefIds: string[],
 ): Promise<{ data: { reference_id: string }[] }> {
   const rows: { reference_id: string }[] = []
   for (let i = 0; i < orgRefIds.length; i += DEAL_REF_IN_CHUNK) {
     const chunk = orgRefIds.slice(i, i + DEAL_REF_IN_CHUNK)
-    const { data } = await supabase.from('deal_references').select('reference_id').in('reference_id', chunk)
+    const { data } = await supabase
+      .from('deal_references')
+      .select('reference_id')
+      .in('reference_id', chunk)
     if (data?.length) rows.push(...(data as { reference_id: string }[]))
   }
   return { data: rows }
@@ -42,15 +55,14 @@ async function fetchDealReferenceRowsForRefs(
 
 export async function getDashboardDataImpl(
   onlyFavorites = false,
-  auth?: { orgId: string; userId: string }
+  auth?: { orgId: string; userId: string },
 ) {
   const user = auth?.userId ? { id: auth.userId } : await getRequestUser()
   if (!user) {
     return { references: [], totalCount: 0, deletedCount: 0 }
   }
 
-  const orgId =
-    auth?.orgId ?? (await getRequestProfile())?.organization_id ?? null
+  const orgId = auth?.orgId ?? (await getRequestProfile())?.organization_id ?? null
   if (!orgId) {
     return { references: [], totalCount: 0, deletedCount: 0 }
   }
@@ -81,7 +93,10 @@ export async function getDashboardDataImpl(
             .overlaps('reference_ids', orgRefIds),
           fetchDealReferenceRowsForRefs(supabase, orgRefIds),
         ])
-      : [{ data: [] as { reference_ids: string[]; view_count: number }[] }, { data: [] as { reference_id: string }[] }]
+      : [
+          { data: [] as { reference_ids: string[]; view_count: number }[] },
+          { data: [] as { reference_id: string }[] },
+        ]
 
   // Favoriten des aktuellen Users (Set für schnellen Lookup)
   const favoriteIds = new Set<string>()
@@ -103,7 +118,9 @@ export async function getDashboardDataImpl(
         : (contactRaw as { email?: string; first_name?: string; last_name?: string })
       : null
     const contactDisplay = contact
-      ? [contact.first_name, contact.last_name].filter(Boolean).join(' ') || contact.email || null
+      ? [contact.first_name, contact.last_name].filter(Boolean).join(' ') ||
+        contact.email ||
+        null
       : null
     const start = r.project_start as string | null
     const end = r.project_end as string | null
@@ -115,7 +132,8 @@ export async function getDashboardDataImpl(
       if (!Number.isNaN(s.getTime()) && !Number.isNaN(e.getTime())) {
         duration_months = Math.max(
           0,
-          (e.getUTCFullYear() - s.getUTCFullYear()) * 12 + (e.getUTCMonth() - s.getUTCMonth())
+          (e.getUTCFullYear() - s.getUTCFullYear()) * 12 +
+            (e.getUTCMonth() - s.getUTCMonth()),
         )
       }
     } else if (status === 'active' && start) {
@@ -124,7 +142,8 @@ export async function getDashboardDataImpl(
       if (!Number.isNaN(s.getTime()) && !Number.isNaN(now.getTime())) {
         duration_months = Math.max(
           0,
-          (now.getUTCFullYear() - s.getUTCFullYear()) * 12 + (now.getUTCMonth() - s.getUTCMonth())
+          (now.getUTCFullYear() - s.getUTCFullYear()) * 12 +
+            (now.getUTCMonth() - s.getUTCMonth()),
         )
       }
     }
@@ -144,8 +163,10 @@ export async function getDashboardDataImpl(
       our_solution: (r.our_solution as string | null) ?? null,
       status: normalizeStatus(r.status),
       customer_approval_status: (r.customer_approval_status as string | null) ?? null,
-      approval_scope_named_mention: (r.approval_scope_named_mention as boolean | null) ?? null,
-      approval_scope_anonymous_mention: (r.approval_scope_anonymous_mention as boolean | null) ?? null,
+      approval_scope_named_mention:
+        (r.approval_scope_named_mention as boolean | null) ?? null,
+      approval_scope_anonymous_mention:
+        (r.approval_scope_anonymous_mention as boolean | null) ?? null,
       created_at: r.created_at as string,
       updated_at: (r.updated_at as string | null) ?? null,
       company_id: r.company_id as string,
@@ -236,7 +257,7 @@ export async function getDeletedReferencesImpl() {
         id,
         title,
         companies ( name )
-      `
+      `,
     )
     .eq('organization_id', orgId)
     .not('deleted_at', 'is', null)
@@ -257,4 +278,3 @@ export async function getDeletedReferencesImpl() {
     }
   })
 }
-

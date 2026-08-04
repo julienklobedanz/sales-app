@@ -17,7 +17,7 @@ export type NormalizedWorkspaceOverlay = {
 export function mergeWorkspaceWithNormalizedOverlay(
   workspace: DealDeskWorkspaceState,
   overlay: NormalizedWorkspaceOverlay | null,
-  smeCustomExperts: SmeExpertOption[]
+  smeCustomExperts: SmeExpertOption[],
 ): DealDeskWorkspaceState {
   if (!overlay) return workspace
 
@@ -27,15 +27,22 @@ export function mergeWorkspaceWithNormalizedOverlay(
 
   return {
     redFlags: overlay.redFlags?.length ? overlay.redFlags : workspace.redFlags,
-    smeRoutes: overlay.smeRoutes ? { ...workspace.smeRoutes, ...overlay.smeRoutes } : workspace.smeRoutes,
-    smeAssignments: parseSmeAssignments(smeAssignments, overlay.smeRoutes ?? workspace.smeRoutes),
+    smeRoutes: overlay.smeRoutes
+      ? { ...workspace.smeRoutes, ...overlay.smeRoutes }
+      : workspace.smeRoutes,
+    smeAssignments: parseSmeAssignments(
+      smeAssignments,
+      overlay.smeRoutes ?? workspace.smeRoutes,
+    ),
     smeCustomExperts,
     decision: overlay.decision ?? workspace.decision,
     bidTeam: overlay.bidTeam?.length ? overlay.bidTeam : workspace.bidTeam,
   }
 }
 
-export function bidDecisionFromDb(value: string | null | undefined): 'go' | 'no-bid' | null {
+export function bidDecisionFromDb(
+  value: string | null | undefined,
+): 'go' | 'no-bid' | null {
   if (value === 'go') return 'go'
   if (value === 'no_bid') return 'no-bid'
   return null

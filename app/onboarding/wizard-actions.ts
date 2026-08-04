@@ -13,9 +13,16 @@ import {
   attachOriginalDocumentToReference,
   createReference,
 } from '@/app/dashboard/references/new/actions'
-import { isValidSalesPhone, salesContactValidationMessage } from '@/lib/profile/sales-contact'
+import {
+  isValidSalesPhone,
+  salesContactValidationMessage,
+} from '@/lib/profile/sales-contact'
 import type { FunctionRole, SystemRole } from '@/lib/roles/capabilities'
-import { legacyAppRoleFrom, legacyRoleToDimensions, LEGACY_INVITE_APP_ROLES } from '@/lib/roles/legacy-mapping'
+import {
+  legacyAppRoleFrom,
+  legacyRoleToDimensions,
+  LEGACY_INVITE_APP_ROLES,
+} from '@/lib/roles/legacy-mapping'
 import { parseInviteRoleDimensions } from '@/lib/roles/invite-roles'
 
 export type FinalizeWorkspaceResult =
@@ -45,7 +52,9 @@ export async function finalizeWorkspaceAndProfile(params: {
   let inviteSystemRole: SystemRole = 'member'
   let inviteFunctionRole: FunctionRole = 'sales_rep'
   if (inviteToken) {
-    const { data } = await supabase.rpc('get_invite_by_token', { invite_token: inviteToken })
+    const { data } = await supabase.rpc('get_invite_by_token', {
+      invite_token: inviteToken,
+    })
     const parsed = data as {
       organization_id?: string
       role?: string | null
@@ -85,9 +94,12 @@ export async function finalizeWorkspaceAndProfile(params: {
     } else {
       const name = params.organizationName.trim()
       if (!name) return { success: false, error: 'Bitte Arbeitsbereich-Namen eingeben.' }
-      const { data: newOrgId, error: orgError } = await supabase.rpc('create_organization', {
-        org_name: name,
-      })
+      const { data: newOrgId, error: orgError } = await supabase.rpc(
+        'create_organization',
+        {
+          org_name: name,
+        },
+      )
       if (orgError || !newOrgId) {
         log.error('onboarding.createOrganizationFailed', {}, orgError)
         return { success: false, error: 'Fehler beim Anlegen des Arbeitsbereichs.' }
@@ -190,7 +202,7 @@ export type SaveOnboardingReferenceResult =
  */
 export async function saveOnboardingReference(
   file: File,
-  data: ExtractedReferenceData
+  data: ExtractedReferenceData,
 ): Promise<SaveOnboardingReferenceResult> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -218,7 +230,7 @@ export async function saveOnboardingReference(
     'employee_count',
     data.employee_count != null && !Number.isNaN(data.employee_count)
       ? String(Math.max(0, Math.trunc(data.employee_count)))
-      : ''
+      : '',
   )
   fd.set('contract_type', '')
   fd.set('incumbent_provider', '')
@@ -262,7 +274,9 @@ export async function saveOnboardingReference(
     }
   }
 
-  const { data: publicUrlData } = supabase.storage.from('references').getPublicUrl(uploadData.path)
+  const { data: publicUrlData } = supabase.storage
+    .from('references')
+    .getPublicUrl(uploadData.path)
   const originalUrl = publicUrlData?.publicUrl ?? null
 
   const attach = await attachOriginalDocumentToReference({
@@ -293,7 +307,7 @@ export type SendInvitesResult =
   | { success: false; error: string }
 
 export async function sendTeamInvites(
-  invites: Array<{ email: string; role: 'sales' | 'account_manager' | 'admin' }>
+  invites: Array<{ email: string; role: 'sales' | 'account_manager' | 'admin' }>,
 ): Promise<SendInvitesResult> {
   const unique = invites
     .map((i) => {
@@ -310,7 +324,11 @@ export async function sendTeamInvites(
 
   let emailsSent = 0
   let emailsFailed = 0
-  const failures: Array<{ email: string; emailError?: string; fallbackInviteLink: string }> = []
+  const failures: Array<{
+    email: string
+    emailError?: string
+    fallbackInviteLink: string
+  }> = []
 
   for (const inv of unique) {
     const res = await inviteByEmail(inv.email, {
@@ -338,4 +356,3 @@ export async function sendTeamInvites(
     failures,
   }
 }
-

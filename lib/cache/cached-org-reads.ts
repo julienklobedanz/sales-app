@@ -3,12 +3,7 @@ import 'server-only'
 import { unstable_cache } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-import {
-  companiesTag,
-  complianceTag,
-  kpisTag,
-  referencesTag,
-} from '@/lib/cache/tags'
+import { companiesTag, complianceTag, kpisTag, referencesTag } from '@/lib/cache/tags'
 import type { ComplianceDocumentRow } from '@/app/dashboard/settings/compliance-actions'
 import type { ReferenceKpiCounts } from '@/lib/dashboard-home/dashboard-home-types'
 import type { Database } from '@/lib/database.types'
@@ -22,7 +17,7 @@ function readWithOrgCache<T>(
   cacheKey: string,
   orgId: string,
   tags: string[],
-  fetcher: (client: DbClient, orgId: string) => Promise<T>
+  fetcher: (client: DbClient, orgId: string) => Promise<T>,
 ): Promise<T> {
   const admin = createServiceRoleSupabaseClient()
   if (!admin) {
@@ -100,7 +95,7 @@ export type CachedCompanyRow = {
 
 async function fetchOrgReferenceRows(
   supabase: DbClient,
-  orgId: string
+  orgId: string,
 ): Promise<Record<string, unknown>[]> {
   let rows: Record<string, unknown>[] | null = null
   let error: { message: string; details?: string } | null = null
@@ -169,13 +164,20 @@ async function fetchOrgReferenceRows(
   return rows ?? []
 }
 
-export function getCachedOrgReferenceRows(orgId: string): Promise<Record<string, unknown>[]> {
-  return readWithOrgCache('org-references', orgId, [referencesTag(orgId)], fetchOrgReferenceRows)
+export function getCachedOrgReferenceRows(
+  orgId: string,
+): Promise<Record<string, unknown>[]> {
+  return readWithOrgCache(
+    'org-references',
+    orgId,
+    [referencesTag(orgId)],
+    fetchOrgReferenceRows,
+  )
 }
 
 async function fetchReferenceKpisForOrg(
   supabase: DbClient,
-  orgId: string
+  orgId: string,
 ): Promise<ReferenceKpiCounts> {
   const base = () =>
     supabase
@@ -184,13 +186,17 @@ async function fetchReferenceKpisForOrg(
       .eq('organization_id', orgId)
       .is('deleted_at', null)
 
-  const [{ count: total }, { count: draft }, { count: internal_only }, { count: approved }] =
-    await Promise.all([
-      base(),
-      base().eq('status', 'draft'),
-      base().eq('status', 'internal_only'),
-      base().in('status', ['approved', 'external']),
-    ])
+  const [
+    { count: total },
+    { count: draft },
+    { count: internal_only },
+    { count: approved },
+  ] = await Promise.all([
+    base(),
+    base().eq('status', 'draft'),
+    base().eq('status', 'internal_only'),
+    base().in('status', ['approved', 'external']),
+  ])
 
   return {
     total: total ?? 0,
@@ -201,10 +207,18 @@ async function fetchReferenceKpisForOrg(
 }
 
 export function getCachedReferenceKpis(orgId: string): Promise<ReferenceKpiCounts> {
-  return readWithOrgCache('org-kpis', orgId, [kpisTag(orgId), referencesTag(orgId)], fetchReferenceKpisForOrg)
+  return readWithOrgCache(
+    'org-kpis',
+    orgId,
+    [kpisTag(orgId), referencesTag(orgId)],
+    fetchReferenceKpisForOrg,
+  )
 }
 
-async function fetchOrgCompanies(supabase: DbClient, orgId: string): Promise<CachedCompanyRow[]> {
+async function fetchOrgCompanies(
+  supabase: DbClient,
+  orgId: string,
+): Promise<CachedCompanyRow[]> {
   const { data, error } = await supabase
     .from('companies')
     .select('id, name, logo_url, industry')
@@ -215,12 +229,17 @@ async function fetchOrgCompanies(supabase: DbClient, orgId: string): Promise<Cac
 }
 
 export function getCachedOrgCompanies(orgId: string): Promise<CachedCompanyRow[]> {
-  return readWithOrgCache('org-companies', orgId, [companiesTag(orgId)], fetchOrgCompanies)
+  return readWithOrgCache(
+    'org-companies',
+    orgId,
+    [companiesTag(orgId)],
+    fetchOrgCompanies,
+  )
 }
 
 async function fetchOrgComplianceDocuments(
   supabase: DbClient,
-  orgId: string
+  orgId: string,
 ): Promise<ComplianceDocumentRow[]> {
   const { data, error } = await supabase
     .from('organization_compliance_documents')
@@ -239,14 +258,21 @@ async function fetchOrgComplianceDocuments(
   return (data ?? []) as ComplianceDocumentRow[]
 }
 
-export function getCachedOrgComplianceDocuments(orgId: string): Promise<ComplianceDocumentRow[]> {
-  return readWithOrgCache('org-compliance', orgId, [complianceTag(orgId)], fetchOrgComplianceDocuments)
+export function getCachedOrgComplianceDocuments(
+  orgId: string,
+): Promise<ComplianceDocumentRow[]> {
+  return readWithOrgCache(
+    'org-compliance',
+    orgId,
+    [complianceTag(orgId)],
+    fetchOrgComplianceDocuments,
+  )
 }
 
 /** Für KPI-Loader mit bestehendem Supabase-Client: orgId explizit, Daten aus Cache. */
 export async function loadReferenceKpisForOrg(
   _supabase: SupabaseClient,
-  orgId: string
+  orgId: string,
 ): Promise<ReferenceKpiCounts> {
   return getCachedReferenceKpis(orgId)
 }

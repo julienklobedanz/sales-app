@@ -12,7 +12,10 @@ import { formatIndustryDisplay } from '@/lib/constants/industries'
 import { formatReferenceDate, formatReferenceVolume } from '@/lib/format'
 import { formatContractTypeDisplay } from '@/lib/references/contract-type'
 import { formatProjectEndWithDurationDe } from '@/lib/references/reference-duration-months'
-import { kpisForPublicReference, formatProjectStatusDe } from '@/lib/public-portfolio/kpis-for-reference'
+import {
+  kpisForPublicReference,
+  formatProjectStatusDe,
+} from '@/lib/public-portfolio/kpis-for-reference'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
@@ -93,7 +96,7 @@ const PUBLIC_PORTFOLIO_KPI_DETAIL_DEDUPE = new Set([
 function buildHeaderSubtitle(
   workspaceName: string,
   singleTitle: string | null,
-  country: string | null
+  country: string | null,
 ) {
   const countryPart = country?.trim() ? ` - (${country.trim()})` : ''
   if (singleTitle) {
@@ -125,13 +128,19 @@ export default async function PublicPortfolioPage({
   const shareOwner = await getPublicPortfolioShareOwner(slug)
   const workspaceName = branding.found ? branding.name : 'RefStack Workspace'
   const singleReferenceTitle =
-    result.found && result.references.length === 1 ? result.references[0]?.title ?? null : null
+    result.found && result.references.length === 1
+      ? (result.references[0]?.title ?? null)
+      : null
   let headerCountry: string | null = null
   if (result.found && result.references.length === 1) {
     const c = String(result.references[0]?.country ?? '').trim()
     headerCountry = c || null
   }
-  const headerSubtitle = buildHeaderSubtitle(workspaceName, singleReferenceTitle, headerCountry)
+  const headerSubtitle = buildHeaderSubtitle(
+    workspaceName,
+    singleReferenceTitle,
+    headerCountry,
+  )
 
   if (!result.found) {
     if (result.reason === 'locked') {
@@ -146,7 +155,8 @@ export default async function PublicPortfolioPage({
           <div className="mx-auto max-w-md rounded-2xl border bg-card/80 p-8 text-center shadow-sm">
             <h1 className="text-lg font-semibold text-foreground">Link abgelaufen</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Die Gültigkeitsdauer dieses Kundenlinks ist abgelaufen. Bitte den RefStack-Nutzer um einen neuen Link.
+              Die Gültigkeitsdauer dieses Kundenlinks ist abgelaufen. Bitte den
+              RefStack-Nutzer um einen neuen Link.
             </p>
           </div>
         </div>
@@ -171,7 +181,9 @@ export default async function PublicPortfolioPage({
   }
 
   const buyerLogoUrl =
-    recipientInfo.found && recipientInfo.companyLogoUrl ? recipientInfo.companyLogoUrl : null
+    recipientInfo.found && recipientInfo.companyLogoUrl
+      ? recipientInfo.companyLogoUrl
+      : null
   const buyerCompanyName =
     recipientInfo.found && recipientInfo.companyName ? recipientInfo.companyName : null
   const sessionTracker = isManageRevokeView ? null : (
@@ -195,7 +207,7 @@ export default async function PublicPortfolioPage({
       const insightResult = await getPublicPortfolioManageInsights(
         slug,
         manageToken,
-        singleRef.id
+        singleRef.id,
       )
       if (insightResult.found) {
         manageInsights = {
@@ -211,7 +223,7 @@ export default async function PublicPortfolioPage({
         }
         manageApprovalStatus = {
           approvedSinceLabel: formatManageApprovedSinceLabel(
-            insightResult.approvalRespondedAt
+            insightResult.approvalRespondedAt,
           ),
           isAnonymous: insightResult.isAnonymous,
         }
@@ -222,37 +234,41 @@ export default async function PublicPortfolioPage({
       <>
         {sessionTracker}
         <ShowcaseSingleReference
-        slug={slug}
-        reference={singleRef}
-        branding={{
-          name: branding.name,
-          logo_url: branding.logo_url,
-          primary_color: branding.primary_color,
-          secondary_color: branding.secondary_color,
-        }}
-        workspaceName={workspaceName}
-        shareOwnerName={shareOwner.found ? shareOwner.name : 'RefStack Team'}
-        shareOwnerPosition={shareOwner.found ? shareOwner.position : 'Sales Ansprechpartner'}
-        shareOwnerAvatar={shareOwner.found ? shareOwner.avatar_url : null}
-        shareOwnerEmail={shareOwner.found ? shareOwner.email : null}
-        shareOwnerPhone={shareOwner.found ? shareOwner.phone : null}
-        shareOwnerBookingUrl={shareOwner.found ? shareOwner.booking_url : null}
-        canDeactivate={result.canDeactivate}
-        revokeMode={revokeMode}
-        approvalEditUrl={approvalEditUrl}
-        showApprovalEdit={Boolean(approvalEditUrl)}
-        buyerLogoUrl={buyerLogoUrl}
-        buyerCompanyName={buyerCompanyName}
-        recipientToken={recipientToken}
-        manageInsights={manageInsights}
-        manageApprovalStatus={manageApprovalStatus}
-      />
+          slug={slug}
+          reference={singleRef}
+          branding={{
+            name: branding.name,
+            logo_url: branding.logo_url,
+            primary_color: branding.primary_color,
+            secondary_color: branding.secondary_color,
+          }}
+          workspaceName={workspaceName}
+          shareOwnerName={shareOwner.found ? shareOwner.name : 'RefStack Team'}
+          shareOwnerPosition={
+            shareOwner.found ? shareOwner.position : 'Sales Ansprechpartner'
+          }
+          shareOwnerAvatar={shareOwner.found ? shareOwner.avatar_url : null}
+          shareOwnerEmail={shareOwner.found ? shareOwner.email : null}
+          shareOwnerPhone={shareOwner.found ? shareOwner.phone : null}
+          shareOwnerBookingUrl={shareOwner.found ? shareOwner.booking_url : null}
+          canDeactivate={result.canDeactivate}
+          revokeMode={revokeMode}
+          approvalEditUrl={approvalEditUrl}
+          showApprovalEdit={Boolean(approvalEditUrl)}
+          buyerLogoUrl={buyerLogoUrl}
+          buyerCompanyName={buyerCompanyName}
+          recipientToken={recipientToken}
+          manageInsights={manageInsights}
+          manageApprovalStatus={manageApprovalStatus}
+        />
       </>
     )
   }
 
   const shareOwnerName = shareOwner.found ? shareOwner.name : 'RefStack Team'
-  const shareOwnerPosition = shareOwner.found ? shareOwner.position : 'Sales Ansprechpartner'
+  const shareOwnerPosition = shareOwner.found
+    ? shareOwner.position
+    : 'Sales Ansprechpartner'
   const shareOwnerAvatar = shareOwner.found ? shareOwner.avatar_url : null
   const shareOwnerEmail = shareOwner.found ? shareOwner.email : null
   const shareOwnerPhone = shareOwner.found ? shareOwner.phone : null
@@ -274,18 +290,20 @@ export default async function PublicPortfolioPage({
                     className="h-10 max-w-[120px] object-contain"
                   />
                   {buyerCompanyName ? (
-                    <span className="text-[10px] text-muted-foreground">für {buyerCompanyName}</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      für {buyerCompanyName}
+                    </span>
                   ) : null}
                 </div>
               ) : null}
               <div className="min-w-0">
-              <h1
-                className="text-lg font-semibold tracking-tight"
-                style={{ color: branding.primary_color }}
-              >
-                {`Referenzportfolio - ${workspaceName}`}
-              </h1>
-              <p className="mt-1 text-sm text-muted-foreground">{headerSubtitle}</p>
+                <h1
+                  className="text-lg font-semibold tracking-tight"
+                  style={{ color: branding.primary_color }}
+                >
+                  {`Referenzportfolio - ${workspaceName}`}
+                </h1>
+                <p className="mt-1 text-sm text-muted-foreground">{headerSubtitle}</p>
               </div>
             </div>
             <div className="w-[280px] max-w-full">
@@ -305,9 +323,14 @@ export default async function PublicPortfolioPage({
           <div className="space-y-8">
             {result.references.map((ref) => {
               const kpis = kpisForPublicReference(ref, { max: 3 })
-              const kpisInDetails = kpis.filter((k) => !PUBLIC_PORTFOLIO_KPI_DETAIL_DEDUPE.has(k.label))
+              const kpisInDetails = kpis.filter(
+                (k) => !PUBLIC_PORTFOLIO_KPI_DETAIL_DEDUPE.has(k.label),
+              )
               return (
-                <article key={ref.id} className="rounded-2xl border bg-card p-6 shadow-sm md:p-8">
+                <article
+                  key={ref.id}
+                  className="rounded-2xl border bg-card p-6 shadow-sm md:p-8"
+                >
                   <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
                     <div className="space-y-6">
                       <div className="space-y-2">
@@ -329,7 +352,9 @@ export default async function PublicPortfolioPage({
                             </h2>
                             <p className="mt-1 text-sm text-muted-foreground">
                               {ref.company_name}
-                              {ref.industry ? ` · ${formatIndustryDisplay(ref.industry)}` : ''}
+                              {ref.industry
+                                ? ` · ${formatIndustryDisplay(ref.industry)}`
+                                : ''}
                               {ref.country?.trim() ? ` · ${ref.country.trim()}` : ''}
                             </p>
                           </div>
@@ -350,7 +375,9 @@ export default async function PublicPortfolioPage({
                           {ref.customer_challenge ? (
                             <Card className="border-border/70 flex min-h-[12rem] flex-col sm:min-h-[14rem]">
                               <CardHeader className="pb-2">
-                                <CardTitle className="text-sm font-semibold">Herausforderung</CardTitle>
+                                <CardTitle className="text-sm font-semibold">
+                                  Herausforderung
+                                </CardTitle>
                               </CardHeader>
                               <CardContent className="flex flex-1 flex-col">
                                 <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
@@ -363,7 +390,9 @@ export default async function PublicPortfolioPage({
                           {ref.our_solution ? (
                             <Card className="border-border/70 flex min-h-[12rem] flex-col sm:min-h-[14rem]">
                               <CardHeader className="pb-2">
-                                <CardTitle className="text-sm font-semibold">Unsere Lösung</CardTitle>
+                                <CardTitle className="text-sm font-semibold">
+                                  Unsere Lösung
+                                </CardTitle>
                               </CardHeader>
                               <CardContent className="flex flex-1 flex-col">
                                 <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
@@ -391,21 +420,29 @@ export default async function PublicPortfolioPage({
                           <div className="flex justify-between gap-3">
                             <span className="text-muted-foreground">Vertragsart</span>
                             <span className="text-right font-medium">
-                              {releaseDisplay(releaseText(formatContractTypeDisplay(ref.contract_type)))}
+                              {releaseDisplay(
+                                releaseText(formatContractTypeDisplay(ref.contract_type)),
+                              )}
                             </span>
                           </div>
                           <div className="flex justify-between gap-3">
                             <span className="text-muted-foreground">Projektstatus</span>
                             <span className="text-right font-medium">
                               {releaseDisplay(
-                                releaseText(formatProjectStatusDe(ref.project_status) || ref.project_status)
+                                releaseText(
+                                  formatProjectStatusDe(ref.project_status) ||
+                                    ref.project_status,
+                                ),
                               )}
                             </span>
                           </div>
                           <div className="flex justify-between gap-3">
                             <span className="text-muted-foreground">Projektstart</span>
                             <span className="text-right font-medium">
-                              {releaseDisplay(formatDateMaybe(ref.project_start) || RELEASE_NOT_INCLUDED)}
+                              {releaseDisplay(
+                                formatDateMaybe(ref.project_start) ||
+                                  RELEASE_NOT_INCLUDED,
+                              )}
                             </span>
                           </div>
                           <div className="flex justify-between gap-3">
@@ -419,12 +456,15 @@ export default async function PublicPortfolioPage({
                                       project_status: ref.project_status,
                                       formatEndDate: (iso) => formatDateMaybe(iso) || '',
                                     }) || RELEASE_NOT_INCLUDED
-                                  : formatDateMaybe(ref.project_end) || RELEASE_NOT_INCLUDED
+                                  : formatDateMaybe(ref.project_end) ||
+                                      RELEASE_NOT_INCLUDED,
                               )}
                             </span>
                           </div>
                           <div className="flex justify-between gap-3">
-                            <span className="text-muted-foreground">Akt. Dienstleister</span>
+                            <span className="text-muted-foreground">
+                              Akt. Dienstleister
+                            </span>
                             <span className="text-right font-medium">
                               {releaseDisplay(releaseText(ref.incumbent_provider))}
                             </span>
@@ -472,7 +512,6 @@ export default async function PublicPortfolioPage({
                               </div>
                             </>
                           ) : null}
-
                         </CardContent>
                       </Card>
                     </aside>

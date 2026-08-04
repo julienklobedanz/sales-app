@@ -7,7 +7,10 @@ import { asTableUpdate } from '@/lib/supabase/db-types'
 import { getAppOrigin } from '@/lib/env/app-origin'
 import { ROUTES } from '@/lib/routes'
 import { validatePasswordPolicy } from '@/lib/security/password-policy'
-import { isValidSalesPhone, salesContactValidationMessage } from '@/lib/profile/sales-contact'
+import {
+  isValidSalesPhone,
+  salesContactValidationMessage,
+} from '@/lib/profile/sales-contact'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { isSystemAdmin, legacyRoleToDimensions } from '@/lib/roles/legacy-mapping'
 import { isSalesAppView } from '@/lib/roles/reference-access'
@@ -26,7 +29,9 @@ function normalizeHttpsBookingUrl(raw: string | null | undefined): string | null
   }
 }
 
-function parseDataUrlImage(dataUrl: string): { bytes: Uint8Array; contentType: string; ext: string } | null {
+function parseDataUrlImage(
+  dataUrl: string,
+): { bytes: Uint8Array; contentType: string; ext: string } | null {
   const trimmed = dataUrl.trim()
   const match = trimmed.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/)
   if (!match) return null
@@ -60,7 +65,9 @@ export async function updateProfile(formData: FormData) {
     .single()
 
   const parsedRoles = parseProfileRoles(profileRow ?? {})
-  const existingPhone = String((profileRow as { phone?: string | null })?.phone ?? '').trim()
+  const existingPhone = String(
+    (profileRow as { phone?: string | null })?.phone ?? '',
+  ).trim()
 
   const firstName = formData.get('firstName')?.toString()?.trim()
   const lastName = formData.get('lastName')?.toString()?.trim()
@@ -79,7 +86,9 @@ export async function updateProfile(formData: FormData) {
   const avatarDataUrl =
     avatarDataUrlRaw !== undefined ? avatarDataUrlRaw.trim() || null : undefined
   const bookingUrlRaw = formData.get('bookingUrl')?.toString()?.trim() ?? ''
-  const bookingUrlNormalized = bookingUrlRaw ? normalizeHttpsBookingUrl(bookingUrlRaw) : null
+  const bookingUrlNormalized = bookingUrlRaw
+    ? normalizeHttpsBookingUrl(bookingUrlRaw)
+    : null
   if (bookingUrlRaw && !bookingUrlNormalized) {
     return { error: 'Buchungslink muss eine gültige https://-URL sein (z. B. Calendly).' }
   }
@@ -154,7 +163,9 @@ export async function updateProfile(formData: FormData) {
   return { success: true }
 }
 
-export async function changeOwnPassword(formData: FormData): Promise<{ success?: true; error?: string }> {
+export async function changeOwnPassword(
+  formData: FormData,
+): Promise<{ success?: true; error?: string }> {
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
@@ -221,7 +232,9 @@ export async function requestEmailChange(input: {
 
   const { error: updateError } = await supabase.auth.updateUser(
     { email: newEmail },
-    { emailRedirectTo: `${getAppOrigin()}${ROUTES.authCallback}?next=${encodeURIComponent(ROUTES.settings)}` }
+    {
+      emailRedirectTo: `${getAppOrigin()}${ROUTES.authCallback}?next=${encodeURIComponent(ROUTES.settings)}`,
+    },
   )
   if (updateError) return { success: false, error: updateError.message }
 
@@ -229,7 +242,9 @@ export async function requestEmailChange(input: {
   return { success: true, pendingEmail: newEmail }
 }
 
-export async function signOutOtherSessions(): Promise<{ success: true } | { success: false; error: string }> {
+export async function signOutOtherSessions(): Promise<
+  { success: true } | { success: false; error: string }
+> {
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
@@ -241,7 +256,9 @@ export async function signOutOtherSessions(): Promise<{ success: true } | { succ
   return { success: true }
 }
 
-export async function signOutAllSessions(): Promise<{ success: true } | { success: false; error: string }> {
+export async function signOutAllSessions(): Promise<
+  { success: true } | { success: false; error: string }
+> {
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
@@ -253,9 +270,9 @@ export async function signOutAllSessions(): Promise<{ success: true } | { succes
   return { success: true }
 }
 
-export async function deleteOwnAccount(confirmEmail: string): Promise<
-  { success: true } | { success: false; error: string }
-> {
+export async function deleteOwnAccount(
+  confirmEmail: string,
+): Promise<{ success: true } | { success: false; error: string }> {
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
@@ -284,7 +301,7 @@ export async function deleteOwnAccount(confirmEmail: string): Promise<
     const otherMembers = (members ?? []).filter((m) => m.id !== user.id)
     if (otherMembers.length > 0 && isSystemAdmin(roles.systemRole)) {
       const otherAdmins = otherMembers.filter((m) =>
-        isSystemAdmin(parseProfileRoles({ system_role: m.system_role }).systemRole)
+        isSystemAdmin(parseProfileRoles({ system_role: m.system_role }).systemRole),
       )
       if (otherAdmins.length === 0) {
         return {
@@ -308,7 +325,10 @@ export async function deleteOwnAccount(confirmEmail: string): Promise<
       .select('id', { count: 'exact', head: true })
       .eq('organization_id', organizationId)
     if ((count ?? 0) <= 1) {
-      const { error: orgDeleteError } = await admin.from('organizations').delete().eq('id', organizationId)
+      const { error: orgDeleteError } = await admin
+        .from('organizations')
+        .delete()
+        .eq('id', organizationId)
       if (orgDeleteError) {
         return { success: false, error: orgDeleteError.message }
       }

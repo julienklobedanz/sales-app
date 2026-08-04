@@ -24,14 +24,19 @@ export async function GET(request: Request) {
     }
   } else if (!isDev) {
     return NextResponse.json(
-      { error: 'CRON_SECRET ist nicht gesetzt (erforderlich außerhalb der Entwicklung).' },
-      { status: 503 }
+      {
+        error: 'CRON_SECRET ist nicht gesetzt (erforderlich außerhalb der Entwicklung).',
+      },
+      { status: 503 },
     )
   }
 
   const admin = createServiceRoleSupabaseClient()
   if (!admin) {
-    return NextResponse.json({ ok: false, error: 'Service role nicht verfügbar.' }, { status: 503 })
+    return NextResponse.json(
+      { ok: false, error: 'Service role nicht verfügbar.' },
+      { status: 503 },
+    )
   }
 
   // Service-Role weil: org-übergreifender Cron-Scan; Grenze: Bearer CRON_SECRET + Writes pro reference.organization_id.

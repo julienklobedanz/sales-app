@@ -46,4 +46,3 @@ export const VOLUME_CURRENCY_OPTIONS = [
   { code: 'SGD', symbol: 'S$' },
   { code: 'USD', symbol: '$' },
 ] as const
-

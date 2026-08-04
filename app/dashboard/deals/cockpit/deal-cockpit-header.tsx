@@ -30,8 +30,8 @@ export function DealCockpitHeader({
   const owner = deal.sales_manager_name ?? deal.account_manager_name ?? null
   const volumeLabel =
     deal.volume && String(deal.volume).trim() ? formatDealVolume(deal.volume) : null
-  const metaParts = [deal.company_name, volumeLabel, owner].filter(
-    (v): v is string => Boolean(v && String(v).trim() && v !== '—')
+  const metaParts = [deal.company_name, volumeLabel, owner].filter((v): v is string =>
+    Boolean(v && String(v).trim() && v !== '—'),
   )
 
   return (
@@ -46,7 +46,9 @@ export function DealCockpitHeader({
 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 space-y-1.5">
-          <h1 className={`${DASHBOARD_PAGE_TITLE_CLASS} flex flex-wrap items-center gap-x-2 break-words`}>
+          <h1
+            className={`${DASHBOARD_PAGE_TITLE_CLASS} flex flex-wrap items-center gap-x-2 break-words`}
+          >
             <span>{deal.title}</span>
             <span className="text-muted-foreground" aria-hidden>
               ·

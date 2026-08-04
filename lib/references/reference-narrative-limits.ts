@@ -7,7 +7,7 @@ export const REFERENCE_NARRATIVE_MAX_CHARS = 620
 
 export function narrativeFieldLengthError(
   raw: string | null | undefined,
-  fieldLabel: string
+  fieldLabel: string,
 ): string | null {
   const len = raw == null ? 0 : String(raw).length
   if (len <= REFERENCE_NARRATIVE_MAX_CHARS) return null
@@ -21,7 +21,9 @@ export function clampNarrativeText(raw: string | null | undefined): string {
   return s.slice(0, REFERENCE_NARRATIVE_MAX_CHARS)
 }
 
-export function clampNarrativeTextNullable(raw: string | null | undefined): string | null {
+export function clampNarrativeTextNullable(
+  raw: string | null | undefined,
+): string | null {
   const s = String(raw ?? '').trim()
   if (!s) return null
   const c = clampNarrativeText(s)

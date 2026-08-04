@@ -106,7 +106,12 @@ export function DealQuickAccountDialog({
         </div>
 
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={pending}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={pending}
+          >
             Abbrechen
           </Button>
           <Button type="button" onClick={submit} disabled={!canSubmit}>

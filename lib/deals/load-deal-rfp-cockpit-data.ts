@@ -8,10 +8,20 @@ import type { WinProbabilityBreakdown } from '@/lib/deal-desk/compute-delivery-w
 import type { DealDeskDraftRow } from '@/lib/deal-desk/mock-analysis'
 import type { RfpCoverageRow } from '@/lib/rfp-coverage'
 import type { ExtractedRfpRequirement } from '@/lib/rfp-requirements'
-import type { EligibilityAssessment, EligibilityCriterion } from '@/lib/deals/eligibility-criteria-schema'
+import type {
+  EligibilityAssessment,
+  EligibilityCriterion,
+} from '@/lib/deals/eligibility-criteria-schema'
 import { compareEligibilityCriteria } from '@/lib/deals/compare-eligibility-criteria'
-import { isIcpDefinitionEmpty, scoreIcpRubrik, type IcpRubrikScore } from '@/lib/deals/icp-rubric'
-import { loadDealRfpRisksData, type DealRfpRisksData } from '@/lib/deals/load-deal-rfp-risks-data'
+import {
+  isIcpDefinitionEmpty,
+  scoreIcpRubrik,
+  type IcpRubrikScore,
+} from '@/lib/deals/icp-rubric'
+import {
+  loadDealRfpRisksData,
+  type DealRfpRisksData,
+} from '@/lib/deals/load-deal-rfp-risks-data'
 import type { RfpVerdict } from '@/lib/rfp-relevance'
 import {
   loadOrgCapabilitySettings,
@@ -27,7 +37,10 @@ import {
   buildRfpStammdatenRows,
   type RfpStammdatenRow,
 } from './build-rfp-stammdaten-rows'
-import { buildRequestedEvidenceGaps, type RequestedEvidenceGapItem } from './build-requested-evidence-gaps'
+import {
+  buildRequestedEvidenceGaps,
+  type RequestedEvidenceGapItem,
+} from './build-requested-evidence-gaps'
 import { normalizeExecutiveBriefingFields } from '@/lib/deal-desk/executive-briefing-fields'
 import type { DealDeskExecutiveBriefingFields } from '@/lib/deal-desk/executive-briefing-fields'
 import type { TenderLot } from '@/lib/deals/tender-lots'
@@ -65,7 +78,7 @@ export async function loadDealRfpCockpitData(
     industry?: string | null
     volume?: string | null
     title?: string | null
-  }
+  },
 ): Promise<DealRfpCockpitData | null> {
   const { data: project, error } = await supabase
     .from('deal_desk_projects')
@@ -91,7 +104,9 @@ export async function loadDealRfpCockpitData(
     ? snap.requirements
     : []
   const coverage: RfpCoverageRow[] = Array.isArray(snap.coverage) ? snap.coverage : []
-  const eligibilityCriteria: EligibilityCriterion[] = Array.isArray(snap.eligibilityCriteria)
+  const eligibilityCriteria: EligibilityCriterion[] = Array.isArray(
+    snap.eligibilityCriteria,
+  )
     ? snap.eligibilityCriteria
     : []
   const rfpVerdicts: Record<string, RfpVerdict> | null =
@@ -153,7 +168,7 @@ export async function loadDealRfpCockpitData(
       requirements,
       coverage,
       undefined,
-      engineVersion >= 2 ? rfpVerdicts : null
+      engineVersion >= 2 ? rfpVerdicts : null,
     ),
     icpFitLabel: snap.icpFitLabel ?? null,
     icpSummary: icpRubrik?.summary ?? snap.icpSummary ?? null,

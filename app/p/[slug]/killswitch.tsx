@@ -48,7 +48,11 @@ export function PublicPortfolioKillswitch({ slug }: { slug: string }) {
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive text-xs">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground hover:text-destructive text-xs"
+        >
           <AppIcon icon={ShieldAlert} size={14} className="mr-1.5" />
           Diesen Zugriff sofort sperren
         </Button>
@@ -57,8 +61,8 @@ export function PublicPortfolioKillswitch({ slug }: { slug: string }) {
         <AlertDialogHeader>
           <AlertDialogTitle>Zugriff sperren?</AlertDialogTitle>
           <AlertDialogDescription>
-            Der Link wird sofort deaktiviert und ist danach für niemanden mehr erreichbar – auch nicht für Sie.
-            Diese Aktion kann nicht rückgängig gemacht werden.
+            Der Link wird sofort deaktiviert und ist danach für niemanden mehr erreichbar
+            – auch nicht für Sie. Diese Aktion kann nicht rückgängig gemacht werden.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

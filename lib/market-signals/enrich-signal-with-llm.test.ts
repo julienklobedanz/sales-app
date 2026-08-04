@@ -55,9 +55,10 @@ describe('parseLlmEnrichmentJson', () => {
         is_relevant: true,
         signal_category: 'people',
         insight_signal_fact: 'Tim Cook tritt als CEO zurück.',
-        insight_why_now: 'Führungswechsel bei Apple öffnet ein neues Entscheidungsfenster.',
+        insight_why_now:
+          'Führungswechsel bei Apple öffnet ein neues Entscheidungsfenster.',
       }),
-      'strategy'
+      'strategy',
     )
     expect(parsed?.insight_why_now).toContain('Führungswechsel')
     expect(parsed?.signal_category).toBe('people')
@@ -73,7 +74,7 @@ describe('parseLlmEnrichmentJson', () => {
           why_now: 'Bessere Zahlen erhöhen den Investitionsdruck im IT-Budget.',
         },
       }),
-      'strategy'
+      'strategy',
     )
     expect(parsed?.insight_signal_fact).toContain('Quartalszahlen')
     expect(parsed?.insight_why_now).toContain('Investitionsdruck')

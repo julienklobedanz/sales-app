@@ -31,7 +31,7 @@ type SemanticSearchParams = {
 }
 
 async function runSemanticMatch(
-  params: SemanticSearchParams & { embedInput: string; source: 'homepage' | 'command' }
+  params: SemanticSearchParams & { embedInput: string; source: 'homepage' | 'command' },
 ): Promise<{
   rows: Awaited<ReturnType<typeof rpcMatchReferences>>['rows']
   error?: string
@@ -44,7 +44,11 @@ async function runSemanticMatch(
   const emb = await embedTextWithOpenAICached(params.apiKey, params.embedInput)
   const embeddingMs = Math.round(performance.now() - embeddingStart)
   if ('error' in emb) {
-    return { rows: [], error: emb.error, durationMs: Math.round(performance.now() - totalStart) }
+    return {
+      rows: [],
+      error: emb.error,
+      durationMs: Math.round(performance.now() - totalStart),
+    }
   }
   log.info('command.semantic.embedding', {
     label: 'command.semantic.embedding',
@@ -63,7 +67,7 @@ async function runSemanticMatch(
         organizationId: params.organizationId,
         salesVisibleOnly: params.salesVisibleOnly,
       }),
-    timingCtx
+    timingCtx,
   )
 
   const durationMs = Math.round(performance.now() - totalStart)
@@ -82,8 +86,10 @@ async function runSemanticMatch(
 
 /** Homepage: angereicherter Query, volle Karten-Daten. */
 export async function searchHomepageReferencesSemantic(
-  params: SemanticSearchParams
-): Promise<{ ok: true; hits: HomepageSemanticReferenceHit[] } | { ok: false; error: string }> {
+  params: SemanticSearchParams,
+): Promise<
+  { ok: true; hits: HomepageSemanticReferenceHit[] } | { ok: false; error: string }
+> {
   const trimmed = params.query.trim()
   if (!trimmed) return { ok: true, hits: [] }
 
@@ -104,28 +110,30 @@ export async function searchHomepageReferencesSemantic(
     ? rows.filter((r) => referenceVolumeMatchesConstraint(r.volume_eur, volumeConstraint))
     : rows
 
-  const baseHits: HomepageSemanticReferenceHit[] = matchedRows.slice(0, matchCount).map((r) => {
-    const summary = r.summary?.trim() ?? null
-    const title = r.title ?? ''
-    const volRaw = r.volume_eur?.trim() ?? null
-    return {
-      id: r.id,
-      title,
-      summary,
-      industry: r.industry ?? null,
-      similarity: typeof r.similarity === 'number' ? r.similarity : 0,
-      snippet: snippetFromSummary(summary, title),
-      companyName: r.company_name?.trim() ? r.company_name : null,
-      companyId: null,
-      companyLogoUrl: null,
-      volumeEur: volRaw && volRaw.length > 0 ? volRaw : null,
-      createdAt: r.created_at ?? null,
-    }
-  })
+  const baseHits: HomepageSemanticReferenceHit[] = matchedRows
+    .slice(0, matchCount)
+    .map((r) => {
+      const summary = r.summary?.trim() ?? null
+      const title = r.title ?? ''
+      const volRaw = r.volume_eur?.trim() ?? null
+      return {
+        id: r.id,
+        title,
+        summary,
+        industry: r.industry ?? null,
+        similarity: typeof r.similarity === 'number' ? r.similarity : 0,
+        snippet: snippetFromSummary(summary, title),
+        companyName: r.company_name?.trim() ? r.company_name : null,
+        companyId: null,
+        companyLogoUrl: null,
+        volumeEur: volRaw && volRaw.length > 0 ? volRaw : null,
+        createdAt: r.created_at ?? null,
+      }
+    })
 
   const companyByRef = await fetchCompanyFieldsForReferenceIds(
     params.supabase,
-    baseHits.map((h) => h.id)
+    baseHits.map((h) => h.id),
   )
 
   const hits = baseHits.map((h) => {
@@ -152,7 +160,7 @@ export async function searchHomepageReferencesSemantic(
 
 /** Legacy-Fallback für gemischte Command-Search. */
 export async function searchReferencesSemanticLegacy(
-  params: SemanticSearchParams
+  params: SemanticSearchParams,
 ): Promise<
   | { ok: true; hits: Extract<CommandSearchResult, { kind: 'reference' }>[] }
   | { ok: false; error: string }

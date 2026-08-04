@@ -11,9 +11,7 @@ function executiveBullets(briefing: DealDeskExecutiveBriefingFields): string[] {
     return fromTakeaways.slice(0, 7)
   }
   const raw =
-    briefing.strategicAssessment?.trim() ||
-    briefing.projectOverviewPlain?.trim() ||
-    ''
+    briefing.strategicAssessment?.trim() || briefing.projectOverviewPlain?.trim() || ''
   if (!raw) return []
   const lines = raw
     .split(/\n+/)
@@ -42,7 +40,11 @@ export function DealRfpNoticeHero({
     briefing.projectLocation,
   ].filter((v): v is string => Boolean(v && String(v).trim()))
 
-  if (bullets.length === 0 && metaParts.length === 0 && briefing.domainTags.length === 0) {
+  if (
+    bullets.length === 0 &&
+    metaParts.length === 0 &&
+    briefing.domainTags.length === 0
+  ) {
     return null
   }
 

@@ -31,11 +31,12 @@
 ## T1 (D1) — Rollenbasierte Dashboards
 
 **Soll:** Dashboards über **`function_role`** auswählen (Dispatcher `loadDashboardHomeForRole` darauf umstellen). Je Rolle: **eine Leitfrage + Hero + max. 3 Widgets** (Design-Spec). Auf den vorhandenen `load*DashboardData`-Modellen aufbauen.
+
 - **Sales Rep:** Hero = semantische Suche; Widgets: aktive Deals (Match-Status), empfohlene Referenzen, kürzlich geteilt. **Kein** synthetischer Pipeline-Impact (in W0 entfernt — nicht wieder einführen).
 - **Account Manager:** Hero = Neue Referenz/Bulk-Import; Widgets: eigene Referenzen nach Status, ausstehende Freigaben (inkl. Änderungswünsche), Nutzung der eigenen Referenzen.
 - **Sales Leader:** Hero = KPI-Leiste (Referenzen, Matches/Woche, **Win-Rate echt oder „zu wenig Daten"**); Widgets: Adoption, Top-Referenzen, Abdeckungslücken.
 - Weitere Funktions-Rollen (RPM/Marketing/Bid) später — hier nur, falls trivial ableitbar.
-**Akzeptanz:** Dashboard richtet sich nach `function_role`; je Rolle 1 Hero + ≤3 Widgets; alle Zahlen echt oder ehrlich leer; Tests grün.
+  **Akzeptanz:** Dashboard richtet sich nach `function_role`; je Rolle 1 Hero + ≤3 Widgets; alle Zahlen echt oder ehrlich leer; Tests grün.
 
 ---
 
@@ -49,39 +50,43 @@
 ## T3 (C7) — Insights-Destination
 
 **Soll:** Neue Route `app/dashboard/insights/` + Sidebar-Eintrag. Inhalt (Zeitreihen, aus `evidence_events`): Nutzung (Views/Shares/Matches — echt), Adoption (WAU/Team), **Win-Rate mit vs. ohne Referenz** (echt aus `deals.outcome` × `deal_references`/`evidence_events`; bei zu wenig Deals ehrlich „nicht aussagekräftig"), Top-Referenzen, Abdeckungslücken.
+
 - Zugriff über Capability `view_analytics_all` (Sales Leader/Admin) bzw. `view_analytics_own` (AM = eigene).
-**Akzeptanz:** `/dashboard/insights` erreichbar gem. Capability; KPIs echt; keine hartkodierten Werte; in der Nav (siehe T4).
+  **Akzeptanz:** `/dashboard/insights` erreichbar gem. Capability; KPIs echt; keine hartkodierten Werte; in der Nav (siehe T4).
 
 ---
 
 ## T4 (C1) — Sidebar neu ordnen
 
 **Soll-Reihenfolge:** **Home · Match · Evidence · Deals · Accounts · Insights · Settings.**
+
 - Evidence **nach oben** (vor Deals/Accounts), Insights **neu** aufnehmen, **Market Signals aus der Nav entfernen** (→ T5).
-**Dateien:** `app/dashboard/dashboard-shell.tsx`, `lib/copy.ts`.
-**Akzeptanz:** Sidebar entspricht der Soll-Reihenfolge; kein Market-Signals-Top-Level-Punkt mehr; Insights vorhanden; aktive Zustände korrekt.
+  **Dateien:** `app/dashboard/dashboard-shell.tsx`, `lib/copy.ts`.
+  **Akzeptanz:** Sidebar entspricht der Soll-Reihenfolge; kein Market-Signals-Top-Level-Punkt mehr; Insights vorhanden; aktive Zustände korrekt.
 
 ---
 
 ## T5 (C4) — Market Signals: Per-Account-Feed + Widgets (Option B)
 
 **Soll:** Market Signals ist **keine** eigene Destination mehr.
+
 1. **Heimat = Per-Account-Feed:** Signal-Inhalt im Account-Detail (Tab/Sektion) anzeigen — die bestehende Logik aus `market-signals-client.tsx` **dorthin verlagern** (nicht zerlegen-um-des-Zerlegens-willen, sondern verschieben/zuschneiden auf Account-Kontext).
 2. **Dashboard-Widgets (handlungsauslösend, account-/pipeline-gebunden, kein Feed):**
    - **Sales Rep:** Signale zu Accounts **eigener aktiver Deals** — bevorzugt als **Badge/Indikator auf den Deal-Karten** (Widget 1), mit Direktaktion „passenden Beweis finden/teilen".
    - **Sales Leader:** **aggregiertes** Widget — nur Signale auf Accounts mit offenen Deals **über Schwelle X**, priorisiert.
    - **Andere Rollen:** keine Signale.
 3. Cron-Ingest/Digest bleiben bestehen; nur die **Oberfläche** wird verlagert.
-**Dateien:** `app/dashboard/market-signals/*` (Quelle), `app/dashboard/accounts/[id]/*` (Ziel-Feed), Dashboard-Komponenten (Widgets), `dashboard-shell.tsx` (Nav-Eintrag raus, mit T4).
-**Akzeptanz:** Kein Market-Signals-Nav-Punkt; Signale im Account-Detail sichtbar; Sales-Rep-Deal-Karten zeigen Signal-Indikator mit Aktion; Sales-Leader-Dashboard zeigt aggregiertes, pipeline-gefiltertes Signal-Widget; kein generischer Feed im Dashboard.
+   **Dateien:** `app/dashboard/market-signals/*` (Quelle), `app/dashboard/accounts/[id]/*` (Ziel-Feed), Dashboard-Komponenten (Widgets), `dashboard-shell.tsx` (Nav-Eintrag raus, mit T4).
+   **Akzeptanz:** Kein Market-Signals-Nav-Punkt; Signale im Account-Detail sichtbar; Sales-Rep-Deal-Karten zeigen Signal-Indikator mit Aktion; Sales-Leader-Dashboard zeigt aggregiertes, pipeline-gefiltertes Signal-Widget; kein generischer Feed im Dashboard.
 
 ---
 
 ## T6 (C5) — Request kontextuell + Pfade konsolidieren
 
 **Soll:** Reference-Request wird **im Deal** ausgelöst (Branche/Volumen/Stage vorbefüllt) + Übersicht „Meine Requests" in der Notifications-Inbox. **Einen** Request-Pfad behalten.
+
 - Die zwei Pfade (`/dashboard/request`, `/dashboard/deals/request/new`) auf einen konsolidieren; den anderen per Redirect/Entfernen auflösen.
-**Akzeptanz:** Request aus dem Deal heraus mit vorbefülltem Kontext; „Meine Requests" in der Inbox; nur noch ein Request-Einstieg im Code; alte URL leitet um.
+  **Akzeptanz:** Request aus dem Deal heraus mit vorbefülltem Kontext; „Meine Requests" in der Inbox; nur noch ein Request-Einstieg im Code; alte URL leitet um.
 
 ---
 
@@ -112,6 +117,7 @@
 npm run test
 npm run build
 ```
+
 - Manuell je Funktions-Rolle (sales_rep / account_manager / sales_leader, plus „keine Rolle"): korrektes Dashboard, ≤3 Widgets, echte/ehrliche Zahlen.
 - Insights nur mit passender Capability erreichbar.
 - Sidebar = Soll-Reihenfolge; kein Market-Signals-Punkt; Signale im Account-Detail + als Dashboard-Widget/Badge.

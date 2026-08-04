@@ -25,7 +25,7 @@ import {
 import { updateCompanyAccountStatus } from '../actions'
 
 const SELECTABLE_STATUSES = ACCOUNT_STATUS_FORM_OPTIONS.filter(
-  (o) => o.value !== '__none__'
+  (o) => o.value !== '__none__',
 )
 
 export function AccountStatusBadge({
@@ -43,7 +43,7 @@ export function AccountStatusBadge({
         variant="outline"
         className={cn(
           'shrink-0 border-sky-200/80 bg-sky-50 text-[10px] font-medium text-sky-900 dark:border-sky-900/50 dark:bg-sky-950/40 dark:text-sky-100',
-          className
+          className,
         )}
       >
         Target
@@ -108,7 +108,7 @@ export function AccountStatusPicker({
           className={cn(
             variant === 'badge' && 'h-auto shrink-0 px-0 py-0 hover:bg-transparent',
             variant === 'button' && 'h-9 gap-1.5',
-            className
+            className,
           )}
           disabled={pending}
           onClick={(e) => e.stopPropagation()}
@@ -122,7 +122,11 @@ export function AccountStatusPicker({
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64" onClick={(e) => e.stopPropagation()}>
+      <DropdownMenuContent
+        align="end"
+        className="w-64"
+        onClick={(e) => e.stopPropagation()}
+      >
         <DropdownMenuLabel>Kundenstatus</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {SELECTABLE_STATUSES.map((opt) => (

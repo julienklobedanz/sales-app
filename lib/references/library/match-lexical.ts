@@ -24,7 +24,7 @@ export async function fetchLexicalReferenceHits(
     salesVisibleOnly: boolean
     matchCount: number
     filters?: MatchReferencesOptions['filters']
-  }
+  },
 ): Promise<MatchReferenceHit[]> {
   const needle = params.query.trim()
   if (needle.length < 2) return []
@@ -112,12 +112,14 @@ export async function fetchLexicalReferenceHits(
       ]) {
         rowMap.set(row.id, row)
       }
-    })
+    }),
   )
 
   if (rowMap.size === 0) return []
 
-  const companyByRef = await fetchCompanyFieldsForReferenceIds(supabase, [...rowMap.keys()])
+  const companyByRef = await fetchCompanyFieldsForReferenceIds(supabase, [
+    ...rowMap.keys(),
+  ])
 
   let hits: MatchReferenceHit[] = []
   for (const row of rowMap.values()) {

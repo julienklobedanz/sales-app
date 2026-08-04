@@ -1,37 +1,37 @@
-"use client"
+'use client'
 
-import type * as React from "react"
+import type * as React from 'react'
 
-import { DraggableColumnHead } from "@/components/table/draggable-column-head"
+import { DraggableColumnHead } from '@/components/table/draggable-column-head'
 
 import type {
   ReferenceColumnKey,
   ReferenceTableHeaderRenderContext,
-} from "./reference-table-column-types"
+} from './reference-table-column-types'
 import {
   buildHeaderDragProps,
   ColumnSortButton,
-} from "./reference-table-column-header-shared"
+} from './reference-table-column-header-shared'
 
 const DATE_COLUMNS = [
-  "updated_at",
-  "project_start",
-  "project_end",
-  "duration_months",
-  "created_at",
+  'updated_at',
+  'project_start',
+  'project_end',
+  'duration_months',
+  'created_at',
 ] as const satisfies readonly ReferenceColumnKey[]
 
 export type ReferenceDateColumnKey = (typeof DATE_COLUMNS)[number]
 
 export function isDateColumn(
-  column: ReferenceColumnKey
+  column: ReferenceColumnKey,
 ): column is ReferenceDateColumnKey {
   return (DATE_COLUMNS as readonly string[]).includes(column)
 }
 
 export function renderDateColumnHeader(
   column: ReferenceDateColumnKey,
-  ctx: ReferenceTableHeaderRenderContext
+  ctx: ReferenceTableHeaderRenderContext,
 ): React.ReactNode {
   return (
     <DraggableColumnHead

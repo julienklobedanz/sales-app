@@ -18,7 +18,7 @@ import { log } from '@/lib/observability/logger'
 
 function redirectWithError(returnTo: ReturnType<typeof parseHubSpotOAuthReturnTo>) {
   return NextResponse.redirect(
-    `${getAppOrigin()}${buildHubSpotOAuthCallbackPath(returnTo, 'error', { openImport: false })}`
+    `${getAppOrigin()}${buildHubSpotOAuthCallbackPath(returnTo, 'error', { openImport: false })}`,
   )
 }
 

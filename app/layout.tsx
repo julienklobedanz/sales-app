@@ -1,44 +1,42 @@
-import type { Metadata } from "next";
-import { Geist_Mono, Inter, Manrope } from "next/font/google";
-import { Providers } from "@/components/providers";
-import "./globals.css";
-import "../styles/theme-cognism.css";
-import "../styles/theme-cognism-content.css";
-import { cn } from "@/lib/utils";
+import type { Metadata } from 'next'
+import { Geist_Mono, Inter, Manrope } from 'next/font/google'
+import { Providers } from '@/components/providers'
+import './globals.css'
+import '../styles/theme-cognism.css'
+import '../styles/theme-cognism-content.css'
+import { cn } from '@/lib/utils'
 
-const manropeHeading = Manrope({subsets:['latin'],variable:'--font-heading'});
+const manropeHeading = Manrope({ subsets: ['latin'], variable: '--font-heading' })
 
 const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-});
+  variable: '--font-inter',
+  subsets: ['latin'],
+})
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
+})
 
 export const metadata: Metadata = {
-  title: "RefStack",
-  description: "Referenz- und Account-Management für Sales-Teams",
-};
+  title: 'RefStack',
+  description: 'Referenz- und Account-Management für Sales-Teams',
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
   return (
     <html
       lang="de"
       suppressHydrationWarning
-      className={cn("font-sans", manropeHeading.variable, inter.variable)}
+      className={cn('font-sans', manropeHeading.variable, inter.variable)}
     >
-      <body
-        className={`${geistMono.variable} antialiased`}
-      >
+      <body className={`${geistMono.variable} antialiased`}>
         <Providers>{children}</Providers>
       </body>
     </html>
-  );
+  )
 }

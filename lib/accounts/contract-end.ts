@@ -9,13 +9,15 @@ export const DEFAULT_HUBSPOT_CONTRACT_END_PROPERTY = 'contract_end_date'
 const MS_PER_DAY = 24 * 60 * 60 * 1000
 
 export function resolveHubSpotContractEndProperty(
-  orgOverride: string | null | undefined
+  orgOverride: string | null | undefined,
 ): string {
   const trimmed = orgOverride?.trim()
   return trimmed || DEFAULT_HUBSPOT_CONTRACT_END_PROPERTY
 }
 
-export function contractEndWarningDays(months: number = CONTRACT_END_WARNING_MONTHS): number {
+export function contractEndWarningDays(
+  months: number = CONTRACT_END_WARNING_MONTHS,
+): number {
   return Math.round(months * 30.4375)
 }
 
@@ -33,7 +35,7 @@ export function daysUntilDate(isoDate: string, now: Date = new Date()): number |
 export function isContractEndWithinWarningWindow(
   contractEndDate: string | null | undefined,
   now: Date = new Date(),
-  warningMonths: number = CONTRACT_END_WARNING_MONTHS
+  warningMonths: number = CONTRACT_END_WARNING_MONTHS,
 ): boolean {
   if (!contractEndDate?.trim()) return false
   const days = daysUntilDate(contractEndDate, now)
@@ -44,7 +46,7 @@ export function isContractEndWithinWarningWindow(
 
 export function contractEndPrimaryTone(
   contractEndDate: string,
-  now: Date = new Date()
+  now: Date = new Date(),
 ): 'danger' | 'warning' {
   const days = daysUntilDate(contractEndDate, now)
   if (days != null && days <= CONTRACT_END_CRITICAL_DAYS) return 'danger'
@@ -54,7 +56,7 @@ export function contractEndPrimaryTone(
 /** Relative deutsche Copy: „in 9 Monaten“ / „in 12 Tagen“ / „diesen Monat“. */
 export function formatContractEndRelativeLabel(
   contractEndDate: string,
-  now: Date = new Date()
+  now: Date = new Date(),
 ): string {
   const days = daysUntilDate(contractEndDate, now)
   if (days == null) return 'läuft bald aus'

@@ -82,7 +82,9 @@ function normalizeChampionKey(raw: string | null | undefined) {
 }
 
 function parseSignalCategory(raw: unknown): MarketSignalCategory | null {
-  const v = String(raw ?? '').trim().toLowerCase()
+  const v = String(raw ?? '')
+    .trim()
+    .toLowerCase()
   if (v === 'people' || v === 'finance' || v === 'strategy') return v
   return null
 }
@@ -197,7 +199,9 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
     logoUrl: (company.logo_url as string | null) ?? null,
     isFollowing: Boolean(company.is_favorite),
   }))
-  let followingCompanyIds = companyList.filter((company) => company.isFollowing).map((company) => company.id)
+  let followingCompanyIds = companyList
+    .filter((company) => company.isFollowing)
+    .map((company) => company.id)
   const companyMetaById = new Map(companyList.map((company) => [company.id, company]))
 
   const { data: signalReadRows } = await supabase
@@ -205,7 +209,7 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
     .select('notification_key')
     .eq('user_id', user.id)
     .or(
-      'notification_key.like.market_exec:%,notification_key.like.market_news:%,notification_key.like.market_irrelevant:%'
+      'notification_key.like.market_exec:%,notification_key.like.market_news:%,notification_key.like.market_irrelevant:%',
     )
     .limit(500)
   const signalReadKeys = (signalReadRows ?? [])
@@ -221,9 +225,11 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
   const championWatchlist = Array.from(
     new Set(
       (championRows ?? [])
-        .map((row) => normalizeChampionKey((row as { person_key?: string | null }).person_key ?? ''))
-        .filter(Boolean)
-    )
+        .map((row) =>
+          normalizeChampionKey((row as { person_key?: string | null }).person_key ?? ''),
+        )
+        .filter(Boolean),
+    ),
   )
 
   const { data: dealRows } = await supabase
@@ -237,8 +243,8 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
       (dealRows ?? [])
         .filter((row) => isActiveDealStatus((row as { status?: unknown }).status))
         .map((row) => String((row as { company_id?: string | null }).company_id ?? ''))
-        .filter(Boolean)
-    )
+        .filter(Boolean),
+    ),
   )
 
   const { data: activeDealRows } = await supabase
@@ -309,8 +315,8 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
       new Set(
         [...(execRows ?? []), ...(newsRows ?? [])]
           .map((row) => String((row as { company_id?: string | null }).company_id ?? ''))
-          .filter((companyId) => companyId && companyMetaById.has(companyId))
-      )
+          .filter((companyId) => companyId && companyMetaById.has(companyId)),
+      ),
     ).slice(0, 8)
     if (bootstrapCompanyIds.length > 0) {
       await supabase
@@ -326,29 +332,33 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
     }
   }
 
-  const executives: ExecutiveTrackingRow[] = (execRows ?? []).map((row: Record<string, unknown>) => {
-    const co = Array.isArray(row.companies)
-      ? (row.companies as { name?: string; logo_url?: string | null }[])[0]
-      : (row.companies as { name?: string; logo_url?: string | null } | null)
-    const ek = String(row.event_kind ?? 'role_change')
-    return {
-      id: String(row.id),
-      companyId: String(row.company_id),
-      companyName: co?.name?.trim() ? String(co.name) : '—',
-      companyLogoUrl:
-        (co?.logo_url as string | undefined) ?? companyMetaById.get(String(row.company_id))?.logoUrl ?? null,
-      personName: String(row.person_name ?? ''),
-      personTitleBefore: (row.person_title_before as string | null) ?? null,
-      personTitleAfter: (row.person_title_after as string | null) ?? null,
-      changeSummary: String(row.change_summary ?? ''),
-      detectedAt: String(row.detected_at ?? ''),
-      eventKind: ek === 'news_mention' ? 'news_mention' : 'role_change',
-      sourceUrl: (row.source_url as string | null) ?? null,
-      signalCategory: parseSignalCategory(row.signal_category),
-      insightSignalFact: (row.insight_signal_fact as string | null) ?? null,
-      insightWhyNow: (row.insight_why_now as string | null) ?? null,
-    }
-  })
+  const executives: ExecutiveTrackingRow[] = (execRows ?? []).map(
+    (row: Record<string, unknown>) => {
+      const co = Array.isArray(row.companies)
+        ? (row.companies as { name?: string; logo_url?: string | null }[])[0]
+        : (row.companies as { name?: string; logo_url?: string | null } | null)
+      const ek = String(row.event_kind ?? 'role_change')
+      return {
+        id: String(row.id),
+        companyId: String(row.company_id),
+        companyName: co?.name?.trim() ? String(co.name) : '—',
+        companyLogoUrl:
+          (co?.logo_url as string | undefined) ??
+          companyMetaById.get(String(row.company_id))?.logoUrl ??
+          null,
+        personName: String(row.person_name ?? ''),
+        personTitleBefore: (row.person_title_before as string | null) ?? null,
+        personTitleAfter: (row.person_title_after as string | null) ?? null,
+        changeSummary: String(row.change_summary ?? ''),
+        detectedAt: String(row.detected_at ?? ''),
+        eventKind: ek === 'news_mention' ? 'news_mention' : 'role_change',
+        sourceUrl: (row.source_url as string | null) ?? null,
+        signalCategory: parseSignalCategory(row.signal_category),
+        insightSignalFact: (row.insight_signal_fact as string | null) ?? null,
+        insightWhyNow: (row.insight_why_now as string | null) ?? null,
+      }
+    },
+  )
 
   const news: AccountNewsRow[] = (newsRows ?? []).map((row: Record<string, unknown>) => {
     const co = Array.isArray(row.companies)
@@ -360,7 +370,9 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
       companyId: String(row.company_id),
       companyName: co?.name?.trim() ? String(co.name) : '—',
       companyLogoUrl:
-        (co?.logo_url as string | undefined) ?? companyMetaById.get(String(row.company_id))?.logoUrl ?? null,
+        (co?.logo_url as string | undefined) ??
+        companyMetaById.get(String(row.company_id))?.logoUrl ??
+        null,
       body: String(row.body ?? ''),
       sourceLabel: (row.source_label as string | null) ?? null,
       sourceUrl: (row.source_url as string | null) ?? null,
@@ -373,20 +385,27 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
   })
 
   const relevantCompanyIds = Array.from(
-    new Set([...executives, ...news].map((x) => x.companyId).filter(Boolean))
+    new Set([...executives, ...news].map((x) => x.companyId).filter(Boolean)),
   ).slice(0, 50)
 
-  const referenceSnippetsByCompanyId: MarketSignalsPageModel['referenceSnippetsByCompanyId'] = {}
+  const referenceSnippetsByCompanyId: MarketSignalsPageModel['referenceSnippetsByCompanyId'] =
+    {}
   if (relevantCompanyIds.length) {
     const { data: refRows, error: refErr } = await supabase
       .from('references')
-      .select('id,title,industry,status,company_id,updated_at, companies ( name, logo_url )')
+      .select(
+        'id,title,industry,status,company_id,updated_at, companies ( name, logo_url )',
+      )
       .in('company_id', relevantCompanyIds)
       .order('updated_at', { ascending: false })
       .limit(250)
 
     if (refErr) {
-      log.error('marketSignals.referencesFailed', { companyCount: relevantCompanyIds.length }, refErr)
+      log.error(
+        'marketSignals.referencesFailed',
+        { companyCount: relevantCompanyIds.length },
+        refErr,
+      )
     }
 
     for (const raw of refRows ?? []) {
@@ -397,7 +416,10 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
         status?: string | null
         company_id?: string | null
         updated_at?: string | null
-        companies?: { name?: string | null; logo_url?: string | null } | { name?: string | null; logo_url?: string | null }[] | null
+        companies?:
+          | { name?: string | null; logo_url?: string | null }
+          | { name?: string | null; logo_url?: string | null }[]
+          | null
       }
       const companyId = String(row.company_id ?? '')
       if (!companyId) continue
@@ -423,7 +445,9 @@ export async function loadMarketSignalsPageData(): Promise<MarketSignalsPageMode
   const lastUpdatedMs = [
     ...executives.map((row) => new Date(row.detectedAt).getTime()),
     ...news.map((row) => {
-      const iso = row.publishedOn.includes('T') ? row.publishedOn : `${row.publishedOn}T12:00:00.000Z`
+      const iso = row.publishedOn.includes('T')
+        ? row.publishedOn
+        : `${row.publishedOn}T12:00:00.000Z`
       return new Date(iso).getTime()
     }),
   ].filter((t) => Number.isFinite(t) && t > 0)

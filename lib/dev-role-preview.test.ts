@@ -132,7 +132,7 @@ describe('canUseDevRolePreview', () => {
 describe('formatDevRolePreviewLabel', () => {
   it('formats preset labels in German', () => {
     expect(
-      formatDevRolePreviewLabel({ systemRole: 'member', functionRole: 'sales_rep' })
+      formatDevRolePreviewLabel({ systemRole: 'member', functionRole: 'sales_rep' }),
     ).toContain('Vertrieb')
   })
 })

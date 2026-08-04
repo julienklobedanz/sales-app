@@ -15,7 +15,10 @@ export async function POST(req: Request) {
   const p256dh = String(body.keys?.p256dh ?? '').trim()
   const auth = String(body.keys?.auth ?? '').trim()
   if (!endpoint || !p256dh || !auth) {
-    return NextResponse.json({ error: 'endpoint, keys.p256dh und keys.auth sind erforderlich.' }, { status: 400 })
+    return NextResponse.json(
+      { error: 'endpoint, keys.p256dh und keys.auth sind erforderlich.' },
+      { status: 400 },
+    )
   }
 
   const supabase = await createServerSupabaseClient()
@@ -33,7 +36,7 @@ export async function POST(req: Request) {
       p256dh,
       auth,
     },
-    { onConflict: 'user_id,endpoint' }
+    { onConflict: 'user_id,endpoint' },
   )
 
   if (error) {

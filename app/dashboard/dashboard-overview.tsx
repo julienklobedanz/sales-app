@@ -4,10 +4,7 @@ import React from 'react'
 import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import type {
-  ReferenceRow,
-  ReferenceAssetRow,
-} from './actions'
+import type { ReferenceRow, ReferenceAssetRow } from './actions'
 import { ROUTES } from '@/lib/routes'
 import { isSalesAppView, userCanCreateReference } from '@/lib/roles/reference-access'
 import { isSystemAdmin, legacyAppRoleFrom } from '@/lib/roles/legacy-mapping'
@@ -31,9 +28,7 @@ import {
   useReferenceLibraryMode,
 } from '@/lib/references/library/reference-library-mode-store'
 import type { ComplianceDocumentRow } from '@/app/dashboard/settings/compliance-actions'
-import {
-  type ReferenceColumnKey,
-} from './overview/reference-table-column-renders'
+import { type ReferenceColumnKey } from './overview/reference-table-column-renders'
 import {
   COLUMN_KEYS,
   COLUMN_LABELS,
@@ -63,10 +58,7 @@ import { ReferencesBulkActionsBar } from './overview/references-bulk-actions-bar
 import { useReferencesOverviewDialogsState } from './overview/use-references-overview-dialogs-state'
 import { ReferenceOnboardingEmptyState } from '@/app/dashboard/references/components/reference-onboarding-empty-state'
 import { toast } from 'sonner'
-import {
-  clampColumnWidth,
-  saveColumnWidthsToStorage,
-} from '@/lib/table-column-sizing'
+import { clampColumnWidth, saveColumnWidthsToStorage } from '@/lib/table-column-sizing'
 import type { OrgDateDisplayFormat } from '@/lib/format'
 import { canViewComplianceReferenceSegment } from '@/lib/references/library/reference-proof-segment-access'
 import type { ReferenceVolumeFilter } from '@/lib/references/reference-volume-filter'
@@ -85,7 +77,7 @@ const InboxReferencesConceptClient = dynamic(
         aria-label="Laden"
       />
     ),
-  }
+  },
 )
 
 const ReferenceDetailSheet = dynamic(
@@ -93,7 +85,7 @@ const ReferenceDetailSheet = dynamic(
     import('./overview/reference-detail-sheet').then((m) => ({
       default: m.ReferenceDetailSheet,
     })),
-  { ssr: false, loading: () => null }
+  { ssr: false, loading: () => null },
 )
 
 // --- Hauptkomponente ---
@@ -104,7 +96,12 @@ type CompanyOption = {
   logo_url?: string | null
   industry?: string | null
 }
-type ContactOption = { id: string; first_name: string | null; last_name: string | null; email: string | null }
+type ContactOption = {
+  id: string
+  first_name: string | null
+  last_name: string | null
+  email: string | null
+}
 
 export function DashboardOverview({
   references: initialReferences,
@@ -126,7 +123,15 @@ export function DashboardOverview({
   initialStatusFilter?: string
   companies?: CompanyOption[]
   contacts?: ContactOption[]
-  externalContacts?: { id: string; company_id: string; first_name: string | null; last_name: string | null; email: string | null; role: string | null; phone?: string | null }[]
+  externalContacts?: {
+    id: string
+    company_id: string
+    first_name: string | null
+    last_name: string | null
+    email: string | null
+    role: string | null
+    phone?: string | null
+  }[]
   orgDateDisplayFormat?: OrgDateDisplayFormat | string
   complianceDocuments?: ComplianceDocumentRow[]
 }) {
@@ -156,7 +161,7 @@ export function DashboardOverview({
   const isCertificatesLibrary = libraryMode === 'certificates'
   const canViewComplianceSegment = canViewComplianceReferenceSegment(
     profile.systemRole,
-    profile.functionRole
+    profile.functionRole,
   )
   const [rowMenuOpenId, setRowMenuOpenId] = useState<string | null>(null)
   const [selectedRef, setSelectedRef] = useState<ReferenceRow | null>(null)
@@ -182,10 +187,10 @@ export function DashboardOverview({
     Record<(typeof COLUMN_KEYS)[number], boolean>
   >(loadVisibleColumnsFromStorage)
   const [columnOrder, setColumnOrder] = useState<ReferenceColumnKey[]>(() =>
-    loadColumnOrderFromStorage()
+    loadColumnOrderFromStorage(),
   )
   const [columnWidths, setColumnWidths] = useState<Record<ReferenceColumnKey, number>>(
-    () => loadReferenceColumnWidthsFromStorage()
+    () => loadReferenceColumnWidthsFromStorage(),
   )
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null)
 
@@ -200,7 +205,9 @@ export function DashboardOverview({
   useLayoutEffect(() => {
     syncReferenceLibraryModeFromStorage()
     try {
-      setShowExpiredCertificates(localStorage.getItem(REFERENCE_SHOW_EXPIRED_CERTS_KEY) === '1')
+      setShowExpiredCertificates(
+        localStorage.getItem(REFERENCE_SHOW_EXPIRED_CERTS_KEY) === '1',
+      )
     } catch {
       /* ignore */
     }
@@ -230,7 +237,7 @@ export function DashboardOverview({
     try {
       localStorage.setItem(
         REFERENCE_SHOW_EXPIRED_CERTS_KEY,
-        showExpiredCertificates ? '1' : '0'
+        showExpiredCertificates ? '1' : '0',
       )
     } catch {
       /* ignore */
@@ -266,12 +273,15 @@ export function DashboardOverview({
     saveColumnWidthsToStorage(COLUMN_SIZING_STORAGE_KEY, columnWidths)
   }, [columnWidths])
 
-  const handleColumnWidthChange = useCallback((column: ReferenceColumnKey, width: number) => {
-    setColumnWidths((prev) => ({
-      ...prev,
-      [column]: clampColumnWidth(width),
-    }))
-  }, [])
+  const handleColumnWidthChange = useCallback(
+    (column: ReferenceColumnKey, width: number) => {
+      setColumnWidths((prev) => ({
+        ...prev,
+        [column]: clampColumnWidth(width),
+      }))
+    },
+    [],
+  )
 
   useEffect(() => {
     try {
@@ -287,7 +297,7 @@ export function DashboardOverview({
 
   const orderedVisibleColumnKeys = useMemo(
     () => columnOrder.filter((k) => visibleColumns[k]),
-    [columnOrder, visibleColumns]
+    [columnOrder, visibleColumns],
   )
 
   const moveColumnOrder = useCallback((from: string, to: string) => {
@@ -323,12 +333,12 @@ export function DashboardOverview({
           return next
         })
         toast.error('Fehler beim Aktualisieren der Favoriten')
-      }
+      },
     )
   }
 
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(
-    () => new Set(initialReferences.filter((r) => r.is_favorited).map((r) => r.id))
+    () => new Set(initialReferences.filter((r) => r.is_favorited).map((r) => r.id)),
   )
 
   const referencesWithLocalFavorites = useMemo(
@@ -337,22 +347,23 @@ export function DashboardOverview({
         ...r,
         is_favorited: favoriteIds.has(r.id),
       })),
-    [initialReferences, favoriteIds]
+    [initialReferences, favoriteIds],
   )
 
   const companyLogoById = useMemo(
     () => buildCompanyLogoById(companies, initialReferences),
-    [companies, initialReferences]
+    [companies, initialReferences],
   )
 
   const companyIndustryById = useMemo(
     () => buildCompanyIndustryById(companies),
-    [companies]
+    [companies],
   )
 
   const companyIdsNeedingBrandfetch = useMemo(
-    () => buildCompanyIdsNeedingBrandfetch(initialReferences, companies, companyIndustryById),
-    [initialReferences, companies, companyIndustryById]
+    () =>
+      buildCompanyIdsNeedingBrandfetch(initialReferences, companies, companyIndustryById),
+    [initialReferences, companies, companyIndustryById],
   )
 
   const filterOptions = useMemo(
@@ -360,9 +371,9 @@ export function DashboardOverview({
       buildReferenceFilterOptions(
         initialReferences,
         companyIndustryById,
-        normalizeTagLabel
+        normalizeTagLabel,
       ),
-    [initialReferences, companyIndustryById]
+    [initialReferences, companyIndustryById],
   )
 
   const salesAppView = isSalesAppView(profile.systemRole, profile.functionRole)
@@ -401,7 +412,7 @@ export function DashboardOverview({
       sortKey,
       sortDir,
       companyIndustryById,
-    ]
+    ],
   )
 
   const pageCount = Math.max(1, Math.ceil(filteredReferences.length / pageSize))
@@ -436,11 +447,11 @@ export function DashboardOverview({
 
   const selectedRefs = useMemo(
     () => initialReferences.filter((r) => selectedRefIds.has(r.id)),
-    [initialReferences, selectedRefIds]
+    [initialReferences, selectedRefIds],
   )
   const filteredSelectedCount = useMemo(
     () => filteredReferences.filter((r) => selectedRefIds.has(r.id)).length,
-    [filteredReferences, selectedRefIds]
+    [filteredReferences, selectedRefIds],
   )
   const handleDelete = async (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation()
@@ -485,7 +496,7 @@ export function DashboardOverview({
   const canCreateReference = userCanCreateReference(
     profile.functionRole,
     profile.systemRole,
-    profile.capabilities
+    profile.capabilities,
   )
   const filtersActive =
     Boolean(search.trim()) ||
@@ -508,7 +519,9 @@ export function DashboardOverview({
 
     const handleEmptyStateUpload = (files: File[]) => {
       if (!isAdmin) {
-        toast.info('Bulk-Import ist nur für Admins verfügbar. Nutze „Ref. manuell erstellen“.')
+        toast.info(
+          'Bulk-Import ist nur für Admins verfügbar. Nutze „Ref. manuell erstellen“.',
+        )
         return
       }
       setBulkImportGroups([])
@@ -568,7 +581,9 @@ export function DashboardOverview({
           onCreateReferenceClick={() => setNewRefModalOpen(true)}
           onUploadCertificateClick={() => setComplianceUploadOpen(true)}
           onBulkUploadCertificatesClick={
-            isSystemAdmin(profile.systemRole) ? () => setComplianceBulkUploadOpen(true) : undefined
+            isSystemAdmin(profile.systemRole)
+              ? () => setComplianceBulkUploadOpen(true)
+              : undefined
           }
           showExpiredCertificates={showExpiredCertificates}
           onShowExpiredCertificatesChange={setShowExpiredCertificates}
@@ -585,7 +600,9 @@ export function DashboardOverview({
               const selected = Array.from(selectedRefIds)
               const result = await createSharedPortfolio(selected)
               if (!result.success) {
-                toast.error(result.error ?? 'Kollektions-Link konnte nicht erstellt werden.')
+                toast.error(
+                  result.error ?? 'Kollektions-Link konnte nicht erstellt werden.',
+                )
                 return
               }
               const absoluteUrl =
@@ -599,7 +616,9 @@ export function DashboardOverview({
               const base = process.env.NEXT_PUBLIC_SUPABASE_URL
               const withFile = selectedRefs.filter((r) => r.file_path)
               if (withFile.length === 0) {
-                toast.error('Keine der ausgewählten Referenzen hat ein Dokument zum Herunterladen.')
+                toast.error(
+                  'Keine der ausgewählten Referenzen hat ein Dokument zum Herunterladen.',
+                )
                 return
               }
               withFile.forEach((r) => {
@@ -607,7 +626,7 @@ export function DashboardOverview({
                 window.open(url, '_blank', 'noopener,noreferrer')
               })
               toast.success(
-                `${withFile.length} Referenz${withFile.length !== 1 ? 'en' : ''} werden heruntergeladen.`
+                `${withFile.length} Referenz${withFile.length !== 1 ? 'en' : ''} werden heruntergeladen.`,
               )
             }}
           />

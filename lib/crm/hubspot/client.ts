@@ -17,9 +17,11 @@ export type HubSpotApiError = {
 
 async function ensureFreshHubSpotAccessToken(
   supabase: SupabaseClient,
-  connection: OrganizationCrmConnectionRow
+  connection: OrganizationCrmConnectionRow,
 ): Promise<{ accessToken: string; connection: OrganizationCrmConnectionRow } | null> {
-  const expiresAt = connection.expires_at ? new Date(connection.expires_at).getTime() : null
+  const expiresAt = connection.expires_at
+    ? new Date(connection.expires_at).getTime()
+    : null
   const needsRefresh =
     expiresAt != null && expiresAt - Date.now() < TOKEN_REFRESH_BUFFER_MS
 
@@ -57,9 +59,13 @@ async function ensureFreshHubSpotAccessToken(
 
 export async function getHubSpotAccessTokenForOrg(
   supabase: SupabaseClient,
-  organizationId: string
+  organizationId: string,
 ): Promise<string | null> {
-  const connection = await getOrganizationCrmConnection(supabase, organizationId, 'hubspot')
+  const connection = await getOrganizationCrmConnection(
+    supabase,
+    organizationId,
+    'hubspot',
+  )
   if (!connection?.access_token_enc) return null
 
   const fresh = await ensureFreshHubSpotAccessToken(supabase, connection)
@@ -70,7 +76,7 @@ export async function hubSpotApiFetch<T>(
   supabase: SupabaseClient,
   organizationId: string,
   path: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<{ ok: true; data: T } | { ok: false; error: string; status: number }> {
   const accessToken = await getHubSpotAccessTokenForOrg(supabase, organizationId)
   if (!accessToken) {

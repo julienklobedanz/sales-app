@@ -1,7 +1,10 @@
 import { normalizeDueTime } from '@/lib/deal-desk/timeline-display'
 import type { DealDeskTimelineItem } from '@/lib/deal-desk/mock-analysis'
 
-import { buildRfpDeadlineSourceKey, inferDeadlineKindFromTitle } from './deadline-source-key'
+import {
+  buildRfpDeadlineSourceKey,
+  inferDeadlineKindFromTitle,
+} from './deadline-source-key'
 import type { DealDeadlineKind } from './deadline-types'
 
 export type RfpDeadlineUpsertRow = {
@@ -14,7 +17,10 @@ export type RfpDeadlineUpsertRow = {
 }
 
 /** ISO-Timestamp für DB — Datum + optionale Uhrzeit (UTC-Mittag wenn ohne Zeit). */
-export function timelineDueToIso(dueDate: string, dueTime?: string | null): string | null {
+export function timelineDueToIso(
+  dueDate: string,
+  dueTime?: string | null,
+): string | null {
   if (!dueDate || dueDate.length < 10) return null
   const datePart = dueDate.slice(0, 10)
   const time = normalizeDueTime(dueTime ?? null)
@@ -26,7 +32,7 @@ export function timelineDueToIso(dueDate: string, dueTime?: string | null): stri
 
 export function mapTimelineItemToRfpDeadlineRow(
   dealId: string,
-  item: DealDeskTimelineItem
+  item: DealDeskTimelineItem,
 ): RfpDeadlineUpsertRow | null {
   const label = item.title?.trim()
   if (!label) return null
@@ -57,7 +63,7 @@ export function mapTimelineItemToRfpDeadlineRow(
 
 export function mapTimelineToRfpDeadlineRows(
   dealId: string,
-  items: DealDeskTimelineItem[]
+  items: DealDeskTimelineItem[],
 ): RfpDeadlineUpsertRow[] {
   const rows: RfpDeadlineUpsertRow[] = []
   const seen = new Set<string>()

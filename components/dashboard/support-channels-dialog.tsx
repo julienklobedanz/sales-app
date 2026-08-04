@@ -84,13 +84,16 @@ export function SupportChannelsDialog({
   }
 
   const rawWa =
-    typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP_E164?.trim() ?? '' : ''
+    typeof process !== 'undefined'
+      ? (process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP_E164?.trim() ?? '')
+      : ''
   const waDigits = rawWa.replace(/\D/g, '')
   const whatsappHref = waDigits ? buildWhatsAppHref(waDigits) : ''
 
   const supportEmail =
-    (typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() : '') ||
-    'support@refstack.ai'
+    (typeof process !== 'undefined'
+      ? process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim()
+      : '') || 'support@refstack.ai'
   const mailtoSubject = encodeURIComponent('Support-Anfrage RefStack')
   const mailtoHref = `mailto:${supportEmail}?subject=${mailtoSubject}`
 
@@ -100,9 +103,12 @@ export function SupportChannelsDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-lg">
         <DialogHeader className="space-y-1 border-b border-border/60 px-5 py-4 text-left">
-          <DialogTitle className="text-base font-semibold tracking-tight">Support</DialogTitle>
+          <DialogTitle className="text-base font-semibold tracking-tight">
+            Support
+          </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
-            Bei Fragen oder Problemen mit RefStack. Wir melden uns innerhalb von 24h bei dir.
+            Bei Fragen oder Problemen mit RefStack. Wir melden uns innerhalb von 24h bei
+            dir.
           </DialogDescription>
         </DialogHeader>
 

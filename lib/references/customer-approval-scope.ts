@@ -22,7 +22,7 @@ export const REFERENCE_CALL_FREQUENCY_OPTIONS: {
 ]
 
 export function defaultCustomerApprovalScope(
-  approvalType: CustomerApprovalType = 'named'
+  approvalType: CustomerApprovalType = 'named',
 ): CustomerApprovalScopeSelection {
   return {
     approvalType,
@@ -34,7 +34,7 @@ export function defaultCustomerApprovalScope(
 }
 
 export function resetNamedSubOptions(
-  scope: CustomerApprovalScopeSelection
+  scope: CustomerApprovalScopeSelection,
 ): CustomerApprovalScopeSelection {
   return {
     ...scope,
@@ -72,9 +72,7 @@ export function customerApprovalScopeFromDb(row: {
 }
 
 /** Mappt die UI-Auswahl auf references-Spalten. */
-export function customerApprovalScopeToDbPatch(
-  scope: CustomerApprovalScopeSelection
-): {
+export function customerApprovalScopeToDbPatch(scope: CustomerApprovalScopeSelection): {
   approval_scope_named_mention: boolean
   approval_scope_anonymous_mention: boolean
   approval_scope_logo_use: boolean

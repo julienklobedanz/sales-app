@@ -32,7 +32,7 @@ async function extractMetadataFromFile(file: File) {
 }
 
 export async function bulkCreateReferencesFromFilesImpl(
-  formData: FormData
+  formData: FormData,
 ): Promise<BulkImportReferencesResult> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -57,7 +57,9 @@ export async function bulkCreateReferencesFromFilesImpl(
   }
 
   const groupsJson = formData.get('groups') as string | null
-  const groups: BulkImportGroup[] = groupsJson ? (JSON.parse(groupsJson) as BulkImportGroup[]) : []
+  const groups: BulkImportGroup[] = groupsJson
+    ? (JSON.parse(groupsJson) as BulkImportGroup[])
+    : []
   const files = formData.getAll('files') as File[]
 
   const totalFiles = files?.length ?? 0
@@ -67,9 +69,14 @@ export async function bulkCreateReferencesFromFilesImpl(
   }
 
   const useGroups = Array.isArray(groups) && groups.length > 0
-  const expectedCount = useGroups ? groups.reduce((s, g) => s + g.fileCount, 0) : totalFiles
+  const expectedCount = useGroups
+    ? groups.reduce((s, g) => s + g.fileCount, 0)
+    : totalFiles
   if (useGroups && expectedCount !== totalFiles) {
-    return { success: false, error: 'Anzahl der Dateien stimmt nicht mit den Gruppen überein.' }
+    return {
+      success: false,
+      error: 'Anzahl der Dateien stimmt nicht mit den Gruppen überein.',
+    }
   }
 
   let created = 0
@@ -83,9 +90,7 @@ export async function bulkCreateReferencesFromFilesImpl(
     const manualTitle = groupMeta?.projectName?.trim()
     const parsedTitle = parsed?.title?.trim()
     const manualLooksLikeBoilerplate =
-      manualTitle &&
-      manualTitle.length > 100 &&
-      /^Die\s+.+\s+ist\s+/i.test(manualTitle)
+      manualTitle && manualTitle.length > 100 && /^Die\s+.+\s+ist\s+/i.test(manualTitle)
 
     const title =
       (manualTitle && !manualLooksLikeBoilerplate ? manualTitle : null) ||
@@ -98,12 +103,16 @@ export async function bulkCreateReferencesFromFilesImpl(
 
     let companyResolved
     if (companyHint) {
-      companyResolved = await resolveOrCreateCompanyForImport(supabase, organizationId, companyHint)
+      companyResolved = await resolveOrCreateCompanyForImport(
+        supabase,
+        organizationId,
+        companyHint,
+      )
     } else {
       companyResolved = await resolveOrCreateCompanyForImport(
         supabase,
         organizationId,
-        'Unbekannter Kunde'
+        'Unbekannter Kunde',
       )
     }
     if (!companyResolved.success) return
@@ -112,7 +121,8 @@ export async function bulkCreateReferencesFromFilesImpl(
     const industryMapped =
       co.industry ??
       (parsed?.industry
-        ? mapBrandfetchIndustriesArrayToGermanCategory([{ name: parsed.industry }]) ?? parsed.industry
+        ? (mapBrandfetchIndustriesArrayToGermanCategory([{ name: parsed.industry }]) ??
+          parsed.industry)
         : null)
 
     const { data: refRow, error: insertRefError } = await supabase
@@ -137,7 +147,9 @@ export async function bulkCreateReferencesFromFilesImpl(
         customer_challenge: parsed?.customer_challenge
           ? normalizeNarrativeText(parsed.customer_challenge)
           : null,
-        our_solution: parsed?.our_solution ? normalizeNarrativeText(parsed.our_solution) : null,
+        our_solution: parsed?.our_solution
+          ? normalizeNarrativeText(parsed.our_solution)
+          : null,
         project_status:
           parsed?.project_start || parsed?.project_end || parsed?.duration_months
             ? 'completed'

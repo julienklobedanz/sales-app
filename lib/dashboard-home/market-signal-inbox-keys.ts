@@ -1,6 +1,8 @@
 const SIGNAL_KEY_PREFIXES = ['market_exec:', 'market_news:'] as const
 
-export function extractSignalKeyFromSnoozeNotification(notificationKey: string): string | null {
+export function extractSignalKeyFromSnoozeNotification(
+  notificationKey: string,
+): string | null {
   if (!notificationKey.startsWith('market_snooze_until:')) return null
   const rest = notificationKey.slice('market_snooze_until:'.length)
   let idx = -1
@@ -26,7 +28,7 @@ export function parseMarketSnoozeUntilMs(notificationKey: string): number | null
 export function isMarketSignalSnoozed(
   notificationKeys: string[],
   signalKey: string,
-  nowMs: number
+  nowMs: number,
 ): boolean {
   for (const key of notificationKeys) {
     if (extractSignalKeyFromSnoozeNotification(key) !== signalKey) continue
@@ -36,13 +38,21 @@ export function isMarketSignalSnoozed(
   return false
 }
 
-export function isMarketSignalDismissed(notificationKeys: string[], signalKey: string): boolean {
+export function isMarketSignalDismissed(
+  notificationKeys: string[],
+  signalKey: string,
+): boolean {
   const irrelevant = `market_irrelevant:${signalKey}`
   return notificationKeys.some((k) => k === irrelevant)
 }
 
-export function isMarketSignalCallCompleted(notificationKeys: string[], signalKey: string): boolean {
-  return notificationKeys.some((k) => k.startsWith(`market_outcome:`) && k.endsWith(`:${signalKey}`))
+export function isMarketSignalCallCompleted(
+  notificationKeys: string[],
+  signalKey: string,
+): boolean {
+  return notificationKeys.some(
+    (k) => k.startsWith(`market_outcome:`) && k.endsWith(`:${signalKey}`),
+  )
 }
 
 export function normalizeChampionPersonKey(raw: string | null | undefined): string {

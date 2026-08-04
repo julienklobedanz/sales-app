@@ -1,6 +1,4 @@
-export type PasswordPolicyResult =
-  | { ok: true }
-  | { ok: false; error: string }
+export type PasswordPolicyResult = { ok: true } | { ok: false; error: string }
 
 const COMMON_PASSWORDS = new Set([
   'password',
@@ -21,19 +19,31 @@ export function validatePasswordPolicy(password: string): PasswordPolicyResult {
     return { ok: false, error: 'Das Passwort muss mindestens 12 Zeichen lang sein.' }
   }
   if (!/[A-Z]/.test(value)) {
-    return { ok: false, error: 'Das Passwort muss mindestens einen Großbuchstaben enthalten.' }
+    return {
+      ok: false,
+      error: 'Das Passwort muss mindestens einen Großbuchstaben enthalten.',
+    }
   }
   if (!/[a-z]/.test(value)) {
-    return { ok: false, error: 'Das Passwort muss mindestens einen Kleinbuchstaben enthalten.' }
+    return {
+      ok: false,
+      error: 'Das Passwort muss mindestens einen Kleinbuchstaben enthalten.',
+    }
   }
   if (!/[0-9]/.test(value)) {
     return { ok: false, error: 'Das Passwort muss mindestens eine Zahl enthalten.' }
   }
   if (!/[^A-Za-z0-9]/.test(value)) {
-    return { ok: false, error: 'Das Passwort muss mindestens ein Sonderzeichen enthalten.' }
+    return {
+      ok: false,
+      error: 'Das Passwort muss mindestens ein Sonderzeichen enthalten.',
+    }
   }
   if (COMMON_PASSWORDS.has(value.toLowerCase())) {
-    return { ok: false, error: 'Dieses Passwort ist zu häufig. Bitte wähle ein stärkeres Passwort.' }
+    return {
+      ok: false,
+      error: 'Dieses Passwort ist zu häufig. Bitte wähle ein stärkeres Passwort.',
+    }
   }
   return { ok: true }
 }

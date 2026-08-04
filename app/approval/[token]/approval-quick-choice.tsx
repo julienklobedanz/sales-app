@@ -46,7 +46,9 @@ export function ApprovalQuickChoice({
 
   return (
     <div className="space-y-2">
-      <p className="text-sm font-semibold text-foreground">Wofür dürfen wir Ihre Referenz nutzen?</p>
+      <p className="text-sm font-semibold text-foreground">
+        Wofür dürfen wir Ihre Referenz nutzen?
+      </p>
       <div className="flex flex-col gap-2" role="group" aria-label="Freigabe-Typ">
         {QUICK_APPROVAL_CARDS.map((card) => {
           const active = value === card.id
@@ -60,22 +62,22 @@ export function ApprovalQuickChoice({
               onClick={() => handleToggle(card.id)}
               className={cn(
                 'relative w-full rounded-xl border-2 p-4 text-left transition-all duration-200',
-                active ? tone.active : tone.idle
+                active ? tone.active : tone.idle,
               )}
             >
               <span
                 className={cn(
                   'absolute right-3 top-3 inline-flex size-5 items-center justify-center rounded-full border-2',
-                  active
-                    ? tone.radio
-                    : 'border-muted-foreground/30 bg-background'
+                  active ? tone.radio : 'border-muted-foreground/30 bg-background',
                 )}
                 aria-hidden
               >
                 {active ? <Check className="size-3" strokeWidth={3} /> : null}
               </span>
               <p className="pr-8 text-sm font-semibold text-foreground">{card.title}</p>
-              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{card.description}</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                {card.description}
+              </p>
             </button>
           )
         })}

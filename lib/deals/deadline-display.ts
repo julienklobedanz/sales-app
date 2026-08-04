@@ -24,21 +24,24 @@ function dueAtToDateIso(dueAt: string): string {
   return dueAt.slice(0, 10)
 }
 
-export function deadlineDaysUntil(deadline: Pick<DealDeadlineRow, 'due_at'>, now = new Date()): number | null {
+export function deadlineDaysUntil(
+  deadline: Pick<DealDeadlineRow, 'due_at'>,
+  now = new Date(),
+): number | null {
   if (!deadline.due_at) return null
   return daysUntil(dueAtToDateIso(deadline.due_at), now)
 }
 
 function formatDeadlineDate(
   iso: string,
-  dateDisplayFormat: OrgDateDisplayFormat = 'de-DE'
+  dateDisplayFormat: OrgDateDisplayFormat = 'de-DE',
 ): string {
   return formatReferenceDate(iso, dateDisplayFormat)
 }
 
 export function formatDeadlineCountdownLabel(
   deadline: Pick<DealDeadlineRow, 'due_at' | 'due_text' | 'is_approximate' | 'label'>,
-  options?: { now?: Date; dateDisplayFormat?: OrgDateDisplayFormat }
+  options?: { now?: Date; dateDisplayFormat?: OrgDateDisplayFormat },
 ): string {
   const now = options?.now ?? new Date()
   const dateDisplayFormat = options?.dateDisplayFormat ?? 'de-DE'
@@ -51,7 +54,7 @@ export function formatDeadlineCountdownLabel(
 
 export function formatDeadlineRowParts(
   deadline: Pick<DealDeadlineRow, 'due_at' | 'due_text' | 'is_approximate' | 'label'>,
-  options?: { now?: Date; dateDisplayFormat?: OrgDateDisplayFormat }
+  options?: { now?: Date; dateDisplayFormat?: OrgDateDisplayFormat },
 ): { labelDate: string; countdown: string | null } {
   const now = options?.now ?? new Date()
   const dateDisplayFormat = options?.dateDisplayFormat ?? 'de-DE'
@@ -74,7 +77,10 @@ export function formatDeadlineRowParts(
   return { labelDate: deadline.label, countdown: null }
 }
 
-export function pickNextDeadline(deadlines: DealDeadlineRow[], now = new Date()): DealDeadlineRow | null {
+export function pickNextDeadline(
+  deadlines: DealDeadlineRow[],
+  now = new Date(),
+): DealDeadlineRow | null {
   const active = deadlines.filter((d) => !d.suppressed_at)
   if (!active.length) return null
 
@@ -93,7 +99,7 @@ export function pickNextDeadline(deadlines: DealDeadlineRow[], now = new Date())
 
 export function formatNextDeadlineHeadline(
   deadline: DealDeadlineRow,
-  options?: { now?: Date; dateDisplayFormat?: OrgDateDisplayFormat }
+  options?: { now?: Date; dateDisplayFormat?: OrgDateDisplayFormat },
 ): {
   title: string
   subtitle: string
@@ -104,7 +110,10 @@ export function formatNextDeadlineHeadline(
   if (days !== null) {
     const abs = Math.abs(days)
     const unit = abs === 1 ? 'Tag' : 'Tage'
-    const dateLabel = formatDeadlineDate(dueAtToDateIso(deadline.due_at!), dateDisplayFormat)
+    const dateLabel = formatDeadlineDate(
+      dueAtToDateIso(deadline.due_at!),
+      dateDisplayFormat,
+    )
     if (days < 0) {
       return {
         title: `${abs} ${unit} überfällig`,

@@ -12,11 +12,15 @@ import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { sendClientApprovalEmail } from '@/lib/references/library/approvals-client-email'
 import { referenceGiverNameFromRecipientEmail } from '@/lib/references/library/approvals-helpers'
 import { resolveContactForApproval } from '@/lib/references/library/approvals-recipient'
-import type { ApproveInternalAndSendResult, ApproveInternalRecipientOptions, ReferenceApprovalRow } from '@/lib/references/library/approvals-types'
+import type {
+  ApproveInternalAndSendResult,
+  ApproveInternalRecipientOptions,
+  ReferenceApprovalRow,
+} from '@/lib/references/library/approvals-types'
 
 export async function approveInternalAndSendImpl(
   referenceId: string,
-  recipient?: ApproveInternalRecipientOptions
+  recipient?: ApproveInternalRecipientOptions,
 ): Promise<ApproveInternalAndSendResult> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -30,17 +34,23 @@ export async function approveInternalAndSendImpl(
     .eq('id', user.id)
     .maybeSingle()
   if (profileError || !profile) {
-    return { success: false, error: 'Profil nicht gefunden. Bitte Onboarding abschließen.' }
+    return {
+      success: false,
+      error: 'Profil nicht gefunden. Bitte Onboarding abschließen.',
+    }
   }
   const { systemRole, functionRole } = parseProfileRoles(profile)
   if (!profileCanManageOrgData(systemRole, functionRole)) {
-    return { success: false, error: 'Nur Admin oder Account Manager dürfen extern versenden.' }
+    return {
+      success: false,
+      error: 'Nur Admin oder Account Manager dürfen extern versenden.',
+    }
   }
 
   const { data: row, error } = await supabase
     .from('references')
     .select(
-      `id, title, status, company_id, contact_id, customer_contact_id, approval_contact_id, approval_external_contact_id, customer_approval_status, approval_internal_status, approval_reference_status_snapshot, approval_requested_by, companies(name)`
+      `id, title, status, company_id, contact_id, customer_contact_id, approval_contact_id, approval_external_contact_id, customer_approval_status, approval_internal_status, approval_reference_status_snapshot, approval_requested_by, companies(name)`,
     )
     .eq('id', referenceId)
     .single()
@@ -79,7 +89,7 @@ export async function approveInternalAndSendImpl(
       const ensured = await ensureApprovalRecipientFromInputImpl(
         supabase,
         referenceId,
-        recipient.recipientEmail.trim()
+        recipient.recipientEmail.trim(),
       )
       if ('error' in ensured) {
         return { success: false, error: ensured.error }
@@ -95,7 +105,7 @@ export async function approveInternalAndSendImpl(
       ref,
       ref.company_id,
       recipientOpts,
-      { requireRecipientEmail: false }
+      { requireRecipientEmail: false },
     )
     contactEmail = resolved.email
     firstName = resolved.firstName
@@ -110,7 +120,8 @@ export async function approveInternalAndSendImpl(
       .eq('id', referenceId)
     if (syncErr) return { success: false, error: syncErr.message }
   } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Kein gültiger Empfänger für die Freigabe.'
+    const msg =
+      e instanceof Error ? e.message : 'Kein gültiger Empfänger für die Freigabe.'
     return { success: false, error: msg }
   }
 
@@ -120,10 +131,15 @@ export async function approveInternalAndSendImpl(
       : ''
 
   if (!contactEmail?.includes('@')) {
-    return { success: false, error: 'Bitte eine gültige E-Mail-Adresse für den Kundenkontakt angeben.' }
+    return {
+      success: false,
+      error: 'Bitte eine gültige E-Mail-Adresse für den Kundenkontakt angeben.',
+    }
   }
 
-  const orgId = String((profile as { organization_id?: string | null }).organization_id ?? '').trim()
+  const orgId = String(
+    (profile as { organization_id?: string | null }).organization_id ?? '',
+  ).trim()
   let vendorOrgName = company_name
   if (orgId) {
     const { data: orgRow } = await supabase
@@ -150,7 +166,8 @@ export async function approveInternalAndSendImpl(
     })
     customerEmailSent = sent.emailSent
   } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Freigabe konnte nicht gespeichert werden.'
+    const msg =
+      e instanceof Error ? e.message : 'Freigabe konnte nicht gespeichert werden.'
     return { success: false, error: msg }
   }
 

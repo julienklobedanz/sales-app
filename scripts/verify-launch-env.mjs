@@ -80,7 +80,7 @@ printGroup('Recommended for core product flows', RECOMMENDED)
 printGroup('Optional depending on enabled features', OPTIONAL_BY_SCOPE)
 
 console.log(
-  '\nHubSpot CRM Sync (optional): HUBSPOT_CLIENT_ID + HUBSPOT_CLIENT_SECRET + SUPABASE_SERVICE_ROLE_KEY'
+  '\nHubSpot CRM Sync (optional): HUBSPOT_CLIENT_ID + HUBSPOT_CLIENT_SECRET + SUPABASE_SERVICE_ROLE_KEY',
 )
 console.log('Setup: docs/hubspot-crm-sync-setup.md')
 

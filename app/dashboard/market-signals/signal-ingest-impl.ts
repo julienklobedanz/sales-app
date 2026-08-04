@@ -57,7 +57,10 @@ export async function triggerMarketSignalsIngestForMyOrgImpl(args?: {
       purge = await prepareMarketSignalsFeedRefresh(admin, orgId)
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
-      return { success: false, error: `Feed-Refresh konnte nicht vorbereitet werden: ${msg}` }
+      return {
+        success: false,
+        error: `Feed-Refresh konnte nicht vorbereitet werden: ${msg}`,
+      }
     }
   }
 
@@ -74,7 +77,10 @@ export async function triggerMarketSignalsIngestForMyOrgImpl(args?: {
   })
 
   if (process.env.MARKET_SIGNALS_INSTANT_ALERTS_DISABLED !== '1') {
-    await notifyInstantMarketSignalsAfterIngest(admin, { sinceIso: ingestSince, organizationId: orgId })
+    await notifyInstantMarketSignalsAfterIngest(admin, {
+      sinceIso: ingestSince,
+      organizationId: orgId,
+    })
   }
 
   void writeAuditLog({
@@ -238,8 +244,8 @@ export async function backfillCompanyNewsroomsForMyOrgImpl(args?: {
         discoverAndSaveCompanyNewsrooms(supabase, row.id, {
           websiteUrl: row.website_url,
           force,
-        })
-      )
+        }),
+      ),
     )
     for (let j = 0; j < results.length; j++) {
       const result = results[j]
@@ -274,7 +280,7 @@ export async function backfillCompanyNewsroomsForMyOrgImpl(args?: {
 
 export async function updateCompanyNewsroomUrlsImpl(
   companyId: string,
-  urls: string[]
+  urls: string[],
 ): Promise<{ success: true; urls: string[] } | { success: false; error: string }> {
   const supabase = await createServerSupabaseClient()
   const {

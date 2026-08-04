@@ -18,7 +18,7 @@ export type ExecutiveBriefingExtractSuccess = {
 export async function extractExecutiveBriefingFromRfp(
   apiKey: string,
   plainText: string,
-  projectName: string
+  projectName: string,
 ): Promise<ExecutiveBriefingExtractSuccess | { error: string }> {
   const body = plainText.trim().slice(0, MAX_CHARS)
   if (body.length < 80) {
@@ -112,6 +112,9 @@ Regeln:
       tenderLots: normalizeTenderLots(parsed),
     }
   } catch (e) {
-    return { error: e instanceof Error ? e.message : 'Executive-Briefing-Extraktion fehlgeschlagen.' }
+    return {
+      error:
+        e instanceof Error ? e.message : 'Executive-Briefing-Extraktion fehlgeschlagen.',
+    }
   }
 }

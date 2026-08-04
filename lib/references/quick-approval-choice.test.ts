@@ -17,8 +17,8 @@ describe('quick-approval-choice', () => {
           referenceCallsEnabled: false,
           referenceCallFrequency: 'yearly',
         },
-        { hasChangeRequest: true }
-      )
+        { hasChangeRequest: true },
+      ),
     ).toBe('changes_needed')
   })
 

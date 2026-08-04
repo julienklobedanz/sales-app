@@ -15,7 +15,7 @@ describe('formatOutreachEmail', () => {
       senderFullName: 'Anna Schmidt',
     })
     expect(text).toBe(
-      'Guten Tag Herr Meier,\n\nErster Absatz.\n\nZweiter Absatz.\n\n\nVielen Dank im Voraus und beste Grüße,\nAnna Schmidt'
+      'Guten Tag Herr Meier,\n\nErster Absatz.\n\nZweiter Absatz.\n\n\nVielen Dank im Voraus und beste Grüße,\nAnna Schmidt',
     )
   })
 })

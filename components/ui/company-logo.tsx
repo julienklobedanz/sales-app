@@ -41,7 +41,7 @@ function LogoFallback({
     <div
       className={cn(
         'flex items-center justify-center border border-border/50 bg-gradient-to-br from-blue-500/90 to-violet-500/85 text-white',
-        containerClassName
+        containerClassName,
       )}
     >
       {initials ? (
@@ -65,14 +65,16 @@ export function CompanyLogo({
   const router = useRouter()
   const [localSrc, setLocalSrc] = useState<string | null>(() => {
     const raw = String(srcProp ?? '').trim() || null
-    return raw ? rewriteBrandfetchLogoUrlForLightBackground(raw) ?? raw : null
+    return raw ? (rewriteBrandfetchLogoUrlForLightBackground(raw) ?? raw) : null
   })
   const [imageFailed, setImageFailed] = useState(false)
   const mountedRetry = useRef(false)
 
   useEffect(() => {
     const nextRaw = String(srcProp ?? '').trim() || null
-    const next = nextRaw ? rewriteBrandfetchLogoUrlForLightBackground(nextRaw) ?? nextRaw : null
+    const next = nextRaw
+      ? (rewriteBrandfetchLogoUrlForLightBackground(nextRaw) ?? nextRaw)
+      : null
     queueMicrotask(() => {
       setLocalSrc(next)
       setImageFailed(false)
@@ -86,7 +88,7 @@ export function CompanyLogo({
       if (!id) return
 
       void requestCompanyBrandfetchRetry(id, failedLogoUrl, (cid, failed) =>
-        refreshCompanyBrandfetchOnLogoIssue(cid, failed)
+        refreshCompanyBrandfetchOnLogoIssue(cid, failed),
       ).then((result) => {
         if (result?.logo_url) {
           const rewritten =
@@ -97,7 +99,7 @@ export function CompanyLogo({
         if (result) router.refresh()
       })
     },
-    [companyId, router]
+    [companyId, router],
   )
 
   useEffect(() => {

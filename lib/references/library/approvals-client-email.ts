@@ -5,7 +5,10 @@ import { getAppOrigin } from '@/lib/env/app-origin'
 import { buildClientApprovalEmailHtml } from '@/lib/references/library/approvals-email-templates'
 import type { ReferenceApprovalRow } from '@/lib/references/library/approvals-types'
 import { getPortfolioManageAndPreviewUrlsForApprovalEmail } from '@/lib/references/library/sharing'
-import { escapeRefstackEmailHtml, getRefstackResendFrom } from '@/lib/email/refstack-email-layout'
+import {
+  escapeRefstackEmailHtml,
+  getRefstackResendFrom,
+} from '@/lib/email/refstack-email-layout'
 import { markCustomerApprovalEmailSent } from '@/lib/references/customer-approval-reminder'
 import { log } from '@/lib/observability/logger'
 
@@ -49,7 +52,10 @@ export async function sendClientApprovalEmail(args: {
   if (args.internalReviewerId) {
     patch.approval_internal_reviewer_id = args.internalReviewerId
   }
-  const { error: updateError } = await args.supabase.from('references').update(patch).eq('id', args.referenceId)
+  const { error: updateError } = await args.supabase
+    .from('references')
+    .update(patch)
+    .eq('id', args.referenceId)
   if (updateError) throw new Error(updateError.message)
 
   const resend = getApprovalResendClient()
@@ -62,9 +68,16 @@ export async function sendClientApprovalEmail(args: {
       : `<p style="margin:0 0 16px;"><strong>${escapeRefstackEmailHtml(vendorOrg)}</strong> bittet Sie um Freigabe dieser Referenz.</p>`
     let portfolio: { manageUrl: string; publicPreviewUrl: string } | null = null
     try {
-      portfolio = await getPortfolioManageAndPreviewUrlsForApprovalEmail(args.supabase, args.referenceId)
+      portfolio = await getPortfolioManageAndPreviewUrlsForApprovalEmail(
+        args.supabase,
+        args.referenceId,
+      )
     } catch (e) {
-      log.error('portfolio links failed', { action: 'sendClientApprovalEmail.portfolioLinks' }, e)
+      log.error(
+        'portfolio links failed',
+        { action: 'sendClientApprovalEmail.portfolioLinks' },
+        e,
+      )
     }
     const approvalUrl = `${getAppOrigin()}/approval/${newToken}`
     try {

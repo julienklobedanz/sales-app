@@ -58,12 +58,12 @@ export type ReferenceReadinessState = {
 }
 
 export function resolveReferenceReadinessState(
-  input: ReferenceReadinessStateInput
+  input: ReferenceReadinessStateInput,
 ): ReferenceReadinessState {
   const internal = input.internalApprovalStatus.toLowerCase()
   const customer = effectiveCustomerApprovalStatus(
     input.customerApprovalStatus,
-    input.referenceStatus
+    input.referenceStatus,
   )
   const status = input.referenceStatus.toLowerCase()
 
@@ -101,7 +101,10 @@ export function resolveReferenceReadinessState(
     }
   }
 
-  if (customer === 'rejected' || String(input.customerApprovalStatus ?? '').toLowerCase() === 'rejected') {
+  if (
+    customer === 'rejected' ||
+    String(input.customerApprovalStatus ?? '').toLowerCase() === 'rejected'
+  ) {
     return {
       phase: 'rejected',
       badge: {
@@ -116,7 +119,10 @@ export function resolveReferenceReadinessState(
     }
   }
 
-  if (customer === 'expired' || String(input.customerApprovalStatus ?? '').toLowerCase() === 'expired') {
+  if (
+    customer === 'expired' ||
+    String(input.customerApprovalStatus ?? '').toLowerCase() === 'expired'
+  ) {
     return {
       phase: 'expired',
       badge: {

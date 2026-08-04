@@ -17,7 +17,7 @@ export async function analyzeDealDeskRisks(
   apiKey: string,
   plainText: string,
   projectName: string,
-  documentFileNames: string[] = []
+  documentFileNames: string[] = [],
 ): Promise<DealDeskRiskAnalysisResult | { error: string }> {
   const body = plainText.trim().slice(0, MAX_CHARS)
   if (body.length < 80) {

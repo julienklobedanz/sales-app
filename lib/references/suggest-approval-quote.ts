@@ -11,7 +11,10 @@ function firstSentence(text: string, maxLen = 140): string {
   return `${(lastSpace > 40 ? cut.slice(0, lastSpace) : cut).trim()}…`
 }
 
-function benefitPhrase(summary: string | null | undefined, solution: string | null | undefined): string {
+function benefitPhrase(
+  summary: string | null | undefined,
+  solution: string | null | undefined,
+): string {
   const source = (solution?.trim() || summary?.trim() || '').toLowerCase()
   if (/effizienz|produktiv|schnell|zeit|durchlauf/.test(source)) {
     return 'die Effizienz spürbar steigern'

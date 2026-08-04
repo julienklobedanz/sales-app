@@ -36,8 +36,8 @@ describe('resolveResendRecipient', () => {
   it('detects resend sandbox recipient errors', () => {
     expect(
       isResendSandboxRecipientError(
-        'You can only send testing emails to your own email address (test@example.com).'
-      )
+        'You can only send testing emails to your own email address (test@example.com).',
+      ),
     ).toBe(true)
   })
 

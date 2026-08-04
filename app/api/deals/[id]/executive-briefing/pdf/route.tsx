@@ -16,10 +16,7 @@ function sanitizeFileName(text: string): string {
     .slice(0, 80)
 }
 
-export async function GET(
-  _req: Request,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function GET(_req: Request, context: { params: Promise<{ id: string }> }) {
   const { id: dealId } = await context.params
   const supabase = await createServerSupabaseClient()
   const {
@@ -43,13 +40,13 @@ export async function GET(
   const briefing = await loadDealExecutiveBriefingContext(
     supabase,
     profile.organization_id,
-    dealId
+    dealId,
   )
 
   if (!briefing) {
     return NextResponse.json(
       { error: 'Keine abgeschlossene RFP-Analyse für diesen Deal.' },
-      { status: 422 }
+      { status: 422 },
     )
   }
 
@@ -69,10 +66,12 @@ export async function GET(
       title={briefing.projectName}
       bodyText={bodyText}
       generatedLabel={`Erstellt ${generatedLabel}`}
-    />
+    />,
   )
 
-  const customerName = sanitizeFileName(briefing.analysis.customerName || briefing.projectName)
+  const customerName = sanitizeFileName(
+    briefing.analysis.customerName || briefing.projectName,
+  )
   const fileName = `${customerName}_Executive_Briefing.pdf`
 
   return new NextResponse(new Uint8Array(pdf), {

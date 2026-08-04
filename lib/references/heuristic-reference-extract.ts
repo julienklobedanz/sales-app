@@ -43,16 +43,24 @@ function looksLikeCompanyName(line: string): boolean {
   return false
 }
 
-function isBoilerplateCompanyDescription(line: string, companyName: string | null): boolean {
+function isBoilerplateCompanyDescription(
+  line: string,
+  companyName: string | null,
+): boolean {
   const t = line.trim()
   if (t.length > 130) return true
   if (/^Die\s+.+\s+ist\s+(ein|eine|der|die)\s+/i.test(t)) return true
-  if (/\b(ist ein weltweit|ist eine der|ist einer der|ist ein führender|führender anbieter)\b/i.test(t)) {
+  if (
+    /\b(ist ein weltweit|ist eine der|ist einer der|ist ein führender|führender anbieter)\b/i.test(
+      t,
+    )
+  ) {
     return true
   }
   if (companyName) {
     const short = companyName.replace(/\s+(AG|GmbH|SE)$/i, '').trim()
-    if (short.length > 3 && t.includes(short) && /\bist\s+(ein|eine)\b/i.test(t)) return true
+    if (short.length > 3 && t.includes(short) && /\bist\s+(ein|eine)\b/i.test(t))
+      return true
   }
   return false
 }
@@ -65,7 +73,10 @@ function scoreProjectTitle(line: string, companyName: string | null): number {
   if (DATE_RANGE_IN_LINE.test(t) && t.length < 80) return -100
   if (/^(?:kunde|customer|auftraggeber|mandant)\s*[:–-]/i.test(t)) return -100
   if (companyName && t.toLowerCase() === companyName.toLowerCase()) return -100
-  if (looksLikeCompanyName(t) && !/\b(service|infrastructure|infrastruktur|cloud|migration)\b/i.test(t)) {
+  if (
+    looksLikeCompanyName(t) &&
+    !/\b(service|infrastructure|infrastruktur|cloud|migration)\b/i.test(t)
+  ) {
     return -80
   }
   if (isBoilerplateCompanyDescription(t, companyName)) return -100
@@ -77,7 +88,7 @@ function scoreProjectTitle(line: string, companyName: string | null): number {
   if (/\s[-–]\s/.test(t)) score += 25
   if (
     /\b(service|infrastructure|infrastruktur|cloud|migration|konsolidierung|digitalisierung|rollout|modernisierung|plattform|transformation)\b/i.test(
-      t
+      t,
     )
   ) {
     score += 28
@@ -91,7 +102,10 @@ function scoreProjectTitle(line: string, companyName: string | null): number {
   return score
 }
 
-function pickBestProjectTitle(lines: string[], companyName: string | null): string | null {
+function pickBestProjectTitle(
+  lines: string[],
+  companyName: string | null,
+): string | null {
   let best: string | null = null
   let bestScore = 15
   for (const line of lines.slice(0, 50)) {
@@ -109,31 +123,45 @@ function isUsableProjectTitleLine(line: string, companyName: string | null): boo
   if (t.length < 3 || t.length > 150) return false
   if (PROJECT_PERIOD_LABEL.test(t)) return false
   if (/^(?:kunde|customer|auftraggeber|mandant)\s*[:–-]/i.test(t)) return false
-  if (DATE_RANGE_IN_LINE.test(t) && !/\b(service|infrastructure|cloud|migration)\b/i.test(t)) {
+  if (
+    DATE_RANGE_IN_LINE.test(t) &&
+    !/\b(service|infrastructure|cloud|migration)\b/i.test(t)
+  ) {
     return false
   }
   if (companyName && t.toLowerCase() === companyName.toLowerCase()) return false
-  if (looksLikeCompanyName(t) && !/\b(service|infrastructure|infrastruktur|cloud|migration)\b/i.test(t)) {
+  if (
+    looksLikeCompanyName(t) &&
+    !/\b(service|infrastructure|infrastruktur|cloud|migration)\b/i.test(t)
+  ) {
     return false
   }
   return scoreProjectTitle(t, companyName) > 0
 }
 
-function extractLabeledProjectTitle(lines: string[], companyName: string | null): string | null {
+function extractLabeledProjectTitle(
+  lines: string[],
+  companyName: string | null,
+): string | null {
   for (let i = 0; i < Math.min(lines.length, 60); i++) {
     const line = lines[i]!
     const labelMatch = line.match(PROJECT_NAME_LABEL)
     if (!labelMatch) continue
 
     const inline = labelMatch[1]?.trim()
-    if (inline && !PROJECT_PERIOD_LABEL.test(inline) && !DATE_RANGE_IN_LINE.test(inline)) {
+    if (
+      inline &&
+      !PROJECT_PERIOD_LABEL.test(inline) &&
+      !DATE_RANGE_IN_LINE.test(inline)
+    ) {
       if (inline.length >= 5) return inline
     }
 
     for (let j = i + 1; j < Math.min(lines.length, i + 4); j++) {
       const candidate = lines[j]!.trim()
       if (!candidate) continue
-      if (PROJECT_NAME_LABEL.test(candidate) || PROJECT_PERIOD_LABEL.test(candidate)) break
+      if (PROJECT_NAME_LABEL.test(candidate) || PROJECT_PERIOD_LABEL.test(candidate))
+        break
       if (isUsableProjectTitleLine(candidate, companyName)) {
         return candidate
       }
@@ -150,7 +178,7 @@ function extractSectionInline(
   lines: string[],
   inlinePattern: RegExp,
   startPattern: RegExp,
-  stopPatterns: RegExp[]
+  stopPatterns: RegExp[],
 ): string | null {
   for (const line of lines) {
     const m = line.match(inlinePattern)
@@ -161,7 +189,11 @@ function extractSectionInline(
   return extractSection(lines, startPattern, stopPatterns)
 }
 
-function extractSection(lines: string[], startPattern: RegExp, stopPatterns: RegExp[]): string | null {
+function extractSection(
+  lines: string[],
+  startPattern: RegExp,
+  stopPatterns: RegExp[],
+): string | null {
   let start = -1
   for (let i = 0; i < lines.length; i++) {
     if (startPattern.test(lines[i]!)) {
@@ -186,7 +218,7 @@ function extractSection(lines: string[], startPattern: RegExp, stopPatterns: Reg
 function extractSectionFromFullText(
   text: string,
   startPattern: RegExp,
-  stopPatterns: RegExp[]
+  stopPatterns: RegExp[],
 ): string | null {
   const normalized = text.replace(/\r\n/g, '\n')
   const label = startPattern.source.replace(/^\^/, '').replace(/\\b/g, '')
@@ -195,7 +227,7 @@ function extractSectionFromFullText(
     .join('|')
   const startRe = new RegExp(
     `(?:${label})(?:\\s+des\\s+kunden)?\\s*[:–-]?\\s*\\n?([\\s\\S]{30,1400}?)(?=(?:\\n\\s*(?:${stopLabel}))|$)`,
-    'i'
+    'i',
   )
   const match = normalized.match(startRe)
   const body = match?.[1]?.replace(/\s+/g, ' ').trim()
@@ -212,7 +244,10 @@ function titleFromFileName(fileName: string | undefined): string | null {
     .replace(/\s+/g, ' ')
     .trim()
   if (cleaned.length < 5) return null
-  if (/^(tuvsud|csp|bmw|controlware)/i.test(cleaned) && cleaned.split(/\s+/).length <= 4) {
+  if (
+    /^(tuvsud|csp|bmw|controlware)/i.test(cleaned) &&
+    cleaned.split(/\s+/).length <= 4
+  ) {
     return null
   }
   return cleaned
@@ -223,14 +258,18 @@ function titleFromFileName(fileName: string | undefined): string | null {
  */
 export function parseReferenceHeuristicsFromText(
   documentText: string,
-  options?: { fileName?: string; pdfTitle?: string | null }
+  options?: { fileName?: string; pdfTitle?: string | null },
 ): ExtractedReferenceData {
   const lines = normalizeLines(documentText)
   let company_name: string | null = null
   let title: string | null = null
 
   const pdfTitle = String(options?.pdfTitle ?? '').trim()
-  if (pdfTitle.length >= 8 && !/^untitled$/i.test(pdfTitle) && !isBoilerplateCompanyDescription(pdfTitle, null)) {
+  if (
+    pdfTitle.length >= 8 &&
+    !/^untitled$/i.test(pdfTitle) &&
+    !isBoilerplateCompanyDescription(pdfTitle, null)
+  ) {
     const pdfScore = scoreProjectTitle(pdfTitle, null)
     if (pdfScore > 10) title = pdfTitle
   }
@@ -244,7 +283,9 @@ export function parseReferenceHeuristicsFromText(
       }
       continue
     }
-    const kundeMatch = line.match(/^(?:kunde|customer|auftraggeber|mandant)\s*[:–-]\s*(.+)$/i)
+    const kundeMatch = line.match(
+      /^(?:kunde|customer|auftraggeber|mandant)\s*[:–-]\s*(.+)$/i,
+    )
     if (kundeMatch?.[1] && looksLikeCompanyName(kundeMatch[1])) {
       company_name = kundeMatch[1].trim()
     }
@@ -289,14 +330,15 @@ export function parseReferenceHeuristicsFromText(
     lines,
     INLINE_CHALLENGE,
     SECTION_CHALLENGE,
-    [SECTION_SOLUTION, /^ergebnis\b/i, /^nutzen\b/i, /^referenz\b/i, /^mehrwert\b/i]
+    [SECTION_SOLUTION, /^ergebnis\b/i, /^nutzen\b/i, /^referenz\b/i, /^mehrwert\b/i],
   )
-  const our_solution = extractSectionInline(
-    lines,
-    INLINE_SOLUTION,
-    SECTION_SOLUTION,
-    [SECTION_CHALLENGE, /^über\s+/i, /^kontakt\b/i, /^referenz\b/i, /^kunde\b/i]
-  )
+  const our_solution = extractSectionInline(lines, INLINE_SOLUTION, SECTION_SOLUTION, [
+    SECTION_CHALLENGE,
+    /^über\s+/i,
+    /^kontakt\b/i,
+    /^referenz\b/i,
+    /^kunde\b/i,
+  ])
 
   let summary: string | null = null
   if (customer_challenge) {
@@ -311,7 +353,7 @@ export function parseReferenceHeuristicsFromText(
 
   let duration_months: number | null = null
   const durationMatch = joined.match(
-    /\b(\d{1,3})\s*(?:monate|months|monat)\b|\b(?:laufzeit|duration)\s*[:–-]?\s*(\d{1,3})\b/i
+    /\b(\d{1,3})\s*(?:monate|months|monat)\b|\b(?:laufzeit|duration)\s*[:–-]?\s*(\d{1,3})\b/i,
   )
   if (durationMatch) {
     const n = Number.parseInt(durationMatch[1] || durationMatch[2] || '', 10)
@@ -320,7 +362,7 @@ export function parseReferenceHeuristicsFromText(
 
   let incumbent_provider: string | null = null
   const incumbentMatch = joined.match(
-    /(?:bestandsdienstleister|bisheriger\s+anbieter|incumbent(?:\s+provider)?)\s*[:–-]\s*([^\n|;]{2,80})/i
+    /(?:bestandsdienstleister|bisheriger\s+anbieter|incumbent(?:\s+provider)?)\s*[:–-]\s*([^\n|;]{2,80})/i,
   )
   if (incumbentMatch?.[1]) {
     incumbent_provider = incumbentMatch[1].replace(/\s+/g, ' ').trim() || null
@@ -328,7 +370,7 @@ export function parseReferenceHeuristicsFromText(
 
   let competitors: string | null = null
   const competitorMatch = joined.match(
-    /(?:wettbewerber|mitbewerber|competitors?)\s*[:–-]\s*([^\n]{2,160})/i
+    /(?:wettbewerber|mitbewerber|competitors?)\s*[:–-]\s*([^\n]{2,160})/i,
   )
   if (competitorMatch?.[1]) {
     competitors = competitorMatch[1].replace(/\s+/g, ' ').trim() || null
@@ -337,7 +379,7 @@ export function parseReferenceHeuristicsFromText(
   let project_start: string | null = null
   let project_end: string | null = null
   const rangeMatch = joined.match(
-    /\b(\d{1,2})[./](\d{1,2})[./](\d{2,4})\s*[–—-]\s*(\d{1,2})[./](\d{1,2})[./](\d{2,4})\b/
+    /\b(\d{1,2})[./](\d{1,2})[./](\d{2,4})\s*[–—-]\s*(\d{1,2})[./](\d{1,2})[./](\d{2,4})\b/,
   )
   if (rangeMatch) {
     const toIso = (d: string, m: string, y: string) => {

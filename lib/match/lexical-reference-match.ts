@@ -107,7 +107,7 @@ export function scoreLexicalReferenceMatch(
   query: string,
   companyName: string | null | undefined,
   title: string | null | undefined,
-  summary?: string | null | undefined
+  summary?: string | null | undefined,
 ): number | null {
   const needles = lexicalSearchNeedles(query)
   if (!needles.length) return null
@@ -138,19 +138,20 @@ export function scoreLexicalReferenceMatch(
 /** Embedding-Text an Index-Struktur anbinden, wenn die Query exakt ein Account ist. */
 export function enrichEmbedQueryForExactCompany(
   query: string,
-  matchedCompanyNames: string[]
+  matchedCompanyNames: string[],
 ): string {
   const q = query.trim()
   if (!q || matchedCompanyNames.length === 0) return q
-  const exact = matchedCompanyNames.find((n) => n.trim().toLowerCase() === q.toLowerCase())
+  const exact = matchedCompanyNames.find(
+    (n) => n.trim().toLowerCase() === q.toLowerCase(),
+  )
   if (!exact) return q
   return `Kunde/Account: ${exact.trim()}\n${q}`
 }
 
-export function mergeMatchHitsByMaxSimilarity<T extends { id: string; similarity: number }>(
-  primary: T[],
-  secondary: T[]
-): T[] {
+export function mergeMatchHitsByMaxSimilarity<
+  T extends { id: string; similarity: number },
+>(primary: T[], secondary: T[]): T[] {
   const byId = new Map<string, T>()
   for (const hit of primary) {
     byId.set(hit.id, hit)

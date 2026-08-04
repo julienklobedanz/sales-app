@@ -13,7 +13,9 @@ describe('routeExcludesDashboardContentPadding', () => {
 
   it('bleed layout for account detail only, not list', () => {
     expect(routeExcludesDashboardContentPadding('/dashboard/accounts')).toBe(false)
-    expect(routeExcludesDashboardContentPadding('/dashboard/accounts/uuid-here')).toBe(true)
+    expect(routeExcludesDashboardContentPadding('/dashboard/accounts/uuid-here')).toBe(
+      true,
+    )
   })
 
   it('default padded layout for other dashboard routes', () => {

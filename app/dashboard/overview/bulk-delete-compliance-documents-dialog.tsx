@@ -48,8 +48,9 @@ export function BulkDeleteComplianceDocumentsDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Zertifikate löschen</AlertDialogTitle>
           <AlertDialogDescription>
-            Möchtest du die {count} ausgewählten Zertifikat{count !== 1 ? 'e' : ''} wirklich
-            dauerhaft löschen? Die zugehörigen PDF-Dateien werden ebenfalls entfernt.
+            Möchtest du die {count} ausgewählten Zertifikat{count !== 1 ? 'e' : ''}{' '}
+            wirklich dauerhaft löschen? Die zugehörigen PDF-Dateien werden ebenfalls
+            entfernt.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -68,7 +69,7 @@ export function BulkDeleteComplianceDocumentsDialog({
                 }
                 onSuccess()
                 toast.success(
-                  `${result.deleted} Zertifikat${result.deleted !== 1 ? 'e' : ''} gelöscht.`
+                  `${result.deleted} Zertifikat${result.deleted !== 1 ? 'e' : ''} gelöscht.`,
                 )
                 router.refresh()
               } finally {

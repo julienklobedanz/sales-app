@@ -21,8 +21,14 @@ import {
 } from '@/app/dashboard/notifications/read-actions'
 import type { AppRole } from '@/hooks/useRole'
 import { getContactOptionsForReferenceImpl } from '@/lib/references/library/approval-contacts'
-import { getCompetitorSuggestionsImpl, getIncumbentSuggestionsImpl } from '@/lib/references/library/suggestions'
-import { getRequestsImpl, reviewRequestImpl } from '@/lib/references/library/approval-requests'
+import {
+  getCompetitorSuggestionsImpl,
+  getIncumbentSuggestionsImpl,
+} from '@/lib/references/library/suggestions'
+import {
+  getRequestsImpl,
+  reviewRequestImpl,
+} from '@/lib/references/library/approval-requests'
 import {
   cleanupCompanyDomainNamesImpl,
   mergeDuplicateCompaniesImpl,
@@ -33,7 +39,10 @@ import type {
   MatchReferencesOptions,
   MatchReferencesResult,
 } from '@/lib/match/match-types'
-import { getDashboardDataImpl, getDeletedReferencesImpl } from '@/lib/references/library/dashboard'
+import {
+  getDashboardDataImpl,
+  getDeletedReferencesImpl,
+} from '@/lib/references/library/dashboard'
 import {
   deleteReferenceImpl,
   emptyTrashImpl,
@@ -66,11 +75,7 @@ export type ReferenceRow = {
   summary: string | null
   industry: string | null
   country: string | null
-  status:
-    | 'draft'
-    | 'internal_only'
-    | 'approved'
-    | 'anonymized'
+  status: 'draft' | 'internal_only' | 'approved' | 'anonymized'
   created_at: string
   updated_at: string | null
   company_id: string
@@ -132,7 +137,7 @@ export type RequestItem = {
 }
 
 export async function getDashboardData(
-  onlyFavorites = false
+  onlyFavorites = false,
 ): Promise<GetDashboardDataResult> {
   return getDashboardDataImpl(onlyFavorites) as unknown as GetDashboardDataResult
 }
@@ -152,9 +157,11 @@ export type BulkImportReferencesResult =
 export type BulkImportGroup = { projectName: string; fileCount: number }
 
 export async function bulkCreateReferencesFromFiles(
-  formData: FormData
+  formData: FormData,
 ): Promise<BulkImportReferencesResult> {
-  return bulkCreateReferencesFromFilesImpl(formData) as unknown as BulkImportReferencesResult
+  return bulkCreateReferencesFromFilesImpl(
+    formData,
+  ) as unknown as BulkImportReferencesResult
 }
 
 export async function deleteReference(id: string) {
@@ -190,7 +197,7 @@ export async function updateReferenceDetailFields(
     project_status?: 'active' | 'completed' | null
     incumbent_provider?: string | null
     competitors?: string | null
-  }
+  },
 ) {
   return updateReferenceDetailFieldsImpl(id, payload)
 }
@@ -203,7 +210,7 @@ export async function createSharedPortfolio(
     visitorEmail?: string | null
     externalContactId?: string | null
     companyId?: string | null
-  } | null
+  } | null,
 ): Promise<
   | {
       success: true
@@ -236,7 +243,7 @@ export async function getPortfolioViewSessions(referenceId: string) {
 /** Neues ?manage=-Geheimnis für bestehenden Kundenlink (macht alten Sperr-Link ungültig). */
 export async function resetSharedPortfolioManageToken(
   referenceId: string,
-  options?: { notifyCustomer?: boolean }
+  options?: { notifyCustomer?: boolean },
 ): Promise<
   | { success: true; manageToken: string; customerEmailSent?: boolean }
   | { success: false; error: string }
@@ -245,11 +252,10 @@ export async function resetSharedPortfolioManageToken(
 }
 
 export async function getCustomerApprovalRecipientEmail(
-  referenceId: string
+  referenceId: string,
 ): Promise<string | null> {
-  const { getCustomerApprovalRecipientEmailImpl } = await import(
-    '@/lib/references/client-approval-confirmation-email'
-  )
+  const { getCustomerApprovalRecipientEmailImpl } =
+    await import('@/lib/references/client-approval-confirmation-email')
   return getCustomerApprovalRecipientEmailImpl(referenceId)
 }
 
@@ -261,7 +267,7 @@ export async function updateShareLinkSecurity(
     expiresAtIso: string | null
     clearExpires: boolean
     gateMode?: 'none' | 'password' | 'email' | null
-  }
+  },
 ): Promise<{ success: true } | { success: false; error: string }> {
   return updateShareLinkSecurityByReferenceImpl(referenceId, input)
 }
@@ -282,14 +288,14 @@ export type ReferenceAssetRow = {
 }
 
 export async function getReferenceAssets(
-  referenceId: string
+  referenceId: string,
 ): Promise<ReferenceAssetRow[]> {
   return getReferenceAssetsImpl(referenceId)
 }
 
 export async function updateReferenceAssetCategory(
   assetId: string,
-  category: 'sales' | 'contract' | 'other'
+  category: 'sales' | 'contract' | 'other',
 ): Promise<{ success: boolean; error?: string }> {
   return updateReferenceAssetCategoryImpl(assetId, category)
 }
@@ -298,7 +304,7 @@ export async function submitTicket(
   type: 'support' | 'feedback',
   subject: string,
   message: string,
-  options?: { replyToEmail?: string }
+  options?: { replyToEmail?: string },
 ): Promise<SubmitTicketResult> {
   return submitTicketImpl(type, subject, message, options)
 }
@@ -311,14 +317,14 @@ export async function getCompetitorSuggestions(query: string): Promise<string[]>
   return getCompetitorSuggestionsImpl(query)
 }
 
-export async function submitForApproval(
-  id: string,
-  options?: SubmitForApprovalOptions
-) {
+export async function submitForApproval(id: string, options?: SubmitForApprovalOptions) {
   return submitForApprovalImpl(id, options)
 }
 
-export async function approveInternalAndSend(referenceId: string, recipient?: ApproveInternalRecipientOptions) {
+export async function approveInternalAndSend(
+  referenceId: string,
+  recipient?: ApproveInternalRecipientOptions,
+) {
   return approveInternalAndSendImpl(referenceId, recipient)
 }
 
@@ -364,12 +370,15 @@ export async function requestCustomerApprovalAgainAfterChanges(referenceId: stri
 
 export async function updateApprovalRecipient(
   referenceId: string,
-  recipient: ApproveInternalRecipientOptions
+  recipient: ApproveInternalRecipientOptions,
 ) {
   return updateApprovalRecipientImpl(referenceId, recipient)
 }
 
-export async function updateApprovalCoordinator(referenceId: string, coordinatorEmail: string) {
+export async function updateApprovalCoordinator(
+  referenceId: string,
+  coordinatorEmail: string,
+) {
   return updateApprovalCoordinatorImpl(referenceId, coordinatorEmail)
 }
 
@@ -383,7 +392,7 @@ export async function getRequests(): Promise<RequestItem[]> {
 
 export async function reviewRequest(
   approvalId: string,
-  decision: 'approve_external' | 'approve_internal' | 'reject'
+  decision: 'approve_external' | 'approve_internal' | 'reject',
 ) {
   return reviewRequestImpl(approvalId, decision)
 }
@@ -401,14 +410,14 @@ export type GenerateSummaryResult =
 export async function generateSummaryFromStory(
   customerChallenge: string | null,
   ourSolution: string | null,
-  referenceId?: string | null
+  referenceId?: string | null,
 ): Promise<GenerateSummaryResult> {
   return generateSummaryFromStoryImpl(customerChallenge, ourSolution, referenceId)
 }
 
 /** Epic 5: Telemetrie nach KI-Entwurf (Sheet). */
 export async function recordKiEntwurfGenerated(
-  args: Parameters<typeof recordKiEntwurfGeneratedImpl>[0]
+  args: Parameters<typeof recordKiEntwurfGeneratedImpl>[0],
 ): Promise<void> {
   return recordKiEntwurfGeneratedImpl(args)
 }
@@ -427,7 +436,7 @@ export type {
 export async function matchReferences(
   input: string,
   dealId?: string,
-  options?: MatchReferencesOptions
+  options?: MatchReferencesOptions,
 ): Promise<MatchReferencesResult> {
   return matchReferencesImpl(input, dealId, options)
 }

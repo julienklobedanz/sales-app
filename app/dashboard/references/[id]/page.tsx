@@ -75,7 +75,8 @@ export default async function ReferenceDetailPage({
   const parsedRoles = parseProfileRoles(profile)
   const { systemRole, functionRole, capabilities } = parsedRoles
   const isSalesView = isSalesAppView(systemRole, functionRole)
-  const organizationId = (profile as { organization_id?: string | null }).organization_id ?? null
+  const organizationId =
+    (profile as { organization_id?: string | null }).organization_id ?? null
 
   let orgDateFmt = normalizeOrgDateDisplayFormat('de-DE')
   let orgRolesPermissions = null
@@ -86,11 +87,11 @@ export default async function ReferenceDetailPage({
       .eq('id', organizationId)
       .maybeSingle()
     orgDateFmt = normalizeOrgDateDisplayFormat(
-      (orgRow as { date_display_format?: string | null } | null)?.date_display_format
+      (orgRow as { date_display_format?: string | null } | null)?.date_display_format,
     )
     if (orgRow?.api_settings && typeof orgRow.api_settings === 'object') {
       orgRolesPermissions = parseRolesPermissionsSettings(
-        (orgRow.api_settings as Record<string, unknown>).roles_permissions
+        (orgRow.api_settings as Record<string, unknown>).roles_permissions,
       )
     }
   }
@@ -151,7 +152,7 @@ export default async function ReferenceDetailPage({
       competitors,
       website,
       companies ( id, name, headquarters, website_url, employee_count )
-    `
+    `,
     )
     .eq('id', id)
     .single()
@@ -190,7 +191,9 @@ export default async function ReferenceDetailPage({
       .eq('id', company.id)
       .maybeSingle()
     const internalApprovalContactId = (
-      companyApprovalRow as { internal_reference_approval_contact_id?: string | null } | null
+      companyApprovalRow as {
+        internal_reference_approval_contact_id?: string | null
+      } | null
     )?.internal_reference_approval_contact_id
     if (internalApprovalContactId) {
       const { data: approvalContactPerson } = await supabase
@@ -200,7 +203,7 @@ export default async function ReferenceDetailPage({
         .eq('company_id', company.id)
         .maybeSingle()
       const email = String(
-        (approvalContactPerson as { email?: string | null } | null)?.email ?? ''
+        (approvalContactPerson as { email?: string | null } | null)?.email ?? '',
       ).trim()
       if (email.includes('@')) defaultAccountManagerEmail = email
     }
@@ -209,7 +212,10 @@ export default async function ReferenceDetailPage({
   const isAnonymizedView = qs?.view === 'anonymized'
   const companyName = company?.name ?? null
   const headerCompany = isAnonymizedView ? 'Kunde' : companyName
-  const industryLabel = anonymizeText(formatIndustryDisplay(ref.industry) || null, companyName)
+  const industryLabel = anonymizeText(
+    formatIndustryDisplay(ref.industry) || null,
+    companyName,
+  )
   const refEmployeeRaw = ref.employee_count ?? company?.employee_count ?? null
   const employeeMetaLabel =
     typeof refEmployeeRaw === 'number' && Number.isFinite(refEmployeeRaw)
@@ -304,7 +310,11 @@ export default async function ReferenceDetailPage({
     staleInternalPending,
     isApprovalGranted,
     canStartApproval,
-    canInternalApprove: canApproveInternalReference(functionRole, systemRole, capabilities),
+    canInternalApprove: canApproveInternalReference(
+      functionRole,
+      systemRole,
+      capabilities,
+    ),
     approvalScopeNamedMention: ref.approval_scope_named_mention,
     approvalScopeAnonymousMention: ref.approval_scope_anonymous_mention,
     approvalScopeReferenceCall: ref.approval_scope_reference_call,
@@ -315,7 +325,8 @@ export default async function ReferenceDetailPage({
 
   const existingShare = await getExistingShareForReference(id)
 
-  const requestedByDisplay = (ref.approval_requester_name ?? ref.approval_owner_name ?? '').trim() || null
+  const requestedByDisplay =
+    (ref.approval_requester_name ?? ref.approval_owner_name ?? '').trim() || null
   const coordinatorDisplay = resolveApprovalCoordinatorDisplay({
     customerFacingName: ref.approval_customer_facing_name,
     coordinatorName: ref.approval_coordinator_name,
@@ -323,18 +334,18 @@ export default async function ReferenceDetailPage({
   })
   const approvingCustomerDisplay = formatApprovalGiverLine(
     ref.approval_reference_giver_name,
-    ref.approval_reference_giver_title
+    ref.approval_reference_giver_title,
   )
   const delegatedRecipientDisplay = formatApprovalDelegatedRecipientLine(
     ref.approval_delegated_to_name,
-    ref.approval_delegated_to_email
+    ref.approval_delegated_to_email,
   )
   const customerApprovalFollowUp = await resolveCustomerApprovalFollowUpUi(
     supabase,
     id,
     ref.customer_approval_status,
     ref.approval_comment,
-    { showMagicLink: readinessState.showMagicLink }
+    { showMagicLink: readinessState.showMagicLink },
   )
   const canEditPendingCustomerEmail = canEditPreCustomerApprovalRecipient({
     customerApprovalStatus: ref.customer_approval_status,

@@ -10,7 +10,9 @@ import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
 function looksLikeDomain(s: string): boolean {
   const t = s.trim().toLowerCase()
   if (!t || t.includes(' ')) return false
-  return /\.(com|de|net|org|io|eu|co|ai|cloud|global)$/i.test(t) || /\.[a-z]{2,}$/i.test(t)
+  return (
+    /\.(com|de|net|org|io|eu|co|ai|cloud|global)$/i.test(t) || /\.[a-z]{2,}$/i.test(t)
+  )
 }
 
 /** Konvertiert Domain zu lesbarem Namen (z. B. "biontechse.com" → "Biontechse"). */
@@ -82,7 +84,10 @@ export async function mergeDuplicateCompaniesImpl(): Promise<MergeDuplicateCompa
     if (list.length <= 1) continue
     const [keep, ...remove] = list
     for (const other of remove) {
-      const { data: refs } = await supabase.from('references').select('id').eq('company_id', other.id)
+      const { data: refs } = await supabase
+        .from('references')
+        .select('id')
+        .eq('company_id', other.id)
       const refCount = refs?.length ?? 0
       const { error: upErr } = await supabase
         .from('references')
@@ -90,7 +95,10 @@ export async function mergeDuplicateCompaniesImpl(): Promise<MergeDuplicateCompa
         .eq('company_id', other.id)
       if (upErr) return { success: false, error: upErr.message }
       merged += refCount
-      const { error: delErr } = await supabase.from('companies').delete().eq('id', other.id)
+      const { error: delErr } = await supabase
+        .from('companies')
+        .delete()
+        .eq('id', other.id)
       if (delErr) return { success: false, error: delErr.message }
       deleted++
     }
@@ -132,7 +140,10 @@ export async function cleanupCompanyDomainNamesImpl(): Promise<CleanupCompanyDom
   for (const c of companies ?? []) {
     if (!c.name || !looksLikeDomain(c.name)) continue
     const newName = domainToDisplayName(c.name)
-    const { error } = await supabase.from('companies').update({ name: newName }).eq('id', c.id)
+    const { error } = await supabase
+      .from('companies')
+      .update({ name: newName })
+      .eq('id', c.id)
     if (error) return { success: false, error: error.message }
     updated++
   }
@@ -140,4 +151,3 @@ export async function cleanupCompanyDomainNamesImpl(): Promise<CleanupCompanyDom
   revalidatePath(ROUTES.home)
   return { success: true, updated }
 }
-

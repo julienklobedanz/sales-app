@@ -2,13 +2,17 @@
 
 import { useEffect, useRef } from 'react'
 
-import type { RegisterSettingsTab, SettingsTabHandlers, SettingsTabId } from './settings-tab-shared'
+import type {
+  RegisterSettingsTab,
+  SettingsTabHandlers,
+  SettingsTabId,
+} from './settings-tab-shared'
 
 export function useRegisterSettingsTab(
   tabId: SettingsTabId,
   handlers: SettingsTabHandlers,
   register: RegisterSettingsTab,
-  partKey = 'default'
+  partKey = 'default',
 ) {
   const { dirty, pending, save } = handlers
   const saveRef = useRef(save)
@@ -25,7 +29,7 @@ export function useRegisterSettingsTab(
         pending,
         save: () => saveRef.current(),
       },
-      partKey
+      partKey,
     )
     return () => register(tabId, null, partKey)
   }, [tabId, dirty, pending, register, partKey])

@@ -18,11 +18,18 @@ export default async function UpdatePasswordPage() {
   }
 
   return (
-    <AuthShell brandContent={AUTH_BRAND_CONTENT.updatePassword} topRightLink={{ href: ROUTES.login, label: 'Anmelden' }}>
+    <AuthShell
+      brandContent={AUTH_BRAND_CONTENT.updatePassword}
+      topRightLink={{ href: ROUTES.login, label: 'Anmelden' }}
+    >
       <div className="space-y-6">
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Neues Passwort festlegen</h1>
-          <p className="text-sm text-gray-500">Wähle ein sicheres Passwort für dein Konto.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+            Neues Passwort festlegen
+          </h1>
+          <p className="text-sm text-gray-500">
+            Wähle ein sicheres Passwort für dein Konto.
+          </p>
         </div>
         <UpdatePasswordForm />
         <p className="text-sm text-gray-500">

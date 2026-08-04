@@ -27,7 +27,10 @@ export function formatActiveDurationDe(activeSeconds: number): string {
   return `${mins} Min. ${secs} Sek.`
 }
 
-export function formatRelativeAgoDe(startedAtIso: string, nowMs: number = Date.now()): string {
+export function formatRelativeAgoDe(
+  startedAtIso: string,
+  nowMs: number = Date.now(),
+): string {
   const started = new Date(startedAtIso)
   if (Number.isNaN(started.getTime())) return 'vor Kurzem'
   const agoMin = Math.max(0, Math.round((nowMs - started.getTime()) / 60_000))
@@ -49,7 +52,9 @@ export function formatManageLastViewLabel(input: {
   return `Letzte Ansicht aus ${flag} (${duration}) · ${ago}`
 }
 
-export function formatManageLinkExpiresLabel(expiresAtIso: string | null | undefined): string | null {
+export function formatManageLinkExpiresLabel(
+  expiresAtIso: string | null | undefined,
+): string | null {
   if (!expiresAtIso?.trim()) return null
   const d = new Date(expiresAtIso)
   if (Number.isNaN(d.getTime())) return null
@@ -57,7 +62,7 @@ export function formatManageLinkExpiresLabel(expiresAtIso: string | null | undef
 }
 
 export function formatManageApprovedSinceLabel(
-  respondedAtIso: string | null | undefined
+  respondedAtIso: string | null | undefined,
 ): string | null {
   if (!respondedAtIso?.trim()) return null
   const d = new Date(respondedAtIso)
@@ -65,7 +70,11 @@ export function formatManageApprovedSinceLabel(
   return `Freigegeben seit ${formatReferenceDate(d.toISOString(), 'de-DE')}`
 }
 
-export function ShowcaseManageInsightBar({ insights }: { insights: ManageInsightSummary }) {
+export function ShowcaseManageInsightBar({
+  insights,
+}: {
+  insights: ManageInsightSummary
+}) {
   return (
     <div className="flex w-full flex-wrap items-center justify-center gap-x-3 gap-y-1 border-b border-border/60 bg-muted/30 px-4 py-2 text-center text-xs text-muted-foreground">
       <span className="inline-flex items-center gap-1.5 font-medium text-foreground/80">

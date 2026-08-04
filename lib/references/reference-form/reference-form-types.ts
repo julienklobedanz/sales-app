@@ -10,7 +10,7 @@ export type ReferenceFormCompanySearchResult =
   | { success: false; error: string }
 
 export type SearchReferenceFormCompanies = (
-  query: string
+  query: string,
 ) => Promise<ReferenceFormCompanySearchResult>
 
 /** Kontakt nach Anlegen/Bearbeiten im CreateContactDialog. */
@@ -71,4 +71,3 @@ export type ReferenceFormInitialData = {
 }
 
 export type ReferenceFormCompanyOption = ReferenceFormCompany
-

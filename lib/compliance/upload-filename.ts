@@ -1,4 +1,7 @@
-import { complianceDocumentTypeLabel, type ComplianceDocumentTypeOption } from './document-types'
+import {
+  complianceDocumentTypeLabel,
+  type ComplianceDocumentTypeOption,
+} from './document-types'
 
 export function sanitizeComplianceFileNamePart(value: string): string {
   return (
@@ -40,7 +43,7 @@ export function buildComplianceStorageFileName(args: {
 export function buildDefaultComplianceTitle(
   documentType: string,
   typeOptions?: ComplianceDocumentTypeOption[],
-  year: number = new Date().getFullYear()
+  year: number = new Date().getFullYear(),
 ): string {
   const label = complianceDocumentTypeLabel(documentType, typeOptions)
   return `${label} ${year}`

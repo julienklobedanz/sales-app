@@ -1,12 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -98,14 +93,18 @@ function AccountCardBody({
             <div className="pointer-events-none absolute right-0 top-full z-10 mt-1 flex items-center gap-0.5 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100">
               <AccountsToolbarTooltip
                 label={
-                  company.is_favorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'
+                  company.is_favorite
+                    ? 'Aus Favoriten entfernen'
+                    : 'Zu Favoriten hinzufügen'
                 }
               >
                 <button
                   type="button"
                   className="inline-flex size-6 items-center justify-center rounded-full border border-border/80 bg-background text-muted-foreground shadow-sm hover:bg-muted/70"
                   aria-label={
-                    company.is_favorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'
+                    company.is_favorite
+                      ? 'Aus Favoriten entfernen'
+                      : 'Zu Favoriten hinzufügen'
                   }
                   disabled={favoriteSaving}
                   onClick={(e) => {
@@ -177,11 +176,7 @@ function PartnerCardBody({ company }: { company: CompanyCard }) {
                 {company.name}
               </CardTitle>
               <div className="mt-0.5 w-full text-left">
-                <NdaStatusBadge
-                  status={company.nda_status ?? 'none'}
-                  compact
-                  subtle
-                />
+                <NdaStatusBadge status={company.nda_status ?? 'none'} compact subtle />
               </div>
               {company.linked_account_name ? (
                 <p className="mt-0.5 text-[10px] text-muted-foreground">
@@ -214,7 +209,9 @@ function PartnerCardBody({ company }: { company: CompanyCard }) {
           {employeeLabel(company.employee_count) && (
             <div className="flex items-center gap-1.5">
               <AppIcon icon={Users} size={14} className="shrink-0" />
-              <span className="max-w-[160px] truncate">{employeeLabel(company.employee_count)}</span>
+              <span className="max-w-[160px] truncate">
+                {employeeLabel(company.employee_count)}
+              </span>
             </div>
           )}
           {company.headquarters && (
@@ -288,14 +285,18 @@ export function CompanyGridCard({
             <div className="absolute right-3 top-3 z-20 flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
               <AccountsToolbarTooltip
                 label={
-                  company.is_favorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'
+                  company.is_favorite
+                    ? 'Aus Favoriten entfernen'
+                    : 'Zu Favoriten hinzufügen'
                 }
               >
                 <button
                   type="button"
                   className="inline-flex size-8 items-center justify-center rounded-full border border-border/80 bg-background/95 text-muted-foreground shadow-sm hover:bg-muted/70 hover:text-foreground"
                   aria-label={
-                    company.is_favorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'
+                    company.is_favorite
+                      ? 'Aus Favoriten entfernen'
+                      : 'Zu Favoriten hinzufügen'
                   }
                   disabled={favoriteSaving}
                   onClick={(e) => {

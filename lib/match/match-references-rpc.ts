@@ -33,7 +33,7 @@ export async function rpcMatchReferences(
     organizationId: string
     salesVisibleOnly: boolean
     filters?: MatchReferencesRpcFilters
-  }
+  },
 ): Promise<{ rows: MatchReferencesRpcRow[]; error?: string }> {
   const f = params.filters
   const { data: rows, error: rpcError } = await supabase.rpc('match_references', {

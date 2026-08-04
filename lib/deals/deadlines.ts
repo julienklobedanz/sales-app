@@ -11,7 +11,7 @@ import type { DealDeadlineKind } from './deadline-types'
 
 export async function listDealDeadlines(
   supabase: SupabaseClient,
-  dealId: string
+  dealId: string,
 ): Promise<DealDeadlineRow[]> {
   const { data, error } = await supabase
     .from('deal_deadlines')
@@ -30,7 +30,7 @@ export async function syncRfpDeadlinesFromTimeline(
     dealId: string
     organizationId: string
     timelineItems: DealDeskTimelineItem[]
-  }
+  },
 ): Promise<{ synced: number; error?: string }> {
   const rows = mapTimelineToRfpDeadlineRows(args.dealId, args.timelineItems)
   let synced = 0
@@ -64,7 +64,7 @@ export async function createManualDealDeadline(
     dueAt: string | null
     dueText: string | null
     isApproximate: boolean
-  }
+  },
 ): Promise<{ success: boolean; error?: string }> {
   const { error } = await supabase.from('deal_deadlines').insert({
     deal_id: args.dealId,
@@ -94,7 +94,7 @@ export async function updateDealDeadline(
     dueText: string | null
     isApproximate: boolean
     source: 'rfp' | 'manual'
-  }
+  },
 ): Promise<{ success: boolean; error?: string }> {
   const patch: Record<string, unknown> = {
     kind: args.kind,
@@ -121,11 +121,14 @@ export async function updateDealDeadline(
 
 export async function suppressDealDeadline(
   supabase: SupabaseClient,
-  args: { deadlineId: string; organizationId: string }
+  args: { deadlineId: string; organizationId: string },
 ): Promise<{ success: boolean; error?: string }> {
   const { error } = await supabase
     .from('deal_deadlines')
-    .update({ suppressed_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+    .update({
+      suppressed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
     .eq('id', args.deadlineId)
     .eq('organization_id', args.organizationId)
 

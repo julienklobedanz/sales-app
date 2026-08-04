@@ -7,9 +7,14 @@ vi.mock('@/lib/references/approval-workflow-internal-notifications', () => ({
 
 import { confirmInternalApprovalFromToken } from './complete-internal-approval'
 
-function mockAdmin(row: Record<string, unknown> | null, updateError: Error | null = null) {
+function mockAdmin(
+  row: Record<string, unknown> | null,
+  updateError: Error | null = null,
+) {
   const updateEq = vi.fn().mockResolvedValue({ error: updateError })
-  const update = vi.fn().mockReturnValue({ eq: vi.fn().mockReturnValue({ eq: updateEq }) })
+  const update = vi
+    .fn()
+    .mockReturnValue({ eq: vi.fn().mockReturnValue({ eq: updateEq }) })
   const insert = vi.fn().mockResolvedValue({ error: null })
   const maybeSingle = vi.fn().mockResolvedValue({ data: row, error: null })
 

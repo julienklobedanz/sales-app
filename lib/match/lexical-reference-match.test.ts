@@ -15,9 +15,11 @@ import {
 
 describe('textContainsNeedle', () => {
   it('matches title substrings and hyphenated compounds', () => {
-    expect(textContainsNeedle('Passagierfluss-Analyse am Drehkreuz', 'passagier')).toBe(true)
+    expect(textContainsNeedle('Passagierfluss-Analyse am Drehkreuz', 'passagier')).toBe(
+      true,
+    )
     expect(
-      textContainsNeedle('Passagierfluss-Analyse am Drehkreuz', 'passagierflussanalyse')
+      textContainsNeedle('Passagierfluss-Analyse am Drehkreuz', 'passagierflussanalyse'),
     ).toBe(true)
   })
 })
@@ -26,7 +28,7 @@ describe('lexicalSearchNeedles', () => {
   it('includes tokens for short queries', () => {
     expect(lexicalSearchNeedles('passagier')).toContain('passagier')
     expect(lexicalSearchNeedles('zeig mir passagier')).toEqual(
-      expect.arrayContaining(['zeig mir passagier', 'passagier'])
+      expect.arrayContaining(['zeig mir passagier', 'passagier']),
     )
   })
 })
@@ -34,13 +36,13 @@ describe('lexicalSearchNeedles', () => {
 describe('scoreLexicalReferenceMatch', () => {
   it('scores exact company name highly', () => {
     expect(scoreLexicalReferenceMatch('Arla', 'Arla', 'Hybride Cloud')).toBe(
-      LEXICAL_SCORE_EXACT_COMPANY
+      LEXICAL_SCORE_EXACT_COMPANY,
     )
   })
 
   it('scores company contains', () => {
     expect(scoreLexicalReferenceMatch('BMW', 'BMW Group', 'Connected Drive')).toBe(
-      LEXICAL_SCORE_COMPANY_CONTAINS
+      LEXICAL_SCORE_COMPANY_CONTAINS,
     )
   })
 
@@ -49,19 +51,26 @@ describe('scoreLexicalReferenceMatch', () => {
       scoreLexicalReferenceMatch(
         'passagier',
         'Fraport',
-        'Passagierfluss-Analyse am Drehkreuz-Flughafen'
-      )
+        'Passagierfluss-Analyse am Drehkreuz-Flughafen',
+      ),
     ).toBe(LEXICAL_SCORE_TITLE_CONTAINS)
   })
 
   it('scores summary contains', () => {
     expect(
-      scoreLexicalReferenceMatch('wartezeit', 'Fraport', 'Anderer Titel', 'Security-Wartezeit P95')
+      scoreLexicalReferenceMatch(
+        'wartezeit',
+        'Fraport',
+        'Anderer Titel',
+        'Security-Wartezeit P95',
+      ),
     ).toBe(LEXICAL_SCORE_SUMMARY_CONTAINS)
   })
 
   it('returns null for unrelated query', () => {
-    expect(scoreLexicalReferenceMatch('Finanzdienstleister 5 Mio', 'Arla', 'Milch')).toBeNull()
+    expect(
+      scoreLexicalReferenceMatch('Finanzdienstleister 5 Mio', 'Arla', 'Milch'),
+    ).toBeNull()
   })
 
   it('ignores tiny needles', () => {
@@ -78,7 +87,7 @@ describe('escapeIlikePattern', () => {
 describe('enrichEmbedQueryForExactCompany', () => {
   it('prefixes Kunde/Account for exact brand query', () => {
     expect(enrichEmbedQueryForExactCompany('Arla', ['Arla', 'BMW'])).toBe(
-      'Kunde/Account: Arla\nArla'
+      'Kunde/Account: Arla\nArla',
     )
   })
 
@@ -97,7 +106,7 @@ describe('mergeMatchHitsByMaxSimilarity', () => {
       [
         { id: 'a', similarity: 0.78 },
         { id: 'c', similarity: 0.6 },
-      ]
+      ],
     )
     expect(merged.find((m) => m.id === 'a')?.similarity).toBe(0.78)
     expect(merged.map((m) => m.id).sort()).toEqual(['a', 'b', 'c'])

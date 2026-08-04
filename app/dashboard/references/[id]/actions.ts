@@ -72,7 +72,10 @@ type AnonymizedContent = {
 
 function volumeToRange(raw: string | null): string | null {
   if (!raw) return null
-  const cleaned = raw.replace(/[^\d.,]/g, '').replace(/\./g, '').replace(',', '.')
+  const cleaned = raw
+    .replace(/[^\d.,]/g, '')
+    .replace(/\./g, '')
+    .replace(',', '.')
   const value = Number.parseFloat(cleaned)
   if (!Number.isFinite(value) || value <= 0) return '>100k EUR'
   if (value >= 1_000_000) return '>1M EUR'
@@ -93,14 +96,20 @@ function applyFallbackAnonymization(
     tags: string | null
   },
   companyName: string,
-  industry: string | null
+  industry: string | null,
 ): AnonymizedContent {
   const genericCompany = `Führendes ${industry?.trim() || 'Branche'}-Unternehmen`
   const normalizeText = (text: string | null): string | null =>
     text
       ? text
-          .replace(new RegExp(companyName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), genericCompany)
-          .replace(/\b(SAP|Salesforce|AWS|Azure|GCP|Microsoft|Oracle|ServiceNow|Kubernetes|Snowflake)\b/gi, 'führende Enterprise-Technologie')
+          .replace(
+            new RegExp(companyName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'),
+            genericCompany,
+          )
+          .replace(
+            /\b(SAP|Salesforce|AWS|Azure|GCP|Microsoft|Oracle|ServiceNow|Kubernetes|Snowflake)\b/gi,
+            'führende Enterprise-Technologie',
+          )
       : null
 
   const title = normalizeText(input.title) ?? input.title
@@ -173,7 +182,9 @@ Regeln:
   })
 
   if (!response.ok) return null
-  const json = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> }
+  const json = (await response.json()) as {
+    choices?: Array<{ message?: { content?: string } }>
+  }
   const raw = json?.choices?.[0]?.message?.content?.trim()
   if (!raw) return null
   try {
@@ -194,7 +205,9 @@ Regeln:
   }
 }
 
-export async function createAnonymizedReferenceVersion(id: string): Promise<AnonymizeResult> {
+export async function createAnonymizedReferenceVersion(
+  id: string,
+): Promise<AnonymizeResult> {
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
@@ -211,16 +224,20 @@ export async function createAnonymizedReferenceVersion(id: string): Promise<Anon
     return { success: false, error: 'Kein Workspace gefunden.' }
   }
   const roles = parseProfileRoles(profile)
-  if (!userCanAnonymizeReference(roles.functionRole, roles.systemRole, roles.capabilities)) {
+  if (
+    !userCanAnonymizeReference(roles.functionRole, roles.systemRole, roles.capabilities)
+  ) {
     return { success: false, error: 'Keine Berechtigung für diese Aktion.' }
   }
 
   const { data: row, error } = await supabase
     .from('references')
-    .select(`
+    .select(
+      `
       *,
       companies ( id, name )
-    `)
+    `,
+    )
     .eq('id', id)
     .single()
 
@@ -252,11 +269,13 @@ export async function createAnonymizedReferenceVersion(id: string): Promise<Anon
       })
     : null
 
-  const anonymized = aiVersion ?? applyFallbackAnonymization(
-    contentInput,
-    originalCompanyName,
-    (row.industry as string | null) ?? null
-  )
+  const anonymized =
+    aiVersion ??
+    applyFallbackAnonymization(
+      contentInput,
+      originalCompanyName,
+      (row.industry as string | null) ?? null,
+    )
 
   const payload = {
     organization_id: row.organization_id as string,
@@ -294,7 +313,11 @@ export async function createAnonymizedReferenceVersion(id: string): Promise<Anon
     .single()
 
   if (insertError || !inserted?.id) {
-    return { success: false, error: insertError?.message ?? 'Anonymisierte Referenz konnte nicht erstellt werden.' }
+    return {
+      success: false,
+      error:
+        insertError?.message ?? 'Anonymisierte Referenz konnte nicht erstellt werden.',
+    }
   }
 
   revalidatePath(ROUTES.references.root)

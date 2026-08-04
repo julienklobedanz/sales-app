@@ -33,5 +33,9 @@ export function syncReferenceLibraryModeFromStorage(mode?: ReferenceLibraryMode)
 }
 
 export function useReferenceLibraryMode(): ReferenceLibraryMode {
-  return useSyncExternalStore(subscribe, () => current, () => current)
+  return useSyncExternalStore(
+    subscribe,
+    () => current,
+    () => current,
+  )
 }

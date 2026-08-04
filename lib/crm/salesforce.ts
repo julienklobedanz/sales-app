@@ -24,7 +24,7 @@ export function buildSalesforceTaskUrl(params?: {
     JSON.stringify({
       Subject: params.subject ?? '',
       Description: params.body ?? '',
-    })
+    }),
   )
   return `${base}/lightning/o/Task/new?defaultFieldValues=${values}`
 }
@@ -45,4 +45,3 @@ export function buildSalesforceOpportunityUrl(params: {
   // Fallback ohne org-spezifische Domain: öffnet Login mit Opportunity-ID als Startpfad.
   return `https://login.salesforce.com/${encodeURIComponent(oppId)}`
 }
-

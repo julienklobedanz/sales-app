@@ -20,7 +20,7 @@ const PARTIAL_MATCH_CUTOFF = 0.47
 
 export function buildLeaderRiskDeals(
   deals: DealRow[],
-  options?: { dateDisplayFormat?: OrgDateDisplayFormat | string | null }
+  options?: { dateDisplayFormat?: OrgDateDisplayFormat | string | null },
 ): LeaderRiskDealRow[] {
   const copy = COPY.dashboard.home.salesLeader
   const dateFmt = normalizeOrgDateDisplayFormat(options?.dateDisplayFormat)
@@ -70,7 +70,7 @@ export function buildLeaderRiskDeals(
 
 export function buildLeaderCoveragePipeline(
   pipelineSignals: LeaderPipelineSignalRow[],
-  gapTerm: string | null
+  gapTerm: string | null,
 ): LeaderCoveragePipelineRow[] {
   const rows: LeaderCoveragePipelineRow[] = pipelineSignals.map((s) => ({
     label: s.companyName,
@@ -90,7 +90,7 @@ export function buildLeaderCoveragePipeline(
 export function buildLeaderCoaching(
   profiles: Array<{ id: string; full_name: string | null; function_role: string | null }>,
   matchCounts: Map<string, number>,
-  pendingByUser: Map<string, number>
+  pendingByUser: Map<string, number>,
 ): LeaderCoachingRow[] {
   const rows: LeaderCoachingRow[] = []
   for (const p of profiles) {
@@ -159,17 +159,24 @@ export function buildWinRateCompare(closedDeals: DealRow[], minRequired: number)
   const withWon = withRef.filter((d) => d.status === 'won').length
   const withoutWon = withoutRef.filter((d) => d.status === 'won').length
   const closedCount = closedDeals.length
-  const available = closedCount >= minRequired && withRef.length > 0 && withoutRef.length > 0
+  const available =
+    closedCount >= minRequired && withRef.length > 0 && withoutRef.length > 0
   return {
     available,
-    withReferencePercent: withRef.length ? Math.round((withWon / withRef.length) * 100) : null,
-    withoutReferencePercent: withoutRef.length ? Math.round((withoutWon / withoutRef.length) * 100) : null,
+    withReferencePercent: withRef.length
+      ? Math.round((withWon / withRef.length) * 100)
+      : null,
+    withoutReferencePercent: withoutRef.length
+      ? Math.round((withoutWon / withoutRef.length) * 100)
+      : null,
     closedDealsCount: closedCount,
     minDealsRequired: minRequired,
   }
 }
 
-export function aggregateTeamMatches(teamActivity: TeamActivityRow[]): Map<string, number> {
+export function aggregateTeamMatches(
+  teamActivity: TeamActivityRow[],
+): Map<string, number> {
   const counts = new Map<string, number>()
   for (const row of teamActivity) {
     if (!row.userId) continue

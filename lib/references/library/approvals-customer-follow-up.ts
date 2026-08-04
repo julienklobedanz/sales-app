@@ -11,16 +11,23 @@ import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { hasActiveCustomerApprovalWorkflow } from '@/lib/references/effective-customer-approval'
 import { referenceHasOpenCustomerChangeRequests } from '@/lib/references/approval-change-requests'
 import { markCustomerApprovalEmailSent } from '@/lib/references/customer-approval-reminder'
-import { isResendSandboxRecipientError, resolveResendRecipient, shouldMockResendSend } from '@/lib/email/resend-dev-override'
+import {
+  isResendSandboxRecipientError,
+  resolveResendRecipient,
+  shouldMockResendSend,
+} from '@/lib/email/resend-dev-override'
 import { getRefstackResendFrom } from '@/lib/email/refstack-email-layout'
 import { log } from '@/lib/observability/logger'
 import { buildFollowUpApprovalAfterChangesEmailHtml } from '@/lib/references/library/approvals-email-templates'
 import { getApprovalResendClient } from '@/lib/references/library/approvals-client-email'
 import { resolveContactForApproval } from '@/lib/references/library/approvals-recipient'
-import type { ReferenceApprovalRow, RequestCustomerApprovalAgainResult } from '@/lib/references/library/approvals-types'
+import type {
+  ReferenceApprovalRow,
+  RequestCustomerApprovalAgainResult,
+} from '@/lib/references/library/approvals-types'
 
 export async function requestCustomerApprovalAgainAfterChangesImpl(
-  referenceId: string
+  referenceId: string,
 ): Promise<RequestCustomerApprovalAgainResult> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -53,7 +60,7 @@ export async function requestCustomerApprovalAgainAfterChangesImpl(
       approval_delegated_to_email,
       approval_comment,
       companies ( name )
-    `
+    `,
     )
     .eq('id', referenceId)
     .single()
@@ -76,17 +83,23 @@ export async function requestCustomerApprovalAgainAfterChangesImpl(
     supabase,
     referenceId,
     ref.customer_approval_status,
-    ref.approval_comment
+    ref.approval_comment,
   )
   if (!hasChanges) {
-    return { success: false, error: 'Es liegen keine offenen Änderungswünsche vom Kunden vor.' }
+    return {
+      success: false,
+      error: 'Es liegen keine offenen Änderungswünsche vom Kunden vor.',
+    }
   }
 
   const canSend =
     profileCanManageOrgData(systemRole, functionRole) ||
     ref.approval_requested_by === user.id
   if (!canSend) {
-    return { success: false, error: 'Keine Berechtigung, die Freigabe erneut anzufragen.' }
+    return {
+      success: false,
+      error: 'Keine Berechtigung, die Freigabe erneut anzufragen.',
+    }
   }
 
   const token = typeof ref.approval_token === 'string' ? ref.approval_token.trim() : ''
@@ -101,11 +114,15 @@ export async function requestCustomerApprovalAgainAfterChangesImpl(
   let contactEmail: string
   let firstName: string
   const delegatedEmail =
-    typeof ref.approval_delegated_to_email === 'string' ? ref.approval_delegated_to_email.trim() : ''
+    typeof ref.approval_delegated_to_email === 'string'
+      ? ref.approval_delegated_to_email.trim()
+      : ''
   if (delegatedEmail.includes('@')) {
     contactEmail = delegatedEmail
     firstName =
-      typeof ref.approval_delegated_to_name === 'string' ? ref.approval_delegated_to_name.trim() : ''
+      typeof ref.approval_delegated_to_name === 'string'
+        ? ref.approval_delegated_to_name.trim()
+        : ''
   } else {
     try {
       const resolved = await resolveContactForApproval(
@@ -113,12 +130,13 @@ export async function requestCustomerApprovalAgainAfterChangesImpl(
         ref,
         ref.company_id,
         {},
-        { requireRecipientEmail: true }
+        { requireRecipientEmail: true },
       )
       contactEmail = resolved.email
       firstName = resolved.firstName
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Kein gültiger Empfänger für die Freigabe.'
+      const msg =
+        e instanceof Error ? e.message : 'Kein gültiger Empfänger für die Freigabe.'
       return { success: false, error: msg }
     }
   }
@@ -136,7 +154,10 @@ export async function requestCustomerApprovalAgainAfterChangesImpl(
   } else {
     const resend = getApprovalResendClient()
     if (!resend) {
-      return { success: false, error: 'E-Mail-Versand ist nicht konfiguriert (RESEND_API_KEY).' }
+      return {
+        success: false,
+        error: 'E-Mail-Versand ist nicht konfiguriert (RESEND_API_KEY).',
+      }
     }
 
     try {
@@ -162,7 +183,11 @@ export async function requestCustomerApprovalAgainAfterChangesImpl(
           })
           emailMocked = true
         } else {
-          log.error('send failed', { action: 'requestCustomerApprovalAgainAfterChanges.send' }, sendError)
+          log.error(
+            'send failed',
+            { action: 'requestCustomerApprovalAgainAfterChanges.send' },
+            sendError,
+          )
           const hint =
             process.env.NODE_ENV === 'development'
               ? ' Für Tests: RESEND_MOCK_SUCCESS=true oder RESEND_DEV_OVERRIDE_TO=julien.klobedanz@gmail.com in .env.local.'
@@ -174,7 +199,11 @@ export async function requestCustomerApprovalAgainAfterChangesImpl(
         }
       }
     } catch (e) {
-      log.error('send failed', { action: 'requestCustomerApprovalAgainAfterChanges.send' }, e)
+      log.error(
+        'send failed',
+        { action: 'requestCustomerApprovalAgainAfterChanges.send' },
+        e,
+      )
       return { success: false, error: 'E-Mail konnte nicht gesendet werden.' }
     }
   }
@@ -184,10 +213,18 @@ export async function requestCustomerApprovalAgainAfterChangesImpl(
     .update({ approval_comment: null })
     .eq('id', referenceId)
   if (clearCommentError) {
-    log.error('clear comment failed', { action: 'requestCustomerApprovalAgainAfterChanges.clearComment', message: clearCommentError.message }, clearCommentError)
+    log.error(
+      'clear comment failed',
+      {
+        action: 'requestCustomerApprovalAgainAfterChanges.clearComment',
+        message: clearCommentError.message,
+      },
+      clearCommentError,
+    )
     return {
       success: false,
-      error: 'E-Mail wurde gesendet, aber die Änderungswünsche konnten nicht zurückgesetzt werden.',
+      error:
+        'E-Mail wurde gesendet, aber die Änderungswünsche konnten nicht zurückgesetzt werden.',
     }
   }
 

@@ -37,7 +37,8 @@ const UPDATES: LegacyUpdate[] = [
   {
     id: 'd1944935-d2f1-4f4c-b317-5b0939f93d74',
     title: 'Global Seller Success CRM & Service-Cloud',
-    summary: 'Case-Resolution-Zeit −34 %, Seller-NPS +18 Punkte, einheitliche Sicht auf 12 Mio. aktive Händler.',
+    summary:
+      'Case-Resolution-Zeit −34 %, Seller-NPS +18 Punkte, einheitliche Sicht auf 12 Mio. aktive Händler.',
     customer_challenge:
       'eBay betrieb regionale CRM- und Service-Instanzen mit unterschiedlichen Feldern und SLAs. Seller-Beschwerden zu Listings und Zahlungen wurden doppelt erfasst; Eskalationen zwischen Marketplace, Payments und Trust-Teams dauerten Tage.',
     our_solution:
@@ -53,7 +54,8 @@ const UPDATES: LegacyUpdate[] = [
   {
     id: '999d6f2b-4f8b-4d31-a48f-0d7a79c6865e',
     title: 'PIM- und E-Commerce-Datenhub für Techniksortiment',
-    summary: 'Time-to-Shelf für neue SKUs von 6 Wochen auf 9 Tage, Retourenquote −11 % durch korrekte Produktdaten.',
+    summary:
+      'Time-to-Shelf für neue SKUs von 6 Wochen auf 9 Tage, Retourenquote −11 % durch korrekte Produktdaten.',
     customer_challenge:
       'Conrad pflegte Produktdaten, Preise und Verfügbarkeiten in ERP, Shop und Marktplätzen getrennt. Inkonsistente Spezifikationen führten zu Retouren und verlängerten Kampagnenstarts im B2B- und B2C-Kanal.',
     our_solution:
@@ -69,7 +71,8 @@ const UPDATES: LegacyUpdate[] = [
   {
     id: '6bb42175-63d2-468d-b599-9052c12bc9a7',
     title: 'ISO 21434 Cybersecurity für vernetzte Fahrzeugplattform',
-    summary: 'TISAX- und ISO-21434-Audit ohne Major Findings; Schwachstellen-SLA für OTA-Updates unter 72 h.',
+    summary:
+      'TISAX- und ISO-21434-Audit ohne Major Findings; Schwachstellen-SLA für OTA-Updates unter 72 h.',
     customer_challenge:
       'Neue E/E-Architekturen und OTA-Updates erhöhten die Angriffsfläche. Security-Anforderungen nach ISO 21434 und interne BMW-Governance waren in Entwicklungsteams uneinheitlich umgesetzt.',
     our_solution:
@@ -85,7 +88,8 @@ const UPDATES: LegacyUpdate[] = [
   {
     id: '13226968-6678-4f98-b3c2-1f46bdfae656',
     title: 'Hybride Cloud für Molkerei-ERP und Qualitätslabore',
-    summary: 'Lab-Daten synchron in unter 5 Minuten; Betriebskosten Rechenzentrum −22 % im ersten Jahr.',
+    summary:
+      'Lab-Daten synchron in unter 5 Minuten; Betriebskosten Rechenzentrum −22 % im ersten Jahr.',
     customer_challenge:
       'Arla betrieb SAP und Laborsysteme on-prem mit nächtlichen Batch-Jobs. Qualitätsdaten aus Molkereien erreichten das Zentrallager oft erst am Folgetag — kritisch bei Frischeprodukten.',
     our_solution:
@@ -117,7 +121,8 @@ const UPDATES: LegacyUpdate[] = [
   {
     id: 'b57d2a03-3ae2-4601-97d7-6e57135e4cb4',
     title: 'Smart-Building-IoT für Microsoft Campus',
-    summary: 'Energieverbrauch Gebäude −14 %, Raumbelegung optimal genutzt, 2.400 Sensoren live.',
+    summary:
+      'Energieverbrauch Gebäude −14 %, Raumbelegung optimal genutzt, 2.400 Sensoren live.',
     customer_challenge:
       'HVAC, Beleuchtung und Raumbooking liefen auf getrennten Systemen. Facility-Teams hatten keine Echtzeit-Transparenz über Belegung und Energieverbrauch auf dem Redmond-Campus.',
     our_solution:
@@ -133,7 +138,8 @@ const UPDATES: LegacyUpdate[] = [
   {
     id: 'afe04740-a19a-4e88-8562-2d3d7b3c983e',
     title: 'Managed XDR für DACH-Mittelstandskunden',
-    summary: 'MTTR sicherheitsrelevanter Events −48 %, 120 Kunden auf gemeinsamer SOC-Plattform.',
+    summary:
+      'MTTR sicherheitsrelevanter Events −48 %, 120 Kunden auf gemeinsamer SOC-Plattform.',
     customer_challenge:
       'Fujitsu betrieb für Mittelstandskunden heterogene SIEM-Lösungen mit unterschiedlichen Playbooks. Analysten verloren Zeit bei False Positives; Reporting für ISO 27001 war manuell.',
     our_solution:
@@ -149,7 +155,8 @@ const UPDATES: LegacyUpdate[] = [
   {
     id: '367f45b9-78cd-49ad-8d86-0599877d7522',
     title: 'Checkout- und Payments-Modernisierung',
-    summary: 'Payment Success Rate +2,3 PP, PCI-Audit ohne Findings, Rollout in 14 Märkten.',
+    summary:
+      'Payment Success Rate +2,3 PP, PCI-Audit ohne Findings, Rollout in 14 Märkten.',
     customer_challenge:
       'eBays Legacy-Checkout unterstützte neue Payment-Methoden und Buy-now-pay-later nur mit langen Release-Zyklen. Mobile Conversion lag unter Wettbewerbern.',
     our_solution:
@@ -165,7 +172,8 @@ const UPDATES: LegacyUpdate[] = [
   {
     id: 'e26a6530-6a47-4adf-acb1-2b1c360b58be',
     title: 'RFID-Regalbestand im Technik-Fachmarkt',
-    summary: 'Inventurdifferenz −62 %, Omnichannel-Verfügbarkeit +15 PP an Top-100-Standorten.',
+    summary:
+      'Inventurdifferenz −62 %, Omnichannel-Verfügbarkeit +15 PP an Top-100-Standorten.',
     customer_challenge:
       'Conrad erfasste Regalbestände manuell und unterschiedlich je Filiale. Online-Kunden sahen „verfügbar“, obwohl das Produkt im Regal fehlte — besonders bei Kleinteilen.',
     our_solution:
@@ -181,7 +189,8 @@ const UPDATES: LegacyUpdate[] = [
   {
     id: '055c9f22-ef66-4593-9993-20eafd3c1eb5',
     title: 'Connected-Drive Upselling CRM für Händlernetz',
-    summary: 'Service-Umsatz pro VIN +12 %, Kampagnen-Conversion für Software-Upgrades verdoppelt.',
+    summary:
+      'Service-Umsatz pro VIN +12 %, Kampagnen-Conversion für Software-Upgrades verdoppelt.',
     customer_challenge:
       'BMW-Händler nutzten unterschiedliche CRM-Tools für Service, Teile und digitale Upsell-Angebote (ConnectedDrive). Kundenhistorie war nicht kanalübergreifend sichtbar.',
     our_solution:
@@ -197,7 +206,8 @@ const UPDATES: LegacyUpdate[] = [
   {
     id: 'fa13fca0-fae1-4411-8b9f-9379f7237bea',
     title: 'Milchqualitäts-Analytics für Lieferantennetzwerk',
-    summary: 'Abweichungen bei Rohmilch 48 h früher erkannt, Ausschuss −19 % in Pilotregion.',
+    summary:
+      'Abweichungen bei Rohmilch 48 h früher erkannt, Ausschuss −19 % in Pilotregion.',
     customer_challenge:
       'Qualitätsdaten von 1.200 Milchlieferanten kamen in unterschiedlichen Formaten. Abweichungen bei Fett- und Keimwerten wurden oft erst bei Anlieferung im Werk erkannt.',
     our_solution:
@@ -213,7 +223,8 @@ const UPDATES: LegacyUpdate[] = [
   {
     id: '7fe741f6-6e63-4778-8363-e936c9a52634',
     title: 'Zero-Trust für globales Endpoint- und Secrets-Management',
-    summary: 'Phishing-Resilience-Score +40 %, Secrets-Rotation vollständig automatisiert.',
+    summary:
+      'Phishing-Resilience-Score +40 %, Secrets-Rotation vollständig automatisiert.',
     customer_challenge:
       'Apples globale Workforce und Entwickler-Teams nutzten heterogene VPN- und Secrets-Prozesse. Insider-Risiko und Credential-Leaks waren ein Board-Thema.',
     our_solution:
@@ -229,7 +240,8 @@ const UPDATES: LegacyUpdate[] = [
   {
     id: 'f18daa7f-419b-4865-a136-8463762132e3',
     title: 'Open-RAN-Modernisierung des Mobilfunknetzes',
-    summary: 'Spectral Efficiency +18 %, Energiekosten je Site −11 %, 1.200 RAN-Sites migriert.',
+    summary:
+      'Spectral Efficiency +18 %, Energiekosten je Site −11 %, 1.200 RAN-Sites migriert.',
     customer_challenge:
       'AT&T musste Kapazität für exponentiell wachsende Mobilfunkdaten schaffen, gleichzeitig Energiekosten (15–20 % der OPEX) senken und auf Open RAN / Cloud RAN umstellen — bei maximaler Netzverfügbarkeit.',
     our_solution:
@@ -245,7 +257,8 @@ const UPDATES: LegacyUpdate[] = [
   {
     id: 'be75fbaf-7d72-49c3-a55c-40892d04ffc0',
     title: 'Managed IT & Cloud für Kupferproduktion',
-    summary: 'Verfügbarkeit Produktions-IT 99,95 %, Incident-Volume −28 %, ein Ansprechpartner für 14 Werke.',
+    summary:
+      'Verfügbarkeit Produktions-IT 99,95 %, Incident-Volume −28 %, ein Ansprechpartner für 14 Werke.',
     customer_challenge:
       'Aurubis betrieb Werks-IT und Cloud-Ressourcen dezentral. Patch- und Backup-Standards wichen zwischen Hamburg, Bulgaria und USA ab; SAP- und MES-Schnittstellen waren fragil.',
     our_solution:
@@ -261,7 +274,8 @@ const UPDATES: LegacyUpdate[] = [
   {
     id: 'afc6786f-8a60-4d11-ac01-cb19d3e93d4b',
     title: 'SOC-Transformation und Threat-Hunting-Factory',
-    summary: 'Alert-Noise −55 %, Mean Time to Detect −41 %, SOC-Team von L1-Reaktion auf Hunting umgestellt.',
+    summary:
+      'Alert-Noise −55 %, Mean Time to Detect −41 %, SOC-Team von L1-Reaktion auf Hunting umgestellt.',
     customer_challenge:
       'Samsungs SOC arbeitete reaktiv mit hohem Alert-Volumen aus Legacy-SIEM. Threat-Hunting war nur ad hoc möglich; Playbooks für Consumer Electronics und B2B-IT waren nicht vereinheitlicht.',
     our_solution:
@@ -310,7 +324,7 @@ async function main() {
     'REINDEX_IDS=' +
       UPDATES.map((u) => u.id).join(',') +
       ' npx tsx --require dotenv/config scripts/backfill-embeddings.ts dotenv_config_path=.env.local',
-    { stdio: 'inherit', cwd: process.cwd(), env: process.env }
+    { stdio: 'inherit', cwd: process.cwd(), env: process.env },
   )
 }
 

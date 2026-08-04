@@ -17,7 +17,7 @@ function PasswordInput({
 }: Omit<React.ComponentProps<'input'>, 'type'>) {
   const [visible, setVisible] = React.useState(false)
   const [hasValue, setHasValue] = React.useState(
-    () => String(value ?? defaultValue ?? '').length > 0
+    () => String(value ?? defaultValue ?? '').length > 0,
   )
 
   React.useEffect(() => {

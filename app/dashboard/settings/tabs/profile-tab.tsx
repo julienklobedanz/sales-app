@@ -82,24 +82,28 @@ type ProfileTabProps = {
 export function ProfileTab({ profile, register }: ProfileTabProps) {
   const router = useRouter()
   const [notifyNewMatch, setNotifyNewMatch] = useState(
-    profile.notificationSettings.emailOnNewMatch
+    profile.notificationSettings.emailOnNewMatch,
   )
   const [notifyApproval, setNotifyApproval] = useState(
-    profile.notificationSettings.emailOnApprovalUpdate
+    profile.notificationSettings.emailOnApprovalUpdate,
   )
   const [notifyMarketSignalsDigest, setNotifyMarketSignalsDigest] = useState(
-    profile.notificationSettings.emailDailyMarketSignalsDigest
+    profile.notificationSettings.emailDailyMarketSignalsDigest,
   )
   const [notifyDigestEmptyDay, setNotifyDigestEmptyDay] = useState(
-    profile.notificationSettings.emailDigestEmptyDay
+    profile.notificationSettings.emailDigestEmptyDay,
   )
-  const [digestTimezone, setDigestTimezone] = useState(profile.notificationSettings.digestTimezone)
-  const [digestLocalTime, setDigestLocalTime] = useState(profile.notificationSettings.digestLocalTime)
+  const [digestTimezone, setDigestTimezone] = useState(
+    profile.notificationSettings.digestTimezone,
+  )
+  const [digestLocalTime, setDigestLocalTime] = useState(
+    profile.notificationSettings.digestLocalTime,
+  )
   const [notifyInstantMarketSignals, setNotifyInstantMarketSignals] = useState(
-    profile.notificationSettings.emailInstantMarketSignals
+    profile.notificationSettings.emailInstantMarketSignals,
   )
   const [browserPushMarketSignals, setBrowserPushMarketSignals] = useState(
-    profile.notificationSettings.browserPushMarketSignals
+    profile.notificationSettings.browserPushMarketSignals,
   )
   const [profilePending, startProfileTransition] = useTransition()
   const [passwordPending, startPasswordTransition] = useTransition()
@@ -113,11 +117,13 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
   const profileNotificationsDirty =
     notifyNewMatch !== profile.notificationSettings.emailOnNewMatch ||
     notifyApproval !== profile.notificationSettings.emailOnApprovalUpdate ||
-    notifyMarketSignalsDigest !== profile.notificationSettings.emailDailyMarketSignalsDigest ||
+    notifyMarketSignalsDigest !==
+      profile.notificationSettings.emailDailyMarketSignalsDigest ||
     notifyDigestEmptyDay !== profile.notificationSettings.emailDigestEmptyDay ||
     digestTimezone !== profile.notificationSettings.digestTimezone ||
     digestLocalTime !== profile.notificationSettings.digestLocalTime ||
-    notifyInstantMarketSignals !== profile.notificationSettings.emailInstantMarketSignals ||
+    notifyInstantMarketSignals !==
+      profile.notificationSettings.emailInstantMarketSignals ||
     browserPushMarketSignals !== profile.notificationSettings.browserPushMarketSignals
 
   function saveProfileNotifications() {
@@ -167,7 +173,7 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
       pending: profilePending,
       save: saveProfileTab,
     },
-    register
+    register,
   )
 
   return (
@@ -198,10 +204,18 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
               <table className="w-full min-w-[480px] text-sm">
                 <thead className="bg-slate-50 text-slate-600">
                   <tr>
-                    <th className="px-2.5 py-1.5 text-left text-xs font-medium">Ereignis</th>
-                    <th className="w-20 px-2 py-1.5 text-center text-xs font-medium">E-Mail</th>
-                    <th className="w-20 px-2 py-1.5 text-center text-xs font-medium">In-App</th>
-                    <th className="w-20 px-2 py-1.5 text-center text-xs font-medium">Web-Push</th>
+                    <th className="px-2.5 py-1.5 text-left text-xs font-medium">
+                      Ereignis
+                    </th>
+                    <th className="w-20 px-2 py-1.5 text-center text-xs font-medium">
+                      E-Mail
+                    </th>
+                    <th className="w-20 px-2 py-1.5 text-center text-xs font-medium">
+                      In-App
+                    </th>
+                    <th className="w-20 px-2 py-1.5 text-center text-xs font-medium">
+                      Web-Push
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -229,10 +243,16 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
                   <tr className="border-t">
                     <td className="px-2.5 py-1.5">Referenz-Anfragen</td>
                     <td className="px-2 py-1.5 text-center">
-                      <Switch checked={notifyApproval} onCheckedChange={setNotifyApproval} />
+                      <Switch
+                        checked={notifyApproval}
+                        onCheckedChange={setNotifyApproval}
+                      />
                     </td>
                     <td className="px-2 py-1.5 text-center">
-                      <Switch checked={notifyNewMatch} onCheckedChange={setNotifyNewMatch} />
+                      <Switch
+                        checked={notifyNewMatch}
+                        onCheckedChange={setNotifyNewMatch}
+                      />
                     </td>
                     <td className="px-2 py-1.5 text-center">
                       <Switch checked={false} onCheckedChange={() => {}} disabled />
@@ -276,7 +296,9 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
                       </SelectItem>
                     ))}
                     {digestTimezone &&
-                    !(DIGEST_TIMEZONE_OPTIONS as readonly string[]).includes(digestTimezone) ? (
+                    !(DIGEST_TIMEZONE_OPTIONS as readonly string[]).includes(
+                      digestTimezone,
+                    ) ? (
                       <SelectItem value={digestTimezone}>{digestTimezone}</SelectItem>
                     ) : null}
                   </SelectContent>
@@ -299,10 +321,10 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
                         </button>
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs text-xs">
-                        Mit Vercel Pro und Digest-Cron alle 10 Min.: Versand im 10-Min-Fenster ab
-                        dieser lokalen Zeit. Vercel Hobby (Cron 1×/Tag): setze
-                        MARKET_SIGNALS_DIGEST_SKIP_TIME_WINDOW=1 – Versand beim täglichen Cron
-                        (UTC), Einstellung Uhrzeit dann ohne Wirkung.
+                        Mit Vercel Pro und Digest-Cron alle 10 Min.: Versand im
+                        10-Min-Fenster ab dieser lokalen Zeit. Vercel Hobby (Cron 1×/Tag):
+                        setze MARKET_SIGNALS_DIGEST_SKIP_TIME_WINDOW=1 – Versand beim
+                        täglichen Cron (UTC), Einstellung Uhrzeit dann ohne Wirkung.
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -326,7 +348,10 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
             <CardTitle className="text-sm font-semibold">Passwort ändern</CardTitle>
           </CardHeader>
           <CardContent className="px-0 pb-0 pt-2">
-            <form action={saveOwnPassword} className="grid gap-2 sm:grid-cols-3 sm:items-end">
+            <form
+              action={saveOwnPassword}
+              className="grid gap-2 sm:grid-cols-3 sm:items-end"
+            >
               <div className="space-y-1">
                 <Label htmlFor="currentPassword" className="text-xs">
                   Aktuelles Passwort
@@ -386,8 +411,8 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
           </CardHeader>
           <CardContent className="space-y-3 px-0 pb-0 pt-2">
             <p className="text-xs text-muted-foreground">
-              Dieses Gerät bleibt angemeldet, bis du dich abmeldest. Andere Geräte kannst du
-              gezielt oder komplett abmelden.
+              Dieses Gerät bleibt angemeldet, bis du dich abmeldest. Andere Geräte kannst
+              du gezielt oder komplett abmelden.
             </p>
             <div className="flex flex-wrap gap-2">
               <Button
@@ -447,7 +472,12 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
               }}
             >
               <AlertDialogTrigger asChild>
-                <Button type="button" variant="destructive" size="sm" className="shrink-0">
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  className="shrink-0"
+                >
                   <AppIcon icon={Trash2} size={16} />
                   Account löschen
                 </Button>
@@ -456,13 +486,16 @@ export function ProfileTab({ profile, register }: ProfileTabProps) {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Account wirklich löschen?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Dein Login und Profildaten werden gelöscht. Workspace-Daten bleiben erhalten,
-                    sofern andere Mitglieder existieren. Bist du der letzte Admin, musst du zuerst
-                    einen anderen Admin ernennen oder den Workspace löschen.
+                    Dein Login und Profildaten werden gelöscht. Workspace-Daten bleiben
+                    erhalten, sofern andere Mitglieder existieren. Bist du der letzte
+                    Admin, musst du zuerst einen anderen Admin ernennen oder den Workspace
+                    löschen.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <div className="space-y-2">
-                  <Label htmlFor="account-delete-email">Zur Bestätigung E-Mail eingeben</Label>
+                  <Label htmlFor="account-delete-email">
+                    Zur Bestätigung E-Mail eingeben
+                  </Label>
                   <Input
                     id="account-delete-email"
                     value={accountDeleteEmail}

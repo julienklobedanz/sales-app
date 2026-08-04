@@ -5,14 +5,14 @@ import { asJson, asTableInsert } from '@/lib/supabase/db-types'
 import type { CompanyStrategyRow, RoadmapProjectRow } from './account-action-types'
 
 export async function getCompanyStrategyImpl(
-  companyId: string
+  companyId: string,
 ): Promise<CompanyStrategyRow | null> {
   const supabase = await createServerSupabaseClient()
   const full = await supabase
     .from('company_strategies')
     // DB-Spalten: main_goals, competitive_situation; wir mappen per Alias auf unsere Feldnamen
     .select(
-      'id, company_id, company_goals:main_goals, red_flags, competition:competitive_situation, next_steps, value_proposition, metrics_pain, mh_assessment, updated_at'
+      'id, company_id, company_goals:main_goals, red_flags, competition:competitive_situation, next_steps, value_proposition, metrics_pain, mh_assessment, updated_at',
     )
     .eq('company_id', companyId)
     .maybeSingle()
@@ -20,13 +20,15 @@ export async function getCompanyStrategyImpl(
 
   const msg = (full.error.message ?? '').toLowerCase()
   const missingOptionalColumns =
-    msg.includes('metrics_pain') || msg.includes('mh_assessment') || msg.includes('value_proposition')
+    msg.includes('metrics_pain') ||
+    msg.includes('mh_assessment') ||
+    msg.includes('value_proposition')
   if (!missingOptionalColumns) return null
 
   const fallback = await supabase
     .from('company_strategies')
     .select(
-      'id, company_id, company_goals:main_goals, red_flags, competition:competitive_situation, next_steps, updated_at'
+      'id, company_id, company_goals:main_goals, red_flags, competition:competitive_situation, next_steps, updated_at',
     )
     .eq('company_id', companyId)
     .maybeSingle()
@@ -49,7 +51,7 @@ export async function upsertCompanyStrategyImpl(
     value_proposition?: string | null
     metrics_pain?: string | null
     mh_assessment?: Record<string, unknown> | null
-  }
+  },
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createServerSupabaseClient()
   const full = await supabase.from('company_strategies').upsert(
@@ -65,7 +67,7 @@ export async function upsertCompanyStrategyImpl(
       mh_assessment: asJson(payload.mh_assessment ?? {}),
       updated_at: new Date().toISOString(),
     }),
-    { onConflict: 'company_id' }
+    { onConflict: 'company_id' },
   )
   if (!full.error) {
     revalidatePath(ROUTES.accounts)
@@ -75,7 +77,9 @@ export async function upsertCompanyStrategyImpl(
 
   const msg = (full.error.message ?? '').toLowerCase()
   const missingOptionalColumns =
-    msg.includes('metrics_pain') || msg.includes('mh_assessment') || msg.includes('value_proposition')
+    msg.includes('metrics_pain') ||
+    msg.includes('mh_assessment') ||
+    msg.includes('value_proposition')
   if (!missingOptionalColumns) return { success: false, error: full.error.message }
 
   const fallback = await supabase.from('company_strategies').upsert(
@@ -87,7 +91,7 @@ export async function upsertCompanyStrategyImpl(
       next_steps: payload.next_steps ?? null,
       updated_at: new Date().toISOString(),
     },
-    { onConflict: 'company_id' }
+    { onConflict: 'company_id' },
   )
   if (fallback.error) return { success: false, error: fallback.error.message }
   revalidatePath(ROUTES.accounts)
@@ -95,7 +99,9 @@ export async function upsertCompanyStrategyImpl(
   return { success: true }
 }
 
-export async function getRoadmapProjectsImpl(companyId: string): Promise<RoadmapProjectRow[]> {
+export async function getRoadmapProjectsImpl(
+  companyId: string,
+): Promise<RoadmapProjectRow[]> {
   const supabase = await createServerSupabaseClient()
   const { data } = await supabase
     .from('company_roadmap_projects')
@@ -114,7 +120,7 @@ export async function upsertRoadmapProjectImpl(
     status?: string | null
     target_date?: string | null
     tags?: string | null
-  }
+  },
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createServerSupabaseClient()
   const row = {
@@ -127,7 +133,10 @@ export async function upsertRoadmapProjectImpl(
     updated_at: new Date().toISOString(),
   }
   if (payload.id) {
-    const { error } = await supabase.from('company_roadmap_projects').update(row).eq('id', payload.id)
+    const { error } = await supabase
+      .from('company_roadmap_projects')
+      .update(row)
+      .eq('id', payload.id)
     if (error) return { success: false, error: error.message }
   } else {
     const { error } = await supabase.from('company_roadmap_projects').insert(row)
@@ -137,7 +146,9 @@ export async function upsertRoadmapProjectImpl(
   return { success: true }
 }
 
-export async function deleteRoadmapProjectImpl(id: string): Promise<{ success: boolean; error?: string }> {
+export async function deleteRoadmapProjectImpl(
+  id: string,
+): Promise<{ success: boolean; error?: string }> {
   const supabase = await createServerSupabaseClient()
   const { data: row } = await supabase
     .from('company_roadmap_projects')

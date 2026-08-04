@@ -15,7 +15,7 @@ export async function GET() {
     const status = await getOrganizationCrmConnectionPublicStatus(
       guard.ctx.supabase,
       guard.ctx.organizationId,
-      'hubspot'
+      'hubspot',
     )
 
     return NextResponse.json({
@@ -25,6 +25,9 @@ export async function GET() {
     })
   } catch (error) {
     log.error('status failed', { action: 'hubspot.status' }, error)
-    return NextResponse.json({ error: 'Status konnte nicht geladen werden.' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Status konnte nicht geladen werden.' },
+      { status: 500 },
+    )
   }
 }

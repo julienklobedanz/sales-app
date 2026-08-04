@@ -32,8 +32,13 @@ export type PdfOcrResult = {
 
 async function renderPdfPageImages(
   buffer: Buffer,
-  maxPages: number
-): Promise<{ images: Buffer[]; totalPages: number; processedPages: number; truncated: boolean }> {
+  maxPages: number,
+): Promise<{
+  images: Buffer[]
+  totalPages: number
+  processedPages: number
+  truncated: boolean
+}> {
   await ensurePdfJsWorker()
   const pdfjs = await import('pdfjs-dist/build/pdf.mjs')
 
@@ -41,7 +46,7 @@ async function renderPdfPageImages(
     data: new Uint8Array(buffer),
     useSystemFonts: true,
     standardFontDataUrl: pathToFileURL(
-      join(process.cwd(), 'node_modules/pdfjs-dist/standard_fonts/')
+      join(process.cwd(), 'node_modules/pdfjs-dist/standard_fonts/'),
     ).href,
   }).promise
 
@@ -80,7 +85,7 @@ async function renderPdfPageImages(
 
 async function transcribePageImageBatch(
   images: Buffer[],
-  pageStart: number
+  pageStart: number,
 ): Promise<string> {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) {
@@ -150,12 +155,12 @@ async function transcribePageImageBatch(
  */
 export async function ocrPdfBufferWithOpenAi(
   buffer: Buffer,
-  options?: { maxPages?: number }
+  options?: { maxPages?: number },
 ): Promise<PdfOcrResult> {
   const maxPages = options?.maxPages ?? PDF_OCR_MAX_PAGES
   const { images, totalPages, processedPages, truncated } = await renderPdfPageImages(
     buffer,
-    maxPages
+    maxPages,
   )
 
   if (images.length === 0) {

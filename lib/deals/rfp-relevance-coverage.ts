@@ -6,7 +6,7 @@ import type { RfpVerdict } from '@/lib/rfp-relevance'
 export function isRequirementCovered(
   row: RfpCoverageRow,
   verdicts?: Record<string, RfpVerdict> | null,
-  threshold = MATCH_COVERAGE_THRESHOLD
+  threshold = MATCH_COVERAGE_THRESHOLD,
 ): boolean {
   const verdict = verdicts?.[row.requirementId]
   if (verdict) {
@@ -18,7 +18,7 @@ export function isRequirementCovered(
 
 export function effectiveSimilarity(
   row: RfpCoverageRow,
-  verdicts?: Record<string, RfpVerdict> | null
+  verdicts?: Record<string, RfpVerdict> | null,
 ): number {
   const best = row.matches[0]
   const raw = best && !row.embedError ? Math.min(1, Math.max(0, best.similarity)) : 0
@@ -31,7 +31,7 @@ export function effectiveSimilarity(
 
 export function resolveCoverageMatch(
   row: RfpCoverageRow,
-  verdicts?: Record<string, RfpVerdict> | null
+  verdicts?: Record<string, RfpVerdict> | null,
 ): RfpCoverageRow['matches'][number] | undefined {
   const verdict = verdicts?.[row.requirementId]
   if (verdict?.chosenId) {
@@ -44,7 +44,7 @@ export function computeCoveragePercentWithVerdicts(
   requirements: ExtractedRfpRequirement[],
   coverage: RfpCoverageRow[],
   verdicts?: Record<string, RfpVerdict> | null,
-  threshold = MATCH_COVERAGE_THRESHOLD
+  threshold = MATCH_COVERAGE_THRESHOLD,
 ): number {
   if (!requirements.length) return 0
   let covered = 0

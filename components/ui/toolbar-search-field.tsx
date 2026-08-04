@@ -1,18 +1,18 @@
-"use client"
+'use client'
 
-import * as React from "react"
-import { SearchIcon } from "@hugeicons/core-free-icons"
+import * as React from 'react'
+import { SearchIcon } from '@hugeicons/core-free-icons'
 
-import { Input } from "@/components/ui/input"
-import { AppIcon } from "@/lib/icons"
-import { TABLE_TOOLBAR } from "@/lib/table-toolbar"
-import { cn } from "@/lib/utils"
+import { Input } from '@/components/ui/input'
+import { AppIcon } from '@/lib/icons'
+import { TABLE_TOOLBAR } from '@/lib/table-toolbar'
+import { cn } from '@/lib/utils'
 
-export type ToolbarSearchFieldVariant = "list" | "dashboard"
+export type ToolbarSearchFieldVariant = 'list' | 'dashboard'
 
 export type ToolbarSearchFieldProps = Omit<
   React.ComponentProps<typeof Input>,
-  "value" | "onChange"
+  'value' | 'onChange'
 > & {
   value: string
   onChange: (value: string) => void
@@ -28,26 +28,24 @@ export type ToolbarSearchFieldProps = Omit<
 export function ToolbarSearchField({
   value,
   onChange,
-  variant = "list",
+  variant = 'list',
   wrapperClassName,
   className,
   ...inputProps
 }: ToolbarSearchFieldProps) {
   const wrap =
-    variant === "list"
+    variant === 'list'
       ? cn(TABLE_TOOLBAR.list.searchWrap, wrapperClassName)
       : cn(TABLE_TOOLBAR.dashboard.searchWrap, wrapperClassName)
 
   const inputClass =
-    variant === "list"
+    variant === 'list'
       ? cn(TABLE_TOOLBAR.list.searchInput, className)
       : cn(TABLE_TOOLBAR.dashboard.searchInput, className)
 
   return (
     <div className={wrap}>
-      <span
-        className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"
-      >
+      <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground">
         <AppIcon icon={SearchIcon} size={16} />
       </span>
       <Input

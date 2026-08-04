@@ -35,7 +35,7 @@ function companyFromRow(row: Record<string, unknown>): CompanyJoin | null {
 
 async function resolveCompanyIds(
   supabase: SupabaseClient,
-  organizationId?: string
+  organizationId?: string,
 ): Promise<string[] | null> {
   if (!organizationId) return null
   const { data, error } = await supabase
@@ -44,7 +44,9 @@ async function resolveCompanyIds(
     .eq('organization_id', organizationId)
     .limit(10_000)
   if (error) throw new Error(`companies: ${error.message}`)
-  return (data ?? []).map((row) => String((row as { id?: string }).id ?? '')).filter(Boolean)
+  return (data ?? [])
+    .map((row) => String((row as { id?: string }).id ?? ''))
+    .filter(Boolean)
 }
 
 function needsEnrichment(row: Record<string, unknown>): boolean {
@@ -59,7 +61,7 @@ async function pause(ms: number) {
 
 export async function runMarketSignalEnrichmentBackfill(
   supabase: SupabaseClient,
-  options?: BackfillSignalEnrichmentOptions
+  options?: BackfillSignalEnrichmentOptions,
 ): Promise<BackfillSignalEnrichmentResult> {
   const maxNews = Math.min(500, Math.max(1, options?.maxNews ?? 80))
   const maxExecutives = Math.min(500, Math.max(1, options?.maxExecutives ?? 80))
@@ -80,7 +82,10 @@ export async function runMarketSignalEnrichmentBackfill(
     .from('market_signal_account_news')
     .select('insight_signal_fact')
     .limit(1)
-  if (enrichmentProbe.error && isMissingEnrichmentColumnsError(enrichmentProbe.error.message)) {
+  if (
+    enrichmentProbe.error &&
+    isMissingEnrichmentColumnsError(enrichmentProbe.error.message)
+  ) {
     return {
       newsProcessed: 0,
       newsUpdated: 0,
@@ -94,7 +99,9 @@ export async function runMarketSignalEnrichmentBackfill(
 
   let newsQuery = supabase
     .from('market_signal_account_news')
-    .select('id, body, company_id, insight_signal_fact, insight_why_now, companies ( name, organization_id )')
+    .select(
+      'id, body, company_id, insight_signal_fact, insight_why_now, companies ( name, organization_id )',
+    )
     .order('published_on', { ascending: false })
     .limit(maxNews * 3)
 
@@ -143,7 +150,10 @@ export async function runMarketSignalEnrichmentBackfill(
       const enrichment = await enrichSignal({ title: body, companyName })
       if (!enrichment.is_relevant) {
         if (removeIrrelevant) {
-          const { error: delErr } = await supabase.from('market_signal_account_news').delete().eq('id', id)
+          const { error: delErr } = await supabase
+            .from('market_signal_account_news')
+            .delete()
+            .eq('id', id)
           if (delErr) errors.push(`news ${id}: ${delErr.message}`)
           else newsDeleted += 1
         }
@@ -171,7 +181,7 @@ export async function runMarketSignalEnrichmentBackfill(
   let execQuery = supabase
     .from('market_signal_executive_events')
     .select(
-      'id, person_name, change_summary, company_id, event_kind, insight_signal_fact, insight_why_now, companies ( name, organization_id )'
+      'id, person_name, change_summary, company_id, event_kind, insight_signal_fact, insight_why_now, companies ( name, organization_id )',
     )
     .order('detected_at', { ascending: false })
     .limit(maxExecutives * 3)
@@ -216,7 +226,10 @@ export async function runMarketSignalEnrichmentBackfill(
       })
       if (!enrichment.is_relevant) {
         if (removeIrrelevant) {
-          const { error: delErr } = await supabase.from('market_signal_executive_events').delete().eq('id', id)
+          const { error: delErr } = await supabase
+            .from('market_signal_executive_events')
+            .delete()
+            .eq('id', id)
           if (delErr) errors.push(`exec ${id}: ${delErr.message}`)
           else executivesDeleted += 1
         }

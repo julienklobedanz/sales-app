@@ -50,7 +50,10 @@ export const COMPANIES_IMPORT_PARTNER_CATEGORY_KEYS = [
   'Category',
 ] as const
 
-export function pickSheetRowValue(row: Record<string, unknown>, keys: readonly string[]): string {
+export function pickSheetRowValue(
+  row: Record<string, unknown>,
+  keys: readonly string[],
+): string {
   for (const key of keys) {
     const value = String(row[key] ?? '').trim()
     if (value) return value
@@ -86,13 +89,16 @@ export type ParsedCompaniesImportRow = {
 
 export function parseCompaniesImportRow(
   row: Record<string, unknown>,
-  entityKind: 'account' | 'partner'
+  entityKind: 'account' | 'partner',
 ): ParsedCompaniesImportRow | null {
   const name = pickSheetRowValue(row, COMPANIES_IMPORT_NAME_KEYS)
   if (!name) return null
 
   const employeeRaw = pickSheetRowValue(row, COMPANIES_IMPORT_EMPLOYEE_KEYS)
-  const partnerCategoryRaw = pickSheetRowValue(row, COMPANIES_IMPORT_PARTNER_CATEGORY_KEYS)
+  const partnerCategoryRaw = pickSheetRowValue(
+    row,
+    COMPANIES_IMPORT_PARTNER_CATEGORY_KEYS,
+  )
 
   return {
     name,

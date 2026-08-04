@@ -8,7 +8,7 @@ function normalizeTags(tags: string | null | undefined): Set<string> {
     tags
       .split(',')
       .map((t: string) => t.trim().toLowerCase())
-      .filter((t: string): t is string => Boolean(t))
+      .filter((t: string): t is string => Boolean(t)),
   )
 }
 
@@ -24,7 +24,7 @@ function normalizeRegion(s: string | null | undefined): string {
 /** Ähnliches Kundenprofil: gleiche Region (Land) oder HQ enthält Referenz-Land */
 function sizeRegionMatch(
   companyHeadquarters: string | null | undefined,
-  refCountry: string | null | undefined
+  refCountry: string | null | undefined,
 ): boolean {
   const hq = normalizeRegion(companyHeadquarters)
   const country = normalizeRegion(refCountry)
@@ -35,7 +35,7 @@ function sizeRegionMatch(
 
 /** Smart-Matching: Top 3 Referenzen nach Score 0–100 (Branche 50, Themen 30, Größe/Region 20) */
 export async function getRecommendedReferencesImpl(
-  projectId: string
+  projectId: string,
 ): Promise<RecommendedReference[]> {
   const supabase = await createServerSupabaseClient()
   const { data: project } = await supabase
@@ -89,8 +89,7 @@ export async function getRecommendedReferencesImpl(
       [...projectTagSet].some((t: string) => refTagSet.has(t))
     const sizeRegion = sizeRegionMatch(companyHeadquarters, refCountry(r))
 
-    let points =
-      (industryMatch ? 50 : 0) + (tagMatch ? 30 : 0) + (sizeRegion ? 20 : 0)
+    let points = (industryMatch ? 50 : 0) + (tagMatch ? 30 : 0) + (sizeRegion ? 20 : 0)
     if (points === 0) continue
 
     const createdAt = r.created_at as string | null | undefined
@@ -125,7 +124,9 @@ export async function getRecommendedReferencesImpl(
 }
 
 /** Alle Referenzen der Org für Fallback "alle Referenzen anzeigen" (z. B. Top 10) */
-export async function getReferencesForOrgImpl(limit = 10): Promise<RecommendedReference[]> {
+export async function getReferencesForOrgImpl(
+  limit = 10,
+): Promise<RecommendedReference[]> {
   const supabase = await createServerSupabaseClient()
   const { data } = await supabase
     .from('references')
@@ -150,7 +151,7 @@ export async function getReferencesForOrgImpl(limit = 10): Promise<RecommendedRe
 }
 
 export async function getReferencesByCompanyIdImpl(
-  companyId: string
+  companyId: string,
 ): Promise<CompanyRefRow[]> {
   const supabase = await createServerSupabaseClient()
   const { data } = await supabase
@@ -164,7 +165,7 @@ export async function getReferencesByCompanyIdImpl(
 
 /** Smart Match für Account: Referenzen aus der Org, die zu diesem Kunden passen (Branche/Herausforderungen). */
 export async function getRecommendedReferencesForAccountImpl(
-  companyId: string
+  companyId: string,
 ): Promise<RecommendedReference[]> {
   const supabase = await createServerSupabaseClient()
   const { data: company } = await supabase
@@ -216,11 +217,11 @@ export async function getRecommendedReferencesForAccountImpl(
       refTagSet.size > 0 &&
       [...projectTagSet].some((t: string) => refTagSet.has(t))
     const sizeRegion = sizeRegionMatch(companyHeadquarters, refCountry(r))
-    let points =
-      (industryMatch ? 50 : 0) + (tagMatch ? 30 : 0) + (sizeRegion ? 20 : 0)
+    let points = (industryMatch ? 50 : 0) + (tagMatch ? 30 : 0) + (sizeRegion ? 20 : 0)
     if (points === 0) continue
     const createdAt = r.created_at as string | null | undefined
-    if (createdAt && new Date(createdAt) >= twelveMonthsAgo) points = Math.min(100, points + 10)
+    if (createdAt && new Date(createdAt) >= twelveMonthsAgo)
+      points = Math.min(100, points + 10)
     let matchType: RecommendedReference['matchType'] = 'industry_only'
     if (industryMatch && tagMatch) matchType = 'industry_and_tags'
     else if (tagMatch) matchType = 'tags_only'

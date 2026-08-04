@@ -25,12 +25,7 @@ import {
 import { CompanyNameSuggestField } from '@/app/dashboard/accounts/components/company-name-suggest-field'
 import type { CompanySearchSuggestion } from '@/app/dashboard/references/new/actions'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { rewriteBrandfetchLogoUrlForLightBackground } from '@/lib/brandfetch/logo-theme-url'
 import { Switch } from '@/components/ui/switch'
@@ -142,7 +137,7 @@ export function MarketSignalsManageClient({
 
   const watchedInSegment = useMemo(
     () => segmentFiltered.filter((row) => row.isFollowing).length,
-    [segmentFiltered]
+    [segmentFiltered],
   )
 
   const filteredStakeholders = useMemo(() => {
@@ -162,16 +157,19 @@ export function MarketSignalsManageClient({
     if (value === 'executives') params.set('tab', 'executives')
     else params.delete('tab')
     const qs = params.toString()
-    router.replace(qs ? `${ROUTES.marketSignalsManage}?${qs}` : ROUTES.marketSignalsManage, {
-      scroll: false,
-    })
+    router.replace(
+      qs ? `${ROUTES.marketSignalsManage}?${qs}` : ROUTES.marketSignalsManage,
+      {
+        scroll: false,
+      },
+    )
   }
 
   function toggleCompany(companyId: string, nextValue: boolean) {
     setRows((prev) =>
       prev
         .map((row) => (row.id === companyId ? { ...row, isFollowing: nextValue } : row))
-        .sort(compareWatchlistCompanies)
+        .sort(compareWatchlistCompanies),
     )
     setPendingId(companyId)
     startTransition(async () => {
@@ -180,8 +178,10 @@ export function MarketSignalsManageClient({
       if (!result.success) {
         setRows((prev) =>
           prev
-            .map((row) => (row.id === companyId ? { ...row, isFollowing: !nextValue } : row))
-            .sort(compareWatchlistCompanies)
+            .map((row) =>
+              row.id === companyId ? { ...row, isFollowing: !nextValue } : row,
+            )
+            .sort(compareWatchlistCompanies),
         )
         toast.error(result.error ?? 'Watchlist konnte nicht aktualisiert werden')
       }
@@ -193,14 +193,18 @@ export function MarketSignalsManageClient({
       .filter((row) => row.isFollowing !== nextValue)
       .map((row) => row.id)
     if (ids.length === 0) {
-      toast.message(nextValue ? 'Alle sichtbaren Accounts sind bereits aktiv.' : 'Keine aktiven Accounts in der Ansicht.')
+      toast.message(
+        nextValue
+          ? 'Alle sichtbaren Accounts sind bereits aktiv.'
+          : 'Keine aktiven Accounts in der Ansicht.',
+      )
       return
     }
     const idSet = new Set(ids)
     setRows((prev) =>
       prev
         .map((row) => (idSet.has(row.id) ? { ...row, isFollowing: nextValue } : row))
-        .sort(compareWatchlistCompanies)
+        .sort(compareWatchlistCompanies),
     )
     setBulkPending(true)
     startTransition(async () => {
@@ -214,7 +218,7 @@ export function MarketSignalsManageClient({
       toast.success(
         nextValue
           ? `${ids.length} Account${ids.length === 1 ? '' : 's'} aktiviert`
-          : `${ids.length} Account${ids.length === 1 ? '' : 's'} deaktiviert`
+          : `${ids.length} Account${ids.length === 1 ? '' : 's'} deaktiviert`,
       )
     })
   }
@@ -265,7 +269,11 @@ export function MarketSignalsManageClient({
     })
     setPendingStakeholderKey(key)
     startTransition(async () => {
-      const result = await setChampionWatchlistState(personName, true, companyName || null)
+      const result = await setChampionWatchlistState(
+        personName,
+        true,
+        companyName || null,
+      )
       setPendingStakeholderKey(null)
       if (!result.success) {
         setStakeholderRows(watchedStakeholders)
@@ -281,22 +289,26 @@ export function MarketSignalsManageClient({
   function toggleStakeholder(row: WatchedStakeholder, nextValue: boolean) {
     setStakeholderRows((prev) =>
       prev
-        .map((item) => (item.key === row.key ? { ...item, isFollowing: nextValue } : item))
-        .sort(compareStakeholders)
+        .map((item) =>
+          item.key === row.key ? { ...item, isFollowing: nextValue } : item,
+        )
+        .sort(compareStakeholders),
     )
     setPendingStakeholderKey(row.key)
     startTransition(async () => {
       const result = await setChampionWatchlistState(
         row.personName,
         nextValue,
-        row.companyName
+        row.companyName,
       )
       setPendingStakeholderKey(null)
       if (!result.success) {
         setStakeholderRows((prev) =>
           prev
-            .map((item) => (item.key === row.key ? { ...item, isFollowing: !nextValue } : item))
-            .sort(compareStakeholders)
+            .map((item) =>
+              item.key === row.key ? { ...item, isFollowing: !nextValue } : item,
+            )
+            .sort(compareStakeholders),
         )
         toast.error(result.error ?? 'Watchlist konnte nicht aktualisiert werden')
       }
@@ -321,82 +333,324 @@ export function MarketSignalsManageClient({
 
   return (
     <TooltipProvider delayDuration={300}>
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            Marktsignale verwalten
-          </h1>
+      <div className="space-y-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+              Marktsignale verwalten
+            </h1>
+          </div>
+          <div className="flex flex-col items-start gap-1.5 sm:items-end">
+            <Link
+              href={ROUTES.marketSignals}
+              className="text-sm font-medium text-foreground underline-offset-4 hover:underline"
+            >
+              Zurück zu Marktsignalen
+            </Link>
+            <Link
+              href={ROUTES.settings}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              Einstellungen
+            </Link>
+          </div>
         </div>
-        <div className="flex flex-col items-start gap-1.5 sm:items-end">
-          <Link
-            href={ROUTES.marketSignals}
-            className="text-sm font-medium text-foreground underline-offset-4 hover:underline"
+
+        <Tabs value={activeTab} onValueChange={onTabChange} className="gap-6">
+          <div
+            role="tablist"
+            aria-label="Bereich"
+            className="flex w-full items-center justify-center gap-1.5"
           >
-            Zurück zu Marktsignalen
-          </Link>
-          <Link href={ROUTES.settings} className="text-xs text-muted-foreground hover:text-foreground">
-            Einstellungen
-          </Link>
-        </div>
-      </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === 'companies'}
+                  aria-label="Accounts"
+                  onClick={() => onTabChange('companies')}
+                  className={cn(
+                    MANAGE_TAB_BUTTON_CLASS,
+                    activeTab === 'companies'
+                      ? cn(BRAND_PRIMARY_PILL_ACTIVE_CLASS, 'shadow-sm')
+                      : null,
+                  )}
+                >
+                  <AppIcon
+                    icon={Building2}
+                    size={20}
+                    color={activeTab === 'companies' ? '#ffffff' : 'currentColor'}
+                  />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Accounts</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === 'executives'}
+                  aria-label="Executives"
+                  onClick={() => onTabChange('executives')}
+                  className={cn(
+                    MANAGE_TAB_BUTTON_CLASS,
+                    activeTab === 'executives'
+                      ? cn(BRAND_PRIMARY_PILL_ACTIVE_CLASS, 'shadow-sm')
+                      : null,
+                  )}
+                >
+                  <AppIcon
+                    icon={Users}
+                    size={20}
+                    color={activeTab === 'executives' ? '#ffffff' : 'currentColor'}
+                  />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Executives</TooltipContent>
+            </Tooltip>
+          </div>
 
-      <Tabs value={activeTab} onValueChange={onTabChange} className="gap-6">
-        <div role="tablist" aria-label="Bereich" className="flex w-full items-center justify-center gap-1.5">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={activeTab === 'companies'}
-                aria-label="Accounts"
-                onClick={() => onTabChange('companies')}
-                className={cn(
-                  MANAGE_TAB_BUTTON_CLASS,
-                  activeTab === 'companies'
-                    ? cn(BRAND_PRIMARY_PILL_ACTIVE_CLASS, 'shadow-sm')
-                    : null
-                )}
-              >
-                <AppIcon
-                  icon={Building2}
-                  size={20}
-                  color={activeTab === 'companies' ? '#ffffff' : 'currentColor'}
-                />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">Accounts</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={activeTab === 'executives'}
-                aria-label="Executives"
-                onClick={() => onTabChange('executives')}
-                className={cn(
-                  MANAGE_TAB_BUTTON_CLASS,
-                  activeTab === 'executives'
-                    ? cn(BRAND_PRIMARY_PILL_ACTIVE_CLASS, 'shadow-sm')
-                    : null
-                )}
-              >
-                <AppIcon
-                  icon={Users}
-                  size={20}
-                  color={activeTab === 'executives' ? '#ffffff' : 'currentColor'}
-                />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">Executives</TooltipContent>
-          </Tooltip>
-        </div>
+          <TabsContent value="companies" className="mt-0">
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-start">
+              <div className="min-w-0 flex-1 space-y-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+                  <div className="relative w-full md:w-[calc((100%-2rem)/3)]">
+                    <AppIcon
+                      icon={SearchIcon}
+                      size={16}
+                      className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+                    />
+                    <Input
+                      value={query}
+                      onChange={(event) => setQuery(event.target.value)}
+                      placeholder="Accounts durchsuchen"
+                      className="h-10 rounded-xl border-border/70 bg-card pl-10"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    className="size-10 shrink-0 rounded-xl px-0 text-lg"
+                    onClick={() => setAddDialogOpen(true)}
+                    aria-label="Account hinzufügen"
+                  >
+                    +
+                  </Button>
 
-        <TabsContent value="companies" className="mt-0">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-start">
-            <div className="min-w-0 flex-1 space-y-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+                  <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+                    <CompanySegmentSwitch
+                      value={companySegment}
+                      onChange={setCompanySegment}
+                    />
+                    <button
+                      type="button"
+                      aria-pressed={onlyWatched}
+                      onClick={() => setOnlyWatched((v) => !v)}
+                      className={cn(
+                        'h-10 rounded-xl border px-3 text-sm font-medium transition-colors',
+                        onlyWatched
+                          ? 'border-foreground/20 bg-foreground text-background'
+                          : 'border-border/70 bg-card text-muted-foreground hover:text-foreground',
+                      )}
+                    >
+                      Nur Beobachtete
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    <span className="font-medium text-foreground">
+                      {watchedInSegment}
+                    </span>
+                    {' von '}
+                    <span className="font-medium text-foreground">
+                      {segmentFiltered.length}
+                    </span>
+                    {' beobachtet'}
+                    {filteredCompanies.length !== segmentFiltered.length
+                      ? ` · ${filteredCompanies.length} angezeigt`
+                      : null}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="rounded-lg"
+                      disabled={
+                        bulkPending || isPending || filteredCompanies.length === 0
+                      }
+                      onClick={() => bulkSetFollowing(true)}
+                    >
+                      Alle an
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="rounded-lg"
+                      disabled={
+                        bulkPending || isPending || filteredCompanies.length === 0
+                      }
+                      onClick={() => bulkSetFollowing(false)}
+                    >
+                      Alle aus
+                    </Button>
+                  </div>
+                </div>
+
+                {filteredCompanies.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/70 bg-muted/20 px-4 py-10 text-center">
+                    <p className="max-w-md text-sm text-muted-foreground">
+                      {emptyMessage}
+                    </p>
+                    {onlyWatched ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setOnlyWatched(false)}
+                      >
+                        Alle anzeigen
+                      </Button>
+                    ) : null}
+                    {!query.trim() && !onlyWatched && companySegment !== 'bestand' ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="size-9 rounded-lg px-0 text-lg"
+                        onClick={() => setAddDialogOpen(true)}
+                        aria-label="Account hinzufügen"
+                      >
+                        +
+                      </Button>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    {filteredCompanies.map((company) => (
+                      <div
+                        key={company.id}
+                        className={cn(
+                          'flex items-center gap-3 rounded-xl border border-border/70 bg-card p-3 shadow-sm shadow-slate-900/5 transition-opacity duration-200',
+                          company.isFollowing ? 'opacity-100' : 'opacity-50',
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            'relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted/35 transition-all duration-200',
+                            !company.isFollowing && 'grayscale',
+                          )}
+                        >
+                          {company.logoUrl ? (
+                            <Image
+                              src={
+                                rewriteBrandfetchLogoUrlForLightBackground(
+                                  company.logoUrl,
+                                ) ?? company.logoUrl
+                              }
+                              alt=""
+                              fill
+                              sizes="36px"
+                              className="object-contain p-1"
+                            />
+                          ) : (
+                            <span className="text-[10px] font-semibold text-muted-foreground">
+                              {company.name.slice(0, 2).toUpperCase()}
+                            </span>
+                          )}
+                        </div>
+                        <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
+                          {company.name}
+                        </span>
+                        <Switch
+                          checked={company.isFollowing}
+                          disabled={
+                            (isPending && pendingId === company.id) || bulkPending
+                          }
+                          onCheckedChange={(checked) =>
+                            toggleCompany(company.id, checked)
+                          }
+                          aria-label={`${company.name} überwachen`}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <Dialog
+                  open={addDialogOpen}
+                  onOpenChange={(open) => {
+                    setAddDialogOpen(open)
+                    if (!open) setAddCompanyQuery('')
+                  }}
+                >
+                  <DialogContent className="overflow-visible sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Account hinzufügen</DialogTitle>
+                    </DialogHeader>
+                    <CompanyNameSuggestField
+                      id="add-watch-company"
+                      value={addCompanyQuery}
+                      onValueChange={setAddCompanyQuery}
+                      onSelectSuggestion={onAddCompanySuggestion}
+                      disabled={addPending || isPending}
+                      placeholder="Firma suchen oder neu anlegen …"
+                      className="h-10 rounded-xl border-border/60"
+                      autoFocus
+                    />
+                  </DialogContent>
+                </Dialog>
+              </div>
+
+              <div className="w-full shrink-0 xl:w-72 2xl:w-80">
+                <NewsroomsSidebar summary={newsroomSummary} />
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="executives" className="mt-0 space-y-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+              <Input
+                id="stakeholder-name"
+                value={newPersonName}
+                onChange={(e) => setNewPersonName(e.target.value)}
+                placeholder="Name, z. B. Tim Cook"
+                className="h-10 w-full rounded-xl border-border/70 bg-card md:w-[calc((100%-2rem)/3)]"
+                disabled={isPending && !!pendingStakeholderKey}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    addStakeholder()
+                  }
+                }}
+              />
+              <div className="w-full md:w-[calc((100%-2rem)/3)]">
+                <CompanyNameSuggestField
+                  id="stakeholder-company"
+                  value={newCompanyName}
+                  onValueChange={setNewCompanyName}
+                  onSelectSuggestion={(s) => setNewCompanyName(s.name)}
+                  disabled={isPending && !!pendingStakeholderKey}
+                  placeholder="Unternehmen, z. B. Apple"
+                  className="h-10 rounded-xl border-border/70"
+                />
+              </div>
+              <Button
+                type="button"
+                variant="default"
+                onClick={addStakeholder}
+                disabled={isPending && !!pendingStakeholderKey}
+                className="size-10 shrink-0 rounded-xl px-0 text-lg"
+                aria-label="Hinzufügen"
+              >
+                +
+              </Button>
+            </div>
+
             <div className="relative w-full md:w-[calc((100%-2rem)/3)]">
               <AppIcon
                 icon={SearchIcon}
@@ -404,281 +658,83 @@ export function MarketSignalsManageClient({
                 className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"
               />
               <Input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Accounts durchsuchen"
+                value={stakeholderQuery}
+                onChange={(event) => setStakeholderQuery(event.target.value)}
+                placeholder="Durchsuchen"
                 className="h-10 rounded-xl border-border/70 bg-card pl-10"
               />
             </div>
-            <Button
-              type="button"
-              className="size-10 shrink-0 rounded-xl px-0 text-lg"
-              onClick={() => setAddDialogOpen(true)}
-              aria-label="Account hinzufügen"
-            >
-              +
-            </Button>
 
-            <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
-              <CompanySegmentSwitch value={companySegment} onChange={setCompanySegment} />
-              <button
-                type="button"
-                aria-pressed={onlyWatched}
-                onClick={() => setOnlyWatched((v) => !v)}
-                className={cn(
-                  'h-10 rounded-xl border px-3 text-sm font-medium transition-colors',
-                  onlyWatched
-                    ? 'border-foreground/20 bg-foreground text-background'
-                    : 'border-border/70 bg-card text-muted-foreground hover:text-foreground'
-                )}
-              >
-                Nur Beobachtete
-              </button>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">{watchedInSegment}</span>
-              {' von '}
-              <span className="font-medium text-foreground">{segmentFiltered.length}</span>
-              {' beobachtet'}
-              {filteredCompanies.length !== segmentFiltered.length
-                ? ` · ${filteredCompanies.length} angezeigt`
-                : null}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="rounded-lg"
-                disabled={bulkPending || isPending || filteredCompanies.length === 0}
-                onClick={() => bulkSetFollowing(true)}
-              >
-                Alle an
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="rounded-lg"
-                disabled={bulkPending || isPending || filteredCompanies.length === 0}
-                onClick={() => bulkSetFollowing(false)}
-              >
-                Alle aus
-              </Button>
-            </div>
-          </div>
-
-          {filteredCompanies.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/70 bg-muted/20 px-4 py-10 text-center">
-              <p className="max-w-md text-sm text-muted-foreground">{emptyMessage}</p>
-              {onlyWatched ? (
-                <Button type="button" variant="outline" size="sm" onClick={() => setOnlyWatched(false)}>
-                  Alle anzeigen
-                </Button>
-              ) : null}
-              {!query.trim() && !onlyWatched && companySegment !== 'bestand' ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="size-9 rounded-lg px-0 text-lg"
-                  onClick={() => setAddDialogOpen(true)}
-                  aria-label="Account hinzufügen"
-                >
-                  +
-                </Button>
-              ) : null}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              {filteredCompanies.map((company) => (
-                <div
-                  key={company.id}
-                  className={cn(
-                    'flex items-center gap-3 rounded-xl border border-border/70 bg-card p-3 shadow-sm shadow-slate-900/5 transition-opacity duration-200',
-                    company.isFollowing ? 'opacity-100' : 'opacity-50'
-                  )}
-                >
-                  <div
-                    className={cn(
-                      'relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted/35 transition-all duration-200',
-                      !company.isFollowing && 'grayscale'
-                    )}
-                  >
-                    {company.logoUrl ? (
-                      <Image
-                        src={
-                          rewriteBrandfetchLogoUrlForLightBackground(company.logoUrl) ??
-                          company.logoUrl
-                        }
-                        alt=""
-                        fill
-                        sizes="36px"
-                        className="object-contain p-1"
-                      />
-                    ) : (
-                      <span className="text-[10px] font-semibold text-muted-foreground">
-                        {company.name.slice(0, 2).toUpperCase()}
-                      </span>
-                    )}
-                  </div>
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
-                    {company.name}
-                  </span>
-                  <Switch
-                    checked={company.isFollowing}
-                    disabled={(isPending && pendingId === company.id) || bulkPending}
-                    onCheckedChange={(checked) => toggleCompany(company.id, checked)}
-                    aria-label={`${company.name} überwachen`}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-
-          <Dialog
-            open={addDialogOpen}
-            onOpenChange={(open) => {
-              setAddDialogOpen(open)
-              if (!open) setAddCompanyQuery('')
-            }}
-          >
-            <DialogContent className="overflow-visible sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Account hinzufügen</DialogTitle>
-              </DialogHeader>
-              <CompanyNameSuggestField
-                id="add-watch-company"
-                value={addCompanyQuery}
-                onValueChange={setAddCompanyQuery}
-                onSelectSuggestion={onAddCompanySuggestion}
-                disabled={addPending || isPending}
-                placeholder="Firma suchen oder neu anlegen …"
-                className="h-10 rounded-xl border-border/60"
-                autoFocus
-              />
-            </DialogContent>
-          </Dialog>
-            </div>
-
-            <div className="w-full shrink-0 xl:w-72 2xl:w-80">
-              <NewsroomsSidebar summary={newsroomSummary} />
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="executives" className="mt-0 space-y-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
-            <Input
-              id="stakeholder-name"
-              value={newPersonName}
-              onChange={(e) => setNewPersonName(e.target.value)}
-              placeholder="Name, z. B. Tim Cook"
-              className="h-10 w-full rounded-xl border-border/70 bg-card md:w-[calc((100%-2rem)/3)]"
-              disabled={isPending && !!pendingStakeholderKey}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  addStakeholder()
-                }
-              }}
-            />
-            <div className="w-full md:w-[calc((100%-2rem)/3)]">
-              <CompanyNameSuggestField
-                id="stakeholder-company"
-                value={newCompanyName}
-                onValueChange={setNewCompanyName}
-                onSelectSuggestion={(s) => setNewCompanyName(s.name)}
-                disabled={isPending && !!pendingStakeholderKey}
-                placeholder="Unternehmen, z. B. Apple"
-                className="h-10 rounded-xl border-border/70"
-              />
-            </div>
-            <Button
-              type="button"
-              variant="default"
-              onClick={addStakeholder}
-              disabled={isPending && !!pendingStakeholderKey}
-              className="size-10 shrink-0 rounded-xl px-0 text-lg"
-              aria-label="Hinzufügen"
-            >
-              +
-            </Button>
-          </div>
-
-          <div className="relative w-full md:w-[calc((100%-2rem)/3)]">
-            <AppIcon
-              icon={SearchIcon}
-              size={16}
-              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"
-            />
-            <Input
-              value={stakeholderQuery}
-              onChange={(event) => setStakeholderQuery(event.target.value)}
-              placeholder="Durchsuchen"
-              className="h-10 rounded-xl border-border/70 bg-card pl-10"
-            />
-          </div>
-
-          {filteredStakeholders.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/70 bg-muted/20 px-6 py-14 text-center">
-              {stakeholderQuery.trim() ? (
-                <>
-                  <Search className="size-9 text-muted-foreground/50" strokeWidth={1.5} aria-hidden />
-                  <p className="text-sm font-medium text-muted-foreground">Keine Treffer</p>
-                </>
-              ) : (
-                <>
-                  <UserPlus className="size-9 text-muted-foreground/50" strokeWidth={1.5} aria-hidden />
-                  <p className="text-sm font-medium text-muted-foreground">Noch keine Executives</p>
-                  <p className="max-w-xs text-xs text-muted-foreground/80">
-                    Name und Unternehmen eintragen.
-                  </p>
-                </>
-              )}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              {filteredStakeholders.map((row) => (
-                <div
-                  key={row.key}
-                  className={cn(
-                    'flex items-center gap-3 rounded-xl border border-border/70 bg-card p-3 shadow-sm shadow-slate-900/5 transition-opacity duration-200',
-                    row.isFollowing ? 'opacity-100' : 'opacity-50'
-                  )}
-                >
-                  <div
-                    className={cn(
-                      'flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted/35 transition-all duration-200',
-                      !row.isFollowing && 'grayscale'
-                    )}
-                  >
-                    <span className="text-[10px] font-semibold text-muted-foreground">
-                      {personInitials(row.personName)}
-                    </span>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-foreground">{row.personName}</p>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {formatExecutiveMetaLine(row.personTitle, row.companyName)}
+            {filteredStakeholders.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/70 bg-muted/20 px-6 py-14 text-center">
+                {stakeholderQuery.trim() ? (
+                  <>
+                    <Search
+                      className="size-9 text-muted-foreground/50"
+                      strokeWidth={1.5}
+                      aria-hidden
+                    />
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Keine Treffer
                     </p>
+                  </>
+                ) : (
+                  <>
+                    <UserPlus
+                      className="size-9 text-muted-foreground/50"
+                      strokeWidth={1.5}
+                      aria-hidden
+                    />
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Noch keine Executives
+                    </p>
+                    <p className="max-w-xs text-xs text-muted-foreground/80">
+                      Name und Unternehmen eintragen.
+                    </p>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                {filteredStakeholders.map((row) => (
+                  <div
+                    key={row.key}
+                    className={cn(
+                      'flex items-center gap-3 rounded-xl border border-border/70 bg-card p-3 shadow-sm shadow-slate-900/5 transition-opacity duration-200',
+                      row.isFollowing ? 'opacity-100' : 'opacity-50',
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        'flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted/35 transition-all duration-200',
+                        !row.isFollowing && 'grayscale',
+                      )}
+                    >
+                      <span className="text-[10px] font-semibold text-muted-foreground">
+                        {personInitials(row.personName)}
+                      </span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-foreground">
+                        {row.personName}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {formatExecutiveMetaLine(row.personTitle, row.companyName)}
+                      </p>
+                    </div>
+                    <Switch
+                      checked={row.isFollowing}
+                      disabled={isPending && pendingStakeholderKey === row.key}
+                      onCheckedChange={(checked) => toggleStakeholder(row, checked)}
+                      aria-label={`${row.personName} überwachen`}
+                    />
                   </div>
-                  <Switch
-                    checked={row.isFollowing}
-                    disabled={isPending && pendingStakeholderKey === row.key}
-                    onCheckedChange={(checked) => toggleStakeholder(row, checked)}
-                    aria-label={`${row.personName} überwachen`}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
-    </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
     </TooltipProvider>
   )
 }

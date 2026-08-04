@@ -108,7 +108,7 @@ export function CompaniesImportDialog({
                 : 'border-border bg-muted/20',
               importing
                 ? 'cursor-not-allowed opacity-60'
-                : 'cursor-pointer hover:border-border/80 hover:bg-muted/40'
+                : 'cursor-pointer hover:border-border/80 hover:bg-muted/40',
             )}
             onClick={() => !importing && inputRef.current?.click()}
             onKeyDown={(e) => {
@@ -163,8 +163,15 @@ export function CompaniesImportDialog({
               </div>
             ) : (
               <div className="flex flex-col items-center gap-2">
-                <AppIcon icon={UploadIcon} size={24} className="text-muted-foreground" aria-hidden />
-                <p className="text-sm font-medium text-foreground">{copy.dropzoneTitle}</p>
+                <AppIcon
+                  icon={UploadIcon}
+                  size={24}
+                  className="text-muted-foreground"
+                  aria-hidden
+                />
+                <p className="text-sm font-medium text-foreground">
+                  {copy.dropzoneTitle}
+                </p>
                 <p className="text-xs text-muted-foreground">{copy.dropzoneHint}</p>
               </div>
             )}
@@ -192,7 +199,11 @@ export function CompaniesImportDialog({
           >
             {COPY.accounts.importCancel}
           </Button>
-          <Button type="button" disabled={!file || importing} onClick={() => void handleSubmit()}>
+          <Button
+            type="button"
+            disabled={!file || importing}
+            onClick={() => void handleSubmit()}
+          >
             {importing ? (
               <>
                 <AppIcon icon={Loader} size={16} className="animate-spin" />

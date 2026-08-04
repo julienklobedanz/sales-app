@@ -11,7 +11,9 @@ export function getAppOrigin(): string {
       process.env.NODE_ENV === 'production' ||
       process.env.NEXT_PUBLIC_APP_URL === undefined
     if (isProd) {
-      throw new Error('NEXT_PUBLIC_APP_URL ist nicht gesetzt. Bitte in der Zielumgebung (Staging/Prod) konfigurieren.')
+      throw new Error(
+        'NEXT_PUBLIC_APP_URL ist nicht gesetzt. Bitte in der Zielumgebung (Staging/Prod) konfigurieren.',
+      )
     }
     return 'http://localhost:3000'
   }
@@ -20,4 +22,3 @@ export function getAppOrigin(): string {
   if (/^https?:\/\//i.test(normalized)) return normalized
   return `https://${normalized}`
 }
-

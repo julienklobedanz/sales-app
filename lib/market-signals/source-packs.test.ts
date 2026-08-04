@@ -42,7 +42,9 @@ describe('source packs', () => {
   })
 
   it('erkennt Pack-Hosts in URLs', () => {
-    expect(isIndustryPackHost('https://www.lebensmittelzeitung.net/foo', 'ret')).toBe(true)
+    expect(isIndustryPackHost('https://www.lebensmittelzeitung.net/foo', 'ret')).toBe(
+      true,
+    )
     expect(isIndustryPackHost('https://example.com/x', 'ret')).toBe(false)
     expect(isPeoplePackHost('https://www.cio.de/karriere/x')).toBe(true)
   })

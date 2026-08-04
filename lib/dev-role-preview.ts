@@ -16,7 +16,11 @@ export type DevRolePreview = {
 }
 
 const SYSTEM_ROLE_SET = new Set<SystemRole>(['owner', 'admin', 'member', 'viewer'])
-const FUNCTION_ROLE_SET = new Set<FunctionRole>(['sales_rep', 'account_manager', 'sales_leader'])
+const FUNCTION_ROLE_SET = new Set<FunctionRole>([
+  'sales_rep',
+  'account_manager',
+  'sales_leader',
+])
 
 export function isDevRolePreviewEnabled(): boolean {
   const flag = process.env.NEXT_PUBLIC_ENABLE_DEV_ROLE_PREVIEW?.trim()
@@ -38,8 +42,7 @@ export function canUseDevRolePreview(systemRole: SystemRole): boolean {
 }
 
 export function formatDevRolePreviewLabel(preview: DevRolePreview): string {
-  const system =
-    COPY.roleDimensions.systemRoles[preview.systemRole] ?? preview.systemRole
+  const system = COPY.roleDimensions.systemRoles[preview.systemRole] ?? preview.systemRole
   const fn =
     COPY.roleDimensions.functionRoles[preview.functionRole] ?? preview.functionRole
   return `${system} · ${fn}`
@@ -55,13 +58,21 @@ function parseDimensionToken(value: string, allowed: Set<string>): string | null
 }
 
 /** Neues Format: `system:function` (z. B. `admin:sales_leader`). Legacy: `admin` | `sales` | `account_manager`. */
-export function parseDevRolePreviewCookie(value: string | undefined): DevRolePreview | null {
+export function parseDevRolePreviewCookie(
+  value: string | undefined,
+): DevRolePreview | null {
   if (!value) return null
 
   if (value.includes(':')) {
     const [systemRaw, functionRaw] = value.split(':')
-    const systemRole = parseDimensionToken(systemRaw ?? '', SYSTEM_ROLE_SET) as SystemRole | null
-    const functionRole = parseDimensionToken(functionRaw ?? '', FUNCTION_ROLE_SET) as FunctionRole | null
+    const systemRole = parseDimensionToken(
+      systemRaw ?? '',
+      SYSTEM_ROLE_SET,
+    ) as SystemRole | null
+    const functionRole = parseDimensionToken(
+      functionRaw ?? '',
+      FUNCTION_ROLE_SET,
+    ) as FunctionRole | null
     if (systemRole && functionRole) {
       return { systemRole, functionRole }
     }

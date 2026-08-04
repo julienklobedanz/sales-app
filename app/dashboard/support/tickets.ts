@@ -41,8 +41,7 @@ async function notifySupportInboxEmail(params: {
 
   const to = supportInboxAddress()
   const label = params.type === 'feedback' ? 'Feedback' : 'Support'
-  const replyTo =
-    params.replyToEmail?.trim() || params.userEmail?.trim() || undefined
+  const replyTo = params.replyToEmail?.trim() || params.userEmail?.trim() || undefined
 
   try {
     const html = buildRefstackEmailHtml({
@@ -66,7 +65,11 @@ async function notifySupportInboxEmail(params: {
       html,
     })
     if (error) {
-      log.error('submitTicket.resendFailed', { type: params.type, userId: params.userId }, error)
+      log.error(
+        'submitTicket.resendFailed',
+        { type: params.type, userId: params.userId },
+        error,
+      )
     }
   } catch (e) {
     log.error('submitTicket.emailFailed', { type: params.type, userId: params.userId }, e)
@@ -77,7 +80,7 @@ export async function submitTicketImpl(
   type: 'support' | 'feedback',
   subject: string,
   message: string,
-  options?: { replyToEmail?: string }
+  options?: { replyToEmail?: string },
 ): Promise<SubmitTicketResult> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -111,4 +114,3 @@ export async function submitTicketImpl(
 
   return { success: true }
 }
-

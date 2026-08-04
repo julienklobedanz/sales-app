@@ -44,10 +44,16 @@ export function PortfolioUnlockGate({ slug }: { slug: string }) {
       <div className="w-full max-w-md rounded-2xl border bg-card/95 p-8 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800">
-            <AppIcon icon={SquareLock02Icon} size={22} className="text-slate-700 dark:text-slate-200" />
+            <AppIcon
+              icon={SquareLock02Icon}
+              size={22}
+              className="text-slate-700 dark:text-slate-200"
+            />
           </div>
           <div>
-            <h1 className="text-lg font-semibold tracking-tight">Geschützter Kundenlink</h1>
+            <h1 className="text-lg font-semibold tracking-tight">
+              Geschützter Kundenlink
+            </h1>
             <p className="text-sm text-muted-foreground">
               Diese Referenz ist passwortgeschützt. Bitte Passwort eingeben.
             </p>

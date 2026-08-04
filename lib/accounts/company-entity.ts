@@ -29,7 +29,9 @@ export function hasNdaDocumentUploaded(row: NdaAgreementStatusInput): boolean {
   return Boolean(row.file_storage_path?.trim())
 }
 
-export function resolveNdaDisplayStatus(rows: NdaAgreementStatusInput[]): NdaDisplayStatus {
+export function resolveNdaDisplayStatus(
+  rows: NdaAgreementStatusInput[],
+): NdaDisplayStatus {
   const documented = rows.filter(hasNdaDocumentUploaded)
   if (!documented.length) return 'none'
 

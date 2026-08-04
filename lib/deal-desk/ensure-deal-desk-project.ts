@@ -10,7 +10,7 @@ export async function ensureDealDeskProjectForDeal(
     userId: string
     dealId: string
     projectName: string
-  }
+  },
 ): Promise<{ projectId: string } | { error: string }> {
   const { organizationId, userId, dealId, projectName } = params
 
@@ -39,7 +39,9 @@ export async function ensureDealDeskProjectForDeal(
     .single()
 
   if (insertError || !created?.id) {
-    return { error: insertError?.message ?? 'Deal-Desk-Projekt konnte nicht angelegt werden.' }
+    return {
+      error: insertError?.message ?? 'Deal-Desk-Projekt konnte nicht angelegt werden.',
+    }
   }
 
   return { projectId: String(created.id) }

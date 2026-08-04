@@ -18,7 +18,10 @@ export type BenchmarkRiskCriterionDef = {
   tooltipClassLabel: string
 }
 
-export const BENCHMARK_RISK_CRITERIA: Record<BenchmarkRiskCriterionId, BenchmarkRiskCriterionDef> = {
+export const BENCHMARK_RISK_CRITERIA: Record<
+  BenchmarkRiskCriterionId,
+  BenchmarkRiskCriterionDef
+> = {
   no_contact_rule: {
     id: 'no_contact_rule',
     class: 'ko',
@@ -78,7 +81,7 @@ export const BENCHMARK_RISK_CRITERIA: Record<BenchmarkRiskCriterionId, Benchmark
 }
 
 export const BENCHMARK_RISK_CRITERION_IDS = Object.keys(
-  BENCHMARK_RISK_CRITERIA
+  BENCHMARK_RISK_CRITERIA,
 ) as BenchmarkRiskCriterionId[]
 
 export type BenchmarkRiskHit = {
@@ -91,7 +94,9 @@ export type BenchmarkRiskAnalysis = {
   hits: BenchmarkRiskHit[]
 }
 
-export function isBenchmarkRiskCriterionId(value: string): value is BenchmarkRiskCriterionId {
+export function isBenchmarkRiskCriterionId(
+  value: string,
+): value is BenchmarkRiskCriterionId {
   return value in BENCHMARK_RISK_CRITERIA
 }
 
@@ -106,7 +111,9 @@ export function computeBenchmarkRiskScore(hits: BenchmarkRiskHit[]): number {
   return Math.min(100, sum)
 }
 
-export function buildBenchmarkRiskAnalysis(hits: BenchmarkRiskHit[]): BenchmarkRiskAnalysis {
+export function buildBenchmarkRiskAnalysis(
+  hits: BenchmarkRiskHit[],
+): BenchmarkRiskAnalysis {
   const normalized = hits.filter((h) => isBenchmarkRiskCriterionId(h.id))
   return {
     hits: normalized,
@@ -141,7 +148,7 @@ export function benchmarkRiskBadgeClass(tone: BenchmarkRiskTone): string {
 
 export function topBenchmarkRiskTooltipHits(
   hits: BenchmarkRiskHit[],
-  limit = 5
+  limit = 5,
 ): BenchmarkRiskHit[] {
   const unique = new Map<BenchmarkRiskCriterionId, BenchmarkRiskHit>()
   for (const hit of hits) {
@@ -151,7 +158,7 @@ export function topBenchmarkRiskTooltipHits(
   return [...unique.values()]
     .sort(
       (a, b) =>
-        BENCHMARK_RISK_CRITERIA[b.id].weight - BENCHMARK_RISK_CRITERIA[a.id].weight
+        BENCHMARK_RISK_CRITERIA[b.id].weight - BENCHMARK_RISK_CRITERIA[a.id].weight,
     )
     .slice(0, limit)
 }

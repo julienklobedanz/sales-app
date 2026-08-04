@@ -26,7 +26,9 @@ export function AuthBrandPanel({ content }: { content: AuthBrandContent }) {
       </div>
 
       <div className="relative z-10">
-        <h2 className="max-w-md text-3xl font-medium tracking-tight text-white">{content.title}</h2>
+        <h2 className="max-w-md text-3xl font-medium tracking-tight text-white">
+          {content.title}
+        </h2>
         {content.bullets && content.bullets.length > 0 ? (
           <div className="mt-4 max-w-sm text-sm text-zinc-400">
             <p className="mb-2">Alles an einem Ort:</p>

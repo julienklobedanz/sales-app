@@ -32,7 +32,9 @@ export function ReferenceReader({ reference }: { reference: ReferenceRow }) {
           />
         )}
         <div className="min-w-0">
-          <p className="text-xs font-medium uppercase tracking-wider text-slate-500">{companyDisplay}</p>
+          <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+            {companyDisplay}
+          </p>
           <h2 className="mt-1 text-xl font-semibold leading-tight tracking-tight text-slate-900 md:text-2xl">
             {reference.title}
           </h2>
@@ -45,21 +47,28 @@ export function ReferenceReader({ reference }: { reference: ReferenceRow }) {
             <AppIcon icon={InformationCircleIcon} size={14} />
             Herausforderung
           </p>
-          <p className="text-sm leading-relaxed text-slate-800">{reference.customer_challenge || '—'}</p>
+          <p className="text-sm leading-relaxed text-slate-800">
+            {reference.customer_challenge || '—'}
+          </p>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4">
           <p className="mb-2 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
             <AppIcon icon={Sparkles} size={14} />
             Unsere Lösung
           </p>
-          <p className="text-sm leading-relaxed text-slate-800">{reference.our_solution || '—'}</p>
+          <p className="text-sm leading-relaxed text-slate-800">
+            {reference.our_solution || '—'}
+          </p>
         </div>
       </div>
 
       {tags.length > 0 ? (
         <div className="mt-4 flex flex-wrap gap-2">
           {tags.map((tag) => (
-            <span key={tag} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+            <span
+              key={tag}
+              className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600"
+            >
               {tag}
             </span>
           ))}

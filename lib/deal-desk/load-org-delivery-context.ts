@@ -8,7 +8,7 @@ import { log } from '@/lib/observability/logger'
 /** Aktuelle Compliance-/Nachweis-Dokumente der Organisation (Evidence Library). */
 export async function loadOrgComplianceDocsForDelivery(
   supabase: SupabaseClient,
-  organizationId: string
+  organizationId: string,
 ): Promise<OrgComplianceDoc[]> {
   const { data, error } = await supabase
     .from('organization_compliance_documents')

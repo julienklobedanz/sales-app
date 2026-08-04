@@ -8,7 +8,7 @@ import type { ContactPersonRow, StakeholderRole } from './account-action-types'
 
 export async function updateExternalContactBuyingCenterRoleImpl(
   id: string,
-  role: StakeholderRole
+  role: StakeholderRole,
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createServerSupabaseClient()
   const { data: row } = await supabase
@@ -38,7 +38,9 @@ export async function updateExternalContactBuyingCenterRoleImpl(
   return { success: true }
 }
 
-export async function getContactsByCompanyIdImpl(companyId: string): Promise<ContactPersonRow[]> {
+export async function getContactsByCompanyIdImpl(
+  companyId: string,
+): Promise<ContactPersonRow[]> {
   const supabase = await createServerSupabaseClient()
   const { data, error } = await supabase
     .from('contact_persons')
@@ -55,7 +57,7 @@ export async function getContactsByCompanyIdImpl(companyId: string): Promise<Con
 /** Ein interner Kontakt pro Account als Ansprechpartner für Koordination der Referenzfreigabe (Kunde). */
 export async function setCompanyInternalReferenceApprovalContactImpl(
   companyId: string,
-  contactPersonId: string | null
+  contactPersonId: string | null,
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -68,9 +70,11 @@ export async function setCompanyInternalReferenceApprovalContactImpl(
     .select('organization_id, system_role, function_role')
     .eq('id', user.id)
     .single()
-  if (!profile?.organization_id) return { success: false, error: 'Onboarding unvollständig.' }
+  if (!profile?.organization_id)
+    return { success: false, error: 'Onboarding unvollständig.' }
   const { systemRole, functionRole } = parseProfileRoles(profile)
-  if (profileIsSalesRestricted(systemRole, functionRole)) return { success: false, error: 'Keine Berechtigung.' }
+  if (profileIsSalesRestricted(systemRole, functionRole))
+    return { success: false, error: 'Keine Berechtigung.' }
 
   const { data: company, error: cErr } = await supabase
     .from('companies')
@@ -78,7 +82,9 @@ export async function setCompanyInternalReferenceApprovalContactImpl(
     .eq('id', companyId)
     .single()
   if (cErr || !company) return { success: false, error: 'Account nicht gefunden.' }
-  if ((company as { organization_id: string }).organization_id !== profile.organization_id) {
+  if (
+    (company as { organization_id: string }).organization_id !== profile.organization_id
+  ) {
     return { success: false, error: 'Keine Berechtigung.' }
   }
 
@@ -126,7 +132,7 @@ export async function createContactPersonImpl(
     role?: string | null
     position?: string | null
     last_interaction_at?: string | null
-  }
+  },
 ): Promise<{ success: boolean; contact?: ContactPersonRow; error?: string }> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -188,7 +194,7 @@ export async function updateContactPersonImpl(
     position?: string | null
     company_id?: string | null
     last_interaction_at?: string | null
-  }
+  },
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createServerSupabaseClient()
   const { data: row } = await supabase
@@ -197,22 +203,32 @@ export async function updateContactPersonImpl(
     .eq('id', id)
     .single()
   const update: Record<string, unknown> = { updated_at: new Date().toISOString() }
-  if (payload.first_name !== undefined) update.first_name = payload.first_name?.trim() || null
-  if (payload.last_name !== undefined) update.last_name = payload.last_name?.trim() || null
-  if (payload.email !== undefined) update.email = payload.email?.trim().toLowerCase() || null
+  if (payload.first_name !== undefined)
+    update.first_name = payload.first_name?.trim() || null
+  if (payload.last_name !== undefined)
+    update.last_name = payload.last_name?.trim() || null
+  if (payload.email !== undefined)
+    update.email = payload.email?.trim().toLowerCase() || null
   if (payload.phone !== undefined) update.phone = payload.phone?.trim() || null
-  if (payload.linkedin_url !== undefined) update.linkedin_url = payload.linkedin_url?.trim() || null
+  if (payload.linkedin_url !== undefined)
+    update.linkedin_url = payload.linkedin_url?.trim() || null
   if (payload.role !== undefined) update.role = payload.role?.trim() || null
   if (payload.position !== undefined) update.position = payload.position?.trim() || null
   if (payload.company_id !== undefined) update.company_id = payload.company_id || null
-  if (payload.last_interaction_at !== undefined) update.last_interaction_at = payload.last_interaction_at || null
-  const { error } = await supabase.from('contact_persons').update(asTableUpdate<'contact_persons'>(update)).eq('id', id)
+  if (payload.last_interaction_at !== undefined)
+    update.last_interaction_at = payload.last_interaction_at || null
+  const { error } = await supabase
+    .from('contact_persons')
+    .update(asTableUpdate<'contact_persons'>(update))
+    .eq('id', id)
   if (error) return { success: false, error: error.message }
   if (row?.company_id) revalidatePath(ROUTES.accountsDetail(row.company_id))
   return { success: true }
 }
 
-export async function deleteContactPersonImpl(id: string): Promise<{ success: boolean; error?: string }> {
+export async function deleteContactPersonImpl(
+  id: string,
+): Promise<{ success: boolean; error?: string }> {
   const supabase = await createServerSupabaseClient()
   const { data: row } = await supabase
     .from('contact_persons')

@@ -12,9 +12,7 @@ import { ROUTES } from '@/lib/routes'
 export type SignInResult = { error?: string; redirectTo?: string }
 export type AltSignInResult = { error?: string; success?: string; redirectUrl?: string }
 
-export async function signInWithPassword(
-  formData: FormData
-): Promise<SignInResult> {
+export async function signInWithPassword(formData: FormData): Promise<SignInResult> {
   const email = formData.get('email')?.toString()?.trim()
   const password = formData.get('password')?.toString()
 
@@ -33,7 +31,9 @@ export async function signInWithPassword(
 
   const inviteToken = formData.get('invite_token')?.toString()?.trim()
   if (inviteToken) {
-    return { redirectTo: `${ROUTES.onboarding}?invite=${encodeURIComponent(inviteToken)}` }
+    return {
+      redirectTo: `${ROUTES.onboarding}?invite=${encodeURIComponent(inviteToken)}`,
+    }
   }
   return { redirectTo: ROUTES.home }
 }
@@ -108,7 +108,8 @@ export async function startSsoSignIn(formData: FormData): Promise<AltSignInResul
   const inviteToken = formData.get('invite_token')?.toString()?.trim() || null
 
   const domain =
-    normalizeSsoDomain(domainInput) ?? (emailFallback ? normalizeSsoDomain(emailFallback) : null)
+    normalizeSsoDomain(domainInput) ??
+    (emailFallback ? normalizeSsoDomain(emailFallback) : null)
 
   if (!domain) {
     return { error: 'Bitte eine Firmen-Domain oder geschäftliche E-Mail eingeben.' }
@@ -137,7 +138,10 @@ export async function startSsoSignIn(formData: FormData): Promise<AltSignInResul
   }
 
   if (!data?.url) {
-    return { error: 'SSO konnte nicht gestartet werden. Bitte Domain prüfen oder Support kontaktieren.' }
+    return {
+      error:
+        'SSO konnte nicht gestartet werden. Bitte Domain prüfen oder Support kontaktieren.',
+    }
   }
 
   return { redirectUrl: data.url }

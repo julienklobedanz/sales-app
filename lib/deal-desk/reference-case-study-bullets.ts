@@ -59,7 +59,9 @@ export function buildCustomerChallengeBullets(analysis: DealDeskMockAnalysis): s
   }
 
   const businessReqs = analysis.draftRows
-    .filter((r) => r.requirement?.trim() && !LEGAL_REQUIREMENT_PATTERN.test(r.requirement))
+    .filter(
+      (r) => r.requirement?.trim() && !LEGAL_REQUIREMENT_PATTERN.test(r.requirement),
+    )
     .slice(0, MAX_CHALLENGE_BULLETS)
     .map((r) => firstSentence(r.requirement, 180))
 
@@ -73,7 +75,7 @@ export function buildCustomerChallengeBullets(analysis: DealDeskMockAnalysis): s
 
 export function buildCaseStudySolutionBullets(
   analysis: DealDeskMockAnalysis,
-  fallback: string
+  fallback: string,
 ): string[] {
   const answers = analysis.draftRows
     .filter((r) => r.answer?.trim())

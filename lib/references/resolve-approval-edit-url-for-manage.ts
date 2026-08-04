@@ -2,9 +2,7 @@ import { createHash, randomUUID } from 'crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { createServiceRoleSupabaseClient } from '@/lib/supabase/service-role'
-import {
-  effectiveCustomerApprovalStatus,
-} from '@/lib/references/effective-customer-approval'
+import { effectiveCustomerApprovalStatus } from '@/lib/references/effective-customer-approval'
 
 function hashManageToken(plain: string): string {
   return createHash('sha256').update(plain, 'utf8').digest('hex')
@@ -14,7 +12,7 @@ async function verifyManageTokenForReference(
   admin: SupabaseClient,
   slug: string,
   manageToken: string,
-  referenceId: string
+  referenceId: string,
 ): Promise<boolean> {
   const { data: row } = await admin
     .from('shared_portfolios')
@@ -27,7 +25,8 @@ async function verifyManageTokenForReference(
   const referenceIds = (row as { reference_ids?: string[] }).reference_ids ?? []
   if (!referenceIds.includes(referenceId)) return false
 
-  const storedHash = (row as { customer_manage_token_hash?: string | null }).customer_manage_token_hash
+  const storedHash = (row as { customer_manage_token_hash?: string | null })
+    .customer_manage_token_hash
   if (!storedHash) return false
 
   return storedHash === hashManageToken(manageToken.trim())
@@ -36,7 +35,7 @@ async function verifyManageTokenForReference(
 async function resolveViaManageRpc(
   slug: string,
   manageToken: string,
-  referenceId: string
+  referenceId: string,
 ): Promise<string | null> {
   const supabase = await createServerSupabaseClient()
   const { data, error } = await supabase.rpc('resolve_manage_approval_edit', {
@@ -46,7 +45,8 @@ async function resolveViaManageRpc(
   })
   if (error) return null
   const payload = data as { found?: boolean; approval_token?: string } | null
-  const token = typeof payload?.approval_token === 'string' ? payload.approval_token.trim() : ''
+  const token =
+    typeof payload?.approval_token === 'string' ? payload.approval_token.trim() : ''
   if (!payload?.found || !token) return null
   return `/approval/${token}`
 }
@@ -58,7 +58,7 @@ async function resolveViaManageRpc(
 export async function resolveApprovalEditUrlForManageView(
   slug: string,
   manageToken: string,
-  referenceId: string
+  referenceId: string,
 ): Promise<string | null> {
   const tokenTrim = manageToken.trim()
   const refId = referenceId.trim()
@@ -95,7 +95,10 @@ export async function resolveApprovalEditUrlForManageView(
   if (existing) return `/approval/${existing}`
 
   // Gültiger Manage-Token + Referenz im Portfolio → Token wiederherstellen
-  const effective = effectiveCustomerApprovalStatus(ref.customer_approval_status, ref.status)
+  const effective = effectiveCustomerApprovalStatus(
+    ref.customer_approval_status,
+    ref.status,
+  )
   const newToken = randomUUID()
   const patch: {
     approval_token: string
@@ -109,7 +112,10 @@ export async function resolveApprovalEditUrlForManageView(
     patch.customer_approval_status = 'pending'
   }
 
-  const { error: updateError } = await admin.from('references').update(patch).eq('id', refId)
+  const { error: updateError } = await admin
+    .from('references')
+    .update(patch)
+    .eq('id', refId)
   if (updateError) return null
 
   return `/approval/${newToken}`

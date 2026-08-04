@@ -49,8 +49,8 @@ export function BulkDeleteReferencesDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Referenzen löschen</AlertDialogTitle>
           <AlertDialogDescription>
-            Möchtest du die {count} ausgewählten Referenz{count !== 1 ? 'en' : ''} wirklich
-            dauerhaft löschen?
+            Möchtest du die {count} ausgewählten Referenz{count !== 1 ? 'en' : ''}{' '}
+            wirklich dauerhaft löschen?
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

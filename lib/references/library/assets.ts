@@ -14,7 +14,9 @@ export type ReferenceAssetRow = {
   created_at: string
 }
 
-export async function getReferenceAssetsImpl(referenceId: string): Promise<ReferenceAssetRow[]> {
+export async function getReferenceAssetsImpl(
+  referenceId: string,
+): Promise<ReferenceAssetRow[]> {
   const supabase = await createServerSupabaseClient()
   const { data, error } = await supabase
     .from('reference_assets')
@@ -35,12 +37,14 @@ export async function getReferenceAssetsImpl(referenceId: string): Promise<Refer
 
 export async function updateReferenceAssetCategoryImpl(
   assetId: string,
-  category: 'sales' | 'contract' | 'other'
+  category: 'sales' | 'contract' | 'other',
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createServerSupabaseClient()
-  const { error } = await supabase.from('reference_assets').update({ category }).eq('id', assetId)
+  const { error } = await supabase
+    .from('reference_assets')
+    .update({ category })
+    .eq('id', assetId)
   if (error) return { success: false, error: error.message }
   revalidatePath(ROUTES.home)
   return { success: true }
 }
-

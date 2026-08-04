@@ -2,7 +2,9 @@ import { formatIndustryDisplay } from '@/lib/constants/industries'
 import { formatReferenceVolume } from '@/lib/format'
 
 /** MM/YYYY aus ISO-Datum/Timestamp (z. B. 03/2025). */
-export function formatMatchReferenceMetaMonthYear(value: string | null | undefined): string {
+export function formatMatchReferenceMetaMonthYear(
+  value: string | null | undefined,
+): string {
   if (value == null || String(value).trim() === '') return ''
   const raw = String(value).trim()
   const dateOnly = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw)
@@ -33,7 +35,7 @@ export function formatMatchReferenceMetaLine(fields: MatchReferenceMetaFields): 
   const volume = fields.volumeEur ? formatReferenceVolume(fields.volumeEur) || null : null
   const when =
     formatMatchReferenceMetaMonthYear(
-      fields.projectEnd || fields.projectStart || fields.createdAt
+      fields.projectEnd || fields.projectStart || fields.createdAt,
     ) || null
   return [industry, volume, when].filter(Boolean).join(' · ')
 }

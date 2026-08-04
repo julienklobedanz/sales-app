@@ -25,45 +25,45 @@ describe('isCustomerApprovalReminderDue', () => {
       isCustomerApprovalReminderDue({
         lastSentAt: recent,
         reminderSentAt: null,
-      })
+      }),
     ).toBe(false)
   })
 
   it('returns true when last sent is older than 14 days and no reminder yet', () => {
     const old = new Date(
-      now - (CUSTOMER_APPROVAL_REMINDER_AFTER_DAYS + 1) * 24 * 60 * 60 * 1000
+      now - (CUSTOMER_APPROVAL_REMINDER_AFTER_DAYS + 1) * 24 * 60 * 60 * 1000,
     ).toISOString()
     expect(
       isCustomerApprovalReminderDue({
         lastSentAt: old,
         reminderSentAt: null,
-      })
+      }),
     ).toBe(true)
   })
 
   it('returns false when reminder was already sent after last customer mail', () => {
     const old = new Date(
-      now - (CUSTOMER_APPROVAL_REMINDER_AFTER_DAYS + 2) * 24 * 60 * 60 * 1000
+      now - (CUSTOMER_APPROVAL_REMINDER_AFTER_DAYS + 2) * 24 * 60 * 60 * 1000,
     ).toISOString()
     const reminder = new Date(now - 1 * 24 * 60 * 60 * 1000).toISOString()
     expect(
       isCustomerApprovalReminderDue({
         lastSentAt: old,
         reminderSentAt: reminder,
-      })
+      }),
     ).toBe(false)
   })
 
   it('uses approval_requested_at as fallback when last_sent is missing', () => {
     const old = new Date(
-      now - (CUSTOMER_APPROVAL_REMINDER_AFTER_DAYS + 1) * 24 * 60 * 60 * 1000
+      now - (CUSTOMER_APPROVAL_REMINDER_AFTER_DAYS + 1) * 24 * 60 * 60 * 1000,
     ).toISOString()
     expect(
       isCustomerApprovalReminderDue({
         lastSentAt: null,
         fallbackSentAt: old,
         reminderSentAt: null,
-      })
+      }),
     ).toBe(true)
   })
 })

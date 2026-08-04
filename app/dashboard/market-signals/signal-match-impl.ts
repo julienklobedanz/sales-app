@@ -12,7 +12,10 @@ import { log } from '@/lib/observability/logger'
 import { isSystemAdmin } from '@/lib/roles/legacy-mapping'
 import { parseProfileRoles } from '@/lib/roles/profile-roles'
 import { ROUTES } from '@/lib/routes'
-import type { DecisionMakerCandidate, SignalReferenceMatchPayload } from './market-signal-action-types'
+import type {
+  DecisionMakerCandidate,
+  SignalReferenceMatchPayload,
+} from './market-signal-action-types'
 
 type ProviderRawCandidate = {
   fullName: string
@@ -35,8 +38,10 @@ type CandidateProviderAdapter = {
 function inferRoleBucket(title: string): DecisionMakerCandidate['roleBucket'] {
   const t = title.toLowerCase()
   if (/\bcio\b|chief information officer/.test(t)) return 'cio'
-  if (/head of it|it director|leiter it|it-leiter|vp it|director it/.test(t)) return 'it_lead'
-  if (/infrastructure|cloud platform|platform engineering|head of infrastructure/.test(t)) return 'infrastructure'
+  if (/head of it|it director|leiter it|it-leiter|vp it|director it/.test(t))
+    return 'it_lead'
+  if (/infrastructure|cloud platform|platform engineering|head of infrastructure/.test(t))
+    return 'infrastructure'
   if (/ciso|security|it security|cybersecurity/.test(t)) return 'security'
   if (/data platform|head of data|data engineering|analytics/.test(t)) return 'data'
   return 'other'
@@ -46,7 +51,8 @@ function roleMatchScore(title: string): number {
   const bucket = inferRoleBucket(title)
   if (bucket === 'cio') return 1
   if (bucket === 'it_lead') return 0.9
-  if (bucket === 'infrastructure' || bucket === 'security' || bucket === 'data') return 0.78
+  if (bucket === 'infrastructure' || bucket === 'security' || bucket === 'data')
+    return 0.78
   return 0.45
 }
 
@@ -72,11 +78,17 @@ function freshnessScore(lastSeenAt: string | null | undefined): number {
 function mockMutualConnectionBridges(
   targetFullName: string,
   count: number | null | undefined,
-  seed: number
+  seed: number,
 ): string[] {
   const n = typeof count === 'number' && count > 0 ? Math.min(count, 4) : 0
   if (!n) return []
-  const colleagues = ['Markus Weber', 'Anna Schmidt', 'Julia Braun', 'Tom Schneider', 'Lea Hoffmann']
+  const colleagues = [
+    'Markus Weber',
+    'Anna Schmidt',
+    'Julia Braun',
+    'Tom Schneider',
+    'Lea Hoffmann',
+  ]
   return Array.from({ length: n }, (_, i) => {
     const c = colleagues[(seed + i) % colleagues.length]
     return `Dein Kollege ${c} kennt ${targetFullName} – starker Einstieg für ein Warm-Intro.`
@@ -97,8 +109,17 @@ function buildConfidenceReason(input: {
         ? 'guter Rollen-Match'
         : 'teilweiser Rollen-Match'
   const seniorityHint =
-    input.seniority >= 0.9 ? 'hohe Seniority' : input.seniority >= 0.75 ? 'mittlere-hohe Seniority' : 'mittlere Seniority'
-  const freshnessHint = input.freshness >= 0.9 ? 'aktuelle Daten' : input.freshness >= 0.7 ? 'relativ aktuelle Daten' : 'ältere Daten'
+    input.seniority >= 0.9
+      ? 'hohe Seniority'
+      : input.seniority >= 0.75
+        ? 'mittlere-hohe Seniority'
+        : 'mittlere Seniority'
+  const freshnessHint =
+    input.freshness >= 0.9
+      ? 'aktuelle Daten'
+      : input.freshness >= 0.7
+        ? 'relativ aktuelle Daten'
+        : 'ältere Daten'
   return `${roleHint}, ${seniorityHint}, ${freshnessHint} (${input.sourceLabel})`
 }
 
@@ -154,7 +175,7 @@ const linkedInAdapter: CandidateProviderAdapter = {
         fullName: 'Sarah Klein',
         title: `${role}, ${companyName}`,
         profileUrl: `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(
-          `${role} ${companyName}`
+          `${role} ${companyName}`,
         )}`,
         lastSeenAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
         mutualConnections: 2,
@@ -163,12 +184,19 @@ const linkedInAdapter: CandidateProviderAdapter = {
   },
 }
 
-const CANDIDATE_ADAPTERS: CandidateProviderAdapter[] = [theOrgAdapter, cioDeAdapter, linkedInAdapter]
+const CANDIDATE_ADAPTERS: CandidateProviderAdapter[] = [
+  theOrgAdapter,
+  cioDeAdapter,
+  linkedInAdapter,
+]
 
 export async function getDecisionMakerCandidatesImpl(args: {
   companyId: string
   signalKind: 'exec' | 'news'
-}): Promise<{ success: true; candidates: DecisionMakerCandidate[] } | { success: false; error: string }> {
+}): Promise<
+  | { success: true; candidates: DecisionMakerCandidate[] }
+  | { success: false; error: string }
+> {
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
@@ -204,7 +232,7 @@ export async function getDecisionMakerCandidatesImpl(args: {
         signalKind: args.signalKind,
       })
       return rows.map((row, idx) => ({ row, adapter, idx }))
-    })
+    }),
   )
 
   const ranked = allRaw
@@ -235,7 +263,11 @@ export async function getDecisionMakerCandidatesImpl(args: {
         profileUrl: row.profileUrl ?? null,
         lastSeenAt: row.lastSeenAt ?? null,
         mutualConnections: row.mutualConnections ?? null,
-        mutualConnectionBridges: mockMutualConnectionBridges(row.fullName, row.mutualConnections, idx),
+        mutualConnectionBridges: mockMutualConnectionBridges(
+          row.fullName,
+          row.mutualConnections,
+          idx,
+        ),
       } satisfies DecisionMakerCandidate
     })
     .sort((a, b) => b.confidence - a.confidence)
@@ -245,8 +277,8 @@ export async function getDecisionMakerCandidatesImpl(args: {
       arr.findIndex(
         (x) =>
           x.fullName.toLowerCase().trim() === candidate.fullName.toLowerCase().trim() &&
-          x.title.toLowerCase().trim() === candidate.title.toLowerCase().trim()
-      ) === idx
+          x.title.toLowerCase().trim() === candidate.title.toLowerCase().trim(),
+      ) === idx,
   )
 
   return { success: true, candidates: deduped.slice(0, 3) }
@@ -305,9 +337,7 @@ export async function requestReferenceApprovalForSignalImpl(args: {
 
     // Grenze: nur User-IDs der eigenen Org; E-Mails per auth.admin.getUserById (kein listUsers).
     const emailByUserId = await resolveAuthEmailsByUserIds(ids)
-    const emails = ids
-      .map((id) => emailByUserId.get(id) ?? '')
-      .filter(Boolean)
+    const emails = ids.map((id) => emailByUserId.get(id) ?? '').filter(Boolean)
     if (!emails.length) return { success: true }
 
     const resend = new Resend(resendKey)
@@ -338,11 +368,14 @@ export async function requestReferenceApprovalForSignalImpl(args: {
  * Dedupliziert gleiche Queries; begrenzt Parallelität.
  */
 export async function matchReferencesForSignalsImpl(
-  signals: SignalReferenceMatchPayload[]
+  signals: SignalReferenceMatchPayload[],
 ): Promise<
   | {
       success: true
-      byKey: Record<string, import('@/lib/market-signals/signal-reference-match').SignalMatchHit[]>
+      byKey: Record<
+        string,
+        import('@/lib/market-signals/signal-reference-match').SignalMatchHit[]
+      >
     }
   | { success: false; error: string }
 > {
@@ -376,7 +409,7 @@ export async function matchReferencesForSignalsImpl(
           rerank: false,
         })
         hitsByQuery.set(query, result)
-      })
+      }),
     )
   }
 
@@ -392,7 +425,10 @@ export async function matchReferencesForSignalsImpl(
       continue
     }
     let hits = result.matches
-      .filter((m) => !item.excludeCompanyId || !m.companyId || m.companyId !== item.excludeCompanyId)
+      .filter(
+        (m) =>
+          !item.excludeCompanyId || !m.companyId || m.companyId !== item.excludeCompanyId,
+      )
       .map(toSignalMatchHit)
     if (hits.length === 0) {
       hits = result.matches.map(toSignalMatchHit)

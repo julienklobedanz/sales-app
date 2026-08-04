@@ -22,22 +22,22 @@ Kurz-Dokument für **Design-Partner / kontrollierten Piloten**. Aus dem aktuelle
 
 ## 3. Umgebungsvariablen (Minimum)
 
-| Variable | Zweck |
-|----------|--------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase API |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Client (öffentlich) |
-| `SUPABASE_SERVICE_ROLE_KEY` | Server (z. B. Registrierung/E-Mail-Flows – nur Server) |
-| `RESEND_API_KEY` | Transaktionsmails (Freigaben, Einladungen) |
-| `RESEND_FROM` | Verifizierte Absender-Domain für Pilot empfohlen |
-| `NEXT_PUBLIC_APP_URL` | Basis-URL der App |
+| Variable                        | Zweck                                                  |
+| ------------------------------- | ------------------------------------------------------ |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Supabase API                                           |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Client (öffentlich)                                    |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Server (z. B. Registrierung/E-Mail-Flows – nur Server) |
+| `RESEND_API_KEY`                | Transaktionsmails (Freigaben, Einladungen)             |
+| `RESEND_FROM`                   | Verifizierte Absender-Domain für Pilot empfohlen       |
+| `NEXT_PUBLIC_APP_URL`           | Basis-URL der App                                      |
 
 **Optional / feature-abhängig:**
 
-| Variable | Zweck |
-|----------|--------|
-| `OPENAI_API_KEY` | Magic Import (PDF/PPTX), KI-Zusammenfassungen, Marktsignal-„Strategie“-API |
-| `BRANDFETCH_API_KEY` / `BRANDFETCH_CLIENT_ID` | Account-/Logo-Anreicherung |
-| `REFERENCE_MANAGER_EMAIL` | Routing „Referenzbedarf melden“ |
+| Variable                                      | Zweck                                                                      |
+| --------------------------------------------- | -------------------------------------------------------------------------- |
+| `OPENAI_API_KEY`                              | Magic Import (PDF/PPTX), KI-Zusammenfassungen, Marktsignal-„Strategie“-API |
+| `BRANDFETCH_API_KEY` / `BRANDFETCH_CLIENT_ID` | Account-/Logo-Anreicherung                                                 |
+| `REFERENCE_MANAGER_EMAIL`                     | Routing „Referenzbedarf melden“                                            |
 
 Stripe: in Settings vorhanden – Checkout/Portal nur nutzen, wenn `STRIPE_*` in eurer Implementierung gesetzt und getestet sind (siehe `app/dashboard/settings/stripe-actions.ts`).
 
@@ -45,17 +45,17 @@ Stripe: in Settings vorhanden – Checkout/Portal nur nutzen, wenn `STRIPE_*` in
 
 ## 4. Kern-Routen zum Abnahmetest
 
-| Bereich | Route (`lib/routes.ts`) |
-|---------|-------------------------|
-| Dashboard | `/dashboard` |
-| Referenzen | `/dashboard/evidence`, `/dashboard/evidence/new`, `/dashboard/evidence/[id]` |
-| Accounts | `/dashboard/accounts`, `/dashboard/accounts/[id]` |
-| Deals | `/dashboard/deals`, `/dashboard/deals/[id]`, `/dashboard/deals/new` |
-| Match | `/dashboard/match` |
-| Referenzbedarf | `/dashboard/request` |
-| Marktsignale | `/dashboard/market-signals`, `/dashboard/market-signals/manage` |
-| Einstellungen | `/dashboard/settings` |
-| Öffentlich | `/p/[slug]` (Share), `/approval/[token]` (Freigabe aus Mail) |
+| Bereich        | Route (`lib/routes.ts`)                                                      |
+| -------------- | ---------------------------------------------------------------------------- |
+| Dashboard      | `/dashboard`                                                                 |
+| Referenzen     | `/dashboard/evidence`, `/dashboard/evidence/new`, `/dashboard/evidence/[id]` |
+| Accounts       | `/dashboard/accounts`, `/dashboard/accounts/[id]`                            |
+| Deals          | `/dashboard/deals`, `/dashboard/deals/[id]`, `/dashboard/deals/new`          |
+| Match          | `/dashboard/match`                                                           |
+| Referenzbedarf | `/dashboard/request`                                                         |
+| Marktsignale   | `/dashboard/market-signals`, `/dashboard/market-signals/manage`              |
+| Einstellungen  | `/dashboard/settings`                                                        |
+| Öffentlich     | `/p/[slug]` (Share), `/approval/[token]` (Freigabe aus Mail)                 |
 
 ---
 
@@ -86,16 +86,16 @@ Stripe: in Settings vorhanden – Checkout/Portal nur nutzen, wenn `STRIPE_*` in
 
 ## 8. Was ist noch „Demo“ / heuristisch? (Erwartung managen)
 
-| Bereich | Stand im Code |
-|---------|----------------|
-| **Marktsignale – Stakeholder** | `app/dashboard/market-signals/actions.ts`: feste **Adapter** (The Org / CIO.de / LinkedIn) liefern **synthetische** Kandidaten; **gemeinsame Kontakte** inkl. Brückentexte sind **Mock**. |
-| **Marktsignale – ICP-Score** | Heuristik im Client, keine konfigurierbare ICP-DB. |
-| **Marktsignale – Strategietext** | `/api/market-signals/intro-strategy`: Regeln + optional OpenAI. |
-| **CRM (Sales)** | Referenzdetail: „Salesforce Deal öffnen (Demo)“ → externer Link, **keine** Org-Anbindung. |
-| **Login „Salesforce“** | Platzhalter-Toast (kein OAuth). |
-| **Konzept-Route** | `/dashboard/concepts/inbox-references` – laut `ROUTES` Demo/Inbox-Konzept. |
+| Bereich                          | Stand im Code                                                                                                                                                                             |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Marktsignale – Stakeholder**   | `app/dashboard/market-signals/actions.ts`: feste **Adapter** (The Org / CIO.de / LinkedIn) liefern **synthetische** Kandidaten; **gemeinsame Kontakte** inkl. Brückentexte sind **Mock**. |
+| **Marktsignale – ICP-Score**     | Heuristik im Client, keine konfigurierbare ICP-DB.                                                                                                                                        |
+| **Marktsignale – Strategietext** | `/api/market-signals/intro-strategy`: Regeln + optional OpenAI.                                                                                                                           |
+| **CRM (Sales)**                  | Referenzdetail: „Salesforce Deal öffnen (Demo)“ → externer Link, **keine** Org-Anbindung.                                                                                                 |
+| **Login „Salesforce“**           | Platzhalter-Toast (kein OAuth).                                                                                                                                                           |
+| **Konzept-Route**                | `/dashboard/concepts/inbox-references` – laut `ROUTES` Demo/Inbox-Konzept.                                                                                                                |
 
-Pilot-Text für Kunden: *„Marktsignale & CRM-Deep-Integration sind Beta / folgen.“*
+Pilot-Text für Kunden: _„Marktsignale & CRM-Deep-Integration sind Beta / folgen.“_
 
 ---
 
@@ -123,4 +123,4 @@ Pilot-Text für Kunden: *„Marktsignale & CRM-Deep-Integration sind Beta / folg
 
 ---
 
-*Letzte Ausrichtung an Codebasis: App Router, `ROUTES` in `lib/routes.ts`, Marktsignale in `app/dashboard/market-signals/`.*
+_Letzte Ausrichtung an Codebasis: App Router, `ROUTES` in `lib/routes.ts`, Marktsignale in `app/dashboard/market-signals/`._

@@ -56,9 +56,8 @@ export function buildAusschreibungNavItems(input: {
       id: 'drafts',
       href: '#drafts',
       label: COPY.deals.cockpit.ausschreibungNavDrafts,
-      count:
-        input.draftsTotal > 0 ? `${input.draftsCovered}/${input.draftsTotal}` : null,
-    }
+      count: input.draftsTotal > 0 ? `${input.draftsCovered}/${input.draftsTotal}` : null,
+    },
   )
 
   return items

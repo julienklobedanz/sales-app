@@ -9,18 +9,22 @@ export async function resolveChampionPersonTitle(
   supabase: SupabaseClient,
   orgId: string,
   personName: string,
-  companyName?: string | null
+  companyName?: string | null,
 ): Promise<string | null> {
   const key = normalizeKey(personName)
   if (!key) return null
-  const company = String(companyName ?? '').trim().toLowerCase()
+  const company = String(companyName ?? '')
+    .trim()
+    .toLowerCase()
 
   const { data: companies } = await supabase
     .from('companies')
     .select('id, name')
     .eq('organization_id', orgId)
     .limit(2000)
-  const companyIds = (companies ?? []).map((c) => String((c as { id?: string }).id ?? '')).filter(Boolean)
+  const companyIds = (companies ?? [])
+    .map((c) => String((c as { id?: string }).id ?? ''))
+    .filter(Boolean)
   if (companyIds.length === 0) return null
 
   const nameToCompanyId = new Map<string, string>()
@@ -54,18 +58,24 @@ export async function resolveChampionPersonTitle(
 
   const stakeholderMatches = (stakeholders ?? []).filter((row) => {
     const nameKey = normalizeKey(String((row as { name?: string }).name ?? ''))
-    return nameKey === key && String((row as { title?: string | null }).title ?? '').trim()
+    return (
+      nameKey === key && String((row as { title?: string | null }).title ?? '').trim()
+    )
   }) as Array<{ name: string; title: string | null; company_id: string | null }>
 
   if (preferredCompanyId) {
-    const atCompany = stakeholderMatches.find((row) => row.company_id === preferredCompanyId)
+    const atCompany = stakeholderMatches.find(
+      (row) => row.company_id === preferredCompanyId,
+    )
     if (atCompany?.title?.trim()) return atCompany.title.trim()
   }
   if (stakeholderMatches[0]?.title?.trim()) return stakeholderMatches[0].title.trim()
 
   const { data: events } = await supabase
     .from('market_signal_executive_events')
-    .select('person_name, person_title_after, person_title_before, company_id, detected_at')
+    .select(
+      'person_name, person_title_after, person_title_before, company_id, detected_at',
+    )
     .in('company_id', companyIds)
     .ilike('person_name', personName.trim())
     .order('detected_at', { ascending: false })
@@ -92,7 +102,7 @@ export async function resolveChampionPersonTitle(
 
 export function formatExecutiveMetaLine(
   title: string | null | undefined,
-  companyName: string | null | undefined
+  companyName: string | null | undefined,
 ): string {
   const t = String(title ?? '').trim()
   const c = String(companyName ?? '').trim()

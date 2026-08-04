@@ -16,7 +16,8 @@ function isValidEmail(email: string): boolean {
 
 function wantsApprovalUpdateEmails(notificationSettings: unknown): boolean {
   if (!notificationSettings || typeof notificationSettings !== 'object') return true
-  const flag = (notificationSettings as { email_on_approval_update?: unknown }).email_on_approval_update
+  const flag = (notificationSettings as { email_on_approval_update?: unknown })
+    .email_on_approval_update
   return flag !== false
 }
 
@@ -24,7 +25,7 @@ async function resolveCoordinatorEmail(
   admin: SupabaseClient,
   companyId: string,
   organizationId: string | null | undefined,
-  coordinatorEmail?: string | null
+  coordinatorEmail?: string | null,
 ): Promise<string | null> {
   const direct = String(coordinatorEmail ?? '').trim()
   if (isValidEmail(direct)) return direct
@@ -38,8 +39,9 @@ async function resolveCoordinatorEmail(
   }
   const { data: companyRow } = await companyQuery.maybeSingle()
 
-  const contactId = (companyRow as { internal_reference_approval_contact_id?: string | null } | null)
-    ?.internal_reference_approval_contact_id
+  const contactId = (
+    companyRow as { internal_reference_approval_contact_id?: string | null } | null
+  )?.internal_reference_approval_contact_id
   if (!contactId) return null
 
   const { data: person } = await admin
@@ -56,7 +58,7 @@ async function resolveCoordinatorEmail(
 async function resolveRequesterEmail(
   admin: SupabaseClient,
   requesterId: string | null,
-  organizationId?: string | null
+  organizationId?: string | null,
 ): Promise<string | null> {
   const id = String(requesterId ?? '').trim()
   if (!id) return null
@@ -72,7 +74,11 @@ async function resolveRequesterEmail(
 
   const { systemRole, functionRole } = parseProfileRoles(profile)
   if (!profileCanManageOrgData(systemRole, functionRole)) return null
-  if (!wantsApprovalUpdateEmails((profile as { notification_settings?: unknown } | null)?.notification_settings)) {
+  if (
+    !wantsApprovalUpdateEmails(
+      (profile as { notification_settings?: unknown } | null)?.notification_settings,
+    )
+  ) {
     return null
   }
 
@@ -96,18 +102,22 @@ export async function resolveApprovalWorkflowNotifyEmails(
     organizationId?: string | null
     requesterId: string | null
     coordinatorEmail?: string | null
-  }
+  },
 ): Promise<string[]> {
   const emails: string[] = []
 
-  const requesterEmail = await resolveRequesterEmail(admin, args.requesterId, args.organizationId)
+  const requesterEmail = await resolveRequesterEmail(
+    admin,
+    args.requesterId,
+    args.organizationId,
+  )
   if (requesterEmail) emails.push(requesterEmail)
 
   const coordinatorEmail = await resolveCoordinatorEmail(
     admin,
     args.companyId,
     args.organizationId,
-    args.coordinatorEmail
+    args.coordinatorEmail,
   )
   if (coordinatorEmail) emails.push(coordinatorEmail)
 

@@ -65,11 +65,7 @@ export function ReferenceForm({
         >
           Abbrechen
         </Button>
-        <Button
-          type="submit"
-          form={vm.formId}
-          disabled={vm.submitting}
-        >
+        <Button type="submit" form={vm.formId} disabled={vm.submitting}>
           <AppIcon icon={CirclePlus} size={16} className="mr-2" />
           Speichern
         </Button>
@@ -92,11 +88,21 @@ export function ReferenceForm({
         <>
           <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-0">
             {vm.isEditMode ? (
-              <form id={vm.formId} noValidate onSubmit={vm.handleEditSubmit} className={formInnerClass}>
+              <form
+                id={vm.formId}
+                noValidate
+                onSubmit={vm.handleEditSubmit}
+                className={formInnerClass}
+              >
                 <ReferenceFormContent {...contentProps} />
               </form>
             ) : (
-              <form id={vm.formId} noValidate onSubmit={vm.handleCreateSubmit} className={formInnerClass}>
+              <form
+                id={vm.formId}
+                noValidate
+                onSubmit={vm.handleCreateSubmit}
+                className={formInnerClass}
+              >
                 <ReferenceFormContent {...contentProps} />
               </form>
             )}
@@ -106,11 +112,21 @@ export function ReferenceForm({
       ) : (
         <>
           {vm.isEditMode ? (
-            <form id={vm.formId} noValidate onSubmit={vm.handleEditSubmit} className={formInnerClass}>
+            <form
+              id={vm.formId}
+              noValidate
+              onSubmit={vm.handleEditSubmit}
+              className={formInnerClass}
+            >
               <ReferenceFormContent {...contentProps} />
             </form>
           ) : (
-            <form id={vm.formId} noValidate onSubmit={vm.handleCreateSubmit} className={formInnerClass}>
+            <form
+              id={vm.formId}
+              noValidate
+              onSubmit={vm.handleCreateSubmit}
+              className={formInnerClass}
+            >
               <ReferenceFormContent {...contentProps} />
             </form>
           )}
@@ -120,4 +136,3 @@ export function ReferenceForm({
     </div>
   )
 }
-

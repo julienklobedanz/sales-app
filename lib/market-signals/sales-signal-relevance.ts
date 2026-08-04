@@ -20,24 +20,33 @@ export function isLowValueRssTitle(title: string): boolean {
 
   if (
     /\b(stellenanzeige|jobangebot|jobsuche|karriereportal|recruiting|praktikum|werkstudent|ausbildung|traineeprogramm|duales studium)\b/i.test(
-      t
+      t,
     )
   ) {
     return true
   }
-  if (/\b(wir suchen|jetzt bewerben|bewerbung bis|stellenmarkt|your career|join our team|we are hiring)\b/i.test(t)) {
+  if (
+    /\b(wir suchen|jetzt bewerben|bewerbung bis|stellenmarkt|your career|join our team|we are hiring)\b/i.test(
+      t,
+    )
+  ) {
     return true
   }
   if (/\b(karriere|jobs)\s+bei\b/i.test(t)) return true
   if (/\b(instandhaltung|facility management|hausmeister|reinigungskraft)\b/i.test(t)) {
     return true
   }
-  if (/\b(bauingenieur|koordinator legal|teamleiter|spezialist|sachbearbeiter)\s*\(m/i.test(t)) return true
+  if (
+    /\b(bauingenieur|koordinator legal|teamleiter|spezialist|sachbearbeiter)\s*\(m/i.test(
+      t,
+    )
+  )
+    return true
 
   // Sport / Entertainment / Consumer-PR / Live-Streams
   if (
     /\b(emmy|oscars?|grammy|nfl|nba|mlb|mls|bundesliga|champions league|apple arcade|apple tv\+|streaming|filmpremiere|serienstart)\b/i.test(
-      t
+      t,
     )
   ) {
     return true
@@ -45,7 +54,7 @@ export function isLowValueRssTitle(title: string): boolean {
   if (/\b(madden|fifa|call of duty|fortnite|playstation|xbox)\b/i.test(t)) return true
   if (
     /\b(livestream|live stream|liveübertragung|matchday|matchplay|weltmeisterschaft|wm\b|em\b|dazn|sky sport|sportdeutschland)\b/i.test(
-      t
+      t,
     )
   ) {
     return true
@@ -53,7 +62,11 @@ export function isLowValueRssTitle(title: string): boolean {
   if (/\b(ticketverkauf|fanshop|fantasy\s*liga|tippspiel)\b/i.test(t)) return true
 
   // Katalog / Safety / leere Newsroom-Listings
-  if (/\b(sicherheitsdatenblatt|safety data sheet|sds\b|produktkatalog|data sheet)\b/i.test(t)) {
+  if (
+    /\b(sicherheitsdatenblatt|safety data sheet|sds\b|produktkatalog|data sheet)\b/i.test(
+      t,
+    )
+  ) {
     return true
   }
   if (/^newsroom\s*[-–—:]\s*\w+/i.test(raw) && raw.length < 48) return true
@@ -67,18 +80,22 @@ export function hasSalesTriggerHint(title: string): boolean {
   const t = String(title ?? '').toLowerCase()
   return (
     /\b(ceo|cto|cio|cfo|vorstand|geschäftsführ|chief|ernannt|berufen|wechselt|übernimmt|neu im amt)\b/i.test(
-      t
+      t,
     ) ||
     /\b(investition|investiert|expansion|erweiterung|werkseröffnung|eröffnet|neuer standort|produktionsstandort|logistikzentrum|fabrik|werk\b|milliarde|millionen)\b/i.test(
-      t
+      t,
     ) ||
     /\bneuer\s+(ceo|cto|cio|cfo|vorstand)\b/i.test(t) ||
-    /\b(übernahme|acquisition|fusion|kooperation|partnerschaft|joint venture|auftrag|vertrag)\b/i.test(t) ||
+    /\b(übernahme|acquisition|fusion|kooperation|partnerschaft|joint venture|auftrag|vertrag)\b/i.test(
+      t,
+    ) ||
     /\b(quartal|umsatz|gewinn|ebit|finanzierung|funding|ipo|börsengang)\b/i.test(t) ||
     /\b(digitalisierung|transformation|cloud|ki|künstliche intelligenz|strategie|restrukturierung)\b/i.test(
-      t
+      t,
     ) ||
-    /\b(rücktritt|tritt zurück|verlässt das unternehmen|neuer präsident|neuer leiter)\b/i.test(t)
+    /\b(rücktritt|tritt zurück|verlässt das unternehmen|neuer präsident|neuer leiter)\b/i.test(
+      t,
+    )
   )
 }
 
@@ -92,7 +109,7 @@ export function isRssPubDateWithinDays(pubDate: Date | null, maxDays: number): b
 /** Google-News-Suche: Firmenname minus typische Job-/Karriere-Treffer. */
 export function buildSalesFocusedCompanyNewsRssQuery(
   companyName: string,
-  websiteHost: string | null
+  websiteHost: string | null,
 ): string {
   const base = buildCompanyNewsRssQuery(companyName, websiteHost)
   if (!base) return ''
@@ -112,7 +129,10 @@ export function buildSalesFocusedCompanyNewsRssQuery(
  * Zusätzliche Queries für Newsroom / Presse des Accounts (über Google News site:).
  * Kein Scraping der Seite — nur Index-Suche.
  */
-export function buildNewsroomRssQueries(companyName: string, websiteHost: string | null): string[] {
+export function buildNewsroomRssQueries(
+  companyName: string,
+  websiteHost: string | null,
+): string[] {
   const name = companyName.trim()
   const host = (websiteHost ?? '')
     .replace(/^https?:\/\//i, '')
@@ -129,7 +149,9 @@ export function buildNewsroomRssQueries(companyName: string, websiteHost: string
     `site:${host}/presse`,
   ]
   if (name) {
-    queries.unshift(`"${name}" (CEO OR CTO OR CIO OR Vorstand OR "Executive Chairman" OR Nachfolger) site:${host}`)
+    queries.unshift(
+      `"${name}" (CEO OR CTO OR CIO OR Vorstand OR "Executive Chairman" OR Nachfolger) site:${host}`,
+    )
   }
   return queries
 }

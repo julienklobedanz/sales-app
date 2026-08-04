@@ -18,7 +18,10 @@ import { AppIcon } from '@/lib/icons'
 import { COPY } from '@/lib/copy'
 import { ROUTES } from '@/lib/routes'
 import { cn } from '@/lib/utils'
-import type { CompanySearchHit, MeetingPrepSnapshot } from '@/lib/meeting-prep/meeting-prep-types'
+import type {
+  CompanySearchHit,
+  MeetingPrepSnapshot,
+} from '@/lib/meeting-prep/meeting-prep-types'
 
 function formatPrepDate(iso: string) {
   const d = new Date(iso)
@@ -74,7 +77,11 @@ export function MeetingPrepOverlayDialog({
 
         {!snapshot ? (
           <div className="flex flex-1 items-center justify-center p-12">
-            <AppIcon icon={Loader} size={28} className="animate-spin text-muted-foreground" />
+            <AppIcon
+              icon={Loader}
+              size={28}
+              className="animate-spin text-muted-foreground"
+            />
           </div>
         ) : (
           <div className="flex-1 space-y-6 overflow-y-auto px-6 py-5">
@@ -123,9 +130,14 @@ export function MeetingPrepOverlayDialog({
               ) : (
                 <ul className="mt-2 space-y-2">
                   {snapshot.signals.map((s) => (
-                    <li key={s.id} className="rounded-lg border border-border/70 px-3 py-2 text-sm">
+                    <li
+                      key={s.id}
+                      className="rounded-lg border border-border/70 px-3 py-2 text-sm"
+                    >
                       <p>{s.label}</p>
-                      <p className="text-xs text-muted-foreground">{formatPrepDate(s.dateIso)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatPrepDate(s.dateIso)}
+                      </p>
                     </li>
                   ))}
                 </ul>
@@ -164,10 +176,15 @@ export function MeetingPrepOverlayDialog({
                       key={ref.id}
                       className={cn(
                         'rounded-lg border px-3 py-2',
-                        ref.similarity >= 0.47 ? 'border-border' : 'border-dashed border-muted-foreground/40'
+                        ref.similarity >= 0.47
+                          ? 'border-border'
+                          : 'border-dashed border-muted-foreground/40',
                       )}
                     >
-                      <Link href={ref.href} className="text-sm font-medium hover:underline">
+                      <Link
+                        href={ref.href}
+                        className="text-sm font-medium hover:underline"
+                      >
                         {ref.title}
                       </Link>
                       <p className="text-xs text-muted-foreground">
@@ -213,7 +230,10 @@ export function MeetingPrepOverlayDialog({
             ) : (
               <p className="text-sm text-muted-foreground">
                 {c.noAccount}{' '}
-                <Link href={ROUTES.accountsCreate} className="font-medium text-primary hover:underline">
+                <Link
+                  href={ROUTES.accountsCreate}
+                  className="font-medium text-primary hover:underline"
+                >
                   {c.createAccount}
                 </Link>
               </p>
@@ -308,9 +328,10 @@ export function useMeetingPrepFlow() {
 export async function runCreateMeetingPrep(
   query: string,
   companyId: string | null | undefined,
-  flow: ReturnType<typeof useMeetingPrepFlow>
+  flow: ReturnType<typeof useMeetingPrepFlow>,
 ) {
-  const { createMeetingPrepSessionAction } = await import('@/app/dashboard/meeting-prep/actions')
+  const { createMeetingPrepSessionAction } =
+    await import('@/app/dashboard/meeting-prep/actions')
   flow.openLoading(query)
   const result = await createMeetingPrepSessionAction({ query, companyId })
   if (!result.success) {
@@ -330,9 +351,10 @@ export async function runCreateMeetingPrep(
 export async function runLoadMeetingPrepSession(
   sessionId: string,
   title: string,
-  flow: ReturnType<typeof useMeetingPrepFlow>
+  flow: ReturnType<typeof useMeetingPrepFlow>,
 ) {
-  const { loadMeetingPrepSessionAction } = await import('@/app/dashboard/meeting-prep/actions')
+  const { loadMeetingPrepSessionAction } =
+    await import('@/app/dashboard/meeting-prep/actions')
   flow.openLoading(title)
   const result = await loadMeetingPrepSessionAction(sessionId)
   if ('error' in result) {

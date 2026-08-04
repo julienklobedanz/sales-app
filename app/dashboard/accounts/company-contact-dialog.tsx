@@ -1,6 +1,12 @@
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Loader } from '@hugeicons/core-free-icons'
@@ -55,7 +61,9 @@ export function CompanyContactDialog({
     <Dialog open={open} onOpenChange={(v) => !saving && onOpenChange(v)}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{editing ? 'Kontakt bearbeiten' : 'Kontakt hinzufügen'}</DialogTitle>
+          <DialogTitle>
+            {editing ? 'Kontakt bearbeiten' : 'Kontakt hinzufügen'}
+          </DialogTitle>
         </DialogHeader>
         <div className="grid gap-4">
           <div className="grid gap-2">
@@ -64,11 +72,19 @@ export function CompanyContactDialog({
           </div>
           <div className="grid gap-2">
             <Label>Vorname</Label>
-            <Input value={cFirst} onChange={(e) => setCFirst(e.target.value)} disabled={saving} />
+            <Input
+              value={cFirst}
+              onChange={(e) => setCFirst(e.target.value)}
+              disabled={saving}
+            />
           </div>
           <div className="grid gap-2">
             <Label>Nachname</Label>
-            <Input value={cLast} onChange={(e) => setCLast(e.target.value)} disabled={saving} />
+            <Input
+              value={cLast}
+              onChange={(e) => setCLast(e.target.value)}
+              disabled={saving}
+            />
           </div>
           <div className="grid gap-2">
             <Label>Rolle</Label>
@@ -81,7 +97,11 @@ export function CompanyContactDialog({
           </div>
           <div className="grid gap-2">
             <Label>E-Mail</Label>
-            <Input value={cEmail} onChange={(e) => setCEmail(e.target.value)} disabled={saving} />
+            <Input
+              value={cEmail}
+              onChange={(e) => setCEmail(e.target.value)}
+              disabled={saving}
+            />
           </div>
           <div className="grid gap-2">
             <Label>Telefon</Label>
@@ -109,17 +129,26 @@ export function CompanyContactDialog({
               disabled={saving}
               className="mt-0.5"
             />
-            <label htmlFor="ref-approval-contact" className="cursor-pointer text-sm leading-snug">
+            <label
+              htmlFor="ref-approval-contact"
+              className="cursor-pointer text-sm leading-snug"
+            >
               <span className="font-medium">Referenzfreigabe auf diesem Account</span>
               <span className="mt-1 block text-muted-foreground text-xs">
-                Dieser Kollege gilt als Ansprechpartner für die Koordination der Kunden-Referenzfreigabe.
-                Pro Account ist nur eine Person wählbar (ersetzt die vorherige Zuordnung).
+                Dieser Kollege gilt als Ansprechpartner für die Koordination der
+                Kunden-Referenzfreigabe. Pro Account ist nur eine Person wählbar (ersetzt
+                die vorherige Zuordnung).
               </span>
             </label>
           </div>
         </div>
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={saving}
+          >
             Abbrechen
           </Button>
           <Button type="button" onClick={() => void onSave()} disabled={saving}>

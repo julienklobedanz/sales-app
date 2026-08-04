@@ -12,7 +12,7 @@ type ReferenceLike = {
 
 export function buildCompanyLogoById(
   companies: CompanyLike[],
-  references: ReferenceLike[]
+  references: ReferenceLike[],
 ): Map<string, string> {
   const map = new Map<string, string>()
   for (const company of companies) {
@@ -39,16 +39,19 @@ export function buildCompanyIndustryById(companies: CompanyLike[]): Map<string, 
 export function buildCompanyIdsNeedingBrandfetch(
   references: ReferenceLike[],
   companies: CompanyLike[],
-  companyIndustryById: Map<string, string>
+  companyIndustryById: Map<string, string>,
 ): string[] {
   const ids = new Set<string>()
   for (const ref of references) {
     if (!ref.company_id) continue
     const hasLogo =
       Boolean(String(ref.company_logo_url ?? '').trim()) ||
-      Boolean(String(companies.find((c) => c.id === ref.company_id)?.logo_url ?? '').trim())
+      Boolean(
+        String(companies.find((c) => c.id === ref.company_id)?.logo_url ?? '').trim(),
+      )
     const hasIndustry =
-      Boolean(String(ref.industry ?? '').trim()) || companyIndustryById.has(ref.company_id)
+      Boolean(String(ref.industry ?? '').trim()) ||
+      companyIndustryById.has(ref.company_id)
     if (!hasLogo || !hasIndustry) ids.add(ref.company_id)
   }
   return [...ids]

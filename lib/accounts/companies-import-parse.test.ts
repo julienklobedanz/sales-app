@@ -9,8 +9,12 @@ import {
 
 describe('pickSheetRowValue', () => {
   it('finds the first non-empty alias', () => {
-    expect(pickSheetRowValue({ Name: ' Acme ', website: 'x.com' }, ['website', 'Name'])).toBe('x.com')
-    expect(pickSheetRowValue({ Unternehmen: 'Beta GmbH' }, ['name', 'Unternehmen'])).toBe('Beta GmbH')
+    expect(
+      pickSheetRowValue({ Name: ' Acme ', website: 'x.com' }, ['website', 'Name']),
+    ).toBe('x.com')
+    expect(pickSheetRowValue({ Unternehmen: 'Beta GmbH' }, ['name', 'Unternehmen'])).toBe(
+      'Beta GmbH',
+    )
   })
 })
 
@@ -43,8 +47,8 @@ describe('parseCompaniesImportRow', () => {
           Branche: 'IT',
           Mitarbeiter: '50',
         },
-        'account'
-      )
+        'account',
+      ),
     ).toEqual({
       name: 'Acme',
       website: '',
@@ -57,7 +61,7 @@ describe('parseCompaniesImportRow', () => {
 
   it('parses partner rows with category', () => {
     expect(
-      parseCompaniesImportRow({ Name: 'Partner AG', Kategorie: 'legal' }, 'partner')
+      parseCompaniesImportRow({ Name: 'Partner AG', Kategorie: 'legal' }, 'partner'),
     ).toMatchObject({
       name: 'Partner AG',
       partnerCategory: 'legal',

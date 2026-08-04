@@ -1,4 +1,8 @@
-import { MASTER_INDUSTRIES, formatIndustryDisplay, resolveIndustryId } from '@/lib/constants/industries'
+import {
+  MASTER_INDUSTRIES,
+  formatIndustryDisplay,
+  resolveIndustryId,
+} from '@/lib/constants/industries'
 import type { MatchReferenceHit, MatchReferenceFilters } from '@/lib/match/match-types'
 import type { DealRow } from '@/app/dashboard/deals/types'
 import { parseStoredVolumeEur } from '@/lib/match/parse-smart-match-query'
@@ -54,7 +58,7 @@ export function normalizeFilters(raw: Partial<FiltersState> | undefined): Filter
   }
   let volumeBands = Array.isArray(legacy?.volumeBands)
     ? legacy.volumeBands.filter((b): b is VolumeBandId =>
-        VOLUME_BAND_OPTIONS.some((o) => o.value === b)
+        VOLUME_BAND_OPTIONS.some((o) => o.value === b),
       )
     : []
   if (!volumeBands.length) {
@@ -77,12 +81,16 @@ export function normalizeFilters(raw: Partial<FiltersState> | undefined): Filter
     statuses: Array.isArray(legacy?.statuses) ? legacy.statuses.map(String) : [],
     monthsBackList,
     excludeYears: Array.isArray(legacy?.excludeYears)
-      ? legacy.excludeYears.filter((n): n is number => typeof n === 'number' && n >= 2000 && n <= 2100)
+      ? legacy.excludeYears.filter(
+          (n): n is number => typeof n === 'number' && n >= 2000 && n <= 2100,
+        )
       : [],
     excludeIndustryIds: Array.isArray(legacy?.excludeIndustryIds)
       ? legacy.excludeIndustryIds.map(String)
       : [],
-    excludeTerms: Array.isArray(legacy?.excludeTerms) ? legacy.excludeTerms.map(String) : [],
+    excludeTerms: Array.isArray(legacy?.excludeTerms)
+      ? legacy.excludeTerms.map(String)
+      : [],
   }
 }
 
@@ -135,10 +143,12 @@ export const STATUS_OPTIONS: { label: string; value: string }[] = [
   { label: 'Extern', value: 'external' },
   { label: 'Entwurf', value: 'draft' },
 ]
-export const INDUSTRY_OPTIONS: { label: string; value: string }[] = MASTER_INDUSTRIES.map((ind) => ({
-  label: ind.labelDe,
-  value: ind.id,
-}))
+export const INDUSTRY_OPTIONS: { label: string; value: string }[] = MASTER_INDUSTRIES.map(
+  (ind) => ({
+    label: ind.labelDe,
+    value: ind.id,
+  }),
+)
 
 export function toApiFilters(f: FiltersState): MatchReferenceFilters {
   const volumeBounds = rpcVolumeBoundsFromBands(f.volumeBands)
@@ -171,8 +181,7 @@ export function filtersActive(f: FiltersState): boolean {
 }
 
 export function filtersFromParsed(parsed: ParsedSmartMatchConstraints): FiltersState {
-  const band =
-    parsed.minVolume != null ? volumeBandFromMinVolume(parsed.minVolume) : null
+  const band = parsed.minVolume != null ? volumeBandFromMinVolume(parsed.minVolume) : null
   return {
     industries: parsed.industryId ? [parsed.industryId] : [],
     volumeBands: band ? [band] : [],
@@ -196,7 +205,10 @@ export function filtersFromDeal(deal: DealRow | null): Partial<FiltersState> {
 }
 
 /** Query-Filter haben Vorrang; Deal füllt leere Dimensionen hart vor. */
-export function mergeDealPrefills(queryFilters: FiltersState, deal: DealRow | null): FiltersState {
+export function mergeDealPrefills(
+  queryFilters: FiltersState,
+  deal: DealRow | null,
+): FiltersState {
   const dealF = filtersFromDeal(deal)
   return {
     ...queryFilters,
@@ -209,10 +221,7 @@ export function mergeDealPrefills(queryFilters: FiltersState, deal: DealRow | nu
   }
 }
 
-function multiFilterLabel(
-  emptyLabel: string,
-  selectedLabels: string[]
-): string {
+function multiFilterLabel(emptyLabel: string, selectedLabels: string[]): string {
   if (!selectedLabels.length) return emptyLabel
   if (selectedLabels.length === 1) return selectedLabels[0]!
   return `${emptyLabel} (${selectedLabels.length})`
@@ -221,25 +230,21 @@ function multiFilterLabel(
 export function industryFilterLabel(f: FiltersState): string {
   return multiFilterLabel(
     'Branche',
-    f.industries.map(
-      (id) => MASTER_INDUSTRIES.find((i) => i.id === id)?.labelDe ?? id
-    )
+    f.industries.map((id) => MASTER_INDUSTRIES.find((i) => i.id === id)?.labelDe ?? id),
   )
 }
 
 export function volumeFilterLabel(f: FiltersState): string {
   return multiFilterLabel(
     'Volumen',
-    f.volumeBands.map(
-      (b) => VOLUME_BAND_OPTIONS.find((o) => o.value === b)?.label ?? b
-    )
+    f.volumeBands.map((b) => VOLUME_BAND_OPTIONS.find((o) => o.value === b)?.label ?? b),
   )
 }
 
 export function statusFilterLabel(f: FiltersState): string {
   return multiFilterLabel(
     'Status',
-    f.statuses.map((id) => STATUS_OPTIONS.find((s) => s.value === id)?.label ?? id)
+    f.statuses.map((id) => STATUS_OPTIONS.find((s) => s.value === id)?.label ?? id),
   )
 }
 

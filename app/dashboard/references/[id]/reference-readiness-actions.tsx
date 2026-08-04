@@ -99,7 +99,9 @@ export function ReferenceReadinessActions({
   const [loadingContacts, setLoadingContacts] = useState(false)
   const [contacts, setContacts] = useState<ApprovalContactOption[]>([])
   const [contactQuery, setContactQuery] = useState('')
-  const [selectedContact, setSelectedContact] = useState<ApprovalContactOption | null>(null)
+  const [selectedContact, setSelectedContact] = useState<ApprovalContactOption | null>(
+    null,
+  )
 
   const canConfirmRecipient = canSubmitApprovalRecipient({
     query: contactQuery,
@@ -108,19 +110,19 @@ export function ReferenceReadinessActions({
 
   const showShowcaseSection =
     readiness.phase === 'approved' && Boolean(existingSharePath?.trim())
-  const showCreateShareHint =
-    readiness.phase === 'approved' && !existingSharePath?.trim()
+  const showCreateShareHint = readiness.phase === 'approved' && !existingSharePath?.trim()
 
   const visibleChangeRequestComment =
     !changeRequestsDismissed && customerChangeRequestComment?.trim()
       ? customerChangeRequestComment.trim()
       : null
-  const showRequestApprovalAgain =
-    hasCustomerChangeRequests && !changeRequestsDismissed
+  const showRequestApprovalAgain = hasCustomerChangeRequests && !changeRequestsDismissed
 
   const showCustomerFollowUpActions =
     readiness.showMagicLink &&
-    (showRequestApprovalAgain || canEditCustomerEmail || Boolean(visibleChangeRequestComment))
+    (showRequestApprovalAgain ||
+      canEditCustomerEmail ||
+      Boolean(visibleChangeRequestComment))
 
   const showWorkflowRerouteActions =
     readiness.showWithdraw &&
@@ -215,10 +217,12 @@ export function ReferenceReadinessActions({
       }
       setEditCoordinatorOpen(false)
       if (result.emailSent) {
-        toast.success('Interne Ansprechperson wurde aktualisiert und per E-Mail informiert.')
+        toast.success(
+          'Interne Ansprechperson wurde aktualisiert und per E-Mail informiert.',
+        )
       } else {
         toast.success(
-          'Interne Ansprechperson wurde aktualisiert. E-Mail-Versand nicht möglich — bitte direkt informieren.'
+          'Interne Ansprechperson wurde aktualisiert. E-Mail-Versand nicht möglich — bitte direkt informieren.',
         )
       }
       router.refresh()
@@ -228,7 +232,9 @@ export function ReferenceReadinessActions({
   function onConfirmEditRecipient() {
     const recipient = buildRecipientPayload()
     if (!recipient) {
-      toast.error('Bitte E-Mail-Adresse eingeben oder einen Kontakt mit E-Mail auswählen.')
+      toast.error(
+        'Bitte E-Mail-Adresse eingeben oder einen Kontakt mit E-Mail auswählen.',
+      )
       return
     }
     startTransition(async () => {
@@ -253,14 +259,16 @@ export function ReferenceReadinessActions({
       setChangeRequestsDismissed(true)
       if (result.emailMocked) {
         toast.success(
-          'Freigabe erneut angefragt — Testmodus: E-Mail nicht gesendet, Ablauf ansonsten abgeschlossen.'
+          'Freigabe erneut angefragt — Testmodus: E-Mail nicht gesendet, Ablauf ansonsten abgeschlossen.',
         )
       } else if (result.devRedirected && result.originalRecipientEmail) {
         toast.success(
-          `Freigabe erneut angefragt — E-Mail an ${result.recipientEmail} gesendet (Dev-Umleitung von ${result.originalRecipientEmail}).`
+          `Freigabe erneut angefragt — E-Mail an ${result.recipientEmail} gesendet (Dev-Umleitung von ${result.originalRecipientEmail}).`,
         )
       } else {
-        toast.success(`Freigabe erneut angefragt — E-Mail an ${result.recipientEmail} gesendet.`)
+        toast.success(
+          `Freigabe erneut angefragt — E-Mail an ${result.recipientEmail} gesendet.`,
+        )
       }
       router.refresh()
     })
@@ -269,7 +277,9 @@ export function ReferenceReadinessActions({
   function onConfirmInternalApprove() {
     const recipient = buildRecipientPayload()
     if (!recipient) {
-      toast.error('Bitte E-Mail-Adresse eingeben oder einen Kontakt mit E-Mail auswählen.')
+      toast.error(
+        'Bitte E-Mail-Adresse eingeben oder einen Kontakt mit E-Mail auswählen.',
+      )
       return
     }
     startTransition(async () => {
@@ -281,11 +291,11 @@ export function ReferenceReadinessActions({
       setDialogOpen(false)
       if (result.customerEmailSent) {
         toast.success(
-          `Freigabe-Anfrage mit Magic Link wurde an ${result.recipientEmail} gesendet.`
+          `Freigabe-Anfrage mit Magic Link wurde an ${result.recipientEmail} gesendet.`,
         )
       } else {
         toast.success(
-          'Kundenfreigabe vorbereitet. E-Mail-Versand nicht möglich — Freigabe-Link kopieren und manuell senden.'
+          'Kundenfreigabe vorbereitet. E-Mail-Versand nicht möglich — Freigabe-Link kopieren und manuell senden.',
         )
       }
       router.refresh()
@@ -323,7 +333,9 @@ export function ReferenceReadinessActions({
         toast.success('Neuer Link ist aktiv. Bitte erneut kopieren und versenden.')
         router.refresh()
       } catch (e) {
-        toast.error(e instanceof Error ? e.message : 'Freigabe-Link konnte nicht erneuert werden.')
+        toast.error(
+          e instanceof Error ? e.message : 'Freigabe-Link konnte nicht erneuert werden.',
+        )
       }
     })
   }
@@ -337,9 +349,13 @@ export function ReferenceReadinessActions({
   }
 
   const primaryIsRequest =
-    readiness.phase === 'request_approval' && canStartApproval && readiness.showPrimaryStart
+    readiness.phase === 'request_approval' &&
+    canStartApproval &&
+    readiness.showPrimaryStart
   const primaryIsPrepareCustomer =
-    readiness.phase === 'prepare_customer' && canInternalApprove && readiness.showPrimaryStart
+    readiness.phase === 'prepare_customer' &&
+    canInternalApprove &&
+    readiness.showPrimaryStart
   const primaryIsWithdrawnRestart =
     readiness.phase === 'withdrawn' && readiness.showPrimaryStart
 
@@ -347,7 +363,7 @@ export function ReferenceReadinessActions({
     <div
       className={cn(
         'flex w-full flex-col items-center gap-3 border-t border-border/60 pt-4 transition-all duration-200 ease-out',
-        !showActions && readiness.showStaleHint && 'border-t-0 pt-0'
+        !showActions && readiness.showStaleHint && 'border-t-0 pt-0',
       )}
     >
       {readiness.showStaleHint ? (
@@ -518,7 +534,8 @@ export function ReferenceReadinessActions({
       {showCreateShareHint ? (
         <p className="max-w-sm text-center text-xs leading-relaxed text-muted-foreground">
           Für die Kunden-Showcase-Ansicht zuerst unter{' '}
-          <span className="font-medium text-foreground">Aktionen → Teilen</span> einen Kundenlink anlegen.
+          <span className="font-medium text-foreground">Aktionen → Teilen</span> einen
+          Kundenlink anlegen.
         </p>
       ) : null}
 
@@ -562,7 +579,9 @@ export function ReferenceReadinessActions({
         </div>
       ) : null}
 
-      {readiness.showWithdraw && !readiness.showMagicLink && !showWorkflowRerouteActions ? (
+      {readiness.showWithdraw &&
+      !readiness.showMagicLink &&
+      !showWorkflowRerouteActions ? (
         <Button
           type="button"
           variant="outline"
@@ -580,8 +599,8 @@ export function ReferenceReadinessActions({
             <DialogTitle>Interne Ansprechperson ändern</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Die neue Person erhält eine E-Mail mit einem Link zur internen Freigabe. Der bisherige
-            interne Freigabe-Link verliert seine Gültigkeit.
+            Die neue Person erhält eine E-Mail mit einem Link zur internen Freigabe. Der
+            bisherige interne Freigabe-Link verliert seine Gültigkeit.
           </p>
           <div className="grid gap-2 py-2">
             <Label htmlFor="edit-coordinator-email">E-Mail des Account Managers</Label>
@@ -620,8 +639,9 @@ export function ReferenceReadinessActions({
             <DialogTitle>Kunden E-Mail ändern</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Der neue Kontakt erhält künftige Freigabe-E-Mails. Der Freigebende Kunde wird aus der
-            E-Mail-Adresse abgeleitet. Eine bestehende Delegation wird zurückgesetzt.
+            Der neue Kontakt erhält künftige Freigabe-E-Mails. Der Freigebende Kunde wird
+            aus der E-Mail-Adresse abgeleitet. Eine bestehende Delegation wird
+            zurückgesetzt.
           </p>
           <div className="grid gap-2 py-2">
             <Label htmlFor="edit-approval-recipient">Kontakt (Name oder E-Mail)</Label>
@@ -666,9 +686,9 @@ export function ReferenceReadinessActions({
             <DialogTitle>Kundenkontakt für die Freigabe</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Es wird kein automatischer E-Mail-Versand ausgelöst. Der Kontakt wird gespeichert; den
-            Freigabe-Link kopieren Sie anschließend und senden ihn manuell. Unbekannte E-Mail-Adressen
-            werden als Kundenkontakt angelegt.
+            Es wird kein automatischer E-Mail-Versand ausgelöst. Der Kontakt wird
+            gespeichert; den Freigabe-Link kopieren Sie anschließend und senden ihn
+            manuell. Unbekannte E-Mail-Adressen werden als Kundenkontakt angelegt.
           </p>
           <div className="grid gap-2 py-2">
             <Label htmlFor="internal-approve-contact">Kontakt (Name oder E-Mail)</Label>
@@ -688,7 +708,12 @@ export function ReferenceReadinessActions({
             />
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} disabled={pending}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDialogOpen(false)}
+              disabled={pending}
+            >
               Abbrechen
             </Button>
             <Button
@@ -707,8 +732,9 @@ export function ReferenceReadinessActions({
           <AlertDialogHeader>
             <AlertDialogTitle>Neuen Freigabelink erzeugen?</AlertDialogTitle>
             <AlertDialogDescription>
-              Der bisherige Link verliert damit seine Gültigkeit und die Kundenfreigabe wird auf
-              „ausstehend“ zurückgesetzt. Bitte senden Sie den neuen Magic Link erneut an den Kunden.
+              Der bisherige Link verliert damit seine Gültigkeit und die Kundenfreigabe
+              wird auf „ausstehend“ zurückgesetzt. Bitte senden Sie den neuen Magic Link
+              erneut an den Kunden.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

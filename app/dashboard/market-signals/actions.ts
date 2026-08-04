@@ -67,7 +67,10 @@ export async function setCompanyWatchlistState(companyId: string, isFollowing: b
   return setCompanyWatchlistStateImpl(companyId, isFollowing)
 }
 
-export async function setCompaniesWatchlistState(companyIds: string[], isFollowing: boolean) {
+export async function setCompaniesWatchlistState(
+  companyIds: string[],
+  isFollowing: boolean,
+) {
   return setCompaniesWatchlistStateImpl(companyIds, isFollowing)
 }
 
@@ -75,14 +78,16 @@ export async function setCompaniesWatchlistState(companyIds: string[], isFollowi
 export async function watchCompanyFromSuggestion(input: {
   id: string
   name: string
-}): Promise<{ success: true; company: WatchlistCompanyResult } | { success: false; error: string }> {
+}): Promise<
+  { success: true; company: WatchlistCompanyResult } | { success: false; error: string }
+> {
   return watchCompanyFromSuggestionImpl(input)
 }
 
 export async function setChampionWatchlistState(
   personName: string,
   isFollowing: boolean,
-  companyName?: string | null
+  companyName?: string | null,
 ) {
   return setChampionWatchlistStateImpl(personName, isFollowing, companyName)
 }
@@ -90,7 +95,10 @@ export async function setChampionWatchlistState(
 export async function getDecisionMakerCandidates(args: {
   companyId: string
   signalKind: 'exec' | 'news'
-}): Promise<{ success: true; candidates: DecisionMakerCandidate[] } | { success: false; error: string }> {
+}): Promise<
+  | { success: true; candidates: DecisionMakerCandidate[] }
+  | { success: false; error: string }
+> {
   return getDecisionMakerCandidatesImpl(args)
 }
 
@@ -130,7 +138,7 @@ export async function backfillCompanyNewsroomsForMyOrg(args?: {
 
 export async function updateCompanyNewsroomUrls(
   companyId: string,
-  urls: string[]
+  urls: string[],
 ): Promise<{ success: true; urls: string[] } | { success: false; error: string }> {
   return updateCompanyNewsroomUrlsImpl(companyId, urls)
 }
@@ -184,11 +192,14 @@ export async function logMarketSignalQuickAction(args: {
  * Dedupliziert gleiche Queries; begrenzt Parallelität.
  */
 export async function matchReferencesForSignals(
-  signals: SignalReferenceMatchPayload[]
+  signals: SignalReferenceMatchPayload[],
 ): Promise<
   | {
       success: true
-      byKey: Record<string, import('@/lib/market-signals/signal-reference-match').SignalMatchHit[]>
+      byKey: Record<
+        string,
+        import('@/lib/market-signals/signal-reference-match').SignalMatchHit[]
+      >
     }
   | { success: false; error: string }
 > {

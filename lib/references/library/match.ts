@@ -23,7 +23,10 @@ import type {
   MatchReferencesOptions,
   MatchReferencesResult,
 } from '@/lib/match/match-types'
-import { attachCompanyFields, attachProjectDates } from '@/lib/references/library/match-enrich'
+import {
+  attachCompanyFields,
+  attachProjectDates,
+} from '@/lib/references/library/match-enrich'
 import { fetchLexicalReferenceHits } from '@/lib/references/library/match-lexical'
 import { browseRecentReferences } from '@/lib/references/library/match-browse'
 
@@ -42,7 +45,7 @@ const MATCH_DEFAULT_COUNT = 10
 export async function matchReferencesImpl(
   input: string,
   dealId?: string,
-  options?: MatchReferencesOptions
+  options?: MatchReferencesOptions,
 ): Promise<MatchReferencesResult> {
   const raw = input?.trim() ?? ''
 
@@ -88,8 +91,11 @@ export async function matchReferencesImpl(
 
   const apiKey = process.env.OPENAI_API_KEY
 
-  let dealContext: { title: string | null; industry: string | null; volume: string | null } | null =
-    null
+  let dealContext: {
+    title: string | null
+    industry: string | null
+    volume: string | null
+  } | null = null
   if (dealId) {
     const { data: deal, error: dealErr } = await supabase
       .from('deals')
@@ -127,18 +133,21 @@ export async function matchReferencesImpl(
         matches: await attachCompanyFields(
           supabase,
           sortMatchesBySimilarityDesc(
-            applyClientSideStructuralFilters(lexicalHits, options?.filters)
-          ).slice(0, matchCount)
+            applyClientSideStructuralFilters(lexicalHits, options?.filters),
+          ).slice(0, matchCount),
         ),
       }
     }
-    return { success: false, error: 'OpenAI API ist nicht konfiguriert (OPENAI_API_KEY).' }
+    return {
+      success: false,
+      error: 'OpenAI API ist nicht konfiguriert (OPENAI_API_KEY).',
+    }
   }
   const lexicalCompanyNames = [
     ...new Set(
       lexicalHits
         .map((h) => h.companyName?.trim())
-        .filter((n): n is string => Boolean(n))
+        .filter((n): n is string => Boolean(n)),
     ),
   ]
 
@@ -147,7 +156,9 @@ export async function matchReferencesImpl(
   if (dealContext) {
     const parts = [
       dealContext.title ? `Deal: ${dealContext.title}` : null,
-      dealContext.industry ? `Branche: ${formatIndustryDisplay(dealContext.industry)}` : null,
+      dealContext.industry
+        ? `Branche: ${formatIndustryDisplay(dealContext.industry)}`
+        : null,
       dealContext.volume ? `Volumen: ${dealContext.volume}` : null,
       `Anfrage:\n${enrichedRaw}`,
     ].filter(Boolean)
@@ -160,7 +171,7 @@ export async function matchReferencesImpl(
   if ('error' in emb) {
     if (lexicalHits.length > 0) {
       const fallback = sortMatchesBySimilarityDesc(
-        applyClientSideStructuralFilters(lexicalHits, options?.filters)
+        applyClientSideStructuralFilters(lexicalHits, options?.filters),
       ).slice(0, matchCount)
       return { success: true, matches: await attachCompanyFields(supabase, fallback) }
     }
@@ -194,14 +205,14 @@ export async function matchReferencesImpl(
             }
           : undefined,
       }),
-    { organizationId: orgId }
+    { organizationId: orgId },
   )
   const { rows: list, error: rpcError } = rpcResult
 
   if (rpcError) {
     if (lexicalHits.length > 0) {
       const fallback = sortMatchesBySimilarityDesc(
-        applyClientSideStructuralFilters(lexicalHits, options?.filters)
+        applyClientSideStructuralFilters(lexicalHits, options?.filters),
       ).slice(0, matchCount)
       return { success: true, matches: await attachCompanyFields(supabase, fallback) }
     }
@@ -232,7 +243,7 @@ export async function matchReferencesImpl(
     const { result: reranked } = await withTiming(
       'match.rerank',
       () => rerankMatchHitsWithGpt(apiKey, queryText, matches),
-      { organizationId: orgId, resultCount: matches.length }
+      { organizationId: orgId, resultCount: matches.length },
     )
     matches = reranked
   }

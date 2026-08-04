@@ -1,7 +1,10 @@
 import { formatIndustryDisplay } from '@/lib/constants/industries'
 
 /** Epic 5: Ausgabeformate für KI-Entwurf (Wireframe §15). */
-export type KiEntwurfOutputFormat = 'email_snippet' | 'proposal_passage' | 'elevator_pitch'
+export type KiEntwurfOutputFormat =
+  | 'email_snippet'
+  | 'proposal_passage'
+  | 'elevator_pitch'
 
 export type KiEntwurfTone = 'professional' | 'casual' | 'formal'
 
@@ -43,7 +46,8 @@ export function buildKiEntwurfUserPrompt(params: {
   additionalContext?: string | null
   dealContext?: string | null
 }): string {
-  const { reference, matchScore, outputFormat, tone, additionalContext, dealContext } = params
+  const { reference, matchScore, outputFormat, tone, additionalContext, dealContext } =
+    params
   const scorePct = Math.round(Math.min(1, Math.max(0, matchScore)) * 100)
 
   const parts = [
@@ -58,10 +62,14 @@ export function buildKiEntwurfUserPrompt(params: {
     reference.companyName ? `Account / Kunde: ${reference.companyName}` : null,
     reference.industry ? `Branche: ${formatIndustryDisplay(reference.industry)}` : null,
     reference.summary ? `Kurzbeschreibung:\n${reference.summary}` : null,
-    reference.customerChallenge ? `Herausforderung des Kunden:\n${reference.customerChallenge}` : null,
+    reference.customerChallenge
+      ? `Herausforderung des Kunden:\n${reference.customerChallenge}`
+      : null,
     reference.ourSolution ? `Unsere Lösung:\n${reference.ourSolution}` : null,
     dealContext?.trim() ? `### Deal-Kontext\n${dealContext.trim()}` : null,
-    additionalContext?.trim() ? `### Zusätzliche Vorgaben vom Nutzer\n${additionalContext.trim()}` : null,
+    additionalContext?.trim()
+      ? `### Zusätzliche Vorgaben vom Nutzer\n${additionalContext.trim()}`
+      : null,
   ]
 
   return parts.filter(Boolean).join('\n\n')

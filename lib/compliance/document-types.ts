@@ -61,13 +61,15 @@ export function getSystemComplianceDocumentTypes(): ComplianceDocumentTypeOption
 }
 
 export function sortComplianceDocumentTypeOptions(
-  types: ComplianceDocumentTypeOption[]
+  types: ComplianceDocumentTypeOption[],
 ): ComplianceDocumentTypeOption[] {
-  return [...types].sort((a, b) => a.label.localeCompare(b.label, 'de', { sensitivity: 'base' }))
+  return [...types].sort((a, b) =>
+    a.label.localeCompare(b.label, 'de', { sensitivity: 'base' }),
+  )
 }
 
 export function mergeComplianceDocumentTypeOptions(
-  customRows: Array<{ id: string; slug: string; label: string }>
+  customRows: Array<{ id: string; slug: string; label: string }>,
 ): ComplianceDocumentTypeOption[] {
   const custom: ComplianceDocumentTypeOption[] = customRows.map((row) => ({
     id: row.id,
@@ -75,18 +77,22 @@ export function mergeComplianceDocumentTypeOptions(
     label: row.label,
     isSystem: false,
   }))
-  return sortComplianceDocumentTypeOptions([...getSystemComplianceDocumentTypes(), ...custom])
+  return sortComplianceDocumentTypeOptions([
+    ...getSystemComplianceDocumentTypes(),
+    ...custom,
+  ])
 }
 
 export function complianceDocumentTypeLabel(
   type: string,
-  options?: ComplianceDocumentTypeOption[]
+  options?: ComplianceDocumentTypeOption[],
 ): string {
   const fromList = options?.find((o) => o.slug === type)?.label
   if (fromList) return fromList
   const system = COMPLIANCE_DOCUMENT_TYPE_LABELS[type as ComplianceDocumentType]
   if (system) return system
-  if (LEGACY_COMPLIANCE_DOCUMENT_TYPE_LABELS[type]) return LEGACY_COMPLIANCE_DOCUMENT_TYPE_LABELS[type]
+  if (LEGACY_COMPLIANCE_DOCUMENT_TYPE_LABELS[type])
+    return LEGACY_COMPLIANCE_DOCUMENT_TYPE_LABELS[type]
   return type.replace(/^custom_/, '').replace(/_/g, ' ')
 }
 

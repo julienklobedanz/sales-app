@@ -38,7 +38,7 @@
 ## T3 (Bug) — `reference_matched`-Tracking reparieren
 
 **Problem:** `[verifiziert]` Live ist `reference_matched` seit 20.04. **stale**, obwohl Views/Shares aktiv sind. Befund: Logging (`logEvent({ eventType: 'reference_matched' })`) liegt in `app/dashboard/references/match.ts` (via `actions.ts::matchReferences` → `matchReferencesImpl`). Die **prominente** Dashboard-/Command-Center-Suche läuft aber über `searchReferencesSemanticLegacy` (`app/dashboard/command-center/actions.ts`) — **Hypothese: dieser Pfad loggt nicht.**
-**Schritte:** (1) Prüfen, welche Match-Einstiege real genutzt werden und welche `reference_matched` emittieren. (2) Den/die ungeloggten Pfad(e) ergänzen — am besten **eine** zentrale Logging-Stelle, damit nicht erneut ein Pfad „vergisst". 
+**Schritte:** (1) Prüfen, welche Match-Einstiege real genutzt werden und welche `reference_matched` emittieren. (2) Den/die ungeloggten Pfad(e) ergänzen — am besten **eine** zentrale Logging-Stelle, damit nicht erneut ein Pfad „vergisst".
 **Dateien:** `app/dashboard/command-center/actions.ts`, `lib/command-center/search-references-semantic.ts`, `app/dashboard/references/match.ts`, `lib/events/log-event.ts`.
 **Akzeptanz:** Ein Match über die Dashboard-Suche **und** über die Match-Seite erzeugt je ein `reference_matched`-Event in `evidence_events`; manuell verifiziert.
 
@@ -76,11 +76,12 @@
 ## T7 (Cleanup A) — Tote Pfade entfernen
 
 **Problem:** `[verifiziert]`
+
 - `app/dashboard/concepts/inbox-references/*` — Route per `LEGACY_REDIRECTS` abgefangen → wird nie gerendert; enthält `demo-data.ts`.
 - `app/onboarding/steps/reference-step.tsx` — existiert, aber **nicht** im Wizard importiert.
 - `app/dashboard/companies/maintenance.ts` — einzelne Datei in Legacy-Ordner (`companies → accounts` redirected).
-**Soll:** Nach **„0 Imports"-Check** entfernen bzw. verschieben: `concepts/inbox-references/*` löschen; `reference-step.tsx` **einbinden oder löschen** (Entscheidung dokumentieren); `companies/maintenance.ts` nach `accounts/`/`lib/` verschieben (Aufrufer anpassen).
-**Akzeptanz:** Keine toten Routen/Dateien mehr; `grep` zeigt 0 verbliebene Imports der entfernten Teile; Build & Tests grün.
+  **Soll:** Nach **„0 Imports"-Check** entfernen bzw. verschieben: `concepts/inbox-references/*` löschen; `reference-step.tsx` **einbinden oder löschen** (Entscheidung dokumentieren); `companies/maintenance.ts` nach `accounts/`/`lib/` verschieben (Aufrufer anpassen).
+  **Akzeptanz:** Keine toten Routen/Dateien mehr; `grep` zeigt 0 verbliebene Imports der entfernten Teile; Build & Tests grün.
 
 ---
 
@@ -90,6 +91,7 @@
 npm run test
 npm run build
 ```
+
 - T3/T4 zusätzlich manuell: Event in `evidence_events` prüfen bzw. Normalbetrieb ohne Mock.
 - T7: vor jedem Löschen `grep -r "<symbol/pfad>" app components lib` = 0.
 

@@ -59,7 +59,7 @@ function addRiskPanel(
   slide: PptxGenJS.Slide,
   pptx: PptxGenJS,
   box: { x: number; y: number; w: number; h: number },
-  bullets: string[]
+  bullets: string[],
 ) {
   addPptxSidebarCard(slide, pptx, box, { accentTop: true })
 
@@ -88,7 +88,7 @@ function addRiskPanel(
 }
 
 export async function buildExecutiveBriefingPptxBuffer(
-  data: ExecutiveBriefingPptxData
+  data: ExecutiveBriefingPptxData,
 ): Promise<Buffer> {
   const pptx = new PptxGenJS()
   pptx.layout = 'LAYOUT_16x9'
@@ -117,7 +117,7 @@ export async function buildExecutiveBriefingPptxBuffer(
     'Strategische Einschätzung',
     PPTX_LAYOUT.LEFT_X,
     SLIDE1.ASSESS_LABEL_Y,
-    PPTX_LAYOUT.LEFT_STORY_W
+    PPTX_LAYOUT.LEFT_STORY_W,
   )
   addPptxFixedBullets(
     slide1,
@@ -125,7 +125,7 @@ export async function buildExecutiveBriefingPptxBuffer(
     PPTX_LAYOUT.LEFT_X,
     SLIDE1.ASSESS_BULLETS_Y,
     PPTX_LAYOUT.LEFT_STORY_W,
-    SLIDE1.ASSESS_BULLETS_H
+    SLIDE1.ASSESS_BULLETS_H,
   )
 
   addPptxSectionLabel(
@@ -133,7 +133,7 @@ export async function buildExecutiveBriefingPptxBuffer(
     'Tech-Fokus / Scope',
     PPTX_LAYOUT.LEFT_X,
     SLIDE1.TECH_LABEL_Y,
-    PPTX_LAYOUT.LEFT_STORY_W
+    PPTX_LAYOUT.LEFT_STORY_W,
   )
   addPptxFixedBullets(
     slide1,
@@ -141,7 +141,7 @@ export async function buildExecutiveBriefingPptxBuffer(
     PPTX_LAYOUT.LEFT_X,
     SLIDE1.TECH_BULLETS_Y,
     PPTX_LAYOUT.LEFT_STORY_W,
-    SLIDE1.TECH_BULLETS_H
+    SLIDE1.TECH_BULLETS_H,
   )
 
   addPptxFactRowsCard(slide1, pptx, sidebarBox, 'Commercials & Deadlines', [
@@ -166,7 +166,7 @@ export async function buildExecutiveBriefingPptxBuffer(
     'Geforderte Capabilities',
     PPTX_LAYOUT.LEFT_X,
     SLIDE2.CAP_LABEL_Y,
-    PPTX_LAYOUT.LEFT_STORY_W
+    PPTX_LAYOUT.LEFT_STORY_W,
   )
   addPptxFixedBullets(
     slide2,
@@ -174,7 +174,7 @@ export async function buildExecutiveBriefingPptxBuffer(
     PPTX_LAYOUT.LEFT_X,
     SLIDE2.CAP_BULLETS_Y,
     PPTX_LAYOUT.LEFT_STORY_W,
-    SLIDE2.CAP_BULLETS_H
+    SLIDE2.CAP_BULLETS_H,
   )
 
   addPptxHorizontalRule(
@@ -182,7 +182,7 @@ export async function buildExecutiveBriefingPptxBuffer(
     pptx,
     PPTX_LAYOUT.LEFT_X,
     SLIDE2.RULE_Y,
-    PPTX_LAYOUT.LEFT_STORY_W
+    PPTX_LAYOUT.LEFT_STORY_W,
   )
 
   addPptxSectionLabel(
@@ -190,18 +190,25 @@ export async function buildExecutiveBriefingPptxBuffer(
     'Nächste Fristen & offene SME-Punkte',
     PPTX_LAYOUT.LEFT_X,
     SLIDE2.DEADLINE_LABEL_Y,
-    PPTX_LAYOUT.LEFT_STORY_W
+    PPTX_LAYOUT.LEFT_STORY_W,
   )
   addPptxFixedBullets(
     slide2,
-    [...data.deadlineBullets, ...data.smeBullets].map((b) => clipPptxBullet(b, 85)).slice(0, 5),
+    [...data.deadlineBullets, ...data.smeBullets]
+      .map((b) => clipPptxBullet(b, 85))
+      .slice(0, 5),
     PPTX_LAYOUT.LEFT_X,
     SLIDE2.DEADLINE_BULLETS_Y,
     PPTX_LAYOUT.LEFT_STORY_W,
-    SLIDE2.DEADLINE_BULLETS_H
+    SLIDE2.DEADLINE_BULLETS_H,
   )
 
-  addRiskPanel(slide2, pptx, sidebarBox, data.riskBullets.map((b) => clipPptxBullet(b, 85)))
+  addRiskPanel(
+    slide2,
+    pptx,
+    sidebarBox,
+    data.riskBullets.map((b) => clipPptxBullet(b, 85)),
+  )
 
   addPptxFooterLine(slide2, BRIEFING_FOOTER)
 

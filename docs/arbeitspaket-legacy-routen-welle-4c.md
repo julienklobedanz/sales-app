@@ -29,11 +29,12 @@
 ## T1 — Verwaisten Code entfernen
 
 **Soll:** Nach Import-Check löschen:
+
 - `app/dashboard/market-signals/market-signals-client.tsx` (verwaist).
 - Nur-davon-genutzte Helfer im selben Ordner (`data.ts`, `loading.tsx`) — **erst prüfen**, ob die Account-Signal-Card oder `manage` sie nutzen; nur löschen, wenn 0 Referenzen.
 - `app/dashboard/request/` (kompletter Ordner) — durch Redirect tot.
-**Wichtig behalten:** `app/dashboard/market-signals/actions.ts` (Cron/Digest/Account-Card nutzen es) und das `manage/`-Verzeichnis (→ T2).
-**Akzeptanz:** `grep` zeigt 0 verbliebene Importe der gelöschten Dateien; Build & Tests grün.
+  **Wichtig behalten:** `app/dashboard/market-signals/actions.ts` (Cron/Digest/Account-Card nutzen es) und das `manage/`-Verzeichnis (→ T2).
+  **Akzeptanz:** `grep` zeigt 0 verbliebene Importe der gelöschten Dateien; Build & Tests grün.
 
 ---
 
@@ -50,9 +51,10 @@
 ## T3 — Redirect-Mechanik konsolidieren & `LEGACY_REDIRECTS` aufräumen
 
 **Soll:**
+
 - Pro umgeleiteter Route **eine** Mechanik: `LEGACY_REDIRECTS` (next.config) als Quelle für dauerhafte URL-Redirects behalten; die toten `redirect()`-Stub-`page.tsx` (market-signals, deal-desk, ggf. request nach T1) entfernen, wo der Config-Redirect die Route abdeckt.
 - `LEGACY_REDIRECTS` durchsehen: Einträge für gelöschte Quellen (`concepts/inbox-references`) entfernen, **außer** alte externe Links sollen weiter sanft landen (dann mit Kommentar belassen). `permanent` vs. temporär konsistent setzen (echte Umbenennungen = permanent; Übergangs-Redirects = temporär).
-**Akzeptanz:** Keine doppelte Redirect-Mechanik mehr; `LEGACY_REDIRECTS` enthält nur noch sinnvolle, dokumentierte Einträge; alle alten URLs landen weiterhin korrekt; Build & Tests grün.
+  **Akzeptanz:** Keine doppelte Redirect-Mechanik mehr; `LEGACY_REDIRECTS` enthält nur noch sinnvolle, dokumentierte Einträge; alle alten URLs landen weiterhin korrekt; Build & Tests grün.
 
 ---
 
@@ -70,6 +72,7 @@
 npm run test
 npm run build
 ```
+
 - Vor jedem Löschen: `grep -rnE "<dateiname/symbol>" app components lib` → 0.
 - Manuell: alte URLs (`/dashboard/market-signals`, `/dashboard/request`, `/dashboard/deal-desk`, `/dashboard/companies`) leiten korrekt um; `manage` erreichbar (neuer Ort); keine 404 auf zuvor gültigen Pfaden.
 

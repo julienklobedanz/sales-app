@@ -3,9 +3,7 @@ import { renderToBuffer } from '@react-pdf/renderer'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { logEvent } from '@/lib/events/log-event'
 import { writeAuditLog } from '@/lib/audit/log-audit'
-import {
-  ReferencePdfDocument,
-} from '@/lib/references/library/pdf/template'
+import { ReferencePdfDocument } from '@/lib/references/library/pdf/template'
 import type { PdfOrgBranding, PdfReference } from '@/lib/references/library/pdf/types'
 import { computeReferenceDurationMonths } from '@/lib/references/reference-duration-months'
 import {
@@ -55,7 +53,8 @@ export async function GET(req: NextRequest) {
 
   const { data: row, error } = await supabase
     .from('references')
-    .select(`
+    .select(
+      `
       id,
       title,
       summary,
@@ -79,7 +78,8 @@ export async function GET(req: NextRequest) {
       approval_reference_giver_name,
       approval_reference_giver_title,
       companies ( name, logo_url )
-    `)
+    `,
+    )
     .eq('id', id)
     .single()
 
@@ -88,12 +88,21 @@ export async function GET(req: NextRequest) {
   }
 
   const normalizedStatus = String(row.status ?? '').toLowerCase()
-  const salesExportStatuses = ['approved', 'internal_only', 'anonymized', 'external', 'internal']
+  const salesExportStatuses = [
+    'approved',
+    'internal_only',
+    'anonymized',
+    'external',
+    'internal',
+  ]
   if (
     profileIsSalesRestricted(systemRole, functionRole) &&
     !salesExportStatuses.includes(normalizedStatus)
   ) {
-    return NextResponse.json({ error: 'Keine Berechtigung für diese Referenz.' }, { status: 403 })
+    return NextResponse.json(
+      { error: 'Keine Berechtigung für diese Referenz.' },
+      { status: 403 },
+    )
   }
 
   const { data: org } = await supabase
@@ -140,7 +149,7 @@ export async function GET(req: NextRequest) {
 
   const branding: PdfOrgBranding = {
     name: org?.name ?? 'RefStack',
-    logo_url: exportSettings.pdf_logo_enabled === false ? null : org?.logo_url ?? null,
+    logo_url: exportSettings.pdf_logo_enabled === false ? null : (org?.logo_url ?? null),
     primary_color: org?.primary_color ?? '#2563EB',
     secondary_color: org?.secondary_color ?? '#1D4ED8',
   }
@@ -155,9 +164,9 @@ export async function GET(req: NextRequest) {
           org: branding,
           template,
           exportedAtLabel,
-        })
+        }),
       ),
-    { organizationId: profile.organization_id as string, referenceId: id }
+    { organizationId: profile.organization_id as string, referenceId: id },
   )
 
   const customerName = sanitizeFileName(reference.company_name || 'Account')

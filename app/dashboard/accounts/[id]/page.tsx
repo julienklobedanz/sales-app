@@ -42,14 +42,18 @@ export default async function CompanyDetailPage({
   const orgId = profile.organization_id as string | null | undefined
   let organizationName: string | null = null
   if (orgId) {
-    const { data: orgRow } = await supabase.from('organizations').select('name').eq('id', orgId).maybeSingle()
+    const { data: orgRow } = await supabase
+      .from('organizations')
+      .select('name')
+      .eq('id', orgId)
+      .maybeSingle()
     organizationName = (orgRow as { name?: string } | null)?.name?.trim() || null
   }
 
   const { data: company } = await supabase
     .from('companies')
     .select(
-      'id, name, entity_kind, logo_url, website_url, headquarters, industry, description, employee_count, account_status, internal_reference_approval_contact_id'
+      'id, name, entity_kind, logo_url, website_url, headquarters, industry, description, employee_count, account_status, internal_reference_approval_contact_id',
     )
     .eq('id', id)
     .single()
@@ -87,7 +91,7 @@ export default async function CompanyDetailPage({
     supabase
       .from('market_signal_executive_events')
       .select(
-        'id, person_name, person_title_before, person_title_after, change_summary, detected_at, event_kind, source_url'
+        'id, person_name, person_title_before, person_title_after, change_summary, detected_at, event_kind, source_url',
       )
       .eq('company_id', id)
       .order('detected_at', { ascending: false })
@@ -110,13 +114,16 @@ export default async function CompanyDetailPage({
         personTitleAfter: (row.person_title_after as string | null) ?? null,
         changeSummary: String(row.change_summary ?? ''),
         detectedAt: String(row.detected_at ?? ''),
-        eventKind: ek === 'news_mention' ? ('news_mention' as const) : ('role_change' as const),
-        sourceUrl: ((row as { source_url?: string | null }).source_url as string | null) ?? null,
+        eventKind:
+          ek === 'news_mention' ? ('news_mention' as const) : ('role_change' as const),
+        sourceUrl:
+          ((row as { source_url?: string | null }).source_url as string | null) ?? null,
       }
     }),
     accountNews: (accountNewsResult.data ?? []).map((row) => {
       const seg = String(row.segment ?? 'customer')
-      const segment: 'customer' | 'prospect' = seg === 'prospect' ? 'prospect' : 'customer'
+      const segment: 'customer' | 'prospect' =
+        seg === 'prospect' ? 'prospect' : 'customer'
       return {
         id: String(row.id),
         body: String(row.body ?? ''),

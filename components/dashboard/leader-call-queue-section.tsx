@@ -102,14 +102,14 @@ function LeaderCallQueueRow({
                 'rounded-md border px-2.5 py-2',
                 row.perfectReference
                   ? 'border-border/80 bg-background'
-                  : 'border-dashed border-muted-foreground/35 bg-muted/10 italic text-muted-foreground'
+                  : 'border-dashed border-muted-foreground/35 bg-muted/10 italic text-muted-foreground',
               )}
             >
               <Link
                 href={row.referenceHref ?? row.matchHref}
                 className={cn(
                   'text-sm font-medium hover:underline',
-                  !row.perfectReference && 'text-foreground/80 not-italic'
+                  !row.perfectReference && 'text-foreground/80 not-italic',
                 )}
               >
                 {row.referenceTitle}
@@ -199,11 +199,16 @@ export function LeaderCallQueueSection({
       hero
     >
       {thin || rows.length === 0 ? (
-        <HonestEmpty title={c.callQueueEmptyTitle} description={c.callQueueEmptyDescription} />
+        <HonestEmpty
+          title={c.callQueueEmptyTitle}
+          description={c.callQueueEmptyDescription}
+        />
       ) : (
-        <div>{rows.map((row) => (
+        <div>
+          {rows.map((row) => (
             <LeaderCallQueueRow key={row.id} row={row} onDismiss={handleDismiss} />
-          ))}</div>
+          ))}
+        </div>
       )}
     </DashboardSectionCard>
   )

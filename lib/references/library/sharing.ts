@@ -40,7 +40,7 @@ function generateSharePassword(): string {
 
 async function fetchOrgWorkflowJson(
   supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
-  organizationId: string
+  organizationId: string,
 ): Promise<unknown> {
   const { data } = await supabase
     .from('organizations')
@@ -62,10 +62,22 @@ const STATUS_MAP: Record<string, ReferenceRow['status']> = {
   anonymous: 'anonymized',
   restricted: 'internal_only',
 }
-const VALID_STATUSES: ReferenceRow['status'][] = ['draft', 'internal_only', 'approved', 'anonymized']
+const VALID_STATUSES: ReferenceRow['status'][] = [
+  'draft',
+  'internal_only',
+  'approved',
+  'anonymized',
+]
 function normalizeStatus(raw: unknown): ReferenceRow['status'] {
-  const s = String(raw ?? '').toLowerCase().trim()
-  return STATUS_MAP[s] ?? (VALID_STATUSES.includes(s as ReferenceRow['status']) ? (s as ReferenceRow['status']) : 'draft')
+  const s = String(raw ?? '')
+    .toLowerCase()
+    .trim()
+  return (
+    STATUS_MAP[s] ??
+    (VALID_STATUSES.includes(s as ReferenceRow['status'])
+      ? (s as ReferenceRow['status'])
+      : 'draft')
+  )
 }
 
 async function deactivateActiveSharesForReferences(referenceIds: string[]) {
@@ -108,12 +120,14 @@ export type CreateSharedPortfolioRecipient = {
 }
 
 function generatePortfolioRecipientToken(): string {
-  return randomBytes(18).toString('base64url').replace(/[^a-zA-Z0-9_-]/g, 'x')
+  return randomBytes(18)
+    .toString('base64url')
+    .replace(/[^a-zA-Z0-9_-]/g, 'x')
 }
 
 export async function createSharedPortfolioImpl(
   referenceIds: string[],
-  recipient?: CreateSharedPortfolioRecipient | null
+  recipient?: CreateSharedPortfolioRecipient | null,
 ): Promise<
   | {
       success: true
@@ -130,7 +144,8 @@ export async function createSharedPortfolioImpl(
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Nicht angemeldet.' }
-  if (!referenceIds?.length) return { success: false, error: 'Mindestens eine Referenz nötig.' }
+  if (!referenceIds?.length)
+    return { success: false, error: 'Mindestens eine Referenz nötig.' }
 
   await deactivateActiveSharesForReferences(referenceIds)
 
@@ -161,7 +176,10 @@ export async function createSharedPortfolioImpl(
           typeof wf === 'object' && wf !== null && 'link_expiry_days' in wf
             ? Number((wf as { link_expiry_days?: unknown }).link_expiry_days)
             : 14
-        const policy = parseOrgPublicLinkPolicy(wf, Number.isFinite(linkFallback) ? linkFallback : 14)
+        const policy = parseOrgPublicLinkPolicy(
+          wf,
+          Number.isFinite(linkFallback) ? linkFallback : 14,
+        )
         const days = Math.min(Math.max(1, policy.defaultTtlDays), policy.maxTtlDays)
         const exp = new Date()
         exp.setDate(exp.getDate() + days)
@@ -206,19 +224,25 @@ export async function createSharedPortfolioImpl(
         const spId = spRow?.id as string | undefined
         if (spId) {
           const token = generatePortfolioRecipientToken()
-          const { error: recErr } = await supabase.from('shared_portfolio_recipients').insert({
-            shared_portfolio_id: spId,
-            token,
-            label: recipient.label.trim(),
-            visitor_email: recipient.visitorEmail?.trim() || null,
-            external_contact_id: recipient.externalContactId ?? null,
-            company_id: recipient.companyId ?? null,
-            created_by: user.id,
-          })
+          const { error: recErr } = await supabase
+            .from('shared_portfolio_recipients')
+            .insert({
+              shared_portfolio_id: spId,
+              token,
+              label: recipient.label.trim(),
+              visitor_email: recipient.visitorEmail?.trim() || null,
+              external_contact_id: recipient.externalContactId ?? null,
+              company_id: recipient.companyId ?? null,
+              created_by: user.id,
+            })
           if (!recErr) {
             publicUrl = `${url}?r=${encodeURIComponent(token)}`
           } else {
-            log.error('createSharedPortfolio.recipientInsertFailed', { slug, sharedPortfolioId: spId }, recErr)
+            log.error(
+              'createSharedPortfolio.recipientInsertFailed',
+              { slug, sharedPortfolioId: spId },
+              recErr,
+            )
           }
         }
       }
@@ -250,7 +274,7 @@ async function notifyCustomerOfSperrlink(
   supabase: SupabaseClient,
   referenceId: string,
   manageUrl: string,
-  isNewLink: boolean
+  isNewLink: boolean,
 ): Promise<boolean> {
   const { data: ref } = await supabase
     .from('references')
@@ -265,7 +289,7 @@ async function notifyCustomerOfSperrlink(
       approval_delegated_to_email,
       approval_delegated_to_name,
       companies ( name )
-    `
+    `,
     )
     .eq('id', referenceId)
     .maybeSingle()
@@ -316,7 +340,7 @@ async function notifyCustomerOfSperrlink(
  */
 export async function getPortfolioManageAndPreviewUrlsForApprovalEmail(
   supabase: SupabaseClient,
-  referenceId: string
+  referenceId: string,
 ): Promise<{ manageUrl: string; publicPreviewUrl: string } | null> {
   const id = String(referenceId ?? '').trim()
   if (!id) return null
@@ -332,11 +356,18 @@ export async function getPortfolioManageAndPreviewUrlsForApprovalEmail(
   const origin = getAppOrigin()
 
   if (slug) {
-    const { data: rpc, error } = await supabase.rpc('reset_shared_portfolio_manage_token', {
-      p_reference_id: id,
-    })
+    const { data: rpc, error } = await supabase.rpc(
+      'reset_shared_portfolio_manage_token',
+      {
+        p_reference_id: id,
+      },
+    )
     if (error) {
-      log.error('getPortfolioManageAndPreviewUrls.resetTokenFailed', { referenceId: id }, error)
+      log.error(
+        'getPortfolioManageAndPreviewUrls.resetTokenFailed',
+        { referenceId: id },
+        error,
+      )
       return null
     }
     const payload = rpc as { success?: boolean; token?: string; error?: string } | null
@@ -360,9 +391,7 @@ export async function getPortfolioManageAndPreviewUrlsForApprovalEmail(
   return { manageUrl, publicPreviewUrl }
 }
 
-export async function getExistingShareForReferenceImpl(
-  referenceId: string
-): Promise<{
+export async function getExistingShareForReferenceImpl(referenceId: string): Promise<{
   slug: string
   url: string
   expiresAt: string | null
@@ -406,7 +435,7 @@ export async function getExistingShareForReferenceImpl(
     expiresAt: row.expires_at ?? null,
     hasPassword: Boolean(row.password_hash),
     hasCustomerManageToken: Boolean(
-      row.customer_manage_token_hash && String(row.customer_manage_token_hash).length > 0
+      row.customer_manage_token_hash && String(row.customer_manage_token_hash).length > 0,
     ),
     gateMode,
   }
@@ -414,7 +443,7 @@ export async function getExistingShareForReferenceImpl(
 
 export async function resetSharedPortfolioManageTokenImpl(
   referenceId: string,
-  options?: { notifyCustomer?: boolean }
+  options?: { notifyCustomer?: boolean },
 ): Promise<
   | { success: true; manageToken: string; customerEmailSent?: boolean }
   | { success: false; error: string }
@@ -431,7 +460,10 @@ export async function resetSharedPortfolioManageTokenImpl(
   if (error) return { success: false, error: error.message }
   const payload = data as { success?: boolean; token?: string; error?: string } | null
   if (!payload?.success || !payload.token) {
-    return { success: false, error: payload?.error ?? 'Sperr-Link konnte nicht erzeugt werden.' }
+    return {
+      success: false,
+      error: payload?.error ?? 'Sperr-Link konnte nicht erzeugt werden.',
+    }
   }
 
   let customerEmailSent = false
@@ -439,7 +471,12 @@ export async function resetSharedPortfolioManageTokenImpl(
     const previewUrl = await getPublicPreviewUrlForReference(supabase, referenceId)
     if (previewUrl) {
       const manageUrl = buildCustomerManageUrl(previewUrl, payload.token)
-      customerEmailSent = await notifyCustomerOfSperrlink(supabase, referenceId, manageUrl, true)
+      customerEmailSent = await notifyCustomerOfSperrlink(
+        supabase,
+        referenceId,
+        manageUrl,
+        true,
+      )
     }
   }
 
@@ -454,7 +491,7 @@ export async function updateShareLinkSecurityByReferenceImpl(
     expiresAtIso: string | null
     clearExpires: boolean
     gateMode?: 'none' | 'password' | 'email' | null
-  }
+  },
 ): Promise<{ success: true } | { success: false; error: string }> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -478,14 +515,18 @@ export async function updateShareLinkSecurityByReferenceImpl(
     .limit(1)
   if (findErr) return { success: false, error: findErr.message }
   const slug = rows?.[0]?.slug as string | undefined
-  if (!slug) return { success: false, error: 'Kein aktiver Share-Link für diese Referenz.' }
+  if (!slug)
+    return { success: false, error: 'Kein aktiver Share-Link für diese Referenz.' }
 
   const wf = await fetchOrgWorkflowJson(supabase, orgId)
   const linkFallback =
     typeof wf === 'object' && wf !== null && 'link_expiry_days' in wf
       ? Number((wf as { link_expiry_days?: unknown }).link_expiry_days)
       : 14
-  const policy = parseOrgPublicLinkPolicy(wf, Number.isFinite(linkFallback) ? linkFallback : 14)
+  const policy = parseOrgPublicLinkPolicy(
+    wf,
+    Number.isFinite(linkFallback) ? linkFallback : 14,
+  )
 
   let expiresAtIso = input.expiresAtIso
   if (expiresAtIso && !input.clearExpires) {
@@ -497,18 +538,25 @@ export async function updateShareLinkSecurityByReferenceImpl(
     }
   }
 
-  const { data: rpcData, error: rpcErr } = await supabase.rpc('set_shared_portfolio_security', {
-    p_slug: slug,
-    p_password_plain: input.passwordPlain ?? '',
-    p_password_remove: input.removePassword,
-    p_expires_at: input.clearExpires ? undefined : nullToUndefined(expiresAtIso),
-    p_clear_expires: input.clearExpires,
-    p_gate_mode: input.gateMode ?? undefined,
-  })
+  const { data: rpcData, error: rpcErr } = await supabase.rpc(
+    'set_shared_portfolio_security',
+    {
+      p_slug: slug,
+      p_password_plain: input.passwordPlain ?? '',
+      p_password_remove: input.removePassword,
+      p_expires_at: input.clearExpires ? undefined : nullToUndefined(expiresAtIso),
+      p_clear_expires: input.clearExpires,
+      p_gate_mode: input.gateMode ?? undefined,
+    },
+  )
   if (rpcErr) return { success: false, error: rpcErr.message }
   const payload = rpcData as { success?: boolean; error?: string } | null
   if (!payload?.success) {
-    return { success: false, error: payload?.error ?? 'Sicherheitseinstellungen konnten nicht gespeichert werden.' }
+    return {
+      success: false,
+      error:
+        payload?.error ?? 'Sicherheitseinstellungen konnten nicht gespeichert werden.',
+    }
   }
   void writeAuditLog({
     orgId,
@@ -529,7 +577,7 @@ export async function updateShareLinkSecurityByReferenceImpl(
 
 export async function getPortfolioViewSessionsForReferenceImpl(
   referenceId: string,
-  limit = 8
+  limit = 8,
 ): Promise<
   Array<{
     id: string
@@ -553,7 +601,7 @@ export async function getPortfolioViewSessionsForReferenceImpl(
   const { data: sessions, error } = await supabase
     .from('portfolio_view_sessions')
     .select(
-      'id, started_at, country_code, active_seconds, visitor_name, recipient_id, shared_portfolio_recipients(label)'
+      'id, started_at, country_code, active_seconds, visitor_name, recipient_id, shared_portfolio_recipients(label)',
     )
     .eq('shared_portfolio_id', spId)
     .order('started_at', { ascending: false })
@@ -587,7 +635,7 @@ export async function getReferencesByIdsImpl(ids: string[]): Promise<ReferenceRo
       company_id, contact_id, file_path, tags, project_status, project_start, project_end,
       is_nda_deal,
       companies ( name, logo_url )
-    `
+    `,
     )
     .in('id', ids)
     .is('deleted_at', null)
@@ -607,7 +655,7 @@ export async function getReferencesByIdsImpl(ids: string[]): Promise<ReferenceRo
       if (!Number.isNaN(s.getTime()) && !Number.isNaN(e.getTime())) {
         duration_months = Math.max(
           0,
-          (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth())
+          (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth()),
         )
       }
     }
@@ -647,4 +695,3 @@ export async function getReferencesByIdsImpl(ids: string[]): Promise<ReferenceRo
     }
   })
 }
-

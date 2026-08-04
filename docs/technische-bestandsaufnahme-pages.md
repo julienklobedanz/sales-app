@@ -5,6 +5,7 @@
 Ziel: Pro Page/Routing-Screen eine **rein technische** Einschätzung, was **derzeit nicht funktionieren kann** (fehlende APIs/DB/RLS/Env/Platzhalter) und was **hardcodiert** bzw. bewusst „Demo“ ist.
 
 Grundlage:
+
 - Next.js **App Router** (`app/**/page.tsx`)
 - Auth/Daten primär über **Supabase** (`@supabase/ssr`, `@supabase/supabase-js`)
 - Pfade zentral über `lib/routes.ts` (`ROUTES`)
@@ -14,12 +15,12 @@ Grundlage:
 
 ### Legende (Status pro Page)
 
-| Status | Bedeutung |
-|--------|-----------|
-| **OK** | Bei korrekter DB/RLS und gesetzter Env nutzbar |
+| Status        | Bedeutung                                                          |
+| ------------- | ------------------------------------------------------------------ |
+| **OK**        | Bei korrekter DB/RLS und gesetzter Env nutzbar                     |
 | **Teilweise** | Funktioniert mit Einschränkungen, Demo-Fallback oder fehlender Env |
-| **Blockiert** | Env/Platzhalter verhindert Nutzung zuverlässig |
-| **Nur Info** | Keine eigene Funktionalität, nur Verweis/Übersicht |
+| **Blockiert** | Env/Platzhalter verhindert Nutzung zuverlässig                     |
+| **Nur Info**  | Keine eigene Funktionalität, nur Verweis/Übersicht                 |
 
 ---
 
@@ -57,16 +58,16 @@ Diese Punkte betreffen viele Pages gleichzeitig (weil Auth/Server-Actions/Integr
 
 **Verdrahtung im Code (Auszug):**
 
-| Feature | Modul/Route | Ohne Key |
-|---------|-------------|----------|
-| Intelligente Suche (Embeddings) | `app/dashboard/references/match.ts` | Harte Fehlermeldung |
-| KI-Zusammenfassung / Magic Import | `lib/document-extraction.ts`, Evidence Form | Fehler / übersprungen |
-| RFP-Analyse API | `app/api/rfp/analyze/route.ts` | Deaktiviert (503) |
-| KI-Entwurf Stream | `app/api/ki-entwurf/stream/route.ts` | Fehler |
-| Deal Desk Analyse | `app/api/deal-desk/analyze/route.ts` | **Mock-Demo** statt echter KI |
-| Referenz anonymisieren | `app/dashboard/evidence/[id]/actions.ts` | Regel-Fallback ohne KI |
-| Intro-Strategie Market Signals | `app/api/market-signals/intro-strategy/route.ts` | Heuristik statt OpenAI |
-| DB-Embedding-Trigger | `supabase/functions/generate-embedding` | `MISSING_OPENAI_API_KEY` |
+| Feature                           | Modul/Route                                      | Ohne Key                      |
+| --------------------------------- | ------------------------------------------------ | ----------------------------- |
+| Intelligente Suche (Embeddings)   | `app/dashboard/references/match.ts`              | Harte Fehlermeldung           |
+| KI-Zusammenfassung / Magic Import | `lib/document-extraction.ts`, Evidence Form      | Fehler / übersprungen         |
+| RFP-Analyse API                   | `app/api/rfp/analyze/route.ts`                   | Deaktiviert (503)             |
+| KI-Entwurf Stream                 | `app/api/ki-entwurf/stream/route.ts`             | Fehler                        |
+| Deal Desk Analyse                 | `app/api/deal-desk/analyze/route.ts`             | **Mock-Demo** statt echter KI |
+| Referenz anonymisieren            | `app/dashboard/evidence/[id]/actions.ts`         | Regel-Fallback ohne KI        |
+| Intro-Strategie Market Signals    | `app/api/market-signals/intro-strategy/route.ts` | Heuristik statt OpenAI        |
+| DB-Embedding-Trigger              | `supabase/functions/generate-embedding`          | `MISSING_OPENAI_API_KEY`      |
 
 - **Auswirkung bei Fehlen/Quota**: Je nach Feature harte Fehler, Heuristik oder Demo-Fallback (Deal Desk).
 
@@ -99,15 +100,15 @@ Gesetzt (Stand Prüfung): Supabase (URL, Anon, Service Role), Resend, **OpenAI**
 
 **Noch nicht in `.env.local` — blockiert konkrete Flows:**
 
-| Variable | Betroffene Funktion |
-|----------|---------------------|
-| `NEXT_PUBLIC_APP_URL` | **Passwort-Reset** (`forgot-password/actions.ts` — expliziter Fehler) |
-| `REFERENCE_MANAGER_EMAIL` | **Referenzbedarf melden** aus Deal (`deals/actions.ts`) |
-| `RESEND_FROM` | Fallback `onboarding@resend.dev` in Code (Tests ok, Prod eingeschränkt) |
-| `NEXT_PUBLIC_VAPID_*` / `VAPID_PRIVATE_KEY` | Browser-Push in Settings |
-| `STRIPE_*` | Billing/Checkout in Settings |
-| `BRANDFETCH_API_KEY` / `BRANDFETCH_CLIENT_ID` | Firmen-Autocomplete/Enrichment |
-| `CRON_SECRET` | Vercel-Cron in Production |
+| Variable                                      | Betroffene Funktion                                                     |
+| --------------------------------------------- | ----------------------------------------------------------------------- |
+| `NEXT_PUBLIC_APP_URL`                         | **Passwort-Reset** (`forgot-password/actions.ts` — expliziter Fehler)   |
+| `REFERENCE_MANAGER_EMAIL`                     | **Referenzbedarf melden** aus Deal (`deals/actions.ts`)                 |
+| `RESEND_FROM`                                 | Fallback `onboarding@resend.dev` in Code (Tests ok, Prod eingeschränkt) |
+| `NEXT_PUBLIC_VAPID_*` / `VAPID_PRIVATE_KEY`   | Browser-Push in Settings                                                |
+| `STRIPE_*`                                    | Billing/Checkout in Settings                                            |
+| `BRANDFETCH_API_KEY` / `BRANDFETCH_CLIENT_ID` | Firmen-Autocomplete/Enrichment                                          |
+| `CRON_SECRET`                                 | Vercel-Cron in Production                                               |
 
 ---
 
@@ -514,10 +515,12 @@ Gesetzt (Stand Prüfung): Supabase (URL, Anon, Service Role), Resend, **OpenAI**
 ## 12) Kurzfazit – „sicher unfertig“ / klar hardcodiert
 
 **Lokal blockiert (konkret):**
+
 - **Passwort-Reset**: `NEXT_PUBLIC_APP_URL` fehlt in `.env.local`
 - **Referenzbedarf-E-Mail**: `REFERENCE_MANAGER_EMAIL` fehlt
 
 **Teilweise / Demo / MVP:**
+
 - **Deal Desk**: Mock-Analyse ohne OpenAI oder bei Quota; Demo-Badge
 - **Match RFP-Tab**: MVP nur mit Deal-Kontext; ohne Deal nur Hinweis
 - **Salesforce**: generische Links in Settings/Market Signals (kein Opportunity-Link)
@@ -525,6 +528,7 @@ Gesetzt (Stand Prüfung): Supabase (URL, Anon, Service Role), Resend, **OpenAI**
 - **Workflow-Page** (`/dashboard/settings/workflow`): nur Info, keine Konfiguration
 
 **Funktional (bei DB/RLS ok):**
+
 - Auth (außer Forgot-Password lokal), Dashboard, Evidence, Accounts, **Deals-Liste** (wieder aktiv), Deal Desk mit OpenAI, Match Smart mit OpenAI
 
 **OpenAI:** Lokal angebunden (`OPENAI_API_KEY` in `.env.local`); Supabase Embedding-Function braucht zusätzlich Supabase Secret.
@@ -540,14 +544,17 @@ Dieser Abschnitt beschreibt die **konkreten technischen Maßnahmen**, damit alle
 ### 13.1 Umgebungsvariablen & Deployment konsistent machen
 
 **Priorität 1 (lokal sofort — blockiert Flows):**
+
 - `NEXT_PUBLIC_APP_URL` in `.env.local` ergänzen (Passwort-Reset, E-Mail-Links)
 - `REFERENCE_MANAGER_EMAIL` setzen (Referenzbedarf aus Deals)
 
 **Priorität 2 (bereits lokal ok, Prod spiegeln):**
+
 - Supabase (URL, Anon, Service Role), Resend, **OpenAI** → auch in Vercel/Prod
 - OpenAI zusätzlich als Secret in Supabase für `generate-embedding`
 
 **Priorität 3 (Stretch):**
+
 - `RESEND_FROM` mit verifizierter Domain
 - VAPID (Push), Stripe (Billing), Brandfetch (Enrichment), `CRON_SECRET` (Cron)
 
@@ -624,5 +631,3 @@ Viele Screens sind technisch implementiert, funktionieren aber in der Praxis nur
   - Settings: Team/Invites/Notifications/Billing (je nach Env)
   - Public: Approval-Link, Portfolio-Link (locked/expired/ok)
   - Forgot-Password: mit `NEXT_PUBLIC_APP_URL`
-
-

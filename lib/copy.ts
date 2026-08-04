@@ -173,8 +173,10 @@ export const COPY = {
     cockpit: {
       factsTitle: 'Deal-Fakten',
       stammdatenTitle: 'Stammdaten',
-      stammdatenSubtitle: 'Aus der Ausschreibung extrahiert — getrennt von den Deal-Fakten.',
-      stammdatenEmpty: 'Noch keine Stammdaten — nach der Analyse erscheinen Auftraggeber, Fristen und Eckdaten hier.',
+      stammdatenSubtitle:
+        'Aus der Ausschreibung extrahiert — getrennt von den Deal-Fakten.',
+      stammdatenEmpty:
+        'Noch keine Stammdaten — nach der Analyse erscheinen Auftraggeber, Fristen und Eckdaten hier.',
       stammdatenFields: {
         customer: 'Auftraggeber',
         documents: 'Einzureichende Unterlagen',
@@ -203,7 +205,8 @@ export const COPY = {
       proofTitle: 'Verknüpfte Referenzen',
       proofStatusLinked: '{count} verknüpft',
       proofStatusEmpty: 'Noch kein Beweis am Deal',
-      proofEmpty: 'Noch keine Referenzen verknüpft — finde passende Beweise für diesen Deal.',
+      proofEmpty:
+        'Noch keine Referenzen verknüpft — finde passende Beweise für diesen Deal.',
       findReference: 'Referenz finden',
       findReferenceTitle: 'Referenz finden',
       findReferenceDescription:
@@ -257,7 +260,8 @@ export const COPY = {
       metricEligibilityEmptyProfile:
         'Fähigkeitsprofil fehlt — K.O.-Check zeigt „Unbekannt", kein stiller Go.',
       eligibilityTitle: 'Eignungs- und K.O.-Kriterien',
-      eligibilityEmpty: 'Keine strukturierten Eignungskriterien in der Analyse — ggf. neu analysieren.',
+      eligibilityEmpty:
+        'Keine strukturierten Eignungskriterien in der Analyse — ggf. neu analysieren.',
       eligibilityColCriterion: 'Kriterium',
       eligibilityColRequirement: 'Prüfung',
       eligibilityColStatus: 'Status',
@@ -269,7 +273,8 @@ export const COPY = {
       risksGeneralTitle: 'Allgemeine Risiken',
       risksGeneralEmpty: 'Keine kritischen Vertragsrisiken erkannt.',
       risksOpenPointsTitle: 'Offene Punkte: Fachlich',
-      risksOpenPointsEmpty: 'Keine offenen Punkte — alle Anforderungen fachlich abgedeckt.',
+      risksOpenPointsEmpty:
+        'Keine offenen Punkte — alle Anforderungen fachlich abgedeckt.',
       risksRequestedEvidenceTitle: 'Vom Kunden angefragte Nachweise',
       risksRequestedEvidenceEmpty:
         'Keine fehlenden Nachweise erkannt — Eignungs- und Einreichungsanforderungen sind abgedeckt oder nicht extrahiert.',
@@ -283,10 +288,13 @@ export const COPY = {
       risksSeverityMedium: 'Mittel',
       recommendationAnalyzedOn: 'Analyse vom {date}',
       draftsTitle: 'Antwort-Entwürfe',
-      draftsSubtitle: 'Vorbereitete Antworten pro RFP-Anforderung — mit Referenz-Nachweis.',
-      draftsEmpty: 'Noch keine Entwürfe — nach RFP-Analyse oder Neu-Analyse erscheinen sie hier.',
+      draftsSubtitle:
+        'Vorbereitete Antworten pro RFP-Anforderung — mit Referenz-Nachweis.',
+      draftsEmpty:
+        'Noch keine Entwürfe — nach RFP-Analyse oder Neu-Analyse erscheinen sie hier.',
       draftsGenerateCta: '✦ KI-Antwort generieren',
-      draftsNoReference: 'Keine verifizierte Referenz — Antwort kann nicht automatisch belegt werden.',
+      draftsNoReference:
+        'Keine verifizierte Referenz — Antwort kann nicht automatisch belegt werden.',
       draftsStatusReady: 'Bereit',
       draftsStatusDraft: 'Entwurf',
       draftsStatusGap: 'Lücke',
@@ -383,7 +391,8 @@ export const COPY = {
       'Keine Treffer für diesen Namen. Namen weiter ausformulieren oder unten manuell anlegen.',
     createDialogBrandfetchHint:
       'Markendaten vorübergehend nicht verfügbar. Bitte kurz warten oder Stammdaten manuell ausfüllen.',
-    createDialogOpenExisting: 'Dieser Account existiert bereits. Es wird zur Detailseite gewechselt.',
+    createDialogOpenExisting:
+      'Dieser Account existiert bereits. Es wird zur Detailseite gewechselt.',
     editDialogTitle: 'Account bearbeiten',
     editSuccess: 'Account gespeichert.',
     editButton: 'Bearbeiten',
@@ -439,7 +448,8 @@ export const COPY = {
         signalsDescription:
           'News und Positionswechsel bei deinen Accounts — jeweils mit passender Reaktion.',
         signalsEmptyTitle: 'Keine Signale',
-        signalsEmptyDescription: 'Noch keine überwachten Accounts — Watchlist einrichten.',
+        signalsEmptyDescription:
+          'Noch keine überwachten Accounts — Watchlist einrichten.',
         coverageTitle: 'Deine offenen Deals — Beweis-Abdeckung',
         coverageDescription: 'Nach Frist sortiert. Deals ohne Beweis mit direktem Link.',
         coverageEmptyTitle: 'Noch keine Deals verknüpft',
@@ -529,7 +539,8 @@ export const COPY = {
         callQueueNoRef: 'Noch kein starker Referenz-Match — im Deal prüfen.',
         whyChampion: 'Champion {name} auf deiner Watchlist — Relevanz für den Deal.',
         whyWatchlistAccount: 'Account auf der Watchlist mit frischem Signal.',
-        whyRoleChange: 'Führungswechsel — neuer Ansprechpartner und Neubewertung der Lage.',
+        whyRoleChange:
+          'Führungswechsel — neuer Ansprechpartner und Neubewertung der Lage.',
         whyInitiative: 'Strategische Initiative passt zu eurem Angebot.',
         whyHiring: 'Neue Rolle/Stelle signalisiert Bedarf oder Budget.',
         whyPerfectRef: 'Starke Referenz für das Gespräch verfügbar.',
@@ -537,7 +548,8 @@ export const COPY = {
         whyDealNoProof: 'Offener Deal ohne belastbaren Beweis — Signal als Hebel.',
         whyFallback: 'Zeitfenster durch Marktsignal und offene Pipeline.',
         riskEmptyTitle: 'Noch zu wenige Deals',
-        riskEmptyDescription: 'Eine belastbare Risiko-Sicht braucht mehr offene Deals im System.',
+        riskEmptyDescription:
+          'Eine belastbare Risiko-Sicht braucht mehr offene Deals im System.',
         riskNoProof: 'kein Beweis',
         riskPartial: 'teilweise',
         riskStrong: 'stark belegt',
@@ -551,14 +563,16 @@ export const COPY = {
         coachingEmptyDescription: 'Adoption noch niedrig — CS-Begleitung im Pilot.',
         meetingPrep: {
           title: 'Meeting Prep',
-          description: 'Kundenmeeting vorbereiten — Signale, Risiken und Referenzen auf einen Blick.',
+          description:
+            'Kundenmeeting vorbereiten — Signale, Risiken und Referenzen auf einen Blick.',
           inputPlaceholder: 'Firmenname, z. B. Bosch',
           inputRequired: 'Bitte einen Firmennamen eingeben.',
           prepareCta: 'Briefing öffnen',
           preparing: 'Wird vorbereitet …',
           emptyTitle: 'Noch keine Briefings',
           emptyDescription: 'Firmennamen eingeben und Meeting Prep starten.',
-          sessionsEmpty: 'Noch keine gespeicherten Sessions — erstes Briefing oben anlegen.',
+          sessionsEmpty:
+            'Noch keine gespeicherten Sessions — erstes Briefing oben anlegen.',
           sessionsLabel: 'Gespeicherte Sessions',
           dialogSubtitle: 'Meeting Prep',
           dialogLoading: 'Briefing wird geladen …',
@@ -586,13 +600,15 @@ export const COPY = {
         signalRiskTitle: 'Signal-Risiko in der Pipeline',
         signalRiskDescription: 'Beziehungs- und Trigger-Risiko über offene Deals.',
         signalRiskEmptyTitle: 'Zu wenig Daten',
-        signalRiskEmptyDescription: 'Signal-Risiko braucht mehr überwachte Accounts und Deals.',
+        signalRiskEmptyDescription:
+          'Signal-Risiko braucht mehr überwachte Accounts und Deals.',
         signalRiskIntervene: 'eingreifen',
         signalRiskPushTeam: 'Team anstoßen',
         winTitle: 'Wirkungs-Beleg',
         winDescription: 'ROI-Beleg für die Leitung — bewusst periodisch, nicht operativ.',
         winEmptyTitle: 'Noch nicht aussagekräftig',
-        winEmptyDescription: '{closed} abgeschlossene Deals (Schwelle: {min}). Kein Fake-Chart.',
+        winEmptyDescription:
+          '{closed} abgeschlossene Deals (Schwelle: {min}). Kein Fake-Chart.',
         winWithRef: 'mit Referenz',
         winWithoutRef: 'ohne Referenz',
         winDelta: 'Δ +{n} Prozentpunkte Win-Rate',
@@ -647,7 +663,8 @@ export const COPY = {
     outreachFailed: 'Outreach-Entwurf konnte nicht erstellt werden.',
     outreachMatchingRefsTitle: 'Passende Referenzen',
     outreachMatchingRefsEmpty: 'Keine passende Referenz gefunden.',
-    outreachMatchingRefsHint: 'Anhaken fügt einen kurzen Proof-Satz ein — ohne den Entwurf neu zu generieren.',
+    outreachMatchingRefsHint:
+      'Anhaken fügt einen kurzen Proof-Satz ein — ohne den Entwurf neu zu generieren.',
     outreachGenerating: 'Entwurf wird erstellt …',
     outreachClose: 'Schließen',
     menuHide: 'Ausblenden',
@@ -666,7 +683,8 @@ export const COPY = {
       'Lege Accounts und Zielpersonen fest, damit Signale hier erscheinen.',
     emptyFollowingCta: 'Accounts & Personen festlegen',
     feedEmptyTitle: 'Noch keine Signale',
-    feedEmptyBody: 'Sobald neue Signale zu deiner Watchlist vorliegen, erscheinen sie hier.',
+    feedEmptyBody:
+      'Sobald neue Signale zu deiner Watchlist vorliegen, erscheinen sie hier.',
     executiveEmptyTitle: 'Noch keine Führungswechsel',
     executiveEmptyBody: 'Sobald neue Personen-Signale vorliegen, erscheinen sie hier.',
     newsEmptyTitle: 'Noch keine Company Updates',
@@ -695,4 +713,3 @@ export const COPY = {
 export function copyTableRowsSelected(selected: number, total: number) {
   return `${selected} von ${total} Ergebnissen ausgewählt`
 }
-

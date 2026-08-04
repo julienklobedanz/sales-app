@@ -19,10 +19,7 @@
     "public/sw.js",
     "supabase/functions/**/*.ts"
   ],
-  "ignore": [
-    "lib/database.types.ts",
-    "lib/supabase.ts"
-  ],
+  "ignore": ["lib/database.types.ts", "lib/supabase.ts"],
   "ignoreDependencies": [
     "server-only",
     "shadcn",

@@ -30,7 +30,7 @@ export async function updateOrganization(
   dateDisplayFormat?: string | null,
   uiLocale?: string | null,
   subdomain?: string | null,
-  billingSettings?: Partial<OrganizationBillingSettings> | null
+  billingSettings?: Partial<OrganizationBillingSettings> | null,
 ): Promise<UpdateOrganizationResult> {
   const supabase = await createServerSupabaseClient()
   const {
@@ -75,9 +75,15 @@ export async function updateOrganization(
     if (normalizedSubdomain) {
       const formatError = validateSubdomainFormat(normalizedSubdomain)
       if (formatError) return { success: false, error: formatError }
-      const availability = await checkSubdomainAvailability(normalizedSubdomain, organizationId)
+      const availability = await checkSubdomainAvailability(
+        normalizedSubdomain,
+        organizationId,
+      )
       if (!availability.available) {
-        return { success: false, error: availability.error ?? 'Subdomain ist nicht verfügbar.' }
+        return {
+          success: false,
+          error: availability.error ?? 'Subdomain ist nicht verfügbar.',
+        }
       }
     }
     updates.subdomain = normalizedSubdomain
@@ -92,7 +98,9 @@ export async function updateOrganization(
       .eq('id', organizationId)
       .maybeSingle()
     const prev =
-      orgRow?.api_settings && typeof orgRow.api_settings === 'object' && !Array.isArray(orgRow.api_settings)
+      orgRow?.api_settings &&
+      typeof orgRow.api_settings === 'object' &&
+      !Array.isArray(orgRow.api_settings)
         ? { ...(orgRow.api_settings as Record<string, unknown>) }
         : {}
 
@@ -146,7 +154,7 @@ export async function updateOrganization(
 
 export async function checkSubdomainAvailability(
   subdomain: string,
-  organizationId: string
+  organizationId: string,
 ): Promise<{ available: boolean; error?: string }> {
   const normalized = normalizeSubdomainInput(subdomain)
   if (!normalized) return { available: true }
@@ -187,9 +195,9 @@ export async function checkSubdomainAvailability(
   return { available: true }
 }
 
-export async function deleteWorkspace(confirmSubdomain: string): Promise<
-  { success: true } | { success: false; error: string }
-> {
+export async function deleteWorkspace(
+  confirmSubdomain: string,
+): Promise<{ success: true } | { success: false; error: string }> {
   const supabase = await createServerSupabaseClient()
   const {
     data: { user },
@@ -221,7 +229,8 @@ export async function deleteWorkspace(confirmSubdomain: string): Promise<
   if (!expected) {
     return {
       success: false,
-      error: 'Bitte zuerst eine Subdomain setzen, bevor der Workspace gelöscht werden kann.',
+      error:
+        'Bitte zuerst eine Subdomain setzen, bevor der Workspace gelöscht werden kann.',
     }
   }
   if (typed !== expected) {
@@ -231,7 +240,10 @@ export async function deleteWorkspace(confirmSubdomain: string): Promise<
   // Service-Role weil Org-Löschung alle Tenants-Daten und RLS-Grenzen umgeht / Grenze: nur eigene Org nach Admin+Confirm.
   const admin = createServiceRoleSupabaseClient()
   if (!admin) {
-    return { success: false, error: 'Workspace-Löschung ist serverseitig nicht konfiguriert.' }
+    return {
+      success: false,
+      error: 'Workspace-Löschung ist serverseitig nicht konfiguriert.',
+    }
   }
 
   const { error } = await admin.from('organizations').delete().eq('id', organizationId)

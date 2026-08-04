@@ -89,7 +89,8 @@ export async function createComplianceDocument(payload: {
 }): Promise<{ success: true; id: string } | { success: false; error: string }> {
   const auth = await getComplianceAuth()
   if ('error' in auth) return { success: false, error: auth.error }
-  if (!auth.isAdmin) return { success: false, error: 'Nur Admins dürfen Compliance-Dokumente verwalten.' }
+  if (!auth.isAdmin)
+    return { success: false, error: 'Nur Admins dürfen Compliance-Dokumente verwalten.' }
 
   const title = payload.title.trim()
   if (!title) return { success: false, error: 'Titel ist erforderlich.' }
@@ -171,9 +172,7 @@ export type ExtractComplianceCertificateMetadataResult =
     }
   | { success: false; error: string }
 
-function readCompliancePdfUpload(
-  formData: FormData
-): { file: File } | { error: string } {
+function readCompliancePdfUpload(formData: FormData): { file: File } | { error: string } {
   const file = formData.get('file')
   if (!(file instanceof File) || file.size === 0) {
     return { error: 'PDF-Datei fehlt.' }
@@ -189,7 +188,7 @@ function readCompliancePdfUpload(
 
 /** Liest Ablaufdatum aus PDF-Text (mehrsprachige Heuristik). */
 export async function extractComplianceCertificateExpiryFromPdf(
-  formData: FormData
+  formData: FormData,
 ): Promise<ExtractComplianceCertificateExpiryResult> {
   const auth = await getComplianceAuth()
   if ('error' in auth) return { success: false, error: auth.error }
@@ -214,7 +213,7 @@ export async function extractComplianceCertificateExpiryFromPdf(
 
 /** Liest Ablaufdatum und Dokumenttyp aus PDF-Text. */
 export async function extractComplianceCertificateMetadataFromPdf(
-  formData: FormData
+  formData: FormData,
 ): Promise<ExtractComplianceCertificateMetadataResult> {
   const auth = await getComplianceAuth()
   if ('error' in auth) return { success: false, error: auth.error }
@@ -248,7 +247,7 @@ export type UploadComplianceDocumentsBatchResult =
   | { success: false; error: string }
 
 export async function uploadComplianceDocumentsBatch(
-  formData: FormData
+  formData: FormData,
 ): Promise<UploadComplianceDocumentsBatchResult> {
   const auth = await getComplianceAuth()
   if ('error' in auth) return { success: false, error: auth.error }
@@ -313,7 +312,7 @@ export async function uploadComplianceDocumentsBatch(
 }
 
 export async function uploadComplianceDocument(
-  formData: FormData
+  formData: FormData,
 ): Promise<{ success: true; id: string } | { success: false; error: string }> {
   const file = formData.get('file')
   if (!(file instanceof File) || file.size === 0) {
@@ -346,11 +345,13 @@ export async function listCurrentComplianceDocuments(): Promise<
 async function createComplianceFileAccessUrls(
   supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
   fileStoragePath: string,
-  fileName: string | null
+  fileName: string | null,
 ): Promise<ComplianceDocumentAccessUrls | null> {
   const downloadName = fileName?.trim() || 'dokument.pdf'
   const [viewRes, downloadRes] = await Promise.all([
-    supabase.storage.from(COMPLIANCE_BUCKET).createSignedUrl(fileStoragePath, SIGNED_URL_TTL_SEC),
+    supabase.storage
+      .from(COMPLIANCE_BUCKET)
+      .createSignedUrl(fileStoragePath, SIGNED_URL_TTL_SEC),
     supabase.storage
       .from(COMPLIANCE_BUCKET)
       .createSignedUrl(fileStoragePath, SIGNED_URL_TTL_SEC, { download: downloadName }),
@@ -361,9 +362,10 @@ async function createComplianceFileAccessUrls(
 }
 
 export async function getComplianceDocumentAccessUrls(
-  documentId: string
+  documentId: string,
 ): Promise<
-  { success: true; urls: ComplianceDocumentAccessUrls } | { success: false; error: string }
+  | { success: true; urls: ComplianceDocumentAccessUrls }
+  | { success: false; error: string }
 > {
   const auth = await getComplianceAuth()
   if ('error' in auth) return { success: false, error: auth.error }
@@ -376,13 +378,16 @@ export async function getComplianceDocumentAccessUrls(
     .maybeSingle()
 
   if (error || !data?.file_storage_path) {
-    return { success: false, error: 'Dokument nicht gefunden oder keine Datei hinterlegt.' }
+    return {
+      success: false,
+      error: 'Dokument nicht gefunden oder keine Datei hinterlegt.',
+    }
   }
 
   const urls = await createComplianceFileAccessUrls(
     auth.supabase,
     data.file_storage_path,
-    data.file_name
+    data.file_name,
   )
   if (!urls) {
     return { success: false, error: 'Download-Link konnte nicht erstellt werden.' }
@@ -393,7 +398,7 @@ export async function getComplianceDocumentAccessUrls(
 
 /** Signierte URLs für viele Dokumente (Prefetch in der Zertifikate-Tabelle). */
 export async function prefetchComplianceDocumentUrls(
-  documentIds: string[]
+  documentIds: string[],
 ): Promise<
   | { success: true; urlsById: Record<string, ComplianceDocumentAccessUrls> }
   | { success: false; error: string }
@@ -419,17 +424,17 @@ export async function prefetchComplianceDocumentUrls(
       const urls = await createComplianceFileAccessUrls(
         auth.supabase,
         row.file_storage_path,
-        row.file_name
+        row.file_name,
       )
       if (urls) urlsById[row.id] = urls
-    })
+    }),
   )
 
   return { success: true, urlsById }
 }
 
 export async function getComplianceDocumentDownloadUrl(
-  documentId: string
+  documentId: string,
 ): Promise<{ success: true; url: string } | { success: false; error: string }> {
   const result = await getComplianceDocumentAccessUrls(documentId)
   if (!result.success) return result
@@ -443,7 +448,8 @@ export async function updateComplianceDocument(payload: {
 }): Promise<{ success: true } | { success: false; error: string }> {
   const auth = await getComplianceAuth()
   if ('error' in auth) return { success: false, error: auth.error }
-  if (!auth.isAdmin) return { success: false, error: 'Nur Admins dürfen Compliance-Dokumente verwalten.' }
+  if (!auth.isAdmin)
+    return { success: false, error: 'Nur Admins dürfen Compliance-Dokumente verwalten.' }
 
   const id = payload.documentId.trim()
   const title = payload.title.trim()
@@ -483,11 +489,12 @@ export async function updateComplianceDocument(payload: {
 
 /** Löscht eine archivierte Version (nicht die aktuelle). */
 export async function deleteComplianceDocumentVersion(
-  documentId: string
+  documentId: string,
 ): Promise<{ success: true } | { success: false; error: string }> {
   const auth = await getComplianceAuth()
   if ('error' in auth) return { success: false, error: auth.error }
-  if (!auth.isAdmin) return { success: false, error: 'Nur Admins dürfen Compliance-Dokumente verwalten.' }
+  if (!auth.isAdmin)
+    return { success: false, error: 'Nur Admins dürfen Compliance-Dokumente verwalten.' }
 
   const id = documentId.trim()
   if (!id) return { success: false, error: 'Dokument-ID fehlt.' }
@@ -504,7 +511,8 @@ export async function deleteComplianceDocumentVersion(
   if (row.is_current) {
     return {
       success: false,
-      error: 'Die aktuelle Version kann hier nicht gelöscht werden. Bitte zuerst eine neue Version hochladen.',
+      error:
+        'Die aktuelle Version kann hier nicht gelöscht werden. Bitte zuerst eine neue Version hochladen.',
     }
   }
 
@@ -514,11 +522,12 @@ export async function deleteComplianceDocumentVersion(
 }
 
 export async function deleteComplianceDocuments(
-  documentIds: string[]
+  documentIds: string[],
 ): Promise<{ success: true; deleted: number } | { success: false; error: string }> {
   const auth = await getComplianceAuth()
   if ('error' in auth) return { success: false, error: auth.error }
-  if (!auth.isAdmin) return { success: false, error: 'Nur Admins dürfen Compliance-Dokumente verwalten.' }
+  if (!auth.isAdmin)
+    return { success: false, error: 'Nur Admins dürfen Compliance-Dokumente verwalten.' }
 
   const ids = [...new Set(documentIds.map((id) => id.trim()).filter(Boolean))]
   if (ids.length === 0) return { success: false, error: 'Keine Dokumente ausgewählt.' }
@@ -549,7 +558,7 @@ export async function deleteComplianceDocuments(
     .eq('organization_id', auth.orgId)
     .in(
       'id',
-      rows.map((row) => row.id)
+      rows.map((row) => row.id),
     )
 
   if (deleteError) return { success: false, error: deleteError.message }

@@ -71,8 +71,8 @@ export function MarketSignalsFeed({
       new Set(
         initialReadKeys
           .filter((k) => k.startsWith('market_irrelevant:'))
-          .map((k) => k.replace('market_irrelevant:', ''))
-      )
+          .map((k) => k.replace('market_irrelevant:', '')),
+      ),
   )
   const [outreachOpen, setOutreachOpen] = useState(false)
   const [outreachLoading, setOutreachLoading] = useState(false)
@@ -87,7 +87,7 @@ export function MarketSignalsFeed({
 
   const championSet = useMemo(
     () => new Set(championWatchlist.map(normalizeText)),
-    [championWatchlist]
+    [championWatchlist],
   )
 
   const dealMetaByCompany = useMemo(() => {
@@ -124,7 +124,10 @@ export function MarketSignalsFeed({
       if (move) relevanceScore += 15
       else if (badge === 'Executive') relevanceScore += 8
       else relevanceScore += 5
-      const ageDays = Math.max(0, Math.floor((Date.now() - toMs(row.detectedAt)) / 86400000))
+      const ageDays = Math.max(
+        0,
+        Math.floor((Date.now() - toMs(row.detectedAt)) / 86400000),
+      )
       relevanceScore += Math.max(0, 10 - ageDays)
 
       return {
@@ -142,7 +145,7 @@ export function MarketSignalsFeed({
           row.sourceUrl,
           null,
           [row.insightSignalFact, row.changeSummary],
-          row.companyName
+          row.companyName,
         ),
         sourceUrl: row.sourceUrl,
         personName: row.personName,
@@ -167,7 +170,10 @@ export function MarketSignalsFeed({
       if (dealCount > 0) relevanceScore += 20
       if (badge === 'Move') relevanceScore += 15
       else relevanceScore += 5
-      const ageDays = Math.max(0, Math.floor((Date.now() - toMs(row.publishedOn)) / 86400000))
+      const ageDays = Math.max(
+        0,
+        Math.floor((Date.now() - toMs(row.publishedOn)) / 86400000),
+      )
       relevanceScore += Math.max(0, 10 - ageDays)
 
       return {
@@ -177,7 +183,9 @@ export function MarketSignalsFeed({
         companyId: row.companyId,
         companyName: row.companyName,
         companyLogoUrl: row.companyLogoUrl,
-        at: row.publishedOn.includes('T') ? row.publishedOn : `${row.publishedOn}T12:00:00.000Z`,
+        at: row.publishedOn.includes('T')
+          ? row.publishedOn
+          : `${row.publishedOn}T12:00:00.000Z`,
         badge,
         headline: newsHeadline(row),
         compellingEvent: clampCompellingEvent(row.insightWhyNow),
@@ -185,7 +193,7 @@ export function MarketSignalsFeed({
           row.sourceUrl,
           row.sourceLabel,
           [row.insightSignalFact, row.body],
-          row.companyName
+          row.companyName,
         ),
         sourceUrl: row.sourceUrl,
         personName,
@@ -196,7 +204,9 @@ export function MarketSignalsFeed({
       }
     })
 
-    const merged = [...execItems, ...newsItems].filter((item) => !irrelevantKeys.has(item.readKey))
+    const merged = [...execItems, ...newsItems].filter(
+      (item) => !irrelevantKeys.has(item.readKey),
+    )
     merged.sort((a, b) => {
       if (sort === 'relevance' && a.relevanceScore !== b.relevanceScore) {
         return b.relevanceScore - a.relevanceScore
@@ -245,7 +255,11 @@ export function MarketSignalsFeed({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- siehe Kommentar
   }, [visibleKeySig])
 
-  function rebuildOutreachText(base: string, matches: SignalMatchHit[], selectedIds: string[]) {
+  function rebuildOutreachText(
+    base: string,
+    matches: SignalMatchHit[],
+    selectedIds: string[],
+  ) {
     const selected = matches.filter((m) => selectedIds.includes(m.id))
     const blocks = selected.map(formatReferenceProofBlock)
     return composeOutreachWithProofBlocks(base, blocks)
@@ -253,7 +267,9 @@ export function MarketSignalsFeed({
 
   function toggleOutreachMatch(id: string, checked: boolean) {
     setOutreachSelectedIds((prev) => {
-      const next = checked ? [...prev.filter((x) => x !== id), id] : prev.filter((x) => x !== id)
+      const next = checked
+        ? [...prev.filter((x) => x !== id), id]
+        : prev.filter((x) => x !== id)
       setOutreachText(rebuildOutreachText(outreachBase, outreachMatches, next))
       return next
     })
@@ -265,7 +281,8 @@ export function MarketSignalsFeed({
     keys.forEach((key) => next.add(key))
     setReadKeys(next)
     const result = await markMarketSignalNotificationsRead(keys)
-    if (!result.success) toast.error(result.error ?? 'Konnte nicht als gelesen markieren.')
+    if (!result.success)
+      toast.error(result.error ?? 'Konnte nicht als gelesen markieren.')
   }
 
   async function hideSignal(readKey: string) {
@@ -273,7 +290,8 @@ export function MarketSignalsFeed({
     next.add(readKey)
     setIrrelevantKeys(next)
     const result = await markMarketSignalsIrrelevant([readKey])
-    if (!result.success) toast.error(result.error ?? 'Signal konnte nicht ausgeblendet werden.')
+    if (!result.success)
+      toast.error(result.error ?? 'Signal konnte nicht ausgeblendet werden.')
   }
 
   async function copyLink(item: FeedItem) {
@@ -366,7 +384,9 @@ export function MarketSignalsFeed({
     return (
       <div className="rounded-xl border border-dashed bg-muted/30 px-6 py-10 text-center">
         <p className="font-medium text-foreground">{COPY.marketSignals.feedEmptyTitle}</p>
-        <p className="mt-1 text-sm text-muted-foreground">{COPY.marketSignals.feedEmptyBody}</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {COPY.marketSignals.feedEmptyBody}
+        </p>
       </div>
     )
   }

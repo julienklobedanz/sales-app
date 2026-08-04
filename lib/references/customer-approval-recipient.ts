@@ -9,13 +9,17 @@ export type CustomerApprovalRecipientRow = {
 
 export async function resolveCustomerApprovalRecipient(
   admin: SupabaseClient,
-  ref: CustomerApprovalRecipientRow
+  ref: CustomerApprovalRecipientRow,
 ): Promise<{ email: string; firstName: string } | null> {
   const delegatedEmail =
-    typeof ref.approval_delegated_to_email === 'string' ? ref.approval_delegated_to_email.trim() : ''
+    typeof ref.approval_delegated_to_email === 'string'
+      ? ref.approval_delegated_to_email.trim()
+      : ''
   if (delegatedEmail.includes('@')) {
     const name =
-      typeof ref.approval_delegated_to_name === 'string' ? ref.approval_delegated_to_name.trim() : ''
+      typeof ref.approval_delegated_to_name === 'string'
+        ? ref.approval_delegated_to_name.trim()
+        : ''
     return { email: delegatedEmail, firstName: name }
   }
 
@@ -50,11 +54,15 @@ export async function resolveCustomerApprovalRecipient(
 
 export async function fetchVendorOrganizationName(
   admin: SupabaseClient,
-  organizationId: string | null | undefined
+  organizationId: string | null | undefined,
 ): Promise<string> {
   const orgId = String(organizationId ?? '').trim()
   if (!orgId) return 'Refstack'
-  const { data } = await admin.from('organizations').select('name').eq('id', orgId).maybeSingle()
+  const { data } = await admin
+    .from('organizations')
+    .select('name')
+    .eq('id', orgId)
+    .maybeSingle()
   const name = String(data?.name ?? '').trim()
   return name || 'Refstack'
 }

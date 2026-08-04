@@ -510,7 +510,7 @@ async function main() {
   for (const ref of REFERENCES) {
     const companyId = await getOrCreateCompany(
       ref.companyName,
-      ref.companyIndustry ?? ref.industry
+      ref.companyIndustry ?? ref.industry,
     )
 
     const approval_internal_status =
@@ -556,7 +556,7 @@ async function main() {
   const { execSync } = await import('child_process')
   execSync(
     'npx tsx --require dotenv/config scripts/backfill-embeddings.ts dotenv_config_path=.env.local',
-    { stdio: 'inherit', cwd: process.cwd(), env: process.env }
+    { stdio: 'inherit', cwd: process.cwd(), env: process.env },
   )
 }
 

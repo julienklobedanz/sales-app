@@ -67,7 +67,7 @@ async function getNdaAuth(): Promise<NdaAuth> {
 async function assertCompanyInOrg(
   supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
   companyId: string,
-  orgId: string
+  orgId: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const { data } = await supabase
     .from('companies')
@@ -80,8 +80,10 @@ async function assertCompanyInOrg(
 }
 
 export async function getNdaAgreementsByCompanyId(
-  companyId: string
-): Promise<{ success: true; rows: NdaAgreementRow[] } | { success: false; error: string }> {
+  companyId: string,
+): Promise<
+  { success: true; rows: NdaAgreementRow[] } | { success: false; error: string }
+> {
   const auth = await getNdaAuth()
   if ('error' in auth) return { success: false, error: auth.error }
 
@@ -140,7 +142,7 @@ export async function getNdaAgreementsByCompanyId(
         withNdaFileFieldsNull({
           ...(row as Record<string, unknown>),
           title: (row as { title?: string | null }).title ?? null,
-        })
+        }),
       )
       return { success: true, rows: rows as NdaAgreementRow[] }
     }
@@ -176,7 +178,11 @@ export async function createNdaAgreement(payload: {
   if ('error' in auth) return { success: false, error: auth.error }
   if (!auth.canManage) return { success: false, error: 'Keine Berechtigung.' }
 
-  const companyCheck = await assertCompanyInOrg(auth.supabase, payload.companyId, auth.orgId)
+  const companyCheck = await assertCompanyInOrg(
+    auth.supabase,
+    payload.companyId,
+    auth.orgId,
+  )
   if (!companyCheck.ok) return { success: false, error: companyCheck.error }
 
   const baseRow = {
@@ -199,7 +205,11 @@ export async function createNdaAgreement(payload: {
 
   if (error && isMissingNdaTitleColumn(error.message)) {
     titlePersisted = false
-    const fallback = await auth.supabase.from('nda_agreements').insert(baseRow).select('id').single()
+    const fallback = await auth.supabase
+      .from('nda_agreements')
+      .insert(baseRow)
+      .select('id')
+      .single()
     data = fallback.data
     error = fallback.error
   }
@@ -218,7 +228,7 @@ export async function createNdaAgreement(payload: {
 
 export async function deleteNdaAgreement(
   ndaId: string,
-  companyId: string
+  companyId: string,
 ): Promise<{ success: boolean; error?: string }> {
   const auth = await getNdaAuth()
   if ('error' in auth) return { success: false, error: auth.error }
@@ -253,7 +263,7 @@ export async function deleteNdaAgreement(
 export async function uploadNdaAgreementPdf(
   ndaId: string,
   companyId: string,
-  formData: FormData
+  formData: FormData,
 ): Promise<{ success: boolean; error?: string }> {
   const auth = await getNdaAuth()
   if ('error' in auth) return { success: false, error: auth.error }
@@ -285,10 +295,12 @@ export async function uploadNdaAgreementPdf(
   const storagePath = `${auth.orgId}/${companyId}/${ndaId}/${Date.now()}-${safeName}`
 
   const bytes = new Uint8Array(await file.arrayBuffer())
-  const { error: uploadError } = await auth.supabase.storage.from(NDA_BUCKET).upload(storagePath, bytes, {
-    contentType: 'application/pdf',
-    upsert: false,
-  })
+  const { error: uploadError } = await auth.supabase.storage
+    .from(NDA_BUCKET)
+    .upload(storagePath, bytes, {
+      contentType: 'application/pdf',
+      upsert: false,
+    })
 
   if (uploadError) return { success: false, error: uploadError.message }
 
@@ -319,7 +331,7 @@ export async function uploadNdaAgreementPdf(
 
 export async function getNdaAgreementDownloadUrl(
   ndaId: string,
-  companyId: string
+  companyId: string,
 ): Promise<{ success: true; url: string } | { success: false; error: string }> {
   const auth = await getNdaAuth()
   if ('error' in auth) return { success: false, error: auth.error }

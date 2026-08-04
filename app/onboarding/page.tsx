@@ -7,7 +7,11 @@ import { OnboardingWizard } from './onboarding-wizard'
 import { isHubSpotConfigured } from '@/lib/crm/hubspot/config'
 
 type Props = {
-  searchParams: Promise<{ invite?: string; crm_connected?: string; crm_provider?: string }>
+  searchParams: Promise<{
+    invite?: string
+    crm_connected?: string
+    crm_provider?: string
+  }>
 }
 
 export default async function OnboardingPage({ searchParams }: Props) {

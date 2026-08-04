@@ -53,7 +53,8 @@ function referenceExpiresSoon(ref: ReferenceExpiryInput, now: Date): boolean {
 function hasExpiringWonContract(deals: DealStatusInput[], now: Date): boolean {
   return deals.some(
     (d) =>
-      d.status === 'won' && isContractEndWithinWarningWindow(d.contractEndDate ?? null, now)
+      d.status === 'won' &&
+      isContractEndWithinWarningWindow(d.contractEndDate ?? null, now),
   )
 }
 
@@ -73,7 +74,7 @@ function latestWonDate(deals: DealStatusInput[]): Date | null {
  * Priorität: At Risk (Referenz oder Vertragsende ≤9 Monate) → Aktiver Kunde → Ehemaliger → Target.
  */
 export function computeAccountStatusFromSignals(
-  input: ComputeAccountStatusInput
+  input: ComputeAccountStatusInput,
 ): CompanyAccountStatusValue | null {
   const now = input.now ?? new Date()
 

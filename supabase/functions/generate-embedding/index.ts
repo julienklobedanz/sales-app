@@ -77,7 +77,8 @@ function buildReferenceEmbeddingText(ref: ReferenceEmbeddingSource): string {
   if (tags) lines.push(`Tags: ${tags}`)
 
   plain(ref.title)
-  if (ref.customer_challenge?.trim()) lines.push(`Herausforderung:\n${ref.customer_challenge.trim()}`)
+  if (ref.customer_challenge?.trim())
+    lines.push(`Herausforderung:\n${ref.customer_challenge.trim()}`)
   if (ref.our_solution?.trim()) lines.push(`Lösung:\n${ref.our_solution.trim()}`)
   if (ref.summary?.trim()) lines.push(`Zusammenfassung:\n${ref.summary.trim()}`)
 
@@ -90,17 +91,23 @@ serve(async (req) => {
 
   try {
     if (req.method !== 'POST') {
-      return new Response(JSON.stringify({ success: false, error: 'Method not allowed' }), {
-        status: 405,
-        headers: { 'Content-Type': 'application/json' },
-      })
+      return new Response(
+        JSON.stringify({ success: false, error: 'Method not allowed' }),
+        {
+          status: 405,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      )
     }
 
     if (!reference_id) {
-      return new Response(JSON.stringify({ success: false, error: 'reference_id fehlt' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      })
+      return new Response(
+        JSON.stringify({ success: false, error: 'reference_id fehlt' }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      )
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
@@ -115,7 +122,9 @@ serve(async (req) => {
           await supabaseForError
             .from('references')
             .update({
-              embedding_error: !openaiKey ? 'MISSING_OPENAI_API_KEY' : 'MISSING_SUPABASE_SECRETS',
+              embedding_error: !openaiKey
+                ? 'MISSING_OPENAI_API_KEY'
+                : 'MISSING_SUPABASE_SECRETS',
               embedding_updated_at: null,
             })
             .eq('id', reference_id)
@@ -127,9 +136,10 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: false,
-          error: 'Missing secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, OPENAI_API_KEY',
+          error:
+            'Missing secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, OPENAI_API_KEY',
         }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
+        { status: 500, headers: { 'Content-Type': 'application/json' } },
       )
     }
 
@@ -155,7 +165,7 @@ serve(async (req) => {
         competitors,
         project_status,
         companies ( name )
-      `
+      `,
       )
       .eq('id', reference_id)
       .single()
@@ -165,16 +175,17 @@ serve(async (req) => {
         .from('references')
         .update({ embedding_error: refErr?.message ?? 'Reference not found' })
         .eq('id', reference_id)
-      return new Response(JSON.stringify({ success: false, error: refErr?.message ?? 'not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
-      })
+      return new Response(
+        JSON.stringify({ success: false, error: refErr?.message ?? 'not found' }),
+        {
+          status: 404,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      )
     }
 
     const companyRaw = ref.companies as { name?: string } | { name?: string }[] | null
-    const companyName = Array.isArray(companyRaw)
-      ? companyRaw[0]?.name
-      : companyRaw?.name
+    const companyName = Array.isArray(companyRaw) ? companyRaw[0]?.name : companyRaw?.name
 
     const text = buildReferenceEmbeddingText({
       title: ref.title,
@@ -218,10 +229,13 @@ serve(async (req) => {
         .from('references')
         .update({ embedding_error: 'INVALID_EMBEDDING_DIM' })
         .eq('id', reference_id)
-      return new Response(JSON.stringify({ success: false, error: 'Invalid embedding result' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      })
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid embedding result' }),
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      )
     }
 
     await supabase
@@ -240,7 +254,7 @@ serve(async (req) => {
   } catch (e) {
     return new Response(
       JSON.stringify({ success: false, error: (e as Error)?.message ?? 'Unknown error' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      { status: 500, headers: { 'Content-Type': 'application/json' } },
     )
   }
 })

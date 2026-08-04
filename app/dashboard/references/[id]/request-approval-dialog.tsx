@@ -80,14 +80,16 @@ export function RequestApprovalDialog({
     try {
       await submitForApproval(referenceId, options)
       toast.success(
-        'Zur internen Prüfung eingereicht. Der Account Manager wurde per E-Mail benachrichtigt.'
+        'Zur internen Prüfung eingereicht. Der Account Manager wurde per E-Mail benachrichtigt.',
       )
       setOpen(false)
       setMessage('')
       setAccountManagerEmail('')
       router.refresh()
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Freigabe konnte nicht angefordert werden.')
+      toast.error(
+        e instanceof Error ? e.message : 'Freigabe konnte nicht angefordert werden.',
+      )
     } finally {
       setLoading(false)
     }
@@ -102,7 +104,9 @@ export function RequestApprovalDialog({
         className={triggerClassName}
         onClick={() => setOpen(true)}
       >
-        {triggerIcon ? <span className="mr-2 inline-flex items-center">{triggerIcon}</span> : null}
+        {triggerIcon ? (
+          <span className="mr-2 inline-flex items-center">{triggerIcon}</span>
+        ) : null}
         {triggerLabel}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
@@ -113,10 +117,11 @@ export function RequestApprovalDialog({
           <div className="rounded-lg border border-sky-200/80 bg-sky-50/60 p-3 text-xs leading-relaxed text-sky-950 dark:border-sky-500/25 dark:bg-sky-500/10 dark:text-sky-100">
             <p className="font-medium">Interne Prüfung beim Account Manager anstoßen</p>
             <p className="mt-1 text-sky-900/90 dark:text-sky-100/85">
-              Mit dieser Anfrage leiten Sie die Referenz zur internen Prüfung weiter — nicht direkt
-              an den Kunden. Der Account Manager erhält eine E-Mail, prüft die Referenz und bereitet
-              danach die Kundenfreigabe vor (Kontaktwahl und Versand des Freigabe-Links). Scope,
-              Zitat und Fristen sind an der Referenz bzw. in den Einstellungen hinterlegt.
+              Mit dieser Anfrage leiten Sie die Referenz zur internen Prüfung weiter —
+              nicht direkt an den Kunden. Der Account Manager erhält eine E-Mail, prüft
+              die Referenz und bereitet danach die Kundenfreigabe vor (Kontaktwahl und
+              Versand des Freigabe-Links). Scope, Zitat und Fristen sind an der Referenz
+              bzw. in den Einstellungen hinterlegt.
             </p>
           </div>
           <div className="grid gap-5 py-2">
@@ -137,7 +142,9 @@ export function RequestApprovalDialog({
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="approval-msg">Nachricht an den Account Manager (optional)</Label>
+              <Label htmlFor="approval-msg">
+                Nachricht an den Account Manager (optional)
+              </Label>
               <Textarea
                 id="approval-msg"
                 value={message}
@@ -149,7 +156,12 @@ export function RequestApprovalDialog({
             </div>
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+              disabled={loading}
+            >
               Abbrechen
             </Button>
             <Button type="button" onClick={() => void onSubmit()} disabled={loading}>

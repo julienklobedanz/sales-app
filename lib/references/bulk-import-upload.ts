@@ -9,7 +9,7 @@ import { attachBulkImportFileToReference } from '@/lib/references/library/bulk-i
 export async function uploadBulkImportFilesForReference(
   organizationId: string,
   referenceId: string,
-  files: File[]
+  files: File[],
 ): Promise<{ ok: boolean; error?: string }> {
   if (!organizationId?.trim() || !referenceId?.trim() || files.length === 0) {
     return { ok: false, error: 'Upload-Parameter unvollständig.' }
@@ -33,14 +33,15 @@ export async function uploadBulkImportFilesForReference(
 
     if (uploadError || !uploadData?.path) {
       const raw = uploadError?.message ?? 'Datei konnte nicht hochgeladen werden.'
-      const error =
-        /bucket not found/i.test(raw)
-          ? 'Storage-Bucket „references“ ist nicht angelegt. Bitte Supabase-Migrationen ausführen (20260510220000_references_storage_bucket.sql).'
-          : raw
+      const error = /bucket not found/i.test(raw)
+        ? 'Storage-Bucket „references“ ist nicht angelegt. Bitte Supabase-Migrationen ausführen (20260510220000_references_storage_bucket.sql).'
+        : raw
       return { ok: false, error }
     }
 
-    const { data: publicUrlData } = supabase.storage.from('references').getPublicUrl(uploadData.path)
+    const { data: publicUrlData } = supabase.storage
+      .from('references')
+      .getPublicUrl(uploadData.path)
     const publicUrl = publicUrlData?.publicUrl ?? null
     const ext = file.name.includes('.') ? (file.name.split('.').pop() ?? '') : ''
 

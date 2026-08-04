@@ -37,14 +37,14 @@ In Ausschreibungen wird oft „Reference Call verfügbar“ verlangt — tatsäc
 
 ## 2. Diagnose: Wo es bricht
 
-| Phase | Reibung | Warum das im MSP-Kontext weh tut |
-|-------|---------|----------------------------------|
-| **Vor Projektende** | Referenz-Thema kommt zu spät | Kunde ist im Delivery-Modus, nicht im Marketing-Modus |
-| **Vertrag** | Klauseln existieren, aber nicht im Account-/Projekt-Flow | AM verhandelt mündlich, Sales fragt später nochmal digital |
-| **Freigabe-Start** | Sales sieht Portfolio-Stufe, Workflow in separater Card | Unklar, was der Kunde später wirklich bestätigen muss |
-| **Kundenfreigabe** | Referenzcalls als Checkbox *nach* großer Freigabe | Wirkt wie Zusatzrisiko, nicht wie Option |
-| **Einwilligungen** | Zwei juristische Checkboxen | Kunde denkt: „Ich gebe mein Unternehmen frei“ |
-| **Nach Freigabe** | Showcase + Sperrlink gut — aber Kunde hat oft nie gesehen, wie die Referenz im Pitch aussieht | Überraschung = Widerruf |
+| Phase               | Reibung                                                                                       | Warum das im MSP-Kontext weh tut                           |
+| ------------------- | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| **Vor Projektende** | Referenz-Thema kommt zu spät                                                                  | Kunde ist im Delivery-Modus, nicht im Marketing-Modus      |
+| **Vertrag**         | Klauseln existieren, aber nicht im Account-/Projekt-Flow                                      | AM verhandelt mündlich, Sales fragt später nochmal digital |
+| **Freigabe-Start**  | Sales sieht Portfolio-Stufe, Workflow in separater Card                                       | Unklar, was der Kunde später wirklich bestätigen muss      |
+| **Kundenfreigabe**  | Referenzcalls als Checkbox _nach_ großer Freigabe                                             | Wirkt wie Zusatzrisiko, nicht wie Option                   |
+| **Einwilligungen**  | Zwei juristische Checkboxen                                                                   | Kunde denkt: „Ich gebe mein Unternehmen frei“              |
+| **Nach Freigabe**   | Showcase + Sperrlink gut — aber Kunde hat oft nie gesehen, wie die Referenz im Pitch aussieht | Überraschung = Widerruf                                    |
 
 ---
 
@@ -61,17 +61,17 @@ Die drei Pakete aus dem Deal Desk (`Rundum-Sorglos`, `Mittel`, `Anonym`) sollten
 - Beim **Projektabschluss** automatisch vorschlagen: „Welches Paket wurde vereinbart?“
 - Beim **Freigabe-Start** vorausfüllen: Kunde sieht in der Freigabeansicht genau das, was schon im Vertrag stand
 
-→ Reduziert kognitive Dissonanz: *„Das steht schon in unserem Rahmenvertrag.“*
+→ Reduziert kognitive Dissonanz: _„Das steht schon in unserem Rahmenvertrag.“_
 
 **A2. Mid-Project „Success Story Draft“ (4–6 Wochen vor Go-Live)**  
 Unterstützende Unterlagen für eure User:
 
-| Asset | Zweck |
-|-------|--------|
-| **1-Pager „Projekterfolg auf einen Blick“** (Template) | Mit Kunde gemeinsam ausfüllen — wird später die Referenz |
-| **E-Mail-Vorlage an Executive Sponsor** | „Dürfen wir den Erfolg anonym/namentlich teilen?“ |
-| **Referenz-Koordinator-Rolle** | Wer beim Kunden ist Ansprechpartner? (ihr habt `internal_reference_approval_contact` auf Account-Ebene — gut, aber noch nicht „Reference Champion“ beim Kunden) |
-| **Mutual Success Review Agenda** | 30-Min-Call: keine Freigabe, nur Inhalt validieren |
+| Asset                                                  | Zweck                                                                                                                                                           |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1-Pager „Projekterfolg auf einen Blick“** (Template) | Mit Kunde gemeinsam ausfüllen — wird später die Referenz                                                                                                        |
+| **E-Mail-Vorlage an Executive Sponsor**                | „Dürfen wir den Erfolg anonym/namentlich teilen?“                                                                                                               |
+| **Referenz-Koordinator-Rolle**                         | Wer beim Kunden ist Ansprechpartner? (ihr habt `internal_reference_approval_contact` auf Account-Ebene — gut, aber noch nicht „Reference Champion“ beim Kunden) |
+| **Mutual Success Review Agenda**                       | 30-Min-Call: keine Freigabe, nur Inhalt validieren                                                                                                              |
 
 **A3. Account-Feld „Referenz-Reife“**  
 Einfache Skala für AM/Sales im Account:
@@ -97,10 +97,10 @@ Das Kernproblem: **RFP verlangt Calls → Kunde will keine unbegrenzte Pflicht.*
 
 **B1. Zwei-Stufen-Modell (produktisch und vertraglich)**
 
-| Stufe | Was der Kunde gibt | Was Sales in RFPs schreiben darf |
-|-------|-------------------|----------------------------------|
+| Stufe                          | Was der Kunde gibt                                    | Was Sales in RFPs schreiben darf                         |
+| ------------------------------ | ----------------------------------------------------- | -------------------------------------------------------- |
 | **Stufe 1: Written Reference** | Anonyme oder namentliche Case Study, Zitat, ggf. Logo | „Referenzprojekt verfügbar“, „Kundenerfolg dokumentiert“ |
-| **Stufe 2: Call Pool** | Max. 1–2 Calls/Jahr, Named Contact, Ersatzperson | „Reference Call auf Anfrage, nach Terminabstimmung“ |
+| **Stufe 2: Call Pool**         | Max. 1–2 Calls/Jahr, Named Contact, Ersatzperson      | „Reference Call auf Anfrage, nach Terminabstimmung“      |
 
 Heute: Stufe 1+2 in einem Formular (`referenceCallsEnabled` Checkbox).  
 Besser: **Stufe 2 erst nach Stufe 1** oder als separater, optionaler Schritt.
@@ -109,7 +109,7 @@ Besser: **Stufe 2 erst nach Stufe 1** oder als separater, optionaler Schritt.
 Im Datenmodell habt ihr `approval_reference_call_frequency` — in der Kunden-UI wird das **nicht** gezeigt. Empfehlung:
 
 - Wenn Calls aktiviert: Frequenz wählen (1×/Jahr default)
-- Klarer Text: *„Sie verpflichten sich nicht zu jedem Anruf — Sie können einzelne Anfragen ablehnen.“*
+- Klarer Text: _„Sie verpflichten sich nicht zu jedem Anruf — Sie können einzelne Anfragen ablehnen.“_
 - Optional: „Schriftliche Referenz-Antwort statt Call“ als Alternative
 
 Das entspricht der MSP-Realität: In Ausschreibungen steht „Reference available“, tatsächlich reicht oft eine **schriftliche Bestätigung**.
@@ -141,10 +141,10 @@ Heute ist die Seite schon überdurchschnittlich — aber für MSP-Kunden noch zu
 
 **C1. Default-Pfad nach Risikoprofil**
 
-| Kundentyp | Vorauswahl |
-|-----------|------------|
-| Enterprise / Procurement-stark | **Anonyme Freigabe** vorausgewählt |
-| Vertrags-Paket „Mittel“ | Namentlich vorausgewählt, Calls **aus** |
+| Kundentyp                       | Vorauswahl                                                |
+| ------------------------------- | --------------------------------------------------------- |
+| Enterprise / Procurement-stark  | **Anonyme Freigabe** vorausgewählt                        |
+| Vertrags-Paket „Mittel“         | Namentlich vorausgewählt, Calls **aus**                   |
 | Vertrags-Paket „Rundum-Sorglos“ | Namentlich + Calls vorausgewählt (aber Frequenz sichtbar) |
 
 Technisch: `initialScope` aus Account/Vertrags-Paket, nicht nur DB-Defaults.
@@ -159,7 +159,7 @@ Besser als **eigener Block nach Freigabe** oder Accordion:
 
 - Hauptentscheidung: namentlich / anonym / nein (3 Klicks)
 - Darunter eingeklappt: „Optional: Für Ausschreibungen bereitstehen“
-- Mit Erklärung: *„In den meisten Fällen werden keine Anrufe angefragt. Sie behalten ein Veto pro Anfrage.“*
+- Mit Erklärung: _„In den meisten Fällen werden keine Anrufe angefragt. Sie behalten ein Veto pro Anfrage.“_
 
 **C3. „So sieht es aus“-Preview**
 
@@ -189,7 +189,7 @@ Quick-Choice-Karten sind richtig — Zitat und Name/Position nur bei namentliche
 
 Ihr habt den Sperrlink-Loop — stark. Ergänzen:
 
-- In der Bestätigungs-Mail: *„So haben wir Ihre Freigabe verstanden“* (Scope in 3 Bulletpoints)
+- In der Bestätigungs-Mail: _„So haben wir Ihre Freigabe verstanden“_ (Scope in 3 Bulletpoints)
 - Link zur Showcase-Vorschau, nicht nur Sperrlink
 
 ---
@@ -228,4 +228,4 @@ Die Freigabeansicht ist dann der **letzte, leichte Schritt** — nicht der erste
 
 ---
 
-*Erstellt: 2026-05-27 — RefStack Freigabeflow-Analyse*
+_Erstellt: 2026-05-27 — RefStack Freigabeflow-Analyse_

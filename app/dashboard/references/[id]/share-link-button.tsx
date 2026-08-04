@@ -61,7 +61,9 @@ export function ShareLinkButton({
   const [hasCustomerManageToken, setHasCustomerManageToken] = useState(false)
   const [issuingManage, setIssuingManage] = useState(false)
   const [sperrlinkConfirmOpen, setSperrlinkConfirmOpen] = useState(false)
-  const [customerEmailForSperrlink, setCustomerEmailForSperrlink] = useState<string | null>(null)
+  const [customerEmailForSperrlink, setCustomerEmailForSperrlink] = useState<
+    string | null
+  >(null)
 
   useEffect(() => {
     return () => {
@@ -180,14 +182,15 @@ export function ShareLinkButton({
           })
         } else {
           toast.success('Neuer Sperrlink erzeugt', {
-            description: 'E-Mail konnte nicht gesendet werden (z. B. fehlender Resend-Key).',
+            description:
+              'E-Mail konnte nicht gesendet werden (z. B. fehlender Resend-Key).',
           })
         }
       } else {
         toast.success(
           hasCustomerManageToken
             ? 'Neuer Sperr-Link erzeugt (alter ist ungültig).'
-            : 'Sperr-Link eingerichtet.'
+            : 'Sperr-Link eingerichtet.',
         )
       }
     } finally {
@@ -219,12 +222,12 @@ export function ShareLinkButton({
       timeoutRefs.current.push(
         window.setTimeout(() => {
           setCopiedSuccess(false)
-        }, 1100)
+        }, 1100),
       )
       timeoutRefs.current.push(
         window.setTimeout(() => {
           setShowConfetti(false)
-        }, 650)
+        }, 650),
       )
 
       toast.custom(
@@ -238,7 +241,7 @@ export function ShareLinkButton({
             </p>
           </div>
         ),
-        { duration: 2800 }
+        { duration: 2800 },
       )
     } catch {
       toast.error('Kopieren fehlgeschlagen')
@@ -253,7 +256,11 @@ export function ShareLinkButton({
           ? null
           : new Date(`${secExpires}T23:59:59.000Z`).toISOString()
       const res = await updateShareLinkSecurity(referenceId, {
-        passwordPlain: secRemovePw ? null : secPassword.trim() ? secPassword.trim() : null,
+        passwordPlain: secRemovePw
+          ? null
+          : secPassword.trim()
+            ? secPassword.trim()
+            : null,
         removePassword: secRemovePw,
         expiresAtIso: expiresIso,
         clearExpires: secNoExpiry,

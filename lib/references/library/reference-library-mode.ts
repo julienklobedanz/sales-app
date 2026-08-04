@@ -8,10 +8,11 @@ export const REFERENCE_PROOF_SEGMENT_LABELS: Record<ReferenceLibraryMode, string
   certificates: 'Nachweise',
 }
 
-export const REFERENCE_PROOF_SEGMENT_DESCRIPTIONS: Record<ReferenceLibraryMode, string> = {
-  references: 'Projekt- und Kundenreferenzen für Sales und Matching',
-  certificates: 'Compliance-Dokumente, Zertifikate und Unternehmensnachweise',
-}
+export const REFERENCE_PROOF_SEGMENT_DESCRIPTIONS: Record<ReferenceLibraryMode, string> =
+  {
+    references: 'Projekt- und Kundenreferenzen für Sales und Matching',
+    certificates: 'Compliance-Dokumente, Zertifikate und Unternehmensnachweise',
+  }
 
 export function referenceLibraryTitle(mode: ReferenceLibraryMode): string {
   return REFERENCE_PROOF_SEGMENT_LABELS[mode]

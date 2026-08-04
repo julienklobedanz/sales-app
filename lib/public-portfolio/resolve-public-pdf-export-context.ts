@@ -23,7 +23,7 @@ const DEFAULT_BRANDING: PdfOrgBranding = {
 export async function resolvePublicPdfExportContext(
   branding: PublicPortfolioBranding,
   referenceId: string | null,
-  allowedReferenceIds: string[]
+  allowedReferenceIds: string[],
 ): Promise<PublicPdfExportContext> {
   const baseBranding: PdfOrgBranding = branding.found
     ? {
@@ -47,11 +47,15 @@ export async function resolvePublicPdfExportContext(
 
   const { data: row } = await admin
     .from('references')
-    .select('organization_id, organizations ( export_settings, logo_url, name, primary_color, secondary_color )')
+    .select(
+      'organization_id, organizations ( export_settings, logo_url, name, primary_color, secondary_color )',
+    )
     .eq('id', referenceId)
     .maybeSingle()
 
-  const org = Array.isArray(row?.organizations) ? row.organizations[0] : row?.organizations
+  const org = Array.isArray(row?.organizations)
+    ? row.organizations[0]
+    : row?.organizations
   const exportSettings = parsePdfExportSettings(org?.export_settings)
 
   const resolvedBranding: PdfOrgBranding = {

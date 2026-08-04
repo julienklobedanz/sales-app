@@ -19,12 +19,20 @@ async function getSessionOrgId(): Promise<string | null> {
 
 const CREATE_DEAL_ALLOWED_STATUS = new Set<DealStatus>(['negotiation', 'rfp'])
 
-export async function createDealImpl(formData: FormData): Promise<{ success: boolean; error?: string; id?: string }> {
+export async function createDealImpl(
+  formData: FormData,
+): Promise<{ success: boolean; error?: string; id?: string }> {
   const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Nicht angemeldet.' }
 
-  const { data: profile } = await supabase.from('profiles').select('organization_id').eq('id', user.id).single()
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .single()
   const orgId = profile?.organization_id
   if (!orgId) return { success: false, error: 'Keine Organisation zugeordnet.' }
 
@@ -39,13 +47,15 @@ export async function createDealImpl(formData: FormData): Promise<{ success: boo
     .select('id', { count: 'exact', head: true })
     .eq('id', companyId)
     .eq('organization_id', orgId)
-  if (companyCheckErr || !companyCount) return { success: false, error: 'Ungültiger Account.' }
+  if (companyCheckErr || !companyCount)
+    return { success: false, error: 'Ungültiger Account.' }
 
   const industry = formData.get('industry')?.toString()?.trim() || null
   const volume = formData.get('volume')?.toString()?.trim() || null
   if (!volume) return { success: false, error: 'Volumen ist erforderlich.' }
   const requirements_text = formData.get('requirements_text')?.toString()?.trim() || null
-  const incumbent_provider = formData.get('incumbent_provider')?.toString()?.trim() || null
+  const incumbent_provider =
+    formData.get('incumbent_provider')?.toString()?.trim() || null
   const is_public = formData.get('is_public') !== 'false'
   const account_manager_id = formData.get('account_manager_id')?.toString() || null
   const sales_manager_id = formData.get('sales_manager_id')?.toString() || null
@@ -143,7 +153,7 @@ export async function updateDealImpl(args: {
 /** Manuell RFP-Modus setzen (Promote/Demote). Nur explizite Nutzeraktion — nicht für stateless Coverage. */
 export async function setDealRfpModeImpl(
   dealId: string,
-  isRfpMode: boolean
+  isRfpMode: boolean,
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createServerSupabaseClient()
   const orgId = await getSessionOrgId()
@@ -163,7 +173,7 @@ export async function setDealRfpModeImpl(
 
 /** Deal inkl. Storage (deal-documents + legacy rfp-documents) und Desk-Projekte löschen. */
 export async function deleteDealImpl(
-  dealId: string
+  dealId: string,
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createServerSupabaseClient()
   const user = await getRequestUser()
@@ -193,7 +203,7 @@ export async function deleteDealImpl(
       },
       user.id,
       systemRole,
-      functionRole
+      functionRole,
     )
   ) {
     return { success: false, error: 'Keine Berechtigung, diesen Deal zu löschen.' }
@@ -225,7 +235,9 @@ export async function deleteDealImpl(
   }
 
   if (dealDocPaths.length > 0) {
-    const { error } = await supabase.storage.from(DEAL_DOCUMENTS_BUCKET).remove(dealDocPaths)
+    const { error } = await supabase.storage
+      .from(DEAL_DOCUMENTS_BUCKET)
+      .remove(dealDocPaths)
     if (error) return { success: false, error: error.message }
   }
 

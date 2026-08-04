@@ -46,18 +46,32 @@ const SALES_SUGGESTIONS: CommandCenterSuggestion[] = [
 ]
 
 const ADMIN_SUGGESTIONS: CommandCenterSuggestion[] = [
-  { label: '☁️ Cloud & Governance', query: 'Cloud Migration mit Landing Zone und Governance' },
-  { label: '🔒 Compliance-Referenzen', query: 'Audit, Compliance und Zero Trust im Enterprise' },
-  { label: '💶 Große Projekte', query: 'Referenzen mit Projektvolumen über 3 Millionen Euro' },
+  {
+    label: '☁️ Cloud & Governance',
+    query: 'Cloud Migration mit Landing Zone und Governance',
+  },
+  {
+    label: '🔒 Compliance-Referenzen',
+    query: 'Audit, Compliance und Zero Trust im Enterprise',
+  },
+  {
+    label: '💶 Große Projekte',
+    query: 'Referenzen mit Projektvolumen über 3 Millionen Euro',
+  },
 ]
 
 const ACCOUNT_MANAGER_SUGGESTIONS: CommandCenterSuggestion[] = [
   { label: '☁️ Cloud-Migration', query: 'Skalierbare Cloud-Plattform und Migration' },
-  { label: '🔒 Security & Audit', query: 'Security-Hardening unter Compliance-Anforderungen' },
+  {
+    label: '🔒 Security & Audit',
+    query: 'Security-Hardening unter Compliance-Anforderungen',
+  },
   { label: '📊 Data Platform', query: 'Lakehouse, Analytics und Self-Service BI' },
 ]
 
-export function commandCenterSuggestionsForRole(role: AppRole): CommandCenterSuggestion[] {
+export function commandCenterSuggestionsForRole(
+  role: AppRole,
+): CommandCenterSuggestion[] {
   const branch = commandCenterSuggestionsBranch(role)
   if (branch === 'admin') return ADMIN_SUGGESTIONS
   if (branch === 'account_manager') return ACCOUNT_MANAGER_SUGGESTIONS
@@ -68,7 +82,7 @@ export function commandCenterSuggestionsForRole(role: AppRole): CommandCenterSug
 export function filterCommandCenterSuggestions(
   suggestions: CommandCenterSuggestion[],
   draft: string,
-  limit = 5
+  limit = 5,
 ): CommandCenterSuggestion[] {
   const q = draft.trim().toLowerCase()
   if (!q) return suggestions.slice(0, limit)

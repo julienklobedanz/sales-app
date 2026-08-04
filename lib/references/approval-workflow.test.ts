@@ -8,7 +8,10 @@ describe('canStartApprovalWorkflow', () => {
     customerApprovalStatus: null as string | null,
   }
 
-  const adminDims = { systemRole: 'admin' as const, functionRole: 'sales_leader' as const }
+  const adminDims = {
+    systemRole: 'admin' as const,
+    functionRole: 'sales_leader' as const,
+  }
   const salesDims = { systemRole: 'member' as const, functionRole: 'sales_rep' as const }
 
   it('allows admin on draft when workflow not started (DB default pending_internal)', () => {
@@ -19,7 +22,7 @@ describe('canStartApprovalWorkflow', () => {
         referenceStatus: 'draft',
         internalApprovalStatus: 'pending_internal',
         approvalRequestedAt: null,
-      })
+      }),
     ).toBe(true)
 
     expect(
@@ -29,7 +32,7 @@ describe('canStartApprovalWorkflow', () => {
         referenceStatus: 'draft',
         internalApprovalStatus: 'pending_internal',
         approvalRequestedAt: '2026-01-01T00:00:00Z',
-      })
+      }),
     ).toBe(false)
 
     expect(
@@ -38,7 +41,7 @@ describe('canStartApprovalWorkflow', () => {
         ...adminDims,
         referenceStatus: 'draft',
         internalApprovalStatus: 'withdrawn_internal',
-      })
+      }),
     ).toBe(true)
   })
 
@@ -49,7 +52,7 @@ describe('canStartApprovalWorkflow', () => {
         ...salesDims,
         referenceStatus: 'internal_only',
         internalApprovalStatus: 'approved_internal',
-      })
+      }),
     ).toBe(true)
   })
 
@@ -61,7 +64,7 @@ describe('canStartApprovalWorkflow', () => {
         referenceStatus: 'internal_only',
         internalApprovalStatus: 'pending_internal',
         approvalRequestedAt: null,
-      })
+      }),
     ).toBe(true)
   })
 
@@ -73,7 +76,7 @@ describe('canStartApprovalWorkflow', () => {
         referenceStatus: 'external',
         internalApprovalStatus: 'withdrawn_internal',
         isApprovalGranted: false,
-      })
+      }),
     ).toBe(true)
   })
 
@@ -85,7 +88,7 @@ describe('canStartApprovalWorkflow', () => {
         referenceStatus: 'draft',
         internalApprovalStatus: 'approved_internal',
         customerApprovalStatus: 'pending',
-      })
+      }),
     ).toBe(false)
   })
 })

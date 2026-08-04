@@ -27,7 +27,7 @@ export async function loadAccountManagerDashboardData(
   supabase: SupabaseClient,
   userId: string,
   fullName: string | null,
-  orgId: string | undefined
+  orgId: string | undefined,
 ): Promise<AccountManagerDashboardModel> {
   const greetingName = dashboardFirstName(fullName) || 'du'
   const copy = COPY.dashboard.home.accountManager
@@ -54,49 +54,52 @@ export async function loadAccountManagerDashboardData(
     const since30 = new Date()
     since30.setDate(since30.getDate() - 30)
 
-    const [viewsRes, shareARes, shareBRes, matchesRes, refsRes, ndaRes, dealReqRes] = await Promise.all([
-      supabase
-        .from('evidence_events')
-        .select('id', { count: 'planned', head: true })
-        .eq('organization_id', orgId)
-        .eq('event_type', 'reference_viewed')
-        .gte('created_at', since30.toISOString()),
-      supabase
-        .from('evidence_events')
-        .select('id', { count: 'planned', head: true })
-        .eq('organization_id', orgId)
-        .eq('event_type', 'reference_shared')
-        .gte('created_at', since30.toISOString()),
-      supabase
-        .from('evidence_events')
-        .select('id', { count: 'planned', head: true })
-        .eq('organization_id', orgId)
-        .eq('event_type', 'share_link_viewed')
-        .gte('created_at', since30.toISOString()),
-      supabase
-        .from('evidence_events')
-        .select('id', { count: 'planned', head: true })
-        .eq('organization_id', orgId)
-        .eq('event_type', 'reference_matched')
-        .gte('created_at', since30.toISOString()),
-      supabase
-        .from('references')
-        .select('id, title, status, updated_at, customer_approval_status, company_id, industry, companies(name)')
-        .eq('organization_id', orgId)
-        .is('deleted_at', null)
-        .order('updated_at', { ascending: true })
-        .limit(80),
-      supabase
-        .from('nda_agreements')
-        .select('id, company_id, valid_until, status, companies(name)')
-        .eq('organization_id', orgId)
-        .limit(200),
-      supabase
-        .from('deal_reference_requests')
-        .select('id, deal_id, created_at, status, deals(company_id, companies(name))')
-        .eq('organization_id', orgId)
-        .eq('status', 'pending'),
-    ])
+    const [viewsRes, shareARes, shareBRes, matchesRes, refsRes, ndaRes, dealReqRes] =
+      await Promise.all([
+        supabase
+          .from('evidence_events')
+          .select('id', { count: 'planned', head: true })
+          .eq('organization_id', orgId)
+          .eq('event_type', 'reference_viewed')
+          .gte('created_at', since30.toISOString()),
+        supabase
+          .from('evidence_events')
+          .select('id', { count: 'planned', head: true })
+          .eq('organization_id', orgId)
+          .eq('event_type', 'reference_shared')
+          .gte('created_at', since30.toISOString()),
+        supabase
+          .from('evidence_events')
+          .select('id', { count: 'planned', head: true })
+          .eq('organization_id', orgId)
+          .eq('event_type', 'share_link_viewed')
+          .gte('created_at', since30.toISOString()),
+        supabase
+          .from('evidence_events')
+          .select('id', { count: 'planned', head: true })
+          .eq('organization_id', orgId)
+          .eq('event_type', 'reference_matched')
+          .gte('created_at', since30.toISOString()),
+        supabase
+          .from('references')
+          .select(
+            'id, title, status, updated_at, customer_approval_status, company_id, industry, companies(name)',
+          )
+          .eq('organization_id', orgId)
+          .is('deleted_at', null)
+          .order('updated_at', { ascending: true })
+          .limit(80),
+        supabase
+          .from('nda_agreements')
+          .select('id, company_id, valid_until, status, companies(name)')
+          .eq('organization_id', orgId)
+          .limit(200),
+        supabase
+          .from('deal_reference_requests')
+          .select('id, deal_id, created_at, status, deals(company_id, companies(name))')
+          .eq('organization_id', orgId)
+          .eq('status', 'pending'),
+      ])
 
     void dealReqRes
 
@@ -154,13 +157,14 @@ export async function loadAccountManagerDashboardData(
       if (status === 'draft') draft += 1
       else if (status === 'internal_only') internal += 1
       else if (row.customer_approval_status === 'pending') customer += 1
-      else if (status === 'approved' || status === 'external' || status === 'anonymized') approved += 1
+      else if (status === 'approved' || status === 'external' || status === 'anonymized')
+        approved += 1
     }
     approvalFunnel.push(
       { label: copy.funnelDraft, value: draft },
       { label: copy.funnelInternal, value: internal },
       { label: copy.funnelCustomer, value: customer },
-      { label: copy.funnelApproved, value: approved }
+      { label: copy.funnelApproved, value: approved },
     )
 
     const staleCutoff = new Date()
@@ -168,7 +172,9 @@ export async function loadAccountManagerDashboardData(
 
     for (const row of refRows) {
       const updated = row.updated_at ? new Date(row.updated_at) : null
-      const companiesRaw = (row as { companies?: { name?: string } | { name?: string }[] | null }).companies
+      const companiesRaw = (
+        row as { companies?: { name?: string } | { name?: string }[] | null }
+      ).companies
       const company = Array.isArray(companiesRaw)
         ? companiesRaw[0]?.name
         : companiesRaw?.name
@@ -268,7 +274,10 @@ export async function loadAccountManagerDashboardData(
 
     const byCompany = new Map<string, { name: string; count: number }>()
     for (const row of (advocateRows ?? []) as Array<{
-      deals?: { company_id?: string | null; companies?: { name?: string } | { name?: string }[] | null } | null
+      deals?: {
+        company_id?: string | null
+        companies?: { name?: string } | { name?: string }[] | null
+      } | null
     }>) {
       const deal = row.deals
       const cid = deal?.company_id

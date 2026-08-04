@@ -67,7 +67,7 @@ export function NewsroomsSidebar({ summary }: { summary: NewsroomSummary }) {
       toast.success(
         result.scanned === 0
           ? 'Keine Accounts mit Website gefunden.'
-          : `${result.withUrls} von ${result.scanned} mit Newsroom`
+          : `${result.withUrls} von ${result.scanned} mit Newsroom`,
       )
       router.refresh()
     })
@@ -77,7 +77,7 @@ export function NewsroomsSidebar({ summary }: { summary: NewsroomSummary }) {
     setPendingCompanyId(companyId)
     const prev = entries
     setEntries((list) =>
-      list.map((row) => (row.id === companyId ? { ...row, urls: nextUrls } : row))
+      list.map((row) => (row.id === companyId ? { ...row, urls: nextUrls } : row)),
     )
     const result = await updateCompanyNewsroomUrls(companyId, nextUrls)
     setPendingCompanyId(null)
@@ -87,7 +87,7 @@ export function NewsroomsSidebar({ summary }: { summary: NewsroomSummary }) {
       return
     }
     setEntries((list) =>
-      list.map((row) => (row.id === companyId ? { ...row, urls: result.urls } : row))
+      list.map((row) => (row.id === companyId ? { ...row, urls: result.urls } : row)),
     )
   }
 
@@ -96,7 +96,7 @@ export function NewsroomsSidebar({ summary }: { summary: NewsroomSummary }) {
     if (!row) return
     void persistUrls(
       companyId,
-      row.urls.filter((u) => u !== url)
+      row.urls.filter((u) => u !== url),
     )
   }
 
@@ -120,7 +120,9 @@ export function NewsroomsSidebar({ summary }: { summary: NewsroomSummary }) {
   return (
     <aside className="flex max-h-[min(70vh,720px)] flex-col rounded-2xl border border-border/70 bg-card">
       <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2.5">
-        <h2 className="min-w-0 flex-1 text-sm font-semibold text-foreground">Newsrooms</h2>
+        <h2 className="min-w-0 flex-1 text-sm font-semibold text-foreground">
+          Newsrooms
+        </h2>
         <span className="text-xs text-muted-foreground tabular-nums">
           {stats.withUrls}/{stats.total}
         </span>
@@ -152,7 +154,9 @@ export function NewsroomsSidebar({ summary }: { summary: NewsroomSummary }) {
             const busy = pendingCompanyId === entry.id
             return (
               <li key={entry.id} className={cn('space-y-1.5', busy && 'opacity-60')}>
-                <p className="truncate text-sm font-medium text-foreground">{entry.name}</p>
+                <p className="truncate text-sm font-medium text-foreground">
+                  {entry.name}
+                </p>
                 {entry.urls.length > 0 ? (
                   <ul className="space-y-1">
                     {entry.urls.map((url) => (

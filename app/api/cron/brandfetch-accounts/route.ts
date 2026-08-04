@@ -26,15 +26,20 @@ export async function GET(request: Request) {
     }
   } else if (!isDev) {
     return NextResponse.json(
-      { error: 'CRON_SECRET ist nicht gesetzt (erforderlich außerhalb der Entwicklung).' },
-      { status: 503 }
+      {
+        error: 'CRON_SECRET ist nicht gesetzt (erforderlich außerhalb der Entwicklung).',
+      },
+      { status: 503 },
     )
   }
 
   if (!process.env.BRANDFETCH_API_KEY?.trim()) {
     return NextResponse.json(
-      { ok: false, error: 'BRANDFETCH_API_KEY fehlt — geplanter Abgleich nicht möglich.' },
-      { status: 503 }
+      {
+        ok: false,
+        error: 'BRANDFETCH_API_KEY fehlt — geplanter Abgleich nicht möglich.',
+      },
+      { status: 503 },
     )
   }
 
@@ -42,14 +47,20 @@ export async function GET(request: Request) {
   if (!admin) {
     return NextResponse.json(
       { error: 'SUPABASE_SERVICE_ROLE_KEY fehlt — Cron nicht möglich.' },
-      { status: 503 }
+      { status: 503 },
     )
   }
 
   // Service-Role weil: Brandfetch-Refresh org-übergreifend per Cron.
   // Grenze: Bearer CRON_SECRET; Updates nur pro company.id mit company.organization_id.
-  const maxCompanies = Number.parseInt(process.env.BRANDFETCH_ACCOUNTS_CRON_MAX ?? '200', 10)
-  const staleAfterDays = Number.parseInt(process.env.BRANDFETCH_ACCOUNTS_STALE_DAYS ?? '90', 10)
+  const maxCompanies = Number.parseInt(
+    process.env.BRANDFETCH_ACCOUNTS_CRON_MAX ?? '200',
+    10,
+  )
+  const staleAfterDays = Number.parseInt(
+    process.env.BRANDFETCH_ACCOUNTS_STALE_DAYS ?? '90',
+    10,
+  )
 
   const result = await runBrandfetchStaleAccountsRefresh(admin, {
     maxCompanies: Number.isFinite(maxCompanies) ? maxCompanies : 200,

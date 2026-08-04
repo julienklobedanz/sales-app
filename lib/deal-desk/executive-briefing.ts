@@ -1,7 +1,5 @@
 import type { DealDeskMockAnalysis, DealDeskRedFlag } from '@/lib/deal-desk/mock-analysis'
-import type {
-  DealDeskCapabilityRisk,
-} from '@/lib/deal-desk/executive-briefing-fields'
+import type { DealDeskCapabilityRisk } from '@/lib/deal-desk/executive-briefing-fields'
 import {
   hasSuitabilityContent,
   resolveDomainTags,
@@ -27,7 +25,7 @@ function formatDateDe(iso: string): string {
 
 function timelineDateByPattern(
   items: DealDeskMockAnalysis['timelineItems'],
-  patterns: RegExp[]
+  patterns: RegExp[],
 ): string | null {
   const hit = items.find((t) => patterns.some((p) => p.test(t.title)))
   return hit?.dueDate ? formatDateDe(hit.dueDate) : null
@@ -39,7 +37,9 @@ function bulletLine(label: string, value: string | null | undefined): string | n
   return `• ${label}: ${v}`
 }
 
-function riskKindLabel(kind: DealDeskCapabilityRisk['kind'] | DealDeskRedFlag['severity']): string {
+function riskKindLabel(
+  kind: DealDeskCapabilityRisk['kind'] | DealDeskRedFlag['severity'],
+): string {
   if (kind === 'delivery') return 'DELIVERY RISK'
   return kind.toUpperCase()
 }
@@ -76,8 +76,9 @@ export function buildExecutiveBriefingText(params: {
   const strategicAssessment =
     briefing?.strategicAssessment?.trim() || analysis.icpSummary?.trim() || '—'
 
-  const takeaways =
-    briefing?.keyTakeaways?.length ? briefing.keyTakeaways : buildHeroKeyTakeaways(analysis).map((t) => t.text)
+  const takeaways = briefing?.keyTakeaways?.length
+    ? briefing.keyTakeaways
+    : buildHeroKeyTakeaways(analysis).map((t) => t.text)
 
   const deadlines = [...(analysis.timelineItems ?? [])]
     .filter((t) => t.dueDate?.length >= 10)
@@ -85,7 +86,7 @@ export function buildExecutiveBriefingText(params: {
 
   const capabilityFromBriefing = briefing?.capabilityRisks ?? []
   const contractFlags = redFlags.filter(
-    (f) => f.severity === 'critical' || f.severity === 'high'
+    (f) => f.severity === 'critical' || f.severity === 'high',
   )
 
   const domainTags = resolveDomainTags(briefing)
@@ -134,7 +135,7 @@ export function buildExecutiveBriefingText(params: {
   }
 
   const severityRank = (
-    k: DealDeskCapabilityRisk['kind'] | DealDeskRedFlag['severity']
+    k: DealDeskCapabilityRisk['kind'] | DealDeskRedFlag['severity'],
   ): number => {
     if (k === 'critical') return 0
     if (k === 'high') return 1
@@ -213,7 +214,7 @@ export function buildExecutiveBriefingText(params: {
       '• Wirtschaftlicher Entscheider: —',
       '• Wettbewerb: —',
       '• Unser Hebel: —',
-      '• Tender-Verfahren: —'
+      '• Tender-Verfahren: —',
     )
   }
 
@@ -241,14 +242,14 @@ export function buildExecutiveBriefingText(params: {
     lines.push(
       '',
       '— OFFENE SME-PUNKTE —',
-      `• ${openSme} Klärungspunkt(e) — siehe Deal Desk Tab SME Routing.`
+      `• ${openSme} Klärungspunkt(e) — siehe Deal Desk Tab SME Routing.`,
     )
   }
 
   lines.push(
     '',
     '— HINWEIS —',
-    'Internes Freigabe-Dokument (E-Mail / Management). Keine Kundendaten an Dritte weitergeben.'
+    'Internes Freigabe-Dokument (E-Mail / Management). Keine Kundendaten an Dritte weitergeben.',
   )
 
   return lines.join('\n')

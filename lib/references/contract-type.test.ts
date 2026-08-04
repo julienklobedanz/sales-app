@@ -10,7 +10,7 @@ describe('formatContractTypeDisplay', () => {
   it('mappt ältere englische Werte auf Deutsch', () => {
     expect(formatContractTypeDisplay('Usage-Based')).toBe('Nutzungsbasiert')
     expect(formatContractTypeDisplay('Subscription (Per User/Tiered)')).toBe(
-      'Abo pro Nutzer / Staffel'
+      'Abo pro Nutzer / Staffel',
     )
     expect(formatContractTypeDisplay('Full Managed')).toBe('Komplett-Managed')
   })

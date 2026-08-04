@@ -11,7 +11,7 @@ const IMAGE_MIME = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp'
 
 export function isSupportedReferenceImageMime(
   mimeType: string | null | undefined,
-  fileName?: string
+  fileName?: string,
 ): boolean {
   const mt = String(mimeType ?? '').toLowerCase()
   if (IMAGE_MIME.has(mt)) return true
@@ -20,7 +20,7 @@ export function isSupportedReferenceImageMime(
 
 export function resolveImageMimeType(
   mimeType: string | null | undefined,
-  fileName?: string
+  fileName?: string,
 ): 'image/png' | 'image/jpeg' | 'image/webp' {
   const mt = String(mimeType ?? '').toLowerCase()
   if (mt === 'image/png' || mt === 'image/webp' || mt === 'image/jpeg') return mt
@@ -35,12 +35,12 @@ export function resolveImageMimeType(
  */
 export async function ocrImageBufferWithOpenAi(
   buffer: Buffer,
-  options?: { mimeType?: string | null; fileName?: string }
+  options?: { mimeType?: string | null; fileName?: string },
 ): Promise<string> {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) {
     throw new Error(
-      'Automatisches Ausfüllen von Bildern ist nicht konfiguriert (fehlender API-Schlüssel). Bitte als PDF exportieren oder Felder manuell ausfüllen.'
+      'Automatisches Ausfüllen von Bildern ist nicht konfiguriert (fehlender API-Schlüssel). Bitte als PDF exportieren oder Felder manuell ausfüllen.',
     )
   }
 

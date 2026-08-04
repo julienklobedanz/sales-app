@@ -16,7 +16,7 @@ export async function GET() {
 
     const discovered = await listHubSpotAccountsWithOpenOpportunities(
       guard.ctx.supabase,
-      guard.ctx.organizationId
+      guard.ctx.organizationId,
     )
 
     if (!discovered.success) {
@@ -27,7 +27,7 @@ export async function GET() {
       guard.ctx.supabase,
       guard.ctx.organizationId,
       'hubspot',
-      discovered.accounts
+      discovered.accounts,
     )
 
     return NextResponse.json({
@@ -41,7 +41,7 @@ export async function GET() {
     log.error('discover failed', { action: 'hubspot.discover' }, error)
     return NextResponse.json(
       { error: 'CRM-Accounts konnten nicht geladen werden.' },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }

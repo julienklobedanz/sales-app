@@ -8,7 +8,9 @@ const DATE_RANGE_IN_LINE =
  * Entfernt typische PDF-Artefakte am Titelanfang.
  * Häufiger Fall: Zeilenumbruch mitten in „References“ → erkannte Zeile beginnt mit „es …“.
  */
-export function sanitizeExtractedProjectTitle(title: string | null | undefined): string | null {
+export function sanitizeExtractedProjectTitle(
+  title: string | null | undefined,
+): string | null {
   const t = String(title ?? '').trim()
   if (!t) return null
 

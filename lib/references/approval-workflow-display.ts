@@ -2,7 +2,7 @@ import { deriveReferenceGiverNameFromEmail } from '@/lib/references/derive-refer
 
 export function formatApprovalGiverLine(
   name: string | null | undefined,
-  title: string | null | undefined
+  title: string | null | undefined,
 ): string | null {
   const trimmedName = String(name ?? '').trim()
   const trimmedTitle = String(title ?? '').trim()
@@ -13,7 +13,7 @@ export function formatApprovalGiverLine(
 /** Aktueller E-Mail-Empfänger nach Delegation (Freigebender Kunde bleibt unverändert). */
 export function formatApprovalDelegatedRecipientLine(
   delegateName: string | null | undefined,
-  delegateEmail: string | null | undefined
+  delegateEmail: string | null | undefined,
 ): string | null {
   const name = String(delegateName ?? '').trim()
   const email = String(delegateEmail ?? '').trim()

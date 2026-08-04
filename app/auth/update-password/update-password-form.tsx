@@ -8,7 +8,7 @@ import { updatePasswordAfterReset, type UpdatePasswordResult } from './actions'
 
 function formAction(
   _prev: UpdatePasswordResult | null,
-  formData: FormData
+  formData: FormData,
 ): Promise<UpdatePasswordResult> {
   return updatePasswordAfterReset(formData)
 }

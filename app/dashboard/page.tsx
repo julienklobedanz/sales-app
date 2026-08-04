@@ -33,14 +33,15 @@ async function DashboardHomeContent() {
   const { profile, functionRole, systemRole } = effective
   const supabase = await createServerSupabaseClient()
 
-  const dashboardPayload: RoleHomeDashboardPayload = await loadDashboardHomeForFunctionRole(
-    functionRole,
-    systemRole,
-    supabase,
-    user.id,
-    profile.full_name,
-    profile.organization_id ?? undefined
-  )
+  const dashboardPayload: RoleHomeDashboardPayload =
+    await loadDashboardHomeForFunctionRole(
+      functionRole,
+      systemRole,
+      supabase,
+      user.id,
+      profile.full_name,
+      profile.organization_id ?? undefined,
+    )
 
   const orgId = profile.organization_id as string
   // Server Component: wall-clock cutoff for the 7d evidence query (not client render purity).

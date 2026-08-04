@@ -8,7 +8,7 @@ const STATUS_SORT_RANK: Record<CompanyAccountStatusValue, number> = {
 }
 
 export function accountStatusSortRank(
-  status: CompanyAccountStatusValue | null | undefined
+  status: CompanyAccountStatusValue | null | undefined,
 ): number {
   if (!status) return 99
   return STATUS_SORT_RANK[status] ?? 99

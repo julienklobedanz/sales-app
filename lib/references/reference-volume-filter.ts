@@ -22,7 +22,9 @@ export const REFERENCE_VOLUME_FILTER_OPTIONS: ReadonlyArray<{
   { value: 'unspecified', label: 'Ohne Angabe' },
 ]
 
-export function referenceVolumeAmountEur(volumeEur: string | null | undefined): number | null {
+export function referenceVolumeAmountEur(
+  volumeEur: string | null | undefined,
+): number | null {
   const parsed = parseReferenceVolume(volumeEur)
   if (!parsed) return null
   const amount = Number(parsed.amountDigits)
@@ -32,7 +34,7 @@ export function referenceVolumeAmountEur(volumeEur: string | null | undefined): 
 
 export function matchesReferenceVolumeFilter(
   volumeEur: string | null | undefined,
-  filter: ReferenceVolumeFilter
+  filter: ReferenceVolumeFilter,
 ): boolean {
   if (filter === 'all') return true
   const amount = referenceVolumeAmountEur(volumeEur)

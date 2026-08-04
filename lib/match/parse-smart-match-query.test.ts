@@ -28,7 +28,7 @@ describe('parseMinVolumeFromQuery', () => {
 describe('parseIndustryFromQuery', () => {
   it('maps Finanzdienstleister to fin', () => {
     expect(
-      parseIndustryFromQuery('Managed Services 24/7 für Finanzdienstleister >5 Mio €')
+      parseIndustryFromQuery('Managed Services 24/7 für Finanzdienstleister >5 Mio €'),
     ).toBe('fin')
   })
 })
@@ -72,7 +72,7 @@ describe('parseExcludeYearsFromQuery', () => {
 describe('parseSmartMatchQuery', () => {
   it('combines volume industry and recency', () => {
     const p = parseSmartMatchQuery(
-      'Managed Services 24/7 für Finanzdienstleister >5 Mio € letzte 24 monate'
+      'Managed Services 24/7 für Finanzdienstleister >5 Mio € letzte 24 monate',
     )
     expect(p.minVolume).toBe(5_000_000)
     expect(p.industryId).toBe('fin')

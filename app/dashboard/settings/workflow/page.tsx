@@ -1,6 +1,12 @@
 import Link from 'next/link'
 import { ClipboardList, ChevronRight, ShieldCheck, Zap } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { ROUTES } from '@/lib/routes'
 import { Button } from '@/components/ui/button'
 
@@ -32,8 +38,8 @@ export default function WorkflowSettingsPage() {
         <CardHeader>
           <CardTitle>Workflow-Konfiguration</CardTitle>
           <CardDescription>
-            Die editierbaren Einstellungen (Fristen, Erinnerungen, Freigabe-Umfang) liegen im
-            Settings-Tab „Workflow“.
+            Die editierbaren Einstellungen (Fristen, Erinnerungen, Freigabe-Umfang) liegen
+            im Settings-Tab „Workflow“.
           </CardDescription>
         </CardHeader>
         <CardContent>

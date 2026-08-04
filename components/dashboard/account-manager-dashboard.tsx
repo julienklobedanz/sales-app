@@ -23,7 +23,7 @@ function riskPillClass(tone: 'gap' | 'warn' | 'ok') {
     'text-[11px]',
     tone === 'ok' && 'border-primary/30 bg-primary/10 text-primary',
     tone === 'warn' && 'border-amber-300/60 bg-amber-50 text-amber-900',
-    tone === 'gap' && 'border-destructive/30 bg-destructive/10 text-destructive'
+    tone === 'gap' && 'border-destructive/30 bg-destructive/10 text-destructive',
   )
 }
 
@@ -57,12 +57,21 @@ export function AccountManagerDashboard({
         hero
       >
         {thin || data.digest.length === 0 ? (
-          <HonestEmpty title={c.digestEmptyTitle} description={c.digestEmptyDescription} />
+          <HonestEmpty
+            title={c.digestEmptyTitle}
+            description={c.digestEmptyDescription}
+          />
         ) : (
           data.digest.map((item) => (
             <WorkQueueRow
               key={`${item.href}-${item.title}`}
-              tone={item.tone === 'info' ? 'intent' : item.tone === 'intent' ? 'intent' : item.tone}
+              tone={
+                item.tone === 'info'
+                  ? 'intent'
+                  : item.tone === 'intent'
+                    ? 'intent'
+                    : item.tone
+              }
               title={item.title}
               meta={item.meta}
               ctaLabel={item.ctaLabel}
@@ -75,7 +84,10 @@ export function AccountManagerDashboard({
       <div className="grid gap-4 md:grid-cols-2">
         <DashboardSectionCard title={c.freshTitle} description={c.freshDescription}>
           {thin || data.freshness.length === 0 ? (
-            <HonestEmpty title={c.freshEmptyTitle} description={c.freshEmptyDescription} />
+            <HonestEmpty
+              title={c.freshEmptyTitle}
+              description={c.freshEmptyDescription}
+            />
           ) : (
             <div className="space-y-0">
               {data.freshness.map((row) => (
@@ -96,9 +108,15 @@ export function AccountManagerDashboard({
           )}
         </DashboardSectionCard>
 
-        <DashboardSectionCard title={c.whitespotTitle} description={c.whitespotDescription}>
+        <DashboardSectionCard
+          title={c.whitespotTitle}
+          description={c.whitespotDescription}
+        >
           {thin || data.whitespots.length === 0 ? (
-            <HonestEmpty title={c.whitespotEmptyTitle} description={c.whitespotEmptyDescription} />
+            <HonestEmpty
+              title={c.whitespotEmptyTitle}
+              description={c.whitespotEmptyDescription}
+            />
           ) : (
             <div className="space-y-0">
               {data.whitespots.map((row) => (
@@ -123,7 +141,10 @@ export function AccountManagerDashboard({
       <div className="grid gap-4 md:grid-cols-2">
         <DashboardSectionCard title={c.funnelTitle} description={c.funnelDescription}>
           {thin || data.approvalFunnel.every((s) => s.value === 0) ? (
-            <HonestEmpty title={c.funnelEmptyTitle} description={c.funnelEmptyDescription} />
+            <HonestEmpty
+              title={c.funnelEmptyTitle}
+              description={c.funnelEmptyDescription}
+            />
           ) : (
             <FunnelBarList steps={data.approvalFunnel} />
           )}
@@ -131,7 +152,10 @@ export function AccountManagerDashboard({
 
         <DashboardSectionCard title={c.advocateTitle} description={c.advocateDescription}>
           {thin || data.advocateLoad.length === 0 ? (
-            <HonestEmpty title={c.advocateEmptyTitle} description={c.advocateEmptyDescription} />
+            <HonestEmpty
+              title={c.advocateEmptyTitle}
+              description={c.advocateEmptyDescription}
+            />
           ) : (
             <HorizontalBarList
               items={data.advocateLoad.map((row) => ({

@@ -27,7 +27,9 @@ function ndaStatusLine(status: string, validUntil: string | null): string {
   return `Aktiv (bis ${formatNdaExpiryDateDe(validUntil)})`
 }
 
-function referenceFromJoin(raw: unknown): { title: string; companyName: string | null } | null {
+function referenceFromJoin(
+  raw: unknown,
+): { title: string; companyName: string | null } | null {
   const ref = Array.isArray(raw) ? raw[0] : raw
   if (!ref || typeof ref !== 'object') return null
   const title = String((ref as { title?: string }).title ?? '').trim()
@@ -58,7 +60,7 @@ export function mapReferenceAssetRow(row: {
 
 export async function searchHomepageBuckets(
   supabase: SupabaseClient,
-  rawQuery: string
+  rawQuery: string,
 ): Promise<HomepageSearchGroups> {
   const q = rawQuery.trim()
   if (!q) return emptyHomepageSearchGroups()
@@ -142,7 +144,9 @@ export async function searchHomepageBuckets(
           document_type: docType,
         }),
         documentType: docType,
-        validUntilLine: formatComplianceValidUntilLine((row.valid_until as string | null) ?? null),
+        validUntilLine: formatComplianceValidUntilLine(
+          (row.valid_until as string | null) ?? null,
+        ),
         hasFile: Boolean(row.file_storage_path),
       })
     }
@@ -170,7 +174,7 @@ export async function searchHomepageBuckets(
         file_path: row.file_path as string | null,
         reference_id: String(row.reference_id),
         references: row.references,
-      })
+      }),
     )
   }
 

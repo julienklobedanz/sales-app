@@ -50,7 +50,7 @@ export type HubSpotTokenExchangeResult =
   | { success: false; error: string }
 
 export async function exchangeHubSpotAuthorizationCode(
-  code: string
+  code: string,
 ): Promise<HubSpotTokenExchangeResult> {
   const clientId = getHubSpotClientId()
   const clientSecret = getHubSpotClientSecret()
@@ -95,7 +95,7 @@ export async function exchangeHubSpotAuthorizationCode(
 }
 
 export async function refreshHubSpotAccessToken(
-  refreshToken: string
+  refreshToken: string,
 ): Promise<HubSpotTokenExchangeResult> {
   const clientId = getHubSpotClientId()
   const clientSecret = getHubSpotClientSecret()

@@ -55,7 +55,7 @@ export async function delegateClientApproval(params: {
       approval_customer_facing_name,
       approval_coordinator_name,
       companies ( name )
-    `
+    `,
     )
     .eq('approval_token', token)
     .maybeSingle()
@@ -77,7 +77,7 @@ export async function delegateClientApproval(params: {
   const previousContactName =
     formatApprovalGiverLine(
       refRow.approval_reference_giver_name,
-      refRow.approval_reference_giver_title
+      refRow.approval_reference_giver_title,
     ) ?? 'Ihrem bisherigen Ansprechpartner'
 
   const company =
@@ -122,7 +122,12 @@ export async function delegateClientApproval(params: {
         },
         created_by: null,
       })
-      if (eventError) log.error('delegateClientApproval.eventLogFailed', { referenceId: refRow.id }, eventError)
+      if (eventError)
+        log.error(
+          'delegateClientApproval.eventLogFailed',
+          { referenceId: refRow.id },
+          eventError,
+        )
     }
   }
 

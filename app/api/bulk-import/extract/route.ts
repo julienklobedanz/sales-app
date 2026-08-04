@@ -15,7 +15,10 @@ export async function POST(request: Request) {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) {
-    return NextResponse.json({ success: false, error: 'Nicht angemeldet.' }, { status: 401 })
+    return NextResponse.json(
+      { success: false, error: 'Nicht angemeldet.' },
+      { status: 401 },
+    )
   }
 
   const { data: profile } = await supabase
@@ -26,12 +29,18 @@ export async function POST(request: Request) {
 
   const { systemRole } = parseProfileRoles(profile ?? {})
   if (!isSystemAdmin(systemRole)) {
-    return NextResponse.json({ success: false, error: 'Keine Berechtigung.' }, { status: 403 })
+    return NextResponse.json(
+      { success: false, error: 'Keine Berechtigung.' },
+      { status: 403 },
+    )
   }
 
   const organizationId = profile?.organization_id ?? null
   if (!organizationId) {
-    return NextResponse.json({ success: false, error: 'Keine Organisation.' }, { status: 400 })
+    return NextResponse.json(
+      { success: false, error: 'Keine Organisation.' },
+      { status: 400 },
+    )
   }
 
   try {
@@ -39,10 +48,16 @@ export async function POST(request: Request) {
     const referenceId = String(formData.get('referenceId') ?? '').trim()
     const file = formData.get('file')
     if (!referenceId) {
-      return NextResponse.json({ success: false, error: 'Referenz-ID fehlt.' }, { status: 400 })
+      return NextResponse.json(
+        { success: false, error: 'Referenz-ID fehlt.' },
+        { status: 400 },
+      )
     }
     if (!(file instanceof File) || file.size === 0) {
-      return NextResponse.json({ success: false, error: 'Keine Datei übergeben.' }, { status: 400 })
+      return NextResponse.json(
+        { success: false, error: 'Keine Datei übergeben.' },
+        { status: 400 },
+      )
     }
 
     const buffer = Buffer.from(await file.arrayBuffer())
@@ -51,7 +66,7 @@ export async function POST(request: Request) {
       organizationId,
       referenceId,
       buffer,
-      file.name || 'document.pdf'
+      file.name || 'document.pdf',
     )
 
     return NextResponse.json(result)
@@ -59,7 +74,7 @@ export async function POST(request: Request) {
     log.error('extract failed', { action: 'bulk-import.extract' }, e)
     return NextResponse.json(
       { success: false, error: 'Extraktion fehlgeschlagen.' },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }
