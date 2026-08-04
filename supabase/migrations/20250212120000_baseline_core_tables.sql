@@ -3,6 +3,7 @@
 -- migrations from an empty database (supabase start / migration up).
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- App profile row linked to Supabase Auth (auth schema exists on supabase/postgres).
 CREATE TABLE IF NOT EXISTS public.profiles (
@@ -59,3 +60,12 @@ CREATE TABLE IF NOT EXISTS public.approvals (
 );
 
 CREATE INDEX IF NOT EXISTS idx_approvals_reference_id ON public.approvals (reference_id);
+
+-- Interne Ansprechpartner (historisch manuell; später organization_id per Org-Migration)
+CREATE TABLE IF NOT EXISTS public.contact_persons (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  first_name text,
+  last_name text,
+  email text,
+  created_at timestamptz DEFAULT now()
+);
