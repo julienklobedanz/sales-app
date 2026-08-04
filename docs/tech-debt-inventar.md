@@ -71,7 +71,7 @@ Verweis: [arbeitspaket-logging-error-e6.md](./arbeitspaket-logging-error-e6.md),
 |----|-----|--------|------|---------|-------|
 | P1-1 | Guide + `lib/observability/result.ts` | `{ ok }` vs `{ success }` | Helpers auf `{ success }`; Guide angleichen | S | E6 |
 | P1-2 | ~119 `console.*` / ~64 Dateien; Logger ~11 Importe | E6 T3 kaum gestartet | Heiße Pfade (Auth, Approval, Import, Cron) → `log`; Settings/Actions Boy-Scout | L | E6 — **heiße Pfade ✅ 2026-08-04**; Rest offen |
-| P1-3 | God-Files | `dashboard-overview` 1500, `accounts/actions` 1366, `market-signals/actions` 1299, `reference-form-content` 1093, `smart-match-shell` 962, … | Sliceweise splitten; Actions dünn halten | L | E5 / QC |
+| P1-3 | God-Files | `dashboard-overview` 1500, `accounts/actions` 1366, `market-signals/actions` 1299, `reference-form-content` 1093, `smart-match-shell` 962, … | Sliceweise splitten; Actions dünn halten | L | E5 / QC — **Accounts actions ✅** (~327 Z. Wrapper) |
 | P1-4 | `companyFromJoin` 3× + inline in Deals | Duplikat | Eine Shared-Helper-Funktion | S | neu — ✅ `lib/accounts/company-from-join.ts` |
 | P1-5 | `normalizeDealStatus` 3× (actions, request, market-signals) | Drift-Risiko | Eine Funktion in `lib/deals/` | S | neu — ✅ `lib/deals/normalize-deal-status.ts` |
 | P1-6 | Accounts Naming | Route `accounts/`, Code `company*` (~18 Dateien) | Schrittweise Rename (DB `companies` ok) | L | Welle 5 |
@@ -131,7 +131,7 @@ Verweis: [arbeitspaket-logging-error-e6.md](./arbeitspaket-logging-error-e6.md),
 1. **Quick Wins (diese Session):** P0-1 Auth-Guard ✅, P0-2/P0-3 tote APIs ✅, P2-1 leere Dirs ✅, P2-2 triagierte Orphans ✅, P2-3 Aliase ✅, P1-1 Result-Shape + Guide ✅, Knip-Script ✅.
 2. **E6-Fortsetzung:** Logger auf heiße Pfade ✅ (Auth, HubSpot, Approvals, Import, Invite — 2026-08-04); Rest Boy-Scout.
 3. **Konsolidierung:** `companyFromJoin` ✅, `normalizeDealStatus` ✅, `formatDateUtcDe`→`formatReferenceDate` ✅; Extract-Facades noch offen.
-4. **God-File-Slices:** Overview, Accounts-Actions, Smart-Match-Shell (eigene PRs).
+4. **God-File-Slices:** Accounts-`actions.ts` ✅ (~1395 → ~327 Z. + Impl-Module, 2026-08-04); Overview / Smart-Match-Shell noch offen.
 5. **Tooling:** Knip warnend in CI (`npm run knip`); `format:check` erst nach Format-Welle.
 
 ### Erledigt 2026-08-04 (Welle Quick Wins)
@@ -149,6 +149,7 @@ Verweis: [arbeitspaket-logging-error-e6.md](./arbeitspaket-logging-error-e6.md),
 | Tooling | `knip` + `knip.json`; Script `npm run knip` |
 | P1-2 / E6 T3 | Logger auf Auth, HubSpot-APIs, Approvals/E-Mails, Deal-Import, Bulk-Import, reference-extract, Invite |
 | P1-4 / P1-5 / P2-4 | `companyFromJoin` → `lib/accounts/company-from-join.ts`; `normalizeDealStatus` → `lib/deals/normalize-deal-status.ts`; UI-Dates → `formatReferenceDate(..., 'de-DE')` |
+| P1-3 Accounts | `actions.ts` auf Wrapper + Impl-Module (`strategy-roadmap`, `stakeholders`, `contacts`, `account-match`, `account-deals`, `company-crud`, `onepager`, Typen) |
 
 ---
 
